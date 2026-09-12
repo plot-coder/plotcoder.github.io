@@ -198,6 +198,54 @@ Add new items at the bottom of this list. Do not renumber. If a requirement dies
 - **Proposed mechanism (P11):** One command kernel that both the human UI and the agent call. Three doors into it: the human gestures, a `window.plotcoder` API on the page, and an MCP server in the repo. A workspace board file lets commands work with the app closed.
 - **Notes:** First agent tools are notes only (`list_board`, `create_note`, `update_note`, `move_note`, `recolor_note`, `delete_note`). Arrows and groups exist in the same state and reducer but are not agent tools yet. The agent must not fake pointer drags; it calls commands.
 
+### R18 — The method the tools serve
+
+- **Status:** proposed
+- **Date:** 2026-09-12
+- **Statement:** PlotCoder supports a specific order of work. (1) State the **logline / central question** — what the story is arguing. (2) Find the **beats** — 8 to 15 major turns (inciting incident, midpoint, lowest point, climax). (3) Fill the space between them with **scene cards**; one card is one scene. (4) **Read the wall** — look for a sagging Act 2, a missing setup, a character who disappears, two scenes that do the same job. (5) **Only then write pages** — or write one sequence, then restick the remaining cards.
+- **Why:** Robert works this way. Recording the method makes it testable as a product: every feature below exists to serve one of the five steps, and a feature that serves none of them has to argue for itself.
+- **Notes:** The order is a default, not a cage. Step 5 loops back to step 3 — that is the point of "restick the remaining cards." R19–R23 are the five steps as requirements.
+
+### R19 — Logline / central question
+
+- **Status:** proposed
+- **Date:** 2026-09-12
+- **Statement:** A board has one logline: the central question, what the story is arguing. It belongs to the board, not to a card. It stays visible while working rather than living inside a modal you have to remember to open.
+- **Why:** It is the thing every other decision gets checked against. Off the wall, it stops being checked.
+- **Notes:** This would be the **first board-level field we have ever had** — `BoardState` is `{ notes, groups, arrows }` and nothing else. It changes the kernel state shape, the saved project file (R12), `.plotcoder/board.json`, and what the MCP server returns, so it needs a migration path for boards saved before the change.
+
+### R20 — Beats
+
+- **Status:** proposed
+- **Date:** 2026-09-12
+- **Statement:** Some cards are **beats**: the 8 to 15 major turns. A beat is a card with a different **rank**, not a different kind of object and not a second document.
+- **Why:** Forty equal rectangles have no spine. The turns are what the rest hangs on.
+- **Notes:** R14 and the combine log both already forbid inventing a separate beat-sheet model — this honours that. Open: does the app name the canonical turns (inciting incident, midpoint, lowest point, climax) or only mark rank and let the writer title them? See open question 16 for whether the app has an opinion about the count.
+
+### R21 — Scene cards
+
+- **Status:** proposed
+- **Date:** 2026-09-12
+- **Statement:** The rest of the cards are **scenes**. One card is one scene. Scenes fill the space between beats.
+- **Why:** It is the unit the writer actually moves, and it keeps a card honest — if it needs two cards it is two scenes.
+- **Notes:** "Between" is deliberately unresolved: it may be **spatial** (scenes hang under a beat spine) or **structural** (a scene has a parent beat and position is free). That is P14, to be mocked both ways before anything is locked. Groups (R14) already give us a parent mechanism; prefer reusing it over adding a second one.
+
+### R22 — Read the wall
+
+- **Status:** proposed
+- **Date:** 2026-09-12
+- **Statement:** The app helps the writer find what is wrong with the board: an act that sags, a setup with no payoff, a character who disappears for a stretch, two scenes doing the same job.
+- **Why:** This is the step no other tool takes for the writer. Final Draft's reports count scenes and speeches for a production office; nobody answers "why does Act 2 feel long" at 2 a.m.
+- **Notes:** Impossible until cards carry meaning the app can read — rank (R20), characters (P15), typed arrows (P16). Today a card is a headline, a change line, and a colour whose meaning R16 deliberately leaves to the writer, so **the board cannot currently tell you anything you did not already know.** It must raise questions, never auto-fix. Proposed home is the Reminders modal grown up (P17), not a new panel.
+
+### R23 — Pages come last
+
+- **Status:** proposed
+- **Date:** 2026-09-12
+- **Statement:** Writing pages happens after the wall reads right, and PlotCoder does not have to be where it happens. D1 still holds: this is not a screenplay formatter.
+- **Why:** The whole method is "earn the structure before you spend the pages."
+- **Notes:** The cheapest useful version is **export**, not an editor: hand a finished board to Final Draft or Fountain. Whether PlotCoder ever holds draft text is open question 4, still unanswered.
+
 ---
 
 ## Proposed (not yet confirmed)
@@ -217,6 +265,12 @@ These were recommended in conversation. They are defaults until Robert says othe
 | P9 | **General bar layers:** closed is a left chevron. That opens a row of standalone marks (theme, new note, organize, group/scatter when relevant, then an up chevron) — no circular buttons. The up chevron opens the tall labeled panel. Collapse walks back one step. Everyday default is the button row. | Refines R7; mocked. Icons are still being judged. |
 | P10 | **Color tab:** stacked-paper mark on the card opens five swatches. Selection of two or more paints all of them. | Mechanism for R16; mocked. |
 | P11 | **Agent command surface — one kernel, three doors.** A DOM-free command kernel (`src/board/reducer.js`) owns the board records and is the only thing that mutates them. The React app, a `window.plotcoder` API, and an MCP server (`scripts/plotcoder-mcp.mjs`, wired in `.cursor/mcp.json`) all call it. State mirrors to `localStorage` (so Save/Open still works) and, on localhost, to `.plotcoder/board.json` via a Vite dev bridge so an agent can read/write the board with the app open (live via SSE) or closed (file). MCP tools are notes-only for now. | Mechanism for R17; implemented as a first cut. |
+| P12 | **Logline strip:** a thin always-visible line along the top of the canvas. Click the words to edit in place, same gesture as a card (R13). Empty state shows the question itself — "What is this story arguing?" — rather than a blank field. | Mechanism for R19. It competes with the top-right buttons and the PLOTCODER mark for the top of the screen; needs a look before it is locked. |
+| P13 | **Card rank shown in the paper, not the colour:** a beat card differs by size, weight, or a marked edge. Colour stays the writer's own legend. | Mechanism for R20. R16 explicitly refuses to lock a colour legend, so rank must not steal colour's job or the two meanings will fight on the same wall. |
+| P14 | **Two layouts to mock and compare.** (a) **Spine:** beats sit in a row across the top; scene cards hang below, between them. Organize lays scenes under their beat. (b) **Rank on the free wall:** a beat is just a heavier card that can sit anywhere; the relationship is a parent link, not a position. | Robert has not picked (2026-09-12: "mock both and let me look at them"). Do not build either as if it won. |
+| P15 | **Characters as card data:** a small tag list on a card for who is in the scene. Feeds the "character who disappears" check. | Needs a prior decision: is a character a free-typed string per card, or a board-level roster you maintain? See open question 17. |
+| P16 | **Typed arrows:** an arrow can carry a type, the first being **setup → payoff**. Untyped "what comes after what" stays the default. | Extends R15, which already anticipated that a label on an arrow would be a new requirement. Feeds the "missing setup" check in R22. |
+| P17 | **Read the wall is Reminders grown up:** the same modal gains a second half. Top is the craft principles as today; below, those principles checked against your actual board. Not a new panel. | Combines R10 and R22 instead of adding a tool. See the combine log. |
 
 ---
 
@@ -224,13 +278,13 @@ These were recommended in conversation. They are defaults until Robert says othe
 
 Answer these in this file when we decide. Do not hide decisions only in chat.
 
-1. What is the first tool besides “the board”? Beat sheet, A/B/C story rows, characters, or something else?
+1. What is the first tool besides “the board”? Beat sheet, A/B/C story rows, characters, or something else? *(Candidate answer on the table: the logline (R19) and read the wall (R22).)*
 2. Feature board vs TV episode board first — or one board that can do both?
-3. What belongs on a card besides headline, change, and paper color (want, conflict, character, a locked color legend)?
-4. Is PlotCoder only the board, or will it later include a story bible, fountain/script draft, or export to Final Draft?
+3. What belongs on a card besides headline, change, and paper color (want, conflict, character, a locked color legend)? *(Candidates now proposed: a beat/scene rank (R20), characters (P15).)*
+4. Is PlotCoder only the board, or will it later include a story bible, fountain/script draft, or export to Final Draft? *(R23 leans to export over an editor. Still open.)*
 5. Single-player first, or plan for two people on one board from the start (Supabase Realtime)?
 6. Should `plotcoder.com` be the app, with a small marketing page, or a marketing page plus `app.plotcoder.com`?
-7. Any structure method baked in (Save the Cat, eight sequences, three acts), or method-agnostic cards?
+7. Any structure method baked in (Save the Cat, eight sequences, three acts), or method-agnostic cards? *(Robert's method sketch (R18) leans to a **light** method — named major turns, beats ranked above scenes — rather than a branded template. Not locked.)*
 8. What else belongs in the general bar besides theme, and in what order?
 9. Should a manual theme choice survive the next 8:00 a.m. / 8:00 p.m. boundary? Current decision: no, the clock wins.
 10. ~~When should reminders move from localStorage to Supabase?~~ **Decided (D9):** localStorage now, Supabase later. Move reminders when we add accounts, using the same record shape.
@@ -238,6 +292,11 @@ Answer these in this file when we decide. Do not hide decisions only in chat.
 12. Confirm grouping mechanism: named frame after lasso (P6), stack-on-drop, or both?
 13. Confirm arrow draw: outbound handle (P8), or another gesture?
 14. Confirm color tab (P10), or another place to change paper color?
+15. Beat **spine** or beat **rank on the free wall** (P14)? Robert asked to see both mocked before choosing.
+16. Does the app have an opinion about the 8-to-15 beat count — nudge at 5, nudge at 30 — or does it just count them and stay quiet?
+17. Is a character a free-typed tag on a card, or a board-level roster you maintain (P15)?
+18. Does the logline belong to the **board** or to a **project**, if a project later holds more than one board (a season of episodes)?
+19. Do beats and scenes share one z-order and one Organize, or does ranking change what Organize does?
 
 ---
 
@@ -256,6 +315,10 @@ Use this when two requirements or tools overlap. Other agents should add rows if
 | 2026-09-12 | Card color could have been a general-bar control or a long-press menu. | Color lives on the card. The bar is canvas chrome. Long-press is not required. |
 | 2026-09-12 | The agent could have driven the board by simulating mouse drags in a browser. | Rejected. Human gestures and agent tools both call one command kernel. Faked pointer drags are brittle and drift from the real state. |
 | 2026-09-12 | Tests could have covered the React components and drag gestures too. | Rejected for now. The kernel is where the logic lives and two of its three doors have no visual feedback, so that is what is tested. Component tests would be rewritten every time a gesture changes. |
+| 2026-09-12 | Reminders (R10) puts craft principles on the wall. Read the wall (R22) checks those same principles against the actual board. One is a poster; the other is the poster looking back. | Proposed combine (P17): one tool at two levels of intelligence. Do not build a second diagnostics panel next to the reminders modal. |
+| 2026-09-12 | Beats and scenes could be two card types, two boards, or one card plus a rank. | Proposed: one card plus a rank (R20/R21). Reaffirms R14 and the earlier row above — still no second beat-sheet model, and groups already provide a parent mechanism. |
+| 2026-09-12 | Measured the board against Final Draft. It has a beat board, a story map with a real page axis, structure templates, an outline editor, index cards two-way bound to the script, a navigator that filters by character and location, and reports. | Skip the production half entirely (revision colours, locked pages, scene numbering, tagging, cast reports, FDX authoring) — D1 says we are not a formatter. The story half is what R18–R23 aim at. The gap worth owning is the last one: Final Draft can count your scenes but it cannot read your wall back to you. |
+| 2026-09-12 | Everything on the board today is spatial and untyped — a card is two lines and a colour, and R16 leaves colour's meaning to the writer. | Named as the root constraint behind R22: the board cannot diagnose what it cannot read. Any "read the wall" feature has to be preceded by giving cards machine-readable meaning (rank, characters, typed arrows), not by cleverer heuristics over the current shape. |
 
 ---
 
@@ -268,6 +331,7 @@ Use this when two requirements or tools overlap. Other agents should add rows if
 - GitHub Pages no longer serves the repo root. `.github/workflows/deploy.yml` runs on every push to `main`, installs with `npm ci`, runs `npm test`, builds, and publishes `dist/` through the Pages Actions deploy (the Pages `build_type` is `workflow`, not `legacy`). The custom domain lives in `public/CNAME`, which Vite copies into `dist/`; there is deliberately no `CNAME` at the repo root any more, so there is one source of truth. A failing test blocks the deploy.
 - Board state flows through one kernel: `src/board/reducer.js` (plain ESM + `reducer.d.ts` so it runs in the browser and in Node). `src/board/store.ts` is the browser store (localStorage + dev bridge + `window.plotcoder`). The Vite dev bridge (`vite.config.ts`) serves `/__plotcoder/board` and `/__plotcoder/events` and mirrors `.plotcoder/board.json` (gitignored) on localhost only — it never ships to Pages. The MCP server is `scripts/plotcoder-mcp.mjs` (run by `node`, wired in `.cursor/mcp.json`); it applies the same kernel and writes the live bridge when the app is open, or the file when it is closed. See the `plotcoder-board` skill in `.cursor/skills/`.
 
+- A logline (R19) would be the first **board-level** field. `BoardState` is `{ notes, groups, arrows }` and has never held anything that is not a list. Adding one touches the kernel's state shape, `isBoardState`, the saved project file (R12), `.plotcoder/board.json`, and the MCP board payload — so it needs a read path that tolerates boards written before the change rather than rejecting them as invalid.
 - Tests run on Vitest: `npm test` (single pass) or `npm run test:watch`. They cover the DOM-free half only — the kernel (`src/board/reducer.test.ts`), the pure helpers (`src/arrowGeometry.test.ts`, `src/organizeLayout.test.ts`, `src/projectStore.test.ts`), and the MCP server (`scripts/plotcoder-mcp.test.mjs`, which spawns it against a temp board file and a fake dev bridge). No browser, no jsdom. Config is `vitest.config.ts`; `tsc -b` typechecks the `.ts` tests and Vite leaves them out of the bundle.
 
 When hosting no longer fits Pages, record the change here.
@@ -313,3 +377,4 @@ Add a dated heading and your verdict. Challenge requirements, don’t just affir
 | 2026-09-12 | Full feature pass with screenshots. Fixed two bugs: cards painted over the modals (card z-indexes escaped into the page), and `list_board` always reported the app as closed. |
 | 2026-09-12 | Added a test suite (Vitest, `npm test`) over the DOM-free half: kernel reducer, arrow geometry, organize layout, project files, and the MCP server offline and against a fake bridge. UI gestures stay untested on purpose while the mockup moves. |
 | 2026-09-12 | Released v0.1.0. plotcoder.com now serves the built app instead of the placeholder landing page: Pages switched from serving the repo root to a build-and-deploy workflow, and the domain moved from the root `CNAME` to `public/CNAME`. Open item: GitHub has not yet issued the HTTPS certificate, so the site is HTTP-only. |
+| 2026-09-12 | Compared the board against Final Draft and recorded Robert's working method as R18–R23 (method, logline, beats, scene cards, read the wall, pages last) with mechanisms P12–P17. All **proposed**, none confirmed — nothing here is built yet. Added open questions 15–19. Beat spine vs. rank-on-the-free-wall (P14 / question 15) is to be mocked both ways before anyone picks. |

@@ -1,4 +1,4 @@
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { GeneralBar, type BarLayer } from "./GeneralBar";
 import { NoteBoard } from "./NoteBoard";
 import { boardStore, installWindowApi } from "./board/store";
@@ -18,6 +18,7 @@ import {
   writeStoredTheme,
   type Theme,
 } from "./theme";
+import { fitView, IDENTITY_VIEW, zoomAt, type View } from "./viewport";
 
 const BAR_KEY = "plotcoder.generalBar.layer";
 const BAR_KEY_LEGACY = "plotcoder.generalBar.expanded";
@@ -39,6 +40,29 @@ export function App() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectedArrowId, setSelectedArrowId] = useState<string | null>(null);
   const [scatterPoses, setScatterPoses] = useState<NotePose[] | null>(null);
+  // The window is a viewport onto an unbounded wall (D15). This is per-viewer
+  // state on purpose: it never enters the board record, the project file, or
+  // later Postgres, because where you are looking is not part of the story.
+  const boardRef = useRef<HTMLDivElement>(null);
+  const [view, setView] = useState<View>(IDENTITY_VIEW);
+
+  const updateView = useCallback((update: (current: View) => View) => {
+    setView(update);
+  }, []);
+
+  const viewportSize = useCallback(() => {
+    const rect = boardRef.current?.getBoundingClientRect();
+    return { width: rect?.width ?? 0, height: rect?.height ?? 0 };
+  }, []);
+
+  function fitToWall() {
+    setView(fitView(notes, viewportSize()));
+  }
+
+  function zoomBy(factor: number) {
+    const { width, height } = viewportSize();
+    setView((current) => zoomAt(current, factor, { x: width / 2, y: height / 2 }));
+  }
 
   useEffect(() => {
     boardStore.start();
@@ -189,6 +213,9 @@ export function App() {
         />
       </div>
       <NoteBoard
+        boardRef={boardRef}
+        view={view}
+        onView={updateView}
         notes={notes}
         groups={groups}
         arrows={arrows}
@@ -221,6 +248,11 @@ export function App() {
         onOrganize={organizeNotes}
         canScatter={scatterPoses !== null}
         onScatter={scatterNotes}
+        zoom={view.scale}
+        canFit={notes.length > 0}
+        onFit={fitToWall}
+        onZoomIn={() => zoomBy(1.25)}
+        onZoomOut={() => zoomBy(0.8)}
       />
     </div>
   );

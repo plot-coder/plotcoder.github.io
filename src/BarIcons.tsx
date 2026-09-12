@@ -63,6 +63,24 @@ export function ScatterIcon({ className }: IconProps) {
   );
 }
 
+// Stand back and see the whole wall: corner brackets pulling outward around
+// the cards.
+export function FitIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M3.4 8.6V4.6a1.2 1.2 0 0 1 1.2-1.2h4M20.6 8.6V4.6a1.2 1.2 0 0 0-1.2-1.2h-4M3.4 15.4v4a1.2 1.2 0 0 0 1.2 1.2h4M20.6 15.4v4a1.2 1.2 0 0 1-1.2 1.2h-4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+      <rect x="8.2" y="9.2" width="3.3" height="5.6" rx="0.6" fill="currentColor" />
+      <rect x="12.5" y="9.2" width="3.3" height="5.6" rx="0.6" fill="currentColor" />
+    </svg>
+  );
+}
+
 export function ChevronIcon({
   className,
   direction,

@@ -1,5 +1,6 @@
 import {
   ChevronIcon,
+  FitIcon,
   GroupIcon,
   NoteIcon,
   OrganizeIcon,
@@ -22,6 +23,11 @@ type GeneralBarProps = {
   onOrganize: () => void;
   canScatter: boolean;
   onScatter: () => void;
+  zoom: number;
+  canFit: boolean;
+  onFit: () => void;
+  onZoomIn: () => void;
+  onZoomOut: () => void;
 };
 
 export function GeneralBar({
@@ -36,6 +42,11 @@ export function GeneralBar({
   onOrganize,
   canScatter,
   onScatter,
+  zoom,
+  canFit,
+  onFit,
+  onZoomIn,
+  onZoomOut,
 }: GeneralBarProps) {
   const nextChange = formatNextChange(theme);
   const followingClock = theme === scheduled;
@@ -98,6 +109,24 @@ export function GeneralBar({
               Scatter
             </button>
           ) : null}
+
+          <div className="general-bar__item">
+            <div className="general-bar__item-copy">
+              <p className="general-bar__item-label">Wall</p>
+              <p className="general-bar__item-meta">{Math.round(zoom * 100)}% · Fit shows every card</p>
+            </div>
+            <div className="zoom-group">
+              <button type="button" className="zoom-step" onClick={onZoomOut} aria-label="Zoom out">
+                −
+              </button>
+              <button type="button" className="zoom-step" onClick={onZoomIn} aria-label="Zoom in">
+                +
+              </button>
+            </div>
+          </div>
+          <button type="button" className="new-note" onClick={onFit} disabled={!canFit}>
+            Fit the whole wall
+          </button>
         </>
       ) : (
         <div className="general-bar__row">
@@ -127,6 +156,16 @@ export function GeneralBar({
               >
                 <OrganizeIcon className="bar-icon__svg" />
               </button>
+              {canFit ? (
+                <button
+                  type="button"
+                  className="bar-icon"
+                  onClick={onFit}
+                  aria-label="Fit the whole wall"
+                >
+                  <FitIcon className="bar-icon__svg" />
+                </button>
+              ) : null}
               {canGroup ? (
                 <button
                   type="button"

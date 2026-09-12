@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState, type PointerEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type PointerEvent,
+  type RefObject,
+} from "react";
 import { arrowLayout, noteAtPoint, previewPath } from "./arrowGeometry";
 import { NoteCard } from "./NoteCard";
 import {
@@ -9,14 +15,26 @@ import {
   type MockNote,
   type NoteColor,
 } from "./noteMock";
+import {
+  panByDrag,
+  panByScroll,
+  scaleDelta,
+  toBoard,
+  zoomAt,
+  type View,
+} from "./viewport";
 
 type DragState =
   | { kind: "note"; id: string; offsetX: number; offsetY: number }
   | { kind: "group"; id: string; lastX: number; lastY: number }
   | { kind: "lasso"; x: number; y: number; w: number; h: number }
-  | { kind: "arrow"; fromId: string; x: number; y: number; hoverId: string | null };
+  | { kind: "arrow"; fromId: string; x: number; y: number; hoverId: string | null }
+  | { kind: "pan"; lastX: number; lastY: number };
 
 type NoteBoardProps = {
+  boardRef: RefObject<HTMLDivElement | null>;
+  view: View;
+  onView: (update: (view: View) => View) => void;
   notes: MockNote[];
   groups: MockGroup[];
   arrows: MockArrow[];
@@ -49,9 +67,11 @@ function capturePointer(event: PointerEvent<HTMLElement>) {
   }
 }
 
-function boardPoint(event: PointerEvent, board: HTMLElement) {
+// Screen coordinates are useless to everything downstream — cards, the lasso and
+// arrows all live in board space, which pans and zooms underneath the window.
+function boardPoint(event: PointerEvent, board: HTMLElement, view: View) {
   const rect = board.getBoundingClientRect();
-  return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+  return toBoard({ x: event.clientX - rect.left, y: event.clientY - rect.top }, view);
 }
 
 function noteBox(note: MockNote) {
@@ -79,6 +99,9 @@ function groupBounds(notes: MockNote[]) {
 }
 
 export function NoteBoard({
+  boardRef,
+  view,
+  onView,
   notes,
   groups,
   arrows,
@@ -99,8 +122,68 @@ export function NoteBoard({
   onEdit,
   onCommit,
 }: NoteBoardProps) {
-  const boardRef = useRef<HTMLDivElement>(null);
+  const layerRef = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState<DragState | null>(null);
+  const [spaceHeld, setSpaceHeld] = useState(false);
+
+  // Trackpad scroll pans, pinch (which arrives as ctrl+wheel) zooms. This has to
+  // be a native listener because React's wheel handler is passive and cannot
+  // preventDefault, which would let the gesture zoom the whole page instead.
+  useEffect(() => {
+    const board = boardRef.current;
+    if (!board) return;
+
+    function onWheel(event: WheelEvent) {
+      event.preventDefault();
+      const rect = board!.getBoundingClientRect();
+      const anchor = { x: event.clientX - rect.left, y: event.clientY - rect.top };
+      if (event.ctrlKey || event.metaKey) {
+        onView((current) => zoomAt(current, Math.exp(-event.deltaY / 320), anchor));
+      } else {
+        onView((current) => panByScroll(current, event.deltaX, event.deltaY));
+      }
+    }
+
+    board.addEventListener("wheel", onWheel, { passive: false });
+    return () => board.removeEventListener("wheel", onWheel);
+  }, [boardRef, onView]);
+
+  // Space-drag is the mouse user's pan. Empty-canvas drag stays the lasso (R14),
+  // so panning never takes a gesture away.
+  useEffect(() => {
+    function isTyping(target: EventTarget | null) {
+      const el = target as HTMLElement | null;
+      return Boolean(
+        el &&
+          (el.tagName === "INPUT" ||
+            el.tagName === "TEXTAREA" ||
+            el.isContentEditable),
+      );
+    }
+
+    function down(event: KeyboardEvent) {
+      if (event.code !== "Space" || event.repeat || isTyping(event.target)) return;
+      event.preventDefault();
+      setSpaceHeld(true);
+    }
+
+    function up(event: KeyboardEvent) {
+      if (event.code === "Space") setSpaceHeld(false);
+    }
+
+    function blur() {
+      setSpaceHeld(false);
+    }
+
+    window.addEventListener("keydown", down);
+    window.addEventListener("keyup", up);
+    window.addEventListener("blur", blur);
+    return () => {
+      window.removeEventListener("keydown", down);
+      window.removeEventListener("keyup", up);
+      window.removeEventListener("blur", blur);
+    };
+  }, []);
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
@@ -128,7 +211,7 @@ export function NoteBoard({
     event.stopPropagation();
     capturePointer(event);
     onRaise(note.id);
-    const point = boardPoint(event, boardRef.current!);
+    const point = boardPoint(event, boardRef.current!, view);
     setDrag({
       kind: "note",
       id: note.id,
@@ -138,8 +221,18 @@ export function NoteBoard({
   }
 
   function startBoardDrag(event: PointerEvent<HTMLDivElement>) {
-    if (event.button !== 0 || event.target !== event.currentTarget) return;
-    const point = boardPoint(event, event.currentTarget);
+    // Space-drag anywhere, or a middle-drag even over a card, grabs the wall.
+    if (spaceHeld || event.button === 1) {
+      event.preventDefault();
+      capturePointer(event);
+      setDrag({ kind: "pan", lastX: event.clientX, lastY: event.clientY });
+      return;
+    }
+    // The transform layer covers the board, so empty canvas is either element.
+    const onEmptyCanvas =
+      event.target === event.currentTarget || event.target === layerRef.current;
+    if (event.button !== 0 || !onEmptyCanvas) return;
+    const point = boardPoint(event, event.currentTarget, view);
     capturePointer(event);
     setDrag({ kind: "lasso", x: point.x, y: point.y, w: 0, h: 0 });
   }
@@ -159,7 +252,7 @@ export function NoteBoard({
     } catch {
       /* synthetic pointers in the mockup */
     }
-    const point = boardPoint(event, boardRef.current);
+    const point = boardPoint(event, boardRef.current, view);
     onSelect([]);
     onSelectArrow(null);
     setDrag({ kind: "arrow", fromId: note.id, x: point.x, y: point.y, hoverId: null });
@@ -167,7 +260,16 @@ export function NoteBoard({
 
   function movePointer(event: PointerEvent<HTMLDivElement>) {
     if (!drag || !boardRef.current) return;
-    const point = boardPoint(event, boardRef.current);
+
+    if (drag.kind === "pan") {
+      onView((current) =>
+        panByDrag(current, event.clientX - drag.lastX, event.clientY - drag.lastY),
+      );
+      setDrag({ ...drag, lastX: event.clientX, lastY: event.clientY });
+      return;
+    }
+
+    const point = boardPoint(event, boardRef.current, view);
 
     if (drag.kind === "note") {
       onMove(drag.id, point.x - drag.offsetX, point.y - drag.offsetY);
@@ -175,8 +277,15 @@ export function NoteBoard({
     }
 
     if (drag.kind === "group") {
+      // Screen pixels dragged are not board pixels moved once you are zoomed.
       const group = groups.find((item) => item.id === drag.id);
-      if (group) onMoveMany(group.noteIds, event.clientX - drag.lastX, event.clientY - drag.lastY);
+      if (group) {
+        onMoveMany(
+          group.noteIds,
+          scaleDelta(event.clientX - drag.lastX, view),
+          scaleDelta(event.clientY - drag.lastY, view),
+        );
+      }
       setDrag({ ...drag, lastX: event.clientX, lastY: event.clientY });
       return;
     }
@@ -250,7 +359,9 @@ export function NoteBoard({
   return (
     <div
       ref={boardRef}
-      className="note-board"
+      className={`note-board${spaceHeld ? " is-grabbable" : ""}${
+        drag?.kind === "pan" ? " is-panning" : ""
+      }`}
       onPointerDown={startBoardDrag}
       onPointerMove={movePointer}
       onPointerUp={endPointer}
@@ -263,6 +374,11 @@ export function NoteBoard({
         </p>
       ) : null}
 
+      <div
+        ref={layerRef}
+        className="board-layer"
+        style={{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})` }}
+      >
       {groups.map((group) => {
         const members = notes.filter((note) => group.noteIds.includes(note.id));
         if (members.length === 0) return null;
@@ -386,6 +502,7 @@ export function NoteBoard({
           Remove
         </button>
       ) : null}
+      </div>
     </div>
   );
 }

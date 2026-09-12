@@ -55,6 +55,7 @@ These came from Robert. Do not quietly reverse them.
 | D12 | Cards can be **grouped**. Mechanism is proposed (lasso → named frame), not locked until Robert picks it. | 2026-09-12 |
 | D13 | Cards can have **directed arrows** between them. A→B and B→A are two arrows, not one double-headed line. | 2026-09-12 |
 | D14 | A card has a **user-chosen paper color** from the pad (yellow, pink, blue, green, orange). | 2026-09-12 |
+| D15 | The board is an **unbounded wall**. The window is a viewport onto it that you can **pan and zoom**. A wall that only holds what fits on screen is not a wall. | 2026-09-12 |
 
 ---
 
@@ -246,6 +247,16 @@ Add new items at the bottom of this list. Do not renumber. If a requirement dies
 - **Why:** The whole method is "earn the structure before you spend the pages."
 - **Notes:** The cheapest useful version is **export**, not an editor: hand a finished board to Final Draft or Fountain. Whether PlotCoder ever holds draft text is open question 4, still unanswered.
 
+### R24 — The wall is bigger than the window
+
+- **Status:** confirmed (need). Mechanism: proposed.
+- **Date:** 2026-09-12
+- **Statement:** The board is an unbounded surface. The window shows part of it. The user can **pan** to reach any part of the wall and **zoom out** to see the whole thing at once. No card can ever become unreachable.
+- **Why:** Measured on v0.1.0 with a feature-length board — 13 beats plus 40 scene cards, the scale R18's method actually implies — then pressed Organize on a 1440×900 laptop. **16 of the 53 cards were visible and the other 37 were unreachable.** Laid-out content ran 3,162px tall against a 900px viewport, the lowest card sat at y=2970, and `.note-board` is `position: absolute; inset: 0; overflow: hidden` with `document.scrollHeight` equal to the viewport height. No scroll, no pan, no zoom. Organize itself is what pushes cards off the wall, and you cannot drag back a card you cannot see.
+- **Blocks:** R20–R22 all assume a wall that holds the cards. R22 ("read the wall") is impossible in the most literal sense at 30% visibility. P14 cannot even be honestly mocked — 13 beats in a row is 2,860px wide, so a spine does not fit on a laptop screen.
+- **Notes:** The **viewport is not board data.** Pan and zoom are per-viewer, per-device state and must stay out of the kernel's `BoardState`, or they will end up in the project file and later in Postgres, which D9 says is for user data. Two writers on one board (open question 5) should not share a scroll position.
+- **Cost note:** The work is not the transform, it is that every pointer gesture has to convert screen coordinates to board coordinates — card drag, lasso, arrow draw, group drag. That set only grows, so this is cheaper now than after the method features land.
+
 ---
 
 ## Proposed (not yet confirmed)
@@ -271,6 +282,7 @@ These were recommended in conversation. They are defaults until Robert says othe
 | P15 | **Characters as card data:** a small tag list on a card for who is in the scene. Feeds the "character who disappears" check. | Needs a prior decision: is a character a free-typed string per card, or a board-level roster you maintain? See open question 17. |
 | P16 | **Typed arrows:** an arrow can carry a type, the first being **setup → payoff**. Untyped "what comes after what" stays the default. | Extends R15, which already anticipated that a label on an arrow would be a new requirement. Feeds the "missing setup" check in R22. |
 | P17 | **Read the wall is Reminders grown up:** the same modal gains a second half. Top is the craft principles as today; below, those principles checked against your actual board. Not a new panel. | Combines R10 and R22 instead of adding a tool. See the combine log. |
+| P18 | **Pan and zoom mechanism:** the board content sits on one transformed layer (`translate` + `scale`). Trackpad two-finger scroll pans; pinch or ctrl-wheel zooms toward the pointer; space-drag and middle-drag pan for mouse users. Drag on empty canvas stays the lasso (R14) — panning never steals it. A **Fit** control in the general bar frames every card at once: standing back from the corkboard, which is the literal gesture R22 is named after. | Mechanism for R24 / D15. Zoom range and whether the view persists across reloads are still open. |
 
 ---
 
@@ -297,6 +309,9 @@ Answer these in this file when we decide. Do not hide decisions only in chat.
 17. Is a character a free-typed tag on a card, or a board-level roster you maintain (P15)?
 18. Does the logline belong to the **board** or to a **project**, if a project later holds more than one board (a season of episodes)?
 19. Do beats and scenes share one z-order and one Organize, or does ranking change what Organize does?
+20. Should the pan/zoom view survive a reload, and should Save project carry it? Current lean: no — the viewport is per-viewer, not board data (R24).
+21. Organize picks its row width from `window.innerWidth` (capped at 920px). With zoom, the same board organizes differently on a laptop and a monitor. Should the row width become a fixed board-space constant instead?
+22. How far out should zoom go — far enough to read 53 cards, or far enough for a whole season?
 
 ---
 
@@ -318,6 +333,8 @@ Use this when two requirements or tools overlap. Other agents should add rows if
 | 2026-09-12 | Reminders (R10) puts craft principles on the wall. Read the wall (R22) checks those same principles against the actual board. One is a poster; the other is the poster looking back. | Proposed combine (P17): one tool at two levels of intelligence. Do not build a second diagnostics panel next to the reminders modal. |
 | 2026-09-12 | Beats and scenes could be two card types, two boards, or one card plus a rank. | Proposed: one card plus a rank (R20/R21). Reaffirms R14 and the earlier row above — still no second beat-sheet model, and groups already provide a parent mechanism. |
 | 2026-09-12 | Measured the board against Final Draft. It has a beat board, a story map with a real page axis, structure templates, an outline editor, index cards two-way bound to the script, a navigator that filters by character and location, and reports. | Skip the production half entirely (revision colours, locked pages, scene numbering, tagging, cast reports, FDX authoring) — D1 says we are not a formatter. The story half is what R18–R23 aim at. The gap worth owning is the last one: Final Draft can count your scenes but it cannot read your wall back to you. |
+| 2026-09-12 | Pan/zoom could have been stored on the board so a board reopens where you left it. | Rejected. The viewport is per-viewer, per-device state and stays out of `BoardState` — otherwise it lands in the project file and later in Postgres, and two writers on one board would fight over one scroll position. |
+| 2026-09-12 | Panning could have used drag-on-empty-canvas, the most obvious gesture. | Rejected. That gesture is already the lasso (R14). Trackpad scroll, pinch, space-drag and middle-drag all pan without taking anything away. |
 | 2026-09-12 | Everything on the board today is spatial and untyped — a card is two lines and a colour, and R16 leaves colour's meaning to the writer. | Named as the root constraint behind R22: the board cannot diagnose what it cannot read. Any "read the wall" feature has to be preceded by giving cards machine-readable meaning (rank, characters, typed arrows), not by cleverer heuristics over the current shape. |
 
 ---
@@ -332,7 +349,8 @@ Use this when two requirements or tools overlap. Other agents should add rows if
 - Board state flows through one kernel: `src/board/reducer.js` (plain ESM + `reducer.d.ts` so it runs in the browser and in Node). `src/board/store.ts` is the browser store (localStorage + dev bridge + `window.plotcoder`). The Vite dev bridge (`vite.config.ts`) serves `/__plotcoder/board` and `/__plotcoder/events` and mirrors `.plotcoder/board.json` (gitignored) on localhost only — it never ships to Pages. The MCP server is `scripts/plotcoder-mcp.mjs` (run by `node`, wired in `.cursor/mcp.json`); it applies the same kernel and writes the live bridge when the app is open, or the file when it is closed. See the `plotcoder-board` skill in `.cursor/skills/`.
 
 - A logline (R19) would be the first **board-level** field. `BoardState` is `{ notes, groups, arrows }` and has never held anything that is not a list. Adding one touches the kernel's state shape, `isBoardState`, the saved project file (R12), `.plotcoder/board.json`, and the MCP board payload — so it needs a read path that tolerates boards written before the change rather than rejecting them as invalid.
-- Tests run on Vitest: `npm test` (single pass) or `npm run test:watch`. They cover the DOM-free half only — the kernel (`src/board/reducer.test.ts`), the pure helpers (`src/arrowGeometry.test.ts`, `src/organizeLayout.test.ts`, `src/projectStore.test.ts`), and the MCP server (`scripts/plotcoder-mcp.test.mjs`, which spawns it against a temp board file and a fake dev bridge). No browser, no jsdom. Config is `vitest.config.ts`; `tsc -b` typechecks the `.ts` tests and Vite leaves them out of the bundle.
+- Pan and zoom live in `src/viewport.ts` — pure functions over a `{ x, y, scale }` view, with no React and no DOM. `NoteBoard` renders one `.board-layer` carrying `translate(x, y) scale(s)`, and every gesture runs its screen coordinates through `toBoard` before touching a card. Scroll and drag pan in **opposite** directions for the same delta, so both signs are pinned in `panByScroll` / `panByDrag` rather than left in an event handler where they are trivially easy to swap.
+- Tests run on Vitest: `npm test` (single pass) or `npm run test:watch`. They cover the DOM-free half only — the kernel (`src/board/reducer.test.ts`), the pure helpers (`src/arrowGeometry.test.ts`, `src/organizeLayout.test.ts`, `src/projectStore.test.ts`, `src/viewport.test.ts`), and the MCP server (`scripts/plotcoder-mcp.test.mjs`, which spawns it against a temp board file and a fake dev bridge). No browser, no jsdom. Config is `vitest.config.ts`; `tsc -b` typechecks the `.ts` tests and Vite leaves them out of the bundle.
 
 When hosting no longer fits Pages, record the change here.
 
@@ -377,4 +395,6 @@ Add a dated heading and your verdict. Challenge requirements, don’t just affir
 | 2026-09-12 | Full feature pass with screenshots. Fixed two bugs: cards painted over the modals (card z-indexes escaped into the page), and `list_board` always reported the app as closed. |
 | 2026-09-12 | Added a test suite (Vitest, `npm test`) over the DOM-free half: kernel reducer, arrow geometry, organize layout, project files, and the MCP server offline and against a fake bridge. UI gestures stay untested on purpose while the mockup moves. |
 | 2026-09-12 | Released v0.1.0. plotcoder.com now serves the built app instead of the placeholder landing page: Pages switched from serving the repo root to a build-and-deploy workflow, and the domain moved from the root `CNAME` to `public/CNAME`. Open item: GitHub has not yet issued the HTTPS certificate, so the site is HTTP-only. |
+| 2026-09-12 | Loaded a feature-length board (13 beats + 40 scenes) onto v0.1.0 and pressed Organize: 16 of 53 cards visible, 37 unreachable, no pan/zoom/scroll anywhere. Added D15 / R24 / P18 — the wall is bigger than the window. This blocks R20–R22 and even blocks mocking P14, so it goes before the method work. |
+| 2026-09-12 | Built R24: pan and zoom on an unbounded wall, plus **Fit** in the general bar. Same 53-card board now fits 53 of 53 with nothing stranded. Card drag, lasso, group drag and arrows all convert through board space. Found and fixed one real bug on the way — trackpad scroll panned the wrong way — and moved both pan signs into tested functions. |
 | 2026-09-12 | Compared the board against Final Draft and recorded Robert's working method as R18–R23 (method, logline, beats, scene cards, read the wall, pages last) with mechanisms P12–P17. All **proposed**, none confirmed — nothing here is built yet. Added open questions 15–19. Beat spine vs. rank-on-the-free-wall (P14 / question 15) is to be mocked both ways before anyone picks. |

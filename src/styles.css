@@ -511,6 +511,34 @@ body {
   letter-spacing: 0.04em;
 }
 
+.zoom-group {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 0.3rem;
+}
+
+.zoom-step {
+  width: 1.85rem;
+  height: 1.85rem;
+  padding: 0;
+  border: 1px solid var(--bar-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  font-size: 0.95rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.zoom-step:hover {
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+}
+
+.new-note:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
 .theme-switch {
   position: relative;
   width: 3.4rem;
@@ -565,7 +593,30 @@ body {
   /* Card z-indexes climb forever, so keep them inside the board's own
      stacking context where they can never rise above the bar or a modal. */
   isolation: isolate;
+  /* The wall is unbounded and extends past this window in every direction; this
+     clips it to the viewport. Pan and zoom are how you reach the rest. */
   overflow: hidden;
+  /* Trackpad pans and pinches are handled in JS, so the browser must not also
+     scroll or page-zoom on the same gesture. */
+  touch-action: none;
+  overscroll-behavior: none;
+}
+
+.note-board.is-grabbable {
+  cursor: grab;
+}
+
+.note-board.is-panning {
+  cursor: grabbing;
+}
+
+/* Every board object rides on this one layer, so panning and zooming is a
+   single transform rather than 53 separate position updates. */
+.board-layer {
+  position: absolute;
+  inset: 0;
+  transform-origin: 0 0;
+  will-change: transform;
 }
 
 .note {

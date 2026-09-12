@@ -2,7 +2,7 @@
 //
 // Owns the live BoardState the React app renders, routes every mutation through
 // the kernel reducer, and keeps three mirrors in sync:
-//   1. localStorage (plotcoder.notes / plotcoder.groups / plotcoder.arrows) so a
+//   1. localStorage (plotcoder.logline / .notes / .groups / .arrows) so a
 //      project Save/Open keeps working and the board survives a reload.
 //   2. the Vite dev bridge (.plotcoder/board.json) when the app runs on
 //      localhost, so an agent can read/write the board with the file.
@@ -12,12 +12,14 @@
 import {
   applyCommand,
   isBoardState,
+  normalizeState,
   seedState,
   type BoardState,
   type Command,
   type NoteColor,
 } from "./reducer";
 
+const LS_LOGLINE = "plotcoder.logline";
 const LS_NOTES = "plotcoder.notes";
 const LS_GROUPS = "plotcoder.groups";
 const LS_ARROWS = "plotcoder.arrows";
@@ -43,12 +45,15 @@ function loadLocal(): BoardState | null {
     const groups = localStorage.getItem(LS_GROUPS);
     const arrows = localStorage.getItem(LS_ARROWS);
     if (notes === null && groups === null && arrows === null) return null;
-    const state: BoardState = {
+    // A board saved before R19 has no logline key; normalizeState fills it in
+    // rather than the board being treated as unreadable.
+    const state = {
+      logline: localStorage.getItem(LS_LOGLINE) ?? "",
       notes: notes ? JSON.parse(notes) : [],
       groups: groups ? JSON.parse(groups) : [],
       arrows: arrows ? JSON.parse(arrows) : [],
     };
-    return isBoardState(state) ? state : null;
+    return isBoardState(state) ? normalizeState(state) : null;
   } catch {
     return null;
   }
@@ -56,6 +61,7 @@ function loadLocal(): BoardState | null {
 
 function saveLocal(state: BoardState): void {
   try {
+    localStorage.setItem(LS_LOGLINE, state.logline ?? "");
     localStorage.setItem(LS_NOTES, JSON.stringify(state.notes));
     localStorage.setItem(LS_GROUPS, JSON.stringify(state.groups));
     localStorage.setItem(LS_ARROWS, JSON.stringify(state.arrows));
@@ -151,7 +157,7 @@ class BoardStore {
     if (this.adopted && payload.rev <= this.rev) return;
     this.adopted = true;
     this.rev = payload.rev;
-    this.setState(payload.state);
+    this.setState(normalizeState(payload.state));
   }
 
   private scheduleSync(): void {

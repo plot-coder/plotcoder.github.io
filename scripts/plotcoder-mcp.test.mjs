@@ -133,6 +133,7 @@ describe("plotcoder MCP server", () => {
       "list_board",
       "move_note",
       "recolor_note",
+      "set_logline",
       "update_note",
     ]);
   });
@@ -152,6 +153,22 @@ describe("plotcoder MCP server", () => {
       "tom-lies",
       "letter-aloud",
     ]);
+  });
+
+  it("sets and clears the logline, and reports it in the summary", async () => {
+    const text = await client.callTool("set_logline", {
+      logline: "Does telling the truth cost more than the lie?",
+    });
+    expect(text).toContain("Logline set");
+
+    const listed = await client.callTool("list_board");
+    expect(listed).toContain('logline: "Does telling the truth cost more than the lie?"');
+    expect(readBoardFile().state.logline).toBe(
+      "Does telling the truth cost more than the lie?",
+    );
+
+    expect(await client.callTool("set_logline", { logline: "" })).toContain("cleared");
+    expect(await client.callTool("list_board")).toContain("logline: (not set)");
   });
 
   // Regression guard: this line used to claim the app was closed even when it

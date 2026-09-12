@@ -27,7 +27,7 @@ export function nowIso() {
 }
 
 export function emptyState() {
-  return { notes: [], groups: [], arrows: [] };
+  return { logline: "", notes: [], groups: [], arrows: [] };
 }
 
 export function seedState(now = nowIso()) {
@@ -45,6 +45,9 @@ export function seedState(now = nowIso()) {
   });
 
   return {
+    // Left empty on purpose: the placeholder asks the question, which is how a
+    // new writer finds out the logline is there at all.
+    logline: "",
     notes: [
       mk("maya-letter", "Maya finds the letter", "She decides not to tell Tom.", "yellow", 88, 120, -2.2, 1),
       mk("tom-lies", "Tom lies about the job", "Maya starts to doubt him.", "pink", 320, 168, 1.6, 2),
@@ -55,6 +58,10 @@ export function seedState(now = nowIso()) {
   };
 }
 
+// Deliberately unchanged by the arrival of `logline`. Validation stays as loose
+// as it was so that no board which was valid yesterday becomes invalid today —
+// a stricter check here would reject saved projects and lose someone's wall.
+// Shape is repaired in normalizeState instead.
 export function isBoardState(value) {
   if (!value || typeof value !== "object") return false;
   return (
@@ -62,6 +69,18 @@ export function isBoardState(value) {
     Array.isArray(value.groups) &&
     Array.isArray(value.arrows)
   );
+}
+
+/**
+ * Fill in fields added after a board was written. Every load boundary — the
+ * browser store, the dev bridge, the MCP server, an opened project file — runs
+ * a board through this so the rest of the code can assume the current shape.
+ */
+export function normalizeState(value) {
+  if (!isBoardState(value)) return emptyState();
+  const logline = typeof value.logline === "string" ? value.logline : "";
+  if (value.logline === logline) return value;
+  return { ...value, logline };
 }
 
 function maxZ(notes) {
@@ -78,6 +97,12 @@ function pruneGroups(groups) {
 
 export function applyCommand(state, command, now = nowIso()) {
   switch (command.type) {
+    case "set_logline": {
+      const logline = typeof command.logline === "string" ? command.logline.trim() : "";
+      if (logline === (state.logline ?? "")) return { state, changed: false };
+      return { state: { ...state, logline }, changed: true, result: { logline } };
+    }
+
     case "create_note": {
       const n = state.notes.length;
       const note = {

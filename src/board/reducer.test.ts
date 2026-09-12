@@ -5,6 +5,7 @@ import {
   isBoardState,
   NOTE_HEIGHT,
   NOTE_WIDTH,
+  normalizeState,
   seedState,
   type BoardState,
   type Command,
@@ -348,6 +349,7 @@ describe("no-op commands return the identical state object", () => {
     ["rename_group on a missing group", { type: "rename_group", id: "ghost", title: "x" }],
     ["create_arrow onto itself", { type: "create_arrow", from: "a", to: "a" }],
     ["delete_arrow on a missing arrow", { type: "delete_arrow", id: "ghost" }],
+    ["set_logline to the value it already has", { type: "set_logline", logline: "" }],
     ["an unknown command", { type: "not_a_command" } as unknown as Command],
   ];
 
@@ -374,6 +376,85 @@ describe("commands never mutate the state they are given", () => {
     );
 
     expect(start).toEqual(before);
+  });
+});
+
+describe("set_logline", () => {
+  it("sets the central question", () => {
+    const outcome = applyCommand(
+      emptyState(),
+      { type: "set_logline", logline: "Does telling the truth cost more than the lie?" },
+      NOW,
+    );
+    expect(outcome.changed).toBe(true);
+    expect(outcome.state.logline).toBe("Does telling the truth cost more than the lie?");
+  });
+
+  it("trims surrounding whitespace", () => {
+    const state = run(emptyState(), { type: "set_logline", logline: "  What is it arguing?  " });
+    expect(state.logline).toBe("What is it arguing?");
+  });
+
+  it("clears back to empty", () => {
+    const state = run(
+      emptyState(),
+      { type: "set_logline", logline: "A question." },
+      { type: "set_logline", logline: "" },
+    );
+    expect(state.logline).toBe("");
+  });
+
+  it("leaves the cards alone", () => {
+    const start = seedState(NOW);
+    const state = run(start, { type: "set_logline", logline: "A question." });
+    expect(state.notes).toBe(start.notes);
+    expect(state.groups).toBe(start.groups);
+    expect(state.arrows).toBe(start.arrows);
+  });
+
+  it("survives a round trip through the other commands", () => {
+    const state = run(
+      emptyState(),
+      { type: "set_logline", logline: "A question." },
+      { type: "create_note", id: "a" },
+      { type: "create_note", id: "b" },
+      { type: "create_arrow", from: "a", to: "b" },
+      { type: "delete_note", id: "b" },
+    );
+    expect(state.logline).toBe("A question.");
+  });
+});
+
+// R19 added the first board-level field. Boards written before it must still
+// open — rejecting one would lose somebody's wall.
+describe("normalizeState", () => {
+  it("gives a pre-logline board an empty one", () => {
+    const old = { notes: [], groups: [], arrows: [] };
+    expect(isBoardState(old)).toBe(true);
+    expect(normalizeState(old).logline).toBe("");
+  });
+
+  it("keeps every card, group and arrow of an old board", () => {
+    const { logline: _drop, ...old } = seedState(NOW);
+    const normalized = normalizeState(old);
+    expect(normalized.notes).toEqual(seedState(NOW).notes);
+    expect(normalized.groups).toEqual([]);
+    expect(normalized.arrows).toEqual([]);
+  });
+
+  it("repairs a logline of the wrong type rather than rejecting the board", () => {
+    const bent = { logline: 42, notes: [], groups: [], arrows: [] };
+    expect(normalizeState(bent).logline).toBe("");
+  });
+
+  it("returns the same object when nothing needed filling in", () => {
+    const state = seedState(NOW);
+    expect(normalizeState(state)).toBe(state);
+  });
+
+  it("falls back to an empty board for junk", () => {
+    expect(normalizeState(null).notes).toEqual([]);
+    expect(normalizeState({ notes: [] }).logline).toBe("");
   });
 });
 

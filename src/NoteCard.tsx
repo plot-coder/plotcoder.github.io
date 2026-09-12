@@ -1,21 +1,6 @@
-import {
-  useEffect,
-  useRef,
-  useState,
-  type ClipboardEvent,
-  type KeyboardEvent,
-  type PointerEvent,
-} from "react";
+import { useEffect, useState, type PointerEvent } from "react";
+import { EditableText } from "./EditableText";
 import { NOTE_COLORS, type MockNote, type NoteColor } from "./noteMock";
-
-type Field = "headline" | "change";
-
-function syncText(element: HTMLElement | null, value: string) {
-  if (!element) return;
-  if (document.activeElement === element) return;
-  if (element.textContent === value) return;
-  element.textContent = value;
-}
 
 type NoteCardProps = {
   note: MockNote;
@@ -41,64 +26,10 @@ export function NoteCard({
   onEdit,
 }: NoteCardProps) {
   const [picking, setPicking] = useState(false);
-  const headlineRef = useRef<HTMLHeadingElement>(null);
-  const changeRef = useRef<HTMLParagraphElement>(null);
-  const timers = useRef<Record<Field, number | undefined>>({
-    headline: undefined,
-    change: undefined,
-  });
 
   useEffect(() => {
     if (active) setPicking(false);
   }, [active]);
-
-  // The words are uncontrolled: React never renders them as children, so it can
-  // never rewrite the text out from under the caret. We push the value in only
-  // when the field is not being typed in.
-  useEffect(() => {
-    syncText(headlineRef.current, note.headline);
-  }, [note.headline]);
-
-  useEffect(() => {
-    syncText(changeRef.current, note.change);
-  }, [note.change]);
-
-  useEffect(() => {
-    const pending = timers.current;
-    return () => {
-      window.clearTimeout(pending.headline);
-      window.clearTimeout(pending.change);
-    };
-  }, []);
-
-  function commit(field: Field, element: HTMLElement | null) {
-    if (!element) return;
-    const text = (element.textContent ?? "").replace(/\s+/g, " ").trim();
-    if (text === note[field]) return;
-    onEdit(note.id, field === "headline" ? { headline: text } : { change: text });
-  }
-
-  function scheduleCommit(field: Field, element: HTMLElement | null) {
-    window.clearTimeout(timers.current[field]);
-    timers.current[field] = window.setTimeout(() => commit(field, element), 250);
-  }
-
-  function flushCommit(field: Field, element: HTMLElement | null) {
-    window.clearTimeout(timers.current[field]);
-    commit(field, element);
-  }
-
-  function onTextKeyDown(event: KeyboardEvent<HTMLElement>) {
-    if (event.key !== "Enter" && event.key !== "Escape") return;
-    event.preventDefault();
-    event.currentTarget.blur();
-  }
-
-  function onTextPaste(event: ClipboardEvent<HTMLElement>) {
-    event.preventDefault();
-    const text = event.clipboardData.getData("text/plain").replace(/\s+/g, " ");
-    document.execCommand("insertText", false, text);
-  }
 
   return (
     <article
@@ -111,35 +42,21 @@ export function NoteCard({
       }}
       onPointerDown={(event) => onPointerDown(event, note)}
     >
-      <h3
-        ref={headlineRef}
+      <EditableText
+        as="h3"
         className="note__headline"
-        contentEditable
-        suppressContentEditableWarning
-        spellCheck={false}
-        role="textbox"
-        aria-label="Card headline"
-        data-placeholder="Headline"
-        onPointerDown={(event) => event.stopPropagation()}
-        onKeyDown={onTextKeyDown}
-        onPaste={onTextPaste}
-        onInput={() => scheduleCommit("headline", headlineRef.current)}
-        onBlur={() => flushCommit("headline", headlineRef.current)}
+        value={note.headline}
+        onCommit={(text) => onEdit(note.id, { headline: text })}
+        ariaLabel="Card headline"
+        placeholder="Headline"
       />
-      <p
-        ref={changeRef}
+      <EditableText
+        as="p"
         className="note__change"
-        contentEditable
-        suppressContentEditableWarning
-        spellCheck={false}
-        role="textbox"
-        aria-label="What changes"
-        data-placeholder="What changes?"
-        onPointerDown={(event) => event.stopPropagation()}
-        onKeyDown={onTextKeyDown}
-        onPaste={onTextPaste}
-        onInput={() => scheduleCommit("change", changeRef.current)}
-        onBlur={() => flushCommit("change", changeRef.current)}
+        value={note.change}
+        onCommit={(text) => onEdit(note.id, { change: text })}
+        ariaLabel="What changes"
+        placeholder="What changes?"
       />
       <button
         type="button"

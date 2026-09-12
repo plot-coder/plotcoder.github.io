@@ -34,6 +34,8 @@ export type BoardArrow = {
 };
 
 export type BoardState = {
+  /** The board's central question — what this story is arguing (R19). */
+  logline: string;
   notes: BoardNote[];
   groups: BoardGroup[];
   arrows: BoardArrow[];
@@ -42,6 +44,7 @@ export type BoardState = {
 export type Pose = { id: string; x: number; y: number; rotate: number };
 
 export type Command =
+  | { type: "set_logline"; logline: string }
   | {
       type: "create_note";
       id?: string;
@@ -77,6 +80,8 @@ export declare function nowIso(): string;
 export declare function emptyState(): BoardState;
 export declare function seedState(now?: string): BoardState;
 export declare function isBoardState(value: unknown): value is BoardState;
+/** Fill in fields added after a board was written. Run at every load boundary. */
+export declare function normalizeState(value: unknown): BoardState;
 export declare function applyCommand(
   state: BoardState,
   command: Command,

@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { GeneralBar, type BarLayer } from "./GeneralBar";
+import { Logline } from "./Logline";
 import { NoteBoard } from "./NoteBoard";
+import { readPremise, writePremise } from "./premiseStore";
 import { boardStore, installWindowApi } from "./board/store";
 import { type NoteColor } from "./noteMock";
 import {
@@ -37,6 +39,9 @@ export function App() {
   const [projectOpen, setProjectOpen] = useState(false);
   const board = useSyncExternalStore(boardStore.subscribe, boardStore.getState);
   const { notes, groups, arrows } = board;
+  // The premise belongs to the project, not the board, so it does not come from
+  // the kernel. It lives in its own plotcoder.* key like reminders do.
+  const [premise, setPremise] = useState<string>(readPremise);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectedArrowId, setSelectedArrowId] = useState<string | null>(null);
   const [scatterPoses, setScatterPoses] = useState<NotePose[] | null>(null);
@@ -102,6 +107,15 @@ export function App() {
 
   function addNote() {
     boardStore.dispatch({ type: "create_note" });
+  }
+
+  function setLogline(text: string) {
+    boardStore.dispatch({ type: "set_logline", logline: text });
+  }
+
+  function savePremise(text: string) {
+    writePremise(text);
+    setPremise(text.trim());
   }
 
   function recolorNote(id: string, color: NoteColor) {
@@ -200,6 +214,12 @@ export function App() {
   return (
     <div className="canvas">
       <p className="wordmark">PlotCoder</p>
+      <Logline
+        logline={board.logline}
+        premise={premise}
+        onSetLogline={setLogline}
+        onSetPremise={savePremise}
+      />
       <div className="top-actions">
         <RemindersModal
           open={remindersOpen}

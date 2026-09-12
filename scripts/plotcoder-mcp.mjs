@@ -20,6 +20,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import {
   applyCommand,
   isBoardState,
+  normalizeState,
   NOTE_COLORS,
   seedState,
 } from "../src/board/reducer.js";
@@ -103,7 +104,12 @@ function readFileBoard() {
   try {
     const parsed = JSON.parse(fs.readFileSync(BOARD_FILE, "utf8"));
     if (parsed.state && isBoardState(parsed.state)) {
-      return { state: parsed.state, rev: typeof parsed.rev === "number" ? parsed.rev : 0 };
+      // Boards written before the logline existed still load; they just gain an
+      // empty one on the way in.
+      return {
+        state: normalizeState(parsed.state),
+        rev: typeof parsed.rev === "number" ? parsed.rev : 0,
+      };
     }
   } catch {
     /* no file yet */
@@ -125,7 +131,8 @@ async function readBoard() {
         signal: AbortSignal.timeout(1500),
       });
       const data = await res.json();
-      const state = data.state && isBoardState(data.state) ? data.state : seedState();
+      const state =
+        data.state && isBoardState(data.state) ? normalizeState(data.state) : seedState();
       return { state, rev: typeof data.rev === "number" ? data.rev : 0, base, live: true };
     } catch (error) {
       log("bridge read failed, using file:", error);
@@ -171,6 +178,7 @@ function summarize(state) {
     )
     .join("\n");
   return [
+    `logline: ${state.logline ? `"${state.logline}"` : "(not set)"}`,
     `notes: ${state.notes.length}, groups: ${state.groups.length}, arrows: ${state.arrows.length}`,
     notes || "  (no notes)",
   ].join("\n");
@@ -198,6 +206,27 @@ server.registerTool(
     return ok(
       `PlotCoder board (${live ? "live: app is open" : "from file: app not running"})\n${summarize(state)}`,
       state,
+    );
+  },
+);
+
+server.registerTool(
+  "set_logline",
+  {
+    title: "Set logline",
+    description:
+      "Set the board's logline — the central question, what this story is arguing. One sentence. Every card on the wall should be checkable against it. Pass an empty string to clear it.",
+    inputSchema: {
+      logline: z.string(),
+    },
+  },
+  async (args) => {
+    const { state, live } = await commit({ type: "set_logline", logline: args.logline });
+    return ok(
+      state.logline
+        ? `Logline set${live ? " (visible on the open board)" : " (written to file)"}.`
+        : "Logline cleared.",
+      { logline: state.logline },
     );
   },
 );

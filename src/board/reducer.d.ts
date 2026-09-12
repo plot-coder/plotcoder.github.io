@@ -1,0 +1,84 @@
+// Type surface for the PlotCoder board kernel (implemented in reducer.js).
+// Authored as plain ESM JS + this declaration so the exact same module runs in
+// the browser (via Vite) and in Node (the MCP server) with no build step.
+
+export declare const NOTE_COLORS: readonly ["yellow", "pink", "blue", "green", "orange"];
+export type NoteColor = (typeof NOTE_COLORS)[number];
+
+export declare const NOTE_WIDTH: number;
+export declare const NOTE_HEIGHT: number;
+
+export type BoardNote = {
+  id: string;
+  headline: string;
+  change: string;
+  color: NoteColor;
+  x: number;
+  y: number;
+  rotate: number;
+  z: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type BoardGroup = {
+  id: string;
+  title: string;
+  noteIds: string[];
+};
+
+export type BoardArrow = {
+  id: string;
+  from: string;
+  to: string;
+};
+
+export type BoardState = {
+  notes: BoardNote[];
+  groups: BoardGroup[];
+  arrows: BoardArrow[];
+};
+
+export type Pose = { id: string; x: number; y: number; rotate: number };
+
+export type Command =
+  | {
+      type: "create_note";
+      id?: string;
+      headline?: string;
+      change?: string;
+      color?: NoteColor;
+      x?: number;
+      y?: number;
+      rotate?: number;
+    }
+  | { type: "update_note"; id: string; headline?: string; change?: string }
+  | { type: "move_note"; id: string; x: number; y: number }
+  | { type: "nudge_notes"; ids: string[]; dx: number; dy: number }
+  | { type: "recolor_notes"; ids: string[]; color: NoteColor }
+  | { type: "raise_note"; id: string }
+  | { type: "delete_note"; id: string }
+  | { type: "apply_poses"; poses: Pose[] }
+  | { type: "settle_note"; id: string }
+  | { type: "create_group"; title?: string; noteIds: string[] }
+  | { type: "ungroup"; id: string }
+  | { type: "rename_group"; id: string; title: string }
+  | { type: "create_arrow"; from: string; to: string }
+  | { type: "delete_arrow"; id: string };
+
+export type CommandResult = {
+  state: BoardState;
+  changed: boolean;
+  result?: unknown;
+};
+
+export declare function newId(): string;
+export declare function nowIso(): string;
+export declare function emptyState(): BoardState;
+export declare function seedState(now?: string): BoardState;
+export declare function isBoardState(value: unknown): value is BoardState;
+export declare function applyCommand(
+  state: BoardState,
+  command: Command,
+  now?: string,
+): CommandResult;

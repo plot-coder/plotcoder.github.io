@@ -5,7 +5,7 @@
 
 import fs from "node:fs";
 import { expect, test } from "@playwright/test";
-import { boardOnBridge, boardOnPage, McpClient, resetBoard } from "./helpers.mjs";
+import { boardOnBridge, boardOnPage, McpClient, resetBoard, waitForBridge } from "./helpers.mjs";
 
 test.beforeEach(async ({ request }) => {
   await resetBoard(request);
@@ -19,6 +19,7 @@ test("the wall loads the seed cards with no console errors", async ({ page }) =>
   page.on("pageerror", (error) => errors.push(error.message));
 
   await page.goto("/");
+  await waitForBridge(page);
 
   await expect(page.getByText("PlotCoder", { exact: true })).toBeVisible();
   await expect(page.locator("article.note")).toHaveCount(3);
@@ -29,6 +30,7 @@ test("the wall loads the seed cards with no console errors", async ({ page }) =>
 
 test("an MCP tool call lands on the open wall", async ({ page, request }) => {
   await page.goto("/");
+  await waitForBridge(page);
   await expect(page.locator("article.note")).toHaveCount(3);
 
   const mcp = new McpClient();
@@ -67,6 +69,7 @@ test("a dragged card lands where it was dropped, on the wall and in the file", a
   request,
 }) => {
   await page.goto("/");
+  await waitForBridge(page);
   const before = (await boardOnPage(page)).notes.find((note) => note.id === "maya-letter");
 
   // Grab the paper's top strip, above the headline — the R13 gesture. The card
@@ -100,6 +103,7 @@ test("a dragged card lands where it was dropped, on the wall and in the file", a
 
 test("a saved project reopens with the wall it held", async ({ page, request }) => {
   await page.goto("/");
+  await waitForBridge(page);
 
   // Make the board unmistakable through the console door, then save it.
   await page.evaluate(() => {
@@ -155,6 +159,7 @@ test("the story map jumps the wall to a card, and hides to a ruler that is remem
   page,
 }) => {
   await page.goto("/");
+  await waitForBridge(page);
 
   // A beat far off the first screen, so the jump has somewhere to go.
   await page.evaluate(() => {
@@ -202,6 +207,7 @@ test("the story map jumps the wall to a card, and hides to a ruler that is remem
 
 test("a change an agent made can be undone from the wall, and redone", async ({ page, request }) => {
   await page.goto("/");
+  await waitForBridge(page);
   await expect(page.locator("article.note")).toHaveCount(3);
 
   const mcp = new McpClient();
@@ -246,6 +252,7 @@ test("a project holds more than one board, and switching keeps each wall intact"
   request,
 }) => {
   await page.goto("/");
+  await waitForBridge(page);
   await expect(page.locator("article.note")).toHaveCount(3);
 
   // One board: the crumb shows only the mark. Open the panel and add a board.
@@ -293,6 +300,7 @@ test("a person's page opens from the cast lens, takes a line, and shows their sc
   request,
 }) => {
   await page.goto("/");
+  await waitForBridge(page);
   await expect(page.locator("article.note")).toHaveCount(3);
 
   // The roster, then Maya's page from the chevron at her row's end.
@@ -342,6 +350,7 @@ test("a place typed on a card appears in the lens, fades the wall, and reaches a
   request,
 }) => {
   await page.goto("/");
+  await waitForBridge(page);
   await expect(page.locator("article.note")).toHaveCount(3);
 
   // The fourth line: tap it and type where the scene happens.
@@ -391,6 +400,7 @@ test("pages open beside the wall: a scene typed there lands on its card, measure
   request,
 }) => {
   await page.goto("/");
+  await waitForBridge(page);
   await expect(page.locator("article.note")).toHaveCount(3);
 
   // The panel: the whole script in wall order, one scene per card.

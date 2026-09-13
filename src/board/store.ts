@@ -237,6 +237,8 @@ class BoardStore {
 
   getState = (): BoardState => this.state;
   getProject = (): ProjectRecord => this.project;
+  /** True once the dev bridge's first frames have landed; a fresh page follows the bridge until then. */
+  isBridged = (): boolean => this.adopted && this.adoptedProject;
   getHistory = (): HistorySnapshot => this.historySnapshot;
 
   subscribe = (listener: () => void): (() => void) => {
@@ -749,6 +751,8 @@ export type PlotCoderWindowApi = {
   fountain: () => string;
   /** A scene's text onto its card (R23, slice b). */
   writeScene: (id: string, text: string) => unknown;
+  /** True once the dev bridge's first frames have landed (dev only). */
+  bridged: () => boolean;
 };
 
 let windowApiInstalled = false;
@@ -783,6 +787,7 @@ export function installWindowApi(): void {
     applyTemplate: (template) => boardStore.dispatch({ type: "apply_template", template }),
     setPremise: (premise) => boardStore.setPremise(premise),
     writeScene: (id, text) => boardStore.dispatch({ type: "set_text", id, text }),
+    bridged: () => boardStore.isBridged(),
     fountain: () => {
       const project = boardStore.getProject();
       const board = project.boards.find((item) => item.id === project.activeBoardId);

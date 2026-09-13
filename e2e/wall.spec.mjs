@@ -1,4 +1,4 @@
-// Six checks over the doors into the kernel. Headlines are looked up on the card
+// Seven checks over the doors into the kernel. Headlines are looked up on the card
 // itself: the Story Map repeats each one as an SVG title, and a text lookup would
 // match both. Not a pixel suite: each one asks
 // whether a change made through one door shows up through the others.
@@ -121,7 +121,9 @@ test("a saved project reopens with the wall it held", async ({ page, request }) 
   const saved = await download.path();
   const project = JSON.parse(fs.readFileSync(saved, "utf8"));
   expect(project.app).toBe("plotcoder");
-  expect(project.storage["plotcoder.logline"]).toBe("Can Maya forgive a useful lie?");
+  // The logline lives inside the board's own key now (R35): one board per key.
+  const boardKey = Object.keys(project.storage).find((key) => key.startsWith("plotcoder.board."));
+  expect(JSON.parse(project.storage[boardKey]).logline).toBe("Can Maya forgive a useful lie?");
   await page.getByRole("button", { name: "Close", exact: true }).click();
 
   // Lose the work: a fresh board on the bridge, and a reload to adopt it.
@@ -232,6 +234,53 @@ test("a change an agent made can be undone from the wall, and redone", async ({ 
     await page.keyboard.press("ControlOrMeta+z");
     const back = (await boardOnPage(page)).notes.find((note) => note.id === "maya-letter");
     expect([back.x, back.y]).toEqual([before.x, before.y]);
+  } finally {
+    mcp.stop();
+  }
+});
+
+test("a project holds more than one board, and switching keeps each wall intact", async ({
+  page,
+  request,
+}) => {
+  await page.goto("/");
+  await expect(page.locator("article.note")).toHaveCount(3);
+
+  // One board: the crumb shows only the mark. Open the panel and add a board.
+  await expect(page.getByLabel("Board name")).toHaveCount(0);
+  await page.getByRole("button", { name: /Open the project/ }).click();
+  await page.getByLabel("Add a board").fill("Episode 2");
+  await page.getByLabel("Add a board").press("Enter");
+
+  // The new board opens, empty, and the crumb now names it.
+  await expect(page.locator("article.note")).toHaveCount(0);
+  await expect(page.getByLabel("Board name")).toHaveText("Episode 2");
+  await page.evaluate(() => {
+    window.plotcoder.dispatch({ type: "create_note", id: "ep2", headline: "A second story", change: "Begins." });
+  });
+  await expect(page.locator("article.note")).toHaveCount(1);
+
+  // Back to the first board: its three seed cards are where they were.
+  await page.getByRole("button", { name: /Board 1/ }).click();
+  await expect(page.locator("article.note")).toHaveCount(3);
+  await expect(page.getByLabel("Board name")).toHaveText("Board 1");
+
+  // The bridge followed the switch: an agent reading now sees board one, and
+  // the project mirror has both boards.
+  await expect.poll(async () => (await boardOnBridge(request)).notes.length).toBe(3);
+  await expect
+    .poll(async () => (await (await request.get("/__plotcoder/project")).json()).project.boards.length)
+    .toBe(2);
+
+  // And forward again, by the agent's door this time.
+  const mcp = new McpClient();
+  await mcp.start();
+  try {
+    const listed = await mcp.callTool("list_boards");
+    expect(listed).toContain("boards: 2");
+    expect(await mcp.callTool("open_board", { board: "Episode 2" })).toContain('Opened "Episode 2"');
+    await expect(page.locator("article.note")).toHaveCount(1);
+    await expect(page.getByLabel("Board name")).toHaveText("Episode 2");
   } finally {
     mcp.stop();
   }

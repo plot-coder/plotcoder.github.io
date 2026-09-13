@@ -1956,3 +1956,257 @@ body {
 .story-map__unpaid path {
   stroke-width: 1.6;
 }
+
+/* --- The project (R35): the crumb and its panel ---------------------------- */
+
+.crumb {
+  position: absolute;
+  top: 1.05rem;
+  left: 1.5rem;
+  z-index: 11;
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  max-width: min(28rem, calc(50vw - 24rem));
+}
+
+@media (max-width: 60rem) {
+  .crumb {
+    max-width: 16rem;
+  }
+}
+
+.crumb__mark {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.crumb__sep {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.crumb__board {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ink);
+  outline: none;
+  border-radius: 0.14rem;
+  cursor: text;
+}
+
+.crumb__board:focus {
+  background: var(--slot);
+  box-shadow: 0 0 0 3px var(--slot);
+}
+
+.crumb__board:empty::before {
+  content: attr(data-placeholder);
+  color: var(--muted);
+}
+
+.crumb__toggle {
+  padding: 0 0.2rem;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+
+.crumb__toggle:hover,
+.crumb.is-open .crumb__toggle {
+  color: var(--ink);
+}
+
+.project-panel {
+  position: absolute;
+  top: 2.1rem;
+  left: 0;
+  width: 19rem;
+  padding: 0.6rem 0.45rem 0.55rem;
+  border: 1px solid var(--bar-border);
+  border-radius: 0.55rem;
+  background: var(--bar);
+  color: var(--ink);
+  box-shadow: var(--bar-shadow);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+}
+
+.project-panel__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 0 0.5rem 0.3rem;
+}
+
+.project-panel__kicker,
+.project-panel__action,
+.project-panel__n,
+.project-panel__shape {
+  font-size: 0.64rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.project-panel__kicker {
+  color: var(--muted);
+}
+
+.project-panel__action {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.project-panel__action:hover:not(:disabled) {
+  color: var(--ink);
+}
+
+.project-panel__action:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.project-panel__action--danger:hover:not(:disabled) {
+  color: var(--over);
+}
+
+.project-panel__name,
+.project-panel__premise {
+  margin: 0;
+  padding: 0.1rem 0.5rem;
+  font-family: "Iowan Old Style", Palatino, "Palatino Linotype", Georgia, serif;
+  outline: none;
+  border-radius: 0.14rem;
+  cursor: text;
+}
+
+.project-panel__name {
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.project-panel__premise {
+  padding-bottom: 0.45rem;
+  margin-bottom: 0.3rem;
+  border-bottom: 1px solid var(--bar-border);
+  font-size: 0.86rem;
+  font-style: italic;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+.project-panel__name:focus,
+.project-panel__premise:focus {
+  background: var(--slot);
+}
+
+.project-panel__name:empty::before,
+.project-panel__premise:empty::before {
+  content: attr(data-placeholder);
+  color: var(--muted);
+}
+
+.project-panel__boards {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.project-panel__board {
+  display: grid;
+  grid-template-columns: 1.2rem minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 0.45rem;
+  width: 100%;
+  padding: 0.32rem 0.5rem;
+  border: 0;
+  border-radius: 0.3rem;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.project-panel__board:hover {
+  background: var(--slot);
+}
+
+.project-panel__board.is-open {
+  background: var(--slot);
+  cursor: default;
+}
+
+.project-panel__n {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.project-panel__title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: "Iowan Old Style", Palatino, "Palatino Linotype", Georgia, serif;
+  font-size: 0.98rem;
+}
+
+.project-panel__board.is-open .project-panel__title {
+  font-weight: 600;
+}
+
+.project-panel__shape {
+  color: var(--muted);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.project-panel__shape.is-over {
+  color: var(--over);
+}
+
+.project-panel__add {
+  margin: 0.3rem 0.5rem 0;
+}
+
+.project-panel__input {
+  width: 100%;
+  padding: 0.35rem 0;
+  border: 0;
+  border-top: 1px solid var(--bar-border);
+  background: transparent;
+  color: var(--ink);
+  font-family: "Iowan Old Style", Palatino, "Palatino Linotype", Georgia, serif;
+  font-size: 0.95rem;
+  outline: none;
+}
+
+.project-panel__input::placeholder {
+  color: var(--muted);
+}
+
+.project-panel__foot {
+  display: flex;
+  gap: 0.8rem;
+  margin: 0.3rem 0.5rem 0;
+  padding-top: 0.4rem;
+  border-top: 1px solid var(--bar-border);
+}
+
+.project-panel__foot .project-panel__action--danger {
+  margin-left: auto;
+}

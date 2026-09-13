@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { seedState } from "../src/board/reducer.js";
+import { emptyProject } from "../src/board/project.js";
 
 /** @typedef {import("../src/board/reducer.js").BoardState} BoardState */
 
@@ -16,7 +17,14 @@ export const E2E_URL = process.env.PLOTCODER_E2E_URL ?? "http://127.0.0.1:5174";
  * @param {BoardState} [state]
  */
 export async function resetBoard(request, state = seedState()) {
-  const response = await request.put("/__plotcoder/board", { data: { state, rev: 0 } });
+  // A fresh one-board project every spec (R35): the record and the open board.
+  const project = emptyProject();
+  const id = project.boards[0].id;
+  const projectResponse = await request.put("/__plotcoder/project", {
+    data: { project, boards: { [id]: state }, rev: 0 },
+  });
+  if (!projectResponse.ok()) throw new Error(`bridge project reset failed: ${projectResponse.status()}`);
+  const response = await request.put("/__plotcoder/board", { data: { state, rev: 0, boardId: id } });
   if (!response.ok()) throw new Error(`bridge reset failed: ${response.status()}`);
 }
 

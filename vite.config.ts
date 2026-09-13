@@ -9,9 +9,11 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 // Only runs under `vite` on localhost. It keeps the board mirrored to
 // .plotcoder/board.json and lets an agent (or the MCP server) read and write
 // the board while the app is open:
-//   GET    /__plotcoder/board   -> { state, rev }
+//   GET    /__plotcoder/board   -> { state, rev, boardId }   the open board
 //   PUT    /__plotcoder/board   -> replace state, bump rev, write file, notify
-//   GET    /__plotcoder/events  -> Server-Sent Events stream of { state, rev }
+//   GET    /__plotcoder/project -> { project, boards, rev }   every board (R35)
+//   PUT    /__plotcoder/project -> replace, bump rev, write file, notify
+//   GET    /__plotcoder/events  -> Server-Sent Events: "state" and "project" frames
 //
 // The browser store PUTs the whole board after every change so the file matches
 // the wall; the MCP server PUTs after applying a command so the wall matches an
@@ -24,8 +26,14 @@ function plotcoderBridge(): Plugin {
   const boardPath = process.env.PLOTCODER_BOARD_FILE
     ? path.resolve(process.env.PLOTCODER_BOARD_FILE)
     : path.resolve(process.cwd(), ".plotcoder/board.json");
+  const projectPath = path.join(path.dirname(boardPath), "project.json");
   let state: unknown = null;
+  let boardId: string | null = null;
   let rev = 0;
+  // The project: its record plus every board's state, keyed by id (R35).
+  let project: unknown = null;
+  let boards: Record<string, unknown> = {};
+  let projectRev = 0;
   const clients = new Set<ServerResponse>();
 
   function loadFromDisk(): void {
@@ -33,10 +41,21 @@ function plotcoderBridge(): Plugin {
       const parsed = JSON.parse(fs.readFileSync(boardPath, "utf8"));
       if (parsed && typeof parsed === "object") {
         state = "state" in parsed ? parsed.state : null;
+        boardId = typeof parsed.boardId === "string" ? parsed.boardId : null;
         rev = typeof parsed.rev === "number" ? parsed.rev : 0;
       }
     } catch {
       /* no board file yet; the first client will seed it */
+    }
+    try {
+      const parsed = JSON.parse(fs.readFileSync(projectPath, "utf8"));
+      if (parsed && typeof parsed === "object") {
+        project = "project" in parsed ? parsed.project : null;
+        boards = parsed.boards && typeof parsed.boards === "object" ? parsed.boards : {};
+        projectRev = typeof parsed.rev === "number" ? parsed.rev : 0;
+      }
+    } catch {
+      /* no project file yet */
     }
   }
 
@@ -45,19 +64,34 @@ function plotcoderBridge(): Plugin {
       fs.mkdirSync(path.dirname(boardPath), { recursive: true });
       fs.writeFileSync(
         boardPath,
-        `${JSON.stringify({ app: "plotcoder", version: 1, rev, state }, null, 2)}\n`,
+        `${JSON.stringify({ app: "plotcoder", version: 1, rev, boardId, state }, null, 2)}\n`,
       );
     } catch (error) {
       console.warn("[plotcoder] could not write board file:", error);
     }
   }
 
-  function frame(): string {
-    return `event: state\ndata: ${JSON.stringify({ state, rev })}\n\n`;
+  function persistProject(): void {
+    try {
+      fs.mkdirSync(path.dirname(projectPath), { recursive: true });
+      fs.writeFileSync(
+        projectPath,
+        `${JSON.stringify({ app: "plotcoder", version: 2, rev: projectRev, project, boards }, null, 2)}\n`,
+      );
+    } catch (error) {
+      console.warn("[plotcoder] could not write project file:", error);
+    }
   }
 
-  function broadcast(): void {
-    const payload = frame();
+  function frame(): string {
+    return `event: state\ndata: ${JSON.stringify({ state, rev, boardId })}\n\n`;
+  }
+
+  function projectFrame(): string {
+    return `event: project\ndata: ${JSON.stringify({ project, boards, rev: projectRev })}\n\n`;
+  }
+
+  function broadcast(payload: string): void {
     for (const client of clients) {
       try {
         client.write(payload);
@@ -93,18 +127,35 @@ function plotcoderBridge(): Plugin {
       // If a command runs against the file directly (e.g. the MCP server while
       // it cannot see the bridge), pick the change up and push it to the wall.
       server.watcher.add(boardPath);
+      server.watcher.add(projectPath);
       server.watcher.on("change", (file) => {
-        if (path.resolve(file) !== boardPath) return;
-        try {
-          const parsed = JSON.parse(fs.readFileSync(boardPath, "utf8"));
-          const fileRev = typeof parsed.rev === "number" ? parsed.rev : rev + 1;
-          if (fileRev > rev) {
-            state = "state" in parsed ? parsed.state : null;
-            rev = fileRev;
-            broadcast();
+        const changed = path.resolve(file);
+        if (changed === boardPath) {
+          try {
+            const parsed = JSON.parse(fs.readFileSync(boardPath, "utf8"));
+            const fileRev = typeof parsed.rev === "number" ? parsed.rev : rev + 1;
+            if (fileRev > rev) {
+              state = "state" in parsed ? parsed.state : null;
+              boardId = typeof parsed.boardId === "string" ? parsed.boardId : boardId;
+              rev = fileRev;
+              broadcast(frame());
+            }
+          } catch {
+            /* ignore partial writes */
           }
-        } catch {
-          /* ignore partial writes */
+        } else if (changed === projectPath) {
+          try {
+            const parsed = JSON.parse(fs.readFileSync(projectPath, "utf8"));
+            const fileRev = typeof parsed.rev === "number" ? parsed.rev : projectRev + 1;
+            if (fileRev > projectRev) {
+              project = "project" in parsed ? parsed.project : null;
+              boards = parsed.boards && typeof parsed.boards === "object" ? parsed.boards : {};
+              projectRev = fileRev;
+              broadcast(projectFrame());
+            }
+          } catch {
+            /* ignore partial writes */
+          }
         }
       });
 
@@ -116,6 +167,9 @@ function plotcoderBridge(): Plugin {
             "Cache-Control": "no-cache",
             Connection: "keep-alive",
           });
+          // The project first: a fresh page then knows which board the board
+          // frame belongs to, instead of taking it for a board of its own.
+          res.write(projectFrame());
           res.write(frame());
           clients.add(res);
           req.on("close", () => clients.delete(res));
@@ -126,7 +180,7 @@ function plotcoderBridge(): Plugin {
         "/__plotcoder/board",
         (req: IncomingMessage, res: ServerResponse) => {
           if (req.method === "GET") {
-            sendJson(res, { state, rev });
+            sendJson(res, { state, rev, boardId });
             return;
           }
           if (req.method === "PUT") {
@@ -134,10 +188,40 @@ function plotcoderBridge(): Plugin {
               .then((body) => {
                 const parsed = JSON.parse(body);
                 state = parsed && "state" in parsed ? parsed.state : null;
+                if (parsed && typeof parsed.boardId === "string") boardId = parsed.boardId;
                 rev += 1;
                 persist();
-                broadcast();
-                sendJson(res, { state, rev });
+                broadcast(frame());
+                sendJson(res, { state, rev, boardId });
+              })
+              .catch(() => {
+                res.statusCode = 400;
+                res.end("bad request");
+              });
+            return;
+          }
+          res.statusCode = 405;
+          res.end();
+        },
+      );
+
+      server.middlewares.use(
+        "/__plotcoder/project",
+        (req: IncomingMessage, res: ServerResponse) => {
+          if (req.method === "GET") {
+            sendJson(res, { project, boards, rev: projectRev });
+            return;
+          }
+          if (req.method === "PUT") {
+            readBody(req)
+              .then((body) => {
+                const parsed = JSON.parse(body);
+                project = parsed && "project" in parsed ? parsed.project : null;
+                boards = parsed && parsed.boards && typeof parsed.boards === "object" ? parsed.boards : {};
+                projectRev += 1;
+                persistProject();
+                broadcast(projectFrame());
+                sendJson(res, { project, boards, rev: projectRev });
               })
               .catch(() => {
                 res.statusCode = 400;

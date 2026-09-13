@@ -4,7 +4,7 @@ import { resolveCast } from "./castNames";
 import { GeneralBar, type BarLayer } from "./GeneralBar";
 import { Logline } from "./Logline";
 import { NoteBoard } from "./NoteBoard";
-import { readPremise, writePremise } from "./premiseStore";
+import { ProjectCrumb } from "./ProjectCrumb";
 import { boardStore, installWindowApi } from "./board/store";
 import { type NoteColor, type NoteRank } from "./noteMock";
 import { readWall } from "./board/readWall";
@@ -66,13 +66,14 @@ export function App() {
   const [hoverNoteId, setHoverNoteId] = useState<string | null>(null);
   const board = useSyncExternalStore(boardStore.subscribe, boardStore.getState);
   const history = useSyncExternalStore(boardStore.subscribe, boardStore.getHistory);
+  // The project (R35): the boards, the premise, which board is open.
+  const project = useSyncExternalStore(boardStore.subscribe, boardStore.getProject);
   const { notes, groups, arrows, characters } = board;
   const castFocusId = castOpen ? (castHeld ?? castHover) : null;
   // One reading of the wall for the lens and the map, so they agree.
   const reading = useMemo(() => readWall(board), [board]);
-  // The premise belongs to the project, not the board, so it does not come from
-  // the kernel. It lives in its own plotcoder.* key like reminders do.
-  const [premise, setPremise] = useState<string>(readPremise);
+  // The premise belongs to the project, not the board (D17).
+  const premise = project.premise;
   const shape = countRanks(board);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectedArrowId, setSelectedArrowId] = useState<string | null>(null);
@@ -214,8 +215,32 @@ export function App() {
   }
 
   function savePremise(text: string) {
-    writePremise(text);
-    setPremise(text.trim());
+    boardStore.setPremise(text);
+  }
+
+  // Switching boards clears what belongs to the old wall: selection, scatter memory, the view.
+  function openBoard(id: string) {
+    if (!boardStore.openBoard(id)) return;
+    setSelectedIds([]);
+    setSelectedArrowId(null);
+    setScatterPoses(null);
+    setView(IDENTITY_VIEW);
+  }
+
+  function addBoard(name: string) {
+    boardStore.addBoard(name);
+    setSelectedIds([]);
+    setSelectedArrowId(null);
+    setScatterPoses(null);
+    setView(IDENTITY_VIEW);
+  }
+
+  function removeBoard(id: string) {
+    if (!boardStore.removeBoard(id)) return;
+    setSelectedIds([]);
+    setSelectedArrowId(null);
+    setScatterPoses(null);
+    setView(IDENTITY_VIEW);
   }
 
   function recolorNote(id: string, color: NoteColor) {
@@ -379,7 +404,17 @@ export function App() {
 
   return (
     <div className={`canvas ${mapOpen ? "has-map" : "has-ruler"}`}>
-      <p className="wordmark">PlotCoder</p>
+      <ProjectCrumb
+        project={project}
+        shapeOf={boardStore.boardShape}
+        onOpenBoard={openBoard}
+        onAddBoard={addBoard}
+        onRenameBoard={boardStore.renameBoard}
+        onMoveBoard={boardStore.moveBoard}
+        onRemoveBoard={removeBoard}
+        onRenameProject={boardStore.renameProject}
+        onSetPremise={savePremise}
+      />
       <Logline
         logline={board.logline}
         premise={premise}

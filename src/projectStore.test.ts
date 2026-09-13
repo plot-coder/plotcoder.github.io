@@ -87,7 +87,7 @@ describe("exportProject", () => {
     const project = exportProject();
 
     expect(project.app).toBe("plotcoder");
-    expect(project.version).toBe(1);
+    expect(project.version).toBe(2);
     expect(Object.keys(project.storage).sort()).toEqual(["plotcoder.notes", "plotcoder.theme"]);
     expect(project.storage["plotcoder.notes"]).toBe(BOARD);
   });

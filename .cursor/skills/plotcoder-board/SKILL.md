@@ -30,7 +30,8 @@ The board holds five kinds of thing:
   A card says who is in the scene by pointing at people in the roster.
 
 Above them all sits the **logline**: the central question, what the story is
-arguing.
+arguing. And above the board sits the **project**: an ordered set of boards (a
+season's episodes, or a writer's stories) under one name and one premise.
 
 ## Use the MCP tools, not the mouse
 
@@ -95,9 +96,16 @@ lands on the exact same board a person sees.
   arrows, a row per beat with the scenes that follow it, groups kept together.
   Pass `noteIds` to tidy only those. Prefer it to moving cards one by one, and
   draw the arrows first — it is the arrows that make the layout right.
-- `new_board` — an empty wall. **Destructive**: every card, group, arrow and
-  the cast go. On a wall with work on it, ask the writer first and suggest Save
-  project.
+- `list_boards` — the project: its name, premise, and every board in order with
+  id, name and shape, marking the open one. Ids come from here.
+- `open_board` — open another board by id, name, or number. Every card tool
+  then works on that board; the writer's wall switches too.
+- `new_board` — add an empty board to the project and open it, keeping the
+  target. The other boards are untouched. Give it a name.
+- `rename_board` — by id, name, or number.
+- `delete_board` — remove a board and everything on it. **Cannot be undone**,
+  not even from the wall: ask the writer first, say how many cards it holds,
+  suggest Save project. The last board of a project cannot be deleted.
 - `undo` — take back **your own** last change, newest first. It refuses if the
   board has changed since (the writer moved on), so it never tramples their
   work; they can undo anything from the wall with ⌘Z. Use it when a

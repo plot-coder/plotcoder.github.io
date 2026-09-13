@@ -134,14 +134,18 @@ describe("plotcoder MCP server", () => {
       "create_group",
       "create_note",
       "delete_arrow",
+      "delete_board",
       "delete_note",
       "list_board",
+      "list_boards",
       "move_note",
       "new_board",
+      "open_board",
       "organize",
       "read_wall",
       "recolor_note",
       "remove_character",
+      "rename_board",
       "rename_character",
       "rename_group",
       "set_arrow_kind",
@@ -813,16 +817,21 @@ describe("typed arrows and new_board", () => {
     );
   });
 
-  it("new_board empties the wall but keeps the target", async () => {
+  it("new_board adds an empty board, opens it, and keeps the target", async () => {
     await typed.callTool("set_target", { pages: 60 });
-    const text = await typed.callTool("new_board");
-    expect(text).toContain("The wall is empty");
+    const text = await typed.callTool("new_board", { name: "Episode 2" });
+    expect(text).toContain('Added "Episode 2"');
+    expect(text).toContain("opened it");
     const board = await typed.callToolData("list_board");
     expect(board.notes).toEqual([]);
     expect(board.arrows).toEqual([]);
     expect(board.characters).toEqual([]);
     expect(board.logline).toBe("");
     expect(board.targetEighths).toBe(60 * 8);
+    // The board that was open is still there, untouched.
+    const listed = await typed.callTool("list_boards");
+    expect(listed).toContain("boards: 2");
+    expect(listed).toContain('"Episode 2" (open)');
   });
 });
 
@@ -981,5 +990,61 @@ describe("organize", () => {
     const text = await tidy.callTool("organize", { noteIds: ids });
     expect(text).toContain("Organized 3 card(s)");
     expect(await tidy.callTool("undo")).toContain("Undid apply_poses");
+  });
+});
+
+// The project (R35), through the agent door: many boards, one premise.
+describe("boards of a project", () => {
+  let season;
+  let seasonRoot;
+
+  beforeAll(async () => {
+    seasonRoot = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-season-"));
+    season = new McpClient(seasonRoot);
+    await season.start();
+  }, 30000);
+
+  afterAll(() => {
+    season?.stop();
+    if (seasonRoot) fs.rmSync(seasonRoot, { recursive: true, force: true });
+  });
+
+  it("starts as a one-board project around the wall on file", async () => {
+    const text = await season.callTool("list_boards");
+    expect(text).toContain("boards: 1");
+    expect(text).toContain("(open)");
+    expect(await season.callTool("list_board")).toMatch(/PlotCoder "Board 1" \(1 of 1 in "Untitled project"\)/);
+  });
+
+  it("adds boards, lists them in order, and opens one by number or name", async () => {
+    await season.callTool("set_logline", { logline: "Episode one's question" });
+    await season.callTool("new_board", { name: "Episode 2" });
+    await season.callTool("set_logline", { logline: "Episode two's question" });
+    await season.callTool("new_board", { name: "Episode 3" });
+    const listed = await season.callTool("list_boards");
+    expect(listed).toContain("boards: 3");
+    expect(listed).toMatch(/1\. .* — "Board 1"/);
+    expect(listed).toMatch(/3\. .* — "Episode 3" \(open\)/);
+
+    expect(await season.callTool("open_board", { board: "2" })).toContain('Opened "Episode 2"');
+    expect((await season.callToolData("list_board")).logline).toBe("Episode two's question");
+    expect(await season.callTool("open_board", { board: "board 1" })).toContain('Opened "Board 1"');
+    expect((await season.callToolData("list_board")).logline).toBe("Episode one's question");
+    expect(await season.callTool("open_board", { board: "board 1" })).toContain("already open");
+    expect(await season.callTool("open_board", { board: "nope" })).toContain("No board matches");
+  });
+
+  it("renames a board and refuses a blank rename", async () => {
+    expect(await season.callTool("rename_board", { board: "1", name: "Episode 1" })).toContain('Renamed to "Episode 1"');
+    expect(await season.callTool("list_boards")).toContain('"Episode 1" (open)');
+  });
+
+  it("deletes a board, opening the one before it when the open one goes, and never the last", async () => {
+    await season.callTool("open_board", { board: "Episode 3" });
+    expect(await season.callTool("delete_board", { board: "Episode 3" })).toContain('opened "Episode 2"');
+    expect((await season.callToolData("list_board")).logline).toBe("Episode two's question");
+    await season.callTool("delete_board", { board: "Episode 1" });
+    expect(await season.callTool("list_boards")).toContain("boards: 1");
+    expect(await season.callTool("delete_board", { board: "Episode 2" })).toContain("keeps at least one board");
   });
 });

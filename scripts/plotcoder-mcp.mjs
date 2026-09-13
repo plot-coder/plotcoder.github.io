@@ -23,6 +23,7 @@ import {
   boardEighths,
   countRanks,
   EIGHTHS_PER_PAGE,
+  emptyState,
   formatPages,
   isBoardState,
   normalizeState,
@@ -32,6 +33,17 @@ import {
 } from "../src/board/reducer.js";
 import { describeRuns, describeSetups, readWall } from "../src/board/readWall.js";
 import { organizePoses } from "../src/board/organize.js";
+import {
+  addBoard,
+  boardById,
+  emptyProject,
+  findBoard,
+  isProjectRecord,
+  normalizeProject,
+  removeBoard,
+  renameBoard,
+  setActiveBoard,
+} from "../src/board/project.js";
 
 const colorSchema = z.enum(NOTE_COLORS);
 const rankSchema = z.enum(NOTE_RANKS);
@@ -70,6 +82,7 @@ function findRepoRoot() {
 
 const REPO_ROOT = findRepoRoot();
 const BOARD_FILE = path.join(REPO_ROOT, ".plotcoder", "board.json");
+const PROJECT_FILE = path.join(REPO_ROOT, ".plotcoder", "project.json");
 
 // --- Live dev bridge -------------------------------------------------------
 
@@ -123,18 +136,110 @@ function readFileBoard() {
       return {
         state: normalizeState(parsed.state),
         rev: typeof parsed.rev === "number" ? parsed.rev : 0,
+        boardId: typeof parsed.boardId === "string" ? parsed.boardId : null,
       };
     }
   } catch {
     /* no file yet */
   }
-  return { state: seedState(), rev: 0 };
+  return { state: seedState(), rev: 0, boardId: null };
 }
 
-function writeFileBoard(state, rev) {
+function writeFileBoard(state, rev, boardId = null) {
   fs.mkdirSync(path.dirname(BOARD_FILE), { recursive: true });
-  const payload = { app: "plotcoder", version: 1, rev, state };
+  const payload = { app: "plotcoder", version: 1, rev, boardId, state };
   fs.writeFileSync(BOARD_FILE, `${JSON.stringify(payload, null, 2)}\n`);
+}
+
+// --- The project (R35): the record and every board ------------------------
+
+function readFileProject() {
+  try {
+    const parsed = JSON.parse(fs.readFileSync(PROJECT_FILE, "utf8"));
+    if (parsed && isProjectRecord(parsed.project)) {
+      return {
+        project: normalizeProject(parsed.project),
+        boards: parsed.boards && typeof parsed.boards === "object" ? parsed.boards : {},
+        rev: typeof parsed.rev === "number" ? parsed.rev : 0,
+      };
+    }
+  } catch {
+    /* no project file yet */
+  }
+  return null;
+}
+
+function writeFileProject(project, boards, rev) {
+  fs.mkdirSync(path.dirname(PROJECT_FILE), { recursive: true });
+  const payload = { app: "plotcoder", version: 2, rev, project, boards };
+  fs.writeFileSync(PROJECT_FILE, `${JSON.stringify(payload, null, 2)}\n`);
+}
+
+/**
+ * The project as the bridge or the file holds it. A wall from before projects
+ * existed becomes a one-board project around the board on file, so every
+ * board tool works on an older checkout too.
+ */
+async function readProject() {
+  const base = await findBridge();
+  if (base) {
+    try {
+      const res = await fetch(`${base}/__plotcoder/project`, { signal: AbortSignal.timeout(1500) });
+      const data = await res.json();
+      if (data && isProjectRecord(data.project)) {
+        return {
+          project: normalizeProject(data.project),
+          boards: data.boards && typeof data.boards === "object" ? data.boards : {},
+          rev: typeof data.rev === "number" ? data.rev : 0,
+          base,
+          live: true,
+        };
+      }
+    } catch (error) {
+      log("bridge project read failed, using file:", error);
+    }
+  }
+  const file = readFileProject();
+  if (file) return { ...file, base: null, live: false };
+  const board = readFileBoard();
+  const project = emptyProject();
+  const id = board.boardId ?? project.boards[0].id;
+  const record = board.boardId
+    ? { ...project, boards: [{ ...project.boards[0], id: board.boardId }], activeBoardId: board.boardId }
+    : project;
+  return { project: record, boards: { [id]: board.state }, rev: 0, base: null, live: false };
+}
+
+async function writeProject(project, boards, rev, base) {
+  if (base) {
+    try {
+      const res = await fetch(`${base}/__plotcoder/project`, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ project, boards, rev }),
+        signal: AbortSignal.timeout(1500),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        writeFileProject(data.project ?? project, data.boards ?? boards, data.rev ?? rev + 1);
+        return true;
+      }
+    } catch (error) {
+      log("bridge project write failed, falling back to file:", error);
+    }
+  }
+  writeFileProject(project, boards, rev + 1);
+  return false;
+}
+
+/** Open a board everywhere: the record's open board, and the board channel with its id. */
+async function openBoardEverywhere(project, boards, projectRev, base, boardId) {
+  const opened = setActiveBoard(project, boardId);
+  const state = isBoardState(boards[boardId]) ? normalizeState(boards[boardId]) : emptyState();
+  const live = await writeProject(opened, { ...boards, [boardId]: state }, projectRev, base);
+  const { rev } = await readBoard();
+  await writeBoard(state, rev, base, boardId);
+  return { project: opened, state, live };
 }
 
 async function readBoard() {
@@ -147,7 +252,13 @@ async function readBoard() {
       const data = await res.json();
       const state =
         data.state && isBoardState(data.state) ? normalizeState(data.state) : seedState();
-      return { state, rev: typeof data.rev === "number" ? data.rev : 0, base, live: true };
+      return {
+        state,
+        rev: typeof data.rev === "number" ? data.rev : 0,
+        boardId: typeof data.boardId === "string" ? data.boardId : null,
+        base,
+        live: true,
+      };
     } catch (error) {
       log("bridge read failed, using file:", error);
     }
@@ -156,26 +267,37 @@ async function readBoard() {
   return { ...file, base: null, live: false };
 }
 
-async function writeBoard(next, rev, base) {
+async function writeBoard(next, rev, base, boardId = null) {
   if (base) {
     try {
       const res = await fetch(`${base}/__plotcoder/board`, {
         method: "PUT",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ state: next, rev }),
+        body: JSON.stringify({ state: next, rev, boardId }),
         signal: AbortSignal.timeout(1500),
       });
       if (res.ok) {
         const data = await res.json();
-        if (data.state && isBoardState(data.state)) writeFileBoard(data.state, data.rev);
+        if (data.state && isBoardState(data.state)) {
+          writeFileBoard(data.state, data.rev, data.boardId ?? boardId);
+        }
         return true;
       }
     } catch (error) {
       log("bridge write failed, falling back to file:", error);
     }
   }
-  writeFileBoard(next, rev + 1);
+  writeFileBoard(next, rev + 1, boardId);
+  syncProjectFileBoard(boardId, next);
   return false;
+}
+
+/** Keep the project file's copy of a board current when the app is not open to do it. */
+function syncProjectFileBoard(boardId, state) {
+  if (!boardId) return;
+  const file = readFileProject();
+  if (!file || !file.project.boards.some((board) => board.id === boardId)) return;
+  writeFileProject(file.project, { ...file.boards, [boardId]: state }, file.rev + 1);
 }
 
 // This server's own trail of changes (R33): what the board was before each
@@ -197,14 +319,14 @@ function describeCommand(command) {
 }
 
 async function commit(command) {
-  const { state, rev, base } = await readBoard();
+  const { state, rev, base, boardId } = await readBoard();
   const { state: next, changed, result } = applyCommand(state, command);
   // `changed` is passed back so a tool can tell the agent that nothing
   // happened, and why. A tool that silently reports success on a rejected
   // command teaches the agent the board is in a state it is not.
   if (!changed) return { state: next, changed, result, live: base !== null };
 
-  const live = await writeBoard(next, rev, base);
+  const live = await writeBoard(next, rev, base, boardId);
   trail.push({ before: state, after: JSON.stringify(next), what: describeCommand(command) });
   if (trail.length > TRAIL_CAP) trail.shift();
   return { state: next, changed, result, live };
@@ -290,9 +412,14 @@ server.registerTool(
     inputSchema: {},
   },
   async () => {
-    const { state, live } = await readBoard();
+    const { state, live, boardId } = await readBoard();
+    const { project } = await readProject();
+    const board = boardById(project, boardId ?? project.activeBoardId);
+    const which = board
+      ? `"${board.name}" (${project.boards.findIndex((item) => item.id === board.id) + 1} of ${project.boards.length} in "${project.name}")`
+      : "board";
     return ok(
-      `PlotCoder board (${live ? "live: app is open" : "from file: app not running"})\n${summarize(state)}`,
+      `PlotCoder ${which} (${live ? "live: app is open" : "from file: app not running"})\n${summarize(state)}`,
       state,
     );
   },
@@ -573,7 +700,8 @@ server.registerTool(
       );
     }
     trail.pop();
-    const live = await writeBoard(last.before, rev, base);
+    const { boardId } = await readBoard();
+    const live = await writeBoard(last.before, rev, base, boardId);
     return ok(
       `Undid ${last.what}${where(live)}. ${trail.length} more of mine can be undone.`,
       last.before,
@@ -850,17 +978,125 @@ server.registerTool(
   },
 );
 
+// --- The project (R35) ------------------------------------------------------
+
+function describeBoards(project, boards) {
+  return project.boards
+    .map((board, index) => {
+      const state = boards[board.id];
+      const open = board.id === project.activeBoardId ? " (open)" : "";
+      const shape =
+        state && isBoardState(state)
+          ? `${state.notes.length} cards, about ${formatPages(boardEighths(normalizeState(state)))} of ${formatPages(normalizeState(state).targetEighths)} pages`
+          : "no cards";
+      return `  ${index + 1}. ${board.id} — "${board.name}"${open}: ${shape}`;
+    })
+    .join("\n");
+}
+
+server.registerTool(
+  "list_boards",
+  {
+    title: "List boards",
+    description:
+      "The project: its name, its premise, and every board with id, name, and shape, marking the one that is open. Boards are in the writer's order — a season's episodes, or a writer's stories. Use the ids here for open_board, rename_board and delete_board.",
+    inputSchema: {},
+  },
+  async () => {
+    const { project, boards, live } = await readProject();
+    return ok(
+      [
+        `Project "${project.name}" (${live ? "live: app is open" : "from file: app not running"})`,
+        `premise: ${project.premise ? `"${project.premise}"` : "(not set)"}`,
+        `boards: ${project.boards.length}`,
+        describeBoards(project, boards),
+      ].join("\n"),
+      project,
+    );
+  },
+);
+
+server.registerTool(
+  "open_board",
+  {
+    title: "Open board",
+    description:
+      "Open another board of the project by id, name, or number from list_boards. Every card tool then works on that board; the open wall switches too.",
+    inputSchema: { board: z.string().min(1) },
+  },
+  async (args) => {
+    const { project, boards, rev, base } = await readProject();
+    const target = findBoard(project, args.board);
+    if (!target) return ok(`No board matches "${args.board}". Call list_boards for the real ones.`);
+    if (target.id === project.activeBoardId) return ok(`"${target.name}" is already open.`);
+    const { live } = await openBoardEverywhere(project, boards, rev, base, target.id);
+    return ok(`Opened "${target.name}"${where(live)}.`, target);
+  },
+);
+
 server.registerTool(
   "new_board",
   {
     title: "New board",
     description:
-      "Start an empty wall: removes every card, group, arrow and the cast, and clears the logline. The target length stays. This cannot be undone, so on a board that has work on it, ask the writer first and suggest Save project.",
-    inputSchema: {},
+      "Add a board to the project and open it: an empty wall with the logline placeholder, under the same premise, with the same target length as the board that was open. Nothing else is touched — the other boards stay as they are. Name it for what it is: an episode, a draft, a story.",
+    inputSchema: { name: z.string().optional() },
   },
-  async () => {
-    const { live } = await commit({ type: "new_board" });
-    return ok(`The wall is empty${where(live)}. Set the logline, then start on the beats.`);
+  async (args) => {
+    const { project, boards, rev, base } = await readProject();
+    const previous = boards[project.activeBoardId];
+    const target =
+      previous && isBoardState(previous) ? normalizeState(previous).targetEighths : undefined;
+    const { project: next, board } = addBoard(project, args.name ?? "");
+    const fresh = { ...emptyState(), ...(target ? { targetEighths: target } : {}) };
+    const { live } = await openBoardEverywhere(next, { ...boards, [board.id]: fresh }, rev, base, board.id);
+    return ok(
+      `Added "${board.name}" (${board.id}) and opened it${where(live)}. It is empty: set the logline, then start on the beats.`,
+      board,
+    );
+  },
+);
+
+server.registerTool(
+  "rename_board",
+  {
+    title: "Rename board",
+    description: "Rename a board of the project by id, name, or number.",
+    inputSchema: { board: z.string().min(1), name: z.string().min(1) },
+  },
+  async (args) => {
+    const { project, boards, rev, base } = await readProject();
+    const target = findBoard(project, args.board);
+    if (!target) return ok(`No board matches "${args.board}". Call list_boards for the real ones.`);
+    const next = renameBoard(project, target.id, args.name);
+    if (next === project) return ok(`"${target.name}" already has that name.`);
+    const live = await writeProject(next, boards, rev, base);
+    return ok(`Renamed to "${args.name.trim()}"${where(live)}.`);
+  },
+);
+
+server.registerTool(
+  "delete_board",
+  {
+    title: "Delete board",
+    description:
+      "Remove a board and everything on it. This cannot be undone — not from the wall either — so ask the writer first, say how many cards it holds, and suggest Save project. The last board of a project cannot be deleted. If the open board goes, the one before it opens.",
+    inputSchema: { board: z.string().min(1) },
+  },
+  async (args) => {
+    const { project, boards, rev, base } = await readProject();
+    const target = findBoard(project, args.board);
+    if (!target) return ok(`No board matches "${args.board}". Call list_boards for the real ones.`);
+    if (project.boards.length <= 1) return ok("Not deleted: a project keeps at least one board.");
+    const next = removeBoard(project, target.id);
+    const remaining = { ...boards };
+    delete remaining[target.id];
+    if (next.activeBoardId !== project.activeBoardId) {
+      const { live } = await openBoardEverywhere(next, remaining, rev, base, next.activeBoardId);
+      return ok(`Deleted "${target.name}" and opened "${boardById(next, next.activeBoardId)?.name}"${where(live)}.`);
+    }
+    const live = await writeProject(next, remaining, rev, base);
+    return ok(`Deleted "${target.name}"${where(live)}.`);
   },
 );
 

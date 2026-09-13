@@ -127,10 +127,15 @@ afterAll(() => {
 describe("plotcoder MCP server", () => {
   it("exposes the board tools an agent needs", async () => {
     const { tools } = await client.request("tools/list", {});
-    expect(tools.map((tool) => tool.name).sort()).toEqual([
+    expect(tools.map((tool) => tool.name).sort()).toEqual(SORTED_TOOLS);
+  });
+
+  const SORTED_TOOLS = [
       "add_character",
       "add_reminder",
+      "add_take",
       "apply_template",
+      "build_segment",
       "cast",
       "create_arrow",
       "create_group",
@@ -138,6 +143,7 @@ describe("plotcoder MCP server", () => {
       "delete_arrow",
       "delete_board",
       "delete_note",
+      "end_revision",
       "export_fdx",
       "export_fountain",
       "import_fdx",
@@ -145,7 +151,9 @@ describe("plotcoder MCP server", () => {
       "list_board",
       "list_boards",
       "list_projects",
+      "lock_numbers",
       "list_reminders",
+      "list_takes",
       "list_workflows",
       "move_note",
       "new_board",
@@ -171,13 +179,14 @@ describe("plotcoder MCP server", () => {
       "set_premise",
       "set_rank",
       "set_target",
+      "start_revision",
       "undo",
       "ungroup",
+      "unlock_numbers",
       "update_character",
       "update_note",
       "write_scene",
-    ]);
-  });
+    ].sort();
 
   it("describes every tool so an agent can pick the right one", async () => {
     const { tools } = await client.request("tools/list", {});
@@ -1183,6 +1192,26 @@ describe("the premise and reminders (roadmap item 6)", () => {
     });
     expect(imported).toContain("Imported");
     expect(await door.callTool("export_fdx")).toContain("<FinalDraft");
+  });
+
+  it("locks the numbers, gives a new scene an A-number in the export, and runs a revision", async () => {
+    expect(await door.callTool("lock_numbers")).toMatch(/Locked \d+ scene number\(s\)/);
+    expect(await door.callTool("list_board")).toContain("numbers: locked");
+    await door.callTool("create_note", { headline: "Between", change: "x", x: 200, y: 120 });
+    const fdx = await door.callTool("export_fdx");
+    expect(fdx).toMatch(/Number="\d+A"/);
+    expect(await door.callTool("start_revision", { name: "blue draft", color: "blue" })).toContain('Started the blue revision "blue draft"');
+    expect(await door.callTool("list_board")).toContain('revision: "blue draft" in blue');
+    expect(await door.callTool("end_revision")).toContain("Revision ended");
+    expect(await door.callTool("unlock_numbers")).toContain("Unlocked");
+    expect(await door.callTool("unlock_numbers")).toContain("were not locked");
+  });
+
+  it("hands a brief to a video tool that is not there yet, and says so", async () => {
+    const text = await door.callTool("build_segment", { ids: ["maya-letter"] });
+    expect(text).toContain("No video tool is configured");
+    expect(text).toContain("SEGMENT: Maya finds the letter");
+    expect(await door.callTool("list_takes")).toContain("No account door");
   });
 
   it("lists the workflows and briefs a segment from the wall", async () => {

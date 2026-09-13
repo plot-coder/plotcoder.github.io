@@ -14,9 +14,11 @@ type BriefSheetProps = {
   ids: string[];
   title: string;
   onClose: () => void;
+  /** Open the takes for this segment (item 9). */
+  onTakes?: () => void;
 };
 
-export function BriefSheet({ open, board, ids, title, onClose }: BriefSheetProps) {
+export function BriefSheet({ open, board, ids, title, onClose, onTakes }: BriefSheetProps) {
   const titleId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
   const [copied, setCopied] = useState(false);
@@ -71,6 +73,11 @@ export function BriefSheet({ open, board, ids, title, onClose }: BriefSheetProps
           <button type="button" className="project-action" onClick={() => void copy()}>
             {copied ? "Copied" : "Copy the brief"}
           </button>
+          {onTakes ? (
+            <button type="button" className="project-action project-action--ghost" onClick={onTakes}>
+              Takes
+            </button>
+          ) : null}
         </div>
       </div>
     </div>

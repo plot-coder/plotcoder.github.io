@@ -13,6 +13,7 @@
 import { parseScene, TRANSITION } from "./paginate.js";
 import { readingOrder } from "./readWall.js";
 import { sceneHeading } from "./fountain.js";
+import { sceneNumbers } from "./numbering.js";
 
 function escapeXml(text) {
   return String(text)
@@ -51,9 +52,10 @@ function speechParagraphs(speech) {
  */
 export function toFdx(state, options = {}) {
   const order = readingOrder(state.notes);
+  const numbers = sceneNumbers(order, state.lock);
   let content = "";
   order.forEach((note, index) => {
-    const number = index + 1;
+    const number = numbers.get(note.id) ?? index + 1;
     content += paragraph("Scene Heading", sceneHeading(note).slice(1), ` Number="${number}"`).replace(
       "<Text>",
       `<SceneProperties Length="" Page="" Title="${escapeXml(note.headline)}" />\n      <Text>`,
@@ -81,7 +83,7 @@ export function toFdx(state, options = {}) {
   if (options.project && options.project !== options.title) title.push(paragraph("General", `An episode of ${options.project}`, ' Alignment="Center"'));
   if (options.author) title.push(paragraph("General", `Written by ${options.author}`, ' Alignment="Center"'));
   if (options.draftDate) title.push(paragraph("General", options.draftDate.slice(0, 10)));
-  title.push(paragraph("General", "Scene numbers follow the wall's order and are not locked."));
+  title.push(paragraph("General", state.lock ? `Scene numbers locked ${String(state.lock.at).slice(0, 10)}.` : "Scene numbers follow the wall's order and are not locked."));
 
   return (
     `<?xml version="1.0" encoding="UTF-8" standalone="no" ?>\n` +

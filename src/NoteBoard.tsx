@@ -7,7 +7,8 @@ import {
 } from "react";
 import { arrowLayout, noteAtPoint, previewPath } from "./arrowGeometry";
 import { NoteCard } from "./NoteCard";
-import { atPlace, type ArrowKind, type BoardCharacter } from "./board/reducer";
+import { atPlace, type ArrowKind, type BoardCharacter, type BoardState } from "./board/reducer";
+import { isRevised } from "./board/numbering";
 import {
   NOTE_HEIGHT,
   NOTE_WIDTH,
@@ -54,6 +55,12 @@ type NoteBoardProps = {
   pagesOpen?: boolean;
   /** The page a written scene starts on (R23 c). */
   pageOf: Map<string, number>;
+  /** Locked scene numbers by card (item 8); empty when not locked. */
+  numberOf: Map<string, string>;
+  /** The revision in progress, for the colour a changed card wears. */
+  revision: BoardState["revision"];
+  /** Cards with a take filed on them (item 9). */
+  hasTake: Set<string>;
   onHoverNote: (id: string | null) => void;
   selectedIds: string[];
   selectedArrowId: string | null;
@@ -135,6 +142,9 @@ export function NoteBoard({
   onStructure,
   pagesOpen = false,
   pageOf,
+  numberOf,
+  revision,
+  hasTake,
   onHoverNote,
   selectedIds,
   selectedArrowId,
@@ -528,6 +538,9 @@ export function NoteBoard({
           characters={characters}
           places={places}
           page={pageOf.get(note.id) ?? null}
+          sceneNumber={numberOf.get(note.id) ?? null}
+          hasTake={hasTake.has(note.id)}
+          revised={revision && isRevised(note, revision.snapshot[note.id]) ? revision.color : null}
           onCastNames={onCastNames}
           onLocation={onLocation}
           onRaise={onRaise}

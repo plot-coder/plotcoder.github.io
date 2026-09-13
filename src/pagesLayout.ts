@@ -7,6 +7,7 @@ import { sceneHeading } from "./board/fountain";
 import { paginate, type Pagination } from "./board/paginate";
 import { type WallReading } from "./board/readWall";
 import { isMeasured, type BoardNote, type BoardState } from "./board/reducer";
+import { sceneNumbers } from "./board/numbering";
 
 export type PageTurn = {
   /** The page that begins here. */
@@ -31,6 +32,7 @@ export function paginateBoard(board: BoardState, reading: WallReading | null): B
   const order = reading
     ? (reading.order.map((id) => byId.get(id)).filter(Boolean) as BoardNote[])
     : board.notes;
+  const numbers = sceneNumbers(order, board.lock);
   const result = paginate(
     order.map((note) => ({
       id: note.id,
@@ -38,6 +40,7 @@ export function paginateBoard(board: BoardState, reading: WallReading | null): B
       text: note.text,
       change: note.change,
       written: isMeasured(note),
+      number: numbers.get(note.id) ?? undefined,
     })),
   );
   const pageOf = new Map(result.scenes.map((scene) => [scene.id, scene.page]));

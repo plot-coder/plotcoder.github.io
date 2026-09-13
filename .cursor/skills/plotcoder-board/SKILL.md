@@ -222,3 +222,12 @@ writer's own — and no dev server running, every tool works the writer's
 project on the account directly, and each change lands on every open wall.
 `list_projects` shows what you can work; `open_project` switches. Prefer the
 open app's bridge when it is there; the account door is for when it is not.
+
+## The production half
+
+- `lock_numbers` / `unlock_numbers` — once a draft has gone out, every scene
+  keeps its number; new scenes take A-numbers (14A, 14B); Final Draft out
+  carries them. Ask the writer first: it is a decision about the document.
+- `start_revision` / `end_revision` — a named revision in one of the
+  industry's colours; changed lines print in the colour with a star, changed
+  cards wear it on the wall. `list_board` says the lock and the revision.

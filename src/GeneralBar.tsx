@@ -34,6 +34,7 @@ type GeneralBarProps = {
   /** A card or cards are selected: the brief for that segment (R28). */
   canBrief: boolean;
   onBrief: () => void;
+  onTakes: () => void;
   zoom: number;
   canFit: boolean;
   beats: number;
@@ -63,6 +64,7 @@ export function GeneralBar({
   onStructure,
   canBrief,
   onBrief,
+  onTakes,
   zoom,
   canFit,
   beats,
@@ -145,9 +147,14 @@ export function GeneralBar({
             Structure
           </button>
           {canBrief ? (
-            <button type="button" className="new-note" onClick={onBrief}>
-              Brief
-            </button>
+            <>
+              <button type="button" className="new-note" onClick={onBrief}>
+                Brief
+              </button>
+              <button type="button" className="new-note" onClick={onTakes}>
+                Takes
+              </button>
+            </>
           ) : null}
 
           {/* The count and nothing else. No nudge under 8, no warning over 15 —

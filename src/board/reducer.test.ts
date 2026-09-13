@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { sceneNumbers } from "./numbering";
 import {
   applyCommand,
   atPlace,
@@ -1114,6 +1115,38 @@ describe("where a scene happens (R37)", () => {
     const repaired = normalizeState(old as never);
     expect(repaired).not.toBe(old);
     expect(repaired.notes.every((note) => note.location === "")).toBe(true);
+    expect(normalizeState(repaired)).toBe(repaired);
+  });
+});
+
+describe("the production half (Roadmap 2, item 8)", () => {
+  it("locks the numbers by the order given, gives a new scene an A-number, and unlocks", () => {
+    const seed = seedState();
+    const locked = applyCommand(seed, { type: "lock_numbers", order: ["maya-letter", "tom-lies", "letter-aloud"] }, NOW);
+    expect(locked.changed).toBe(true);
+    expect(locked.state.lock?.numbers).toEqual({ "maya-letter": "1", "tom-lies": "2", "letter-aloud": "3" });
+    const added = applyCommand(locked.state, { type: "create_note", id: "new", headline: "New", change: "x" }, NOW).state;
+    expect(sceneNumbers([{ id: "maya-letter" }, { id: "new" }, { id: "tom-lies" }, { id: "letter-aloud" }], added.lock).get("new")).toBe("1A");
+    expect(applyCommand(added, { type: "unlock_numbers" }, NOW).state.lock).toBeNull();
+    expect(applyCommand(seed, { type: "unlock_numbers" }, NOW).changed).toBe(false);
+  });
+
+  it("starts a revision with a snapshot of every card, and ends it", () => {
+    const seed = seedState();
+    const started = applyCommand(seed, { type: "start_revision", name: "blue draft", color: "blue" }, NOW);
+    expect(started.state.revision).toMatchObject({ name: "blue draft", color: "blue", since: NOW });
+    expect(started.state.revision?.snapshot["maya-letter"]).toEqual({ headline: "Maya finds the letter", change: "She decides not to tell Tom.", location: "", text: "" });
+    expect(applyCommand(seed, { type: "start_revision", name: "  " }, NOW).changed).toBe(false);
+    expect(applyCommand(seed, { type: "start_revision", name: "x", color: "puce" }, NOW).state.revision?.color).toBe("blue");
+    expect(applyCommand(started.state, { type: "end_revision" }, NOW).state.revision).toBeNull();
+  });
+
+  it("fills lock and revision in for older boards (tenth migration)", () => {
+    const seed = seedState();
+    const { lock: _lock, revision: _revision, ...old } = seed;
+    const repaired = normalizeState(old as never);
+    expect(repaired.lock).toBeNull();
+    expect(repaired.revision).toBeNull();
     expect(normalizeState(repaired)).toBe(repaired);
   });
 });

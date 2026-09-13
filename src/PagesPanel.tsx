@@ -14,6 +14,7 @@ import { sceneHeading } from "./board/fountain";
 import { paginateBoard } from "./pagesLayout";
 import { type Line } from "./board/paginate";
 import { SceneEditor } from "./SceneEditor";
+import { isRevised, revisedLines } from "./board/numbering";
 import { type WallReading } from "./board/readWall";
 import {
   formatPages,
@@ -211,10 +212,12 @@ export function PagesPanel({
               const turns = pages.turnsOf.get(note.id) ?? [];
               const before = turns.filter((turn) => turn.src < 0);
               const inside = turns.filter((turn) => turn.src >= 0);
+              const revision = board.revision;
+              const revised = revision ? isRevised(note, revision.snapshot[note.id]) : false;
               return (
                 <section
                   key={note.id}
-                  className={`script__scene ${note.id === focusId ? "is-focus" : ""}`}
+                  className={`script__scene ${note.id === focusId ? "is-focus" : ""} ${revised ? `is-revised rev--${revision?.color}` : ""}`}
                   data-scene={note.id}
                 >
                   {before.map((turn) => (
@@ -230,6 +233,7 @@ export function PagesPanel({
                   <SceneEditor
                     note={note}
                     turns={inside}
+                    revisedLines={revision ? revisedLines(note.text, revision.snapshot[note.id]?.text ?? null) : []}
                     onCommit={(text) => onSetText(note.id, text)}
                     onFocus={() => onFocusScene(note.id)}
                     onBlur={() => onFocusScene(null)}
@@ -248,9 +252,13 @@ export function PagesPanel({
               <div key={page.number} className="print-page" data-page={page.number}>
                 <div className="print-page__number">{page.number}.</div>
                 <div className="print-page__body">
-                  {page.lines.map((line, index) => (
-                    <PrintLine key={index} line={line} first={false} focus={false} onFocus={() => {}} />
-                  ))}
+                  {page.lines.map((line, index) => {
+                    const note = line.noteId ? byId.get(line.noteId) : undefined;
+                    const snapshot = board.revision && note ? board.revision.snapshot[note.id] : undefined;
+                    const starred =
+                      Boolean(board.revision) && note !== undefined && (line.src === -1 ? isRevised(note, snapshot) : typeof line.src === "number" && revisedLines(note.text, snapshot?.text ?? null).includes(line.src));
+                    return <PrintLine key={index} line={line} first={false} focus={false} starred={starred} onFocus={() => {}} />;
+                  })}
                 </div>
               </div>
             ))}
@@ -297,7 +305,7 @@ export function PagesPanel({
 }
 
 // One line of a printed page, at the element's column. A dual line is two.
-function PrintLine({ line, first, focus, onFocus }: { line: Line; first: boolean; focus: boolean; onFocus: () => void }) {
+function PrintLine({ line, first, focus, starred = false, onFocus }: { line: Line; first: boolean; focus: boolean; starred?: boolean; onFocus: () => void }) {
   if (line.kind === "dual") {
     return (
       <div className={`pl pl--dual ${focus ? "is-focus" : ""}`} data-scene={first ? line.noteId : undefined} onClick={onFocus}>
@@ -307,10 +315,11 @@ function PrintLine({ line, first, focus, onFocus }: { line: Line; first: boolean
     );
   }
   return (
-    <div className={`pl pl--${line.kind} ${focus ? "is-focus" : ""}`} data-scene={first ? line.noteId : undefined} onClick={onFocus}>
+    <div className={`pl pl--${line.kind} ${focus ? "is-focus" : ""} ${starred ? "is-starred" : ""}`} data-scene={first ? line.noteId : undefined} onClick={onFocus}>
       {line.kind === "heading" && line.sceneNumber ? <span className="pl__num pl__num--l">{line.sceneNumber}</span> : null}
       {line.text}
       {line.kind === "heading" && line.sceneNumber ? <span className="pl__num pl__num--r">{line.sceneNumber}</span> : null}
+      {starred ? <span className="pl__star" aria-label="revised">*</span> : null}
     </div>
   );
 }

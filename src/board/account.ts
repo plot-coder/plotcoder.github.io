@@ -673,6 +673,20 @@ class AccountStore {
     return added;
   };
 
+  /** One take is the chosen one for its subject (Roadmap 2, item 9). */
+  chooseTake = async (id: string, subject: string): Promise<boolean> => {
+    if (!this.client || !this.books) return false;
+    const others = this.account.assets.filter((asset) => asset.kind === "take" && asset.subject === subject && asset.id !== id && asset.note === "chosen");
+    for (const other of others) await this.client.from(ASSETS).update({ note: "" }).eq("id", other.id);
+    const { error } = await this.client.from(ASSETS).update({ note: "chosen" }).eq("id", id);
+    if (error) {
+      this.set({ error: error.message });
+      return false;
+    }
+    await this.loadAssets();
+    return true;
+  };
+
   removeAsset = async (id: string): Promise<boolean> => {
     if (!this.client || !this.books) return false;
     const asset = this.account.assets.find((item) => item.id === id);

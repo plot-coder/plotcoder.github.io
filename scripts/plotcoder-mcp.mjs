@@ -40,6 +40,7 @@ import { fromFountain, mergeFountain, toFountain } from "../src/board/fountain.j
 import { describeSetAside, fromFdx, toFdx } from "../src/board/fdx.js";
 import { paginate } from "../src/board/paginate.js";
 import { readingOrder } from "../src/board/readWall.js";
+import { REVISION_COLORS, sceneNumbers } from "../src/board/numbering.js";
 import { sceneHeading } from "../src/board/fountain.js";
 import { segmentBrief, WORKFLOWS } from "../src/board/workflows.js";
 import { DEFAULT_REMINDERS, titleFromBody } from "../src/board/reminders.js";
@@ -570,8 +571,14 @@ function summarize(state) {
 
   // No blank lines: ok() uses the first blank line to separate prose from the
   // JSON payload, so one in here would swallow the payload.
+  const numbers = state.lock ? sceneNumbers(readingOrder(state.notes), state.lock) : null;
+  const production = [
+    `numbers: ${state.lock ? `locked ${String(state.lock.at).slice(0, 10)} — ${[...numbers.entries()].map(([id, n]) => `${n}:${id}`).join(" ")}` : "follow the wall's order"}`,
+    `revision: ${state.revision ? `"${state.revision.name}" in ${state.revision.color} since ${String(state.revision.since).slice(0, 10)}` : "none"}`,
+  ];
   return [
     `logline: ${state.logline ? `"${state.logline}"` : "(not set)"}`,
+    ...production,
     `beats: ${beats}, scenes: ${scenes}`,
     `runtime: about ${formatPages(boardEighths(state))} pages of a ${formatPages(state.targetEighths)}-page target (an estimate from the cards)`,
     `notes: ${state.notes.length}, groups: ${state.groups.length}, arrows: ${state.arrows.length}, cast: ${state.characters.length}`,
@@ -1101,6 +1108,134 @@ server.registerTool(
       return `  - ${scene.number}. ${note?.headline ?? scene.id} (${scene.id}) — p. ${scene.page}${scene.endPage !== scene.page ? `–${scene.endPage}` : ""}`;
     });
     return ok([`pages: ${result.pageCount} of ${Math.round(state.targetEighths / 8)}`, ...lines].join("\n"), result.scenes);
+  },
+);
+
+server.registerTool(
+  "lock_numbers",
+  {
+    title: "Lock the scene numbers",
+    description:
+      "Once a draft has gone out: every scene keeps the number it has by the wall's order; a scene added between 14 and 15 becomes 14A, then 14B; moving cards never renumbers. Final Draft out carries the locked numbers. Ask the writer; it is a decision about the document going out.",
+    inputSchema: {},
+  },
+  async () => {
+    const { state } = await readBoard();
+    const order = readingOrder(state.notes).map((note) => note.id);
+    const { changed, result, live } = await commit({ type: "lock_numbers", order });
+    if (!changed) return ok("Nothing to lock.");
+    return ok(`Locked ${Object.keys(result.numbers).length} scene number(s)${where(live)}.`, result);
+  },
+);
+
+server.registerTool(
+  "unlock_numbers",
+  { title: "Unlock the scene numbers", description: "Numbers follow the wall's order again.", inputSchema: {} },
+  async () => {
+    const { changed, live } = await commit({ type: "unlock_numbers" });
+    return ok(changed ? `Unlocked${where(live)}.` : "The numbers were not locked.");
+  },
+);
+
+server.registerTool(
+  "start_revision",
+  {
+    title: "Start a revision",
+    description:
+      `Name a revision and give it one of the industry's colours (${REVISION_COLORS.join(", ")}). Every card is snapshotted; from then on a changed line prints in the colour with a star in the margin, and a changed card wears the colour on the wall.`,
+    inputSchema: { name: z.string().min(1), color: z.string().optional() },
+  },
+  async (args) => {
+    const { changed, result, live } = await commit({ type: "start_revision", name: args.name, color: args.color });
+    if (!changed) return ok("No revision started: give it a name.");
+    return ok(`Started the ${result.color} revision "${result.name}"${where(live)}.`, { name: result.name, color: result.color, since: result.since });
+  },
+);
+
+server.registerTool(
+  "end_revision",
+  { title: "End the revision", description: "The marks come off; the snapshot is dropped.", inputSchema: {} },
+  async () => {
+    const { changed, live } = await commit({ type: "end_revision" });
+    return ok(changed ? `Revision ended${where(live)}.` : "No revision in progress.");
+  },
+);
+
+// --- The horizon's first surface (R28; Roadmap 2, item 9) -------------------
+
+server.registerTool(
+  "build_segment",
+  {
+    title: "Build a segment",
+    description:
+      "Hand a segment's brief — one card, or several in wall order — to the video tool. No tool is chosen yet (question 26): until one is, this returns the brief with a note saying so, and a take built elsewhere is filed with add_take. When a provider exists it will be a tool behind this same surface; the wall's records are what it is handed. The writer approves the brief before anything is made.",
+    inputSchema: { ids: z.array(z.string()).min(1) },
+  },
+  async (args) => {
+    const { state } = await readBoard();
+    const { project } = await readProject();
+    const board = project.boards.find((item) => item.id === project.activeBoardId);
+    const brief = segmentBrief(state, args.ids, { title: board?.name });
+    if (!brief) return ok(`No cards with ids ${args.ids.join(", ")}. Call list_board.`);
+    const provider = process.env.PLOTCODER_VIDEO_PROVIDER;
+    if (!provider) {
+      return ok(`No video tool is configured (PLOTCODER_VIDEO_PROVIDER is unset). Hand this brief to one, then file what it makes with add_take.\n\n${brief}`);
+    }
+    return ok(`The video tool "${provider}" is named but not wired yet; this surface is where it goes. The brief:\n\n${brief}`);
+  },
+);
+
+server.registerTool(
+  "list_takes",
+  {
+    title: "List the takes",
+    description: "Through the account door: every take filed on the working project — by subject (a card id, or run:<ids>), name, and whether it is the chosen one.",
+    inputSchema: {},
+  },
+  async () => {
+    const account = await findAccount();
+    if (!account) return ok("No account door: takes are files on the project, and need PLOTCODER_EMAIL and PLOTCODER_PASSWORD to read.");
+    const { data, error } = await account.client.from("assets").select("id, subject, name, note, created_at").eq("project_id", account.projectId).eq("kind", "take").order("created_at");
+    if (error) return ok(`Could not read the takes: ${error.message}`);
+    const rows = data ?? [];
+    return ok(
+      [`takes: ${rows.length}`, ...rows.map((row) => `  - ${row.id} — ${row.subject} — ${row.name}${row.note === "chosen" ? " (chosen)" : ""}`)].join("\n"),
+      rows,
+    );
+  },
+);
+
+server.registerTool(
+  "add_take",
+  {
+    title: "Add a take",
+    description:
+      "Through the account door: file a take a video tool built — a file by path — on the working project, under a card's id or run:<ids joined by +>. The writer then sees it in the Takes panel and chooses.",
+    inputSchema: { subject: z.string().min(1), path: z.string().min(1), chosen: z.boolean().optional() },
+  },
+  async (args) => {
+    const account = await findAccount();
+    if (!account) return ok("No account door: set PLOTCODER_EMAIL and PLOTCODER_PASSWORD to file takes on the project.");
+    const bytes = fs.readFileSync(args.path);
+    const name = path.basename(args.path);
+    const safe = name.replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "") || "take";
+    const ext = path.extname(name).toLowerCase();
+    const contentType = ext === ".mp4" ? "video/mp4" : ext === ".webm" ? "video/webm" : ext === ".mov" ? "video/quicktime" : ext === ".png" ? "image/png" : ext === ".jpg" || ext === ".jpeg" ? "image/jpeg" : "application/octet-stream";
+    const storagePath = `${account.projectId}/take/${crypto.randomUUID()}-${safe}`;
+    const up = await account.client.storage.from("projects").upload(storagePath, bytes, { contentType, upsert: false });
+    if (up.error) return ok(`Could not upload the take: ${up.error.message}`);
+    const row = await account.client.from("assets").insert({
+      project_id: account.projectId,
+      kind: "take",
+      subject: args.subject,
+      path: storagePath,
+      name,
+      size: bytes.length,
+      content_type: contentType,
+      note: args.chosen ? "chosen" : "",
+    }).select("id").maybeSingle();
+    if (row.error) return ok(`Uploaded, but could not file the take: ${row.error.message}`);
+    return ok(`Filed "${name}" as a take on ${args.subject}${args.chosen ? ", chosen" : ""} (saved to the account; the writer's Takes panel has it).`, { id: row.data?.id, subject: args.subject });
   },
 );
 

@@ -11,7 +11,7 @@
 // Uncontrolled, like EditableText: React never rewrites the lines while the
 // caret is in them. The store's copy wins only when the caret is elsewhere.
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { classifyLines } from "./board/paginate";
 import type { BoardNote } from "./board/reducer";
 import type { PageTurn } from "./pagesLayout";
@@ -20,6 +20,8 @@ type SceneEditorProps = {
   note: BoardNote;
   /** Page turns that fall inside this scene, from the paginator. */
   turns: PageTurn[];
+  /** Source lines changed since the revision's snapshot (Roadmap 2, item 8). */
+  revisedLines?: number[];
   onCommit: (text: string) => void;
   onFocus: () => void;
   onBlur: () => void;
@@ -43,12 +45,12 @@ function readLines(root: HTMLElement): string[] {
   return out;
 }
 
-function paint(root: HTMLElement, lines: string[]): void {
+function paint(root: HTMLElement, lines: string[], starred: ReadonlySet<number> = new Set()): void {
   const kinds = classifyLines(lines.join("\n"));
   const children = Array.from(root.children) as HTMLElement[];
   children.forEach((child, index) => {
     const kind = kinds[index] ?? "action";
-    const next = `sl sl--${kind}`;
+    const next = `sl sl--${kind}${starred.has(index) ? " is-starred" : ""}`;
     if (child.className !== next) child.className = next;
   });
 }
@@ -64,19 +66,22 @@ function build(root: HTMLElement, text: string): void {
   paint(root, lines.length ? lines : [""]);
 }
 
-export function SceneEditor({ note, turns, onCommit, onFocus, onBlur }: SceneEditorProps) {
+export function SceneEditor({ note, turns, revisedLines = [], onCommit, onFocus, onBlur }: SceneEditorProps) {
   const ref = useRef<HTMLDivElement>(null);
   const editing = useRef(false);
   const timer = useRef<number | undefined>(undefined);
   const latest = useRef(note.text);
   const [marks, setMarks] = useState<Array<{ top: number; turn: PageTurn }>>([]);
 
+  const starred = useMemo(() => new Set(revisedLines), [revisedLines]);
+
   // The store's copy lands only while the caret is elsewhere.
   useEffect(() => {
     if (editing.current || !ref.current) return;
     latest.current = note.text;
     build(ref.current, note.text);
-  }, [note.text]);
+    paint(ref.current, linesOf(note.text), starred);
+  }, [note.text, starred]);
 
   // Where the page turns: beside the line it turns at.
   useLayoutEffect(() => {

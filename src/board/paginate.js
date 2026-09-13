@@ -363,8 +363,8 @@ export function sceneLineCount(text) {
 export function paginate(scenes) {
   const laid = scenes.map((scene, index) => ({
     id: scene.id,
-    number: index + 1,
-    blocks: layoutScene(parseScene(scene.written ? scene.text : scene.change || ""), scene.heading, index + 1),
+    number: scene.number ?? index + 1,
+    blocks: layoutScene(parseScene(scene.written ? scene.text : scene.change || ""), scene.heading, scene.number ?? index + 1),
   }));
   const { pages, placement } = paginateBlocks(laid);
   return {

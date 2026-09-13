@@ -15,7 +15,7 @@ export declare function classifyLines(text: string): LineKind[];
 export type Line = {
   kind: "heading" | "action" | "character" | "parenthetical" | "dialogue" | "transition" | "centered" | "more" | "blank" | "dual";
   text?: string;
-  sceneNumber?: number | null;
+  sceneNumber?: number | string | null;
   noteId?: string;
   /** The source line of the scene's text this printed line came from; -1 for the heading. */
   src?: number;
@@ -42,10 +42,10 @@ export declare function paginateBlocks(scenes: Array<{ id: string; blocks: Block
 export declare function splitSpeech(block: Block, space: number): { head: Line[]; tail: Line[] } | null;
 export declare function sceneLineCount(text: string | undefined): number;
 
-export type SceneInput = { id: string; heading: string; text: string; change: string; written: boolean };
+export type SceneInput = { id: string; heading: string; text: string; change: string; written: boolean; number?: string | number };
 export type Pagination = {
   pages: Page[];
-  scenes: Array<{ id: string; number: number; page: number; endPage: number }>;
+  scenes: Array<{ id: string; number: number | string; page: number; endPage: number }>;
   pageCount: number;
 };
 export declare function paginate(scenes: SceneInput[]): Pagination;

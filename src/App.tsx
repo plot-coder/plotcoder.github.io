@@ -10,6 +10,7 @@ import { boardStore, installWindowApi } from "./board/store";
 import { type NoteColor, type NoteRank } from "./noteMock";
 import { readWall } from "./board/readWall";
 import { castText } from "./castNames";
+import { sceneNumbers } from "./board/numbering";
 import {
   boardEighths,
   countRanks,
@@ -30,6 +31,7 @@ import { StructureSheet } from "./StructureSheet";
 import { PagesPanel } from "./PagesPanel";
 import { paginateBoard } from "./pagesLayout";
 import { BriefSheet } from "./BriefSheet";
+import { TakesPanel } from "./TakesPanel";
 import { AccountSheet } from "./AccountSheet";
 import { ProjectPicker } from "./ProjectPicker";
 import { StoryMap } from "./StoryMap";
@@ -103,6 +105,9 @@ export function App() {
   const [structureOpen, setStructureOpen] = useState(false);
   // The brief (R28, first step): for the selected card or cards.
   const [briefOpen, setBriefOpen] = useState(false);
+  // Takes (R28, item 9): for the selected card or run.
+  const [takesOpen, setTakesOpen] = useState(false);
+  const [takesIds, setTakesIds] = useState<string[]>([]);
   // Pages beside the wall (R23 b): open, and whether it takes the window.
   const [pagesOpen, setPagesOpen] = useState<boolean>(() => readFlag(PAGES_KEY, false));
   const [pagesWide, setPagesWide] = useState<boolean>(() => readFlag(PAGES_WIDE_KEY, false));
@@ -144,6 +149,24 @@ export function App() {
   const placeNames = useMemo(() => places.map((place) => place.name), [places]);
   // One reading of the wall for the lens and the map, so they agree.
   const reading = useMemo(() => readWall(board), [board]);
+  // Cards with a take filed on them, alone or in a run (item 9): a mark on the card.
+  const hasTake = useMemo(() => {
+    const marked = new Set<string>();
+    for (const asset of account.assets) {
+      if (asset.kind !== "take") continue;
+      if (asset.subject.startsWith("run:")) for (const id of asset.subject.slice(4).split("+")) marked.add(id);
+      else marked.add(asset.subject);
+    }
+    return marked;
+  }, [account.assets]);
+
+  // Locked scene numbers on the cards (Roadmap 2, item 8); nothing until locked.
+  const numberOf = useMemo(() => {
+    if (!board.lock) return new Map<string, string>();
+    const order = reading.order.map((id) => notes.find((note) => note.id === id)).filter(Boolean) as BoardNote[];
+    return sceneNumbers(order, board.lock);
+  }, [board.lock, reading, notes]);
+
   // The page each written scene starts on (R23 c), for the card's corner.
   const pageOf = useMemo(() => {
     if (!board.notes.some((note) => isMeasured(note))) return new Map<string, number>();
@@ -578,6 +601,12 @@ export function App() {
         onRenameProject={boardStore.renameProject}
         onSetPremise={savePremise}
         onOpenAccount={() => setAccountOpen(true)}
+        lock={board.lock}
+        revision={board.revision}
+        onLock={() => boardStore.dispatch({ type: "lock_numbers", order: reading.order })}
+        onUnlock={() => boardStore.dispatch({ type: "unlock_numbers" })}
+        onStartRevision={(name, color) => boardStore.dispatch({ type: "start_revision", name, color })}
+        onEndRevision={() => boardStore.dispatch({ type: "end_revision" })}
       />
       <Logline
         logline={board.logline}
@@ -662,6 +691,20 @@ export function App() {
         ids={selectedIds}
         title={project.boards.find((item) => item.id === project.activeBoardId)?.name ?? ""}
         onClose={() => setBriefOpen(false)}
+        onTakes={() => {
+          setTakesIds(selectedIds);
+          setBriefOpen(false);
+          setTakesOpen(true);
+        }}
+      />
+      <TakesPanel
+        open={takesOpen && takesIds.length > 0}
+        board={board}
+        ids={takesIds}
+        title={project.boards.find((item) => item.id === project.activeBoardId)?.name ?? ""}
+        takes={account.user ? account.assets : null}
+        uploading={account.uploading}
+        onClose={() => setTakesOpen(false)}
       />
       <PagesPanel
         open={pagesOpen}
@@ -695,6 +738,9 @@ export function App() {
         view={view}
         onView={updateView}
         pageOf={pageOf}
+        numberOf={numberOf}
+        revision={board.revision}
+        hasTake={hasTake}
         notes={notes}
         groups={groups}
         arrows={arrows}
@@ -756,6 +802,10 @@ export function App() {
         onStructure={() => setStructureOpen(true)}
         canBrief={selectedIds.length > 0}
         onBrief={() => setBriefOpen(true)}
+        onTakes={() => {
+          setTakesIds(selectedIds);
+          setTakesOpen(true);
+        }}
         zoom={view.scale}
         canFit={notes.length > 0}
         beats={shape.beats}

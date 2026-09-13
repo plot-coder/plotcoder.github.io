@@ -1773,6 +1773,16 @@ body {
   color: var(--muted);
 }
 
+.readout__line.has-tip {
+  position: relative;
+}
+
+.readout__line.has-tip[data-tip]::after {
+  left: 4.5rem;
+  transform: none;
+  bottom: calc(100% - 0.2rem);
+}
+
 .readout__line.is-over .readout__v {
   color: var(--over);
 }

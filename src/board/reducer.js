@@ -169,6 +169,21 @@ export function formatPages(eighths) {
   return `${whole} ${part}/8`;
 }
 
+/**
+ * A page runs about a minute on screen (the industry's rule, an average over a
+ * whole script): eighths as whole minutes, "about". Under an hour in minutes,
+ * over in hours and minutes.
+ */
+export function formatMinutes(eighths) {
+  // Whole minutes, rounded down: "about 17" for seventeen and a half.
+  const minutes = Math.floor(eighths / EIGHTHS_PER_PAGE);
+  if (minutes < 60) return `${minutes} ${minutes === 1 ? "minute" : "minutes"}`;
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  if (rest === 0) return `${hours} ${hours === 1 ? "hour" : "hours"}`;
+  return `${hours} h ${rest} min`;
+}
+
 export const NOTE_WIDTH = 192;
 export const NOTE_HEIGHT = 192;
 

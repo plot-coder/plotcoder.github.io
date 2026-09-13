@@ -13,7 +13,7 @@ import {
   UndoIcon,
 } from "./BarIcons";
 import { EditableText } from "./EditableText";
-import { EIGHTHS_PER_PAGE, formatPages } from "./board/reducer";
+import { EIGHTHS_PER_PAGE, formatMinutes, formatPages } from "./board/reducer";
 import { formatNextChange, type Theme } from "./theme";
 
 export type BarLayer = "dock" | "strip" | "tall";
@@ -161,7 +161,10 @@ export function GeneralBar({
 
             {/* An estimate, and it says so. The target sits beside it — over or
                 under is the only judgement the bar makes. */}
-            <div className={`readout__line ${over > 0 ? "is-over" : ""}`}>
+            <div
+              className={`readout__line has-tip ${over > 0 ? "is-over" : ""}`}
+              data-tip={`A page runs about a minute on screen — fast for dialogue, slow for action — so ${formatPages(runtimeEighths)} pages is about ${formatMinutes(runtimeEighths)}. An estimate: unwritten scenes are your guesses.`}
+            >
               <span className="readout__k">Runtime</span>
               <span className="readout__v">
                 ≈{formatPages(runtimeEighths)} of{" "}
@@ -175,7 +178,10 @@ export function GeneralBar({
                 />{" "}
                 pages
                 {over > 0 ? ` · ${formatPages(over)} over` : ""}
-                <span className="readout__note"> · an estimate from the cards</span>
+                <br />
+                <span className="readout__note">
+                  about {formatMinutes(runtimeEighths)} of {formatMinutes(targetEighths)}
+                </span>
               </span>
               <span />
             </div>

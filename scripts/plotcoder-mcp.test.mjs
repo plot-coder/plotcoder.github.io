@@ -129,30 +129,48 @@ describe("plotcoder MCP server", () => {
     const { tools } = await client.request("tools/list", {});
     expect(tools.map((tool) => tool.name).sort()).toEqual([
       "add_character",
+      "add_reminder",
+      "apply_template",
       "cast",
       "create_arrow",
       "create_group",
       "create_note",
       "delete_arrow",
+      "delete_board",
       "delete_note",
+      "export_fountain",
+      "import_fountain",
       "list_board",
+      "list_boards",
+      "list_reminders",
+      "list_workflows",
       "move_note",
       "new_board",
+      "open_board",
       "organize",
+      "read_pages",
       "read_wall",
       "recolor_note",
       "remove_character",
+      "remove_reminder",
+      "rename_board",
       "rename_character",
       "rename_group",
+      "rename_project",
+      "segment_brief",
       "set_arrow_kind",
       "set_length",
+      "set_location",
       "set_logline",
       "set_plant",
+      "set_premise",
       "set_rank",
       "set_target",
       "undo",
       "ungroup",
+      "update_character",
       "update_note",
+      "write_scene",
     ]);
   });
 
@@ -714,6 +732,22 @@ describe("characters", () => {
     expect(text).toContain("cast: Maya]");
   });
 
+  it("lays a structure's beats on the wall above the cards, and refuses an unknown one", async () => {
+    const before = await cast.callToolData("list_board");
+    const text = await cast.callTool("apply_template", { template: "three-acts" });
+    expect(text).toContain("Laid out 7 beats");
+    expect(text).toContain("The midpoint");
+    const after = await cast.callToolData("list_board");
+    expect(after.notes).toHaveLength(before.notes.length + 7);
+    const beats = after.notes.filter((note) => note.rank === "beat");
+    expect(beats).toHaveLength(7);
+    expect(Math.max(...beats.map((note) => note.y))).toBeLessThan(Math.min(...before.notes.map((note) => note.y)));
+    expect(await cast.callTool("undo")).toContain("Undid");
+    expect((await cast.callToolData("list_board")).notes).toHaveLength(before.notes.length);
+    const bad = await cast.callTool("apply_template", { template: "hero" }).catch((error) => String(error));
+    expect(String(bad)).toMatch(/hero|invalid|Invalid/);
+  });
+
   it("adds a person once, and says who it already is the second time", async () => {
     const added = await cast.callToolData("add_character", { name: "  Sam " });
     expect(added.name).toBe("Sam");
@@ -738,6 +772,41 @@ describe("characters", () => {
       "maya",
       board.characters.find((character) => character.name === "Sam").id,
     ]);
+  });
+
+  it("writes a person's page a line at a time, and list_board says which lines are written", async () => {
+    const before = await cast.callTool("list_board");
+    expect(before).toContain('maya — "Maya" on 3 cards · page: empty');
+    const text = await cast.callTool("update_character", {
+      id: "maya",
+      looks: "Thirty-four, tall, a coat too good for the flat.",
+      wants: "To keep the flat, and Tom in it.",
+    });
+    expect(text).toContain("Wrote looks, wants on Maya's page");
+    const again = await cast.callTool("update_character", { id: "maya", looks: "Thirty-four, tall, a coat too good for the flat." });
+    expect(again).toContain("Nothing changed on Maya's page");
+    const nobody = await cast.callTool("update_character", { id: "nobody", looks: "x" });
+    expect(nobody).toContain("No character with id nobody");
+    const after = await cast.callToolData("list_board");
+    expect(after.characters.find((character) => character.id === "maya")).toMatchObject({
+      looks: "Thirty-four, tall, a coat too good for the flat.",
+      wants: "To keep the flat, and Tom in it.",
+      voice: "",
+    });
+    expect(await cast.callTool("list_board")).toContain('"Maya" on 3 cards · page: looks, wants');
+  });
+
+  it("puts scenes somewhere, and list_board says where", async () => {
+    const text = await cast.callTool("set_location", { ids: ["tom-lies", "letter-aloud"], location: " the piano shop " });
+    expect(text).toContain("2 card(s) now at the piano shop");
+    expect(await cast.callTool("set_location", { ids: ["tom-lies"], location: "the piano shop" })).toContain("No place changed");
+    expect(await cast.callTool("set_location", { ids: ["nope"], location: "x" })).toContain("No cards with ids nope");
+    const listed = await cast.callTool("list_board");
+    expect(listed).toContain("at: the piano shop] — \"The letter is read aloud\"");
+    const made = await cast.callToolData("create_note", { headline: "At the bank", change: "No loan.", location: "the bank" });
+    expect(made.location).toBe("the bank");
+    const board = await cast.callToolData("list_board");
+    expect(board.notes.find((note) => note.id === "letter-aloud").location).toBe("the piano shop");
   });
 
   it("renames a person and every card follows, because cards hold the id", async () => {
@@ -813,16 +882,21 @@ describe("typed arrows and new_board", () => {
     );
   });
 
-  it("new_board empties the wall but keeps the target", async () => {
+  it("new_board adds an empty board, opens it, and keeps the target", async () => {
     await typed.callTool("set_target", { pages: 60 });
-    const text = await typed.callTool("new_board");
-    expect(text).toContain("The wall is empty");
+    const text = await typed.callTool("new_board", { name: "Episode 2" });
+    expect(text).toContain('Added "Episode 2"');
+    expect(text).toContain("opened it");
     const board = await typed.callToolData("list_board");
     expect(board.notes).toEqual([]);
     expect(board.arrows).toEqual([]);
     expect(board.characters).toEqual([]);
     expect(board.logline).toBe("");
     expect(board.targetEighths).toBe(60 * 8);
+    // The board that was open is still there, untouched.
+    const listed = await typed.callTool("list_boards");
+    expect(listed).toContain("boards: 2");
+    expect(listed).toContain('"Episode 2" (open)');
   });
 });
 
@@ -981,5 +1055,137 @@ describe("organize", () => {
     const text = await tidy.callTool("organize", { noteIds: ids });
     expect(text).toContain("Organized 3 card(s)");
     expect(await tidy.callTool("undo")).toContain("Undid apply_poses");
+  });
+});
+
+// The project (R35), through the agent door: many boards, one premise.
+describe("boards of a project", () => {
+  let season;
+  let seasonRoot;
+
+  beforeAll(async () => {
+    seasonRoot = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-season-"));
+    season = new McpClient(seasonRoot);
+    await season.start();
+  }, 30000);
+
+  afterAll(() => {
+    season?.stop();
+    if (seasonRoot) fs.rmSync(seasonRoot, { recursive: true, force: true });
+  });
+
+  it("starts as a one-board project around the wall on file", async () => {
+    const text = await season.callTool("list_boards");
+    expect(text).toContain("boards: 1");
+    expect(text).toContain("(open)");
+    expect(await season.callTool("list_board")).toMatch(/PlotCoder "Board 1" \(1 of 1 in "Untitled project"\)/);
+  });
+
+  it("adds boards, lists them in order, and opens one by number or name", async () => {
+    await season.callTool("set_logline", { logline: "Episode one's question" });
+    await season.callTool("new_board", { name: "Episode 2" });
+    await season.callTool("set_logline", { logline: "Episode two's question" });
+    await season.callTool("new_board", { name: "Episode 3" });
+    const listed = await season.callTool("list_boards");
+    expect(listed).toContain("boards: 3");
+    expect(listed).toMatch(/1\. .* — "Board 1"/);
+    expect(listed).toMatch(/3\. .* — "Episode 3" \(open\)/);
+
+    expect(await season.callTool("open_board", { board: "2" })).toContain('Opened "Episode 2"');
+    expect((await season.callToolData("list_board")).logline).toBe("Episode two's question");
+    expect(await season.callTool("open_board", { board: "board 1" })).toContain('Opened "Board 1"');
+    expect((await season.callToolData("list_board")).logline).toBe("Episode one's question");
+    expect(await season.callTool("open_board", { board: "board 1" })).toContain("already open");
+    expect(await season.callTool("open_board", { board: "nope" })).toContain("No board matches");
+  });
+
+  it("renames a board and refuses a blank rename", async () => {
+    expect(await season.callTool("rename_board", { board: "1", name: "Episode 1" })).toContain('Renamed to "Episode 1"');
+    expect(await season.callTool("list_boards")).toContain('"Episode 1" (open)');
+  });
+
+  it("deletes a board, opening the one before it when the open one goes, and never the last", async () => {
+    await season.callTool("open_board", { board: "Episode 3" });
+    expect(await season.callTool("delete_board", { board: "Episode 3" })).toContain('opened "Episode 2"');
+    expect((await season.callToolData("list_board")).logline).toBe("Episode two's question");
+    await season.callTool("delete_board", { board: "Episode 1" });
+    expect(await season.callTool("list_boards")).toContain("boards: 1");
+    expect(await season.callTool("delete_board", { board: "Episode 2" })).toContain("keeps at least one board");
+  });
+});
+
+describe("the premise and reminders (roadmap item 6)", () => {
+  let door;
+  let doorRoot;
+
+  beforeAll(async () => {
+    doorRoot = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-door-"));
+    door = new McpClient(doorRoot);
+    await door.start();
+  }, 30000);
+
+  afterAll(() => {
+    door?.stop();
+    if (doorRoot) fs.rmSync(doorRoot, { recursive: true, force: true });
+  });
+
+  it("sets and clears the premise, and renames the project", async () => {
+    expect(await door.callTool("set_premise", { premise: "A season about a lie." })).toContain('Premise set to "A season about a lie."');
+    expect(await door.callTool("list_boards")).toContain('premise: "A season about a lie."');
+    expect(await door.callTool("set_premise", { premise: "A season about a lie." })).toContain("Premise unchanged");
+    expect(await door.callTool("rename_project", { name: "The Letter" })).toContain('Project renamed to "The Letter"');
+    expect(await door.callTool("list_boards")).toContain('Project "The Letter"');
+    expect(await door.callTool("set_premise", { premise: "" })).toContain("Premise cleared");
+  });
+
+  it("exports the wall as Fountain, to the caller or to a file", async () => {
+    const text = await door.callTool("export_fountain");
+    expect(text).toContain("Title: Board 1");
+    expect(text).toContain(".MAYA FINDS THE LETTER");
+    expect(text).toContain("[[with Maya]]");
+    expect(text).toContain("She decides not to tell Tom.");
+    const target = path.join(doorRoot, "out", "board.fountain");
+    expect(await door.callTool("export_fountain", { path: target })).toContain("lines of Fountain");
+    expect(fs.readFileSync(target, "utf8")).toContain(".TOM LIES ABOUT THE JOB");
+  });
+
+  it("writes a scene onto a card, measures it, reads the pages with ids, and imports a script", async () => {
+    const wrote = await door.callTool("write_scene", { id: "maya-letter", text: "Rain on the window.\n\nMAYA\nTom?" });
+    expect(wrote).toContain('Wrote "Maya finds the letter": 1/8 page(s) measured');
+    expect(await door.callTool("list_board")).toContain("[scene, 1/8pp written");
+    const pages = await door.callTool("read_pages");
+    expect(pages).toContain(".MAYA FINDS THE LETTER    [[id: maya-letter · measured 1/8pp]]");
+    expect(pages).toContain(".TOM LIES ABOUT THE JOB    [[id: tom-lies · estimated 1pp]]");
+    const imported = await door.callTool("import_fountain", {
+      text: ".TOM LIES ABOUT THE JOB\n\nHe says the job is fine.\n\n.THE BANK\n\nThere is no loan.\n",
+    });
+    expect(imported).toContain("Imported 2 scene(s): 1 written onto cards, 1 new card(s)");
+    const board = await door.callToolData("list_board");
+    expect(board.notes.find((note) => note.id === "tom-lies").text).toBe("He says the job is fine.");
+    expect(board.notes.some((note) => note.headline === "The Bank" && note.text === "There is no loan.")).toBe(true);
+  });
+
+  it("lists the workflows and briefs a segment from the wall", async () => {
+    const listed = await door.callTool("list_workflows");
+    expect(listed).toContain("break-a-treatment — Break a treatment into a wall");
+    expect(listed).toContain("keep: Wait for the writer; propose, do not fix.");
+    const brief = await door.callTool("segment_brief", { ids: ["maya-letter"] });
+    expect(brief).toContain("SEGMENT: Maya finds the letter");
+    expect(brief).toContain("PEOPLE: Maya");
+    expect(await door.callTool("segment_brief", { ids: ["nope"] })).toContain("No cards with ids nope");
+  });
+
+  it("lists the built-in reminders, adds one of the writer's, and removes it", async () => {
+    const listed = await door.callTool("list_reminders");
+    expect(listed).toContain("reminders: 6");
+    expect(listed).toContain("story-is-change (built in) — Story is change");
+    const added = await door.callToolData("add_reminder", { body: "Every scene ends on a question. Even the quiet ones." });
+    expect(added.title).toBe("Every scene ends on a question");
+    expect(added.builtIn).toBe(false);
+    const after = await door.callToolData("list_reminders");
+    expect(after).toHaveLength(7);
+    expect(await door.callTool("remove_reminder", { id: added.id })).toContain("Removed reminder");
+    expect(await door.callToolData("list_reminders")).toHaveLength(6);
+    expect(await door.callTool("remove_reminder", { id: "nope" })).toContain("No reminder with id nope");
   });
 });

@@ -1,38 +1,91 @@
 // Browser-side board store.
 //
-// Owns the live BoardState the React app renders, routes every mutation through
-// the kernel reducer, and keeps three mirrors in sync:
-//   1. localStorage (plotcoder.logline / .notes / .groups / .arrows) so a
-//      project Save/Open keeps working and the board survives a reload.
-//   2. the Vite dev bridge (.plotcoder/board.json) when the app runs on
-//      localhost, so an agent can read/write the board with the file.
-//   3. window.plotcoder, so the same commands can be driven from the console or
-//      a CDP session on the deployed site.
+// Owns the project (R35) — the record of boards, the premise, which board is
+// open — and the live BoardState of the open board that the React app renders.
+// Every board mutation goes through the kernel reducer. Three mirrors stay in
+// sync:
+//   1. localStorage: `plotcoder.project` for the record, `plotcoder.board.<id>`
+//      for each board's state, so Save/Open carries every board and the wall
+//      survives a reload.
+//   2. the Vite dev bridge on localhost: `/__plotcoder/board` for the open board
+//      (with its id) and `/__plotcoder/project` for the record and every board,
+//      so an agent can read, write and switch boards while the app is open.
+//   3. window.plotcoder, so the same commands can be driven from the console.
 
+import { isReminderList, readReminders, writeReminders } from "../reminderStore";
+import { toFountain } from "./fountain";
 import { History } from "./history";
 import {
+  addBoard as addBoardTo,
+  DEFAULT_PROJECT_NAME,
+  emptyProject,
+  isProjectRecord,
+  moveBoard as moveBoardIn,
+  normalizeProject,
+  reidentifyProject,
+  removeBoard as removeBoardFrom,
+  renameBoard as renameBoardIn,
+  renameProject as renameProjectTo,
+  setActiveBoard,
+  setPremise as setPremiseOn,
+  type BoardMeta,
+  type ProjectRecord,
+} from "./project";
+import {
   applyCommand,
+  boardEighths,
+  CHARACTER_FIELDS,
+  DEFAULT_TARGET_EIGHTHS,
+  emptyState,
   isBoardState,
   normalizeState,
+  nowIso,
   seedState,
   type BoardState,
+  type CharacterField,
   type Command,
   type NoteColor,
 } from "./reducer";
 
-const LS_LOGLINE = "plotcoder.logline";
-const LS_TARGET = "plotcoder.target";
-const LS_CHARACTERS = "plotcoder.characters";
-const LS_NOTES = "plotcoder.notes";
-const LS_GROUPS = "plotcoder.groups";
-const LS_ARROWS = "plotcoder.arrows";
+const LS_PROJECT = "plotcoder.project";
+const boardKey = (id: string) => `plotcoder.board.${id}`;
+
+// The keys a single-board PlotCoder wrote before R35. Read once, then retired.
+const LEGACY = {
+  logline: "plotcoder.logline",
+  target: "plotcoder.target",
+  characters: "plotcoder.characters",
+  notes: "plotcoder.notes",
+  groups: "plotcoder.groups",
+  arrows: "plotcoder.arrows",
+};
 
 const BRIDGE_BOARD = "/__plotcoder/board";
+const BRIDGE_PROJECT = "/__plotcoder/project";
 const BRIDGE_EVENTS = "/__plotcoder/events";
 
 type DispatchOptions = { sync?: boolean };
 
 export type HistorySnapshot = { canUndo: boolean; canRedo: boolean };
+
+export type BoardShape = { totalEighths: number; targetEighths: number; cards: number };
+
+type BoardPayload = { state: BoardState | null; rev: number; boardId?: string | null };
+type ProjectPayload = {
+  project: ProjectRecord | null;
+  boards: Record<string, unknown>;
+  /** Reminders (R11) ride on the project channel so agents can read and add them. */
+  reminders?: unknown;
+  rev: number;
+};
+
+function isDev(): boolean {
+  try {
+    return Boolean(import.meta.env && import.meta.env.DEV);
+  } catch {
+    return false;
+  }
+}
 
 // Consecutive edits to the same line are one undo step: typing a headline is
 // one thing you did, not one thing per keystroke burst.
@@ -46,6 +99,8 @@ function coalesceKey(command: Command): string | null {
       return `rename_group:${command.id}`;
     case "rename_character":
       return `rename_character:${command.id}`;
+    case "update_character":
+      return `update_character:${command.id}:${CHARACTER_FIELDS.filter((field) => field in command).join(",")}`;
     case "set_target":
       return "set_target";
     default:
@@ -53,29 +108,25 @@ function coalesceKey(command: Command): string | null {
   }
 }
 
-type BridgePayload = { state: BoardState | null; rev: number };
-
-function isDev(): boolean {
+function readJson(key: string): unknown {
   try {
-    return Boolean(import.meta.env && import.meta.env.DEV);
+    const raw = localStorage.getItem(key);
+    return raw === null ? null : JSON.parse(raw);
   } catch {
-    return false;
+    return null;
   }
 }
 
-function loadLocal(): BoardState | null {
+function loadLegacyBoard(): BoardState | null {
   try {
-    const notes = localStorage.getItem(LS_NOTES);
-    const groups = localStorage.getItem(LS_GROUPS);
-    const arrows = localStorage.getItem(LS_ARROWS);
+    const notes = localStorage.getItem(LEGACY.notes);
+    const groups = localStorage.getItem(LEGACY.groups);
+    const arrows = localStorage.getItem(LEGACY.arrows);
     if (notes === null && groups === null && arrows === null) return null;
-    // A board saved before R19 has no logline key and one saved before R25 has
-    // no target; normalizeState fills both in rather than the board being
-    // treated as unreadable. A missing target reads as NaN, which it clamps.
-    const target = localStorage.getItem(LS_TARGET);
-    const characters = localStorage.getItem(LS_CHARACTERS);
+    const target = localStorage.getItem(LEGACY.target);
+    const characters = localStorage.getItem(LEGACY.characters);
     const state = {
-      logline: localStorage.getItem(LS_LOGLINE) ?? "",
+      logline: localStorage.getItem(LEGACY.logline) ?? "",
       targetEighths: target === null ? undefined : Number(target),
       characters: characters ? JSON.parse(characters) : [],
       notes: notes ? JSON.parse(notes) : [],
@@ -88,42 +139,105 @@ function loadLocal(): BoardState | null {
   }
 }
 
-function saveLocal(state: BoardState): void {
+function clearLegacy(): void {
   try {
-    localStorage.setItem(LS_LOGLINE, state.logline ?? "");
-    localStorage.setItem(LS_TARGET, String(state.targetEighths));
-    localStorage.setItem(LS_CHARACTERS, JSON.stringify(state.characters));
-    localStorage.setItem(LS_NOTES, JSON.stringify(state.notes));
-    localStorage.setItem(LS_GROUPS, JSON.stringify(state.groups));
-    localStorage.setItem(LS_ARROWS, JSON.stringify(state.arrows));
+    for (const key of Object.values(LEGACY)) localStorage.removeItem(key);
+  } catch {
+    /* nothing to clear */
+  }
+}
+
+function loadBoard(id: string): BoardState | null {
+  const parsed = readJson(boardKey(id));
+  return isBoardState(parsed) ? normalizeState(parsed) : null;
+}
+
+function saveBoard(id: string, state: BoardState): void {
+  try {
+    localStorage.setItem(boardKey(id), JSON.stringify(state));
   } catch {
     /* storage might be full or blocked; the app still works in memory */
   }
 }
 
+/**
+ * Drop board keys the project no longer names. A fresh page under the bridge
+ * seeds a local project, then adopts the bridge's; without this the seed
+ * board's key lingers and Save project carries a board nobody can open.
+ */
+function pruneBoards(project: ProjectRecord): void {
+  try {
+    const keep = new Set(project.boards.map((board) => boardKey(board.id)));
+    for (const key of Object.keys(localStorage)) {
+      if (key.startsWith("plotcoder.board.") && !keep.has(key)) localStorage.removeItem(key);
+    }
+  } catch {
+    /* nothing to prune */
+  }
+}
+
+function saveProject(project: ProjectRecord): void {
+  try {
+    localStorage.setItem(LS_PROJECT, JSON.stringify(project));
+  } catch {
+    /* as above */
+  }
+}
+
+/**
+ * The project record, migrating a pre-R35 wall on the way: the six single-board
+ * keys become board one, and the old `{ premise }` record keeps its premise.
+ */
+function loadProject(): ProjectRecord {
+  const parsed = readJson(LS_PROJECT);
+  if (isProjectRecord(parsed)) return normalizeProject(parsed);
+
+  const now = nowIso();
+  let project = emptyProject(now);
+  const oldPremise =
+    parsed && typeof parsed === "object" && typeof (parsed as { premise?: unknown }).premise === "string"
+      ? (parsed as { premise: string }).premise
+      : "";
+  if (oldPremise) project = setPremiseOn(project, oldPremise, now);
+  const legacy = loadLegacyBoard();
+  if (legacy) {
+    saveBoard(project.boards[0].id, legacy);
+    clearLegacy();
+  }
+  saveProject(project);
+  return project;
+}
+
 class BoardStore {
+  private project: ProjectRecord;
   private state: BoardState;
   private rev = 0;
+  private projectRev = 0;
   private adopted = false;
+  private adoptedProject = false;
   private started = false;
   private source: EventSource | null = null;
   private syncTimer: ReturnType<typeof setTimeout> | undefined;
+  private projectSyncTimer: ReturnType<typeof setTimeout> | undefined;
   private readonly listeners = new Set<() => void>();
-  // Undo (R33). A drag is one step; typing a line is one step; a change an
-  // agent made through the bridge is a step the person can take back.
-  private readonly history = new History<BoardState>();
+  private history = new History<BoardState>();
   private historySnapshot: HistorySnapshot = { canUndo: false, canRedo: false };
-  // Bodies of our own writes still in flight. The bridge echoes every write
-  // back over the event stream; an echo must never be mistaken for a change
-  // someone else made — or an undo pressed right after a drop would see the
-  // drop come back as a "remote" step and re-apply it.
+  // Bodies of our own writes still in flight, so their echoes over the event
+  // stream are never mistaken for someone else's change.
   private readonly inflight = new Set<string>();
 
   constructor() {
-    this.state = loadLocal() ?? seedState();
+    this.project = loadProject();
+    const stored = loadBoard(this.project.activeBoardId);
+    // A brand-new project starts on the seed wall, so a first visit shows what
+    // a card is; a board someone made and left empty stays empty.
+    this.state = stored ?? seedState();
+    if (!stored) saveBoard(this.project.activeBoardId, this.state);
   }
 
   getState = (): BoardState => this.state;
+  getProject = (): ProjectRecord => this.project;
+  getHistory = (): HistorySnapshot => this.historySnapshot;
 
   subscribe = (listener: () => void): (() => void) => {
     this.listeners.add(listener);
@@ -136,8 +250,6 @@ class BoardStore {
     for (const listener of this.listeners) listener();
   }
 
-  getHistory = (): HistorySnapshot => this.historySnapshot;
-
   private refreshHistory(): void {
     const { canUndo, canRedo } = this.history;
     if (canUndo === this.historySnapshot.canUndo && canRedo === this.historySnapshot.canRedo) return;
@@ -147,9 +259,19 @@ class BoardStore {
 
   private setState(next: BoardState): void {
     this.state = next;
-    saveLocal(next);
+    saveBoard(this.project.activeBoardId, next);
     this.emit();
   }
+
+  private setProject(next: ProjectRecord, sync = true): void {
+    if (next === this.project) return;
+    this.project = next;
+    saveProject(next);
+    this.emit();
+    if (sync) this.scheduleProjectSync();
+  }
+
+  // --- the open board ------------------------------------------------------
 
   dispatch = (command: Command, options: DispatchOptions = {}): unknown => {
     const before = this.state;
@@ -167,9 +289,6 @@ class BoardStore {
     return result;
   };
 
-  // Force the current state to the dev bridge now (used at the end of a drag so
-  // the file matches the wall the instant the pointer lifts). Also closes the
-  // gesture, so the drag is one undo step.
   commit = (): void => {
     this.history.endGesture();
     this.refreshHistory();
@@ -195,17 +314,180 @@ class BoardStore {
     return true;
   };
 
-  // After Open project has rewritten localStorage, make the bridge (and so the
-  // file) match it before the page reloads. Without this the reload adopts the
-  // bridge's copy of the *old* wall — the first bridge frame always wins on a
-  // fresh page — and the opened project is silently undone whenever the dev
-  // server is running. Found by the end-to-end suite; a no-op in production.
-  adoptLocal = async (): Promise<void> => {
-    const local = loadLocal();
-    if (!local) return;
-    this.setState(local);
-    await this.pushState();
+  // --- the project ---------------------------------------------------------
+
+  /** Length against target for the panel: the open board live, the rest from storage. */
+  boardShape = (id: string): BoardShape => {
+    const state = id === this.project.activeBoardId ? this.state : loadBoard(id);
+    if (!state) return { totalEighths: 0, targetEighths: DEFAULT_TARGET_EIGHTHS, cards: 0 };
+    return {
+      totalEighths: boardEighths(state),
+      targetEighths: state.targetEighths,
+      cards: state.notes.length,
+    };
   };
+
+  /** Open another board of the project. History is per board and starts fresh. */
+  openBoard = (id: string): boolean => {
+    if (id === this.project.activeBoardId) return false;
+    const next = setActiveBoard(this.project, id);
+    if (next === this.project) return false;
+    this.switchTo(next, loadBoard(id) ?? emptyState());
+    return true;
+  };
+
+  /** Add a board after the others and open it. It inherits the open board's target. */
+  addBoard = (name: string): BoardMeta => {
+    const { project, board } = addBoardTo(this.project, name);
+    const fresh = { ...emptyState(), targetEighths: this.state.targetEighths };
+    saveBoard(board.id, fresh);
+    this.switchTo(project, fresh);
+    return board;
+  };
+
+  renameBoard = (id: string, name: string): void => {
+    this.setProject(renameBoardIn(this.project, id, name));
+  };
+
+  moveBoard = (id: string, delta: number): void => {
+    this.setProject(moveBoardIn(this.project, id, delta));
+  };
+
+  /** Remove a board and its state. Refuses the last board. Not undoable. */
+  removeBoard = (id: string): boolean => {
+    const next = removeBoardFrom(this.project, id);
+    if (next === this.project) return false;
+    try {
+      localStorage.removeItem(boardKey(id));
+    } catch {
+      /* nothing to remove */
+    }
+    if (next.activeBoardId !== this.project.activeBoardId) {
+      this.switchTo(next, loadBoard(next.activeBoardId) ?? emptyState());
+    } else {
+      this.setProject(next);
+    }
+    return true;
+  };
+
+  renameProject = (name: string): void => {
+    this.setProject(renameProjectTo(this.project, name));
+  };
+
+  setPremise = (premise: string): void => {
+    this.setProject(setPremiseOn(this.project, premise));
+  };
+
+  // --- the account mirror (R4) --------------------------------------------
+
+  /** The state of any board of the project: the open one live, the rest from storage. */
+  boardState = (id: string): BoardState | null =>
+    id === this.project.activeBoardId ? this.state : loadBoard(id);
+
+  /**
+   * True while this browser holds nothing but the untouched seed wall under
+   * the default project name: not work, so meeting an account with a project
+   * in it adopts that project rather than carrying the seed in beside it.
+   */
+  isSeedProject = (): boolean => {
+    if (this.project.boards.length !== 1) return false;
+    if (this.project.name !== DEFAULT_PROJECT_NAME || this.project.premise) return false;
+    const seed = seedState();
+    const headlines = (state: BoardState) => state.notes.map((note) => note.headline).join("\u0000");
+    return (
+      headlines(this.state) === headlines(seed) &&
+      this.state.arrows.length === seed.arrows.length &&
+      this.state.groups.length === seed.groups.length &&
+      this.state.logline === seed.logline
+    );
+  };
+
+  /**
+   * The account's copy of a board lands here. On the open board it is an undo
+   * step, like an agent's change over the bridge; on another board it goes
+   * straight to storage for the next switch.
+   */
+  replaceBoard = (id: string, state: BoardState): void => {
+    if (id === this.project.activeBoardId) {
+      if (JSON.stringify(state) === JSON.stringify(this.state)) return;
+      this.history.record(this.state);
+      this.setState(state);
+      this.refreshHistory();
+      this.scheduleSync();
+      return;
+    }
+    saveBoard(id, state);
+    this.scheduleProjectSync();
+  };
+
+  /**
+   * A whole project from the account lands here (R40): the record and every
+   * board's state replace what this device holds, and its open board is the
+   * wall. Used when the writer picks a project or one arrives on sign-in.
+   */
+  loadProject = (project: ProjectRecord, boards: Record<string, BoardState>): void => {
+    pruneBoards(project);
+    for (const [id, state] of Object.entries(boards)) saveBoard(id, normalizeState(state));
+    this.switchTo(project, boards[project.activeBoardId] ?? loadBoard(project.activeBoardId) ?? emptyState());
+  };
+
+  /** The same project under a fresh id, before it is pushed to an account as a new one (R40). */
+  reidentify = (): ProjectRecord => {
+    const { renamed, ...next } = reidentifyProject(this.project);
+    // Every board's state moves to its new key; the open board's is in hand.
+    for (const [oldId, newId] of Object.entries(renamed)) {
+      const state = oldId === this.project.activeBoardId ? this.state : loadBoard(oldId);
+      if (state) saveBoard(newId, state);
+    }
+    this.project = next;
+    saveProject(next);
+    pruneBoards(next);
+    this.emit();
+    if (this.syncTimer) clearTimeout(this.syncTimer);
+    if (this.projectSyncTimer) clearTimeout(this.projectSyncTimer);
+    void this.pushState();
+    void this.pushProject();
+    return next;
+  };
+
+  /** The record and every board's state, for pushing this device's project whole. */
+  snapshotProject = (): { project: ProjectRecord; boards: Record<string, BoardState> } => {
+    const boards: Record<string, BoardState> = {};
+    for (const board of this.project.boards) {
+      const state = this.boardState(board.id);
+      if (state) boards[board.id] = state;
+    }
+    return { project: this.project, boards };
+  };
+
+  /** The account's record lands here; a different open board switches the wall. */
+  adoptProject = (project: ProjectRecord): void => {
+    if (project === this.project) return;
+    pruneBoards(project);
+    if (project.activeBoardId !== this.project.activeBoardId) {
+      this.switchTo(project, loadBoard(project.activeBoardId) ?? emptyState());
+      return;
+    }
+    this.setProject(project);
+  };
+
+  private switchTo(project: ProjectRecord, state: BoardState): void {
+    this.project = project;
+    saveProject(project);
+    this.history = new History<BoardState>();
+    this.state = state;
+    saveBoard(project.activeBoardId, state);
+    this.emit();
+    this.refreshHistory();
+    // A switch is structural: push both channels now rather than on the
+    // debounce, so an agent asking a beat later sees the new shape.
+    if (this.syncTimer) clearTimeout(this.syncTimer);
+    if (this.projectSyncTimer) clearTimeout(this.projectSyncTimer);
+    void this.pushState();
+    void this.pushProject();
+  }
+
+  // --- the bridge ----------------------------------------------------------
 
   start = (): void => {
     if (this.started) return;
@@ -217,6 +499,13 @@ class BoardStore {
       source.addEventListener("state", (event) => {
         try {
           this.onBridgeState(JSON.parse((event as MessageEvent).data));
+        } catch {
+          /* ignore malformed frames */
+        }
+      });
+      source.addEventListener("project", (event) => {
+        try {
+          this.onBridgeProject(JSON.parse((event as MessageEvent).data));
         } catch {
           /* ignore malformed frames */
         }
@@ -236,18 +525,62 @@ class BoardStore {
       this.source = null;
     }
     if (this.syncTimer) clearTimeout(this.syncTimer);
+    if (this.projectSyncTimer) clearTimeout(this.projectSyncTimer);
   };
 
-  private onBridgeState(payload: BridgePayload): void {
+  // After Open project has rewritten localStorage, reload the record and the
+  // open board and make the bridge match before the page reloads. Without this
+  // the reload adopts the bridge's copy of the old wall — the first bridge
+  // frame always wins on a fresh page — and the opened project is undone.
+  adoptLocal = async (): Promise<void> => {
+    this.project = loadProject();
+    this.state = loadBoard(this.project.activeBoardId) ?? seedState();
+    this.history = new History<BoardState>();
+    this.emit();
+    await Promise.all([this.pushState(), this.pushProject()]);
+  };
+
+  private onBridgeState(payload: BoardPayload): void {
     if (payload.state === null) {
       // First bridge boot with no file yet: seed it from what we already have.
       void this.pushState();
+      void this.pushProject();
       return;
     }
     if (!isBoardState(payload.state)) return;
     if (this.adopted && payload.rev <= this.rev) return;
     const incoming = normalizeState(payload.state);
     const incomingJson = JSON.stringify(incoming);
+    const boardId = typeof payload.boardId === "string" ? payload.boardId : this.project.activeBoardId;
+
+    if (boardId !== this.project.activeBoardId) {
+      // Another door opened a different board. Follow it; add it to the record
+      // if the project frame has not arrived yet.
+      this.adopted = true;
+      this.rev = payload.rev;
+      let project = this.project;
+      if (!project.boards.some((board) => board.id === boardId)) {
+        const now = nowIso();
+        project = {
+          ...project,
+          boards: [
+            ...project.boards,
+            { id: boardId, name: `Board ${project.boards.length + 1}`, createdAt: now, updatedAt: now },
+          ],
+          updatedAt: now,
+        };
+      }
+      project = setActiveBoard(project, boardId);
+      this.project = project;
+      saveProject(project);
+      this.history = new History<BoardState>();
+      this.state = incoming;
+      saveBoard(boardId, incoming);
+      this.emit();
+      this.refreshHistory();
+      return;
+    }
+
     if (this.adopted) {
       // Our own write coming back, or nothing new: take the revision, nothing else.
       if (this.inflight.has(incomingJson) || incomingJson === JSON.stringify(this.state)) {
@@ -264,12 +597,64 @@ class BoardStore {
     this.refreshHistory();
   }
 
+  private onBridgeProject(payload: ProjectPayload): void {
+    if (payload.project === null) {
+      void this.pushProject();
+      return;
+    }
+    if (!isProjectRecord(payload.project)) return;
+    if (this.adoptedProject && payload.rev <= this.projectRev) return;
+    const incoming = normalizeProject(payload.project);
+    const incomingJson = JSON.stringify(incoming);
+    this.adoptedProject = true;
+    this.projectRev = payload.rev;
+    if (this.inflight.has(incomingJson) || incomingJson === JSON.stringify(this.project)) return;
+
+    // Reminders ride along too: an agent may have added one.
+    if (isReminderList(payload.reminders) && JSON.stringify(payload.reminders) !== JSON.stringify(readReminders())) {
+      writeReminders(payload.reminders);
+    }
+    // Other boards' states ride along; keep them so a switch finds them.
+    for (const [id, state] of Object.entries(payload.boards ?? {})) {
+      if (id !== this.project.activeBoardId && isBoardState(state)) {
+        saveBoard(id, normalizeState(state));
+      }
+    }
+    if (incoming.activeBoardId !== this.project.activeBoardId) {
+      // Another door opened a different board. The board frame may also be on
+      // its way; switching here is idempotent with switching there.
+      const remote = payload.boards?.[incoming.activeBoardId];
+      const state = isBoardState(remote)
+        ? normalizeState(remote)
+        : loadBoard(incoming.activeBoardId) ?? emptyState();
+      this.project = incoming;
+      saveProject(incoming);
+      pruneBoards(incoming);
+      this.history = new History<BoardState>();
+      this.state = state;
+      saveBoard(incoming.activeBoardId, state);
+      this.emit();
+      this.refreshHistory();
+      return;
+    }
+    this.setProject(incoming, false);
+    pruneBoards(incoming);
+  }
+
   private scheduleSync(): void {
     if (!isDev()) return;
     if (this.syncTimer) clearTimeout(this.syncTimer);
     this.syncTimer = setTimeout(() => {
       void this.pushState();
     }, 120);
+  }
+
+  private scheduleProjectSync(): void {
+    if (!isDev()) return;
+    if (this.projectSyncTimer) clearTimeout(this.projectSyncTimer);
+    this.projectSyncTimer = setTimeout(() => {
+      void this.pushProject();
+    }, 150);
   }
 
   private async pushState(): Promise<void> {
@@ -280,10 +665,10 @@ class BoardStore {
       const response = await fetch(BRIDGE_BOARD, {
         method: "PUT",
         headers: { "content-type": "application/json" },
-        body: `{"state":${stateJson},"rev":${this.rev}}`,
+        body: `{"state":${stateJson},"rev":${this.rev},"boardId":${JSON.stringify(this.project.activeBoardId)}}`,
       });
       if (!response.ok) return;
-      const payload = (await response.json()) as BridgePayload;
+      const payload = (await response.json()) as BoardPayload;
       this.adopted = true;
       if (payload.rev > this.rev) this.rev = payload.rev;
     } catch {
@@ -291,6 +676,34 @@ class BoardStore {
     } finally {
       // Keep it one more tick: the echo can land after the response resolves.
       setTimeout(() => this.inflight.delete(stateJson), 1000);
+    }
+    // The project mirror carries this board's copy too.
+    this.scheduleProjectSync();
+  }
+
+  private async pushProject(): Promise<void> {
+    if (!isDev()) return;
+    const boards: Record<string, BoardState> = {};
+    for (const board of this.project.boards) {
+      const state = board.id === this.project.activeBoardId ? this.state : loadBoard(board.id);
+      if (state) boards[board.id] = state;
+    }
+    const projectJson = JSON.stringify(this.project);
+    this.inflight.add(projectJson);
+    try {
+      const response = await fetch(BRIDGE_PROJECT, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ project: this.project, boards, reminders: readReminders(), rev: this.projectRev }),
+      });
+      if (!response.ok) return;
+      const payload = (await response.json()) as ProjectPayload;
+      this.adoptedProject = true;
+      if (payload.rev > this.projectRev) this.projectRev = payload.rev;
+    } catch {
+      /* bridge down */
+    } finally {
+      setTimeout(() => this.inflight.delete(projectJson), 1000);
     }
   }
 }
@@ -310,6 +723,7 @@ type CreateInput = {
 
 export type PlotCoderWindowApi = {
   list: () => BoardState;
+  project: () => ProjectRecord;
   createNote: (input: CreateInput) => unknown;
   updateNote: (id: string, patch: { headline?: string; change?: string }) => unknown;
   moveNote: (id: string, x: number, y: number) => unknown;
@@ -321,6 +735,20 @@ export type PlotCoderWindowApi = {
   dispatch: (command: Command) => unknown;
   undo: () => boolean;
   redo: () => boolean;
+  openBoard: (id: string) => boolean;
+  newBoard: (name: string) => BoardMeta;
+  setRank: (id: string, rank: "beat" | "scene") => unknown;
+  setLength: (id: string, lengthEighths: number) => unknown;
+  setLogline: (logline: string) => unknown;
+  setTarget: (targetEighths: number) => unknown;
+  setLocation: (ids: string[], location: string) => unknown;
+  updateCharacter: (id: string, patch: Partial<Record<CharacterField, string>>) => unknown;
+  applyTemplate: (template: string) => unknown;
+  setPremise: (premise: string) => void;
+  /** The open board as Fountain text (R23, slice a). */
+  fountain: () => string;
+  /** A scene's text onto its card (R23, slice b). */
+  writeScene: (id: string, text: string) => unknown;
 };
 
 let windowApiInstalled = false;
@@ -330,6 +758,7 @@ export function installWindowApi(): void {
   windowApiInstalled = true;
   const api: PlotCoderWindowApi = {
     list: () => boardStore.getState(),
+    project: () => boardStore.getProject(),
     createNote: (input) => boardStore.dispatch({ type: "create_note", ...input }),
     updateNote: (id, patch) => boardStore.dispatch({ type: "update_note", id, ...patch }),
     moveNote: (id, x, y) => boardStore.dispatch({ type: "move_note", id, x, y }),
@@ -343,6 +772,27 @@ export function installWindowApi(): void {
     dispatch: (command) => boardStore.dispatch(command),
     undo: () => boardStore.undo(),
     redo: () => boardStore.redo(),
+    openBoard: (id) => boardStore.openBoard(id),
+    newBoard: (name) => boardStore.addBoard(name),
+    setRank: (id, rank) => boardStore.dispatch({ type: "set_rank", ids: [id], rank }),
+    setLength: (id, lengthEighths) => boardStore.dispatch({ type: "set_length", ids: [id], lengthEighths }),
+    setLogline: (logline) => boardStore.dispatch({ type: "set_logline", logline }),
+    setTarget: (targetEighths) => boardStore.dispatch({ type: "set_target", targetEighths }),
+    setLocation: (ids, location) => boardStore.dispatch({ type: "set_location", ids, location }),
+    updateCharacter: (id, patch) => boardStore.dispatch({ type: "update_character", id, ...patch }),
+    applyTemplate: (template) => boardStore.dispatch({ type: "apply_template", template }),
+    setPremise: (premise) => boardStore.setPremise(premise),
+    writeScene: (id, text) => boardStore.dispatch({ type: "set_text", id, text }),
+    fountain: () => {
+      const project = boardStore.getProject();
+      const board = project.boards.find((item) => item.id === project.activeBoardId);
+      return toFountain(boardStore.getState(), {
+        title: board?.name,
+        project: project.boards.length > 1 ? project.name : undefined,
+        premise: project.premise || undefined,
+        draftDate: new Date().toISOString(),
+      });
+    },
   };
   (window as unknown as { plotcoder: PlotCoderWindowApi }).plotcoder = api;
 }

@@ -33,6 +33,28 @@ export function OrganizeIcon({ className }: IconProps) {
   );
 }
 
+/** Start from a structure (R38): beats along a line, like the strip. */
+export function StructureIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M3.2 12h17.6" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+      <rect x="4" y="7.4" width="3.2" height="9.2" rx="0.7" fill="currentColor" />
+      <rect x="10.4" y="7.4" width="3.2" height="9.2" rx="0.7" fill="currentColor" />
+      <rect x="16.8" y="7.4" width="3.2" height="9.2" rx="0.7" fill="currentColor" />
+    </svg>
+  );
+}
+
+/** The brief (R28): a page with a play mark, for the segment it describes. */
+export function BriefIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="4.5" y="3.5" width="15" height="17" rx="1.6" fill="none" stroke="currentColor" strokeWidth="1.4" />
+      <path d="M10 8.5v7l5.5-3.5z" fill="currentColor" />
+    </svg>
+  );
+}
+
 export function GroupIcon({ className }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
@@ -49,16 +71,6 @@ export function GroupIcon({ className }: IconProps) {
       />
       <rect x="6.2" y="8.3" width="5" height="7.2" rx="0.65" fill="currentColor" />
       <rect x="12.8" y="8.3" width="5" height="7.2" rx="0.65" fill="currentColor" />
-    </svg>
-  );
-}
-
-export function ScatterIcon({ className }: IconProps) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
-      <rect x="2.4" y="3.6" width="5.2" height="7.4" rx="0.7" fill="currentColor" transform="rotate(-18 5 7.3)" />
-      <rect x="15.2" y="3.2" width="5.2" height="7.4" rx="0.7" fill="currentColor" transform="rotate(17 17.8 6.9)" />
-      <rect x="8.6" y="13" width="5.2" height="7.4" rx="0.7" fill="currentColor" transform="rotate(-8 11.2 16.7)" />
     </svg>
   );
 }

@@ -30,7 +30,8 @@ The board holds five kinds of thing:
   A card says who is in the scene by pointing at people in the roster.
 
 Above them all sits the **logline**: the central question, what the story is
-arguing.
+arguing. And above the board sits the **project**: an ordered set of boards (a
+season's episodes, or a writer's stories) under one name and one premise.
 
 ## Use the MCP tools, not the mouse
 
@@ -67,6 +68,10 @@ lands on the exact same board a person sees.
 - `set_plant` — fold or unfold the corner of cards (`plants` true/false). Fold a
   card when the writer says it sets something up; `read_wall` will ask where it
   pays off until a `setup` arrow leaves it.
+- `set_location` — where one or more cards happen, as the writer would say it
+  ("the piano shop", not "INT. PIANO SHOP"). `create_note` and `update_note`
+  take `location` too; `list_board` shows it as `at: …`. No roster of places:
+  the same phrase on several cards is one place in the lens.
 - `delete_note` — remove a card (also drops its arrows and group membership).
 
 ### Cast
@@ -75,13 +80,42 @@ lands on the exact same board a person sees.
   refused and the existing record returned; use its id.
 - `rename_character` / `remove_character` — by id. Renaming carries to every
   card; removing takes them off every card and leaves the cards.
+- `update_character` — write a person's page by id: `looks`, `voice`, `wants`,
+  `needs`, `notes`, any subset, all text. `list_board` says which lines each
+  person has ("page: looks, wants" or "page: empty"). Looks and voice are what
+  a video agent will be handed later, so ask the writer before inventing them.
 - `cast` — set who is in one or more cards: `noteIds` plus `characters` (names
   or ids). The list **replaces** the card's cast, so pass everyone in the scene;
   an empty list clears it. A name not in the roster is refused by name — call
   `add_character` first. Do not invent people; ask the writer who is in a scene.
 
+### Pages
+
+- `export_fountain` — the open board as a Fountain screenplay in wall order
+  (beats as sections, one scene per card, the scene's text or its change line
+  as the body). Pass `path` to write a `.fountain` file.
+- `read_pages` — the same script with each card's id beside its heading and
+  whether it is measured (written) or estimated. Read it before writing.
+- `write_scene` — a card's scene text in Fountain, by id; the card is then
+  measured from its lines. Write only scenes the writer asked for.
+- `import_fountain` — a `.fountain` file or text onto the open board: scenes
+  land on the cards with the same heading in order; unknown scenes become new
+  cards; nothing is deleted.
+
+### The project
+
+- `set_premise` / `rename_project` — the line above every board's logline, and
+  the project's name. `list_boards` shows both.
+- `list_reminders` / `add_reminder` / `remove_reminder` — the writer's
+  principles. Read them before building or reading a wall; add only what the
+  writer asked to keep in front of them.
+
 ### Structure
 
+- `apply_template` — lay a structure's named beats on the wall as beat cards
+  (`turns` is the house method and the default; also `three-acts`,
+  `eight-sequences`, `fifteen-beats`, `story-circle`). One undo step. Ask the
+  writer which; afterwards there are only cards, nothing remembers the template.
 - `set_logline` — set the board's central question. Empty string clears it.
 - `set_target` — target script length in `pages`: 120 feature, 60 hour, 30 half.
 - `create_group` — frame two or more cards, with an optional `title`.
@@ -95,9 +129,16 @@ lands on the exact same board a person sees.
   arrows, a row per beat with the scenes that follow it, groups kept together.
   Pass `noteIds` to tidy only those. Prefer it to moving cards one by one, and
   draw the arrows first — it is the arrows that make the layout right.
-- `new_board` — an empty wall. **Destructive**: every card, group, arrow and
-  the cast go. On a wall with work on it, ask the writer first and suggest Save
-  project.
+- `list_boards` — the project: its name, premise, and every board in order with
+  id, name and shape, marking the open one. Ids come from here.
+- `open_board` — open another board by id, name, or number. Every card tool
+  then works on that board; the writer's wall switches too.
+- `new_board` — add an empty board to the project and open it, keeping the
+  target. The other boards are untouched. Give it a name.
+- `rename_board` — by id, name, or number.
+- `delete_board` — remove a board and everything on it. **Cannot be undone**,
+  not even from the wall: ask the writer first, say how many cards it holds,
+  suggest Save project. The last board of a project cannot be deleted.
 - `undo` — take back **your own** last change, newest first. It refuses if the
   board has changed since (the writer moved on), so it never tramples their
   work; they can undo anything from the wall with ⌘Z. Use it when a
@@ -156,3 +197,16 @@ edits appear in real time; the change is already saved either way.
 - The **series premise** and **Reminders** live in browser storage, not in the
   board record, so no tool can reach them.
 - **Pan and zoom** are per-viewer state and are deliberately not board data.
+
+## Workflows (R27)
+
+A workflow is what the writer asks for in a sentence; you compose the tools.
+`list_workflows` has the six with the tools each composes and the rule to keep:
+break a treatment into a wall; read the wall and raise questions (change
+nothing); lay a structure over what is here; draft a sequence in Fountain from
+its cards; restick the remaining cards after the pages moved; brief a segment
+for video. Read `list_reminders` first — they are the house style.
+
+`segment_brief` (R28, first step) briefs one card or a run of cards for a
+video tool from what the wall holds. It is text for the writer to approve;
+nothing is generated or sent, and no video tool is chosen yet.

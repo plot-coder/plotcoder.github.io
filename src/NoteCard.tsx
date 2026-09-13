@@ -1,7 +1,8 @@
 import { useEffect, useState, type PointerEvent } from "react";
 import { CastLine } from "./CastLine";
+import { PlaceLine } from "./PlaceLine";
 import { EditableText } from "./EditableText";
-import { DEFAULT_NOTE_EIGHTHS, formatPages, type BoardCharacter } from "./board/reducer";
+import { DEFAULT_NOTE_EIGHTHS, formatPages, isMeasured, noteEighths, type BoardCharacter } from "./board/reducer";
 import { NOTE_COLORS, type MockNote, type NoteColor, type NoteRank } from "./noteMock";
 
 // The sizes a writer actually reaches for, in eighths of a page. Not a slider:
@@ -18,7 +19,10 @@ type NoteCardProps = {
   /** The cast lens is looking at someone who is not in this scene. */
   dimmed: boolean;
   characters: BoardCharacter[];
+  /** Every place on the wall, for completion on the place line (R37). */
+  places: string[];
   onCastNames: (id: string, names: string[]) => void;
+  onLocation: (id: string, location: string) => void;
   onRaise: (id: string) => void;
   /** The pointer is over this card (or has left it): the Story Map lights its block. */
   onHover: (id: string | null) => void;
@@ -39,7 +43,9 @@ export function NoteCard({
   dropTarget,
   dimmed,
   characters,
+  places,
   onCastNames,
+  onLocation,
   onRaise,
   onHover,
   onPointerDown,
@@ -118,6 +124,13 @@ export function NoteCard({
         onBegin={() => onRaise(note.id)}
         onCommit={(names) => onCastNames(note.id, names)}
       />
+      <PlaceLine
+        headline={note.headline}
+        location={note.location}
+        places={places}
+        onBegin={() => onRaise(note.id)}
+        onCommit={(location) => onLocation(note.id, location)}
+      />
       <button
         type="button"
         className="note__rank"
@@ -131,17 +144,17 @@ export function NoteCard({
       </button>
       <button
         type="button"
-        className="note__length"
-        aria-label={`Length of ${note.headline}: ${formatPages(note.lengthEighths)} pages`}
+        className={`note__length ${isMeasured(note) ? "is-measured" : ""}`}
+        aria-label={`Length of ${note.headline}: ${formatPages(noteEighths(note))} pages${isMeasured(note) ? ", measured from its scene" : ""}`}
         aria-expanded={sizing}
-        title="How long this runs"
+        title={isMeasured(note) ? "Measured from the scene's text; the estimate is underneath" : "How long this runs"}
         onPointerDown={(event) => event.stopPropagation()}
         onClick={() => {
           setPicking(false);
           setSizing((open) => !open);
         }}
       >
-        {formatPages(note.lengthEighths)}
+        {formatPages(noteEighths(note))}
       </button>
       {sizing ? (
         <div className="note__lengths" onPointerDown={(event) => event.stopPropagation()}>

@@ -6,6 +6,11 @@ const NOW = "2026-01-01T00:00:00.000Z";
 const person = (id: string, name: string): BoardCharacter => ({
   id,
   name,
+  looks: "",
+  voice: "",
+  wants: "",
+  needs: "",
+  notes: "",
   createdAt: NOW,
   updatedAt: NOW,
 });

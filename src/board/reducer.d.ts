@@ -17,6 +17,12 @@ export declare const EIGHTHS_PER_PAGE: number;
 export declare const DEFAULT_NOTE_EIGHTHS: number;
 export declare const DEFAULT_TARGET_EIGHTHS: number;
 /** Total estimated length of the board, in eighths. */
+export declare const LINES_PER_PAGE: number;
+/** Eighths the scene's text runs to; 0 when there is no text. */
+export declare function measuredEighths(text: string | undefined): number;
+/** Measured when written, the estimate otherwise. Every reading uses this. */
+export declare function noteEighths(note: BoardNote): number;
+export declare function isMeasured(note: BoardNote): boolean;
 export declare function boardEighths(state: BoardState): number;
 /** Eighths as a breakdown writes them: "1 3/8", "97", "5/8". */
 export declare function formatPages(eighths: number): string;
@@ -29,12 +35,29 @@ export declare const NOTE_HEIGHT: number;
  * The record is expected to grow — what they look like, the details a writer
  * pulls up — so it carries an id and timestamps from the start.
  */
+export type CharacterField = "looks" | "voice" | "wants" | "needs" | "notes";
+export declare const CHARACTER_FIELDS: readonly CharacterField[];
+
 export type BoardCharacter = {
   id: string;
   name: string;
+  /** The person's page (R36): all text, empty until filled. */
+  looks: string;
+  voice: string;
+  wants: string;
+  needs: string;
+  notes: string;
   createdAt: string;
   updatedAt: string;
 };
+
+/** The page fields a person has filled in, in page order. */
+/** The places on a wall in order of first appearance, with card counts. */
+export declare function boardPlaces(state: BoardState): Array<{ name: string; cards: number }>;
+/** True when the card is at this place, spelt any way. */
+export declare function atPlace(note: BoardNote, place: string): boolean;
+
+export declare function filledCharacterFields(character: BoardCharacter): CharacterField[];
 
 export type BoardNote = {
   id: string;
@@ -53,6 +76,10 @@ export type BoardNote = {
   characterIds: string[];
   /** The corner is folded: this card plants something that must pay off (R31). */
   plants: boolean;
+  /** Where the scene happens (R37): a phrase in the writer's words; empty until set. */
+  location: string;
+  /** The scene's text in Fountain (R23 b): action, cues, dialogue; empty until written. */
+  text: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -103,8 +130,10 @@ export type Command =
       lengthEighths?: number;
       characterIds?: string[];
       plants?: boolean;
+      location?: string;
+      text?: string;
     }
-  | { type: "update_note"; id: string; headline?: string; change?: string }
+  | { type: "update_note"; id: string; headline?: string; change?: string; location?: string }
   | { type: "move_note"; id: string; x: number; y: number }
   | { type: "nudge_notes"; ids: string[]; dx: number; dy: number }
   | { type: "recolor_notes"; ids: string[]; color: NoteColor }
@@ -122,8 +151,12 @@ export type Command =
   | { type: "add_character"; name: string; id?: string }
   | { type: "rename_character"; id: string; name: string }
   | { type: "remove_character"; id: string }
+  | ({ type: "update_character"; id: string } & Partial<Record<CharacterField, string>>)
   | { type: "set_cast"; ids: string[]; characterIds: string[] }
-  | { type: "set_plant"; ids: string[]; plants: boolean };
+  | { type: "set_plant"; ids: string[]; plants: boolean }
+  | { type: "set_location"; ids: string[]; location: string }
+  | { type: "apply_template"; template: string }
+  | { type: "set_text"; id: string; text: string };
 
 export type CommandResult = {
   state: BoardState;

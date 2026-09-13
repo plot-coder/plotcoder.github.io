@@ -169,6 +169,8 @@ describe("beatLabels", () => {
     plants: false,
     characterIds: [],
     castNames: [],
+    location: "",
+    measured: false,
     start: page * 8,
     length: 8,
   });

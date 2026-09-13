@@ -1,12 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
   applyCommand,
+  atPlace,
+  boardPlaces,
   boardEighths,
   countRanks,
   DEFAULT_NOTE_EIGHTHS,
   DEFAULT_TARGET_EIGHTHS,
   EIGHTHS_PER_PAGE,
   emptyState,
+  filledCharacterFields,
   formatPages,
   isBoardState,
   NOTE_HEIGHT,
@@ -1008,5 +1011,109 @@ describe("set_plant (R31)", () => {
     const fixed = normalizeState({ ...state, notes: [bare] } as unknown as BoardState);
     expect(fixed.notes[0].plants).toBe(false);
     expect(normalizeState(state)).toBe(state);
+  });
+});
+
+describe("the person's page (R36)", () => {
+  function roster() {
+    const base = emptyState();
+    return applyCommand(base, { type: "add_character", name: "Maya", id: "m" }, NOW).state;
+  }
+
+  it("adds a person with every page line present and empty", () => {
+    const maya = roster().characters[0];
+    expect(maya).toMatchObject({ looks: "", voice: "", wants: "", needs: "", notes: "" });
+    expect(filledCharacterFields(maya)).toEqual([]);
+  });
+
+  it("updates any of the five lines by id, one step at a time", () => {
+    const first = applyCommand(roster(), { type: "update_character", id: "m", looks: "Tall, a good coat." }, NOW);
+    expect(first.changed).toBe(true);
+    expect(first.result).toMatchObject({ id: "m", looks: "Tall, a good coat.", voice: "" });
+    const second = applyCommand(
+      first.state,
+      { type: "update_character", id: "m", wants: "To keep the flat.", needs: "To be believed." },
+      NOW,
+    );
+    expect(second.state.characters[0]).toMatchObject({
+      looks: "Tall, a good coat.",
+      wants: "To keep the flat.",
+      needs: "To be believed.",
+    });
+    expect(filledCharacterFields(second.state.characters[0])).toEqual(["looks", "wants", "needs"]);
+  });
+
+  it("changes nothing for an unknown person, an unknown field, or the same words", () => {
+    const state = applyCommand(roster(), { type: "update_character", id: "m", looks: "Tall." }, NOW).state;
+    expect(applyCommand(state, { type: "update_character", id: "nobody", looks: "x" }, NOW).changed).toBe(false);
+    expect(applyCommand(state, { type: "update_character", id: "m", looks: "Tall." }, NOW).changed).toBe(false);
+    const stray = applyCommand(state, { type: "update_character", id: "m", age: "34" } as never, NOW);
+    expect(stray.changed).toBe(false);
+    expect(stray.result).toBe(state.characters[0]);
+  });
+
+  it("fills the page lines in for a roster written before them (seventh migration)", () => {
+    const old = {
+      ...emptyState(),
+      characters: [{ id: "t", name: "Tom", createdAt: NOW, updatedAt: NOW }],
+    };
+    const repaired = normalizeState(old as never);
+    expect(repaired).not.toBe(old);
+    expect(repaired.characters[0]).toMatchObject({ id: "t", name: "Tom", looks: "", notes: "" });
+    // And leaves a roster that already has them alone.
+    expect(normalizeState(repaired)).toBe(repaired);
+  });
+});
+
+describe("where a scene happens (R37)", () => {
+  function wall() {
+    let state = emptyState();
+    state = applyCommand(state, { type: "create_note", id: "a", headline: "A", change: "a", location: "  the piano  shop " }, NOW).state;
+    state = applyCommand(state, { type: "create_note", id: "b", headline: "B", change: "b" }, NOW).state;
+    state = applyCommand(state, { type: "create_note", id: "c", headline: "C", change: "c", location: "The Piano Shop" }, NOW).state;
+    return state;
+  }
+
+  it("cleans a place on creation and leaves a card nowhere by default", () => {
+    const state = wall();
+    expect(state.notes[0].location).toBe("the piano shop");
+    expect(state.notes[1].location).toBe("");
+  });
+
+  it("sets one place on many cards, clears with an empty place, and changes nothing twice", () => {
+    const state = wall();
+    const set = applyCommand(state, { type: "set_location", ids: ["a", "b"], location: "the flat" }, NOW);
+    expect(set.changed).toBe(true);
+    expect((set.result as { id: string }[]).map((note) => note.id)).toEqual(["a", "b"]);
+    expect(set.state.notes.map((note) => note.location)).toEqual(["the flat", "the flat", "The Piano Shop"]);
+    expect(applyCommand(set.state, { type: "set_location", ids: ["a"], location: " the  flat " }, NOW).changed).toBe(false);
+    const cleared = applyCommand(set.state, { type: "set_location", ids: ["b"], location: "" }, NOW);
+    expect(cleared.state.notes[1].location).toBe("");
+    expect(applyCommand(state, { type: "set_location", ids: [], location: "x" }, NOW).changed).toBe(false);
+  });
+
+  it("takes a place through update_note as well", () => {
+    const state = applyCommand(wall(), { type: "update_note", id: "b", location: "the bank" }, NOW).state;
+    expect(state.notes[1].location).toBe("the bank");
+  });
+
+  it("lists the wall's places in order of first appearance, one per spelling-insensitive name", () => {
+    const state = applyCommand(wall(), { type: "set_location", ids: ["b"], location: "the flat" }, NOW).state;
+    expect(boardPlaces(state)).toEqual([
+      { name: "the piano shop", cards: 2 },
+      { name: "the flat", cards: 1 },
+    ]);
+    expect(atPlace(state.notes[2], "the piano shop")).toBe(true);
+    expect(atPlace(state.notes[1], "the piano shop")).toBe(false);
+    expect(boardPlaces(emptyState())).toEqual([]);
+  });
+
+  it("fills a place in for cards written before it (eighth migration)", () => {
+    const seed = seedState();
+    const old = { ...seed, notes: seed.notes.map(({ location: _location, ...note }) => note) };
+    const repaired = normalizeState(old as never);
+    expect(repaired).not.toBe(old);
+    expect(repaired.notes.every((note) => note.location === "")).toBe(true);
+    expect(normalizeState(repaired)).toBe(repaired);
   });
 });

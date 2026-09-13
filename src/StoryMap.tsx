@@ -121,6 +121,7 @@ export function StoryMap({
               <span className="story-map__scrub-meta">
                 {formatPages(readCard.length)} {readCard.length === EIGHTHS_PER_PAGE ? "page" : "pages"}
                 {readCard.castNames.length ? ` · with ${readCard.castNames.join(", ")}` : ""}
+                {readCard.location ? ` · at ${readCard.location}` : ""}
               </span>
             </>
           ) : (
@@ -132,6 +133,12 @@ export function StoryMap({
       ) : null}
       {width > 0 ? (
         <svg className="story-map__svg" width={width} height={height} role="img" aria-hidden="false">
+          <defs>
+            <pattern id="story-map-hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+              <rect width="6" height="6" fill="transparent" />
+              <line x1="0" y1="0" x2="0" y2="6" className="story-map__hatch" />
+            </pattern>
+          </defs>
           {/* Past the target: warm ground, the same note the bar makes. */}
           {layout.totalEighths > layout.targetEighths ? (
             <rect
@@ -260,6 +267,17 @@ export function StoryMap({
                   height={axisY - top}
                   fill={PAPER[card.color] ?? "#ffe56a"}
                 />
+                {/* An estimated length is a guess; the hatch says so. Measured is solid (R23 b). */}
+                {!card.measured && open ? (
+                  <rect
+                    className="story-map__estimate"
+                    x={left}
+                    y={top}
+                    width={w}
+                    height={axisY - top}
+                    fill="url(#story-map-hatch)"
+                  />
+                ) : null}
                 {card.beat ? (
                   <rect className="story-map__beat-bar" x={left} y={top} width={w} height={3} />
                 ) : null}

@@ -1,4 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from "react";
+import { WORKFLOWS } from "./board/workflows";
 import { describeRuns, describeSetups, readWall } from "./board/readWall";
 import { type BoardState } from "./board/reducer";
 import {
@@ -27,9 +28,24 @@ export function RemindersModal({ open, board, onOpen, onClose }: RemindersModalP
   const closeRef = useRef<HTMLButtonElement>(null);
   const [reminders, setReminders] = useState<Reminder[]>(readReminders);
   const [draft, setDraft] = useState("");
+  // Three tabs (R27): the principles, what you can ask an agent for, the reading of the wall.
+  const [tab, setTab] = useState<"principles" | "ask" | "read">("principles");
+  const [copied, setCopied] = useState<string | null>(null);
+
+  async function copyAsk(id: string, text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(id);
+      window.setTimeout(() => setCopied((current) => (current === id ? null : current)), 1500);
+    } catch {
+      /* clipboard blocked: the sentence is on screen to select */
+    }
+  }
 
   useEffect(() => {
     if (!open) return;
+    // The account mirror may have written reminders since the last look.
+    setReminders(readReminders());
     closeRef.current?.focus();
 
     function onKey(event: KeyboardEvent) {
@@ -93,7 +109,55 @@ export function RemindersModal({ open, board, onOpen, onClose }: RemindersModalP
               </button>
             </div>
 
-            <ol className="reminder-list">
+            <div className="reminder-tabs" role="tablist" aria-label="Reminders">
+              {(
+                [
+                  ["principles", "Principles"],
+                  ["ask", "What you can ask for"],
+                  ["read", "Read the wall"],
+                ] as const
+              ).map(([key, label]) => (
+                <button
+                  key={key}
+                  type="button"
+                  role="tab"
+                  aria-selected={tab === key}
+                  className={`reminder-tab ${tab === key ? "is-on" : ""}`}
+                  onClick={() => setTab(key)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {tab === "ask" ? (
+              <section className="ask-list" aria-label="What you can ask for">
+                <p className="reminder-form__note">
+                  A workflow is a sentence you say to your agent; it composes the tools. Copy one and
+                  paste it in the agent's window, with your own words after it.
+                </p>
+                <ol className="reminder-list">
+                  {WORKFLOWS.map((workflow) => (
+                    <li key={workflow.id} className="reminder">
+                      <div className="reminder__top">
+                        <h3 className="reminder__title">{workflow.name}</h3>
+                        <button
+                          type="button"
+                          className="reminder__remove"
+                          onClick={() => void copyAsk(workflow.id, workflow.ask)}
+                        >
+                          {copied === workflow.id ? "Copied" : "Copy"}
+                        </button>
+                      </div>
+                      <p className="reminder__body">“{workflow.ask}”</p>
+                      <p className="reminder__keep">{workflow.then}</p>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            ) : null}
+
+            <ol className="reminder-list" hidden={tab !== "principles"}>
               {reminders.map((reminder) => (
                 <li key={reminder.id} className="reminder">
                   <div className="reminder__top">
@@ -113,7 +177,7 @@ export function RemindersModal({ open, board, onOpen, onClose }: RemindersModalP
               ))}
             </ol>
 
-            {reading ? (
+            {reading && tab === "read" ? (
               <section className="wall-read" aria-labelledby={wallId}>
                 <p className="modal__kicker">Your board</p>
                 <h3 id={wallId} className="wall-read__title">

@@ -21,6 +21,10 @@ export const NOTE_RANKS = ["scene", "beat"];
 // label: R15 keeps free text off arrows on purpose.
 export const ARROW_KINDS = ["follows", "setup"];
 
+// Structure templates (R38) are data beside the kernel; applying one is a
+// kernel command so it is one undo step and one tool call.
+import { templateById } from "./templates.js";
+
 // Characters are a board-level roster (D26): one record per person, referenced
 // from cards by id, so a name changes in one place and the same person is the
 // same person on every card. Long term the record grows — what they look like,
@@ -28,6 +32,62 @@ export const ARROW_KINDS = ["follows", "setup"];
 // timestamps now rather than being a word on a card.
 function isCharacter(value) {
   return Boolean(value) && typeof value.id === "string" && typeof value.name === "string";
+}
+
+// A person's page (R36): what they look like, how they sound, what they want,
+// what they need, and the notes a writer pulls up. All text, all optional; a
+// picture waits for file storage. Looks and voice are what the horizon (R28)
+// hands a video agent; wants and needs are the method's two questions about a
+// person (R18).
+export const CHARACTER_FIELDS = ["looks", "voice", "wants", "needs", "notes"];
+
+/** A roster record with every page field present, so the page never reads undefined. */
+function fillCharacter(character) {
+  let filled = character;
+  for (const field of CHARACTER_FIELDS) {
+    if (typeof filled[field] !== "string") {
+      if (filled === character) filled = { ...character };
+      filled[field] = "";
+    }
+  }
+  return filled;
+}
+
+/** The names of the page fields a person has filled in, in page order. */
+export function filledCharacterFields(character) {
+  return CHARACTER_FIELDS.filter((field) => typeof character[field] === "string" && character[field].trim());
+}
+
+// Where a scene happens (R37): a phrase in the writer's words, not a slug.
+// One string per card, no roster; the wall's places are read off the cards.
+function cleanPlace(value) {
+  return typeof value === "string" ? value.trim().replace(/\s+/g, " ") : "";
+}
+
+function samePlace(a, b) {
+  return a.trim().toLowerCase() === b.trim().toLowerCase();
+}
+
+/**
+ * The places on a wall, in order of first appearance, each with its card
+ * count. Two spellings that differ only in case are one place, spelt the
+ * first way. For the lens and for completion on the card.
+ */
+export function boardPlaces(state) {
+  const places = [];
+  for (const note of state.notes) {
+    const name = cleanPlace(note.location);
+    if (!name) continue;
+    const found = places.find((place) => samePlace(place.name, name));
+    if (found) found.cards += 1;
+    else places.push({ name, cards: 1 });
+  }
+  return places;
+}
+
+/** True when the card is at this place, spelt any way. */
+export function atPlace(note, place) {
+  return Boolean(note.location) && samePlace(note.location, place);
 }
 
 function sameName(a, b) {
@@ -67,11 +127,31 @@ function clampEighths(value, fallback, max) {
 }
 
 /** Total estimated length of the board, in eighths. */
+// Pages beside the wall (R23, slice b): a scene's text lives on its card. A
+// card with text is measured — its lines against a page's worth — in the
+// same eighths the estimate uses (D23); a card without keeps the estimate.
+export const LINES_PER_PAGE = 55;
+
+/** Eighths of a page the scene's text runs to; 0 when there is no text. */
+export function measuredEighths(text) {
+  if (typeof text !== "string" || !text.trim()) return 0;
+  const lines = text.trim().split("\n").length;
+  return Math.max(1, Math.round((lines / LINES_PER_PAGE) * EIGHTHS_PER_PAGE));
+}
+
+/** The card's length as every reading should take it: measured when written, estimated otherwise. */
+export function noteEighths(note) {
+  const measured = measuredEighths(note?.text);
+  return measured > 0 ? measured : (note?.lengthEighths ?? DEFAULT_NOTE_EIGHTHS);
+}
+
+/** True when the card's length comes from its text rather than the estimate. */
+export function isMeasured(note) {
+  return measuredEighths(note?.text) > 0;
+}
+
 export function boardEighths(state) {
-  return state.notes.reduce(
-    (total, note) => total + (note.lengthEighths ?? DEFAULT_NOTE_EIGHTHS),
-    0,
-  );
+  return state.notes.reduce((total, note) => total + noteEighths(note), 0);
 }
 
 /**
@@ -129,6 +209,8 @@ export function seedState(now = nowIso()) {
     rank: "scene",
     lengthEighths: DEFAULT_NOTE_EIGHTHS,
     characterIds,
+    location: "",
+    text: "",
     plants: false,
     createdAt: now,
     updatedAt: now,
@@ -141,8 +223,8 @@ export function seedState(now = nowIso()) {
     targetEighths: DEFAULT_TARGET_EIGHTHS,
     // Two people, cast on the cards, so a new writer sees what the roster is for.
     characters: [
-      { id: "maya", name: "Maya", createdAt: now, updatedAt: now },
-      { id: "tom", name: "Tom", createdAt: now, updatedAt: now },
+      fillCharacter({ id: "maya", name: "Maya", createdAt: now, updatedAt: now }),
+      fillCharacter({ id: "tom", name: "Tom", createdAt: now, updatedAt: now }),
     ],
     notes: [
       mk("maya-letter", "Maya finds the letter", "She decides not to tell Tom.", "yellow", 88, 120, -2.2, 1, ["maya"]),
@@ -195,11 +277,14 @@ export function normalizeState(value) {
   // Boards written before R29 have no roster. A card's cast is filtered to the
   // roster, so a dangling id (a character removed by an older build) is dropped
   // rather than left to point at nobody.
+  // Rosters written before R36 have no page fields; they are empty until filled.
   const characters = Array.isArray(value.characters)
-    ? value.characters.filter(isCharacter)
+    ? value.characters.filter(isCharacter).map(fillCharacter)
     : [];
   const rosterPatched =
-    !Array.isArray(value.characters) || characters.length !== value.characters.length;
+    !Array.isArray(value.characters) ||
+    characters.length !== value.characters.length ||
+    characters.some((character, index) => character !== value.characters[index]);
 
   // Cards written before R20 have no rank. They are scenes: a beat is something
   // you mark deliberately, so the safe default is the one that claims nothing.
@@ -216,18 +301,24 @@ export function normalizeState(value) {
     const characterIds = knownCast(note?.characterIds, characters);
     // Cards written before R31 have no fold; a plant is a claim you make.
     const plants = note?.plants === true;
+    // Cards written before R37 have no place; a scene is nowhere until it is.
+    const location = typeof note?.location === "string" ? note.location : "";
+    // Cards written before pages (R23 b) have no text; a scene is unwritten until it is.
+    const text = typeof note?.text === "string" ? note.text : "";
     if (
       note &&
       note.rank === rank &&
       note.lengthEighths === lengthEighths &&
       Array.isArray(note.characterIds) &&
       sameIds(note.characterIds, characterIds) &&
-      note.plants === plants
+      note.plants === plants &&
+      note.location === location &&
+      note.text === text
     ) {
       return note;
     }
     patched = true;
-    return { ...note, rank, lengthEighths, characterIds, plants };
+    return { ...note, rank, lengthEighths, characterIds, plants, location, text };
   });
 
   if (
@@ -294,6 +385,8 @@ export function applyCommand(state, command, now = nowIso()) {
         ),
         characterIds: knownCast(command.characterIds, state.characters ?? []),
         plants: command.plants === true,
+        location: cleanPlace(command.location),
+        text: typeof command.text === "string" ? command.text : "",
         z: maxZ(state.notes) + 1,
         createdAt: now,
         updatedAt: now,
@@ -312,6 +405,7 @@ export function applyCommand(state, command, now = nowIso()) {
         const patch = {};
         if (command.headline !== undefined) patch.headline = command.headline;
         if (command.change !== undefined) patch.change = command.change;
+        if (command.location !== undefined) patch.location = cleanPlace(command.location);
         updated = bump(note, patch, now);
         return updated;
       });
@@ -582,7 +676,7 @@ export function applyCommand(state, command, now = nowIso()) {
       // The same person twice is the thing a roster exists to prevent. Hand
       // back who it already is so a tool can say so.
       if (existing) return { state, changed: false, result: existing };
-      const character = { id: command.id ?? newId(), name, createdAt: now, updatedAt: now };
+      const character = fillCharacter({ id: command.id ?? newId(), name, createdAt: now, updatedAt: now });
       return {
         state: { ...state, characters: [...state.characters, character] },
         changed: true,
@@ -608,6 +702,25 @@ export function applyCommand(state, command, now = nowIso()) {
       return { state: { ...state, characters }, changed: true, result: renamed };
     }
 
+    // The person's page (R36): any of the five lines, by id. Unknown fields
+    // are ignored; a patch that changes nothing changes nothing.
+    case "update_character": {
+      const current = state.characters.find((character) => character.id === command.id);
+      if (!current) return { state, changed: false };
+      const patch = {};
+      for (const field of CHARACTER_FIELDS) {
+        if (typeof command[field] === "string" && command[field] !== current[field]) {
+          patch[field] = command[field];
+        }
+      }
+      if (Object.keys(patch).length === 0) return { state, changed: false, result: current };
+      const updated = { ...current, ...patch, updatedAt: now };
+      const characters = state.characters.map((character) =>
+        character.id === command.id ? updated : character,
+      );
+      return { state: { ...state, characters }, changed: true, result: updated };
+    }
+
     case "remove_character": {
       if (!state.characters.some((character) => character.id === command.id)) {
         return { state, changed: false };
@@ -630,6 +743,74 @@ export function applyCommand(state, command, now = nowIso()) {
       const notes = state.notes.map((note) => {
         if (!ids.has(note.id) || sameIds(note.characterIds, cast)) return note;
         const next = bump(note, { characterIds: [...cast] }, now);
+        touched.push(next);
+        return next;
+      });
+      if (touched.length === 0) return { state, changed: false };
+      return { state: { ...state, notes }, changed: true, result: touched };
+    }
+
+    // Start from a structure (R38): the template's beats become beat cards in
+    // one row above the wall's cards, prompts on their change lines. Nothing
+    // remembers the template afterwards; there are only cards.
+    case "apply_template": {
+      const template = templateById(command.template);
+      if (!template) return { state, changed: false };
+      // Rows read top to bottom, so the block of new rows starts high enough
+      // that its last row still clears the wall's top card.
+      const rows = Math.ceil(template.beats.length / 5);
+      const top = state.notes.length
+        ? Math.min(...state.notes.map((note) => note.y)) - rows * (NOTE_HEIGHT + 40) - 32
+        : 140;
+      const left = state.notes.length ? Math.min(...state.notes.map((note) => note.x)) : 140;
+      let z = state.notes.reduce((max, note) => Math.max(max, note.z), 0);
+      const created = template.beats.map((item, index) => ({
+        id: newId(),
+        headline: item.name,
+        change: item.prompt,
+        color: NOTE_COLORS[(state.notes.length + index) % NOTE_COLORS.length],
+        x: left + (index % 5) * (NOTE_WIDTH + 28),
+        y: top + Math.floor(index / 5) * (NOTE_HEIGHT + 40),
+        rotate: ((index % 5) - 2) * 0.8,
+        z: (z += 1),
+        rank: "beat",
+        lengthEighths: DEFAULT_NOTE_EIGHTHS,
+        characterIds: [],
+        plants: false,
+        location: "",
+        text: "",
+        createdAt: now,
+        updatedAt: now,
+      }));
+      return { state: { ...state, notes: [...state.notes, ...created] }, changed: true, result: created };
+    }
+
+    // Pages (R23 b): the scene's text, on its card. Trailing whitespace is
+    // trimmed so a stray newline is not a change.
+    case "set_text": {
+      const text = typeof command.text === "string" ? command.text.replace(/\s+$/, "") : "";
+      let updated;
+      const notes = state.notes.map((note) => {
+        if (note.id !== command.id || note.text === text) return note;
+        updated = bump(note, { text }, now);
+        return updated;
+      });
+      if (!updated) {
+        return { state, changed: false, result: state.notes.find((note) => note.id === command.id) };
+      }
+      return { state: { ...state, notes }, changed: true, result: updated };
+    }
+
+    // Where a scene happens (R37): one place on one or more cards; an empty
+    // place clears it.
+    case "set_location": {
+      const ids = new Set(command.ids);
+      if (ids.size === 0) return { state, changed: false };
+      const location = cleanPlace(command.location);
+      const touched = [];
+      const notes = state.notes.map((note) => {
+        if (!ids.has(note.id) || note.location === location) return note;
+        const next = bump(note, { location }, now);
         touched.push(next);
         return next;
       });

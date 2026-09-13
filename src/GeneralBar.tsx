@@ -4,8 +4,9 @@ import {
   GroupIcon,
   NoteIcon,
   OrganizeIcon,
+  StructureIcon,
+  BriefIcon,
   RedoIcon,
-  ScatterIcon,
   ThemeIcon,
   UndoIcon,
 } from "./BarIcons";
@@ -29,8 +30,10 @@ type GeneralBarProps = {
   canGroup: boolean;
   onGroup: () => void;
   onOrganize: () => void;
-  canScatter: boolean;
-  onScatter: () => void;
+  onStructure: () => void;
+  /** A card or cards are selected: the brief for that segment (R28). */
+  canBrief: boolean;
+  onBrief: () => void;
   zoom: number;
   canFit: boolean;
   beats: number;
@@ -57,8 +60,9 @@ export function GeneralBar({
   canGroup,
   onGroup,
   onOrganize,
-  canScatter,
-  onScatter,
+  onStructure,
+  canBrief,
+  onBrief,
   zoom,
   canFit,
   beats,
@@ -137,9 +141,12 @@ export function GeneralBar({
           <button type="button" className="new-note" onClick={onOrganize}>
             Organize
           </button>
-          {canScatter ? (
-            <button type="button" className="new-note" onClick={onScatter}>
-              Scatter
+          <button type="button" className="new-note" onClick={onStructure}>
+            Structure
+          </button>
+          {canBrief ? (
+            <button type="button" className="new-note" onClick={onBrief}>
+              Brief
             </button>
           ) : null}
 
@@ -243,6 +250,26 @@ export function GeneralBar({
               >
                 <OrganizeIcon className="bar-icon__svg" />
               </button>
+              <button
+                type="button"
+                className="bar-icon"
+                onClick={onStructure}
+                aria-label="Start from a structure"
+                title="Start from a structure"
+              >
+                <StructureIcon className="bar-icon__svg" />
+              </button>
+              {canBrief ? (
+                <button
+                  type="button"
+                  className="bar-icon"
+                  onClick={onBrief}
+                  aria-label="Brief the selected scenes for video"
+                  title="Brief: everything the wall knows about this segment"
+                >
+                  <BriefIcon className="bar-icon__svg" />
+                </button>
+              ) : null}
               {canFit ? (
                 <button
                   type="button"
@@ -261,16 +288,6 @@ export function GeneralBar({
                   aria-label="Group selected notes"
                 >
                   <GroupIcon className="bar-icon__svg" />
-                </button>
-              ) : null}
-              {canScatter ? (
-                <button
-                  type="button"
-                  className="bar-icon"
-                  onClick={onScatter}
-                  aria-label="Scatter notes"
-                >
-                  <ScatterIcon className="bar-icon__svg" />
                 </button>
               ) : null}
               <button

@@ -7,7 +7,7 @@ import {
 } from "react";
 import { arrowLayout, noteAtPoint, previewPath } from "./arrowGeometry";
 import { NoteCard } from "./NoteCard";
-import { type ArrowKind, type BoardCharacter } from "./board/reducer";
+import { atPlace, type ArrowKind, type BoardCharacter } from "./board/reducer";
 import {
   NOTE_HEIGHT,
   NOTE_WIDTH,
@@ -43,7 +43,15 @@ type NoteBoardProps = {
   characters: BoardCharacter[];
   /** When the cast lens holds or hovers someone, cards without them fade. */
   castFocusId: string | null;
+  /** When the lens holds or hovers a place, cards elsewhere fade (R37). */
+  placeFocus: string | null;
+  places: string[];
   onCastNames: (id: string, names: string[]) => void;
+  onLocation: (id: string, location: string) => void;
+  /** The empty wall offers a structure (R38). */
+  onStructure: () => void;
+  /** Pages are open beside the wall (R23 b): the wall keeps to the left. */
+  pagesOpen?: boolean;
   onHoverNote: (id: string | null) => void;
   selectedIds: string[];
   selectedArrowId: string | null;
@@ -118,7 +126,12 @@ export function NoteBoard({
   arrows,
   characters,
   castFocusId,
+  placeFocus,
+  places,
   onCastNames,
+  onLocation,
+  onStructure,
+  pagesOpen = false,
   onHoverNote,
   selectedIds,
   selectedArrowId,
@@ -389,7 +402,7 @@ export function NoteBoard({
   return (
     <div
       ref={boardRef}
-      className={`note-board${spaceHeld ? " is-grabbable" : ""}${
+      className={`note-board${pagesOpen ? " board--pages" : ""}${spaceHeld ? " is-grabbable" : ""}${
         drag?.kind === "pan" ? " is-panning" : ""
       }`}
       onPointerDown={startBoardDrag}
@@ -397,7 +410,15 @@ export function NoteBoard({
       onPointerUp={endPointer}
       onPointerCancel={endPointer}
     >
-      {groups.length === 0 && selectedIds.length === 0 && arrows.length === 0 && !lasso ? (
+      {notes.length === 0 && !lasso ? (
+        <p className="group-hint group-hint--empty">
+          No cards yet. Add one, or{" "}
+          <button type="button" className="group-hint__link" onClick={onStructure}>
+            start from a structure
+          </button>
+          .
+        </p>
+      ) : groups.length === 0 && selectedIds.length === 0 && arrows.length === 0 && !lasso ? (
         <p className="group-hint">
           Drag on empty canvas to select notes, then Group. Drag a card’s handle onto another
           card to draw an arrow.
@@ -497,9 +518,14 @@ export function NoteBoard({
           selected={selectedIds.includes(note.id)}
           linking={drag?.kind === "arrow" && drag.fromId === note.id}
           dropTarget={drag?.kind === "arrow" && drag.hoverId === note.id}
-          dimmed={castFocusId !== null && !note.characterIds.includes(castFocusId)}
+          dimmed={
+            (castFocusId !== null && !note.characterIds.includes(castFocusId)) ||
+            (placeFocus !== null && !atPlace(note, placeFocus))
+          }
           characters={characters}
+          places={places}
           onCastNames={onCastNames}
+          onLocation={onLocation}
           onRaise={onRaise}
           onHover={onHoverNote}
           onPointerDown={startNoteDrag}

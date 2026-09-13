@@ -23,15 +23,38 @@ import {
   boardEighths,
   countRanks,
   EIGHTHS_PER_PAGE,
+  CHARACTER_FIELDS,
+  emptyState,
+  filledCharacterFields,
   formatPages,
   isBoardState,
+  isMeasured,
   normalizeState,
+  noteEighths,
   NOTE_COLORS,
   NOTE_RANKS,
   seedState,
 } from "../src/board/reducer.js";
+import { TEMPLATES } from "../src/board/templates.js";
+import { fromFountain, mergeFountain, toFountain } from "../src/board/fountain.js";
+import { segmentBrief, WORKFLOWS } from "../src/board/workflows.js";
+import { DEFAULT_REMINDERS, titleFromBody } from "../src/board/reminders.js";
+import crypto from "node:crypto";
 import { describeRuns, describeSetups, readWall } from "../src/board/readWall.js";
 import { organizePoses } from "../src/board/organize.js";
+import {
+  addBoard,
+  boardById,
+  emptyProject,
+  findBoard,
+  isProjectRecord,
+  normalizeProject,
+  removeBoard,
+  renameBoard,
+  setActiveBoard,
+  setPremise,
+  renameProject,
+} from "../src/board/project.js";
 
 const colorSchema = z.enum(NOTE_COLORS);
 const rankSchema = z.enum(NOTE_RANKS);
@@ -70,6 +93,7 @@ function findRepoRoot() {
 
 const REPO_ROOT = findRepoRoot();
 const BOARD_FILE = path.join(REPO_ROOT, ".plotcoder", "board.json");
+const PROJECT_FILE = path.join(REPO_ROOT, ".plotcoder", "project.json");
 
 // --- Live dev bridge -------------------------------------------------------
 
@@ -123,18 +147,113 @@ function readFileBoard() {
       return {
         state: normalizeState(parsed.state),
         rev: typeof parsed.rev === "number" ? parsed.rev : 0,
+        boardId: typeof parsed.boardId === "string" ? parsed.boardId : null,
       };
     }
   } catch {
     /* no file yet */
   }
-  return { state: seedState(), rev: 0 };
+  return { state: seedState(), rev: 0, boardId: null };
 }
 
-function writeFileBoard(state, rev) {
+function writeFileBoard(state, rev, boardId = null) {
   fs.mkdirSync(path.dirname(BOARD_FILE), { recursive: true });
-  const payload = { app: "plotcoder", version: 1, rev, state };
+  const payload = { app: "plotcoder", version: 1, rev, boardId, state };
   fs.writeFileSync(BOARD_FILE, `${JSON.stringify(payload, null, 2)}\n`);
+}
+
+// --- The project (R35): the record and every board ------------------------
+
+function readFileProject() {
+  try {
+    const parsed = JSON.parse(fs.readFileSync(PROJECT_FILE, "utf8"));
+    if (parsed && isProjectRecord(parsed.project)) {
+      return {
+        project: normalizeProject(parsed.project),
+        boards: parsed.boards && typeof parsed.boards === "object" ? parsed.boards : {},
+        reminders: Array.isArray(parsed.reminders) ? parsed.reminders : null,
+        rev: typeof parsed.rev === "number" ? parsed.rev : 0,
+      };
+    }
+  } catch {
+    /* no project file yet */
+  }
+  return null;
+}
+
+function writeFileProject(project, boards, rev, reminders = null) {
+  fs.mkdirSync(path.dirname(PROJECT_FILE), { recursive: true });
+  const kept = reminders ?? readFileProject()?.reminders ?? null;
+  const payload = { app: "plotcoder", version: 2, rev, project, boards, ...(kept ? { reminders: kept } : {}) };
+  fs.writeFileSync(PROJECT_FILE, `${JSON.stringify(payload, null, 2)}\n`);
+}
+
+/**
+ * The project as the bridge or the file holds it. A wall from before projects
+ * existed becomes a one-board project around the board on file, so every
+ * board tool works on an older checkout too.
+ */
+async function readProject() {
+  const base = await findBridge();
+  if (base) {
+    try {
+      const res = await fetch(`${base}/__plotcoder/project`, { signal: AbortSignal.timeout(1500) });
+      const data = await res.json();
+      if (data && isProjectRecord(data.project)) {
+        return {
+          project: normalizeProject(data.project),
+          boards: data.boards && typeof data.boards === "object" ? data.boards : {},
+          reminders: Array.isArray(data.reminders) ? data.reminders : null,
+          rev: typeof data.rev === "number" ? data.rev : 0,
+          base,
+          live: true,
+        };
+      }
+    } catch (error) {
+      log("bridge project read failed, using file:", error);
+    }
+  }
+  const file = readFileProject();
+  if (file) return { ...file, base: null, live: false };
+  const board = readFileBoard();
+  const project = emptyProject();
+  const id = board.boardId ?? project.boards[0].id;
+  const record = board.boardId
+    ? { ...project, boards: [{ ...project.boards[0], id: board.boardId }], activeBoardId: board.boardId }
+    : project;
+  return { project: record, boards: { [id]: board.state }, rev: 0, base: null, live: false };
+}
+
+async function writeProject(project, boards, rev, base, reminders = null) {
+  if (base) {
+    try {
+      const res = await fetch(`${base}/__plotcoder/project`, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ project, boards, rev, ...(reminders ? { reminders } : {}) }),
+        signal: AbortSignal.timeout(1500),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        writeFileProject(data.project ?? project, data.boards ?? boards, data.rev ?? rev + 1, data.reminders ?? reminders);
+        return true;
+      }
+    } catch (error) {
+      log("bridge project write failed, falling back to file:", error);
+    }
+  }
+  writeFileProject(project, boards, rev + 1, reminders);
+  return false;
+}
+
+/** Open a board everywhere: the record's open board, and the board channel with its id. */
+async function openBoardEverywhere(project, boards, projectRev, base, boardId) {
+  const opened = setActiveBoard(project, boardId);
+  const state = isBoardState(boards[boardId]) ? normalizeState(boards[boardId]) : emptyState();
+  const live = await writeProject(opened, { ...boards, [boardId]: state }, projectRev, base);
+  const { rev } = await readBoard();
+  await writeBoard(state, rev, base, boardId);
+  return { project: opened, state, live };
 }
 
 async function readBoard() {
@@ -147,7 +266,13 @@ async function readBoard() {
       const data = await res.json();
       const state =
         data.state && isBoardState(data.state) ? normalizeState(data.state) : seedState();
-      return { state, rev: typeof data.rev === "number" ? data.rev : 0, base, live: true };
+      return {
+        state,
+        rev: typeof data.rev === "number" ? data.rev : 0,
+        boardId: typeof data.boardId === "string" ? data.boardId : null,
+        base,
+        live: true,
+      };
     } catch (error) {
       log("bridge read failed, using file:", error);
     }
@@ -156,26 +281,37 @@ async function readBoard() {
   return { ...file, base: null, live: false };
 }
 
-async function writeBoard(next, rev, base) {
+async function writeBoard(next, rev, base, boardId = null) {
   if (base) {
     try {
       const res = await fetch(`${base}/__plotcoder/board`, {
         method: "PUT",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ state: next, rev }),
+        body: JSON.stringify({ state: next, rev, boardId }),
         signal: AbortSignal.timeout(1500),
       });
       if (res.ok) {
         const data = await res.json();
-        if (data.state && isBoardState(data.state)) writeFileBoard(data.state, data.rev);
+        if (data.state && isBoardState(data.state)) {
+          writeFileBoard(data.state, data.rev, data.boardId ?? boardId);
+        }
         return true;
       }
     } catch (error) {
       log("bridge write failed, falling back to file:", error);
     }
   }
-  writeFileBoard(next, rev + 1);
+  writeFileBoard(next, rev + 1, boardId);
+  syncProjectFileBoard(boardId, next);
   return false;
+}
+
+/** Keep the project file's copy of a board current when the app is not open to do it. */
+function syncProjectFileBoard(boardId, state) {
+  if (!boardId) return;
+  const file = readFileProject();
+  if (!file || !file.project.boards.some((board) => board.id === boardId)) return;
+  writeFileProject(file.project, { ...file.boards, [boardId]: state }, file.rev + 1);
 }
 
 // This server's own trail of changes (R33): what the board was before each
@@ -197,14 +333,14 @@ function describeCommand(command) {
 }
 
 async function commit(command) {
-  const { state, rev, base } = await readBoard();
+  const { state, rev, base, boardId } = await readBoard();
   const { state: next, changed, result } = applyCommand(state, command);
   // `changed` is passed back so a tool can tell the agent that nothing
   // happened, and why. A tool that silently reports success on a rejected
   // command teaches the agent the board is in a state it is not.
   if (!changed) return { state: next, changed, result, live: base !== null };
 
-  const live = await writeBoard(next, rev, base);
+  const live = await writeBoard(next, rev, base, boardId);
   trail.push({ before: state, after: JSON.stringify(next), what: describeCommand(command) });
   if (trail.length > TRAIL_CAP) trail.shift();
   return { state: next, changed, result, live };
@@ -224,13 +360,19 @@ function summarize(state) {
       const cast = note.characterIds.map((id) => nameOf.get(id) ?? id);
       const who = cast.length ? `, cast: ${cast.join(", ")}` : "";
       const plant = note.plants ? ", plants" : "";
-      return `  - ${note.id} [${note.rank ?? "scene"}, ${formatPages(note.lengthEighths)}pp${who}${plant}] — "${note.headline}" (${note.color}) at ${Math.round(note.x)},${Math.round(note.y)}`;
+      const place = note.location ? `, at: ${note.location}` : "";
+      const pages = `${formatPages(noteEighths(note))}pp${isMeasured(note) ? " written" : ""}`;
+      return `  - ${note.id} [${note.rank ?? "scene"}, ${pages}${who}${place}${plant}] — "${note.headline}" (${note.color}) at ${Math.round(note.x)},${Math.round(note.y)}`;
     })
     .join("\n");
   const cast = state.characters
     .map((character) => {
       const on = state.notes.filter((note) => note.characterIds.includes(character.id)).length;
-      return `  - ${character.id} — "${character.name}" on ${on} card${on === 1 ? "" : "s"}`;
+      // Which lines of their page are written, so an agent can see who is a
+      // brief and who is still a name (R36).
+      const page = filledCharacterFields(character);
+      const brief = page.length ? ` · page: ${page.join(", ")}` : " · page: empty";
+      return `  - ${character.id} — "${character.name}" on ${on} card${on === 1 ? "" : "s"}${brief}`;
     })
     .join("\n");
   const { beats, scenes } = countRanks(state);
@@ -290,9 +432,14 @@ server.registerTool(
     inputSchema: {},
   },
   async () => {
-    const { state, live } = await readBoard();
+    const { state, live, boardId } = await readBoard();
+    const { project } = await readProject();
+    const board = boardById(project, boardId ?? project.activeBoardId);
+    const which = board
+      ? `"${board.name}" (${project.boards.findIndex((item) => item.id === board.id) + 1} of ${project.boards.length} in "${project.name}")`
+      : "board";
     return ok(
-      `PlotCoder board (${live ? "live: app is open" : "from file: app not running"})\n${summarize(state)}`,
+      `PlotCoder ${which} (${live ? "live: app is open" : "from file: app not running"})\n${summarize(state)}`,
       state,
     );
   },
@@ -393,7 +540,7 @@ server.registerTool(
   {
     title: "Create note",
     description:
-      "Add a card (post-it) to the board. A card is one scene: a headline plus the change it causes. Provide both headline and change. Optionally set color, x/y position, rank ('beat' for one of the major turns, otherwise 'scene'), pages (how long it runs; leave it out and the card is taken to be about a page), and plants (true if this scene sets something up that must pay off later).",
+      "Add a card (post-it) to the board. A card is one scene: a headline plus the change it causes. Provide both headline and change. Optionally set color, x/y position, rank ('beat' for one of the major turns, otherwise 'scene'), pages (how long it runs; leave it out and the card is taken to be about a page), plants (true if this scene sets something up that must pay off later), and location (where it happens, as the writer would say it — 'the piano shop', not 'INT. PIANO SHOP').",
     inputSchema: {
       headline: z.string().min(1),
       change: z.string().min(1),
@@ -401,6 +548,7 @@ server.registerTool(
       rank: rankSchema.optional(),
       pages: pagesSchema.optional(),
       plants: z.boolean().optional(),
+      location: z.string().optional(),
       x: z.number().optional(),
       y: z.number().optional(),
     },
@@ -414,6 +562,7 @@ server.registerTool(
       rank: args.rank,
       lengthEighths: args.pages === undefined ? undefined : toEighths(args.pages),
       plants: args.plants,
+      location: args.location,
       x: args.x,
       y: args.y,
     });
@@ -425,11 +574,12 @@ server.registerTool(
   "update_note",
   {
     title: "Update note",
-    description: "Change the headline and/or change text of an existing card by id.",
+    description: "Change the headline, change text and/or location of an existing card by id.",
     inputSchema: {
       id: z.string(),
       headline: z.string().optional(),
       change: z.string().optional(),
+      location: z.string().optional(),
     },
   },
   async (args) => {
@@ -438,6 +588,7 @@ server.registerTool(
       id: args.id,
       headline: args.headline,
       change: args.change,
+      location: args.location,
     });
     if (result === undefined) return ok(`No card with id ${args.id}.`);
     return ok("Updated card.", result);
@@ -556,6 +707,163 @@ server.registerTool(
 );
 
 server.registerTool(
+  "apply_template",
+  {
+    title: "Start from a structure",
+    description:
+      "Lay a structure's named beats on the wall as beat cards, prompts on their change lines, in one row above the cards already there (or at the top of an empty wall). One undo step. Structures: " +
+      TEMPLATES.map((template) => `${template.id} (${template.name}, ${template.beats.length} beats — ${template.blurb})`).join("; ") +
+      ". The house method, turns, is the default. Ask the writer which structure before applying one; nothing remembers the template afterwards, there are only cards.",
+    inputSchema: { template: z.enum(TEMPLATES.map((template) => template.id)) },
+  },
+  async (args) => {
+    const { changed, result, live } = await commit({ type: "apply_template", template: args.template });
+    if (!changed) return ok(`No structure called ${args.template}.`);
+    const names = result.map((note) => note.headline).join(", ");
+    return ok(`Laid out ${result.length} beats${where(live)}: ${names}.`, result);
+  },
+);
+
+server.registerTool(
+  "export_fountain",
+  {
+    title: "Export the wall as Fountain",
+    description:
+      "The open board as a Fountain screenplay: a title page (with the premise and logline in its notes), beats as sections, one scene per card in wall order — a forced heading from the card's place (or its headline), the headline as a synopsis, the cast and the fold as notes, the change line as action. Plain text a writer can open in any Fountain editor. Pass a path to write a .fountain file; otherwise the text comes back.",
+    inputSchema: { path: z.string().optional() },
+  },
+  async (args) => {
+    const { state } = await readBoard();
+    const { project } = await readProject();
+    const board = project.boards.find((item) => item.id === project.activeBoardId);
+    const text = toFountain(state, {
+      title: board?.name,
+      project: project.boards.length > 1 ? project.name : undefined,
+      premise: project.premise || undefined,
+      draftDate: new Date().toISOString(),
+    });
+    if (args.path) {
+      fs.mkdirSync(path.dirname(path.resolve(args.path)), { recursive: true });
+      fs.writeFileSync(args.path, text);
+      return ok(`Wrote ${text.split("\n").length} lines of Fountain to ${args.path}.`);
+    }
+    return ok(text);
+  },
+);
+
+server.registerTool(
+  "write_scene",
+  {
+    title: "Write a scene",
+    description:
+      "Write a card's scene text in Fountain — action, character cues in capitals, dialogue under them — onto the card by id. The card is then measured (its lines against a page) instead of estimated. An empty string clears it. Read read_pages first so the scene fits what is around it, and do not write scenes the writer has not asked for.",
+    inputSchema: { id: z.string(), text: z.string() },
+  },
+  async (args) => {
+    const { changed, result, live } = await commit({ type: "set_text", id: args.id, text: args.text });
+    if (!changed) {
+      if (!result) return ok(`No card with id ${args.id}. Call list_board.`);
+      return ok(`Nothing changed: "${result.headline}" already reads that way.`);
+    }
+    return ok(
+      `Wrote "${result.headline}": ${formatPages(noteEighths(result))} page(s) measured${where(live)}.`,
+      result,
+    );
+  },
+);
+
+server.registerTool(
+  "read_pages",
+  {
+    title: "Read the pages",
+    description:
+      "The open board as a script in wall order, with each card's id beside its heading and whether its length is measured (written) or estimated. The same text export_fountain writes, plus the ids, so a scene can be written back with write_scene.",
+    inputSchema: {},
+  },
+  async () => {
+    const { state } = await readBoard();
+    const { project } = await readProject();
+    const board = project.boards.find((item) => item.id === project.activeBoardId);
+    const text = toFountain(state, { title: board?.name, premise: project.premise || undefined });
+    const parsed = fromFountain(text);
+    const ids = mergeFountain(state, parsed).matched.map((item) => item.id);
+    const lines = [];
+    let index = 0;
+    for (const line of text.split("\n")) {
+      if (/^\.(?!\.)/.test(line) && index < ids.length) {
+        const note = state.notes.find((item) => item.id === ids[index]);
+        index += 1;
+        lines.push(`${line}    [[id: ${note?.id ?? "?"} · ${note && isMeasured(note) ? "measured" : "estimated"} ${formatPages(note ? noteEighths(note) : 0)}pp]]`);
+      } else {
+        lines.push(line);
+      }
+    }
+    return ok(lines.join("\n"));
+  },
+);
+
+server.registerTool(
+  "import_fountain",
+  {
+    title: "Import a Fountain script",
+    description:
+      "Read a .fountain file (by path) or Fountain text onto the open board: each scene's text goes onto the card with the same heading in order, a scene the wall does not have becomes a new card after the last matched one, and nothing is deleted. Say what was matched and what was made.",
+    inputSchema: { path: z.string().optional(), text: z.string().optional() },
+  },
+  async (args) => {
+    const source = args.text ?? (args.path ? fs.readFileSync(args.path, "utf8") : null);
+    if (source === null) return ok("Nothing to import: pass a path or text.");
+    const { state } = await readBoard();
+    const parsed = fromFountain(source);
+    const { commands, matched } = mergeFountain(state, parsed);
+    let live = false;
+    for (const command of commands) ({ live } = await commit(command));
+    const written = commands.filter((command) => command.type === "set_text").length;
+    const created = matched.filter((item) => item.created).length;
+    return ok(
+      `Imported ${parsed.scenes.length} scene(s): ${written} written onto cards, ${created} new card(s)${where(live)}.`,
+      matched,
+    );
+  },
+);
+
+server.registerTool(
+  "list_workflows",
+  {
+    title: "List workflows",
+    description:
+      "The workflows a writer can ask for (R27): each a sentence, the tools it composes, and the rule to keep while doing it. When the writer's ask matches one, follow it; when it does not, compose the tools yourself and say what you did.",
+    inputSchema: {},
+  },
+  async () =>
+    ok(
+      WORKFLOWS.map(
+        (workflow) =>
+          `- ${workflow.id} — ${workflow.name}\n  ask: "${workflow.ask}"\n  tools: ${workflow.tools.join(", ")}\n  keep: ${workflow.then}`,
+      ).join("\n"),
+      WORKFLOWS,
+    ),
+);
+
+server.registerTool(
+  "segment_brief",
+  {
+    title: "Brief a segment",
+    description:
+      "The brief for a segment of the movie (R28, first step): one card, or several in wall order for a run between beats. Everything the wall knows — the story, the people with their pages, the places, what changes, the script or 'unwritten', what must be true after — in the order a video tool would need it. Text only; nothing is generated or sent. Hand it to the writer to approve; fix a wrong brief on the cards.",
+    inputSchema: { ids: z.array(z.string()).min(1) },
+  },
+  async (args) => {
+    const { state } = await readBoard();
+    const { project } = await readProject();
+    const board = project.boards.find((item) => item.id === project.activeBoardId);
+    const brief = segmentBrief(state, args.ids, { title: board?.name });
+    if (!brief) return ok(`No cards with ids ${args.ids.join(", ")}. Call list_board.`);
+    return ok(brief);
+  },
+);
+
+server.registerTool(
   "undo",
   {
     title: "Undo my last change",
@@ -573,7 +881,8 @@ server.registerTool(
       );
     }
     trail.pop();
-    const live = await writeBoard(last.before, rev, base);
+    const { boardId } = await readBoard();
+    const live = await writeBoard(last.before, rev, base, boardId);
     return ok(
       `Undid ${last.what}${where(live)}. ${trail.length} more of mine can be undone.`,
       last.before,
@@ -651,6 +960,63 @@ server.registerTool(
         : ok(`No character with id ${args.id}. Call list_board for the cast.`);
     }
     return ok(`Renamed to "${result.name}"${where(live)}.`, result);
+  },
+);
+
+server.registerTool(
+  "update_character",
+  {
+    title: "Update a person's page",
+    description:
+      "Write any of the five lines of a person's page, by id: looks (what a stranger would notice), voice (how they sound, and how it changes when they lie), wants (the clear want), needs (what they need and will not admit), notes (anything to pull up mid-scene). All text; pass only the lines you are setting; an empty string clears one. Ask the writer before inventing looks or a voice — the page is theirs.",
+    inputSchema: {
+      id: z.string(),
+      looks: z.string().optional(),
+      voice: z.string().optional(),
+      wants: z.string().optional(),
+      needs: z.string().optional(),
+      notes: z.string().optional(),
+    },
+  },
+  async (args) => {
+    const patch = {};
+    for (const field of CHARACTER_FIELDS) {
+      if (typeof args[field] === "string") patch[field] = args[field];
+    }
+    const { changed, result, live } = await commit({ type: "update_character", id: args.id, ...patch });
+    if (!changed) {
+      if (!result) return ok(`No character with id ${args.id}. Call list_board for the cast.`);
+      return ok(`Nothing changed on ${result.name}'s page: those lines already read that way.`, result);
+    }
+    const written = Object.keys(patch).join(", ");
+    return ok(`Wrote ${written} on ${result.name}'s page${where(live)}.`, result);
+  },
+);
+
+server.registerTool(
+  "set_location",
+  {
+    title: "Set where scenes happen",
+    description:
+      "Set the place of one or more cards: where the scene happens, as the writer would say it ('the piano shop', 'the flat, kitchen') — a phrase, not a slugline. The same phrase on several cards is one place in the lens; an empty string clears it. list_board shows each card's place as 'at: …'.",
+    inputSchema: { ids: z.array(z.string()).min(1), location: z.string() },
+  },
+  async (args) => {
+    const { state, changed, result, live } = await commit({
+      type: "set_location",
+      ids: args.ids,
+      location: args.location,
+    });
+    if (!changed) {
+      const known = args.ids.filter((id) => state.notes.some((note) => note.id === id));
+      if (known.length === 0) return ok(`No cards with ids ${args.ids.join(", ")}. Call list_board.`);
+      return ok("No place changed: those cards already read that way.");
+    }
+    const place = result[0].location;
+    return ok(
+      `${result.length} card(s) now ${place ? `at ${place}` : "nowhere"}${where(live)}.`,
+      result,
+    );
   },
 );
 
@@ -850,17 +1216,219 @@ server.registerTool(
   },
 );
 
+// --- The project (R35) ------------------------------------------------------
+
+function describeBoards(project, boards) {
+  return project.boards
+    .map((board, index) => {
+      const state = boards[board.id];
+      const open = board.id === project.activeBoardId ? " (open)" : "";
+      const shape =
+        state && isBoardState(state)
+          ? `${state.notes.length} cards, about ${formatPages(boardEighths(normalizeState(state)))} of ${formatPages(normalizeState(state).targetEighths)} pages`
+          : "no cards";
+      return `  ${index + 1}. ${board.id} — "${board.name}"${open}: ${shape}`;
+    })
+    .join("\n");
+}
+
+server.registerTool(
+  "list_boards",
+  {
+    title: "List boards",
+    description:
+      "The project: its name, its premise, and every board with id, name, and shape, marking the one that is open. Boards are in the writer's order — a season's episodes, or a writer's stories. Use the ids here for open_board, rename_board and delete_board.",
+    inputSchema: {},
+  },
+  async () => {
+    const { project, boards, live } = await readProject();
+    return ok(
+      [
+        `Project "${project.name}" (${live ? "live: app is open" : "from file: app not running"})`,
+        `premise: ${project.premise ? `"${project.premise}"` : "(not set)"}`,
+        `boards: ${project.boards.length}`,
+        describeBoards(project, boards),
+      ].join("\n"),
+      project,
+    );
+  },
+);
+
+server.registerTool(
+  "set_premise",
+  {
+    title: "Set the project's premise",
+    description:
+      "Set the project's premise: the series- or story-level line above every board's logline (D17). An empty string clears it. Boards keep their own loglines.",
+    inputSchema: { premise: z.string() },
+  },
+  async (args) => {
+    const { project, boards, rev, base, live } = await readProject();
+    const next = setPremise(project, args.premise);
+    if (next === project) return ok("Premise unchanged.");
+    await writeProject(next, boards, rev, base);
+    return ok(`Premise ${next.premise ? `set to "${next.premise}"` : "cleared"}${where(live)}.`, next);
+  },
+);
+
+server.registerTool(
+  "rename_project",
+  {
+    title: "Rename the project",
+    description: "Rename the project — the name at the top of the wall, over every board.",
+    inputSchema: { name: z.string().min(1) },
+  },
+  async (args) => {
+    const { project, boards, rev, base, live } = await readProject();
+    const next = renameProject(project, args.name);
+    if (next === project) return ok("Project name unchanged.");
+    await writeProject(next, boards, rev, base);
+    return ok(`Project renamed to "${next.name}"${where(live)}.`, next);
+  },
+);
+
+// Reminders (R10, R11): the writer's principles, read before touching the wall.
+function currentReminders(reminders) {
+  return Array.isArray(reminders) ? reminders : DEFAULT_REMINDERS;
+}
+
+server.registerTool(
+  "list_reminders",
+  {
+    title: "List reminders",
+    description:
+      "The writer's reminders: the principles they keep in front of themselves (six built in, plus their own). Read these before building or reading a wall; they are the house style.",
+    inputSchema: {},
+  },
+  async () => {
+    const { reminders, live } = await readProject();
+    const list = currentReminders(reminders);
+    return ok(
+      [
+        `reminders: ${list.length}${where(live)}`,
+        ...list.map((item) => `  - ${item.id}${item.builtIn ? " (built in)" : ""} — ${item.title}: ${item.body}`),
+      ].join("\n"),
+      list,
+    );
+  },
+);
+
+server.registerTool(
+  "add_reminder",
+  {
+    title: "Add a reminder",
+    description:
+      "Add a reminder to the writer's list: a body (the principle, a sentence or two) and an optional title; without one the first sentence is the title. Add only what the writer asked to keep in front of them.",
+    inputSchema: { body: z.string().min(1), title: z.string().optional() },
+  },
+  async (args) => {
+    const { project, boards, reminders, rev, base, live } = await readProject();
+    const list = currentReminders(reminders);
+    const body = args.body.trim();
+    const title = args.title?.trim() || titleFromBody(body) || "Reminder";
+    const reminder = { id: crypto.randomUUID(), title, body, builtIn: false, createdAt: new Date().toISOString() };
+    await writeProject(project, boards, rev, base, [...list, reminder]);
+    return ok(`Added reminder "${title}"${where(live)}.`, reminder);
+  },
+);
+
+server.registerTool(
+  "remove_reminder",
+  {
+    title: "Remove a reminder",
+    description: "Remove a reminder by id, built in or the writer's own. list_reminders has the ids.",
+    inputSchema: { id: z.string() },
+  },
+  async (args) => {
+    const { project, boards, reminders, rev, base, live } = await readProject();
+    const list = currentReminders(reminders);
+    if (!list.some((item) => item.id === args.id)) return ok(`No reminder with id ${args.id}. Call list_reminders.`);
+    await writeProject(project, boards, rev, base, list.filter((item) => item.id !== args.id));
+    return ok(`Removed reminder ${args.id}${where(live)}.`);
+  },
+);
+
+server.registerTool(
+  "open_board",
+  {
+    title: "Open board",
+    description:
+      "Open another board of the project by id, name, or number from list_boards. Every card tool then works on that board; the open wall switches too.",
+    inputSchema: { board: z.string().min(1) },
+  },
+  async (args) => {
+    const { project, boards, rev, base } = await readProject();
+    const target = findBoard(project, args.board);
+    if (!target) return ok(`No board matches "${args.board}". Call list_boards for the real ones.`);
+    if (target.id === project.activeBoardId) return ok(`"${target.name}" is already open.`);
+    const { live } = await openBoardEverywhere(project, boards, rev, base, target.id);
+    return ok(`Opened "${target.name}"${where(live)}.`, target);
+  },
+);
+
 server.registerTool(
   "new_board",
   {
     title: "New board",
     description:
-      "Start an empty wall: removes every card, group, arrow and the cast, and clears the logline. The target length stays. This cannot be undone, so on a board that has work on it, ask the writer first and suggest Save project.",
-    inputSchema: {},
+      "Add a board to the project and open it: an empty wall with the logline placeholder, under the same premise, with the same target length as the board that was open. Nothing else is touched — the other boards stay as they are. Name it for what it is: an episode, a draft, a story.",
+    inputSchema: { name: z.string().optional() },
   },
-  async () => {
-    const { live } = await commit({ type: "new_board" });
-    return ok(`The wall is empty${where(live)}. Set the logline, then start on the beats.`);
+  async (args) => {
+    const { project, boards, rev, base } = await readProject();
+    const previous = boards[project.activeBoardId];
+    const target =
+      previous && isBoardState(previous) ? normalizeState(previous).targetEighths : undefined;
+    const { project: next, board } = addBoard(project, args.name ?? "");
+    const fresh = { ...emptyState(), ...(target ? { targetEighths: target } : {}) };
+    const { live } = await openBoardEverywhere(next, { ...boards, [board.id]: fresh }, rev, base, board.id);
+    return ok(
+      `Added "${board.name}" (${board.id}) and opened it${where(live)}. It is empty: set the logline, then start on the beats.`,
+      board,
+    );
+  },
+);
+
+server.registerTool(
+  "rename_board",
+  {
+    title: "Rename board",
+    description: "Rename a board of the project by id, name, or number.",
+    inputSchema: { board: z.string().min(1), name: z.string().min(1) },
+  },
+  async (args) => {
+    const { project, boards, rev, base } = await readProject();
+    const target = findBoard(project, args.board);
+    if (!target) return ok(`No board matches "${args.board}". Call list_boards for the real ones.`);
+    const next = renameBoard(project, target.id, args.name);
+    if (next === project) return ok(`"${target.name}" already has that name.`);
+    const live = await writeProject(next, boards, rev, base);
+    return ok(`Renamed to "${args.name.trim()}"${where(live)}.`);
+  },
+);
+
+server.registerTool(
+  "delete_board",
+  {
+    title: "Delete board",
+    description:
+      "Remove a board and everything on it. This cannot be undone — not from the wall either — so ask the writer first, say how many cards it holds, and suggest Save project. The last board of a project cannot be deleted. If the open board goes, the one before it opens.",
+    inputSchema: { board: z.string().min(1) },
+  },
+  async (args) => {
+    const { project, boards, rev, base } = await readProject();
+    const target = findBoard(project, args.board);
+    if (!target) return ok(`No board matches "${args.board}". Call list_boards for the real ones.`);
+    if (project.boards.length <= 1) return ok("Not deleted: a project keeps at least one board.");
+    const next = removeBoard(project, target.id);
+    const remaining = { ...boards };
+    delete remaining[target.id];
+    if (next.activeBoardId !== project.activeBoardId) {
+      const { live } = await openBoardEverywhere(next, remaining, rev, base, next.activeBoardId);
+      return ok(`Deleted "${target.name}" and opened "${boardById(next, next.activeBoardId)?.name}"${where(live)}.`);
+    }
+    const live = await writeProject(next, remaining, rev, base);
+    return ok(`Deleted "${target.name}"${where(live)}.`);
   },
 );
 

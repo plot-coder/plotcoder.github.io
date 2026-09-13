@@ -1,6 +1,9 @@
 export const PROJECT_PREFIX = "plotcoder.";
 export const PROJECT_APP = "plotcoder";
-export const PROJECT_VERSION = 1;
+// Version 2 (R35): the keys now carry a project record and one board per key.
+// Version 1 files still open; their keys land as they were and the store's
+// migration turns them into a one-board project on the next load.
+export const PROJECT_VERSION = 2;
 
 export type PlotCoderProject = {
   app: typeof PROJECT_APP;

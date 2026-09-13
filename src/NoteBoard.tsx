@@ -53,6 +53,8 @@ type NoteBoardProps = {
   onStructure: () => void;
   /** What these words mean (R42). */
   onWords: () => void;
+  /** Are you an agent? Start here (R43). */
+  onAgents: () => void;
   /** Pages are open beside the wall (R23 b): the wall keeps to the left. */
   pagesOpen?: boolean;
   /** The page a written scene starts on (R23 c). */
@@ -147,6 +149,7 @@ export function NoteBoard({
   onLocation,
   onStructure,
   onWords,
+  onAgents,
   pagesOpen = false,
   pageOf,
   numberOf,
@@ -443,6 +446,12 @@ export function NoteBoard({
             what these words mean
           </button>
           .
+          <span className="group-hint__agent">
+            Are you an agent?{" "}
+            <button type="button" className="group-hint__link" onClick={onAgents}>
+              Start here.
+            </button>
+          </span>
         </p>
       ) : groups.length === 0 && selectedIds.length === 0 && arrows.length === 0 && !lasso ? (
         <p className="group-hint">

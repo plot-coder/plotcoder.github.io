@@ -236,7 +236,12 @@ With `PLOTCODER_EMAIL` and `PLOTCODER_PASSWORD` in your environment — the
 writer's own — and no dev server running, every tool works the writer's
 project on the account directly, and each change lands on every open wall.
 `list_projects` shows what you can work; `open_project` switches;
-`new_project` starts an empty one and works it. Files on the project go
+`new_project` starts an empty one and works it. **No account yet?**
+`claim_account` makes one with the writer's email and a password — ask the
+writer for both and never invent a password; say what was made (the email,
+that the wall here is its first project, that they sign in at the wordmark);
+one account per writer, so a taken address is refused, not varied. The
+on-ramp in the app and at plotcoder.com/llms.txt says the same. Files on the project go
 through this door too: `add_picture` puts an image on a person's page,
 `add_take` files a take on a card or a run, `list_files` shows everything,
 `remove_file` takes one away (ask first; it cannot be undone). Prefer the

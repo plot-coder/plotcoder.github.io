@@ -1043,6 +1043,49 @@ body {
   box-shadow: 0 8px 20px rgba(31, 24, 16, 0.3);
 }
 
+/* The picker's caption and foot (R42): the unit named where it is set. */
+.note__picker-cap {
+  grid-column: 1 / -1;
+  margin: 0 0 0.1rem 0.1rem;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.42rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.note__picker-foot {
+  grid-column: 1 / -1;
+  margin: 0.15rem 0.1rem 0;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.42rem;
+  line-height: 1.35;
+  color: var(--muted);
+}
+
+.note__picker-foot b {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* With a caption, the swatches sit on a small tray like the length picker's,
+   so the word does not fall across the card's own lines. */
+.note__swatches {
+  flex-wrap: wrap;
+  padding: 0.28rem;
+  border: 1px solid var(--bar-border);
+  border-radius: 0.24rem;
+  background: var(--bar);
+  box-shadow: 0 8px 20px rgba(31, 24, 16, 0.3);
+}
+
+.note__picker-cap--paper {
+  flex-basis: 100%;
+  margin-bottom: 0;
+}
+
 .note__length-option {
   min-width: 1.55rem;
   padding: 0.16rem 0.1rem;
@@ -1916,7 +1959,10 @@ body {
   text-transform: none;
 }
 
-.has-tip[data-tip]:focus-within::after,
+/* Not while typing: the logline's tip hides while its text has focus, and a
+   card's tips hide while the card is being edited. A button keeps its tip
+   after a click, or the badge would never say anything. */
+.logline__tip:focus-within::after,
 .note.is-active .has-tip[data-tip]::after {
   opacity: 0;
 }

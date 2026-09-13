@@ -159,10 +159,14 @@ export function NoteCard({
       </button>
       <button
         type="button"
-        className={`note__length ${isMeasured(note) ? "is-measured" : ""}`}
+        className={`note__length has-tip ${isMeasured(note) ? "is-measured" : ""}`}
         aria-label={`Length of ${note.headline}: ${formatPages(noteEighths(note))} pages${isMeasured(note) ? ", measured from its scene" : ""}`}
         aria-expanded={sizing}
-        title={isMeasured(note) ? "Measured from the scene's text; the estimate is underneath" : "How long this runs"}
+        data-tip={
+          isMeasured(note)
+            ? `Measured from the scene’s text: ${formatPages(noteEighths(note))} pages${page !== null ? `, starting on page ${page}` : ""}. The picker sets the guess underneath, for when the text goes.`
+            : wordSentence("length")
+        }
         onPointerDown={(event) => event.stopPropagation()}
         onClick={() => {
           setPicking(false);
@@ -173,6 +177,8 @@ export function NoteCard({
       </button>
       {sizing ? (
         <div className="note__lengths" onPointerDown={(event) => event.stopPropagation()}>
+          {/* Pages per scene (R42, Robert's caption): the unit named where it is set. */}
+          <p className="note__picker-cap">Pages per scene</p>
           {LENGTH_PRESETS.map((eighths) => (
             <button
               key={eighths}
@@ -187,6 +193,9 @@ export function NoteCard({
               {formatPages(eighths)}
             </button>
           ))}
+          <p className="note__picker-foot">
+            In eighths: <b>2/8</b> is a quarter of a page. A written scene measures itself.
+          </p>
         </div>
       ) : null}
       <button
@@ -217,6 +226,7 @@ export function NoteCard({
       </button>
       {picking ? (
         <div className="note__swatches" onPointerDown={(event) => event.stopPropagation()}>
+          <p className="note__picker-cap note__picker-cap--paper">Paper</p>
           {NOTE_COLORS.map((color) => (
             <button
               key={color}

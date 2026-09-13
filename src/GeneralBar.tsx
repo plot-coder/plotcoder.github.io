@@ -15,6 +15,7 @@ import {
 import { EditableText } from "./EditableText";
 import { EIGHTHS_PER_PAGE, formatMinutes, formatPages } from "./board/reducer";
 import { formatNextChange, type Theme, type ThemeSource } from "./theme";
+import { wordSentence } from "./board/words";
 
 export type BarLayer = "dock" | "strip" | "tall";
 
@@ -48,6 +49,8 @@ type GeneralBarProps = {
   asks: number;
   onAsks: () => void;
   beats: number;
+  /** Light the beat cards or the scene cards on the wall; with no beats, open Structure. */
+  onShowRank: (rank: "beat" | "scene") => void;
   scenes: number;
   runtimeEighths: number;
   targetEighths: number;
@@ -83,6 +86,7 @@ export function GeneralBar({
   zoom,
   canFit,
   beats,
+  onShowRank,
   scenes,
   runtimeEighths,
   targetEighths,
@@ -175,7 +179,26 @@ export function GeneralBar({
             <div className="readout__line">
               <span className="readout__k">Shape</span>
               <span className="readout__v">
-                {beats} {beats === 1 ? "beat" : "beats"} · {scenes} {scenes === 1 ? "scene" : "scenes"}
+                {/* A count points at what it counts: click lights those cards; with
+                    no beats yet, the click opens Structure, the way a wall gets its first. */}
+                <button
+                  type="button"
+                  className="readout__count has-tip"
+                  data-tip={beats === 0 ? `No beats yet. ${wordSentence("beat")} Click to start from a structure.` : `${wordSentence("beat")} Click to light them on the wall.`}
+                  onClick={() => onShowRank("beat")}
+                >
+                  {beats} {beats === 1 ? "beat" : "beats"}
+                </button>
+                {" · "}
+                <button
+                  type="button"
+                  className="readout__count has-tip"
+                  data-tip={`${wordSentence("scene")} Click to light them on the wall.`}
+                  onClick={() => onShowRank("scene")}
+                  disabled={scenes === 0}
+                >
+                  {scenes} {scenes === 1 ? "scene" : "scenes"}
+                </button>
               </span>
               <span />
             </div>

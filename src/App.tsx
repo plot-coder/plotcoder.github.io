@@ -244,6 +244,15 @@ export function App() {
     }, 60);
   }
 
+  /** The Shape line's counts: light the beats or the scenes; no beats yet opens Structure. */
+  function showRank(rank: "beat" | "scene") {
+    if (rank === "beat" && shape.beats === 0) {
+      setStructureOpen(true);
+      return;
+    }
+    light(() => Array.from(document.querySelectorAll<HTMLElement>(rank === "beat" ? ".note.is-beat" : ".note:not(.is-beat)")));
+  }
+
   /** Show me from the Asks sheet: the cards a question is about. */
   function showCards(ids: string[]) {
     light(() => ids.map((id) => document.querySelector<HTMLElement>(`.note[data-note="${CSS.escape(id)}"]`)).filter((el): el is HTMLElement => Boolean(el)));
@@ -913,6 +922,7 @@ export function App() {
         zoom={view.scale}
         canFit={notes.length > 0}
         beats={shape.beats}
+        onShowRank={showRank}
         scenes={shape.scenes}
         runtimeEighths={boardEighths(board)}
         targetEighths={board.targetEighths}

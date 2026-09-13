@@ -1854,6 +1854,34 @@ body {
   cursor: pointer;
 }
 
+/* A count in the readout is a face that does something: same type, a faint
+   underline, the wall lights up on click. */
+.readout__count {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--bar-border);
+  text-underline-offset: 0.25em;
+  cursor: pointer;
+}
+
+.readout__count:hover:not(:disabled) {
+  text-decoration-color: var(--over);
+}
+
+.readout__count:disabled {
+  text-decoration: none;
+  cursor: default;
+}
+
+.readout__count.has-tip[data-tip]::after {
+  left: 0;
+  transform: none;
+}
+
 .readout__act:disabled {
   color: var(--muted);
   opacity: 0.5;

@@ -1,4 +1,4 @@
-// Four checks over the doors into the kernel. Headlines are looked up on the card
+// Five checks over the doors into the kernel. Headlines are looked up on the card
 // itself: the Story Map repeats each one as an SVG title, and a text lookup would
 // match both. Not a pixel suite: each one asks
 // whether a change made through one door shows up through the others.
@@ -145,4 +145,53 @@ test("a saved project reopens with the wall it held", async ({ page, request }) 
   await expect
     .poll(async () => (await boardOnBridge(request)).logline)
     .toBe("Can Maya forgive a useful lie?");
+});
+
+test("the story map jumps the wall to a card, and hides to a ruler that is remembered", async ({
+  page,
+}) => {
+  await page.goto("/");
+
+  // A beat far off the first screen, so the jump has somewhere to go.
+  await page.evaluate(() => {
+    window.plotcoder.dispatch({
+      type: "create_note",
+      id: "lost",
+      headline: "All is lost",
+      change: "Maya has nothing left to trade.",
+      rank: "beat",
+      x: 2400,
+      y: 1800,
+    });
+  });
+  const card = page.locator("article.note").filter({ hasText: "All is lost" });
+  const board = page.locator(".note-board");
+  const before = (await card.boundingBox());
+  const frame = (await board.boundingBox());
+  expect(before.x).toBeGreaterThan(frame.x + frame.width);
+
+  // The map names the beat; clicking the name brings the card to the middle.
+  const label = page.locator(".story-map__beat-label", { hasText: "All is lost" });
+  await expect(label).toBeVisible();
+  await label.click();
+  await expect(card).toHaveClass(/is-selected/);
+  const after = (await card.boundingBox());
+  const centreX = after.x + after.width / 2;
+  const centreY = after.y + after.height / 2;
+  expect(Math.abs(centreX - (frame.x + frame.width / 2))).toBeLessThan(4);
+  expect(Math.abs(centreY - (frame.y + frame.height / 2))).toBeLessThan(4);
+
+  // The wall did not change: a jump is a view, never a move.
+  const onPage = await boardOnPage(page);
+  expect(onPage.notes.find((note) => note.id === "lost")).toMatchObject({ x: 2400, y: 1800 });
+
+  // Hide to a ruler; the choice survives a reload because it is per viewer.
+  const strip = page.getByLabel("Story map");
+  await page.getByRole("button", { name: "Story map · hide" }).click();
+  await expect(page.getByRole("button", { name: "Story map · show" })).toBeVisible();
+  expect((await strip.boundingBox()).height).toBeLessThan(30);
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Story map · show" })).toBeVisible();
+  await page.getByRole("button", { name: "Story map · show" }).click();
+  await expect(page.getByRole("button", { name: "Story map · hide" })).toBeVisible();
 });

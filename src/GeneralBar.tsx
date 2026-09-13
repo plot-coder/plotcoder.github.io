@@ -222,6 +222,18 @@ export function GeneralBar({
         </>
       ) : (
         <div className="general-bar__row">
+          <button
+            type="button"
+            className="general-bar__corner"
+            aria-expanded={layer === "strip"}
+            aria-label={layer === "dock" ? "Open action buttons" : "Hide action buttons"}
+            onClick={() => onSetLayer(layer === "dock" ? "strip" : "dock")}
+          >
+            <ChevronIcon
+              className="general-bar__corner-svg"
+              direction={layer === "dock" ? "left" : "right"}
+            />
+          </button>
           {layer === "strip" ? (
             <div className="general-bar__strip">
               <button
@@ -241,28 +253,6 @@ export function GeneralBar({
                 data-tip="New note"
               >
                 <NoteIcon className="bar-icon__svg" />
-              </button>
-              <button
-                type="button"
-                className="bar-icon"
-                onClick={onUndo}
-                disabled={!canUndo}
-                aria-label="Undo"
-                data-tip="Undo"
-                title="Undo (⌘Z)"
-              >
-                <UndoIcon className="bar-icon__svg" />
-              </button>
-              <button
-                type="button"
-                className="bar-icon"
-                onClick={onRedo}
-                disabled={!canRedo}
-                aria-label="Redo"
-                data-tip="Redo"
-                title="Redo (⇧⌘Z)"
-              >
-                <RedoIcon className="bar-icon__svg" />
               </button>
               <button
                 type="button"
@@ -348,20 +338,30 @@ export function GeneralBar({
               >
                 <ChevronIcon className="bar-icon__svg" direction="up" />
               </button>
+              <button
+                type="button"
+                className="bar-icon"
+                onClick={onUndo}
+                disabled={!canUndo}
+                aria-label="Undo"
+                data-tip="Undo"
+                title="Undo (⌘Z)"
+              >
+                <UndoIcon className="bar-icon__svg" />
+              </button>
+              <button
+                type="button"
+                className="bar-icon"
+                onClick={onRedo}
+                disabled={!canRedo}
+                aria-label="Redo"
+                data-tip="Redo"
+                title="Redo (⇧⌘Z)"
+              >
+                <RedoIcon className="bar-icon__svg" />
+              </button>
             </div>
           ) : null}
-          <button
-            type="button"
-            className="general-bar__corner"
-            aria-expanded={layer === "strip"}
-            aria-label={layer === "dock" ? "Open action buttons" : "Hide action buttons"}
-            onClick={() => onSetLayer(layer === "dock" ? "strip" : "dock")}
-          >
-            <ChevronIcon
-              className="general-bar__corner-svg"
-              direction={layer === "dock" ? "left" : "right"}
-            />
-          </button>
         </div>
       )}
     </aside>

@@ -645,6 +645,9 @@ body {
   box-shadow: var(--bar-shadow);
 }
 
+/* The corner toggle leads the row: at the far right when docked, at the far
+   left of the open strip, pointing the way it will fold. Undo and redo end
+   the strip at the right (Robert, 2026-09-13). */
 .general-bar__row {
   display: flex;
   align-items: flex-end;

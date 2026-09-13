@@ -1710,24 +1710,6 @@ body {
   color: var(--over);
 }
 
-.cast-lens__remove {
-  width: 1.1rem;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--muted);
-  font: inherit;
-  font-size: 1rem;
-  line-height: 1;
-  opacity: 0;
-  cursor: pointer;
-}
-
-.cast-lens__row:hover .cast-lens__remove,
-.cast-lens__remove:focus-visible {
-  opacity: 1;
-}
-
 .cast-lens__empty {
   margin: 0;
   padding: 0.2rem 0.5rem 0.4rem;
@@ -1763,6 +1745,163 @@ body {
   color: var(--muted);
   font-size: 0.88rem;
   line-height: 1.45;
+}
+
+/* --- The person's page (R36) --------------------------------------------- */
+
+/* The way into a page from the roster: a chevron at the row's end, always
+   there, a shade darker once a line of the page is written. */
+.cast-lens__open {
+  width: 1.1rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 1.1rem;
+  line-height: 1;
+  opacity: 0.55;
+  cursor: pointer;
+}
+
+.cast-lens__open.has-page,
+.cast-lens__row:hover .cast-lens__open,
+.cast-lens__open:focus-visible {
+  opacity: 1;
+}
+
+/* The lens widens to a paragraph while a page is open. */
+.cast-lens--page {
+  width: 20rem;
+  max-height: calc(100vh - 5rem);
+  overflow-y: auto;
+}
+
+.cast-lens__back {
+  font-size: 0.64rem;
+}
+
+.cast-page {
+  padding: 0 0.5rem;
+}
+
+.cast-page__name {
+  margin: 0.1rem 0 0.15rem;
+  font-size: 1.35rem;
+  font-weight: 600;
+  line-height: 1.15;
+  outline: none;
+  border-radius: 0.14rem;
+}
+
+.cast-page__name:focus {
+  background: var(--slot);
+  box-shadow: 0 0 0 2px var(--bar);
+}
+
+.cast-page__name:empty::before {
+  content: attr(data-placeholder);
+  color: var(--muted);
+}
+
+.cast-page__meta {
+  margin: 0 0 0.45rem;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.cast-page__line {
+  padding: 0.4rem 0 0.45rem;
+  border-top: 1px solid var(--bar-border);
+}
+
+.cast-page__line .cast-lens__kicker {
+  margin-bottom: 0.15rem;
+}
+
+.cast-page__text {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  outline: none;
+  border-radius: 0.14rem;
+  overflow-wrap: anywhere;
+}
+
+.cast-page__text:focus {
+  background: var(--slot);
+  box-shadow: 0 0 0 2px var(--bar);
+}
+
+/* A blank line asks its question in the wall's placeholder italic. */
+.cast-page__text:empty::before {
+  content: attr(data-placeholder);
+  color: var(--muted);
+  font-style: italic;
+}
+
+.cast-page__scenes {
+  margin-top: 0.2rem;
+  padding-top: 0.45rem;
+  border-top: 1px solid var(--bar-border);
+}
+
+.cast-page__list {
+  margin: 0.2rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cast-page__jump {
+  display: grid;
+  grid-template-columns: 1.4rem minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0.2rem 0.3rem;
+  margin: 0 -0.3rem;
+  border: 0;
+  border-radius: 0.3rem;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.92rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cast-page__jump:hover,
+.cast-page__jump:focus-visible {
+  background: var(--slot);
+  outline: none;
+}
+
+.cast-page__n,
+.cast-page__pg {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.64rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.cast-page__headline {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cast-page__gap {
+  margin: 0.1rem 0 0.15rem 1.8rem;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.64rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--over);
 }
 
 /* --- The Story Map (R32) ------------------------------------------------- */

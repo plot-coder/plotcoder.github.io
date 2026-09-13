@@ -31,6 +31,7 @@ import {
 import {
   applyCommand,
   boardEighths,
+  CHARACTER_FIELDS,
   DEFAULT_TARGET_EIGHTHS,
   emptyState,
   isBoardState,
@@ -92,6 +93,8 @@ function coalesceKey(command: Command): string | null {
       return `rename_group:${command.id}`;
     case "rename_character":
       return `rename_character:${command.id}`;
+    case "update_character":
+      return `update_character:${command.id}:${CHARACTER_FIELDS.filter((field) => field in command).join(",")}`;
     case "set_target":
       return "set_target";
     default:

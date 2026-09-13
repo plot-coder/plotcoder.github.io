@@ -76,6 +76,10 @@ lands on the exact same board a person sees.
   refused and the existing record returned; use its id.
 - `rename_character` / `remove_character` — by id. Renaming carries to every
   card; removing takes them off every card and leaves the cards.
+- `update_character` — write a person's page by id: `looks`, `voice`, `wants`,
+  `needs`, `notes`, any subset, all text. `list_board` says which lines each
+  person has ("page: looks, wants" or "page: empty"). Looks and voice are what
+  a video agent will be handed later, so ask the writer before inventing them.
 - `cast` — set who is in one or more cards: `noteIds` plus `characters` (names
   or ids). The list **replaces** the card's cast, so pass everyone in the scene;
   an empty list clears it. A name not in the roster is refused by name — call

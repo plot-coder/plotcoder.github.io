@@ -29,12 +29,24 @@ export declare const NOTE_HEIGHT: number;
  * The record is expected to grow — what they look like, the details a writer
  * pulls up — so it carries an id and timestamps from the start.
  */
+export type CharacterField = "looks" | "voice" | "wants" | "needs" | "notes";
+export declare const CHARACTER_FIELDS: readonly CharacterField[];
+
 export type BoardCharacter = {
   id: string;
   name: string;
+  /** The person's page (R36): all text, empty until filled. */
+  looks: string;
+  voice: string;
+  wants: string;
+  needs: string;
+  notes: string;
   createdAt: string;
   updatedAt: string;
 };
+
+/** The page fields a person has filled in, in page order. */
+export declare function filledCharacterFields(character: BoardCharacter): CharacterField[];
 
 export type BoardNote = {
   id: string;
@@ -122,6 +134,7 @@ export type Command =
   | { type: "add_character"; name: string; id?: string }
   | { type: "rename_character"; id: string; name: string }
   | { type: "remove_character"; id: string }
+  | ({ type: "update_character"; id: string } & Partial<Record<CharacterField, string>>)
   | { type: "set_cast"; ids: string[]; characterIds: string[] }
   | { type: "set_plant"; ids: string[]; plants: boolean };
 

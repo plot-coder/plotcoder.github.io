@@ -15,6 +15,7 @@ import {
   EIGHTHS_PER_PAGE,
   type ArrowKind,
   type BoardCharacter,
+  type CharacterField,
 } from "./board/reducer";
 import { organizePoses } from "./board/organize";
 import { snapshotPoses, type NotePose } from "./organizeLayout";
@@ -294,6 +295,11 @@ export function App() {
     boardStore.dispatch({ type: "rename_character", id, name });
   }
 
+  // The person's page (R36): any of its five lines.
+  function updateCharacter(id: string, patch: Partial<Record<CharacterField, string>>) {
+    boardStore.dispatch({ type: "update_character", id, ...patch });
+  }
+
   function removeCharacter(id: string) {
     boardStore.dispatch({ type: "remove_character", id });
     setCastHeld((current) => (current === id ? null : current));
@@ -437,7 +443,9 @@ export function App() {
           onHold={setCastHeld}
           onAdd={addCharacter}
           onRename={renameCharacter}
+          onUpdate={updateCharacter}
           onRemove={removeCharacter}
+          onJump={jumpTo}
         />
         <RemindersModal
           open={remindersOpen}

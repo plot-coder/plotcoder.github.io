@@ -285,3 +285,52 @@ test("a project holds more than one board, and switching keeps each wall intact"
     mcp.stop();
   }
 });
+
+test("a person's page opens from the cast lens, takes a line, and shows their scenes", async ({
+  page,
+  request,
+}) => {
+  await page.goto("/");
+  await expect(page.locator("article.note")).toHaveCount(3);
+
+  // The roster, then Maya's page from the chevron at her row's end.
+  await page.getByRole("button", { name: "Cast", exact: true }).click();
+  await page.getByLabel("Open Maya's page").click();
+  await expect(page.getByRole("region", { name: "Maya's page" })).toBeVisible();
+  // Her scenes, in wall order, with page numbers; she is on all three seed cards.
+  await expect(page.locator(".cast-page__scene")).toHaveCount(3);
+  await expect(page.locator(".cast-page__headline").first()).toHaveText("Maya finds the letter");
+
+  // A blank line asks; typing answers it, and the answer reaches the bridge.
+  const looks = page.getByLabel("Looks of Maya");
+  await expect(looks).toHaveAttribute("data-placeholder", /stranger notice/);
+  await looks.click();
+  await page.keyboard.type("Thirty-four, tall, a coat too good for the flat.");
+  await page.keyboard.press("Enter");
+  await expect
+    .poll(async () => (await boardOnBridge(request)).characters.find((c) => c.id === "maya")?.looks)
+    .toBe("Thirty-four, tall, a coat too good for the flat.");
+
+  // A scene in the list jumps the wall to that card and selects it.
+  await page.locator(".cast-page__jump").nth(2).click();
+  await expect(page.locator("article.note.is-selected")).toHaveCount(1);
+  await expect(page.locator("article.note.is-selected .note__headline")).toHaveText("The letter is read aloud");
+
+  // Back to the roster: the chevron now says the page has lines.
+  await page.getByRole("button", { name: "‹ Cast" }).click();
+  await expect(page.getByLabel("Open Maya's page")).toHaveAttribute("title", /1 of 5 lines/);
+
+  // And an agent sees the same page through its door.
+  const mcp = new McpClient();
+  await mcp.start();
+  try {
+    expect(await mcp.callTool("list_board")).toContain('"Maya" on 3 cards · page: looks');
+    expect(await mcp.callTool("update_character", { id: "maya", voice: "Low, and quicker when she lies." })).toContain(
+      "Wrote voice on Maya's page",
+    );
+  } finally {
+    mcp.stop();
+  }
+  await page.getByLabel("Open Maya's page").click();
+  await expect(page.getByLabel("Voice of Maya")).toHaveText("Low, and quicker when she lies.");
+});

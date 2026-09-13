@@ -156,6 +156,7 @@ describe("plotcoder MCP server", () => {
       "set_target",
       "undo",
       "ungroup",
+      "update_character",
       "update_note",
     ]);
   });
@@ -742,6 +743,28 @@ describe("characters", () => {
       "maya",
       board.characters.find((character) => character.name === "Sam").id,
     ]);
+  });
+
+  it("writes a person's page a line at a time, and list_board says which lines are written", async () => {
+    const before = await cast.callTool("list_board");
+    expect(before).toContain('maya — "Maya" on 3 cards · page: empty');
+    const text = await cast.callTool("update_character", {
+      id: "maya",
+      looks: "Thirty-four, tall, a coat too good for the flat.",
+      wants: "To keep the flat, and Tom in it.",
+    });
+    expect(text).toContain("Wrote looks, wants on Maya's page");
+    const again = await cast.callTool("update_character", { id: "maya", looks: "Thirty-four, tall, a coat too good for the flat." });
+    expect(again).toContain("Nothing changed on Maya's page");
+    const nobody = await cast.callTool("update_character", { id: "nobody", looks: "x" });
+    expect(nobody).toContain("No character with id nobody");
+    const after = await cast.callToolData("list_board");
+    expect(after.characters.find((character) => character.id === "maya")).toMatchObject({
+      looks: "Thirty-four, tall, a coat too good for the flat.",
+      wants: "To keep the flat, and Tom in it.",
+      voice: "",
+    });
+    expect(await cast.callTool("list_board")).toContain('"Maya" on 3 cards · page: looks, wants');
   });
 
   it("renames a person and every card follows, because cards hold the id", async () => {

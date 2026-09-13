@@ -30,6 +30,30 @@ function isCharacter(value) {
   return Boolean(value) && typeof value.id === "string" && typeof value.name === "string";
 }
 
+// A person's page (R36): what they look like, how they sound, what they want,
+// what they need, and the notes a writer pulls up. All text, all optional; a
+// picture waits for file storage. Looks and voice are what the horizon (R28)
+// hands a video agent; wants and needs are the method's two questions about a
+// person (R18).
+export const CHARACTER_FIELDS = ["looks", "voice", "wants", "needs", "notes"];
+
+/** A roster record with every page field present, so the page never reads undefined. */
+function fillCharacter(character) {
+  let filled = character;
+  for (const field of CHARACTER_FIELDS) {
+    if (typeof filled[field] !== "string") {
+      if (filled === character) filled = { ...character };
+      filled[field] = "";
+    }
+  }
+  return filled;
+}
+
+/** The names of the page fields a person has filled in, in page order. */
+export function filledCharacterFields(character) {
+  return CHARACTER_FIELDS.filter((field) => typeof character[field] === "string" && character[field].trim());
+}
+
 function sameName(a, b) {
   return a.trim().toLowerCase() === b.trim().toLowerCase();
 }
@@ -141,8 +165,8 @@ export function seedState(now = nowIso()) {
     targetEighths: DEFAULT_TARGET_EIGHTHS,
     // Two people, cast on the cards, so a new writer sees what the roster is for.
     characters: [
-      { id: "maya", name: "Maya", createdAt: now, updatedAt: now },
-      { id: "tom", name: "Tom", createdAt: now, updatedAt: now },
+      fillCharacter({ id: "maya", name: "Maya", createdAt: now, updatedAt: now }),
+      fillCharacter({ id: "tom", name: "Tom", createdAt: now, updatedAt: now }),
     ],
     notes: [
       mk("maya-letter", "Maya finds the letter", "She decides not to tell Tom.", "yellow", 88, 120, -2.2, 1, ["maya"]),
@@ -195,11 +219,14 @@ export function normalizeState(value) {
   // Boards written before R29 have no roster. A card's cast is filtered to the
   // roster, so a dangling id (a character removed by an older build) is dropped
   // rather than left to point at nobody.
+  // Rosters written before R36 have no page fields; they are empty until filled.
   const characters = Array.isArray(value.characters)
-    ? value.characters.filter(isCharacter)
+    ? value.characters.filter(isCharacter).map(fillCharacter)
     : [];
   const rosterPatched =
-    !Array.isArray(value.characters) || characters.length !== value.characters.length;
+    !Array.isArray(value.characters) ||
+    characters.length !== value.characters.length ||
+    characters.some((character, index) => character !== value.characters[index]);
 
   // Cards written before R20 have no rank. They are scenes: a beat is something
   // you mark deliberately, so the safe default is the one that claims nothing.
@@ -582,7 +609,7 @@ export function applyCommand(state, command, now = nowIso()) {
       // The same person twice is the thing a roster exists to prevent. Hand
       // back who it already is so a tool can say so.
       if (existing) return { state, changed: false, result: existing };
-      const character = { id: command.id ?? newId(), name, createdAt: now, updatedAt: now };
+      const character = fillCharacter({ id: command.id ?? newId(), name, createdAt: now, updatedAt: now });
       return {
         state: { ...state, characters: [...state.characters, character] },
         changed: true,
@@ -606,6 +633,25 @@ export function applyCommand(state, command, now = nowIso()) {
         return renamed;
       });
       return { state: { ...state, characters }, changed: true, result: renamed };
+    }
+
+    // The person's page (R36): any of the five lines, by id. Unknown fields
+    // are ignored; a patch that changes nothing changes nothing.
+    case "update_character": {
+      const current = state.characters.find((character) => character.id === command.id);
+      if (!current) return { state, changed: false };
+      const patch = {};
+      for (const field of CHARACTER_FIELDS) {
+        if (typeof command[field] === "string" && command[field] !== current[field]) {
+          patch[field] = command[field];
+        }
+      }
+      if (Object.keys(patch).length === 0) return { state, changed: false, result: current };
+      const updated = { ...current, ...patch, updatedAt: now };
+      const characters = state.characters.map((character) =>
+        character.id === command.id ? updated : character,
+      );
+      return { state: { ...state, characters }, changed: true, result: updated };
     }
 
     case "remove_character": {

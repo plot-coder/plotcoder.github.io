@@ -23,7 +23,9 @@ import {
   boardEighths,
   countRanks,
   EIGHTHS_PER_PAGE,
+  CHARACTER_FIELDS,
   emptyState,
+  filledCharacterFields,
   formatPages,
   isBoardState,
   normalizeState,
@@ -352,7 +354,11 @@ function summarize(state) {
   const cast = state.characters
     .map((character) => {
       const on = state.notes.filter((note) => note.characterIds.includes(character.id)).length;
-      return `  - ${character.id} — "${character.name}" on ${on} card${on === 1 ? "" : "s"}`;
+      // Which lines of their page are written, so an agent can see who is a
+      // brief and who is still a name (R36).
+      const page = filledCharacterFields(character);
+      const brief = page.length ? ` · page: ${page.join(", ")}` : " · page: empty";
+      return `  - ${character.id} — "${character.name}" on ${on} card${on === 1 ? "" : "s"}${brief}`;
     })
     .join("\n");
   const { beats, scenes } = countRanks(state);
@@ -779,6 +785,36 @@ server.registerTool(
         : ok(`No character with id ${args.id}. Call list_board for the cast.`);
     }
     return ok(`Renamed to "${result.name}"${where(live)}.`, result);
+  },
+);
+
+server.registerTool(
+  "update_character",
+  {
+    title: "Update a person's page",
+    description:
+      "Write any of the five lines of a person's page, by id: looks (what a stranger would notice), voice (how they sound, and how it changes when they lie), wants (the clear want), needs (what they need and will not admit), notes (anything to pull up mid-scene). All text; pass only the lines you are setting; an empty string clears one. Ask the writer before inventing looks or a voice — the page is theirs.",
+    inputSchema: {
+      id: z.string(),
+      looks: z.string().optional(),
+      voice: z.string().optional(),
+      wants: z.string().optional(),
+      needs: z.string().optional(),
+      notes: z.string().optional(),
+    },
+  },
+  async (args) => {
+    const patch = {};
+    for (const field of CHARACTER_FIELDS) {
+      if (typeof args[field] === "string") patch[field] = args[field];
+    }
+    const { changed, result, live } = await commit({ type: "update_character", id: args.id, ...patch });
+    if (!changed) {
+      if (!result) return ok(`No character with id ${args.id}. Call list_board for the cast.`);
+      return ok(`Nothing changed on ${result.name}'s page: those lines already read that way.`, result);
+    }
+    const written = Object.keys(patch).join(", ");
+    return ok(`Wrote ${written} on ${result.name}'s page${where(live)}.`, result);
   },
 );
 

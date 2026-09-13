@@ -7,6 +7,7 @@ import {
   DEFAULT_TARGET_EIGHTHS,
   EIGHTHS_PER_PAGE,
   emptyState,
+  filledCharacterFields,
   formatPages,
   isBoardState,
   NOTE_HEIGHT,
@@ -1008,5 +1009,56 @@ describe("set_plant (R31)", () => {
     const fixed = normalizeState({ ...state, notes: [bare] } as unknown as BoardState);
     expect(fixed.notes[0].plants).toBe(false);
     expect(normalizeState(state)).toBe(state);
+  });
+});
+
+describe("the person's page (R36)", () => {
+  function roster() {
+    const base = emptyState();
+    return applyCommand(base, { type: "add_character", name: "Maya", id: "m" }, NOW).state;
+  }
+
+  it("adds a person with every page line present and empty", () => {
+    const maya = roster().characters[0];
+    expect(maya).toMatchObject({ looks: "", voice: "", wants: "", needs: "", notes: "" });
+    expect(filledCharacterFields(maya)).toEqual([]);
+  });
+
+  it("updates any of the five lines by id, one step at a time", () => {
+    const first = applyCommand(roster(), { type: "update_character", id: "m", looks: "Tall, a good coat." }, NOW);
+    expect(first.changed).toBe(true);
+    expect(first.result).toMatchObject({ id: "m", looks: "Tall, a good coat.", voice: "" });
+    const second = applyCommand(
+      first.state,
+      { type: "update_character", id: "m", wants: "To keep the flat.", needs: "To be believed." },
+      NOW,
+    );
+    expect(second.state.characters[0]).toMatchObject({
+      looks: "Tall, a good coat.",
+      wants: "To keep the flat.",
+      needs: "To be believed.",
+    });
+    expect(filledCharacterFields(second.state.characters[0])).toEqual(["looks", "wants", "needs"]);
+  });
+
+  it("changes nothing for an unknown person, an unknown field, or the same words", () => {
+    const state = applyCommand(roster(), { type: "update_character", id: "m", looks: "Tall." }, NOW).state;
+    expect(applyCommand(state, { type: "update_character", id: "nobody", looks: "x" }, NOW).changed).toBe(false);
+    expect(applyCommand(state, { type: "update_character", id: "m", looks: "Tall." }, NOW).changed).toBe(false);
+    const stray = applyCommand(state, { type: "update_character", id: "m", age: "34" } as never, NOW);
+    expect(stray.changed).toBe(false);
+    expect(stray.result).toBe(state.characters[0]);
+  });
+
+  it("fills the page lines in for a roster written before them (seventh migration)", () => {
+    const old = {
+      ...emptyState(),
+      characters: [{ id: "t", name: "Tom", createdAt: NOW, updatedAt: NOW }],
+    };
+    const repaired = normalizeState(old as never);
+    expect(repaired).not.toBe(old);
+    expect(repaired.characters[0]).toMatchObject({ id: "t", name: "Tom", looks: "", notes: "" });
+    // And leaves a roster that already has them alone.
+    expect(normalizeState(repaired)).toBe(repaired);
   });
 });

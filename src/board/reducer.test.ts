@@ -319,6 +319,31 @@ describe("settle_note", () => {
   });
 });
 
+describe("settle_note is honest about change (R33)", () => {
+  it("is a no-op for a card in no group, or still inside its frame", () => {
+    const loose = boardOf({ id: "a", x: 0, y: 0 }, { id: "b", x: 300, y: 0 });
+    const settled = applyCommand(loose, { type: "settle_note", id: "a" }, NOW);
+    expect(settled.changed).toBe(false);
+    expect(settled.state).toBe(loose);
+
+    const grouped = run(loose, { type: "create_group", noteIds: ["a", "b"] });
+    const inside = applyCommand(grouped, { type: "settle_note", id: "a" }, NOW);
+    expect(inside.changed).toBe(false);
+    expect(inside.state).toBe(grouped);
+  });
+
+  it("is a change when the card has been dragged out of its frame", () => {
+    const grouped = run(
+      boardOf({ id: "a", x: 0, y: 0 }, { id: "b", x: 300, y: 0 }, { id: "c", x: 600, y: 0 }),
+      { type: "create_group", noteIds: ["a", "b", "c"] },
+      { type: "move_note", id: "a", x: 0, y: 2000 },
+    );
+    const out = applyCommand(grouped, { type: "settle_note", id: "a" }, NOW);
+    expect(out.changed).toBe(true);
+    expect(out.state.groups[0].noteIds).toEqual(["b", "c"]);
+  });
+});
+
 describe("apply_poses", () => {
   it("repositions the cards it names and skips the rest", () => {
     const start = boardOf({ id: "a", x: 0, y: 0 }, { id: "b", x: 100, y: 100 });

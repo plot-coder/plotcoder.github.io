@@ -1,4 +1,4 @@
-// Five checks over the doors into the kernel. Headlines are looked up on the card
+// Six checks over the doors into the kernel. Headlines are looked up on the card
 // itself: the Story Map repeats each one as an SVG title, and a text lookup would
 // match both. Not a pixel suite: each one asks
 // whether a change made through one door shows up through the others.
@@ -194,4 +194,45 @@ test("the story map jumps the wall to a card, and hides to a ruler that is remem
   await expect(page.getByRole("button", { name: "Story map · show" })).toBeVisible();
   await page.getByRole("button", { name: "Story map · show" }).click();
   await expect(page.getByRole("button", { name: "Story map · hide" })).toBeVisible();
+});
+
+test("a change an agent made can be undone from the wall, and redone", async ({ page, request }) => {
+  await page.goto("/");
+  await expect(page.locator("article.note")).toHaveCount(3);
+
+  const mcp = new McpClient();
+  await mcp.start();
+  try {
+    await mcp.callTool("create_note", { headline: "Sam steals the van", change: "No going back." });
+    await expect(page.locator("article.note")).toHaveCount(4);
+
+    // ⌘Z on the wall takes back what the agent did; the bridge follows.
+    await page.locator(".note-board").click({ position: { x: 20, y: 20 } });
+    await page.keyboard.press("ControlOrMeta+z");
+    await expect(page.locator("article.note")).toHaveCount(3);
+    await expect
+      .poll(async () => (await boardOnBridge(request)).notes.length)
+      .toBe(3);
+
+    // And forward again.
+    await page.keyboard.press("Shift+ControlOrMeta+z");
+    await expect(page.locator("article.note")).toHaveCount(4);
+    await expect(page.locator(".note__headline", { hasText: "Sam steals the van" })).toBeVisible();
+
+    // A drag is one step: undo puts the card straight back.
+    const card = page.locator("article.note").filter({ hasText: "Maya finds the letter" });
+    const before = (await boardOnPage(page)).notes.find((note) => note.id === "maya-letter");
+    const box = await card.boundingBox();
+    await page.mouse.move(box.x + box.width / 2, box.y + 9);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width / 2 + 150, box.y + 9 + 120, { steps: 8 });
+    await page.mouse.up();
+    const moved = (await boardOnPage(page)).notes.find((note) => note.id === "maya-letter");
+    expect(moved.x).not.toBe(before.x);
+    await page.keyboard.press("ControlOrMeta+z");
+    const back = (await boardOnPage(page)).notes.find((note) => note.id === "maya-letter");
+    expect([back.x, back.y]).toEqual([before.x, before.y]);
+  } finally {
+    mcp.stop();
+  }
 });

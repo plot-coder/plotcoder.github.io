@@ -149,6 +149,7 @@ describe("plotcoder MCP server", () => {
       "set_plant",
       "set_rank",
       "set_target",
+      "undo",
       "ungroup",
       "update_note",
     ]);
@@ -872,5 +873,61 @@ describe("set_plant", () => {
       plants: true,
     });
     expect(created.plants).toBe(true);
+  });
+});
+
+// Undo (R33), through the agent door: the server walks back its own changes,
+// and refuses when the board moved on without it.
+describe("undo", () => {
+  let back;
+  let backRoot;
+  const file = () => path.join(backRoot, ".plotcoder", "board.json");
+
+  beforeAll(async () => {
+    backRoot = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-undo-"));
+    back = new McpClient(backRoot);
+    await back.start();
+  }, 30000);
+
+  afterAll(() => {
+    back?.stop();
+    if (backRoot) fs.rmSync(backRoot, { recursive: true, force: true });
+  });
+
+  it("has nothing to undo before it has done anything", async () => {
+    expect(await back.callTool("undo")).toContain("Nothing of mine to undo");
+  });
+
+  it("walks back its own changes one call at a time, newest first", async () => {
+    await back.callTool("create_note", { headline: "The gun on the wall", change: "Nobody mentions it." });
+    await back.callTool("move_note", { id: "maya-letter", x: 900, y: 40 });
+
+    const first = await back.callTool("undo");
+    expect(first).toContain("Undid move_note");
+    expect(first).toContain("1 more of mine");
+    let board = JSON.parse(fs.readFileSync(file(), "utf8")).state;
+    expect(board.notes.find((note) => note.id === "maya-letter")).toMatchObject({ x: 88, y: 120 });
+    expect(board.notes.some((note) => note.headline === "The gun on the wall")).toBe(true);
+
+    const second = await back.callTool("undo");
+    expect(second).toContain('Undid create_note "The gun on the wall"');
+    board = JSON.parse(fs.readFileSync(file(), "utf8")).state;
+    expect(board.notes.some((note) => note.headline === "The gun on the wall")).toBe(false);
+    expect(await back.callTool("undo")).toContain("Nothing of mine to undo");
+  });
+
+  it("refuses to undo over a change somebody else made since", async () => {
+    await back.callTool("set_logline", { logline: "Can Maya forgive?" });
+    // The person edits the wall in the meantime: the file moves on.
+    const saved = JSON.parse(fs.readFileSync(file(), "utf8"));
+    saved.state.notes[0].headline = "Maya finds the letter, again";
+    saved.rev += 1;
+    fs.writeFileSync(file(), JSON.stringify(saved));
+
+    const text = await back.callTool("undo");
+    expect(text).toContain("Not undone: the board has changed since my set_logline");
+    const board = JSON.parse(fs.readFileSync(file(), "utf8")).state;
+    expect(board.logline).toBe("Can Maya forgive?");
+    expect(board.notes[0].headline).toBe("Maya finds the letter, again");
   });
 });

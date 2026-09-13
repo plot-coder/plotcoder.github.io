@@ -94,6 +94,11 @@ lands on the exact same board a person sees.
 - `new_board` — an empty wall. **Destructive**: every card, group, arrow and
   the cast go. On a wall with work on it, ask the writer first and suggest Save
   project.
+- `undo` — take back **your own** last change, newest first. It refuses if the
+  board has changed since (the writer moved on), so it never tramples their
+  work; they can undo anything from the wall with ⌘Z. Use it when a
+  rearrangement did not help: try, `read_wall`, and undo if the reading got
+  worse.
 
 ## Workflow
 

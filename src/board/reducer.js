@@ -89,7 +89,11 @@ export function formatPages(eighths) {
 export const NOTE_WIDTH = 192;
 export const NOTE_HEIGHT = 192;
 
-const SETTLE_MARGIN = 80;
+// How far a dropped card's centre may sit outside the *other* members' bounds
+// and still belong to the group. It has to cover a whole neighbouring card:
+// the first card of a row sits a card-width from the rest, and dropping it in
+// place must not eject it. (It did, at 80px, until undo's tests caught it.)
+const SETTLE_MARGIN = NOTE_WIDTH + 40;
 
 export function newId() {
   const maybe = globalThis.crypto;
@@ -453,13 +457,19 @@ export function applyCommand(state, command, now = nowIso()) {
     case "settle_note": {
       const note = state.notes.find((item) => item.id === command.id);
       if (!note) return { state, changed: false };
+      // Only a card that actually left its frame is a change. A drop that
+      // changes nothing must say so, or it becomes an empty undo step (R33).
+      let touched = false;
       const groups = pruneGroups(
         state.groups.map((group) => {
           if (!group.noteIds.includes(command.id)) return group;
           const others = state.notes.filter(
             (item) => item.id !== command.id && group.noteIds.includes(item.id),
           );
-          if (others.length === 0) return { ...group, noteIds: [] };
+          if (others.length === 0) {
+            touched = true;
+            return { ...group, noteIds: [] };
+          }
           const left = Math.min(...others.map((item) => item.x)) - SETTLE_MARGIN;
           const top = Math.min(...others.map((item) => item.y)) - SETTLE_MARGIN;
           const right = Math.max(...others.map((item) => item.x + NOTE_WIDTH)) + SETTLE_MARGIN;
@@ -467,11 +477,12 @@ export function applyCommand(state, command, now = nowIso()) {
           const cx = note.x + NOTE_WIDTH / 2;
           const cy = note.y + NOTE_HEIGHT / 2;
           const inside = cx > left && cx < right && cy > top && cy < bottom;
-          return inside
-            ? group
-            : { ...group, noteIds: group.noteIds.filter((id) => id !== command.id) };
+          if (inside) return group;
+          touched = true;
+          return { ...group, noteIds: group.noteIds.filter((id) => id !== command.id) };
         }),
       );
+      if (!touched) return { state, changed: false };
       return { state: { ...state, groups }, changed: true };
     }
 

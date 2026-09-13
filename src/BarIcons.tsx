@@ -104,3 +104,33 @@ export function ChevronIcon({
     </svg>
   );
 }
+
+export function UndoIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M9.5 7.5 5.5 11l4 3.5M6 11h8.2a4.3 4.3 0 0 1 0 8.6H11"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function RedoIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="m14.5 7.5 4 3.5-4 3.5M18 11H9.8a4.3 4.3 0 0 0 0 8.6H13"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}

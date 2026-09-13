@@ -155,14 +155,7 @@ async function readBoard() {
   return { ...file, base: null, live: false };
 }
 
-async function commit(command) {
-  const { state, rev, base } = await readBoard();
-  const { state: next, changed, result } = applyCommand(state, command);
-  // `changed` is passed back so a tool can tell the agent that nothing
-  // happened, and why. A tool that silently reports success on a rejected
-  // command teaches the agent the board is in a state it is not.
-  if (!changed) return { state: next, changed, result, live: base !== null };
-
+async function writeBoard(next, rev, base) {
   if (base) {
     try {
       const res = await fetch(`${base}/__plotcoder/board`, {
@@ -174,14 +167,46 @@ async function commit(command) {
       if (res.ok) {
         const data = await res.json();
         if (data.state && isBoardState(data.state)) writeFileBoard(data.state, data.rev);
-        return { state: next, changed, result, live: true };
+        return true;
       }
     } catch (error) {
       log("bridge write failed, falling back to file:", error);
     }
   }
   writeFileBoard(next, rev + 1);
-  return { state: next, changed, result, live: false };
+  return false;
+}
+
+// This server's own trail of changes (R33): what the board was before each
+// of its tool calls, and what it became. `undo` walks it back — but only when
+// the board still is what the call left, so it never tramples a change the
+// person made on the wall since.
+const TRAIL_CAP = 50;
+const trail = [];
+
+function describeCommand(command) {
+  switch (command.type) {
+    case "create_note":
+      return `create_note "${command.headline ?? ""}"`;
+    case "recolor_notes":
+      return "recolor_note";
+    default:
+      return command.type;
+  }
+}
+
+async function commit(command) {
+  const { state, rev, base } = await readBoard();
+  const { state: next, changed, result } = applyCommand(state, command);
+  // `changed` is passed back so a tool can tell the agent that nothing
+  // happened, and why. A tool that silently reports success on a rejected
+  // command teaches the agent the board is in a state it is not.
+  if (!changed) return { state: next, changed, result, live: base !== null };
+
+  const live = await writeBoard(next, rev, base);
+  trail.push({ before: state, after: JSON.stringify(next), what: describeCommand(command) });
+  if (trail.length > TRAIL_CAP) trail.shift();
+  return { state: next, changed, result, live };
 }
 
 /** Where a change landed, for the tail of a tool's reply. */
@@ -501,6 +526,32 @@ server.registerTool(
         : ["  (none that this reading can see)"]),
     ];
     return ok(lines.join("\n"), reading);
+  },
+);
+
+server.registerTool(
+  "undo",
+  {
+    title: "Undo my last change",
+    description:
+      "Take back the last change this server made, restoring the board to what it was before that call. Refuses if the board has changed since — a person moved on, or another agent did — so it never tramples work; the person can always undo anything from the wall with ⌘Z. Call it again to go back further.",
+    inputSchema: {},
+  },
+  async () => {
+    const last = trail[trail.length - 1];
+    if (!last) return ok("Nothing of mine to undo in this session.");
+    const { state, rev, base } = await readBoard();
+    if (JSON.stringify(state) !== last.after) {
+      return ok(
+        `Not undone: the board has changed since my ${last.what}. Undoing now would trample that. Ask the person to undo from the wall if they want it back.`,
+      );
+    }
+    trail.pop();
+    const live = await writeBoard(last.before, rev, base);
+    return ok(
+      `Undid ${last.what}${where(live)}. ${trail.length} more of mine can be undone.`,
+      last.before,
+    );
   },
 );
 

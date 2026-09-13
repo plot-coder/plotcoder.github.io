@@ -50,8 +50,8 @@ export const WORKFLOWS = [
     id: "brief-a-segment",
     name: "Brief a segment for video",
     ask: "Brief the scene on this card for a video tool: who is in it and what they look and sound like, where it is, what happens, and what must be true after it.",
-    tools: ["segment_brief", "read_pages", "list_board"],
-    then: "Hand the brief to the writer to approve before any tool makes anything.",
+    tools: ["segment_brief", "build_segment", "add_take", "list_takes", "read_pages", "list_board"],
+    then: "Hand the brief to the writer to approve before any tool makes anything; file what is made with add_take.",
   },
 ];
 

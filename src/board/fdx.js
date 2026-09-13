@@ -13,6 +13,7 @@
 import { parseScene, TRANSITION } from "./paginate.js";
 import { readingOrder } from "./readWall.js";
 import { sceneHeading } from "./fountain.js";
+import { sceneNumbers } from "./numbering.js";
 
 function escapeXml(text) {
   return String(text)
@@ -51,9 +52,10 @@ function speechParagraphs(speech) {
  */
 export function toFdx(state, options = {}) {
   const order = readingOrder(state.notes);
+  const numbers = sceneNumbers(order, state.lock);
   let content = "";
   order.forEach((note, index) => {
-    const number = index + 1;
+    const number = numbers.get(note.id) ?? index + 1;
     content += paragraph("Scene Heading", sceneHeading(note).slice(1), ` Number="${number}"`).replace(
       "<Text>",
       `<SceneProperties Length="" Page="" Title="${escapeXml(note.headline)}" />\n      <Text>`,
@@ -81,7 +83,7 @@ export function toFdx(state, options = {}) {
   if (options.project && options.project !== options.title) title.push(paragraph("General", `An episode of ${options.project}`, ' Alignment="Center"'));
   if (options.author) title.push(paragraph("General", `Written by ${options.author}`, ' Alignment="Center"'));
   if (options.draftDate) title.push(paragraph("General", options.draftDate.slice(0, 10)));
-  title.push(paragraph("General", "Scene numbers follow the wall's order and are not locked."));
+  title.push(paragraph("General", state.lock ? `Scene numbers locked ${String(state.lock.at).slice(0, 10)}.` : "Scene numbers follow the wall's order and are not locked."));
 
   return (
     `<?xml version="1.0" encoding="UTF-8" standalone="no" ?>\n` +
@@ -95,6 +97,9 @@ export function toFdx(state, options = {}) {
 /** Every Paragraph in a Content, in order, with Type and Text; nested DualDialogue flattened with a dual mark. */
 function readParagraphs(xml) {
   const paragraphs = [];
+  // A script note holds its own Paragraphs; take it out first so the outer
+  // paragraph closes where it should. The receipt counts them from the body.
+  xml = xml.replace(/<ScriptNote\b[\s\S]*?<\/ScriptNote>/g, "");
   const re = /<Paragraph\b([^>]*)>([\s\S]*?)<\/Paragraph>/g;
   // DualDialogue holds inner Paragraphs; the lazy match above stops at the
   // first inner close, so read dual blocks first and blank them out.
@@ -120,7 +125,10 @@ function readParagraphs(xml) {
     }
     const texts = [...match[2].matchAll(/<Text\b[^>]*>([\s\S]*?)<\/Text>/g)].map((m) => unescapeXml(m[1]));
     const number = /Number="([^"]*)"/.exec(attrs)?.[1] ?? null;
-    paragraphs.push({ type, text: texts.join("").replace(/\s+$/, ""), number });
+    // Marks a production draft carries that the wall does not hold (yet).
+    const revised = /RevisionID="[^"]+"|Revision="[^"]+"/.test(match[2]) || /RevisionID="[^"]+"/.test(attrs);
+    const locked = /Locked="Yes"/.test(attrs) || /SceneNumberLocked="Yes"/.test(match[2]);
+    paragraphs.push({ type, text: texts.join("").replace(/\s+$/, ""), number, revised, locked });
   }
   return paragraphs;
 }
@@ -142,9 +150,15 @@ export function fromFdx(xml) {
     if (lines.length > 1) titles.notes = lines.slice(1).join("\n");
   }
   const scenes = [];
+  // The receipt (Roadmap 2, item 3): what was read and set aside, by count,
+  // so a writer bringing a production draft in knows what the wall does not hold.
+  const setAside = { scriptNotes: 0, revisedParagraphs: 0, lockedNumbers: 0, pageBreaks: 0, other: {} };
   let current = null;
   let lastKind = null;
+  setAside.scriptNotes = (body.match(/<ScriptNote\b/g) ?? []).length;
   for (const p of readParagraphs(body)) {
+    if (p.revised) setAside.revisedParagraphs += 1;
+    if (p.locked) setAside.lockedNumbers += 1;
     if (p.type === "Scene Heading") {
       current = { heading: p.text.trim().replace(/\s+/g, " "), forced: true, synopsis: "", section: null, notes: [], lines: [], number: p.number };
       scenes.push(current);
@@ -165,14 +179,28 @@ export function fromFdx(xml) {
       // A standard transition reads as one on its own; anything else is forced with >.
       current.lines.push("", TRANSITION.test(text) ? text : `> ${text}`);
     } else {
+      if (p.type !== "Action" && p.type !== "General") setAside.other[p.type] = (setAside.other[p.type] ?? 0) + 1;
       // Action, General and anything else: a paragraph of action.
       current.lines.push("", /^[A-Z0-9 .,'!?-]+$/.test(text) && /[A-Z]/.test(text) ? `!${text}` : text);
     }
     lastKind = p.type;
   }
+  setAside.pageBreaks = (body.match(/StartsNewPage="Yes"/g) ?? []).length;
   for (const scene of scenes) {
     scene.text = scene.lines.join("\n").replace(/^\n+/, "").replace(/\n{3,}/g, "\n\n").trim();
     delete scene.lines;
   }
-  return { titles, scenes };
+  return { titles, scenes, setAside };
+}
+
+/** The receipt as one line for a sheet or a tool: "" when nothing was set aside. */
+export function describeSetAside(setAside) {
+  if (!setAside) return "";
+  const parts = [];
+  if (setAside.scriptNotes) parts.push(`${setAside.scriptNotes} script note${setAside.scriptNotes === 1 ? "" : "s"}`);
+  if (setAside.revisedParagraphs) parts.push(`revision marks on ${setAside.revisedParagraphs} paragraph${setAside.revisedParagraphs === 1 ? "" : "s"}`);
+  if (setAside.lockedNumbers) parts.push(`${setAside.lockedNumbers} locked scene number${setAside.lockedNumbers === 1 ? "" : "s"}`);
+  if (setAside.pageBreaks) parts.push(`${setAside.pageBreaks} forced page break${setAside.pageBreaks === 1 ? "" : "s"}`);
+  for (const [type, count] of Object.entries(setAside.other)) parts.push(`${count} ${type} paragraph${count === 1 ? "" : "s"} read as action`);
+  return parts.length ? `Kept out of the wall: ${parts.join(" · ")}. Nothing was deleted.` : "";
 }

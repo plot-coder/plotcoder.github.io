@@ -66,9 +66,9 @@ export function ProjectModal({ open, onOpen, onClose, onSignIn, onPrint }: Proje
       const text = await file.text();
       if (/\.fdx$/i.test(file.name) || /<FinalDraft\b/.test(text.slice(0, 400))) {
         // A Final Draft script: its scenes land on the open board's cards.
-        const { written, created } = openFdxText(text);
+        const { written, created, setAside } = openFdxText(text);
         setError(null);
-        setNotice(`Read ${file.name}: ${written} scene${written === 1 ? "" : "s"} written onto cards, ${created} new card${created === 1 ? "" : "s"}.`);
+        setNotice(`Read ${file.name}: ${written} scene${written === 1 ? "" : "s"} written onto cards, ${created} new card${created === 1 ? "" : "s"}.${setAside ? ` ${setAside}` : ""}`);
         return;
       }
       if (/\.fountain$/i.test(file.name) || !text.trimStart().startsWith("{")) {
@@ -216,8 +216,8 @@ export function ProjectModal({ open, onOpen, onClose, onSignIn, onPrint }: Proje
             {!signedIn && account.ready ? (
               <div className="project-door">
                 <p className="project-copy">
-                  Sign in with a name and a password to keep this project on every device, or share it with
-                  another writer by name.
+                  Sign in with your email and a password to keep this project on every device, or share it
+                  with another writer.
                 </p>
                 <div className="project-actions">
                   <button

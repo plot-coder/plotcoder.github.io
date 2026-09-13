@@ -13,6 +13,8 @@ import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { sceneHeading } from "./board/fountain";
 import { paginateBoard } from "./pagesLayout";
 import { type Line } from "./board/paginate";
+import { SceneEditor } from "./SceneEditor";
+import { isRevised, revisedLines } from "./board/numbering";
 import { type WallReading } from "./board/readWall";
 import {
   formatPages,
@@ -25,9 +27,13 @@ import {
 type PagesPanelProps = {
   open: boolean;
   wide: boolean;
-  /** As text (the editor) or as pages (the print, R23 c). */
-  view: "text" | "pages";
-  onView: (view: "text" | "pages") => void;
+  /** As text (the editor), as pages (the print, R23 c), or as outline (the list, Roadmap 2 item 4). */
+  view: "text" | "pages" | "outline";
+  onView: (view: "text" | "pages" | "outline") => void;
+  /** The outline's drag: put a card after another, on the wall. */
+  onMoveAfter: (id: string, afterId: string | null) => void;
+  /** Where each card is for the outline's lines: places and cast by name. */
+  castNames: (note: BoardNote) => string;
   board: BoardState;
   reading: WallReading | null;
   /** The card whose scene should be in view: the selected one, or the one just clicked. */
@@ -51,7 +57,11 @@ export function PagesPanel({
   onToggleWide,
   onSetText,
   onFocusScene,
+  onMoveAfter,
+  castNames,
 }: PagesPanelProps) {
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [overId, setOverId] = useState<string | null>(null);
   const byId = useMemo(() => new Map(board.notes.map((note) => [note.id, note])), [board.notes]);
   const order = useMemo(
     () => (reading ? reading.order.map((id) => byId.get(id)).filter(Boolean) as BoardNote[] : board.notes),
@@ -80,7 +90,7 @@ export function PagesPanel({
   }, [open, onClose]);
 
   // The pages (R23 c): computed from the same order, never stored.
-  const pages = useMemo(() => (open && view === "pages" ? paginateBoard(board, reading) : null), [open, view, board, reading]);
+  const pages = useMemo(() => (open && view !== "text" ? paginateBoard(board, reading) : null), [open, view, board, reading]);
 
   if (!open) return null;
 
@@ -104,6 +114,9 @@ export function PagesPanel({
             <button type="button" className={`pages__seg-btn ${view === "pages" ? "is-on" : ""}`} aria-pressed={view === "pages"} onClick={() => onView("pages")}>
               As pages
             </button>
+            <button type="button" className={`pages__seg-btn ${view === "outline" ? "is-on" : ""}`} aria-pressed={view === "outline"} onClick={() => onView("outline")}>
+              As outline
+            </button>
           </span>
           {view === "pages" ? (
             <button type="button" className="cast-lens__action" onClick={() => window.print()}>
@@ -119,30 +132,137 @@ export function PagesPanel({
         </div>
       </div>
 
-      {pages ? (
-        <div className="pages__sheet pages__sheet--print print-pages" ref={listRef}>
-          {pages.pages.map((page) => (
-            <div key={page.number} className="print-page" data-page={page.number}>
-              <div className="print-page__number">{page.number}.</div>
-              <div className="print-page__body">
-                {page.lines.map((line, index) => (
-                  <PrintLine
-                    key={index}
-                    line={line}
-                    first={index === 0 || page.lines[index - 1]?.noteId !== line.noteId}
-                    focus={line.noteId === focusId}
-                    onFocus={() => {
-                      if (line.noteId) onFocusScene(line.noteId);
-                    }}
-                  />
-                ))}
-              </div>
-            </div>
-          ))}
+      {pages && view === "outline" ? (
+        <div className="pages__sheet pages__outline" ref={listRef}>
+          <ol className="outline" aria-label="Outline">
+            <li
+              className={`outline__top ${overId === "__top" ? "is-over" : ""}`}
+              onDragOver={(event) => {
+                event.preventDefault();
+                setOverId("__top");
+              }}
+              onDragLeave={() => setOverId((current) => (current === "__top" ? null : current))}
+              onDrop={(event) => {
+                event.preventDefault();
+                if (dragId) onMoveAfter(dragId, null);
+                setDragId(null);
+                setOverId(null);
+              }}
+            >
+              {dragId ? "Drop here to make it the first scene" : ""}
+            </li>
+            {pages.order.map((note, index) => {
+              const scene = pages.scenes[index];
+              const measured = isMeasured(note);
+              const beat = note.rank === "beat";
+              return (
+                <li
+                  key={note.id}
+                  className={`outline__scene ${beat ? "is-beat" : ""} ${note.id === focusId ? "is-focus" : ""} ${dragId === note.id ? "is-drag" : ""} ${overId === note.id ? "is-over" : ""}`}
+                  data-scene={note.id}
+                  draggable
+                  onDragStart={(event) => {
+                    setDragId(note.id);
+                    event.dataTransfer.effectAllowed = "move";
+                    event.dataTransfer.setData("text/plain", note.id);
+                  }}
+                  onDragEnd={() => {
+                    setDragId(null);
+                    setOverId(null);
+                  }}
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                    setOverId(note.id);
+                  }}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    if (dragId && dragId !== note.id) onMoveAfter(dragId, note.id);
+                    setDragId(null);
+                    setOverId(null);
+                  }}
+                  onClick={() => onFocusScene(note.id)}
+                >
+                  <span className="outline__n">{scene?.number}</span>
+                  <span className={`outline__sw outline__sw--${note.color}`} aria-hidden="true" />
+                  <span className="outline__headline">
+                    {note.headline || "Untitled"}
+                    <span className="outline__meta">
+                      {note.location ? ` · ${note.location}` : ""}
+                      {castNames(note) ? ` · ${castNames(note)}` : ""}
+                    </span>
+                  </span>
+                  <span className="outline__pages">{measured ? `p. ${scene?.page}` : `≈${formatPages(noteEighths(note))} pp`}</span>
+                  <span className="outline__tag">{beat ? "beat" : ""}</span>
+                </li>
+              );
+            })}
+          </ol>
           <p className="pages__print-note">
-            Letter, Courier 12, fifty-five lines. Scene numbers follow the wall's order. Click a scene to
-            edit it as text.
+            The wall's reading order as a list. Drag a scene and its card moves on the wall to sit after the
+            one above it; Organize tidies the row.
           </p>
+        </div>
+      ) : pages ? (
+        <div className="pages__sheet pages__sheet--print" ref={listRef}>
+          {/* On screen: one continuous page, the editor. The page turns are drawn where the paginator puts them. */}
+          <div className="script">
+            <div className="script__number">1.</div>
+            {pages.order.map((note, index) => {
+              const scene = pages.scenes[index];
+              const turns = pages.turnsOf.get(note.id) ?? [];
+              const before = turns.filter((turn) => turn.src < 0);
+              const inside = turns.filter((turn) => turn.src >= 0);
+              const revision = board.revision;
+              const revised = revision ? isRevised(note, revision.snapshot[note.id]) : false;
+              return (
+                <section
+                  key={note.id}
+                  className={`script__scene ${note.id === focusId ? "is-focus" : ""} ${revised ? `is-revised rev--${revision?.color}` : ""}`}
+                  data-scene={note.id}
+                >
+                  {before.map((turn) => (
+                    <div key={turn.page} className="scene-editor__turn scene-editor__turn--between" aria-hidden="true">
+                      <span className="scene-editor__rule"><span className="scene-editor__page">{turn.page}.</span></span>
+                    </div>
+                  ))}
+                  <h3 className="sl sl--heading">
+                    <span className="pl__num pl__num--l">{scene?.number}</span>
+                    {sceneHeading(note).slice(1)}
+                    <span className="pl__num pl__num--r">{scene?.number}</span>
+                  </h3>
+                  <SceneEditor
+                    note={note}
+                    turns={inside}
+                    revisedLines={revision ? revisedLines(note.text, revision.snapshot[note.id]?.text ?? null) : []}
+                    onCommit={(text) => onSetText(note.id, text)}
+                    onFocus={() => onFocusScene(note.id)}
+                    onBlur={() => onFocusScene(null)}
+                  />
+                </section>
+              );
+            })}
+            <p className="pages__print-note">
+              Letter, Courier 12, fifty-five lines. The page turns where the paginator puts it; scene numbers
+              follow the wall's order. Print sets it as separate pages.
+            </p>
+          </div>
+          {/* In print: the same script as separate Letter pages. */}
+          <div className="print-pages print-only" aria-hidden="true">
+            {pages.pages.map((page) => (
+              <div key={page.number} className="print-page" data-page={page.number}>
+                <div className="print-page__number">{page.number}.</div>
+                <div className="print-page__body">
+                  {page.lines.map((line, index) => {
+                    const note = line.noteId ? byId.get(line.noteId) : undefined;
+                    const snapshot = board.revision && note ? board.revision.snapshot[note.id] : undefined;
+                    const starred =
+                      Boolean(board.revision) && note !== undefined && (line.src === -1 ? isRevised(note, snapshot) : typeof line.src === "number" && revisedLines(note.text, snapshot?.text ?? null).includes(line.src));
+                    return <PrintLine key={index} line={line} first={false} focus={false} starred={starred} onFocus={() => {}} />;
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       ) : (
       <div className="pages__sheet" ref={listRef}>
@@ -185,7 +305,7 @@ export function PagesPanel({
 }
 
 // One line of a printed page, at the element's column. A dual line is two.
-function PrintLine({ line, first, focus, onFocus }: { line: Line; first: boolean; focus: boolean; onFocus: () => void }) {
+function PrintLine({ line, first, focus, starred = false, onFocus }: { line: Line; first: boolean; focus: boolean; starred?: boolean; onFocus: () => void }) {
   if (line.kind === "dual") {
     return (
       <div className={`pl pl--dual ${focus ? "is-focus" : ""}`} data-scene={first ? line.noteId : undefined} onClick={onFocus}>
@@ -195,10 +315,11 @@ function PrintLine({ line, first, focus, onFocus }: { line: Line; first: boolean
     );
   }
   return (
-    <div className={`pl pl--${line.kind} ${focus ? "is-focus" : ""}`} data-scene={first ? line.noteId : undefined} onClick={onFocus}>
+    <div className={`pl pl--${line.kind} ${focus ? "is-focus" : ""} ${starred ? "is-starred" : ""}`} data-scene={first ? line.noteId : undefined} onClick={onFocus}>
       {line.kind === "heading" && line.sceneNumber ? <span className="pl__num pl__num--l">{line.sceneNumber}</span> : null}
       {line.text}
       {line.kind === "heading" && line.sceneNumber ? <span className="pl__num pl__num--r">{line.sceneNumber}</span> : null}
+      {starred ? <span className="pl__star" aria-label="revised">*</span> : null}
     </div>
   );
 }

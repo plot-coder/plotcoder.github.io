@@ -79,7 +79,7 @@ export function parseScene(text) {
       continue;
     }
     if (/^={3,}$/.test(line)) {
-      elements.push({ kind: "break" });
+      elements.push({ kind: "break", at: i });
       i += 1;
       continue;
     }
@@ -88,17 +88,17 @@ export function parseScene(text) {
       continue;
     }
     if (/^>.*<$/.test(line)) {
-      elements.push({ kind: "centered", text: line.slice(1, -1).trim() });
+      elements.push({ kind: "centered", text: line.slice(1, -1).trim(), at: i });
       i += 1;
       continue;
     }
     if (line.startsWith(">") || (TRANSITION.test(line) && blankBefore(i) && blankAfter(i))) {
-      elements.push({ kind: "transition", text: line.replace(/^>\s*/, "") });
+      elements.push({ kind: "transition", text: line.replace(/^>\s*/, ""), at: i });
       i += 1;
       continue;
     }
     if (line.startsWith("!")) {
-      elements.push({ kind: "action", text: line.slice(1) });
+      elements.push({ kind: "action", text: line.slice(1), at: i });
       i += 1;
       continue;
     }
@@ -108,27 +108,59 @@ export function parseScene(text) {
     if (cue && blankBefore(i) && !blankAfter(i) && /[A-Z]/.test(line) && !TRANSITION.test(line)) {
       const dual = Boolean(cue[3]);
       const name = `${cue[1].replace(/^@/, "").trim()}${cue[2] ? ` ${cue[2].trim()}` : ""}`;
+      const at = i;
       const speech = [];
       i += 1;
       while (i < lines.length && lines[i].trim() !== "") {
         const part = lines[i].trim();
-        if (/^\(.*\)$/.test(part)) speech.push({ kind: "parenthetical", text: part });
-        else speech.push({ kind: "dialogue", text: part });
+        if (/^\(.*\)$/.test(part)) speech.push({ kind: "parenthetical", text: part, at: i });
+        else speech.push({ kind: "dialogue", text: part, at: i });
         i += 1;
       }
-      elements.push({ kind: "speech", name, dual, parts: mergeDialogue(speech) });
+      elements.push({ kind: "speech", name, dual, parts: mergeDialogue(speech), at });
       continue;
     }
     // Action: consecutive non-blank lines are one paragraph, line breaks kept.
+    const at = i;
     const paragraph = [raw.replace(/\s+$/, "")];
     i += 1;
     while (i < lines.length && lines[i].trim() !== "") {
       paragraph.push(lines[i].replace(/\s+$/, ""));
       i += 1;
     }
-    elements.push({ kind: "action", text: paragraph.join("\n") });
+    elements.push({ kind: "action", text: paragraph.join("\n"), at });
   }
   return elements;
+}
+
+/**
+ * The kind of each source line of a scene, for an editor that keeps the
+ * writer's lines as they are and only styles them: the same rules as
+ * parseScene, line by line — "blank", "action", "character", "parenthetical",
+ * "dialogue", "transition", "centered", "break", "note".
+ */
+export function classifyLines(text) {
+  const lines = (text ?? "").replace(/\r\n?/g, "\n").split("\n");
+  const kinds = lines.map(() => "action");
+  const elements = parseScene(text);
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i].trim();
+    if (!line) kinds[i] = "blank";
+    else if (line.startsWith("[[") || line.startsWith("=") || line.startsWith("#") || line.startsWith("/*")) kinds[i] = "note";
+  }
+  for (const element of elements) {
+    if (element.kind === "break") kinds[element.at] = "break";
+    else if (element.kind === "centered" || element.kind === "transition") kinds[element.at] = element.kind;
+    else if (element.kind === "speech") {
+      kinds[element.at] = "character";
+      for (const part of element.parts) if (typeof part.at === "number") kinds[part.at] = part.kind;
+      // merged dialogue lines: every non-blank line after the cue until a blank
+      for (let j = element.at + 1; j < lines.length && lines[j].trim() !== ""; j += 1) {
+        if (kinds[j] === "action") kinds[j] = /^\(.*\)$/.test(lines[j].trim()) ? "parenthetical" : "dialogue";
+      }
+    }
+  }
+  return kinds;
 }
 
 function mergeDialogue(parts) {
@@ -148,7 +180,7 @@ function mergeDialogue(parts) {
  */
 export function layoutScene(elements, heading, sceneNumber) {
   const blocks = [];
-  if (heading) blocks.push({ kind: "heading", lines: wrap(heading, WIDTH.heading).map((text) => ({ kind: "heading", text, sceneNumber })) });
+  if (heading) blocks.push({ kind: "heading", lines: wrap(heading, WIDTH.heading).map((text) => ({ kind: "heading", text, sceneNumber, src: -1 })) });
   for (let index = 0; index < elements.length; index += 1) {
     const element = elements[index];
     if (element.kind === "break") {
@@ -156,7 +188,7 @@ export function layoutScene(elements, heading, sceneNumber) {
       continue;
     }
     if (element.kind === "action" || element.kind === "transition" || element.kind === "centered") {
-      blocks.push({ kind: element.kind, lines: wrap(element.text, WIDTH[element.kind]).map((text) => ({ kind: element.kind, text })) });
+      blocks.push({ kind: element.kind, lines: wrap(element.text, WIDTH[element.kind]).map((text) => ({ kind: element.kind, text, src: element.at })) });
       continue;
     }
     if (element.kind === "speech") {
@@ -185,10 +217,10 @@ export function layoutScene(elements, heading, sceneNumber) {
 }
 
 function speechLines(speech, dialogueWidth) {
-  const lines = [{ kind: "character", text: speech.name.toUpperCase() }];
+  const lines = [{ kind: "character", text: speech.name.toUpperCase(), src: speech.at }];
   for (const part of speech.parts) {
     const width = part.kind === "parenthetical" ? WIDTH.parenthetical : dialogueWidth;
-    for (const text of wrap(part.text, width)) lines.push({ kind: part.kind, text });
+    for (const text of wrap(part.text, width)) lines.push({ kind: part.kind, text, src: part.at ?? speech.at });
   }
   return lines;
 }
@@ -331,8 +363,8 @@ export function sceneLineCount(text) {
 export function paginate(scenes) {
   const laid = scenes.map((scene, index) => ({
     id: scene.id,
-    number: index + 1,
-    blocks: layoutScene(parseScene(scene.written ? scene.text : scene.change || ""), scene.heading, index + 1),
+    number: scene.number ?? index + 1,
+    blocks: layoutScene(parseScene(scene.written ? scene.text : scene.change || ""), scene.heading, scene.number ?? index + 1),
   }));
   const { pages, placement } = paginateBlocks(laid);
   return {

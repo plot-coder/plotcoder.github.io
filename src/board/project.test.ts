@@ -14,6 +14,8 @@ import {
   setPremise,
   type ProjectRecord,
   reidentifyProject,
+  addStructure,
+  removeStructure,
 } from "./project";
 
 const NOW = "2026-01-01T00:00:00.000Z";
@@ -179,5 +181,18 @@ describe("reidentifyProject (R40)", () => {
     expect(fresh.updatedAt).toBe("2026-02-01T00:00:00.000Z");
     // The map is not part of the record once normalized.
     expect("renamed" in normalizeProject(fresh)).toBe(false);
+  });
+});
+
+describe("a writer's own structures (Roadmap 2, item 7)", () => {
+  it("saves beats on the project, forgets one, and normalizes a record without any", () => {
+    const base = emptyProject("2026-01-01T00:00:00.000Z");
+    const { project, structure } = addStructure(base, "  Robert's turns ", [{ name: "The turn", prompt: "What turns?", at: 0.5 }]);
+    expect(structure.name).toBe("Robert's turns");
+    expect(project.structures).toHaveLength(1);
+    expect(normalizeProject(project).structures).toEqual(project.structures);
+    expect(normalizeProject(base).structures).toEqual([]);
+    expect(removeStructure(project, structure.id).structures).toEqual([]);
+    expect(removeStructure(project, "nope")).toBe(project);
   });
 });

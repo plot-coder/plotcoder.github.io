@@ -9,6 +9,8 @@ import { accountStore } from "./board/account";
 import { boardStore, installWindowApi } from "./board/store";
 import { type NoteColor, type NoteRank } from "./noteMock";
 import { readWall } from "./board/readWall";
+import { castText } from "./castNames";
+import { sceneNumbers } from "./board/numbering";
 import {
   boardEighths,
   countRanks,
@@ -18,6 +20,9 @@ import {
   type CharacterField,
   boardPlaces,
   isMeasured,
+  type BoardNote,
+  atPlace,
+  noteEighths,
 } from "./board/reducer";
 import { organizePoses } from "./board/organize";
 import { ProjectModal } from "./ProjectModal";
@@ -26,6 +31,7 @@ import { StructureSheet } from "./StructureSheet";
 import { PagesPanel } from "./PagesPanel";
 import { paginateBoard } from "./pagesLayout";
 import { BriefSheet } from "./BriefSheet";
+import { TakesPanel } from "./TakesPanel";
 import { AccountSheet } from "./AccountSheet";
 import { ProjectPicker } from "./ProjectPicker";
 import { StoryMap } from "./StoryMap";
@@ -53,7 +59,16 @@ function readMapOpen(): boolean {
 const BAR_KEY_LEGACY = "plotcoder.generalBar.expanded";
 const PAGES_KEY = "plotcoder.pages.open";
 const PAGES_WIDE_KEY = "plotcoder.pages.wide";
-const PAGES_VIEW_KEY = "plotcoder.pages.asPages";
+const PAGES_VIEW_KEY = "plotcoder.pages.view";
+
+function readPagesView(): "text" | "pages" | "outline" {
+  try {
+    const stored = localStorage.getItem(PAGES_VIEW_KEY);
+    return stored === "pages" || stored === "outline" ? stored : "text";
+  } catch {
+    return "text";
+  }
+}
 
 function readFlag(key: string, fallback: boolean): boolean {
   try {
@@ -90,10 +105,13 @@ export function App() {
   const [structureOpen, setStructureOpen] = useState(false);
   // The brief (R28, first step): for the selected card or cards.
   const [briefOpen, setBriefOpen] = useState(false);
+  // Takes (R28, item 9): for the selected card or run.
+  const [takesOpen, setTakesOpen] = useState(false);
+  const [takesIds, setTakesIds] = useState<string[]>([]);
   // Pages beside the wall (R23 b): open, and whether it takes the window.
   const [pagesOpen, setPagesOpen] = useState<boolean>(() => readFlag(PAGES_KEY, false));
   const [pagesWide, setPagesWide] = useState<boolean>(() => readFlag(PAGES_WIDE_KEY, false));
-  const [pagesView, setPagesView] = useState<"text" | "pages">(() => (readFlag(PAGES_VIEW_KEY, false) ? "pages" : "text"));
+  const [pagesView, setPagesView] = useState<"text" | "pages" | "outline">(() => readPagesView());
   // The scene with the caret: its card lights on the wall.
   const [sceneFocusId, setSceneFocusId] = useState<string | null>(null);
   // The cast lens (R29): who the wall is being looked at through. Hover is a
@@ -109,6 +127,7 @@ export function App() {
   // The card under the pointer on the wall, so the map can light its block.
   const [hoverNoteId, setHoverNoteId] = useState<string | null>(null);
   const board = useSyncExternalStore(boardStore.subscribe, boardStore.getState);
+  const account = useSyncExternalStore(accountStore.subscribe, accountStore.getAccount);
   const history = useSyncExternalStore(boardStore.subscribe, boardStore.getHistory);
   // The project (R35): the boards, the premise, which board is open.
   const project = useSyncExternalStore(boardStore.subscribe, boardStore.getProject);
@@ -116,10 +135,38 @@ export function App() {
   const castFocusId = castOpen ? (castHeld ?? castHover) : null;
   const placeFocus = castOpen && castFocusId === null ? (placeHeld ?? placeHover) : null;
   // The places on the wall, for the lens and for completion on every card.
-  const places = useMemo(() => boardPlaces(board), [board]);
+  const places = useMemo(
+    () =>
+      boardPlaces(board).map((place) => ({
+        ...place,
+        eighths: board.notes.filter((note) => atPlace(note, place.name)).reduce((sum, note) => sum + noteEighths(note), 0),
+        people: [...new Set(board.notes.filter((note) => atPlace(note, place.name)).flatMap((note) => note.characterIds))]
+          .map((id) => characters.find((character) => character.id === id)?.name)
+          .filter((name): name is string => Boolean(name)),
+      })),
+    [board, characters],
+  );
   const placeNames = useMemo(() => places.map((place) => place.name), [places]);
   // One reading of the wall for the lens and the map, so they agree.
   const reading = useMemo(() => readWall(board), [board]);
+  // Cards with a take filed on them, alone or in a run (item 9): a mark on the card.
+  const hasTake = useMemo(() => {
+    const marked = new Set<string>();
+    for (const asset of account.assets) {
+      if (asset.kind !== "take") continue;
+      if (asset.subject.startsWith("run:")) for (const id of asset.subject.slice(4).split("+")) marked.add(id);
+      else marked.add(asset.subject);
+    }
+    return marked;
+  }, [account.assets]);
+
+  // Locked scene numbers on the cards (Roadmap 2, item 8); nothing until locked.
+  const numberOf = useMemo(() => {
+    if (!board.lock) return new Map<string, string>();
+    const order = reading.order.map((id) => notes.find((note) => note.id === id)).filter(Boolean) as BoardNote[];
+    return sceneNumbers(order, board.lock);
+  }, [board.lock, reading, notes]);
+
   // The page each written scene starts on (R23 c), for the card's corner.
   const pageOf = useMemo(() => {
     if (!board.notes.some((note) => isMeasured(note))) return new Map<string, number>();
@@ -342,6 +389,21 @@ export function App() {
     boardStore.dispatch({ type: "set_location", ids, location });
   }
 
+  // Every picture of a person as one package (Roadmap 2, item 5).
+  async function downloadPictures(characterId: string, name: string) {
+    const pictures = account.assets.filter((asset) => asset.subject === characterId && asset.kind === "picture");
+    if (!pictures.length) return;
+    const folder = name.replace(/[^A-Za-z0-9._-]+/g, "-") || "pictures";
+    const bytes = await accountStore.packageAssets(pictures, folder);
+    const blob = new Blob([bytes.slice().buffer as ArrayBuffer], { type: "application/zip" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${folder}-pictures.zip`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
   function addCharacter(name: string) {
     boardStore.dispatch({ type: "add_character", name });
   }
@@ -428,16 +490,37 @@ export function App() {
     selectNotes([]);
   }
 
+  // A writer's own structure, saved from this wall's beats (Roadmap 2, item 7).
+  function saveStructure(name: string) {
+    boardStore.saveStructure(name, reading);
+  }
+
   // Lay a structure's beats on the wall (R38): one command, one undo step,
   // then the window fits the wall so the new row is in view.
   function applyTemplate(templateId: string) {
-    const created = boardStore.dispatch({ type: "apply_template", template: templateId }) as
-      | { id: string }[]
-      | undefined;
+    const own = project.structures?.find((structure) => structure.id === templateId);
+    const created = boardStore.dispatch(
+      own ? { type: "apply_template", template: own.id, beats: own.beats } : { type: "apply_template", template: templateId },
+    ) as { id: string }[] | undefined;
     setStructureOpen(false);
     if (!created || created.length === 0) return;
     selectNotes(created.map((note) => note.id));
     setView(fitView(boardStore.getState().notes, viewportSize()));
+  }
+
+  // The outline (Roadmap 2, item 4): a dragged scene's card sits after the
+  // one above it on the wall, on that row; null puts it before the first.
+  function moveAfter(id: string, afterId: string | null) {
+    const order = reading.order.map((noteId) => notes.find((note) => note.id === noteId)).filter(Boolean) as BoardNote[];
+    if (afterId === null) {
+      const first = order[0];
+      if (!first || first.id === id) return;
+      boardStore.dispatch({ type: "move_note", id, x: first.x - NOTE_WIDTH - 28, y: first.y });
+      return;
+    }
+    const target = notes.find((note) => note.id === afterId);
+    if (!target || target.id === id) return;
+    boardStore.dispatch({ type: "move_note", id, x: target.x + NOTE_WIDTH + 28, y: target.y });
   }
 
   // Pages (R23 b): the scene's text onto its card.
@@ -518,6 +601,12 @@ export function App() {
         onRenameProject={boardStore.renameProject}
         onSetPremise={savePremise}
         onOpenAccount={() => setAccountOpen(true)}
+        lock={board.lock}
+        revision={board.revision}
+        onLock={() => boardStore.dispatch({ type: "lock_numbers", order: reading.order })}
+        onUnlock={() => boardStore.dispatch({ type: "unlock_numbers" })}
+        onStartRevision={(name, color) => boardStore.dispatch({ type: "start_revision", name, color })}
+        onEndRevision={() => boardStore.dispatch({ type: "end_revision" })}
       />
       <Logline
         logline={board.logline}
@@ -545,6 +634,11 @@ export function App() {
           onClose={closeCast}
           onHover={setCastHover}
           onHold={setCastHeld}
+          pictures={account.user ? account.assets : null}
+          uploading={account.uploading}
+          onAddPictures={(characterId, files) => void accountStore.addFiles(files, "picture", characterId)}
+          onRemovePicture={(assetId) => void accountStore.removeAsset(assetId)}
+          onDownloadPictures={(characterId, name) => void downloadPictures(characterId, name)}
           places={places}
           placeHover={placeHover}
           placeHeld={placeHeld}
@@ -571,7 +665,11 @@ export function App() {
             setPagesOpen(true);
             writeFlag(PAGES_KEY, true);
             setPagesView("pages");
-            writeFlag(PAGES_VIEW_KEY, true);
+            try {
+              localStorage.setItem(PAGES_VIEW_KEY, "pages");
+            } catch {
+              /* per-viewer convenience only */
+            }
             window.setTimeout(() => window.print(), 400);
           }}
         />
@@ -580,8 +678,11 @@ export function App() {
         <StructureSheet
           open={structureOpen}
           board={board}
+          own={project.structures ?? []}
           onClose={() => setStructureOpen(false)}
           onApply={applyTemplate}
+          onSave={saveStructure}
+          onForget={(id) => boardStore.removeStructure(id)}
         />
       </div>
       <BriefSheet
@@ -590,6 +691,20 @@ export function App() {
         ids={selectedIds}
         title={project.boards.find((item) => item.id === project.activeBoardId)?.name ?? ""}
         onClose={() => setBriefOpen(false)}
+        onTakes={() => {
+          setTakesIds(selectedIds);
+          setBriefOpen(false);
+          setTakesOpen(true);
+        }}
+      />
+      <TakesPanel
+        open={takesOpen && takesIds.length > 0}
+        board={board}
+        ids={takesIds}
+        title={project.boards.find((item) => item.id === project.activeBoardId)?.name ?? ""}
+        takes={account.user ? account.assets : null}
+        uploading={account.uploading}
+        onClose={() => setTakesOpen(false)}
       />
       <PagesPanel
         open={pagesOpen}
@@ -597,8 +712,14 @@ export function App() {
         view={pagesView}
         onView={(next) => {
           setPagesView(next);
-          writeFlag(PAGES_VIEW_KEY, next === "pages");
+          try {
+            localStorage.setItem(PAGES_VIEW_KEY, next);
+          } catch {
+            /* per-viewer convenience only */
+          }
         }}
+        onMoveAfter={moveAfter}
+        castNames={(note) => castText(note.characterIds, characters)}
         board={board}
         reading={reading}
         focusId={sceneFocusId ?? (selectedIds.length === 1 ? selectedIds[0] : null)}
@@ -609,13 +730,7 @@ export function App() {
         }}
         onToggleWide={togglePagesWide}
         onSetText={setSceneText}
-        onFocusScene={(id) => {
-          focusScene(id);
-          if (id && pagesView === "pages") {
-            setPagesView("text");
-            writeFlag(PAGES_VIEW_KEY, false);
-          }
-        }}
+        onFocusScene={focusScene}
       />
       <NoteBoard
         boardRef={boardRef}
@@ -623,6 +738,9 @@ export function App() {
         view={view}
         onView={updateView}
         pageOf={pageOf}
+        numberOf={numberOf}
+        revision={board.revision}
+        hasTake={hasTake}
         notes={notes}
         groups={groups}
         arrows={arrows}
@@ -660,6 +778,7 @@ export function App() {
         reading={reading}
         open={mapOpen}
         castFocusId={castFocusId}
+        placeFocus={placeFocus}
         hoverId={hoverNoteId}
         selectedId={selectedIds.length === 1 ? selectedIds[0] : null}
         visibleIds={visibleIds}
@@ -683,6 +802,10 @@ export function App() {
         onStructure={() => setStructureOpen(true)}
         canBrief={selectedIds.length > 0}
         onBrief={() => setBriefOpen(true)}
+        onTakes={() => {
+          setTakesIds(selectedIds);
+          setTakesOpen(true);
+        }}
         zoom={view.scale}
         canFit={notes.length > 0}
         beats={shape.beats}

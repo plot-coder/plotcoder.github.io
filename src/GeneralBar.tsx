@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
   ChevronIcon,
   FitIcon,
@@ -6,6 +7,7 @@ import {
   OrganizeIcon,
   StructureIcon,
   BriefIcon,
+  WallIcon,
   RedoIcon,
   ThemeIcon,
   UndoIcon,
@@ -34,6 +36,7 @@ type GeneralBarProps = {
   /** A card or cards are selected: the brief for that segment (R28). */
   canBrief: boolean;
   onBrief: () => void;
+  onTakes: () => void;
   zoom: number;
   canFit: boolean;
   beats: number;
@@ -63,6 +66,7 @@ export function GeneralBar({
   onStructure,
   canBrief,
   onBrief,
+  onTakes,
   zoom,
   canFit,
   beats,
@@ -77,6 +81,24 @@ export function GeneralBar({
   const nextChange = formatNextChange(theme);
   const followingClock = theme === scheduled;
   const over = runtimeEighths - targetEighths;
+  const [wallOpen, setWallOpen] = useState(false);
+
+  useEffect(() => {
+    if (!wallOpen) return;
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setWallOpen(false);
+    }
+    function onDown(event: PointerEvent) {
+      const el = event.target as HTMLElement | null;
+      if (!el?.closest(".bar-wall")) setWallOpen(false);
+    }
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("pointerdown", onDown);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("pointerdown", onDown);
+    };
+  }, [wallOpen]);
 
   return (
     <aside
@@ -91,84 +113,49 @@ export function GeneralBar({
               type="button"
               className="general-bar__toggle"
               aria-expanded={true}
+              aria-label="Fold the general bar"
               onClick={() => onSetLayer("strip")}
             >
-              Collapse
+              ﹀
             </button>
           </div>
 
-          <div className="general-bar__item">
-            <div className="general-bar__item-copy">
-              <p className="general-bar__item-label">Canvas</p>
-              <p className="general-bar__item-meta">
-                {theme === "dark" ? "Black" : "White"}
-                {followingClock ? " · follows the clock" : " · until the next clock"}
-              </p>
+          {/* The readout: the facts the strip cannot say, one line each, and
+              the verbs as words for anyone who never found the strip. */}
+          <div className="readout">
+            <div className="readout__line">
+              <span className="readout__k">Canvas</span>
+              <span className="readout__v readout__v--compact">
+                {theme === "dark" ? "Black" : "White"}{" "}
+                <span className="readout__note">· {followingClock ? "follows the clock" : "until the next clock"} · {nextChange.toLowerCase()}</span>
+              </span>
+              <button
+                type="button"
+                className={`theme-switch theme-switch--${theme} theme-switch--small`}
+                onClick={onToggleTheme}
+                aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} canvas`}
+              >
+                <span className="theme-switch__knob" />
+                <span className="theme-switch__sun" aria-hidden="true" />
+                <span className="theme-switch__moon" aria-hidden="true" />
+              </button>
             </div>
-            <button
-              type="button"
-              className={`theme-switch theme-switch--${theme}`}
-              onClick={onToggleTheme}
-              aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} canvas`}
-            >
-              <span className="theme-switch__knob" />
-              <span className="theme-switch__sun" aria-hidden="true" />
-              <span className="theme-switch__moon" aria-hidden="true" />
-            </button>
-          </div>
 
-          <p className="general-bar__clock">{nextChange}</p>
-
-          <button type="button" className="new-note" onClick={onNewNote}>
-            <span className="new-note__pad" aria-hidden="true" />
-            New note
-          </button>
-          {/* Undo takes back the last step whoever made it — a drag, a typed
-              line, or an agent's tool call that arrived through the bridge. */}
-          <div className="undo-row">
-            <button type="button" className="new-note new-note--half" onClick={onUndo} disabled={!canUndo}>
-              Undo
-            </button>
-            <button type="button" className="new-note new-note--half" onClick={onRedo} disabled={!canRedo}>
-              Redo
-            </button>
-          </div>
-          {canGroup ? (
-            <button type="button" className="new-note new-note--group" onClick={onGroup}>
-              Group
-            </button>
-          ) : null}
-          <button type="button" className="new-note" onClick={onOrganize}>
-            Organize
-          </button>
-          <button type="button" className="new-note" onClick={onStructure}>
-            Structure
-          </button>
-          {canBrief ? (
-            <button type="button" className="new-note" onClick={onBrief}>
-              Brief
-            </button>
-          ) : null}
-
-          {/* The count and nothing else. No nudge under 8, no warning over 15 —
-              the range is a guide the writer holds, not a rule we enforce (D21). */}
-          <div className="general-bar__item">
-            <div className="general-bar__item-copy">
-              <p className="general-bar__item-label">Shape</p>
-              <p className="general-bar__item-meta">
-                {beats} {beats === 1 ? "beat" : "beats"} · {scenes}{" "}
-                {scenes === 1 ? "scene" : "scenes"}
-              </p>
+            {/* The count and nothing else. No nudge under 8, no warning over 15 —
+                the range is a guide the writer holds, not a rule we enforce (D21). */}
+            <div className="readout__line">
+              <span className="readout__k">Shape</span>
+              <span className="readout__v">
+                {beats} {beats === 1 ? "beat" : "beats"} · {scenes} {scenes === 1 ? "scene" : "scenes"}
+              </span>
+              <span />
             </div>
-          </div>
 
-          {/* An estimate, and it says so. The number that matters is not the
-              total but where the runtime went, which is why the target sits
-              beside it — over or under is the only judgement the bar makes. */}
-          <div className={`general-bar__item ${over > 0 ? "is-over" : ""}`}>
-            <div className="general-bar__item-copy">
-              <p className="general-bar__item-label">Runtime</p>
-              <p className="general-bar__item-meta">
+            {/* An estimate, and it says so. The target sits beside it — over or
+                under is the only judgement the bar makes. */}
+            <div className={`readout__line ${over > 0 ? "is-over" : ""}`}>
+              <span className="readout__k">Runtime</span>
+              <span className="readout__v">
                 ≈{formatPages(runtimeEighths)} of{" "}
                 <EditableText
                   as="span"
@@ -180,27 +167,53 @@ export function GeneralBar({
                 />{" "}
                 pages
                 {over > 0 ? ` · ${formatPages(over)} over` : ""}
-              </p>
+                <span className="readout__note"> · an estimate from the cards</span>
+              </span>
+              <span />
             </div>
-          </div>
 
-          <div className="general-bar__item">
-            <div className="general-bar__item-copy">
-              <p className="general-bar__item-label">Wall</p>
-              <p className="general-bar__item-meta">{Math.round(zoom * 100)}% · Fit shows every card</p>
+            <div className="readout__line">
+              <span className="readout__k">Wall</span>
+              <span className="readout__v">{Math.round(zoom * 100)}%</span>
+              <span className="readout__acts">
+                <button type="button" className="readout__act" onClick={onZoomOut} aria-label="Zoom out">−</button>
+                <span aria-hidden="true">·</span>
+                <button type="button" className="readout__act" onClick={onZoomIn} aria-label="Zoom in">+</button>
+                <span aria-hidden="true">·</span>
+                <button type="button" className="readout__act" onClick={onFit} disabled={!canFit}>fit</button>
+              </span>
             </div>
-            <div className="zoom-group">
-              <button type="button" className="zoom-step" onClick={onZoomOut} aria-label="Zoom out">
-                −
-              </button>
-              <button type="button" className="zoom-step" onClick={onZoomIn} aria-label="Zoom in">
-                +
-              </button>
+
+            <div className="readout__line readout__line--do">
+              <span className="readout__k">Do</span>
+              <span className="readout__acts readout__acts--wrap">
+                <button type="button" className="readout__act" onClick={onNewNote}>New note</button>
+                <span aria-hidden="true">·</span>
+                <button type="button" className="readout__act" onClick={onUndo} disabled={!canUndo}>Undo</button>
+                <span aria-hidden="true">·</span>
+                <button type="button" className="readout__act" onClick={onRedo} disabled={!canRedo}>Redo</button>
+                <span aria-hidden="true">·</span>
+                <button type="button" className="readout__act" onClick={onOrganize}>Organize</button>
+                <span aria-hidden="true">·</span>
+                <button type="button" className="readout__act" onClick={onStructure}>Structure</button>
+                {canGroup ? (
+                  <>
+                    <span aria-hidden="true">·</span>
+                    <button type="button" className="readout__act" onClick={onGroup}>Group</button>
+                  </>
+                ) : null}
+                {canBrief ? (
+                  <>
+                    <span aria-hidden="true">·</span>
+                    <button type="button" className="readout__act" onClick={onBrief}>Brief</button>
+                    <span aria-hidden="true">·</span>
+                    <button type="button" className="readout__act" onClick={onTakes}>Takes</button>
+                  </>
+                ) : null}
+              </span>
+              <span />
             </div>
           </div>
-          <button type="button" className="new-note" onClick={onFit} disabled={!canFit}>
-            Fit the whole wall
-          </button>
         </>
       ) : (
         <div className="general-bar__row">
@@ -277,17 +290,31 @@ export function GeneralBar({
                   <BriefIcon className="bar-icon__svg" />
                 </button>
               ) : null}
-              {canFit ? (
+              {/* The wall's zoom (question 8 answered): one icon that opens into
+                  +, the percent, − and Fit above it; closed, it carries the percent. */}
+              <span className="bar-wall">
+                {wallOpen ? (
+                  <div className="bar-fly" role="group" aria-label="Wall zoom">
+                    <button type="button" className="bar-icon" onClick={onZoomIn} aria-label="Zoom in" data-tip="Zoom in">+</button>
+                    <span className="bar-fly__pct">{Math.round(zoom * 100)}%</span>
+                    <button type="button" className="bar-icon" onClick={onZoomOut} aria-label="Zoom out" data-tip="Zoom out">−</button>
+                    <button type="button" className="bar-icon" onClick={() => { onFit(); setWallOpen(false); }} disabled={!canFit} aria-label="Fit the whole wall" data-tip="Fit the whole wall">
+                      <FitIcon className="bar-icon__svg" />
+                    </button>
+                  </div>
+                ) : null}
                 <button
                   type="button"
-                  className="bar-icon"
-                  onClick={onFit}
-                  aria-label="Fit the whole wall"
-                data-tip="Fit the whole wall"
+                  className={`bar-icon bar-icon--wall ${wallOpen ? "is-on" : ""}`}
+                  onClick={() => setWallOpen((current) => !current)}
+                  aria-expanded={wallOpen}
+                  aria-label="The wall: zoom and fit"
+                  data-tip="The wall: zoom and fit"
                 >
-                  <FitIcon className="bar-icon__svg" />
+                  <WallIcon className="bar-icon__svg" />
+                  <span className="bar-icon__pct">{Math.round(zoom * 100)}%</span>
                 </button>
-              ) : null}
+              </span>
               {canGroup ? (
                 <button
                   type="button"

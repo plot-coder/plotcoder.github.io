@@ -23,6 +23,12 @@ type NoteCardProps = {
   places: string[];
   /** The page this scene starts on once it is written and paginated (R23 c). */
   page: number | null;
+  /** The scene's number as printed, when the numbers are locked (item 8). */
+  sceneNumber: string | null;
+  /** The revision's colour when this card changed since its snapshot (item 8). */
+  revised: string | null;
+  /** A take is filed on this scene (item 9). */
+  hasTake: boolean;
   onCastNames: (id: string, names: string[]) => void;
   onLocation: (id: string, location: string) => void;
   onRaise: (id: string) => void;
@@ -47,6 +53,9 @@ export function NoteCard({
   characters,
   places,
   page,
+  sceneNumber,
+  revised,
+  hasTake,
   onCastNames,
   onLocation,
   onRaise,
@@ -76,7 +85,7 @@ export function NoteCard({
 
   return (
     <article
-      className={`note note--${note.color} ${isBeat ? "is-beat" : ""} ${sized ? "is-sized" : ""} ${active ? "is-active" : ""} ${selected ? "is-selected" : ""} ${linking ? "is-linking" : ""} ${dropTarget ? "is-drop-target" : ""} ${picking || sizing ? "is-picking" : ""} ${dimmed ? "is-dim" : ""} ${note.plants ? "is-planted" : ""}`}
+      className={`note note--${note.color} ${isBeat ? "is-beat" : ""} ${sized ? "is-sized" : ""} ${active ? "is-active" : ""} ${selected ? "is-selected" : ""} ${linking ? "is-linking" : ""} ${dropTarget ? "is-drop-target" : ""} ${picking || sizing ? "is-picking" : ""} ${dimmed ? "is-dim" : ""} ${note.plants ? "is-planted" : ""} ${revised ? `is-revised rev--${revised}` : ""}`}
       style={{
         left: note.x,
         top: note.y,
@@ -104,6 +113,8 @@ export function NoteCard({
       >
         <span className="note__fold-flap" aria-hidden="true" />
       </button>
+      {sceneNumber ? <span className="note__scene-number" aria-label={`Scene ${sceneNumber}`}>{sceneNumber}</span> : null}
+      {hasTake ? <span className="note__take" aria-label="A take exists for this scene" title="A take exists" /> : null}
       <EditableText
         as="h3"
         className="note__headline"

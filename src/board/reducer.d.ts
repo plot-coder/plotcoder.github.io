@@ -108,6 +108,10 @@ export type BoardState = {
   notes: BoardNote[];
   groups: BoardGroup[];
   arrows: BoardArrow[];
+  /** Locked scene numbers, once a draft has gone out (Roadmap 2, item 8); null until then. */
+  lock: import("./numbering").Lock | null;
+  /** The revision in progress — a name, a colour, a snapshot — or null. */
+  revision: import("./numbering").Revision | null;
 };
 
 export type Pose = { id: string; x: number; y: number; rotate: number };
@@ -155,8 +159,12 @@ export type Command =
   | { type: "set_cast"; ids: string[]; characterIds: string[] }
   | { type: "set_plant"; ids: string[]; plants: boolean }
   | { type: "set_location"; ids: string[]; location: string }
-  | { type: "apply_template"; template: string }
-  | { type: "set_text"; id: string; text: string };
+  | { type: "apply_template"; template: string; beats?: Array<{ name: string; prompt: string; at: number }> }
+  | { type: "set_text"; id: string; text: string }
+  | { type: "lock_numbers"; order?: string[] }
+  | { type: "unlock_numbers" }
+  | { type: "start_revision"; name: string; color?: string }
+  | { type: "end_revision" };
 
 export type CommandResult = {
   state: BoardState;

@@ -118,8 +118,13 @@ lands on the exact same board a person sees.
 
 - `apply_template` — lay a structure's named beats on the wall as beat cards
   (`turns` is the house method and the default; also `three-acts`,
-  `eight-sequences`, `fifteen-beats`, `story-circle`). One undo step. Ask the
-  writer which; afterwards there are only cards, nothing remembers the template.
+  `eight-sequences`, `fifteen-beats`, `story-circle`, or one of the writer's
+  own by name). One undo step. Ask the writer which; afterwards there are only
+  cards, nothing remembers the template.
+- `list_structures` / `save_structure` / `remove_structure` — the writer's own
+  structures live on the project: save the open wall's beats as one (reading
+  order, headline as the beat, change line as the prompt), list them beside
+  the built-in five, remove one by name. Save only when the writer asks.
 - `set_logline` — set the board's central question. Empty string clears it.
 - `set_target` — target script length in `pages`: 120 feature, 60 hour, 30 half.
 - `create_group` — frame two or more cards, with an optional `title`.
@@ -148,6 +153,8 @@ lands on the exact same board a person sees.
   work; they can undo anything from the wall with ⌘Z. Use it when a
   rearrangement did not help: try, `read_wall`, and undo if the reading got
   worse.
+- `redo` — put back what you undid, newest first, under the same rule; any
+  new change of yours clears what could be redone.
 
 ## Workflow
 
@@ -198,8 +205,8 @@ edits appear in real time; the change is already saved either way.
 ## Not available to agents
 
 - **Scatter** is a UI-layer action with no tool; undo covers it.
-- The **series premise** and **Reminders** live in browser storage, not in the
-  board record, so no tool can reach them.
+- **Sharing a project, signing in, changing the email or password** are the
+  writer's decisions at the door; no tool does them.
 - **Pan and zoom** are per-viewer state and are deliberately not board data.
 
 ## Workflows (R27)
@@ -214,3 +221,24 @@ for video. Read `list_reminders` first — they are the house style.
 `segment_brief` (R28, first step) briefs one card or a run of cards for a
 video tool from what the wall holds. It is text for the writer to approve;
 nothing is generated or sent, and no video tool is chosen yet.
+
+## The account door
+
+With `PLOTCODER_EMAIL` and `PLOTCODER_PASSWORD` in your environment — the
+writer's own — and no dev server running, every tool works the writer's
+project on the account directly, and each change lands on every open wall.
+`list_projects` shows what you can work; `open_project` switches;
+`new_project` starts an empty one and works it. Files on the project go
+through this door too: `add_picture` puts an image on a person's page,
+`add_take` files a take on a card or a run, `list_files` shows everything,
+`remove_file` takes one away (ask first; it cannot be undone). Prefer the
+open app's bridge when it is there; the account door is for when it is not.
+
+## The production half
+
+- `lock_numbers` / `unlock_numbers` — once a draft has gone out, every scene
+  keeps its number; new scenes take A-numbers (14A, 14B); Final Draft out
+  carries them. Ask the writer first: it is a decision about the document.
+- `start_revision` / `end_revision` — a named revision in one of the
+  industry's colours; changed lines print in the colour with a star, changed
+  cards wear it on the wall. `list_board` says the lock and the revision.

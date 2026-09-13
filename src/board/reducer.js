@@ -26,6 +26,7 @@ export const ARROW_KINDS = ["follows", "setup"];
 import { templateById } from "./templates.js";
 // The same lines the page has, so the panel's count and the print agree (R23 c).
 import { sceneLineCount } from "./paginate.js";
+import { lockFrom, REVISION_COLORS } from "./numbering.js";
 
 // Characters are a board-level roster (D26): one record per person, referenced
 // from cards by id, so a name changes in one place and the same person is the
@@ -195,6 +196,8 @@ export function emptyState() {
     notes: [],
     groups: [],
     arrows: [],
+    lock: null,
+    revision: null,
   };
 }
 
@@ -235,6 +238,8 @@ export function seedState(now = nowIso()) {
     ],
     groups: [],
     arrows: [],
+    lock: null,
+    revision: null,
   };
 }
 
@@ -323,12 +328,18 @@ export function normalizeState(value) {
     return { ...note, rank, lengthEighths, characterIds, plants, location, text };
   });
 
+  // Boards written before the production half (Roadmap 2, item 8) have no
+  // lock and no revision; both are null until a draft goes out.
+  const lock = value.lock && typeof value.lock === "object" && value.lock.numbers ? value.lock : null;
+  const revision = value.revision && typeof value.revision === "object" && typeof value.revision.name === "string" ? value.revision : null;
   if (
     value.logline === logline &&
     value.targetEighths === targetEighths &&
     !rosterPatched &&
     !arrowsPatched &&
-    !patched
+    !patched &&
+    value.lock === lock &&
+    value.revision === revision
   ) {
     return value;
   }
@@ -339,6 +350,8 @@ export function normalizeState(value) {
     characters,
     notes: patched ? notes : value.notes,
     arrows: arrowsPatched ? arrows : value.arrows,
+    lock,
+    revision,
   };
 }
 
@@ -756,7 +769,10 @@ export function applyCommand(state, command, now = nowIso()) {
     // one row above the wall's cards, prompts on their change lines. Nothing
     // remembers the template afterwards; there are only cards.
     case "apply_template": {
-      const template = templateById(command.template);
+      // One of the five by id, or a writer's own beats handed in (Roadmap 2, item 7).
+      const template = Array.isArray(command.beats) && command.beats.length
+        ? { id: command.template, beats: command.beats }
+        : templateById(command.template);
       if (!template) return { state, changed: false };
       // Rows read top to bottom, so the block of new rows starts high enough
       // that its last row still clears the wall's top card.
@@ -801,6 +817,41 @@ export function applyCommand(state, command, now = nowIso()) {
         return { state, changed: false, result: state.notes.find((note) => note.id === command.id) };
       }
       return { state: { ...state, notes }, changed: true, result: updated };
+    }
+
+    // The production half (Roadmap 2, item 8). Lock the numbers once a draft
+    // goes out: every scene keeps its number by the wall's order the caller
+    // passes; new scenes take A-numbers; moving never renumbers. A revision is
+    // a name and a colour over a snapshot of every card, so changed lines mark.
+    case "lock_numbers": {
+      const order = Array.isArray(command.order) ? command.order : state.notes.map((note) => note.id);
+      const byId = new Map(state.notes.map((note) => [note.id, note]));
+      const ordered = order.map((id) => byId.get(id)).filter(Boolean);
+      for (const note of state.notes) if (!order.includes(note.id)) ordered.push(note);
+      const lock = lockFrom(ordered, state.lock, now);
+      return { state: { ...state, lock }, changed: true, result: lock };
+    }
+
+    case "unlock_numbers": {
+      if (!state.lock) return { state, changed: false };
+      return { state: { ...state, lock: null }, changed: true, result: null };
+    }
+
+    case "start_revision": {
+      const name = typeof command.name === "string" ? command.name.trim() : "";
+      if (!name) return { state, changed: false };
+      const color = REVISION_COLORS.includes(command.color) ? command.color : "blue";
+      const snapshot = {};
+      for (const note of state.notes) {
+        snapshot[note.id] = { headline: note.headline, change: note.change, location: note.location ?? "", text: note.text ?? "" };
+      }
+      const revision = { name, color, since: now, snapshot };
+      return { state: { ...state, revision }, changed: true, result: revision };
+    }
+
+    case "end_revision": {
+      if (!state.revision) return { state, changed: false };
+      return { state: { ...state, revision: null }, changed: true, result: null };
     }
 
     // Where a scene happens (R37): one place on one or more cards; an empty

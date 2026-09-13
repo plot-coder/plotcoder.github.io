@@ -9,7 +9,8 @@
 
 import { useEffect, useId, useState, type FormEvent, type KeyboardEvent } from "react";
 import { EditableText } from "./EditableText";
-import { formatPages } from "./board/reducer";
+import { formatPages, type BoardState } from "./board/reducer";
+import { REVISION_COLORS } from "./board/numbering";
 import type { BoardShape } from "./board/store";
 import type { ProjectRecord } from "./board/project";
 
@@ -25,6 +26,13 @@ type ProjectCrumbProps = {
   onSetPremise: (premise: string) => void;
   /** The wordmark opens you and your projects (R39, R40). */
   onOpenAccount: () => void;
+  /** The production half (Roadmap 2, item 8): the open board's lock and revision. */
+  lock: BoardState["lock"];
+  revision: BoardState["revision"];
+  onLock: () => void;
+  onUnlock: () => void;
+  onStartRevision: (name: string, color: string) => void;
+  onEndRevision: () => void;
 };
 
 function isTyping(target: EventTarget | null): boolean {
@@ -45,7 +53,15 @@ export function ProjectCrumb({
   onRenameProject,
   onSetPremise,
   onOpenAccount,
+  lock,
+  revision,
+  onLock,
+  onUnlock,
+  onStartRevision,
+  onEndRevision,
 }: ProjectCrumbProps) {
+  const [revisionName, setRevisionName] = useState("");
+  const [revisionColor, setRevisionColor] = useState("blue");
   const panelId = useId();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState("");
@@ -194,6 +210,54 @@ export function ProjectCrumb({
               onKeyDown={onDraftKey}
             />
           </form>
+
+          {/* The production half (item 8): the numbers and the revision are a state
+              of the board going out, not a mode of the wall. */}
+          <div className="project-panel__production">
+            <p className="project-panel__kicker">Numbers</p>
+            <p className="project-panel__meta">
+              {lock ? `Locked ${new Date(lock.at).toLocaleDateString(undefined, { month: "short", day: "numeric" })} · new scenes take A-numbers` : "Follow the wall's order"}
+              <button type="button" className="project-panel__action" onClick={lock ? onUnlock : onLock}>
+                {lock ? "Unlock" : "Lock"}
+              </button>
+            </p>
+            <p className="project-panel__kicker">Revision</p>
+            {revision ? (
+              <p className="project-panel__meta">
+                <span className={`project-panel__swatch rev--${revision.color}`} aria-hidden="true" />
+                {revision.name} · changed lines print in {revision.color}
+                <button type="button" className="project-panel__action" onClick={onEndRevision}>
+                  End
+                </button>
+              </p>
+            ) : (
+              <form
+                className="project-panel__revision"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  if (!revisionName.trim()) return;
+                  onStartRevision(revisionName.trim(), revisionColor);
+                  setRevisionName("");
+                }}
+              >
+                <input
+                  className="project-panel__input"
+                  value={revisionName}
+                  placeholder="Start a revision… (blue draft)"
+                  aria-label="Start a revision"
+                  spellCheck={false}
+                  onChange={(event) => setRevisionName(event.target.value)}
+                />
+                <select className="project-panel__select" aria-label="Revision colour" value={revisionColor} onChange={(event) => setRevisionColor(event.target.value)}>
+                  {REVISION_COLORS.map((color) => (
+                    <option key={color} value={color}>
+                      {color}
+                    </option>
+                  ))}
+                </select>
+              </form>
+            )}
+          </div>
 
           <div className="project-panel__foot">
             <button

@@ -8,7 +8,19 @@ export declare function toFdx(
   options?: { title?: string; project?: string; author?: string; draftDate?: string },
 ): string;
 
+export type SetAside = {
+  scriptNotes: number;
+  revisedParagraphs: number;
+  lockedNumbers: number;
+  pageBreaks: number;
+  other: Record<string, number>;
+};
+
 export declare function fromFdx(xml: string): {
   titles: Record<string, string>;
   scenes: Array<FountainScene & { number: string | null }>;
+  setAside: SetAside;
 };
+
+/** The receipt as one line; "" when nothing was set aside. */
+export declare function describeSetAside(setAside: SetAside | undefined): string;

@@ -21,6 +21,7 @@ import {
   type CharacterField,
 } from "./board/reducer";
 import { EditableText } from "./EditableText";
+import type { Asset } from "./board/account";
 
 type CastLensProps = {
   open: boolean;
@@ -38,8 +39,14 @@ type CastLensProps = {
   onUpdate: (id: string, patch: Partial<Record<CharacterField, string>>) => void;
   onRemove: (id: string) => void;
   onJump: (noteId: string) => void;
-  /** The places on the wall (R37): hover lights their scenes, click holds. */
-  places: Array<{ name: string; cards: number }>;
+  /** Pictures on a person's page (Roadmap 2, item 5): null when signed out. */
+  pictures: Asset[] | null;
+  uploading: number;
+  onAddPictures: (characterId: string, files: File[]) => void;
+  onRemovePicture: (assetId: string) => void;
+  onDownloadPictures: (characterId: string, name: string) => void;
+  /** The places on the wall (R37): hover lights their scenes, click holds; with pages and people (item 7). */
+  places: Array<{ name: string; cards: number; eighths: number; people: string[] }>;
   placeHover: string | null;
   placeHeld: string | null;
   onPlaceHover: (name: string | null) => void;
@@ -112,6 +119,11 @@ export function CastLens({
   onUpdate,
   onRemove,
   onJump,
+  pictures,
+  uploading,
+  onAddPictures,
+  onRemovePicture,
+  onDownloadPictures,
   places,
   placeHover,
   placeHeld,
@@ -145,6 +157,13 @@ export function CastLens({
         (finding) =>
           (finding.kind === "uncast" || finding.kind === "absent") && finding.ids[0] === focus.id,
       ) ?? null
+    : null;
+
+  // The report by place (Roadmap 2, item 7): the held or hovered place in one line.
+  const focusPlace = focusId === null ? (placeHeld ?? placeHover) : null;
+  const reported = focusPlace ? places.find((place) => place.name === focusPlace) : null;
+  const placeReport = reported
+    ? `${reported.name}: ${reported.cards} ${reported.cards === 1 ? "scene" : "scenes"}, ${formatPages(reported.eighths)} ${reported.eighths === 8 ? "page" : "pages"}${reported.people.length ? `, with ${reported.people.join(" and ")}` : ""}.`
     : null;
 
   function countFor(id: string): number {
@@ -242,6 +261,14 @@ export function CastLens({
               </div>
             ))}
 
+            <PagePictures
+              character={page}
+              pictures={pictures === null ? null : pictures.filter((asset) => asset.subject === page.id && asset.kind === "picture")}
+              uploading={uploading}
+              onAdd={(files) => onAddPictures(page.id, files)}
+              onRemove={onRemovePicture}
+              onDownload={() => onDownloadPictures(page.id, page.name)}
+            />
             <PageScenes id={page.id} notes={notes} reading={reading} onJump={onJump} />
           </div>
         </section>
@@ -357,12 +384,24 @@ export function CastLens({
                     >
                       <span className="cast-lens__name">{place.name}</span>
                       <span className="cast-lens__count">
-                        {place.cards === 1 ? "1 card" : `${place.cards} cards`}
+                        {place.cards === 1 ? "1 card" : `${place.cards} cards`} · {formatPages(place.eighths)} pp
                       </span>
                     </li>
                   );
                 })}
               </ul>
+              {placeReport ? (
+                <p className="cast-lens__foot cast-lens__report">
+                  {placeReport}
+                  <button
+                    type="button"
+                    className="cast-lens__action cast-lens__copy"
+                    onClick={() => void navigator.clipboard?.writeText(placeReport).catch(() => undefined)}
+                  >
+                    Copy
+                  </button>
+                </p>
+              ) : null}
             </>
           ) : null}
 
@@ -421,6 +460,93 @@ function PageScenes({
           ))}
         </ol>
       )}
+    </div>
+  );
+}
+
+// Pictures on the page (Roadmap 2, item 5): what they look like, as files on
+// the project — drop them in or pick several, remove one, or take them all
+// as one package. Signed out, the line says where pictures would live.
+function PagePictures({
+  character,
+  pictures,
+  uploading,
+  onAdd,
+  onRemove,
+  onDownload,
+}: {
+  character: BoardCharacter;
+  pictures: Asset[] | null;
+  uploading: number;
+  onAdd: (files: File[]) => void;
+  onRemove: (assetId: string) => void;
+  onDownload: () => void;
+}) {
+  const inputId = useId();
+  const [over, setOver] = useState(false);
+  if (pictures === null) {
+    return (
+      <div className="cast-page__line">
+        <p className="cast-lens__kicker">Pictures</p>
+        <p className="cast-page__text cast-page__text--muted">Sign in and pictures of {character.name} live on the project, on every device.</p>
+      </div>
+    );
+  }
+  return (
+    <div
+      className={`cast-page__line cast-page__pictures ${over ? "is-over" : ""}`}
+      onDragOver={(event) => {
+        event.preventDefault();
+        setOver(true);
+      }}
+      onDragLeave={() => setOver(false)}
+      onDrop={(event) => {
+        event.preventDefault();
+        setOver(false);
+        const files = Array.from(event.dataTransfer.files).filter((file) => file.type.startsWith("image/"));
+        if (files.length) onAdd(files);
+      }}
+    >
+      <p className="cast-lens__kicker">
+        Pictures{pictures.length ? ` · ${pictures.length}` : ""}
+        {uploading ? ` · ${uploading} on the way` : ""}
+      </p>
+      {pictures.length ? (
+        <ul className="cast-page__gallery">
+          {pictures.map((asset) => (
+            <li key={asset.id} className="cast-page__picture">
+              {asset.url ? <img src={asset.url} alt={asset.name} loading="lazy" /> : <span className="cast-page__picture-empty" />}
+              <button type="button" className="cast-page__picture-remove" aria-label={`Remove ${asset.name}`} title="Remove" onClick={() => onRemove(asset.id)}>
+                ×
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="cast-page__text cast-page__text--muted">Drop pictures here, or add some. They live on the project.</p>
+      )}
+      <div className="cast-page__picture-actions">
+        <label className="cast-lens__action cast-page__add" htmlFor={inputId}>
+          Add pictures…
+        </label>
+        <input
+          id={inputId}
+          className="project-file"
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={(event) => {
+            const files = Array.from(event.target.files ?? []);
+            event.target.value = "";
+            if (files.length) onAdd(files);
+          }}
+        />
+        {pictures.length ? (
+          <button type="button" className="cast-lens__action" onClick={onDownload}>
+            Download all
+          </button>
+        ) : null}
+      </div>
     </div>
   );
 }

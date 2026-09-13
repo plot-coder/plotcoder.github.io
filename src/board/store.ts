@@ -22,12 +22,15 @@ import {
   isProjectRecord,
   moveBoard as moveBoardIn,
   normalizeProject,
+  addStructure,
+  removeStructure as removeStructureFrom,
   reidentifyProject,
   removeBoard as removeBoardFrom,
   renameBoard as renameBoardIn,
   renameProject as renameProjectTo,
   setActiveBoard,
   setPremise as setPremiseOn,
+  structureBeats,
   type BoardMeta,
   type ProjectRecord,
 } from "./project";
@@ -370,6 +373,21 @@ class BoardStore {
       this.setProject(next);
     }
     return true;
+  };
+
+  /**
+   * A writer's own structure from this wall's beats (Roadmap 2, item 7): each
+   * beat's headline, its change line as the prompt, and where it falls as a
+   * fraction of the wall's pages, in reading order.
+   */
+  saveStructure = (name: string, reading: { order: string[] }): void => {
+    const beats = structureBeats(this.state.notes, reading.order);
+    if (beats.length === 0) return;
+    this.setProject(addStructure(this.project, name, beats).project);
+  };
+
+  removeStructure = (id: string): void => {
+    this.setProject(removeStructureFrom(this.project, id));
   };
 
   renameProject = (name: string): void => {

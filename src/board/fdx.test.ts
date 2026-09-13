@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fromFdx, toFdx } from "./fdx";
+import { describeSetAside, fromFdx, toFdx } from "./fdx";
 import { fromFountain, mergeFountain, toFountain } from "./fountain";
 import { applyCommand, seedState } from "./reducer";
 
@@ -125,5 +125,25 @@ describe("Final Draft in (c4)", () => {
     const viaFountain = fromFountain(toFountain(state, { title: "x" })).scenes.map((scene) => scene.text);
     const viaFdx = fromFdx(toFdx(state, { title: "x" })).scenes.map((scene) => scene.text);
     expect(viaFdx[0]).toBe(viaFountain[0]);
+  });
+});
+
+describe("the receipt (Roadmap 2, item 3)", () => {
+  it("counts what a production draft carries that the wall does not hold, and says so", () => {
+    const xml = `<FinalDraft DocumentType="Script" Template="No" Version="5"><Content>
+      <Paragraph Type="Scene Heading" Number="12" Locked="Yes"><SceneProperties Length="1" Page="9" Title="" SceneNumberLocked="Yes" /><Text>INT. HALL - DAY</Text></Paragraph>
+      <Paragraph Type="Action" RevisionID="3"><Text>Tom in the hall.</Text><ScriptNote><Paragraph><Text>check with props</Text></Paragraph></ScriptNote></Paragraph>
+      <Paragraph Type="Shot"><Text>CLOSE ON the phone.</Text></Paragraph>
+      <Paragraph Type="Action" StartsNewPage="Yes"><Text>Later.</Text></Paragraph>
+    </Content></FinalDraft>`;
+    const { scenes, setAside } = fromFdx(xml);
+    expect(scenes[0].text).toContain("Tom in the hall.");
+    expect(scenes[0].text).toContain("CLOSE ON the phone.");
+    expect(scenes[0].text).not.toContain("check with props");
+    expect(setAside).toMatchObject({ scriptNotes: 1, revisedParagraphs: 1, lockedNumbers: 1, pageBreaks: 1, other: { Shot: 1 } });
+    expect(describeSetAside(setAside)).toBe(
+      "Kept out of the wall: 1 script note · revision marks on 1 paragraph · 1 locked scene number · 1 forced page break · 1 Shot paragraph read as action. Nothing was deleted.",
+    );
+    expect(describeSetAside(fromFdx(toFdx(wall(), { title: "x" })).setAside)).toBe("");
   });
 });

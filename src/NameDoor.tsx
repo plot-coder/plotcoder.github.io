@@ -1,9 +1,9 @@
-// The name on the door (R39).
+// The door (R39, revised to email).
 //
-// One field. As the writer finishes a name the sheet says which it is: free,
-// and the password field is where one is set — any password, no rules; or
-// taken, and it asks for the password. One button, named for what it does.
-// For a taken name the sheet confirms nothing about who holds it.
+// One field. As the writer finishes an address the sheet says which it is:
+// free, and the password field is where one is set — any password, no rules;
+// or taken, and it asks for the password. One button, named for what it
+// does. Forgotten? sends a reset link, because the address is the identity.
 
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { accountStore, cleanName, isValidName, type NameStatus } from "./board/account";
@@ -11,11 +11,12 @@ import { accountStore, cleanName, isValidName, type NameStatus } from "./board/a
 type NameDoorProps = {
   busy: boolean;
   error: string | null;
+  resetSentTo?: string | null;
   /** Called once the writer is signed in. */
   onDone?: () => void;
 };
 
-export function NameDoor({ busy, error, onDone }: NameDoorProps) {
+export function NameDoor({ busy, error, resetSentTo = null, onDone }: NameDoorProps) {
   const nameId = useId();
   const passwordId = useId();
   const [name, setName] = useState("");
@@ -61,30 +62,31 @@ export function NameDoor({ busy, error, onDone }: NameDoorProps) {
 
   const answer =
     status === "free"
-      ? `${clean} is free. Set a password and it is yours — any password, no rules.`
+      ? `${clean} is new here. Set a password and you are in — any password, no rules.`
       : status === "taken"
         ? `The password for ${clean}.`
         : status === "invalid"
-          ? "A name is letters and numbers, with dots, dashes or underscores, up to 32 long."
+          ? "That does not look like an email address."
           : status === "unknown"
-            ? "Could not ask about that name. Is the network on?"
+            ? "Could not ask about that address. Is the network on?"
             : status === "asking"
               ? "…"
-              : "Type a name. If nobody has it, it is yours.";
+              : "Your email. New here, and it is yours the moment you set a password.";
 
   return (
     <form className="door" onSubmit={submit}>
       <label className="door__label" htmlFor={nameId}>
-        Name
+        Email
       </label>
       <input
         id={nameId}
         className="door__input"
-        type="text"
+        type="email"
+        inputMode="email"
         autoComplete="username"
         autoCapitalize="off"
         spellCheck={false}
-        placeholder="your name"
+        placeholder="you@example.com"
         value={name}
         onChange={(event) => setName(event.target.value)}
         onKeyDown={(event) => {
@@ -120,14 +122,27 @@ export function NameDoor({ busy, error, onDone }: NameDoorProps) {
 
       <div className="project-actions">
         <button type="submit" className="project-action" disabled={!canGo}>
-          {busy ? "…" : status === "free" ? `Claim ${clean}` : "Sign in"}
+          {busy ? "…" : status === "free" ? "Set the password and sign in" : "Sign in"}
         </button>
+        {status === "taken" ? (
+          <button
+            type="button"
+            className="project-action project-action--ghost"
+            disabled={busy}
+            onClick={() => void accountStore.recover(clean)}
+          >
+            Forgotten?
+          </button>
+        ) : null}
       </div>
+      {resetSentTo ? (
+        <p className="project-notice">
+          A reset link is on its way to {resetSentTo}. Open it on this device and set a new password — any
+          password.
+        </p>
+      ) : null}
       {error ? <p className="project-error">{error}</p> : null}
-      <p className="project-copy project-door__hint">
-        Your wall stays on this device either way. A forgotten password has no way back yet, so keep it
-        somewhere.
-      </p>
+      <p className="project-copy project-door__hint">Your wall stays on this device either way.</p>
     </form>
   );
 }

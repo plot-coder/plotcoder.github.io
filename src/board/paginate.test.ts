@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LINES_PER_PAGE, layoutScene, paginate, parseScene, sceneLineCount, splitSpeech, wrap } from "./paginate";
+import { classifyLines, LINES_PER_PAGE, layoutScene, paginate, parseScene, sceneLineCount, splitSpeech, wrap } from "./paginate";
 
 describe("wrap", () => {
   it("wraps at the width, keeps line breaks, and leaves a long word alone", () => {
@@ -31,20 +31,26 @@ describe("parseScene", () => {
       "",
       "!MAYA walks out.",
     ].join("\n");
-    expect(parseScene(text)).toEqual([
-      { kind: "action", text: "Rain on the window.\nShe waits." },
-      { kind: "speech", name: "MAYA", dual: false, parts: [{ kind: "parenthetical", text: "(reading)" }, { kind: "dialogue", text: "Tom? It's your writing." }] },
-      { kind: "speech", name: "TOM", dual: true, parts: [{ kind: "dialogue", text: "It is fine." }] },
-      { kind: "transition", text: "CUT TO:" },
-      { kind: "centered", text: "THE END" },
-      { kind: "action", text: "MAYA walks out." },
+    expect(parseScene(text)).toMatchObject([
+      { kind: "action", text: "Rain on the window.\nShe waits.", at: 0 },
+      { kind: "speech", name: "MAYA", dual: false, at: 3, parts: [{ kind: "parenthetical", text: "(reading)", at: 4 }, { kind: "dialogue", text: "Tom? It's your writing.", at: 5 }] },
+      { kind: "speech", name: "TOM", dual: true, at: 7, parts: [{ kind: "dialogue", text: "It is fine." }] },
+      { kind: "transition", text: "CUT TO:", at: 13 },
+      { kind: "centered", text: "THE END", at: 15 },
+      { kind: "action", text: "MAYA walks out.", at: 17 },
     ]);
   });
 
   it("does not take a capitalised line with nothing under it for a cue", () => {
-    expect(parseScene("THE DOOR SLAMS.\n\nShe turns.")).toEqual([
+    expect(parseScene("THE DOOR SLAMS.\n\nShe turns.")).toMatchObject([
       { kind: "action", text: "THE DOOR SLAMS." },
       { kind: "action", text: "She turns." },
+    ]);
+  });
+
+  it("classifies every source line for the editor, keeping the writer's lines as they are", () => {
+    expect(classifyLines("Rain.\n\nMAYA\n(reading)\nTom?\nWhy?\n\nCUT TO:\n\n= a synopsis")).toEqual([
+      "action", "blank", "character", "parenthetical", "dialogue", "dialogue", "blank", "transition", "blank", "note",
     ]);
   });
 });
@@ -53,7 +59,7 @@ describe("layoutScene", () => {
   it("lays a heading, action and a speech out as blocks with the page's widths, and pairs dual dialogue", () => {
     const blocks = layoutScene(parseScene("She waits.\n\nMAYA\nTom?\n\nTOM ^\nIt is fine. It's just not mine."), "INT. THE PIANO SHOP - DAY", 14);
     expect(blocks.map((block) => block.kind)).toEqual(["heading", "action", "dual"]);
-    expect(blocks[0].lines[0]).toEqual({ kind: "heading", text: "INT. THE PIANO SHOP - DAY", sceneNumber: 14 });
+    expect(blocks[0].lines[0]).toEqual({ kind: "heading", text: "INT. THE PIANO SHOP - DAY", sceneNumber: 14, src: -1 });
     const dual = blocks[2].lines;
     expect(dual[0].left?.text).toBe("MAYA");
     expect(dual[0].right?.text).toBe("TOM");
@@ -69,9 +75,9 @@ describe("splitSpeech", () => {
     const split = splitSpeech(block, 4);
     expect(split).not.toBeNull();
     expect(split!.head[0].text).toBe("MARK");
-    expect(split!.head.at(-1)).toEqual({ kind: "more", text: "(MORE)" });
+    expect(split!.head.at(-1)).toMatchObject({ kind: "more", text: "(MORE)" });
     expect(split!.head[split!.head.length - 2].text).toMatch(/\.$/);
-    expect(split!.tail[0]).toEqual({ kind: "character", text: "MARK (CONT'D)" });
+    expect(split!.tail[0]).toMatchObject({ kind: "character", text: "MARK (CONT'D)" });
     expect(splitSpeech(block, 2)).toBeNull();
   });
 });

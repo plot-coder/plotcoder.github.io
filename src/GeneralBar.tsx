@@ -33,12 +33,17 @@ type GeneralBarProps = {
   onGroup: () => void;
   onOrganize: () => void;
   onStructure: () => void;
+  /** What these words mean (R42). */
+  onWords: () => void;
   /** A card or cards are selected: the brief for that segment (R28). */
   canBrief: boolean;
   onBrief: () => void;
   onTakes: () => void;
   zoom: number;
   canFit: boolean;
+  /** What the wall asks right now (R22), and the door to it. */
+  asks: number;
+  onAsks: () => void;
   beats: number;
   scenes: number;
   runtimeEighths: number;
@@ -64,6 +69,9 @@ export function GeneralBar({
   onGroup,
   onOrganize,
   onStructure,
+  onWords,
+  asks,
+  onAsks,
   canBrief,
   onBrief,
   onTakes,
@@ -172,6 +180,19 @@ export function GeneralBar({
               <span />
             </div>
 
+            {/* Step four of the method (R22): what the wall asks, and the way in. */}
+            <div className="readout__line">
+              <span className="readout__k">Asks</span>
+              <span className="readout__v">
+                {asks === 0 ? "nothing to ask" : `${asks} ${asks === 1 ? "question" : "questions"}`}
+              </span>
+              <span className="readout__acts">
+                <button type="button" className={`readout__act ${asks > 0 ? "is-warm" : ""}`} onClick={onAsks}>
+                  read the wall
+                </button>
+              </span>
+            </div>
+
             <div className="readout__line">
               <span className="readout__k">Wall</span>
               <span className="readout__v">{Math.round(zoom * 100)}%</span>
@@ -196,6 +217,8 @@ export function GeneralBar({
                 <button type="button" className="readout__act" onClick={onOrganize}>Organize</button>
                 <span aria-hidden="true">·</span>
                 <button type="button" className="readout__act" onClick={onStructure}>Structure</button>
+                <span aria-hidden="true">·</span>
+                <button type="button" className="readout__act" onClick={onWords}>Words</button>
                 {canGroup ? (
                   <>
                     <span aria-hidden="true">·</span>
@@ -217,6 +240,18 @@ export function GeneralBar({
         </>
       ) : (
         <div className="general-bar__row">
+          <button
+            type="button"
+            className="general-bar__corner"
+            aria-expanded={layer === "strip"}
+            aria-label={layer === "dock" ? "Open action buttons" : "Hide action buttons"}
+            onClick={() => onSetLayer(layer === "dock" ? "strip" : "dock")}
+          >
+            <ChevronIcon
+              className="general-bar__corner-svg"
+              direction={layer === "dock" ? "left" : "right"}
+            />
+          </button>
           {layer === "strip" ? (
             <div className="general-bar__strip">
               <button
@@ -236,28 +271,6 @@ export function GeneralBar({
                 data-tip="New note"
               >
                 <NoteIcon className="bar-icon__svg" />
-              </button>
-              <button
-                type="button"
-                className="bar-icon"
-                onClick={onUndo}
-                disabled={!canUndo}
-                aria-label="Undo"
-                data-tip="Undo"
-                title="Undo (⌘Z)"
-              >
-                <UndoIcon className="bar-icon__svg" />
-              </button>
-              <button
-                type="button"
-                className="bar-icon"
-                onClick={onRedo}
-                disabled={!canRedo}
-                aria-label="Redo"
-                data-tip="Redo"
-                title="Redo (⇧⌘Z)"
-              >
-                <RedoIcon className="bar-icon__svg" />
               </button>
               <button
                 type="button"
@@ -328,26 +341,45 @@ export function GeneralBar({
               ) : null}
               <button
                 type="button"
+                className="bar-icon bar-icon--words"
+                onClick={onWords}
+                aria-label="What these words mean"
+                data-tip="What these words mean"
+              >
+                ?
+              </button>
+              <button
+                type="button"
                 className="bar-icon"
                 onClick={() => onSetLayer("tall")}
                 aria-label="Show full general bar"
               >
                 <ChevronIcon className="bar-icon__svg" direction="up" />
               </button>
+              <button
+                type="button"
+                className="bar-icon"
+                onClick={onUndo}
+                disabled={!canUndo}
+                aria-label="Undo"
+                data-tip="Undo"
+                title="Undo (⌘Z)"
+              >
+                <UndoIcon className="bar-icon__svg" />
+              </button>
+              <button
+                type="button"
+                className="bar-icon"
+                onClick={onRedo}
+                disabled={!canRedo}
+                aria-label="Redo"
+                data-tip="Redo"
+                title="Redo (⇧⌘Z)"
+              >
+                <RedoIcon className="bar-icon__svg" />
+              </button>
             </div>
           ) : null}
-          <button
-            type="button"
-            className="general-bar__corner"
-            aria-expanded={layer === "strip"}
-            aria-label={layer === "dock" ? "Open action buttons" : "Hide action buttons"}
-            onClick={() => onSetLayer(layer === "dock" ? "strip" : "dock")}
-          >
-            <ChevronIcon
-              className="general-bar__corner-svg"
-              direction={layer === "dock" ? "left" : "right"}
-            />
-          </button>
         </div>
       )}
     </aside>

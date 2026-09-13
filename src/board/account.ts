@@ -31,6 +31,7 @@ import {
   openOutcome,
   planSignIn,
   pushOutcome,
+  linkOutcome,
   resolveBoardConflict,
 } from "./sync";
 
@@ -88,6 +89,8 @@ export type Account = {
   recovering: boolean;
   /** A reset link was sent to this address. */
   resetSentTo: string | null;
+  /** A reset link landed but did not work: what to tell the writer at the door. */
+  linkError: string | null;
   /** The files on the open project. */
   assets: Asset[];
   /** Files on their way up: how many. */
@@ -200,6 +203,7 @@ class AccountStore {
     busy: false,
     recovering: false,
     resetSentTo: null,
+    linkError: null,
     assets: [],
     uploading: 0,
   };
@@ -260,8 +264,15 @@ class AccountStore {
       this.set({ ready: true });
       return;
     }
+    // A stale reset link comes back with its reason in the address; read it
+    // once and clear it, so a reload does not say it twice.
+    const landed = linkOutcome(window.location.hash);
+    if (landed) {
+      this.set({ linkError: landed.message });
+      history.replaceState(null, "", window.location.pathname + window.location.search);
+    }
     this.client.auth.onAuthStateChange((event, session) => {
-      if (event === "PASSWORD_RECOVERY") this.set({ recovering: true });
+      if (event === "PASSWORD_RECOVERY") this.set({ recovering: true, linkError: null });
       void this.onSession(session);
     });
     void this.client.auth.getSession().then(({ data }) => this.onSession(data.session));
@@ -343,7 +354,7 @@ class AccountStore {
   /** Sign in with a name and its password. */
   signIn = async (name: string, password: string): Promise<boolean> => {
     if (!this.client) return false;
-    this.set({ busy: true, error: null });
+    this.set({ busy: true, error: null, linkError: null });
     try {
       const hashed = await hashPassword(name, password);
       const { error } = await this.client.auth.signInWithPassword({ email: emailFor(name), password: hashed });
@@ -408,6 +419,7 @@ class AccountStore {
     if (!this.client) return;
     if (this.pushTimer) clearTimeout(this.pushTimer);
     await this.client.auth.signOut();
+    this.set({ recovering: false });
     // The wall stays on this device. Only the mirror stops.
   };
 

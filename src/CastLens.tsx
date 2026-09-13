@@ -10,6 +10,7 @@
 // open, which is why the page lives here and not in a modal.
 
 import { useEffect, useId, useState, type FormEvent, type KeyboardEvent } from "react";
+import { PanelHead } from "./PanelHead";
 import { type WallReading } from "./board/readWall";
 import {
   CHARACTER_FIELDS,
@@ -214,11 +215,14 @@ export function CastLens({
           className="cast-lens cast-lens--page"
           aria-label={`${page.name}'s page`}
         >
-          <div className="cast-lens__head">
-            <button type="button" className="cast-lens__action cast-lens__back" onClick={closePage}>
-              ‹ Cast
-            </button>
-            <div className="cast-lens__actions">
+          <PanelHead
+            title=""
+            lead={
+              <button type="button" className="cast-lens__action cast-lens__back" onClick={closePage}>
+                ‹ Cast
+              </button>
+            }
+            aside={
               <button
                 type="button"
                 className="cast-lens__action"
@@ -229,11 +233,9 @@ export function CastLens({
               >
                 Remove
               </button>
-              <button type="button" className="cast-lens__action" onClick={onClose}>
-                Close
-              </button>
-            </div>
-          </div>
+            }
+            onClose={onClose}
+          />
 
           <div className="cast-page">
             <EditableText
@@ -282,12 +284,11 @@ export function CastLens({
             onPlaceHover(null);
           }}
         >
-          <div className="cast-lens__head">
-            <p className="cast-lens__kicker">
-              Cast · {characters.length}
-            </p>
-            <div className="cast-lens__actions">
-              {heldId || placeHeld ? (
+          <PanelHead
+            title="Cast"
+            note={`${characters.length}`}
+            aside={
+              heldId || placeHeld ? (
                 <button
                   type="button"
                   className="cast-lens__action"
@@ -298,12 +299,10 @@ export function CastLens({
                 >
                   Clear
                 </button>
-              ) : null}
-              <button type="button" className="cast-lens__action" onClick={onClose}>
-                Close
-              </button>
-            </div>
-          </div>
+              ) : null
+            }
+            onClose={onClose}
+          />
 
           {characters.length > 0 ? (
             <ul className="cast-lens__list">

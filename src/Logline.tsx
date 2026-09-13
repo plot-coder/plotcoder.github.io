@@ -7,6 +7,7 @@
 
 import { useState } from "react";
 import { EditableText } from "./EditableText";
+import { wordSentence } from "./board/words";
 
 type LoglineProps = {
   logline: string;
@@ -34,6 +35,7 @@ export function Logline({ logline, premise, onSetLogline, onSetPremise }: Loglin
         />
       ) : null}
 
+      <span className="logline__tip has-tip" data-tip={wordSentence("logline")}>
       <EditableText
         as="p"
         className="logline__question"
@@ -42,6 +44,7 @@ export function Logline({ logline, premise, onSetLogline, onSetPremise }: Loglin
         ariaLabel="Logline"
         placeholder="What is this story arguing?"
       />
+      </span>
 
       {showPremise ? null : (
         <button

@@ -33,6 +33,9 @@ import { paginateBoard } from "./pagesLayout";
 import { BriefSheet } from "./BriefSheet";
 import { TakesPanel } from "./TakesPanel";
 import { AccountSheet } from "./AccountSheet";
+import { WordsSheet } from "./WordsSheet";
+import { AsksSheet } from "./AsksSheet";
+import type { WordTarget } from "./board/words";
 import { ProjectPicker } from "./ProjectPicker";
 import { StoryMap } from "./StoryMap";
 import {
@@ -103,6 +106,8 @@ export function App() {
   const [accountOpen, setAccountOpen] = useState(false);
   // Start from a structure (R38).
   const [structureOpen, setStructureOpen] = useState(false);
+  const [wordsOpen, setWordsOpen] = useState(false);
+  const [asksOpen, setAsksOpen] = useState(false);
   // The brief (R28, first step): for the selected card or cards.
   const [briefOpen, setBriefOpen] = useState(false);
   // Takes (R28, item 9): for the selected card or run.
@@ -212,6 +217,59 @@ export function App() {
     return ids;
   }, [view, notes]);
 
+  // The scene that pays each plant off, as printed on the card (R31).
+  const payoffOf = useMemo(() => {
+    const map = new Map<string, string | null>();
+    for (const [from, to] of Object.entries(reading.payoffs)) {
+      // The scene's printed number: the lock's when locked, else its place in reading order.
+      const number = to ? (numberOf.get(to) ?? (reading.order.includes(to) ? String(reading.order.indexOf(to) + 1) : null)) : null;
+      map.set(from, to ? (number ?? notes.find((note) => note.id === to)?.headline ?? null) : null);
+    }
+    return map;
+  }, [reading, numberOf, notes]);
+
+  // Light elements on the wall for a moment; fit first so they are in the window.
+  function light(find: () => HTMLElement[]) {
+    if (notes.length > 0) fitToWall();
+    window.setTimeout(() => {
+      const els = find();
+      for (const el of els) el.classList.add("is-shown");
+      window.setTimeout(() => {
+        for (const el of els) el.classList.remove("is-shown");
+      }, 2200);
+    }, 60);
+  }
+
+  /** Show me from the Asks sheet: the cards a question is about. */
+  function showCards(ids: string[]) {
+    light(() => ids.map((id) => document.querySelector<HTMLElement>(`.note[data-note="${CSS.escape(id)}"]`)).filter((el): el is HTMLElement => Boolean(el)));
+  }
+
+  // Show me (R42): light the thing on the wall a word names, for a moment.
+  // Fit the wall first so the thing is in the window. UI layer only.
+  function showWord(target: WordTarget) {
+    const selectors: Record<WordTarget, string[]> = {
+      card: [".note"],
+      logline: [".logline__question"],
+      beat: [".note.is-beat", ".note"],
+      change: [".note__change"],
+      corner: [".note.is-planted .note__fold", ".note__fold"],
+      arrow: [".note-arrow__line", ".note"],
+      length: [".note__length"],
+      cast: [".note .note__with-prefix", ".note"],
+      place: [".note .note__with-prefix + .note__with-prefix", ".note .note__with-prefix", ".note"],
+      group: [".note-group", ".note"],
+      strip: [".story-map"],
+    };
+    if (target !== "logline" && target !== "strip" && notes.length > 0) fitToWall();
+    window.setTimeout(() => {
+      const el = selectors[target].map((sel) => document.querySelector<HTMLElement>(sel)).find(Boolean);
+      if (!el) return;
+      el.classList.add("is-shown");
+      window.setTimeout(() => el.classList.remove("is-shown"), 2200);
+    }, 60);
+  }
+
   function fitToWall() {
     setView(fitView(notes, viewportSize()));
   }
@@ -252,6 +310,14 @@ export function App() {
   useEffect(() => {
     applyTheme(theme);
   }, [theme]);
+
+  // Back from a reset link (R39): the sheet opens by itself, once — with the
+  // new-password field when the link worked, on the door when it had gone
+  // stale. Closing it is the writer's choice; nothing reopens it.
+  const arrived = account.recovering || account.linkError !== null;
+  useEffect(() => {
+    if (arrived) setAccountOpen(true);
+  }, [arrived]);
 
   // ⌘Z / ⇧⌘Z (Ctrl on other platforms) undo and redo on the wall. Inside a
   // field the browser's own undo of the text keeps working instead.
@@ -542,6 +608,16 @@ export function App() {
     });
   }
 
+  // A card's scene number is the script's address for it: open Pages there.
+  // The panel scrolls to the one selected card when nothing else has focus.
+  function openPagesAt(id: string) {
+    setPagesOpen(true);
+    writeFlag(PAGES_KEY, true);
+    setSceneFocusId(null);
+    setSelectedIds([id]);
+    setSelectedArrowId(null);
+  }
+
   // The caret is in a scene: light its card, and pan to it if it is off screen.
   function focusScene(id: string | null) {
     setSceneFocusId(id);
@@ -674,6 +750,8 @@ export function App() {
           }}
         />
         <AccountSheet open={accountOpen} onClose={() => setAccountOpen(false)} currentProjectId={project.id} />
+        <WordsSheet open={wordsOpen} onClose={() => setWordsOpen(false)} onShow={showWord} />
+        <AsksSheet open={asksOpen} findings={reading.findings} onClose={() => setAsksOpen(false)} onShow={showCards} />
         <ProjectPicker currentProjectId={project.id} />
         <StructureSheet
           open={structureOpen}
@@ -741,6 +819,8 @@ export function App() {
         numberOf={numberOf}
         revision={board.revision}
         hasTake={hasTake}
+        payoffOf={payoffOf}
+        onOpenPages={openPagesAt}
         notes={notes}
         groups={groups}
         arrows={arrows}
@@ -751,6 +831,7 @@ export function App() {
         onCastNames={castNames}
         onLocation={setLocation}
         onStructure={() => setStructureOpen(true)}
+        onWords={() => setWordsOpen(true)}
         onHoverNote={setHoverNoteId}
         selectedIds={selectedIds}
         selectedArrowId={selectedArrowId}
@@ -800,6 +881,9 @@ export function App() {
         onGroup={groupSelected}
         onOrganize={organizeNotes}
         onStructure={() => setStructureOpen(true)}
+        onWords={() => setWordsOpen(true)}
+        asks={reading.findings.length}
+        onAsks={() => setAsksOpen(true)}
         canBrief={selectedIds.length > 0}
         onBrief={() => setBriefOpen(true)}
         onTakes={() => {

@@ -1,4 +1,5 @@
 import { useEffect, useState, type PointerEvent } from "react";
+import { wordSentence } from "./board/words";
 import { CastLine } from "./CastLine";
 import { PlaceLine } from "./PlaceLine";
 import { EditableText } from "./EditableText";
@@ -29,6 +30,10 @@ type NoteCardProps = {
   revised: string | null;
   /** A take is filed on this scene (item 9). */
   hasTake: boolean;
+  /** When folded: the scene that pays it off, as printed ("14"), or null while unpaid. */
+  payoff: string | null;
+  /** Open Pages at this scene: the number is the script's address for it. */
+  onOpenPages: (id: string) => void;
   onCastNames: (id: string, names: string[]) => void;
   onLocation: (id: string, location: string) => void;
   onRaise: (id: string) => void;
@@ -56,6 +61,8 @@ export function NoteCard({
   sceneNumber,
   revised,
   hasTake,
+  payoff,
+  onOpenPages,
   onCastNames,
   onLocation,
   onRaise,
@@ -92,6 +99,7 @@ export function NoteCard({
         zIndex: note.z + 10,
         transform: `rotate(${note.rotate}deg)`,
       }}
+      data-note={note.id}
       onPointerDown={(event) => onPointerDown(event, note)}
       onPointerEnter={() => onHover(note.id)}
       onPointerLeave={() => onHover(null)}
@@ -100,20 +108,51 @@ export function NoteCard({
           like the beat bar, so it reads at Fit zoom and steals no colour. */}
       <button
         type="button"
-        className="note__fold"
+        className="note__fold has-tip"
         aria-label={
           note.plants
             ? `Unfold the corner of ${note.headline}: it no longer plants something`
             : `Fold the corner of ${note.headline}: it plants something to pay off later`
         }
         aria-pressed={note.plants}
-        title={note.plants ? "Folded: this card plants something" : "Fold the corner: this card plants something"}
+        data-tip={wordSentence("corner")}
         onPointerDown={(event) => event.stopPropagation()}
         onClick={() => onSetPlant(note.id, !note.plants)}
       >
         <span className="note__fold-flap" aria-hidden="true" />
       </button>
-      {sceneNumber ? <span className="note__scene-number" aria-label={`Scene ${sceneNumber}`}>{sceneNumber}</span> : null}
+      {/* The top edge, right of the fold's square: the locked scene number (a
+          button — the number is the script's address, so it opens Pages there),
+          then the fold's state, a debt in the warm colour until a setup arrow
+          leaves the card. One line, one home, whether or not the corner folds. */}
+      {sceneNumber || note.plants ? (
+        <span className="note__edge">
+          {sceneNumber ? (
+            <button
+              type="button"
+              className="note__number has-tip"
+              aria-label={`Scene ${sceneNumber}: open it in Pages`}
+              data-tip={`Scene ${sceneNumber}. The numbers are locked, so every scene keeps its number${/[A-Z]/.test(sceneNumber) ? ", and this one, added after the lock, keeps its own letter" : ""}; the numbers already out stay true. Click to open it in Pages.`}
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={() => onOpenPages(note.id)}
+            >
+              {sceneNumber}
+            </button>
+          ) : null}
+          {note.plants ? (
+            <span className={`note__plant ${payoff ? "" : "is-unpaid"}`} aria-live="polite">
+              {sceneNumber ? <span aria-hidden="true">· </span> : null}
+              {payoff ? (
+                <>
+                  Plants · <b>paid off in {payoff}</b>
+                </>
+              ) : (
+                "Plants · unpaid"
+              )}
+            </span>
+          ) : null}
+        </span>
+      ) : null}
       {hasTake ? <span className="note__take" aria-label="A take exists for this scene" title="A take exists" /> : null}
       <EditableText
         as="h3"
@@ -147,10 +186,10 @@ export function NoteCard({
       />
       <button
         type="button"
-        className="note__rank"
+        className="note__rank has-tip"
         aria-label={isBeat ? `Make ${note.headline} a scene` : `Make ${note.headline} a beat`}
         aria-pressed={isBeat}
-        title={isBeat ? "A beat — one of the major turns" : "Mark as a beat"}
+        data-tip={isBeat ? wordSentence("beat") : `Mark as a beat. ${wordSentence("beat")}`}
         onPointerDown={(event) => event.stopPropagation()}
         onClick={() => onSetRank(note.id, isBeat ? "scene" : "beat")}
       >
@@ -158,10 +197,14 @@ export function NoteCard({
       </button>
       <button
         type="button"
-        className={`note__length ${isMeasured(note) ? "is-measured" : ""}`}
+        className={`note__length has-tip ${isMeasured(note) ? "is-measured" : ""}`}
         aria-label={`Length of ${note.headline}: ${formatPages(noteEighths(note))} pages${isMeasured(note) ? ", measured from its scene" : ""}`}
         aria-expanded={sizing}
-        title={isMeasured(note) ? "Measured from the scene's text; the estimate is underneath" : "How long this runs"}
+        data-tip={
+          isMeasured(note)
+            ? `Measured from the scene’s text: ${formatPages(noteEighths(note))} pages${page !== null ? `, starting on page ${page}` : ""}. The picker sets the guess underneath, for when the text goes.`
+            : wordSentence("length")
+        }
         onPointerDown={(event) => event.stopPropagation()}
         onClick={() => {
           setPicking(false);
@@ -172,6 +215,8 @@ export function NoteCard({
       </button>
       {sizing ? (
         <div className="note__lengths" onPointerDown={(event) => event.stopPropagation()}>
+          {/* Pages per scene (R42, Robert's caption): the unit named where it is set. */}
+          <p className="note__picker-cap">Pages per scene</p>
           {LENGTH_PRESETS.map((eighths) => (
             <button
               key={eighths}
@@ -186,6 +231,9 @@ export function NoteCard({
               {formatPages(eighths)}
             </button>
           ))}
+          <p className="note__picker-foot">
+            In eighths: <b>2/8</b> is a quarter of a page. A written scene measures itself.
+          </p>
         </div>
       ) : null}
       <button
@@ -216,6 +264,7 @@ export function NoteCard({
       </button>
       {picking ? (
         <div className="note__swatches" onPointerDown={(event) => event.stopPropagation()}>
+          <p className="note__picker-cap note__picker-cap--paper">Paper</p>
           {NOTE_COLORS.map((color) => (
             <button
               key={color}

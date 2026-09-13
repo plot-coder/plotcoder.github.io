@@ -10,6 +10,7 @@
 // pagination is slice c.
 
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
+import { PanelHead } from "./PanelHead";
 import { sceneHeading } from "./board/fountain";
 import { paginateBoard } from "./pagesLayout";
 import { type Line } from "./board/paginate";
@@ -100,37 +101,34 @@ export function PagesPanel({
 
   return (
     <aside className={`pages ${wide ? "pages--wide" : ""}`} aria-label="Pages">
-      <div className="pages__head">
-        <p className="cast-lens__kicker">
-          {pages
-            ? `Pages · ${pages.pageCount} of ${Math.round(board.targetEighths / 8)}${focusScene ? ` · scene ${focusScene.number} on p. ${focusScene.page}` : ""}`
-            : `Pages · ${order.length} ${order.length === 1 ? "scene" : "scenes"} · ${written} written`}
-        </p>
-        <div className="cast-lens__actions">
-          <span className="pages__seg" role="group" aria-label="View">
-            <button type="button" className={`pages__seg-btn ${view === "text" ? "is-on" : ""}`} aria-pressed={view === "text"} onClick={() => onView("text")}>
-              As text
+      <PanelHead
+        title="Pages"
+        note={
+          pages
+            ? `${pages.pageCount} of ${Math.round(board.targetEighths / 8)}${focusScene ? ` · scene ${focusScene.number} on p. ${focusScene.page}` : ""}`
+            : `${order.length} ${order.length === 1 ? "scene" : "scenes"} · ${written} written`
+        }
+        views={[
+          { id: "text", name: "Text" },
+          { id: "pages", name: "Pages" },
+          { id: "outline", name: "Outline" },
+        ]}
+        view={view}
+        onView={onView}
+        verbs={
+          <>
+            {view === "pages" ? (
+              <button type="button" className="cast-lens__action" onClick={() => window.print()}>
+                Print
+              </button>
+            ) : null}
+            <button type="button" className="cast-lens__action" onClick={onToggleWide}>
+              {wide ? "Beside the wall" : "Widen"}
             </button>
-            <button type="button" className={`pages__seg-btn ${view === "pages" ? "is-on" : ""}`} aria-pressed={view === "pages"} onClick={() => onView("pages")}>
-              As pages
-            </button>
-            <button type="button" className={`pages__seg-btn ${view === "outline" ? "is-on" : ""}`} aria-pressed={view === "outline"} onClick={() => onView("outline")}>
-              As outline
-            </button>
-          </span>
-          {view === "pages" ? (
-            <button type="button" className="cast-lens__action" onClick={() => window.print()}>
-              Print
-            </button>
-          ) : null}
-          <button type="button" className="cast-lens__action" onClick={onToggleWide}>
-            {wide ? "Beside the wall" : "Widen"}
-          </button>
-          <button type="button" className="cast-lens__action" onClick={onClose}>
-            Close
-          </button>
-        </div>
-      </div>
+          </>
+        }
+        onClose={onClose}
+      />
 
       {pages && view === "outline" ? (
         <div className="pages__sheet pages__outline" ref={listRef}>

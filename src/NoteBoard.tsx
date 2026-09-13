@@ -51,6 +51,8 @@ type NoteBoardProps = {
   onLocation: (id: string, location: string) => void;
   /** The empty wall offers a structure (R38). */
   onStructure: () => void;
+  /** What these words mean (R42). */
+  onWords: () => void;
   /** Pages are open beside the wall (R23 b): the wall keeps to the left. */
   pagesOpen?: boolean;
   /** The page a written scene starts on (R23 c). */
@@ -61,6 +63,10 @@ type NoteBoardProps = {
   revision: BoardState["revision"];
   /** Cards with a take filed on them (item 9). */
   hasTake: Set<string>;
+  /** Planted card id → the printed number of the scene that pays it off, or null. */
+  payoffOf: Map<string, string | null>;
+  /** Open Pages at a scene (the card's number is its address). */
+  onOpenPages: (id: string) => void;
   onHoverNote: (id: string | null) => void;
   selectedIds: string[];
   selectedArrowId: string | null;
@@ -140,11 +146,14 @@ export function NoteBoard({
   onCastNames,
   onLocation,
   onStructure,
+  onWords,
   pagesOpen = false,
   pageOf,
   numberOf,
   revision,
   hasTake,
+  payoffOf,
+  onOpenPages,
   onHoverNote,
   selectedIds,
   selectedArrowId,
@@ -425,9 +434,13 @@ export function NoteBoard({
     >
       {notes.length === 0 && !lasso ? (
         <p className="group-hint group-hint--empty">
-          No cards yet. Add one, or{" "}
+          No cards yet. Add one,{" "}
           <button type="button" className="group-hint__link" onClick={onStructure}>
             start from a structure
+          </button>
+          , or read{" "}
+          <button type="button" className="group-hint__link" onClick={onWords}>
+            what these words mean
           </button>
           .
         </p>
@@ -540,6 +553,8 @@ export function NoteBoard({
           page={pageOf.get(note.id) ?? null}
           sceneNumber={numberOf.get(note.id) ?? null}
           hasTake={hasTake.has(note.id)}
+          payoff={payoffOf.get(note.id) ?? null}
+          onOpenPages={onOpenPages}
           revised={revision && isRevised(note, revision.snapshot[note.id]) ? revision.color : null}
           onCastNames={onCastNames}
           onLocation={onLocation}

@@ -60,3 +60,6 @@ export declare function liveOutcome(input: {
   seenRev: number;
   dirty: boolean;
 }): "nothing" | "adopt" | "conflict";
+
+/** What a landed reset link's fragment says: nothing, or a stale link, or another error. */
+export declare function linkOutcome(hash: string | null | undefined): { kind: "stale" | "error"; message: string } | null;

@@ -171,3 +171,28 @@ export function liveOutcome({ remoteRev, seenRev, dirty }) {
   if (remoteRev <= seenRev) return "nothing";
   return dirty ? "conflict" : "adopt";
 }
+
+// --- The reset link (R39): what the address says when it lands ------------
+//
+// A reset link that still works signs the writer in; the client reads that
+// from the address itself and says PASSWORD_RECOVERY. One that has expired
+// or was already used comes back with the reason in the fragment instead:
+// #error=access_denied&error_code=otp_expired&error_description=... . Pure,
+// so it is testable; the store clears the fragment after reading it.
+
+/**
+ * Read a landed link's fragment. Returns null when it says nothing, or
+ * { kind: "stale" | "error", message } for the writer.
+ */
+export function linkOutcome(hash) {
+  const raw = (hash ?? "").replace(/^#/, "");
+  if (!raw) return null;
+  const params = new URLSearchParams(raw);
+  const code = params.get("error_code") ?? "";
+  const description = params.get("error_description") ?? "";
+  if (!params.get("error") && !code && !description) return null;
+  if (code === "otp_expired" || /expired|invalid/i.test(description)) {
+    return { kind: "stale", message: "That reset link has expired or was already used. Ask for another below — they last an hour and work once." };
+  }
+  return { kind: "error", message: description || "That link did not work. Ask for another below." };
+}

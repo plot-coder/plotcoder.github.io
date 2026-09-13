@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { addBoard, emptyProject, renameBoard, renameProject } from "./project";
-import { conflictName, deviceName, liveOutcome, mergeProjects, openOutcome, planSignIn, pushOutcome, reconcileOnSignIn, resolveBoardConflict } from "./sync";
+import { conflictName, deviceName, linkOutcome, liveOutcome, mergeProjects, openOutcome, planSignIn, pushOutcome, reconcileOnSignIn, resolveBoardConflict } from "./sync";
 
 const NOW = new Date("2026-09-13T15:14:00");
 const AT = "2026-01-01T00:00:00.000Z";
@@ -150,5 +150,26 @@ describe("liveOutcome (R41)", () => {
     expect(liveOutcome({ remoteRev: 2, seenRev: 2, dirty: false })).toBe("nothing");
     expect(liveOutcome({ remoteRev: 3, seenRev: 2, dirty: false })).toBe("adopt");
     expect(liveOutcome({ remoteRev: 3, seenRev: 2, dirty: true })).toBe("conflict");
+  });
+});
+
+describe("linkOutcome: what a landed reset link says", () => {
+  it("says nothing for an empty or ordinary address", () => {
+    expect(linkOutcome("")).toBeNull();
+    expect(linkOutcome(undefined)).toBeNull();
+    expect(linkOutcome("#board=abc")).toBeNull();
+  });
+
+  it("names a stale link — expired or already used — and points at the way back", () => {
+    const stale = linkOutcome("#error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired");
+    expect(stale?.kind).toBe("stale");
+    expect(stale?.message).toContain("expired or was already used");
+    expect(stale?.message).toContain("an hour");
+  });
+
+  it("passes any other reason through as an error", () => {
+    const other = linkOutcome("#error=server_error&error_description=Something+broke");
+    expect(other).toEqual({ kind: "error", message: "Something broke" });
+    expect(linkOutcome("#error=access_denied")?.message).toContain("did not work");
   });
 });

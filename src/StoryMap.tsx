@@ -322,6 +322,7 @@ export function StoryMap({
                 const xa = x(card.start);
                 return (
                   <g key={id} className="story-map__unpaid">
+                    <title>{`“${card.headline}” plants something, and no arrow pays it off yet. Where does it come back?`}</title>
                     <path d={`M ${xa} ${axisY + 2} Q ${xa + 10} ${axisY + 12} ${xa + 22} ${axisY + 9}`} />
                     <circle cx={xa + 24} cy={axisY + 8} r={2.2} />
                   </g>

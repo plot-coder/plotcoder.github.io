@@ -170,6 +170,18 @@ export function readWall(state) {
     }
   }
 
+  // Two beats back to back: no scene between two turns. A question, not a
+  // verdict — they may be one beat, or a scene may be missing.
+  for (const run of between) {
+    if (run.cards === 0) {
+      findings.push({
+        kind: "empty",
+        ids: [run.from, run.to],
+        text: `Nothing runs between "${headline(run.from)}" and "${headline(run.to)}": two turns back to back. Are they one beat, or is a scene missing?`,
+      });
+    }
+  }
+
   // A card that has not earned its place yet.
   for (const note of order) {
     const change = (note.change ?? "").trim();

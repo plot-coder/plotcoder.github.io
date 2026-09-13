@@ -15,7 +15,7 @@ export const WORKFLOWS = [
     id: "break-a-treatment",
     name: "Break a treatment into a wall",
     ask: "Here is a treatment. Break it into a wall: one card per scene with a headline and what changes, the cast on each card, the places, and the major turns marked as beats.",
-    tools: ["list_words", "read_wall", "list_reminders", "create_note", "add_character", "cast", "set_location", "set_rank", "set_plant", "create_arrow", "organize"],
+    tools: ["list_words", "read_wall", "list_reminders", "create_note", "add_character", "cast", "set_location", "set_rank", "set_length", "set_plant", "create_arrow", "create_group", "organize"],
     then: "Read the wall (read_wall) and say what it asks.",
   },
   {

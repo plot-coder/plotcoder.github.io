@@ -101,7 +101,12 @@ export const WORD_GROUPS = [
     id: "around",
     name: "Around the wall",
     words: [
-      { id: "group", name: "Group", sentence: "A frame around cards you select, with a title. It moves as one.", target: "group" },
+      { id: "group", name: "Group", sentence: "A frame around cards you select, with a title. It moves as one. A treatment’s acts can be groups, titled Act one, Act two.", target: "group" },
+      {
+        id: "paper",
+        name: "Paper",
+        sentence: "The colour of a card. It means nothing to the app; use it as the writer does — an act, a thread, a mood.",
+      },
       { id: "organize", name: "Organize", sentence: "Lays the cards out in rows along their arrows. One undo step." },
       {
         id: "structure",

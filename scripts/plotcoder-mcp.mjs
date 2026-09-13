@@ -543,7 +543,7 @@ function isSampleWall(state) {
   return state.notes.map((note) => note.headline).sort().join("\n") === sample;
 }
 /** Every check read_wall runs, so silence can be named. */
-const CHECKS = ["sag", "unwritten", "unlinked", "duplicate", "sequence", "uncast", "absent", "backwards", "unpaid"];
+const CHECKS = ["sag", "empty", "unwritten", "unlinked", "duplicate", "sequence", "uncast", "absent", "backwards", "unpaid"];
 const SAMPLE_NOTE = "sample: this is the wall PlotCoder starts with (Maya, Tom, the letter); nothing here is the writer's. Replace it, or new_board.";
 
 // --- Reporting -------------------------------------------------------------
@@ -556,7 +556,8 @@ function summarize(state) {
       const who = cast.length ? `, cast: ${cast.join(", ")}` : "";
       const plant = note.plants ? ", plants" : "";
       const place = note.location ? `, at: ${note.location}` : "";
-      const pages = `${formatPages(noteEighths(note))}pp${isMeasured(note) ? " written" : ""}`;
+      const count = formatPages(noteEighths(note));
+      const pages = `${count} ${count === "1" ? "page" : "pages"}${isMeasured(note) ? ", written" : ""}`;
       return `  - ${note.id} [${note.rank ?? "scene"}, ${pages}${who}${place}${plant}] — "${note.headline}" (${note.color}) at ${Math.round(note.x)},${Math.round(note.y)}`;
     })
     .join("\n");
@@ -618,8 +619,11 @@ function summarize(state) {
 
 // Wire format: prose, one blank line, then the JSON payload. `text` must not
 // contain a blank line of its own or the payload becomes unparseable.
+// PLOTCODER_JSON=0 drops the JSON tail from every reply, for an agent that
+// reads the sentence and wants nothing more (a blind run found 400-line replies).
+const TEXT_ONLY = process.env.PLOTCODER_JSON === "0";
 function ok(text, data) {
-  const body = data === undefined ? text : `${text}\n\n${JSON.stringify(data, null, 2)}`;
+  const body = data === undefined || TEXT_ONLY ? text : `${text}\n\n${JSON.stringify(data, null, 2)}`;
   return { content: [{ type: "text", text: body }] };
 }
 
@@ -724,13 +728,14 @@ server.registerTool(
   {
     title: "Set target length",
     description:
-      "Set the board's target script length in pages. 120 for a feature, 30 for a half-hour, 60 for an hour drama. This is what the runtime estimate is measured against.",
-    inputSchema: { pages: pagesSchema },
+      "Set the board's target script length, in pages or in minutes (a page runs about a minute): 120 for a feature, 30 for a half-hour, 60 for an hour drama. This is what the runtime estimate is measured against.",
+    inputSchema: { pages: pagesSchema.optional(), minutes: z.number().positive().optional() },
   },
   async (args) => {
+    if (args.pages === undefined && args.minutes === undefined) return ok("Say the target in pages or in minutes.");
     const { state, live } = await commit({
       type: "set_target",
-      targetEighths: toEighths(args.pages),
+      targetEighths: toEighths(args.pages ?? args.minutes),
     });
     return ok(
       `Target is ${formatPages(state.targetEighths)} pages${where(live)}. The cards add up to about ${formatPages(boardEighths(state))} — ${boardEighths(state) > state.targetEighths ? `${formatPages(boardEighths(state) - state.targetEighths)} over` : `${formatPages(state.targetEighths - boardEighths(state))} under`}.`,
@@ -1782,10 +1787,11 @@ server.registerTool(
               : "that arrow already exists";
       return ok(`No arrow drawn: ${why}. Call list_board to check.`);
     }
+    const name = (id) => `"${state.notes.find((note) => note.id === id)?.headline ?? id}"`;
     return ok(
       result.kind === "setup"
-        ? `Drew ${args.from} → ${args.to} as a setup${where(live)}.`
-        : `Drew ${args.from} → ${args.to}${where(live)}.`,
+        ? `Drew ${name(args.from)} → ${name(args.to)} as a setup: the first plants what the second pays off${where(live)}.`
+        : `Drew ${name(args.from)} → ${name(args.to)}: the second follows the first${where(live)}.`,
       result,
     );
   },
@@ -1903,7 +1909,7 @@ server.registerTool(
     const list = currentReminders(reminders);
     return ok(
       [
-        `reminders: ${list.length}${where(live)}`,
+        `reminders: ${list.length}`,
         ...list.map((item) => `  - ${item.id}${item.builtIn ? " (built in)" : ""} — ${item.title}: ${item.body}`),
       ].join("\n"),
       list,

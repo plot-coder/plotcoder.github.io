@@ -19,6 +19,7 @@ type AsksSheetProps = {
 export const KIND_NAMES: Record<FindingKind, string> = {
   unmarked: "No beats yet",
   sag: "A sagging run",
+  empty: "Two beats back to back",
   unwritten: "Unwritten",
   unlinked: "No arrows",
   duplicate: "Two scenes, one job",

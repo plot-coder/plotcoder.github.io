@@ -403,3 +403,17 @@ describe("payoffs: which scene pays each plant off", () => {
     void plant;
   });
 });
+
+describe("two beats back to back", () => {
+  it("asks whether they are one beat or a scene is missing, and stays quiet when scenes run between", () => {
+    let state = emptyState();
+    state = applyCommand(state, { type: "create_note", headline: "The gate", change: "Miguel checks the glovebox.", x: 0, y: 0, rank: "beat" }).state;
+    state = applyCommand(state, { type: "create_note", headline: "The gun", change: "Dana moves it to her jacket.", x: 600, y: 0, rank: "beat" }).state;
+    const empty = readWall(state).findings.filter((finding) => finding.kind === "empty");
+    expect(empty).toHaveLength(1);
+    expect(empty[0].text).toContain('between "The gate" and "The gun"');
+    expect(empty[0].ids).toEqual([state.notes[0].id, state.notes[1].id]);
+    state = applyCommand(state, { type: "create_note", headline: "The diner", change: "Miguel pockets the tips.", x: 300, y: 0 }).state;
+    expect(readWall(state).findings.filter((finding) => finding.kind === "empty")).toHaveLength(0);
+  });
+});

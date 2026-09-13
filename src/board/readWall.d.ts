@@ -10,6 +10,8 @@ export type FindingKind =
   | "unmarked"
   /** One run between beats is out of proportion with the others. */
   | "sag"
+  /** Two beats back to back, with no scene between them. */
+  | "empty"
   /** A card still carries a placeholder headline or has no change line. */
   | "unwritten"
   /** The wall uses arrows, and these cards have none. */

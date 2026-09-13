@@ -240,7 +240,7 @@ describe("plotcoder MCP server", () => {
     expect(text).toContain("1 beats");
 
     const listed = await client.callTool("list_board");
-    expect(listed).toContain("[beat, 1pp");
+    expect(listed).toContain("[beat, 1 page");
     expect(listed).toContain("beats: 1, scenes: 2");
 
     const saved = readBoardFile();
@@ -267,7 +267,7 @@ describe("plotcoder MCP server", () => {
       expect(text).toContain("about 5 pages");
 
       const listed = await client.callTool("list_board");
-      expect(listed).toContain("[scene, 3pp");
+      expect(listed).toContain("[scene, 3 pages");
       expect(listed).toContain("120-page target");
 
       // Length is a property of the card, not of where it sits.
@@ -284,7 +284,7 @@ describe("plotcoder MCP server", () => {
 
       await client.callTool("set_length", { ids: [id], pages: 0.5 });
       expect(readBoardFile().state.notes.find((note) => note.id === id).lengthEighths).toBe(4);
-      expect(await client.callTool("list_board")).toContain("[scene, 4/8pp");
+      expect(await client.callTool("list_board")).toContain("[scene, 4/8 pages");
 
       await client.callTool("set_length", { ids: [id], pages: 1 });
     });
@@ -1295,6 +1295,39 @@ describe("after the blind run", () => {
     expect(await blind.callTool("new_board", { name: "Ep 2" })).toContain("leave it empty rather than invent it");
   });
 
+  it("names both cards when it draws an arrow, and does not call a read a write", async () => {
+    await blind.callTool("open_board", { board: "1" });
+    const board = await blind.callToolData("list_board");
+    const [a, b] = board.notes;
+    const drawn = await blind.callTool("create_arrow", { from: a.id, to: b.id, kind: "setup" });
+    expect(drawn).toContain(`Drew "${a.headline}" → "${b.headline}" as a setup`);
+    expect(await blind.callTool("list_reminders")).not.toContain("written to file");
+  });
+
+  it("takes the target in minutes, and asks about two beats back to back", async () => {
+    expect(await blind.callTool("set_target", { minutes: 90 })).toContain("Target is 90 pages");
+    expect(await blind.callTool("set_target", {})).toContain("in pages or in minutes");
+    await blind.callTool("new_board", { name: "Back to back" });
+    await blind.callTool("create_note", { headline: "The gate", change: "Miguel checks the glovebox.", rank: "beat", x: 0, y: 0 });
+    await blind.callTool("create_note", { headline: "The gun", change: "Dana moves it to her jacket.", rank: "beat", x: 600, y: 0 });
+    const read = await blind.callTool("read_wall");
+    expect(read).toMatch(/\[empty\] Nothing runs between "The gate" and "The gun"/);
+  });
+
+  it("drops the JSON tail when PLOTCODER_JSON=0", async () => {
+    const terseRoot = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-terse-"));
+    const terse = new McpClient(terseRoot, { PLOTCODER_JSON: "0" });
+    await terse.start();
+    try {
+      const text = await terse.callTool("list_board");
+      expect(text).toContain("cards:");
+      expect(text).not.toContain('"notes": [');
+    } finally {
+      terse.stop();
+      fs.rmSync(terseRoot, { recursive: true, force: true });
+    }
+  });
+
   it("keeps ticket numbers out of every tool description", async () => {
     const { tools } = await blind.request("tools/list", {});
     for (const tool of tools) expect(tool.description).not.toMatch(/\b[RD]\d\d\b|question \d+/);
@@ -1339,7 +1372,7 @@ describe("the premise and reminders (roadmap item 6)", () => {
   it("writes a scene onto a card, measures it, reads the pages with ids, and imports a script", async () => {
     const wrote = await door.callTool("write_scene", { id: "maya-letter", text: "Rain on the window.\n\nMAYA\nTom?" });
     expect(wrote).toContain('Wrote "Maya finds the letter": 1/8 page(s) measured');
-    expect(await door.callTool("list_board")).toContain("[scene, 1/8pp written");
+    expect(await door.callTool("list_board")).toContain("[scene, 1/8 pages, written");
     const pages = await door.callTool("read_pages");
     expect(pages).toContain(".MAYA FINDS THE LETTER    [[id: maya-letter · measured 1/8pp]]");
     expect(pages).toContain(".TOM LIES ABOUT THE JOB    [[id: tom-lies · estimated 1pp]]");

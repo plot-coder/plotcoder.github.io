@@ -10,6 +10,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { accountStore, type Asset } from "./board/account";
+import { PanelHead } from "./PanelHead";
 import { readingOrder } from "./board/readWall";
 import { type BoardState } from "./board/reducer";
 import { segmentBrief } from "./board/workflows";
@@ -67,18 +68,13 @@ export function TakesPanel({ open, board, ids, title, takes, uploading, onClose 
 
   return (
     <aside className="takes" aria-label="Takes" aria-labelledby={titleId}>
-      <div className="pages__head">
-        <p id={titleId} className="cast-lens__kicker">
-          Takes · {ordered.length === 1 ? first?.headline : `${ordered.length} scenes`}
-          {mine ? ` · ${mine.length} ${mine.length === 1 ? "take" : "takes"}` : ""}
-          {uploading ? ` · ${uploading} on the way` : ""}
-        </p>
-        <div className="cast-lens__actions">
-          <button ref={closeRef} type="button" className="cast-lens__action" onClick={onClose}>
-            Close
-          </button>
-        </div>
-      </div>
+      <PanelHead
+        title="Takes"
+        titleId={titleId}
+        note={`${ordered.length === 1 ? first?.headline ?? "" : `${ordered.length} scenes`}${mine ? ` · ${mine.length} ${mine.length === 1 ? "take" : "takes"}` : ""}${uploading ? ` · ${uploading} on the way` : ""}`}
+        onClose={onClose}
+        closeRef={closeRef}
+      />
 
       <div className="takes__body">
         {mine === null ? (

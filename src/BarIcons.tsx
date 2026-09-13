@@ -55,6 +55,16 @@ export function BriefIcon({ className }: IconProps) {
   );
 }
 
+/** The wall's zoom: a magnifier. */
+export function WallIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="10.5" cy="10.5" r="5.6" fill="none" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M14.8 14.8l4.6 4.6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export function GroupIcon({ className }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" aria-hidden="true">

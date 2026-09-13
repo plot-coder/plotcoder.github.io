@@ -719,44 +719,9 @@ body {
   color: var(--muted);
 }
 
-.general-bar__item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
-.general-bar__item-copy {
-  min-width: 0;
-}
-
-.general-bar__item-label,
-.general-bar__item-meta,
-.general-bar__clock,
 .general-bar__slot {
   margin: 0;
-}
-
-.general-bar__item-label {
-  font-size: 0.95rem;
-  font-weight: 600;
-}
-
-.general-bar__item-meta,
-.general-bar__clock,
-.general-bar__slot {
   color: var(--muted);
-}
-
-.general-bar__item-meta,
-.general-bar__clock {
-  margin-top: 0.2rem;
-  font-size: 0.75rem;
-  line-height: 1.35;
-}
-
-.general-bar__clock {
-  margin-top: 0.85rem;
 }
 
 .general-bar__slot {
@@ -769,12 +734,6 @@ body {
   background: var(--slot);
   font-size: 0.72rem;
   letter-spacing: 0.04em;
-}
-
-.zoom-group {
-  display: flex;
-  flex: 0 0 auto;
-  gap: 0.3rem;
 }
 
 .zoom-step {
@@ -792,11 +751,6 @@ body {
 
 .zoom-step:hover {
   background: color-mix(in srgb, var(--ink) 8%, transparent);
-}
-
-.new-note:disabled {
-  opacity: 0.4;
-  cursor: default;
 }
 
 .theme-switch {
@@ -1111,10 +1065,6 @@ body {
   cursor: text;
 }
 
-.general-bar__item.is-over .general-bar__item-meta {
-  color: var(--over);
-}
-
 .note__headline,
 .note__change {
   margin: 0;
@@ -1153,41 +1103,6 @@ body {
   margin-top: 0.55rem;
   font-size: 1rem;
   line-height: 1.4;
-}
-
-.new-note {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-  width: 100%;
-  margin-top: 0.85rem;
-  min-height: 2.7rem;
-  padding: 0 0.8rem;
-  border: 1px dashed var(--bar-border);
-  border-radius: 0.85rem;
-  background: var(--slot);
-  color: var(--ink);
-  font-family: ui-sans-serif, system-ui, sans-serif;
-  font-size: 0.78rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  cursor: pointer;
-}
-
-.new-note__pad {
-  width: 1.15rem;
-  height: 1.15rem;
-  flex: 0 0 auto;
-  background: #ffe56a;
-  box-shadow: 1px 2px 0 #e6c84a;
-}
-
-.new-note--group {
-  justify-content: center;
-  border-style: solid;
-  background: var(--ink);
-  color: var(--canvas);
 }
 
 .note.is-selected {
@@ -1745,6 +1660,196 @@ body {
   color: var(--muted);
   font-size: 0.88rem;
   line-height: 1.45;
+}
+
+/* --- The bar, twice (question 8): the readout, and the wall's flyout ------- */
+
+.general-bar--tall {
+  width: min(21.5rem, calc(100vw - 2.2rem));
+  padding: 0.7rem 0.9rem 0.6rem;
+  border-radius: 0.7rem;
+}
+
+.general-bar--tall .general-bar__header {
+  margin-bottom: 0.2rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--bar-border);
+}
+
+.readout__line {
+  display: grid;
+  grid-template-columns: 4rem minmax(0, 1fr) auto;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--bar-border);
+}
+
+.readout__line:last-child {
+  border-bottom: 0;
+}
+
+.readout__k {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.readout__v {
+  font-family: "Iowan Old Style", Palatino, Georgia, serif;
+  font-size: 0.98rem;
+  line-height: 1.35;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.readout__v--compact {
+  font-size: 0.9rem;
+  line-height: 1.25;
+}
+
+.readout__v--compact .readout__note {
+  font-size: 0.6rem;
+  white-space: nowrap;
+}
+
+.readout__note {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.64rem;
+  color: var(--muted);
+}
+
+.readout__line.is-over .readout__v {
+  color: var(--over);
+}
+
+.readout__acts {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.6rem;
+  color: var(--muted);
+}
+
+.readout__acts--wrap {
+  flex-wrap: wrap;
+  row-gap: 0.2rem;
+}
+
+.readout__act {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.readout__act:disabled {
+  color: var(--muted);
+  opacity: 0.5;
+  cursor: default;
+}
+
+.readout__act:hover:not(:disabled) {
+  color: var(--over);
+}
+
+.theme-switch--small {
+  width: 2.3rem;
+  height: 1.25rem;
+}
+
+.theme-switch--small .theme-switch__knob {
+  top: 0.12rem;
+  left: 0.12rem;
+  width: 1rem;
+  height: 1rem;
+}
+
+.theme-switch--small.theme-switch--dark .theme-switch__knob {
+  transform: translateX(1.05rem);
+}
+
+.theme-switch--small .theme-switch__sun,
+.theme-switch--small .theme-switch__moon {
+  width: 0.4rem;
+  height: 0.4rem;
+}
+
+.theme-switch--small .theme-switch__sun {
+  left: 0.32rem;
+}
+
+.theme-switch--small .theme-switch__moon {
+  right: 0.34rem;
+}
+
+.general-bar__toggle {
+  font-size: 0.9rem;
+}
+
+/* The wall icon carries the percent; open, a column above it. */
+.bar-wall {
+  position: relative;
+  display: inline-flex;
+}
+
+.bar-icon--wall {
+  position: relative;
+}
+
+.bar-icon__pct {
+  position: absolute;
+  left: 50%;
+  bottom: -0.55rem;
+  transform: translateX(-50%);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.bar-fly {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 0.5rem);
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.3rem;
+  border: 1px solid var(--bar-border);
+  border-radius: 1.4rem;
+  background: var(--bar);
+  box-shadow: var(--bar-shadow);
+  z-index: 12;
+}
+
+.bar-fly .bar-icon {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.bar-fly__pct {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
 }
 
 /* --- Names on hover: every bar icon says what it is after a second -------- */
@@ -3354,17 +3459,6 @@ body {
 
 /* --- Undo (R33) ---------------------------------------------------------- */
 
-.undo-row {
-  display: flex;
-  gap: 0.45rem;
-}
-
-.new-note--half {
-  flex: 1;
-  justify-content: center;
-}
-
-.new-note:disabled,
 .bar-icon:disabled {
   opacity: 0.35;
   cursor: default;

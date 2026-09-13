@@ -253,6 +253,14 @@ export function App() {
     applyTheme(theme);
   }, [theme]);
 
+  // Back from a reset link (R39): the sheet opens by itself, once — with the
+  // new-password field when the link worked, on the door when it had gone
+  // stale. Closing it is the writer's choice; nothing reopens it.
+  const arrived = account.recovering || account.linkError !== null;
+  useEffect(() => {
+    if (arrived) setAccountOpen(true);
+  }, [arrived]);
+
   // ⌘Z / ⇧⌘Z (Ctrl on other platforms) undo and redo on the wall. Inside a
   // field the browser's own undo of the text keeps working instead.
   useEffect(() => {

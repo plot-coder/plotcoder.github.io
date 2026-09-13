@@ -102,6 +102,7 @@ export function AccountSheet({ open, onClose, currentProjectId }: AccountSheetPr
         {!signedIn ? (
           account.ready ? (
             <>
+              {account.linkError ? <p className="account__arrival account__arrival--warm">{account.linkError}</p> : null}
               <p className="project-copy">
                 Your email and a password, and this project follows you to every device. Share a project with
                 another writer's email and you write it together.
@@ -115,8 +116,11 @@ export function AccountSheet({ open, onClose, currentProjectId }: AccountSheetPr
           <>
             {account.recovering ? (
               <section className="account__group" aria-label="New password">
+                <p className="account__arrival">
+                  You came in on the reset link, and you are <strong>signed in as {me}</strong>. Set a new password
+                  now — any password, no rules — or close this and keep the old one.
+                </p>
                 <p className="cast-lens__kicker">A new password</p>
-                <p className="project-copy">You came in on a reset link. Set a new password — any password, no rules.</p>
                 <form
                   className="account__form"
                   onSubmit={(event) => {

@@ -339,6 +339,19 @@ body {
   line-height: 1.5;
 }
 
+/* Back from a reset link: the arrival line at the top of the sheet. */
+.account__arrival {
+  margin: 0.2rem 0 0.8rem;
+  padding: 0.6rem 0.8rem;
+  border-left: 3px solid var(--ok, #5f9e5f);
+  background: var(--slot);
+  line-height: 1.5;
+}
+
+.account__arrival--warm {
+  border-left-color: var(--over);
+}
+
 .project-door {
   margin-top: 1.4rem;
   padding-top: 1.1rem;

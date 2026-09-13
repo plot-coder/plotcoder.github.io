@@ -42,7 +42,7 @@ export const WORD_GROUPS = [
         id: "beat",
         name: "A beat",
         sentence:
-          "One of the eight to fifteen big turns — the moment it starts, the point of no return, the lowest point, the climax. A card you mark as a beat; marking it never moves it. Everything else is a scene.",
+          "One of the eight to fifteen big turns — the moment it starts, the point of no return, the lowest point, the climax. A whole card, the scene where the turn happens, marked as a beat; marking it never moves it. Everything else is a scene.",
         target: "beat",
       },
       {
@@ -107,7 +107,23 @@ export const WORD_GROUPS = [
         id: "structure",
         name: "A structure",
         sentence:
-          "A list of named beats laid on the wall as beat cards to fill in — Turns, Three acts, and others. Afterwards there are only cards; nothing remembers which structure it was.",
+          "A list of named beats laid on the wall as beat cards to fill in — Turns (the house method), Three acts, and others. Afterwards there are only cards; nothing remembers which structure it was.",
+      },
+      {
+        id: "acts",
+        name: "Acts",
+        sentence:
+          "PlotCoder has no acts of its own. The wall reads left to right, and a structure’s beats are the act breaks. A colour or a group can mark an act if the writer wants one.",
+      },
+      {
+        id: "wordmark",
+        name: "The wordmark",
+        sentence: "The PlotCoder mark at the top left. It is the door to you and your projects: sign in, share, switch.",
+      },
+      {
+        id: "lens",
+        name: "The Cast panel",
+        sentence: "Cast, at the top right: the roster, each person’s page, and the places. Hold a name or a place and its scenes light up.",
       },
       {
         id: "strip",

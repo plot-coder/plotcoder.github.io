@@ -1246,6 +1246,61 @@ describe("structures of the writer's own", () => {
   });
 });
 
+// What a blind run found (2026-09-13): ids that moved, a sample nobody named,
+// replies that said less than they knew.
+describe("after the blind run", () => {
+  let blind;
+  let blindRoot;
+
+  beforeAll(async () => {
+    blindRoot = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-blind-"));
+    blind = new McpClient(blindRoot);
+    await blind.start();
+  }, 30000);
+
+  afterAll(() => {
+    blind?.stop();
+    if (blindRoot) fs.rmSync(blindRoot, { recursive: true, force: true });
+  });
+
+  it("keeps the first board's id from one call to the next, and says the wall is the sample", async () => {
+    const first = await blind.callTool("list_boards");
+    const read = await blind.callTool("read_wall");
+    const second = await blind.callTool("list_boards");
+    const idOf = (text) => text.match(/1\. ([0-9a-f-]{36}) —/)?.[1];
+    expect(idOf(first)).toBeTruthy();
+    expect(idOf(second)).toBe(idOf(first));
+    expect(read).toContain("sample: this is the wall PlotCoder starts with");
+    expect(await blind.callTool("list_board")).toContain("sample: this is the wall");
+    expect(read).toContain("checked and clean:");
+  });
+
+  it("names the card's id and casts it in one call, adding a role-named person to the roster", async () => {
+    const text = await blind.callTool("create_note", { headline: "Dana calls their mother", change: "She lies about where they are.", characters: ["Maya", "Dana's mother"] });
+    expect(text).toMatch(/^Created card [A-Za-z0-9_-]+ \(/);
+    expect(text).toContain("Cast: Maya, Dana's mother (added to the roster: Dana's mother)");
+    const board = await blind.callToolData("list_board");
+    const mother = board.characters.find((person) => person.name === "Dana's mother");
+    expect(mother).toBeTruthy();
+    const card = board.notes.find((note) => note.headline === "Dana calls their mother");
+    expect(card.characterIds).toContain(mother.id);
+    expect(await blind.callTool("list_board")).not.toContain("sample: this is the wall");
+  });
+
+  it("says over or under in words, and what page_count counts", async () => {
+    expect(await blind.callTool("set_target", { pages: 2 })).toMatch(/— [0-9 /]+ (over|under)\./);
+    expect(await blind.callTool("list_board")).toMatch(/runtime: about .* — .* (over|under) \(an estimate/);
+    const pages = await blind.callTool("page_count");
+    expect(pages).toContain("unwritten and count as one line each");
+    expect(await blind.callTool("new_board", { name: "Ep 2" })).toContain("leave it empty rather than invent it");
+  });
+
+  it("keeps ticket numbers out of every tool description", async () => {
+    const { tools } = await blind.request("tools/list", {});
+    for (const tool of tools) expect(tool.description).not.toMatch(/\b[RD]\d\d\b|question \d+/);
+  });
+});
+
 describe("the premise and reminders (roadmap item 6)", () => {
   let door;
   let doorRoot;

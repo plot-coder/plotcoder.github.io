@@ -12,7 +12,7 @@ export const AGENTS = {
     {
       id: "mcp",
       name: "MCP",
-      text: "For Cursor or Claude Code: the server in the repo, github.com/plot-coder/plotcoder.github.io, wired by this.",
+      text: "For Cursor or Claude Code: the server in the repo, github.com/plot-coder/plotcoder.github.io. Clone it, run npm ci once, then wire it by this. No MCP where you are? node scripts/plotcoder-call.mjs <tool> '{json}' makes one call from a shell; PLOTCODER_ROOT points the server at the folder whose wall you mean.",
       code: '{\n  "mcpServers": {\n    "plotcoder-board": {\n      "command": "node",\n      "args": ["scripts/plotcoder-mcp.mjs"]\n    }\n  }\n}',
     },
     {
@@ -29,14 +29,16 @@ export const AGENTS = {
   ],
   first: [
     { tool: "list_words", why: "the room's words, the app's meaning." },
-    { tool: "read_wall", why: "what is here, and what it asks." },
+    { tool: "read_wall", why: "what is here, and what it asks. A fresh folder holds a sample wall (Maya, Tom, the letter) and says so; it is not the writer's." },
     { tool: "list_workflows", why: "what a writer can ask you for." },
+    { tool: "list_reminders", why: "the writer's principles, before you change anything." },
   ],
   rules: [
     "Questions, not fixes, until the writer says.",
     "No opinions about how many beats there should be.",
     "Page counts are estimates.",
     "Ask before delete_board, unlock_numbers, remove_file, or claim_account — the writer gives the email and the password; never invent one.",
+    "Do not invent people or a logline. An unnamed person in a treatment is named by their role — Dana's mother, the dispatcher — which is a name until the writer gives one. A beat is a whole card. Acts are not a thing on the wall; a structure's beats are the act breaks.",
   ],
   person:
     "Give your agent the account door only on a machine you trust; it signs in as you and shows under People as “an agent, as you” while it runs. Your agent can also make your account: give it your email and a password of your choosing.",

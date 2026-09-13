@@ -68,7 +68,7 @@ import {
 const colorSchema = z.enum(NOTE_COLORS);
 const rankSchema = z.enum(NOTE_RANKS);
 const arrowKindSchema = z.enum(ARROW_KINDS);
-// Agents get pages, not eighths. Eighths are the storage unit (D23); asking a
+// Agents get pages, not eighths. Eighths are the storage unit; asking a
 // model to convert is a needless chance to be wrong by a factor of eight.
 const pagesSchema = z.number().positive();
 const toEighths = (pages) => Math.round(pages * EIGHTHS_PER_PAGE);
@@ -336,7 +336,7 @@ function writeFileBoard(state, rev, boardId = null) {
   fs.writeFileSync(BOARD_FILE, `${JSON.stringify(payload, null, 2)}\n`);
 }
 
-// --- The project (R35): the record and every board ------------------------
+// --- The project: the record and every board ------------------------
 
 function readFileProject() {
   try {
@@ -396,7 +396,11 @@ async function readProject() {
   const record = board.boardId
     ? { ...project, boards: [{ ...project.boards[0], id: board.boardId }], activeBoardId: board.boardId }
     : project;
-  return { project: record, boards: { [id]: board.state }, rev: 0, base: null, live: false };
+  // Written down at once, so the ids an agent reads are the ids it keeps
+  // (a blind run saw the first board's id change between calls).
+  writeFileProject(record, { [id]: board.state }, 1);
+  if (!board.boardId) writeFileBoard(board.state, board.rev, id);
+  return { project: record, boards: { [id]: board.state }, rev: 1, base: null, live: false };
 }
 
 async function writeProject(project, boards, rev, base, reminders = null) {
@@ -492,7 +496,7 @@ function syncProjectFileBoard(boardId, state) {
   writeFileProject(file.project, { ...file.boards, [boardId]: state }, file.rev + 1);
 }
 
-// This server's own trail of changes (R33): what the board was before each
+// This server's own trail of changes: what the board was before each
 // of its tool calls, and what it became. `undo` walks it back — but only when
 // the board still is what the call left, so it never tramples a change the
 // person made on the wall since.
@@ -530,8 +534,17 @@ async function commit(command) {
 /** Where a change landed, for the tail of a tool's reply. */
 function where(live) {
   if (live === ACCOUNT) return " (saved to the account; live on every open wall)";
-  return live ? " (visible on the open board)" : " (written to file)";
+  return live ? " (visible on the open board)" : " (written to file; the wall shows it the next time the app runs from this folder)";
 }
+
+/** The wall PlotCoder starts with — Maya, Tom, the letter — and nothing of the writer's yet. */
+function isSampleWall(state) {
+  const sample = seedState().notes.map((note) => note.headline).sort().join("\n");
+  return state.notes.map((note) => note.headline).sort().join("\n") === sample;
+}
+/** Every check read_wall runs, so silence can be named. */
+const CHECKS = ["sag", "unwritten", "unlinked", "duplicate", "sequence", "uncast", "absent", "backwards", "unpaid"];
+const SAMPLE_NOTE = "sample: this is the wall PlotCoder starts with (Maya, Tom, the letter); nothing here is the writer's. Replace it, or new_board.";
 
 // --- Reporting -------------------------------------------------------------
 
@@ -551,7 +564,7 @@ function summarize(state) {
     .map((character) => {
       const on = state.notes.filter((note) => note.characterIds.includes(character.id)).length;
       // Which lines of their page are written, so an agent can see who is a
-      // brief and who is still a name (R36).
+      // brief and who is still a name.
       const page = filledCharacterFields(character);
       const brief = page.length ? ` · page: ${page.join(", ")}` : " · page: empty";
       return `  - ${character.id} — "${character.name}" on ${on} card${on === 1 ? "" : "s"}${brief}`;
@@ -583,11 +596,14 @@ function summarize(state) {
     `numbers: ${state.lock ? `locked ${String(state.lock.at).slice(0, 10)} — ${[...numbers.entries()].map(([id, n]) => `${n}:${id}`).join(" ")}` : "follow the wall's order"}`,
     `revision: ${state.revision ? `"${state.revision.name}" in ${state.revision.color} since ${String(state.revision.since).slice(0, 10)}` : "none"}`,
   ];
+  const runtime = boardEighths(state);
+  const over = runtime - state.targetEighths;
   return [
+    ...(isSampleWall(state) ? [SAMPLE_NOTE] : []),
     `logline: ${state.logline ? `"${state.logline}"` : "(not set)"}`,
     ...production,
     `beats: ${beats}, scenes: ${scenes}`,
-    `runtime: about ${formatPages(boardEighths(state))} pages of a ${formatPages(state.targetEighths)}-page target (an estimate from the cards)`,
+    `runtime: about ${formatPages(runtime)} pages of a ${formatPages(state.targetEighths)}-page target — ${over > 0 ? `${formatPages(over)} over` : over < 0 ? `${formatPages(-over)} under` : "on it"} (an estimate from the cards; a page runs about a minute)`,
     `notes: ${state.notes.length}, groups: ${state.groups.length}, arrows: ${state.arrows.length}, cast: ${state.characters.length}`,
     "cast:",
     cast || "  (no one yet — add_character to start the roster)",
@@ -717,7 +733,7 @@ server.registerTool(
       targetEighths: toEighths(args.pages),
     });
     return ok(
-      `Target is ${formatPages(state.targetEighths)} pages${where(live)}. The cards add up to about ${formatPages(boardEighths(state))}.`,
+      `Target is ${formatPages(state.targetEighths)} pages${where(live)}. The cards add up to about ${formatPages(boardEighths(state))} — ${boardEighths(state) > state.targetEighths ? `${formatPages(boardEighths(state) - state.targetEighths)} over` : `${formatPages(state.targetEighths - boardEighths(state))} under`}.`,
       { targetEighths: state.targetEighths },
     );
   },
@@ -728,7 +744,7 @@ server.registerTool(
   {
     title: "Create note",
     description:
-      "Add a card (post-it) to the board. A card is one scene: a headline plus the change it causes. Provide both headline and change. Optionally set color, x/y position, rank ('beat' for one of the major turns, otherwise 'scene'), pages (how long it runs; leave it out and the card is taken to be about a page), plants (true if this scene sets something up that must pay off later), and location (where it happens, as the writer would say it — 'the piano shop', not 'INT. PIANO SHOP').",
+      "Add a card (post-it) to the board. A card is one scene: a headline plus the change it causes. Provide both headline and change. Optionally set color, x/y position, rank ('beat' for one of the major turns — a beat is a whole card, the scene where the turn happens), pages (how long it runs; leave it out and the card is taken to be about a page), plants (true if this scene sets something up that must pay off later), location (where it happens, as the writer would say it — 'the piano shop', not 'INT. PIANO SHOP'), and characters (who is in the scene, by name; a name not in the cast yet is added to it — name an unnamed person by their role, 'Dana's mother', rather than leaving them off). The reply names the card's id.",
     inputSchema: {
       headline: z.string().min(1),
       change: z.string().min(1),
@@ -737,6 +753,7 @@ server.registerTool(
       pages: pagesSchema.optional(),
       plants: z.boolean().optional(),
       location: z.string().optional(),
+      characters: z.array(z.string().min(1)).optional(),
       x: z.number().optional(),
       y: z.number().optional(),
     },
@@ -754,7 +771,25 @@ server.registerTool(
       x: args.x,
       y: args.y,
     });
-    return ok(`Created card${where(live)}.`, result);
+    let castLine = "";
+    if (args.characters && args.characters.length && result?.id) {
+      const added = [];
+      const ids = [];
+      for (const name of args.characters) {
+        const { state } = await readBoard();
+        const wanted = name.trim().toLowerCase();
+        let person = state.characters.find((item) => item.id === name) ?? state.characters.find((item) => item.name.trim().toLowerCase() === wanted);
+        if (!person) {
+          const made = await commit({ type: "add_character", name: name.trim() });
+          person = made.result;
+          if (person) added.push(person.name);
+        }
+        if (person) ids.push(person.id);
+      }
+      if (ids.length) await commit({ type: "set_cast", ids: [result.id], characterIds: ids });
+      castLine = ` Cast: ${args.characters.map((name) => name.trim()).join(", ")}${added.length ? ` (added to the roster: ${added.join(", ")})` : ""}.`;
+    }
+    return ok(`Created card ${result?.id ?? ""}${where(live)}.${castLine}`, result);
   },
 );
 
@@ -832,7 +867,7 @@ server.registerTool(
   },
 );
 
-// --- Read the wall (R22) ----------------------------------------------------
+// --- Read the wall ----------------------------------------------------
 
 server.registerTool(
   "read_wall",
@@ -864,7 +899,9 @@ server.registerTool(
       ...(reading.findings.length
         ? reading.findings.map((finding) => `  - [${finding.kind}] ${finding.text}`)
         : ["  (none that this reading can see)"]),
+      `checked and clean: ${CHECKS.filter((kind) => !reading.findings.some((finding) => finding.kind === kind)).join(", ") || "(nothing — every check found something)"}`,
     ];
+    if (isSampleWall(state)) lines.unshift(SAMPLE_NOTE);
     return ok(lines.join("\n"), reading);
   },
 );
@@ -924,7 +961,7 @@ server.registerTool(
   },
 );
 
-// The writer's own structures (R38, Roadmap 2 item 7): saved from a wall's
+// The writer's own structures: saved from a wall's
 // beats onto the project, laid on another wall with apply_template.
 server.registerTool(
   "list_structures",
@@ -1101,7 +1138,7 @@ server.registerTool(
   {
     title: "List workflows",
     description:
-      "The workflows a writer can ask for (R27): each a sentence, the tools it composes, and the rule to keep while doing it. When the writer's ask matches one, follow it; when it does not, compose the tools yourself and say what you did.",
+      "The workflows a writer can ask for: each a sentence, the tools it composes, and the rule to keep while doing it. When the writer's ask matches one, follow it; when it does not, compose the tools yourself and say what you did.",
     inputSchema: {},
   },
   async () =>
@@ -1119,7 +1156,7 @@ server.registerTool(
   {
     title: "Brief a segment",
     description:
-      "The brief for a segment of the movie (R28, first step): one card, or several in wall order for a run between beats. Everything the wall knows — the story, the people with their pages, the places, what changes, the script or 'unwritten', what must be true after — in the order a video tool would need it. Text only; nothing is generated or sent. Hand it to the writer to approve; fix a wrong brief on the cards.",
+      "The brief for a segment of the movie: one card, or several in wall order for a run between beats. Everything the wall knows — the story, the people with their pages, the places, what changes, the script or 'unwritten', what must be true after — in the order a video tool would need it. Text only; nothing is generated or sent. Hand it to the writer to approve; fix a wrong brief on the cards.",
     inputSchema: { ids: z.array(z.string()).min(1) },
   },
   async (args) => {
@@ -1195,7 +1232,11 @@ server.registerTool(
       const note = order.find((item) => item.id === scene.id);
       return `  - ${scene.number}. ${note?.headline ?? scene.id} (${scene.id}) — p. ${scene.page}${scene.endPage !== scene.page ? `–${scene.endPage}` : ""}`;
     });
-    return ok([`pages: ${result.pageCount} of ${Math.round(state.targetEighths / 8)}`, ...lines].join("\n"), result.scenes);
+    const unwritten = order.filter((note) => !(note.text && note.text.trim())).length;
+    const note = unwritten
+      ? [`${unwritten} of ${order.length} scenes are unwritten and count as one line each here; for the estimate from the cards' lengths, see list_board's runtime line.`]
+      : [];
+    return ok([`pages: ${result.pageCount} of ${Math.round(state.targetEighths / 8)}`, ...note, ...lines].join("\n"), result.scenes);
   },
 );
 
@@ -1256,7 +1297,7 @@ server.registerTool(
   {
     title: "Build a segment",
     description:
-      "Hand a segment's brief — one card, or several in wall order — to the video tool. No tool is chosen yet (question 26): until one is, this returns the brief with a note saying so, and a take built elsewhere is filed with add_take. When a provider exists it will be a tool behind this same surface; the wall's records are what it is handed. The writer approves the brief before anything is made.",
+      "Hand a segment's brief — one card, or several in wall order — to the video tool. No tool is chosen yet: until one is, this returns the brief with a note saying so, and a take built elsewhere is filed with add_take. When a provider exists it will be a tool behind this same surface; the wall's records are what it is handed. The writer approves the brief before anything is made.",
     inputSchema: { ids: z.array(z.string()).min(1) },
   },
   async (args) => {
@@ -1339,7 +1380,7 @@ server.registerTool(
   {
     title: "Add a picture to a person's page",
     description:
-      "Through the account door: put a picture — an image file by path — on a person's page (R36), by the character's id or name. The writer sees it in the page's gallery; the first picture is the face on their page.",
+      "Through the account door: put a picture — an image file by path — on a person's page, by the character's id or name. The writer sees it in the page's gallery; the first picture is the face on their page.",
     inputSchema: { character: z.string().min(1), path: z.string().min(1) },
   },
   async (args) => {
@@ -1475,7 +1516,7 @@ server.registerTool(
   },
 );
 
-// --- Characters (R29) -------------------------------------------------------
+// --- Characters -------------------------------------------------------
 
 server.registerTool(
   "add_character",
@@ -1555,7 +1596,7 @@ server.registerTool(
   {
     title: "Set where scenes happen",
     description:
-      "Set the place of one or more cards: where the scene happens, as the writer would say it ('the piano shop', 'the flat, kitchen') — a phrase, not a slugline. The same phrase on several cards is one place in the lens; an empty string clears it. list_board shows each card's place as 'at: …'.",
+      "Set the place of one or more cards: where the scene happens, as the writer would say it ('the piano shop', 'the flat, kitchen') — a phrase, not a slugline. The same phrase on several cards is one place in the Cast panel; an empty string clears it. list_board shows each card's place as 'at: …'.",
     inputSchema: { ids: z.array(z.string()).min(1), location: z.string() },
   },
   async (args) => {
@@ -1643,7 +1684,7 @@ server.registerTool(
   },
 );
 
-// --- Groups (R14) -----------------------------------------------------------
+// --- Groups -----------------------------------------------------------
 
 server.registerTool(
   "create_group",
@@ -1710,7 +1751,7 @@ server.registerTool(
   },
 );
 
-// --- Arrows (R15) -----------------------------------------------------------
+// --- Arrows -----------------------------------------------------------
 
 server.registerTool(
   "create_arrow",
@@ -1773,7 +1814,7 @@ server.registerTool(
   },
 );
 
-// --- The project (R35) ------------------------------------------------------
+// --- The project ------------------------------------------------------
 
 function describeBoards(project, boards) {
   return project.boards
@@ -1816,7 +1857,7 @@ server.registerTool(
   {
     title: "Set the project's premise",
     description:
-      "Set the project's premise: the series- or story-level line above every board's logline (D17). An empty string clears it. Boards keep their own loglines.",
+      "Set the project's premise: the series- or story-level line above every board's logline. An empty string clears it. Boards keep their own loglines.",
     inputSchema: { premise: z.string() },
   },
   async (args) => {
@@ -1844,7 +1885,7 @@ server.registerTool(
   },
 );
 
-// Reminders (R10, R11): the writer's principles, read before touching the wall.
+// Reminders: the writer's principles, read before touching the wall.
 function currentReminders(reminders) {
   return Array.isArray(reminders) ? reminders : DEFAULT_REMINDERS;
 }
@@ -2049,7 +2090,7 @@ server.registerTool(
     const fresh = { ...emptyState(), ...(target ? { targetEighths: target } : {}) };
     const { live } = await openBoardEverywhere(next, { ...boards, [board.id]: fresh }, rev, base, board.id);
     return ok(
-      `Added "${board.name}" (${board.id}) and opened it${where(live)}. It is empty: set the logline, then start on the beats.`,
+      `Added "${board.name}" (${board.id}) and opened it${where(live)}. It is empty. The logline is the story's question when the writer has one — leave it empty rather than invent it — and the cards come next.`,
       board,
     );
   },

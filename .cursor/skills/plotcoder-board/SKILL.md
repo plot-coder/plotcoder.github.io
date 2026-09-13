@@ -35,10 +35,19 @@ season's episodes, or a writer's stories) under one name and one premise.
 
 ## Use the MCP tools, not the mouse
 
-The repo ships an MCP server (`plotcoder-board`, wired in `.cursor/mcp.json`).
-Drive the board through its tools. **Do not** open a browser and fake pointer
-drags — the tools and the human UI share one command kernel, so a tool call
-lands on the exact same board a person sees.
+The repo ships an MCP server (`plotcoder-board`, wired in `.cursor/mcp.json`
+and `.mcp.json`; run `npm ci` once first). Drive the board through its tools.
+**Do not** open a browser and fake pointer drags — the tools and the human UI
+share one command kernel, so a tool call lands on the exact same board a person
+sees. No MCP where you are? `node scripts/plotcoder-call.mjs <tool> '{json}'`
+makes one call from a shell; `PLOTCODER_ROOT` points the server at the folder
+whose wall you mean.
+
+**Call these first, in this order:** `list_words` (the room's words), `read_wall`
+(what is here and what it asks — a fresh folder holds a sample wall, Maya and
+Tom and the letter, and says so; it is not the writer's), `list_workflows`
+(what a writer can ask for), `list_reminders` (the writer's principles) — then
+change anything.
 
 ### Reading
 
@@ -58,7 +67,11 @@ lands on the exact same board a person sees.
 ### Cards
 
 - `create_note` — add a card. Requires `headline` **and** `change`. Optional
-  `color` (yellow, pink, blue, green, orange), `rank`, `pages`, and `x`/`y`.
+  `color` (yellow, pink, blue, green, orange), `rank`, `pages`, `plants`,
+  `location`, `characters` (names; a name not in the cast is added to it), and
+  `x`/`y`. The reply names the card's id. A **beat is a whole card** — the
+  scene where the turn happens — not a moment inside one; when a treatment's
+  "midpoint" spans two scenes, mark the card where the turn lands.
 - `update_note` — change a card's `headline` and/or `change` by `id`.
 - `move_note` — set a card's absolute `x`,`y` (top-left, pixels).
 - `recolor_note` — change a card's paper `color` by `id`.
@@ -71,7 +84,7 @@ lands on the exact same board a person sees.
 - `set_location` — where one or more cards happen, as the writer would say it
   ("the piano shop", not "INT. PIANO SHOP"). `create_note` and `update_note`
   take `location` too; `list_board` shows it as `at: …`. No roster of places:
-  the same phrase on several cards is one place in the lens.
+  the same phrase on several cards is one place in the Cast panel.
 - `delete_note` — remove a card (also drops its arrows and group membership).
 
 ### Cast
@@ -88,6 +101,12 @@ lands on the exact same board a person sees.
   or ids). The list **replaces** the card's cast, so pass everyone in the scene;
   an empty list clears it. A name not in the roster is refused by name — call
   `add_character` first. Do not invent people; ask the writer who is in a scene.
+  An **unnamed** person in a treatment — "their mother", "the dispatcher" —
+  is named by their role: `Dana's mother`, `The dispatcher`. A role is a name
+  until the writer gives one; leaving them off the card is the error.
+- **Acts** are not a thing on the wall. It reads left to right; a structure's
+  beats are the act breaks. Use a colour or a group to mark one only if the
+  writer asks.
 
 ### Pages
 
@@ -212,7 +231,7 @@ edits appear in real time; the change is already saved either way.
 
 ## Not available to agents
 
-- **Scatter** is a UI-layer action with no tool; undo covers it.
+- **Scatter** (shuffling the cards' positions on the wall) is a mouse action with no tool; undo covers it.
 - **Sharing a project, signing in, changing the email or password** are the
   writer's decisions at the door; no tool does them.
 - **Pan and zoom** are per-viewer state and are deliberately not board data.

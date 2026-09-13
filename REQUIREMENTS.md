@@ -559,6 +559,14 @@ Add new items at the bottom of this list. Do not renumber. If a requirement dies
 - **The rule, and its first uses (2026-09-13, "Pages per Scene" mocked three wordings, Robert chose B):** a caption where a control has a grid, a hover where it has a face. The length picker is captioned **Pages per scene** with a foot line — "In eighths: 2/8 is a quarter of a page. A written scene measures itself." — and the corner badge takes the Length sentence after a second, or, when the scene is written, says it is measured from the text and where it starts; the browser tooltip is gone. The colour swatches are captioned **Paper**.
 - **Notes:** Nothing opens by itself. Words that are not things — the wall, runtime, reminders, an agent — have no show me.
 
+### R43 — Are you an agent? Start here
+
+- **Status:** **proposed** 2026-09-13; mocked ("Are You an Agent?"), asked, awaiting Robert's choice
+- **Date:** 2026-09-13
+- **Statement:** The app carries a line — *Are you an agent? Start here* — that opens the on-ramp: what PlotCoder is in three sentences, the doors (MCP with the config to copy, the account door with its two variables, the page's object), the three tools to call first, the rules in one breath, and a part for the person about trust. The same text is served at `plotcoder.com/llms.txt` for agents that read the site rather than the screen.
+- **Why:** Robert: agents and the people who set them up need to find the way in from the GUI itself, not only from the repo. Three documents exist (README, the skill, CLAUDE.md); none is reachable from the app, and none leads with what to call first.
+- **Mocked first:** the line in three quiet places — a fainter second line under the empty wall's hint, the last line of the words sheet, and under You in the wordmark's sheet worded for the person — and the Agents sheet it opens, plus the file. Not on a wall with cards on it; not a tour. The words in one module so the sheet, the file and the README agree.
+
 ### R33 — Undo
 
 - **Status:** **built** 2026-09-13
@@ -1064,3 +1072,4 @@ Add a dated heading and your verdict. Challenge requirements, don’t just affir
 | 2026-09-13 | **The Shape line points at what it counts.** Robert asked whether its parts should open things or modals; neither — a count is a face: click "9 beats" and the beat cards light on the wall, click "3 scenes" and the scenes do; resting on either gives the word's sentence; with no beats yet the click opens Structure, the way a wall gets its first. No modal: the list of beats already exists on the strip and in the Outline, and D21 keeps the app quiet about the number. |
 | 2026-09-13 | **The Do line as icons.** Robert: icons here, not words. The readout's Do line shows the strip's icons at the readout's size, each named after a second; Group, Brief and Takes join when cards are selected, Takes with its own icon at last. |
 | 2026-09-13 | **The strip's far end.** Robert: the target mark overlapped the last page number at the bottom right. The "target 120 →" label keeps the page-number row, and the last page number gives way to it when the two would share the axis's end. |
+| 2026-09-13 | **Are you an agent? Start here, mocked.** Robert wants the agent on-ramp in the GUI. Mocked the line in three quiet places, the Agents sheet it opens (doors with Copy, the three calls first, the rules, a part for the person), and the same text at /llms.txt. R43 proposed, not built. |

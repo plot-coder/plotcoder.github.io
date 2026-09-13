@@ -1,16 +1,28 @@
 ---
 name: plotcoder-board
 description: >-
-  Create, move, recolor, edit, and delete cards on the PlotCoder storyboard from
-  an agent. Use when asked to build or rearrange the PlotCoder wall, add beats,
-  or change the board — instead of simulating mouse drags in a browser.
+  Build and rearrange the PlotCoder storyboard from an agent: cards, groups,
+  arrows, beat rank, and the logline. Use when asked to build or rearrange the
+  PlotCoder wall, add beats, or change the board — instead of simulating mouse
+  drags in a browser.
 ---
 
 # PlotCoder board
 
-PlotCoder is a storylining wall of cards (post-its). Each card is a **beat**: a
-`headline` plus the `change` it causes. Cards also have a `color`, position
-(`x`,`y`), and rotation.
+PlotCoder is a storylining wall of cards (post-its). Each card is one **scene**:
+a `headline` plus the `change` it causes. Cards also have a `color`, a position
+(`x`,`y`), a rotation, and a `rank`.
+
+The board holds four kinds of thing:
+
+- **cards** — one scene each.
+- **rank** — a card is a `scene` or a `beat`. A beat is one of the 8–15 major
+  turns the story hangs on. Rank is carried by the card, never by where it sits.
+- **groups** — a named frame around two or more cards: a sequence, a set piece.
+- **arrows** — directed links between cards: what follows what, what sets up what.
+
+Above them all sits the **logline**: the central question, what the story is
+arguing.
 
 ## Use the MCP tools, not the mouse
 
@@ -19,23 +31,55 @@ Drive the board through its tools. **Do not** open a browser and fake pointer
 drags — the tools and the human UI share one command kernel, so a tool call
 lands on the exact same board a person sees.
 
-Tools:
+### Reading
 
-- `list_board` — every card with its **id**, headline, change, color, position.
+- `list_board` — the logline, the beat/scene counts, then every **card**,
+  **group**, and **arrow** with its **id**. This is the only place ids come from.
+
+### Cards
+
 - `create_note` — add a card. Requires `headline` **and** `change`. Optional
-  `color` (yellow, pink, blue, green, orange) and `x`/`y`.
+  `color` (yellow, pink, blue, green, orange), `rank`, and `x`/`y`.
 - `update_note` — change a card's `headline` and/or `change` by `id`.
 - `move_note` — set a card's absolute `x`,`y` (top-left, pixels).
 - `recolor_note` — change a card's paper `color` by `id`.
+- `set_rank` — mark cards `beat` or `scene`. Takes a list of ids.
 - `delete_note` — remove a card (also drops its arrows and group membership).
+
+### Structure
+
+- `set_logline` — set the board's central question. Empty string clears it.
+- `create_group` — frame two or more cards, with an optional `title`.
+- `rename_group` / `ungroup` — by group id. Ungrouping leaves the cards alone.
+- `create_arrow` — a directed arrow, `from` → `to`.
+- `delete_arrow` — by arrow id. Removes that direction only.
 
 ## Workflow
 
-1. **Call `list_board` first.** Use the real `id`s it returns for any move,
-   recolor, edit, or delete. Never guess ids.
-2. Create beats with a real `headline` and `change` — not placeholders.
-3. To lay cards out, `move_note` each one. The board is roughly 192px cards;
-   leave ~30px gaps for a readable row.
+1. **Call `list_board` first.** Use the real `id`s it returns for every move,
+   edit, group, or arrow. Never guess ids.
+2. Give every card a real `headline` and `change` — not placeholders. A card
+   whose change line is empty is a card that has not earned its place.
+3. To lay cards out, `move_note` each one. Cards are 192px; leave ~30px gaps for
+   a readable row.
+4. Mark the major turns with `set_rank`. Marking a beat never moves it.
+
+## What the tools will refuse
+
+These are not errors to retry — they mean the board disagrees with you. Read the
+reply, call `list_board`, and fix the ids.
+
+- A group needs **two or more cards that exist**. A card can only be in one
+  group, so grouping it removes it from its previous frame.
+- An arrow cannot point at itself, cannot use an id that is not on the board,
+  and the same direction cannot be drawn twice.
+- Arrows are **one-way**. `A→B` does not create `B→A`. Draw both if you mean
+  both — that is two arrows, and deleting one leaves the other.
+
+## Do not have opinions about beat count
+
+The app deliberately counts beats and says nothing about the number. Do not tell
+the user they have too many or too few. Report the count if asked.
 
 ## Live vs. file
 
@@ -49,7 +93,10 @@ If a tool result says the change was "written to file" but you expected it live,
 the app is not open. Tell the user to run `npm run dev` if they want to watch
 edits appear in real time; the change is already saved either way.
 
-## Only notes for now
+## Not available to agents
 
-Arrows and groups live in the same board state but have no agent tools yet.
-Do not try to create them through these tools.
+- **Organize** and **Scatter** are UI-layer layout actions, not kernel commands.
+  Lay cards out with `move_note` instead.
+- The **series premise** and **Reminders** live in browser storage, not in the
+  board record, so no tool can reach them.
+- **Pan and zoom** are per-viewer state and are deliberately not board data.

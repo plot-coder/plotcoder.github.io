@@ -128,13 +128,18 @@ describe("plotcoder MCP server", () => {
   it("exposes the board tools an agent needs", async () => {
     const { tools } = await client.request("tools/list", {});
     expect(tools.map((tool) => tool.name).sort()).toEqual([
+      "create_arrow",
+      "create_group",
       "create_note",
+      "delete_arrow",
       "delete_note",
       "list_board",
       "move_note",
       "recolor_note",
+      "rename_group",
       "set_logline",
       "set_rank",
+      "ungroup",
       "update_note",
     ]);
   });
@@ -194,6 +199,95 @@ describe("plotcoder MCP server", () => {
 
     await client.callTool("set_rank", { ids: [target], rank: "scene" });
     expect(await client.callTool("list_board")).toContain("beats: 0, scenes: 3");
+  });
+
+  describe("groups", () => {
+    it("groups cards, renames the frame, and ungroups without moving them", async () => {
+      const { notes } = await client.callToolData("list_board");
+      const ids = notes.slice(0, 2).map((note) => note.id);
+      const before = notes.slice(0, 2).map((note) => [note.x, note.y]);
+
+      const made = await client.callTool("create_group", { noteIds: ids, title: "The heist" });
+      expect(made).toContain("Grouped 2 cards");
+
+      // The id has to come back out of list_board or the other tools are unusable.
+      const listed = await client.callTool("list_board");
+      expect(listed).toContain('"The heist" holds 2');
+      const group = readBoardFile().state.groups[0];
+      expect(group.noteIds).toEqual(ids);
+
+      expect(await client.callTool("rename_group", { id: group.id, title: "Midpoint" })).toContain(
+        "Midpoint",
+      );
+      expect(readBoardFile().state.groups[0].title).toBe("Midpoint");
+
+      expect(await client.callTool("ungroup", { id: group.id })).toContain("untouched");
+      const after = readBoardFile().state;
+      expect(after.groups).toHaveLength(0);
+      expect(after.notes.filter((note) => ids.includes(note.id)).map((n) => [n.x, n.y])).toEqual(
+        before,
+      );
+    });
+
+    it("says why rather than claiming success it did not have", async () => {
+      const { notes } = await client.callToolData("list_board");
+      // The reply must name the offending id, not just say it failed.
+      expect(await client.callTool("create_group", { noteIds: [notes[0].id, "ghost"] })).toContain(
+        "not on the board — ghost",
+      );
+      expect(await client.callTool("rename_group", { id: "ghost", title: "x" })).toContain(
+        "No group with id ghost",
+      );
+      expect(await client.callTool("ungroup", { id: "ghost" })).toContain("No group with id ghost");
+      expect(readBoardFile().state.groups).toHaveLength(0);
+    });
+  });
+
+  describe("arrows", () => {
+    it("draws a directed arrow and deletes only that direction", async () => {
+      const { notes } = await client.callToolData("list_board");
+      const [a, b] = notes.slice(0, 2).map((note) => note.id);
+
+      expect(await client.callTool("create_arrow", { from: a, to: b })).toContain("Drew");
+      expect(await client.callTool("create_arrow", { from: b, to: a })).toContain("Drew");
+      expect(readBoardFile().state.arrows).toHaveLength(2);
+
+      const listed = await client.callTool("list_board");
+      expect(listed).toContain(`${a} → ${b}`);
+
+      const forward = readBoardFile().state.arrows.find(
+        (arrow) => arrow.from === a && arrow.to === b,
+      );
+      expect(await client.callTool("delete_arrow", { id: forward.id })).toContain("untouched");
+
+      // A→B and B→A are two objects; deleting one must leave the other (R15).
+      const left = readBoardFile().state.arrows;
+      expect(left).toHaveLength(1);
+      expect([left[0].from, left[0].to]).toEqual([b, a]);
+
+      await client.callTool("delete_arrow", { id: left[0].id });
+    });
+
+    it("refuses a self-link, an unknown card, and a duplicate", async () => {
+      const { notes } = await client.callToolData("list_board");
+      const [a, b] = notes.slice(0, 2).map((note) => note.id);
+
+      // Each refusal names its own reason, so an agent fixes the input instead
+      // of retrying the same call.
+      expect(await client.callTool("create_arrow", { from: a, to: a })).toContain(
+        "a card cannot point at itself",
+      );
+      expect(await client.callTool("create_arrow", { from: a, to: "ghost" })).toContain(
+        "there is no card with id ghost",
+      );
+
+      await client.callTool("create_arrow", { from: a, to: b });
+      expect(await client.callTool("create_arrow", { from: a, to: b })).toContain("already exists");
+      expect(readBoardFile().state.arrows).toHaveLength(1);
+
+      expect(await client.callTool("delete_arrow", { id: "ghost" })).toContain("No arrow with id");
+      await client.callTool("delete_arrow", { id: readBoardFile().state.arrows[0].id });
+    });
   });
 
   // Regression guard: this line used to claim the app was closed even when it

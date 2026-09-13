@@ -170,7 +170,7 @@ Add new items at the bottom of this list. Do not renumber. If a requirement dies
 
 ### R14 — Group cards
 
-- **Status:** confirmed (need). Mechanism: proposed.
+- **Status:** **confirmed — mechanism locked** 2026-09-12 (P6 as built; answers open question 12)
 - **Date:** 2026-09-12
 - **Statement:** The user can group cards so a sequence, set piece, or cluster moves and reads as one unit. Cards stay visible; grouping is not a folder you open.
 - **Why:** Rooms rubber-band a run of beats. Forty loose notes hide the sequences.
@@ -180,7 +180,7 @@ Add new items at the bottom of this list. Do not renumber. If a requirement dies
 
 ### R15 — Arrows between cards
 
-- **Status:** confirmed (need). Draw gesture: proposed.
+- **Status:** **confirmed — draw gesture locked** 2026-09-12 (P8 as built; answers open question 13)
 - **Date:** 2026-09-12
 - **Statement:** The user can draw an arrow from one card to another to show what comes after what. Arrows are **directed**. Drawing A→B does not create B→A. The user may also draw B→A, so two arrows can run opposite ways between the same pair. That is two objects, not one two-headed line.
 - **Why:** Sequence is not only left-to-right position. Loops and mutual cause are real in story (“they keep triggering each other”).
@@ -189,7 +189,7 @@ Add new items at the bottom of this list. Do not renumber. If a requirement dies
 
 ### R16 — Change a card’s paper color
 
-- **Status:** confirmed (need). Gesture: proposed.
+- **Status:** **confirmed — gesture locked** 2026-09-12 (P10 as built; answers open question 14)
 - **Date:** 2026-09-12
 - **Statement:** The user can change a card’s paper color. Color is a property of the card, not a canvas setting. The five pad colors are yellow, pink, blue, green, and orange. They stay paper on both black and white canvases.
 - **Why:** Rooms color a storyline, a character, or a tone. A random pad color is not enough once the wall is real work.
@@ -198,12 +198,15 @@ Add new items at the bottom of this list. Do not renumber. If a requirement dies
 
 ### R17 — Agent command surface
 
-- **Status:** confirmed (need). Mechanism: proposed.
+- **Status:** **built** 2026-09-12 (P11 as built; mechanism locked)
 - **Date:** 2026-09-12
 - **Statement:** An agent or robot (including this assistant) can create cards and move things around without driving the mouse. The same operations a human does by hand — new note, move, recolor, edit, delete — are available as callable commands, and they land on the same board a human sees.
 - **Why:** Robert wants to build the wall with an agent, not only by dragging paper. If the agent and the human edit through different code paths they will drift.
 - **Proposed mechanism (P11):** One command kernel that both the human UI and the agent call. Three doors into it: the human gestures, a `window.plotcoder` API on the page, and an MCP server in the repo. A workspace board file lets commands work with the app closed.
-- **Notes:** First agent tools are notes only (`list_board`, `create_note`, `update_note`, `move_note`, `recolor_note`, `delete_note`). Arrows and groups exist in the same state and reducer but are not agent tools yet. The agent must not fake pointer drags; it calls commands.
+- **As built:** thirteen tools, covering every board verb a person has — `list_board`; cards (`create_note`, `update_note`, `move_note`, `recolor_note`, `set_rank`, `delete_note`); structure (`set_logline`, `create_group`, `rename_group`, `ungroup`, `create_arrow`, `delete_arrow`). Verified end to end by building a nine-card wall with beats, a named group and three arrows through the live bridge, with nothing faked.
+- **Deliberately not exposed:** Organize and Scatter (UI-layer layout, not kernel commands), the series premise and Reminders (browser storage, not board data), and pan/zoom (per-viewer, D18).
+- **Refusals name their cause.** A tool that reports success on a rejected command teaches the agent the board is in a state it is not, so `create_arrow` distinguishes a self-link from an unknown id from a duplicate, and `create_group` names the ids that were not on the board. An agent that is told what is wrong fixes its input; an agent told "it failed" retries the same call.
+- **Notes:** The agent must not fake pointer drags; it calls commands.
 
 ### R18 — The method the tools serve
 
@@ -268,13 +271,14 @@ Add new items at the bottom of this list. Do not renumber. If a requirement dies
 
 ### R24 — The wall is bigger than the window
 
-- **Status:** confirmed (need). Mechanism: proposed.
+- **Status:** **built** 2026-09-12 (P18 as built)
 - **Date:** 2026-09-12
 - **Statement:** The board is an unbounded surface. The window shows part of it. The user can **pan** to reach any part of the wall and **zoom out** to see the whole thing at once. No card can ever become unreachable.
 - **Why:** Measured on v0.1.0 with a feature-length board — 13 beats plus 40 scene cards, the scale R18's method actually implies — then pressed Organize on a 1440×900 laptop. **16 of the 53 cards were visible and the other 37 were unreachable.** Laid-out content ran 3,162px tall against a 900px viewport, the lowest card sat at y=2970, and `.note-board` is `position: absolute; inset: 0; overflow: hidden` with `document.scrollHeight` equal to the viewport height. No scroll, no pan, no zoom. Organize itself is what pushes cards off the wall, and you cannot drag back a card you cannot see.
 - **Blocks:** R20–R22 all assume a wall that holds the cards. R22 ("read the wall") is impossible in the most literal sense at 30% visibility. P14 cannot even be honestly mocked — 13 beats in a row is 2,860px wide, so a spine does not fit on a laptop screen.
 - **Notes:** The **viewport is not board data.** Pan and zoom are per-viewer, per-device state and must stay out of the kernel's `BoardState`, or they will end up in the project file and later in Postgres, which D9 says is for user data. Two writers on one board (open question 5) should not share a scroll position.
-- **Cost note:** The work is not the transform, it is that every pointer gesture has to convert screen coordinates to board coordinates — card drag, lasso, arrow draw, group drag. That set only grows, so this is cheaper now than after the method features land.
+- **Cost note:** The work is not the transform, it is that every pointer gesture has to convert screen coordinates to board coordinates — card drag, lasso, arrow draw, group drag. That set only grows, so this is cheaper now than after the method features land. **Confirmed in the build:** the transform was an afternoon; the coordinate conversion was the whole job.
+- **As built:** the same 53-card board now fits 53 of 53 with nothing stranded. Zoom 15%–250% (D19), viewport never persisted (D18), and drag-on-empty-canvas still lassos rather than pans.
 
 ---
 
@@ -294,7 +298,7 @@ These were recommended in conversation. They are defaults until Robert says othe
 | P8 | **Arrow draw:** drag from a card’s outbound handle onto another card. A→B and B→A are separate, offset arrows. | Mechanism for R15; mocked on the board. |
 | P9 | **General bar layers:** closed is a left chevron. That opens a row of standalone marks (theme, new note, organize, group/scatter when relevant, then an up chevron) — no circular buttons. The up chevron opens the tall labeled panel. Collapse walks back one step. Everyday default is the button row. | Refines R7; mocked. Icons are still being judged. |
 | P10 | **Color tab:** stacked-paper mark on the card opens five swatches. Selection of two or more paints all of them. | Mechanism for R16; mocked. |
-| P11 | **Agent command surface — one kernel, three doors.** A DOM-free command kernel (`src/board/reducer.js`) owns the board records and is the only thing that mutates them. The React app, a `window.plotcoder` API, and an MCP server (`scripts/plotcoder-mcp.mjs`, wired in `.cursor/mcp.json`) all call it. State mirrors to `localStorage` (so Save/Open still works) and, on localhost, to `.plotcoder/board.json` via a Vite dev bridge so an agent can read/write the board with the app open (live via SSE) or closed (file). MCP tools are notes-only for now. | Mechanism for R17; implemented as a first cut. |
+| P11 | **[Built 2026-09-12 as R17.]** **Agent command surface — one kernel, three doors.** A DOM-free command kernel (`src/board/reducer.js`) owns the board records and is the only thing that mutates them. The React app, a `window.plotcoder` API, and an MCP server (`scripts/plotcoder-mcp.mjs`, wired in `.cursor/mcp.json`) all call it. State mirrors to `localStorage` (so Save/Open still works) and, on localhost, to `.plotcoder/board.json` via a Vite dev bridge so an agent can read/write the board with the app open (live via SSE) or closed (file). Now covers cards, rank, logline, groups and arrows (R17). | Mechanism for R17; implemented as a first cut. |
 | P12 | ~~**Logline strip:** a thin always-visible line along the top of the canvas. Click the words to edit in place, same gesture as a card (R13). Empty state shows the question itself — "What is this story arguing?" — rather than a blank field.~~ | **Built 2026-09-12** as R19. Centred between the wordmark and the top-right buttons, and hidden below 60rem where there is no room for all three. |
 | P13 | ~~**Card rank shown in the paper, not the colour:** a beat card differs by size, weight, or a marked edge. Colour stays the writer's own legend.~~ | **Built 2026-09-12** as R20: a 14px top bar and a bolder headline, colour untouched. The mockup confirmed it reads at Fit zoom on a 53-card board and on beats of every colour. |
 | P14 | ~~**Two layouts to mock and compare.** (a) **Spine** (b) **Rank on the free wall**.~~ | **Decided 2026-09-12: the free wall** (D20), after mocking both. One part of (b) was *not* adopted: the "parent link". See R21 — a scene is just a card that is not a beat, and groups already provide ownership if it is ever wanted. |
@@ -320,9 +324,9 @@ Answer these in this file when we decide. Do not hide decisions only in chat.
 9. Should a manual theme choice survive the next 8:00 a.m. / 8:00 p.m. boundary? Current decision: no, the clock wins.
 10. ~~When should reminders move from localStorage to Supabase?~~ **Decided (D9):** localStorage now, Supabase later. Move reminders when we add accounts, using the same record shape.
 11. ~~How do you edit a note?~~ **Decided (D11 / R13):** tap the words; drag the paper.
-12. Confirm grouping mechanism: named frame after lasso (P6), stack-on-drop, or both?
-13. Confirm arrow draw: outbound handle (P8), or another gesture?
-14. Confirm color tab (P10), or another place to change paper color?
+12. ~~Confirm grouping mechanism: named frame after lasso (P6), stack-on-drop, or both?~~ **Answered 2026-09-12: lasso then Group, as built.** Stack-on-drop is not being added.
+13. ~~Confirm arrow draw: outbound handle (P8), or another gesture?~~ **Answered 2026-09-12: the outbound handle, as built.**
+14. ~~Confirm color tab (P10), or another place to change paper color?~~ **Answered 2026-09-12: the tab on the card, as built.**
 15. ~~Beat **spine** or beat **rank on the free wall** (P14)?~~ **Answered 2026-09-12: rank on the free wall** (D20), after mocking both on a 53-card feature. See the combine log for what the mockup showed.
 16. ~~Does the app have an opinion about the 8-to-15 beat count?~~ **Answered 2026-09-12: it counts and stays quiet** (D21).
 17. Is a character a free-typed tag on a card, or a board-level roster you maintain (P15)?
@@ -425,6 +429,8 @@ Add a dated heading and your verdict. Challenge requirements, don’t just affir
 | 2026-09-12 | Built R24: pan and zoom on an unbounded wall, plus **Fit** in the general bar. Same 53-card board now fits 53 of 53 with nothing stranded. Card drag, lasso, group drag and arrows all convert through board space. Found and fixed one real bug on the way — trackpad scroll panned the wrong way — and moved both pan signs into tested functions. |
 | 2026-09-12 | Closed three open questions without new work: 20 and 22 were already answered by how pan/zoom was built (D18, D19), and 19 turned out not to be its own question — it is decided by question 15. Logged that R20 and R21 are one change plus one decision, not two features. |
 | 2026-09-12 | Built R19, step 1 of the method: the logline strip. Answered open question 18 with **both** levels (D16, D17) — the board owns the central question, the project owns the series premise. `BoardState` gained its first non-list field; `isBoardState` was left untouched and a new `normalizeState` repairs old boards at every load boundary, so a pre-R19 board still opens. Agents get `set_logline` and see the logline in `list_board`. The cards and the strip now share one `EditableText` component instead of two copies of caret-safe contentEditable. |
+| 2026-09-12 | Finished R17. Agents had cards but no way to express a relationship between them, so groups and arrows got tools: `create_group`, `rename_group`, `ungroup`, `create_arrow`, `delete_arrow`. `list_board` now reports groups and arrows **with their ids** — without that the other tools are unusable. Refusals name their cause instead of just failing. Verified by building a nine-card wall with beats, a group and three arrows entirely through the tools, against the live app. |
+| 2026-09-12 | Locked three gestures that had been built and in use but never confirmed: lasso-then-Group (R14/P6), the outbound arrow handle (R15/P8), and the colour tab on the card (R16/P10). Closed questions 12–14. Also corrected R24's status, which still said "mechanism: proposed" after pan/zoom had shipped. |
 | 2026-09-12 | Chose between the two P14 layouts by building both on a 53-card feature and looking at them: **rank on the free wall** (D20). Recorded what the mockup showed that the argument had not — see the combine log. Also closed question 16 with D21: the app counts beats and stays quiet. |
 | 2026-09-12 | Built R20, step 2 of the method: a card carries a **rank**, beat or scene, marked from a control beside the colour tab and shown as a heavy top bar rather than a colour (P13). Marking a beat never moves it. The general bar counts "N beats · M scenes" and says nothing else (D21). Second board migration, same pattern as R19 — pre-rank cards become scenes. R21 came out **satisfied with no code of its own**, and deliberately without a parent link. Agents get `set_rank`; `list_board` reports rank and the counts. |
 | 2026-09-12 | Compared the board against Final Draft and recorded Robert's working method as R18–R23 (method, logline, beats, scene cards, read the wall, pages last) with mechanisms P12–P17. All **proposed**, none confirmed — nothing here is built yet. Added open questions 15–19. Beat spine vs. rank-on-the-free-wall (P14 / question 15) is to be mocked both ways before anyone picks. |

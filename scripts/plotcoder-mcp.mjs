@@ -148,7 +148,10 @@ async function readBoard() {
 async function commit(command) {
   const { state, rev, base } = await readBoard();
   const { state: next, changed, result } = applyCommand(state, command);
-  if (!changed) return { state: next, result, live: base !== null };
+  // `changed` is passed back so a tool can tell the agent that nothing
+  // happened, and why. A tool that silently reports success on a rejected
+  // command teaches the agent the board is in a state it is not.
+  if (!changed) return { state: next, changed, result, live: base !== null };
 
   if (base) {
     try {
@@ -161,14 +164,19 @@ async function commit(command) {
       if (res.ok) {
         const data = await res.json();
         if (data.state && isBoardState(data.state)) writeFileBoard(data.state, data.rev);
-        return { state: next, result, live: true };
+        return { state: next, changed, result, live: true };
       }
     } catch (error) {
       log("bridge write failed, falling back to file:", error);
     }
   }
   writeFileBoard(next, rev + 1);
-  return { state: next, result, live: false };
+  return { state: next, changed, result, live: false };
+}
+
+/** Where a change landed, for the tail of a tool's reply. */
+function where(live) {
+  return live ? " (visible on the open board)" : " (written to file)";
 }
 
 // --- Reporting -------------------------------------------------------------
@@ -181,14 +189,41 @@ function summarize(state) {
     )
     .join("\n");
   const { beats, scenes } = countRanks(state);
+  const headline = (id) =>
+    state.notes.find((note) => note.id === id)?.headline ?? "(missing card)";
+
+  // Groups and arrows are listed with their own ids, not just counted. An agent
+  // cannot ungroup, rename, or delete an arrow it has never been told the id of.
+  const groups = state.groups
+    .map(
+      (group) =>
+        `  - ${group.id} — "${group.title}" holds ${group.noteIds.length}: ${group.noteIds.join(", ")}`,
+    )
+    .join("\n");
+  const arrows = state.arrows
+    .map(
+      (arrow) =>
+        `  - ${arrow.id} — ${arrow.from} → ${arrow.to}  ("${headline(arrow.from)}" → "${headline(arrow.to)}")`,
+    )
+    .join("\n");
+
+  // No blank lines: ok() uses the first blank line to separate prose from the
+  // JSON payload, so one in here would swallow the payload.
   return [
     `logline: ${state.logline ? `"${state.logline}"` : "(not set)"}`,
     `beats: ${beats}, scenes: ${scenes}`,
     `notes: ${state.notes.length}, groups: ${state.groups.length}, arrows: ${state.arrows.length}`,
-    notes || "  (no notes)",
+    "cards:",
+    notes || "  (no cards)",
+    "groups:",
+    groups || "  (no groups)",
+    "arrows:",
+    arrows || "  (no arrows)",
   ].join("\n");
 }
 
+// Wire format: prose, one blank line, then the JSON payload. `text` must not
+// contain a blank line of its own or the payload becomes unparseable.
 function ok(text, data) {
   const body = data === undefined ? text : `${text}\n\n${JSON.stringify(data, null, 2)}`;
   return { content: [{ type: "text", text: body }] };
@@ -359,6 +394,122 @@ server.registerTool(
     const { result } = await commit({ type: "delete_note", id: args.id });
     if (result === undefined) return ok(`No card with id ${args.id}.`);
     return ok("Deleted card.", result);
+  },
+);
+
+// --- Groups (R14) -----------------------------------------------------------
+
+server.registerTool(
+  "create_group",
+  {
+    title: "Create group",
+    description:
+      "Wrap two or more cards in a named frame — a sequence, a set piece, a run of beats that reads as one unit. The cards stay visible and keep their positions; a group is a frame around them, not a folder. A card can only be in one group, so grouping a card moves it out of any group it was already in. Call list_board first to get real card ids.",
+    inputSchema: {
+      noteIds: z.array(z.string()).min(2),
+      title: z.string().optional(),
+    },
+  },
+  async (args) => {
+    const { state, changed, result, live } = await commit({
+      type: "create_group",
+      noteIds: args.noteIds,
+      title: args.title,
+    });
+    if (!changed) {
+      const missing = args.noteIds.filter(
+        (id) => !state.notes.some((note) => note.id === id),
+      );
+      return ok(
+        missing.length > 0
+          ? `No group made: not on the board — ${missing.join(", ")}. Call list_board to check the ids.`
+          : "No group made: a group needs at least two cards.",
+      );
+    }
+    return ok(`Grouped ${result.noteIds.length} cards as "${result.title}"${where(live)}.`, result);
+  },
+);
+
+server.registerTool(
+  "rename_group",
+  {
+    title: "Rename group",
+    description:
+      "Retitle a group frame, e.g. 'Midpoint' or 'The heist'. Needs the group's id from list_board.",
+    inputSchema: { id: z.string(), title: z.string().min(1) },
+  },
+  async (args) => {
+    const { changed, live } = await commit({
+      type: "rename_group",
+      id: args.id,
+      title: args.title,
+    });
+    if (!changed) return ok(`No group with id ${args.id}. Call list_board for the real ids.`);
+    return ok(`Renamed the group to "${args.title}"${where(live)}.`);
+  },
+);
+
+server.registerTool(
+  "ungroup",
+  {
+    title: "Ungroup",
+    description:
+      "Remove a group frame. The cards stay on the board exactly where they are — only the frame goes.",
+    inputSchema: { id: z.string() },
+  },
+  async (args) => {
+    const { changed, live } = await commit({ type: "ungroup", id: args.id });
+    if (!changed) return ok(`No group with id ${args.id}. Call list_board for the real ids.`);
+    return ok(`Ungrouped${where(live)}. The cards are untouched.`);
+  },
+);
+
+// --- Arrows (R15) -----------------------------------------------------------
+
+server.registerTool(
+  "create_arrow",
+  {
+    title: "Create arrow",
+    description:
+      "Draw a directed arrow from one card to another to show what comes after what, or what sets up what. Arrows are one-way: A→B does not create B→A. If you want both, call this twice — that is two arrows, not one two-headed line. A card cannot point at itself, and the same direction cannot be drawn twice.",
+    inputSchema: { from: z.string(), to: z.string() },
+  },
+  async (args) => {
+    const { state, changed, result, live } = await commit({
+      type: "create_arrow",
+      from: args.from,
+      to: args.to,
+    });
+    if (!changed) {
+      // Say which of the three reasons it was. "Something went wrong" makes an
+      // agent retry the same call; naming the cause makes it fix the input.
+      const onBoard = (id) => state.notes.some((note) => note.id === id);
+      const why =
+        args.from === args.to
+          ? "a card cannot point at itself"
+          : !onBoard(args.from)
+            ? `there is no card with id ${args.from}`
+            : !onBoard(args.to)
+              ? `there is no card with id ${args.to}`
+              : "that arrow already exists";
+      return ok(`No arrow drawn: ${why}. Call list_board to check.`);
+    }
+    return ok(`Drew ${args.from} → ${args.to}${where(live)}.`, result);
+  },
+);
+
+server.registerTool(
+  "delete_arrow",
+  {
+    title: "Delete arrow",
+    description:
+      "Remove one arrow by its id, which list_board reports. This deletes that direction only: removing A→B leaves B→A alone.",
+    inputSchema: { id: z.string() },
+  },
+  async (args) => {
+    const { changed, live } = await commit({ type: "delete_arrow", id: args.id });
+    if (!changed) return ok(`No arrow with id ${args.id}. Call list_board for the real ids.`);
+    return ok(`Deleted that arrow${where(live)}. Any arrow the other way is untouched.`);
   },
 );
 

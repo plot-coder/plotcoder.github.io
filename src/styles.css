@@ -1767,6 +1767,46 @@ body {
   white-space: nowrap;
 }
 
+/* Light | Dark | Clock as words, the current one in ink (R9). */
+.readout__views {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.readout__view-slot {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.readout__bar {
+  color: var(--bar-border);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+}
+
+.readout__view {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-family: "Iowan Old Style", Palatino, "Palatino Linotype", Georgia, serif;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.readout__view:hover {
+  color: var(--ink);
+}
+
+.readout__view.is-on {
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.3em;
+  text-decoration-thickness: 1.5px;
+}
+
 .readout__note {
   font-family: ui-sans-serif, system-ui, sans-serif;
   font-size: 0.64rem;
@@ -1822,36 +1862,6 @@ body {
 
 .readout__act:hover:not(:disabled) {
   color: var(--over);
-}
-
-.theme-switch--small {
-  width: 2.3rem;
-  height: 1.25rem;
-}
-
-.theme-switch--small .theme-switch__knob {
-  top: 0.12rem;
-  left: 0.12rem;
-  width: 1rem;
-  height: 1rem;
-}
-
-.theme-switch--small.theme-switch--dark .theme-switch__knob {
-  transform: translateX(1.05rem);
-}
-
-.theme-switch--small .theme-switch__sun,
-.theme-switch--small .theme-switch__moon {
-  width: 0.4rem;
-  height: 0.4rem;
-}
-
-.theme-switch--small .theme-switch__sun {
-  left: 0.32rem;
-}
-
-.theme-switch--small .theme-switch__moon {
-  right: 0.34rem;
 }
 
 .general-bar__toggle {

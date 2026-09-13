@@ -14,7 +14,7 @@ import {
 } from "./BarIcons";
 import { EditableText } from "./EditableText";
 import { EIGHTHS_PER_PAGE, formatMinutes, formatPages } from "./board/reducer";
-import { formatNextChange, type Theme } from "./theme";
+import { formatNextChange, type Theme, type ThemeSource } from "./theme";
 
 export type BarLayer = "dock" | "strip" | "tall";
 
@@ -22,6 +22,9 @@ type GeneralBarProps = {
   layer: BarLayer;
   theme: Theme;
   scheduled: Theme;
+  /** Whose choice the canvas is: the clock's, or the writer's until the next clock. */
+  source: ThemeSource;
+  onSetTheme: (mode: Theme | "clock") => void;
   onToggleTheme: () => void;
   onSetLayer: (layer: BarLayer) => void;
   onNewNote: () => void;
@@ -59,6 +62,8 @@ export function GeneralBar({
   theme,
   scheduled,
   onToggleTheme,
+  source,
+  onSetTheme,
   onSetLayer,
   onNewNote,
   canUndo,
@@ -131,22 +136,38 @@ export function GeneralBar({
           {/* The readout: the facts the strip cannot say, one line each, and
               the verbs as words for anyone who never found the strip. */}
           <div className="readout">
+            {/* Light | Dark | Clock as words (R9, "The Canvas Line"): the current one
+                in ink, and a plain note saying what the clock does next. */}
             <div className="readout__line">
               <span className="readout__k">Canvas</span>
               <span className="readout__v readout__v--compact">
-                {theme === "dark" ? "Black" : "White"}{" "}
-                <span className="readout__note">· {followingClock ? "follows the clock" : "until the next clock"} · {nextChange.toLowerCase()}</span>
+                <span className="readout__views" role="group" aria-label="Canvas">
+                  {(["light", "dark", "clock"] as const).map((mode, index) => {
+                    const on = mode === "clock" ? source === "auto" : source === "manual" && theme === mode;
+                    return (
+                      <span key={mode} className="readout__view-slot">
+                        {index > 0 ? (
+                          <span className="readout__bar" aria-hidden="true">
+                            |
+                          </span>
+                        ) : null}
+                        <button type="button" className={`readout__view ${on ? "is-on" : ""}`} aria-pressed={on} onClick={() => onSetTheme(mode)}>
+                          {mode === "light" ? "Light" : mode === "dark" ? "Dark" : "Clock"}
+                        </button>
+                      </span>
+                    );
+                  })}
+                </span>
+                <br />
+                <span className="readout__note">
+                  {source === "manual"
+                    ? followingClock
+                      ? `your choice · the clock agrees · ${nextChange.toLowerCase()}`
+                      : `your choice · the clock turns it ${nextChange.toLowerCase()}`
+                    : `light by day, dark from 8:00 pm`}
+                </span>
               </span>
-              <button
-                type="button"
-                className={`theme-switch theme-switch--${theme} theme-switch--small`}
-                onClick={onToggleTheme}
-                aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} canvas`}
-              >
-                <span className="theme-switch__knob" />
-                <span className="theme-switch__sun" aria-hidden="true" />
-                <span className="theme-switch__moon" aria-hidden="true" />
-              </button>
+              <span />
             </div>
 
             {/* The count and nothing else. No nudge under 8, no warning over 15 —

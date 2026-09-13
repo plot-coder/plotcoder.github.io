@@ -41,10 +41,12 @@ import { StoryMap } from "./StoryMap";
 import {
   applyTheme,
   nextClockChange,
+  readStoredTheme,
   resolveTheme,
   scheduledTheme,
   writeStoredTheme,
   type Theme,
+  type ThemeSource,
 } from "./theme";
 import { centerOn, fitView, IDENTITY_VIEW, visibleBox, zoomAt, type View } from "./viewport";
 import { NOTE_HEIGHT, NOTE_WIDTH } from "./noteMock";
@@ -99,6 +101,8 @@ function readBarLayer(): BarLayer {
 
 export function App() {
   const [theme, setTheme] = useState<Theme>(() => resolveTheme());
+  // Whose choice the canvas is: the clock's, or the writer's until the next clock (R9).
+  const [themeSource, setThemeSource] = useState<ThemeSource>(() => (resolveTheme() === scheduledTheme() && readStoredTheme()?.source !== "manual" ? "auto" : readStoredTheme()?.source ?? "auto"));
   const [barLayer, setBarLayer] = useState<BarLayer>(readBarLayer);
   const [remindersOpen, setRemindersOpen] = useState(false);
   const [projectOpen, setProjectOpen] = useState(false);
@@ -350,6 +354,7 @@ export function App() {
     function syncFromClock() {
       const next = resolveTheme();
       setTheme(next);
+      setThemeSource("auto");
       writeStoredTheme(next, "auto");
     }
 
@@ -367,9 +372,22 @@ export function App() {
   }, []);
 
   function toggleTheme() {
-    const next = theme === "dark" ? "light" : "dark";
-    setTheme(next);
-    writeStoredTheme(next, "manual");
+    setThemeMode(theme === "dark" ? "light" : "dark");
+  }
+
+  // Light and Dark are the writer's choice, kept until the next clock; Clock
+  // hands the canvas back to the day (R9). The readout's three words.
+  function setThemeMode(mode: Theme | "clock") {
+    if (mode === "clock") {
+      const next = scheduledTheme();
+      setTheme(next);
+      setThemeSource("auto");
+      writeStoredTheme(next, "auto");
+      return;
+    }
+    setTheme(mode);
+    setThemeSource("manual");
+    writeStoredTheme(mode, "manual");
   }
 
   function addNote() {
@@ -870,7 +888,9 @@ export function App() {
         layer={barLayer}
         theme={theme}
         scheduled={scheduledTheme()}
+        source={themeSource}
         onToggleTheme={toggleTheme}
+        onSetTheme={setThemeMode}
         onSetLayer={setLayer}
         onNewNote={addNote}
         canUndo={history.canUndo}

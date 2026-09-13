@@ -22,6 +22,7 @@ import { organizePoses } from "./board/organize";
 import { snapshotPoses, type NotePose } from "./organizeLayout";
 import { ProjectModal } from "./ProjectModal";
 import { RemindersModal } from "./RemindersModal";
+import { StructureSheet } from "./StructureSheet";
 import { StoryMap } from "./StoryMap";
 import {
   applyTheme,
@@ -58,6 +59,8 @@ export function App() {
   const [barLayer, setBarLayer] = useState<BarLayer>(readBarLayer);
   const [remindersOpen, setRemindersOpen] = useState(false);
   const [projectOpen, setProjectOpen] = useState(false);
+  // Start from a structure (R38).
+  const [structureOpen, setStructureOpen] = useState(false);
   // The cast lens (R29): who the wall is being looked at through. Hover is a
   // glance, hold is a click; neither is board data.
   const [castOpen, setCastOpen] = useState(false);
@@ -390,6 +393,18 @@ export function App() {
     selectNotes([]);
   }
 
+  // Lay a structure's beats on the wall (R38): one command, one undo step,
+  // then the window fits the wall so the new row is in view.
+  function applyTemplate(templateId: string) {
+    const created = boardStore.dispatch({ type: "apply_template", template: templateId }) as
+      | { id: string }[]
+      | undefined;
+    setStructureOpen(false);
+    if (!created || created.length === 0) return;
+    selectNotes(created.map((note) => note.id));
+    setView(fitView(boardStore.getState().notes, viewportSize()));
+  }
+
   function scatterNotes() {
     if (!scatterPoses) return;
     boardStore.dispatch({ type: "apply_poses", poses: scatterPoses });
@@ -481,6 +496,12 @@ export function App() {
           onOpen={() => setProjectOpen(true)}
           onClose={() => setProjectOpen(false)}
         />
+        <StructureSheet
+          open={structureOpen}
+          board={board}
+          onClose={() => setStructureOpen(false)}
+          onApply={applyTemplate}
+        />
       </div>
       <NoteBoard
         boardRef={boardRef}
@@ -495,6 +516,7 @@ export function App() {
         places={placeNames}
         onCastNames={castNames}
         onLocation={setLocation}
+        onStructure={() => setStructureOpen(true)}
         onHoverNote={setHoverNoteId}
         selectedIds={selectedIds}
         selectedArrowId={selectedArrowId}
@@ -542,6 +564,7 @@ export function App() {
         canGroup={selectedIds.length >= 2}
         onGroup={groupSelected}
         onOrganize={organizeNotes}
+        onStructure={() => setStructureOpen(true)}
         canScatter={scatterPoses !== null}
         onScatter={scatterNotes}
         zoom={view.scale}

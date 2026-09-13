@@ -145,7 +145,8 @@ export type Command =
   | ({ type: "update_character"; id: string } & Partial<Record<CharacterField, string>>)
   | { type: "set_cast"; ids: string[]; characterIds: string[] }
   | { type: "set_plant"; ids: string[]; plants: boolean }
-  | { type: "set_location"; ids: string[]; location: string };
+  | { type: "set_location"; ids: string[]; location: string }
+  | { type: "apply_template"; template: string };
 
 export type CommandResult = {
   state: BoardState;

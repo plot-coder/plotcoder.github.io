@@ -48,6 +48,8 @@ type NoteBoardProps = {
   places: string[];
   onCastNames: (id: string, names: string[]) => void;
   onLocation: (id: string, location: string) => void;
+  /** The empty wall offers a structure (R38). */
+  onStructure: () => void;
   onHoverNote: (id: string | null) => void;
   selectedIds: string[];
   selectedArrowId: string | null;
@@ -126,6 +128,7 @@ export function NoteBoard({
   places,
   onCastNames,
   onLocation,
+  onStructure,
   onHoverNote,
   selectedIds,
   selectedArrowId,
@@ -404,7 +407,15 @@ export function NoteBoard({
       onPointerUp={endPointer}
       onPointerCancel={endPointer}
     >
-      {groups.length === 0 && selectedIds.length === 0 && arrows.length === 0 && !lasso ? (
+      {notes.length === 0 && !lasso ? (
+        <p className="group-hint group-hint--empty">
+          No cards yet. Add one, or{" "}
+          <button type="button" className="group-hint__link" onClick={onStructure}>
+            start from a structure
+          </button>
+          .
+        </p>
+      ) : groups.length === 0 && selectedIds.length === 0 && arrows.length === 0 && !lasso ? (
         <p className="group-hint">
           Drag on empty canvas to select notes, then Group. Drag a card’s handle onto another
           card to draw an arrow.

@@ -33,6 +33,18 @@ export function OrganizeIcon({ className }: IconProps) {
   );
 }
 
+/** Start from a structure (R38): beats along a line, like the strip. */
+export function StructureIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M3.2 12h17.6" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+      <rect x="4" y="7.4" width="3.2" height="9.2" rx="0.7" fill="currentColor" />
+      <rect x="10.4" y="7.4" width="3.2" height="9.2" rx="0.7" fill="currentColor" />
+      <rect x="16.8" y="7.4" width="3.2" height="9.2" rx="0.7" fill="currentColor" />
+    </svg>
+  );
+}
+
 export function GroupIcon({ className }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" aria-hidden="true">

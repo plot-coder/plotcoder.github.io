@@ -21,6 +21,10 @@ export const NOTE_RANKS = ["scene", "beat"];
 // label: R15 keeps free text off arrows on purpose.
 export const ARROW_KINDS = ["follows", "setup"];
 
+// Structure templates (R38) are data beside the kernel; applying one is a
+// kernel command so it is one undo step and one tool call.
+import { templateById } from "./templates.js";
+
 // Characters are a board-level roster (D26): one record per person, referenced
 // from cards by id, so a name changes in one place and the same person is the
 // same person on every card. Long term the record grows — what they look like,
@@ -719,6 +723,40 @@ export function applyCommand(state, command, now = nowIso()) {
       });
       if (touched.length === 0) return { state, changed: false };
       return { state: { ...state, notes }, changed: true, result: touched };
+    }
+
+    // Start from a structure (R38): the template's beats become beat cards in
+    // one row above the wall's cards, prompts on their change lines. Nothing
+    // remembers the template afterwards; there are only cards.
+    case "apply_template": {
+      const template = templateById(command.template);
+      if (!template) return { state, changed: false };
+      // Rows read top to bottom, so the block of new rows starts high enough
+      // that its last row still clears the wall's top card.
+      const rows = Math.ceil(template.beats.length / 5);
+      const top = state.notes.length
+        ? Math.min(...state.notes.map((note) => note.y)) - rows * (NOTE_HEIGHT + 40) - 32
+        : 140;
+      const left = state.notes.length ? Math.min(...state.notes.map((note) => note.x)) : 140;
+      let z = state.notes.reduce((max, note) => Math.max(max, note.z), 0);
+      const created = template.beats.map((item, index) => ({
+        id: newId(),
+        headline: item.name,
+        change: item.prompt,
+        color: NOTE_COLORS[(state.notes.length + index) % NOTE_COLORS.length],
+        x: left + (index % 5) * (NOTE_WIDTH + 28),
+        y: top + Math.floor(index / 5) * (NOTE_HEIGHT + 40),
+        rotate: ((index % 5) - 2) * 0.8,
+        z: (z += 1),
+        rank: "beat",
+        lengthEighths: DEFAULT_NOTE_EIGHTHS,
+        characterIds: [],
+        plants: false,
+        location: "",
+        createdAt: now,
+        updatedAt: now,
+      }));
+      return { state: { ...state, notes: [...state.notes, ...created] }, changed: true, result: created };
     }
 
     // Where a scene happens (R37): one place on one or more cards; an empty

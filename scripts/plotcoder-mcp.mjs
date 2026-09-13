@@ -33,6 +33,7 @@ import {
   NOTE_RANKS,
   seedState,
 } from "../src/board/reducer.js";
+import { TEMPLATES } from "../src/board/templates.js";
 import { describeRuns, describeSetups, readWall } from "../src/board/readWall.js";
 import { organizePoses } from "../src/board/organize.js";
 import {
@@ -690,6 +691,24 @@ server.registerTool(
       `Organized ${poses.length} card(s) along the arrows into ${rows} row(s)${beats ? `, one per beat` : ""}${where(live)}.`,
       poses,
     );
+  },
+);
+
+server.registerTool(
+  "apply_template",
+  {
+    title: "Start from a structure",
+    description:
+      "Lay a structure's named beats on the wall as beat cards, prompts on their change lines, in one row above the cards already there (or at the top of an empty wall). One undo step. Structures: " +
+      TEMPLATES.map((template) => `${template.id} (${template.name}, ${template.beats.length} beats — ${template.blurb})`).join("; ") +
+      ". The house method, turns, is the default. Ask the writer which structure before applying one; nothing remembers the template afterwards, there are only cards.",
+    inputSchema: { template: z.enum(TEMPLATES.map((template) => template.id)) },
+  },
+  async (args) => {
+    const { changed, result, live } = await commit({ type: "apply_template", template: args.template });
+    if (!changed) return ok(`No structure called ${args.template}.`);
+    const names = result.map((note) => note.headline).join(", ");
+    return ok(`Laid out ${result.length} beats${where(live)}: ${names}.`, result);
   },
 );
 

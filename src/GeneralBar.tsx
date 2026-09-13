@@ -4,6 +4,7 @@ import {
   GroupIcon,
   NoteIcon,
   OrganizeIcon,
+  StructureIcon,
   RedoIcon,
   ScatterIcon,
   ThemeIcon,
@@ -29,6 +30,7 @@ type GeneralBarProps = {
   canGroup: boolean;
   onGroup: () => void;
   onOrganize: () => void;
+  onStructure: () => void;
   canScatter: boolean;
   onScatter: () => void;
   zoom: number;
@@ -57,6 +59,7 @@ export function GeneralBar({
   canGroup,
   onGroup,
   onOrganize,
+  onStructure,
   canScatter,
   onScatter,
   zoom,
@@ -136,6 +139,9 @@ export function GeneralBar({
           ) : null}
           <button type="button" className="new-note" onClick={onOrganize}>
             Organize
+          </button>
+          <button type="button" className="new-note" onClick={onStructure}>
+            Structure
           </button>
           {canScatter ? (
             <button type="button" className="new-note" onClick={onScatter}>
@@ -242,6 +248,15 @@ export function GeneralBar({
                 aria-label="Organize notes"
               >
                 <OrganizeIcon className="bar-icon__svg" />
+              </button>
+              <button
+                type="button"
+                className="bar-icon"
+                onClick={onStructure}
+                aria-label="Start from a structure"
+                title="Start from a structure"
+              >
+                <StructureIcon className="bar-icon__svg" />
               </button>
               {canFit ? (
                 <button

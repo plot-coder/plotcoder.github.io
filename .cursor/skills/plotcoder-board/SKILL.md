@@ -91,6 +91,10 @@ lands on the exact same board a person sees.
 
 ### Structure
 
+- `apply_template` — lay a structure's named beats on the wall as beat cards
+  (`turns` is the house method and the default; also `three-acts`,
+  `eight-sequences`, `fifteen-beats`, `story-circle`). One undo step. Ask the
+  writer which; afterwards there are only cards, nothing remembers the template.
 - `set_logline` — set the board's central question. Empty string clears it.
 - `set_target` — target script length in `pages`: 120 feature, 60 hour, 30 half.
 - `create_group` — frame two or more cards, with an optional `title`.

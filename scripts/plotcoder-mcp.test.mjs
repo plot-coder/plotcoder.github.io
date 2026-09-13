@@ -129,6 +129,7 @@ describe("plotcoder MCP server", () => {
     const { tools } = await client.request("tools/list", {});
     expect(tools.map((tool) => tool.name).sort()).toEqual([
       "add_character",
+      "apply_template",
       "cast",
       "create_arrow",
       "create_group",
@@ -718,6 +719,22 @@ describe("characters", () => {
     expect(text).toContain('maya — "Maya" on 3 cards');
     expect(text).toContain('tom — "Tom" on 2 cards');
     expect(text).toContain("cast: Maya]");
+  });
+
+  it("lays a structure's beats on the wall above the cards, and refuses an unknown one", async () => {
+    const before = await cast.callToolData("list_board");
+    const text = await cast.callTool("apply_template", { template: "three-acts" });
+    expect(text).toContain("Laid out 7 beats");
+    expect(text).toContain("The midpoint");
+    const after = await cast.callToolData("list_board");
+    expect(after.notes).toHaveLength(before.notes.length + 7);
+    const beats = after.notes.filter((note) => note.rank === "beat");
+    expect(beats).toHaveLength(7);
+    expect(Math.max(...beats.map((note) => note.y))).toBeLessThan(Math.min(...before.notes.map((note) => note.y)));
+    expect(await cast.callTool("undo")).toContain("Undid");
+    expect((await cast.callToolData("list_board")).notes).toHaveLength(before.notes.length);
+    const bad = await cast.callTool("apply_template", { template: "hero" }).catch((error) => String(error));
+    expect(String(bad)).toMatch(/hero|invalid|Invalid/);
   });
 
   it("adds a person once, and says who it already is the second time", async () => {

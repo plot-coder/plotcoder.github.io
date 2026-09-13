@@ -128,6 +128,8 @@ describe("plotcoder MCP server", () => {
   it("exposes the board tools an agent needs", async () => {
     const { tools } = await client.request("tools/list", {});
     expect(tools.map((tool) => tool.name).sort()).toEqual([
+      "add_character",
+      "cast",
       "create_arrow",
       "create_group",
       "create_note",
@@ -137,6 +139,8 @@ describe("plotcoder MCP server", () => {
       "move_note",
       "read_wall",
       "recolor_note",
+      "remove_character",
+      "rename_character",
       "rename_group",
       "set_length",
       "set_logline",
@@ -189,7 +193,7 @@ describe("plotcoder MCP server", () => {
     expect(text).toContain("1 beats");
 
     const listed = await client.callTool("list_board");
-    expect(listed).toContain("[beat, 1pp]");
+    expect(listed).toContain("[beat, 1pp");
     expect(listed).toContain("beats: 1, scenes: 2");
 
     const saved = readBoardFile();
@@ -216,7 +220,7 @@ describe("plotcoder MCP server", () => {
       expect(text).toContain("about 5 pages");
 
       const listed = await client.callTool("list_board");
-      expect(listed).toContain("[scene, 3pp]");
+      expect(listed).toContain("[scene, 3pp");
       expect(listed).toContain("120-page target");
 
       // Length is a property of the card, not of where it sits.
@@ -233,7 +237,7 @@ describe("plotcoder MCP server", () => {
 
       await client.callTool("set_length", { ids: [id], pages: 0.5 });
       expect(readBoardFile().state.notes.find((note) => note.id === id).lengthEighths).toBe(4);
-      expect(await client.callTool("list_board")).toContain("[scene, 4/8pp]");
+      expect(await client.callTool("list_board")).toContain("[scene, 4/8pp");
 
       await client.callTool("set_length", { ids: [id], pages: 1 });
     });
@@ -678,5 +682,79 @@ describe("read_wall", () => {
     });
     const text = await reader.callTool("read_wall");
     expect(text).toContain('[unwritten] "Coda" has no change line. What is different when it ends?');
+  });
+});
+
+
+// The cast (R29): a roster the board maintains, and cards that point into it.
+describe("characters", () => {
+  let cast;
+  let castRoot;
+
+  beforeAll(async () => {
+    castRoot = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-cast-"));
+    cast = new McpClient(castRoot);
+    await cast.start();
+  }, 30000);
+
+  afterAll(() => {
+    cast?.stop();
+    if (castRoot) fs.rmSync(castRoot, { recursive: true, force: true });
+  });
+
+  it("starts with the seed cast on the seed cards", async () => {
+    const text = await cast.callTool("list_board");
+    expect(text).toContain('maya — "Maya" on 3 cards');
+    expect(text).toContain('tom — "Tom" on 2 cards');
+    expect(text).toContain("cast: Maya]");
+  });
+
+  it("adds a person once, and says who it already is the second time", async () => {
+    const added = await cast.callToolData("add_character", { name: "  Sam " });
+    expect(added.name).toBe("Sam");
+    const again = await cast.callTool("add_character", { name: "sam" });
+    expect(again).toContain(`Already in the cast as "Sam" (${added.id})`);
+  });
+
+  it("casts a card by name and refuses a name that is not in the cast", async () => {
+    const refused = await cast.callTool("cast", {
+      noteIds: ["maya-letter"],
+      characters: ["Maya", "Reed"],
+    });
+    expect(refused).toContain('not in the cast — "Reed"');
+
+    const text = await cast.callTool("cast", {
+      noteIds: ["maya-letter"],
+      characters: ["Maya", "sam"],
+    });
+    expect(text).toContain("1 card(s) now cast Maya, Sam");
+    const board = await cast.callToolData("list_board");
+    expect(board.notes.find((note) => note.id === "maya-letter").characterIds).toEqual([
+      "maya",
+      board.characters.find((character) => character.name === "Sam").id,
+    ]);
+  });
+
+  it("renames a person and every card follows, because cards hold the id", async () => {
+    const text = await cast.callTool("rename_character", { id: "maya", name: "Maya Reed" });
+    expect(text).toContain('Renamed to "Maya Reed"');
+    const board = await cast.callTool("list_board");
+    expect(board).toContain("cast: Maya Reed, Sam]");
+    const clash = await cast.callTool("rename_character", { id: "tom", name: "maya reed" });
+    expect(clash).toContain("already has that name");
+  });
+
+  it("removes a person from the cast and from every card", async () => {
+    await cast.callTool("remove_character", { id: "tom" });
+    const board = await cast.callToolData("list_board");
+    expect(board.characters.map((character) => character.id)).not.toContain("tom");
+    expect(board.notes.every((note) => !note.characterIds.includes("tom"))).toBe(true);
+    expect(await cast.callTool("remove_character", { id: "tom" })).toContain("No character with id tom");
+  });
+
+  it("read_wall asks about a person in the cast who is on no card", async () => {
+    await cast.callTool("add_character", { name: "The landlord" });
+    const text = await cast.callTool("read_wall");
+    expect(text).toContain("[uncast] The landlord is in the cast but on no card. Where do they come in?");
   });
 });

@@ -22,6 +22,8 @@ The board holds five kinds of thing:
   one page. Like rank, it belongs to the card and never moves it.
 - **groups** — a named frame around two or more cards: a sequence, a set piece.
 - **arrows** — directed links between cards: what follows what, what sets up what.
+- **cast** — the roster: every person in the story, one record each with an id.
+  A card says who is in the scene by pointing at people in the roster.
 
 Above them all sits the **logline**: the central question, what the story is
 arguing.
@@ -42,8 +44,9 @@ lands on the exact same board a person sees.
   scenes between consecutive beats, and the **questions the wall raises**: a run
   out of proportion with the others, a card with no change line, a card no arrow
   touches, two headlines that read like the same scene, a group too long to be
-  one sequence. Put the questions to the writer. Do not act on them unasked, and
-  do not add an opinion about the number of beats.
+  one sequence, a person in the cast who is on no card, a person gone for more
+  than a third of the story. Put the questions to the writer. Do not act on them
+  unasked, and do not add an opinion about the number of beats.
 
 ### Cards
 
@@ -56,6 +59,17 @@ lands on the exact same board a person sees.
 - `set_length` — how long cards run, in `pages`. Takes a list of ids. Fractions
   are fine (`0.5`); they are stored in eighths of a page.
 - `delete_note` — remove a card (also drops its arrows and group membership).
+
+### Cast
+
+- `add_character` — add a person to the roster by `name`. The same name twice is
+  refused and the existing record returned; use its id.
+- `rename_character` / `remove_character` — by id. Renaming carries to every
+  card; removing takes them off every card and leaves the cards.
+- `cast` — set who is in one or more cards: `noteIds` plus `characters` (names
+  or ids). The list **replaces** the card's cast, so pass everyone in the scene;
+  an empty list clears it. A name not in the roster is refused by name — call
+  `add_character` first. Do not invent people; ask the writer who is in a scene.
 
 ### Structure
 

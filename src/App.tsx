@@ -1,11 +1,19 @@
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { CastLens } from "./CastLens";
+import { resolveCast } from "./castNames";
 import { GeneralBar, type BarLayer } from "./GeneralBar";
 import { Logline } from "./Logline";
 import { NoteBoard } from "./NoteBoard";
 import { readPremise, writePremise } from "./premiseStore";
 import { boardStore, installWindowApi } from "./board/store";
 import { type NoteColor, type NoteRank } from "./noteMock";
-import { boardEighths, countRanks, EIGHTHS_PER_PAGE } from "./board/reducer";
+import { readWall } from "./board/readWall";
+import {
+  boardEighths,
+  countRanks,
+  EIGHTHS_PER_PAGE,
+  type BoardCharacter,
+} from "./board/reducer";
 import {
   organizeReadingOrder,
   snapshotPoses,
@@ -38,8 +46,15 @@ export function App() {
   const [barLayer, setBarLayer] = useState<BarLayer>(readBarLayer);
   const [remindersOpen, setRemindersOpen] = useState(false);
   const [projectOpen, setProjectOpen] = useState(false);
+  // The cast lens (R29): who the wall is being looked at through. Hover is a
+  // glance, hold is a click; neither is board data.
+  const [castOpen, setCastOpen] = useState(false);
+  const [castHover, setCastHover] = useState<string | null>(null);
+  const [castHeld, setCastHeld] = useState<string | null>(null);
   const board = useSyncExternalStore(boardStore.subscribe, boardStore.getState);
-  const { notes, groups, arrows } = board;
+  const { notes, groups, arrows, characters } = board;
+  const castFocusId = castOpen ? (castHeld ?? castHover) : null;
+  const castReading = useMemo(() => (castOpen ? readWall(board) : null), [castOpen, board]);
   // The premise belongs to the project, not the board, so it does not come from
   // the kernel. It lives in its own plotcoder.* key like reminders do.
   const [premise, setPremise] = useState<string>(readPremise);
@@ -139,6 +154,46 @@ export function App() {
     const ids =
       selectedIds.includes(id) && selectedIds.length >= 2 ? selectedIds : [id];
     boardStore.dispatch({ type: "set_length", ids, lengthEighths });
+  }
+
+  // Names typed on a card (R29). Known names resolve to the roster's spelling;
+  // a stranger is added to the roster on the way, so casting someone and
+  // adding them are one motion. Applies to the whole selection like recolour.
+  function castNames(id: string, names: string[]) {
+    const ids =
+      selectedIds.includes(id) && selectedIds.length >= 2 ? selectedIds : [id];
+    const characterIds = resolveCast(names, boardStore.getState().characters).map((entry) => {
+      if (entry.id) return entry.id;
+      const added = boardStore.dispatch({ type: "add_character", name: entry.name }) as
+        | BoardCharacter
+        | undefined;
+      return added?.id ?? null;
+    });
+    boardStore.dispatch({
+      type: "set_cast",
+      ids,
+      characterIds: characterIds.filter((value): value is string => value !== null),
+    });
+  }
+
+  function addCharacter(name: string) {
+    boardStore.dispatch({ type: "add_character", name });
+  }
+
+  function renameCharacter(id: string, name: string) {
+    boardStore.dispatch({ type: "rename_character", id, name });
+  }
+
+  function removeCharacter(id: string) {
+    boardStore.dispatch({ type: "remove_character", id });
+    setCastHeld((current) => (current === id ? null : current));
+    setCastHover((current) => (current === id ? null : current));
+  }
+
+  function closeCast() {
+    setCastOpen(false);
+    setCastHover(null);
+    setCastHeld(null);
   }
 
   function setTarget(pages: number) {
@@ -245,6 +300,21 @@ export function App() {
         onSetPremise={savePremise}
       />
       <div className="top-actions">
+        <CastLens
+          open={castOpen}
+          characters={characters}
+          notes={notes}
+          reading={castReading}
+          hoverId={castHover}
+          heldId={castHeld}
+          onOpen={() => setCastOpen(true)}
+          onClose={closeCast}
+          onHover={setCastHover}
+          onHold={setCastHeld}
+          onAdd={addCharacter}
+          onRename={renameCharacter}
+          onRemove={removeCharacter}
+        />
         <RemindersModal
           open={remindersOpen}
           board={board}
@@ -264,6 +334,9 @@ export function App() {
         notes={notes}
         groups={groups}
         arrows={arrows}
+        characters={characters}
+        castFocusId={castFocusId}
+        onCastNames={castNames}
         selectedIds={selectedIds}
         selectedArrowId={selectedArrowId}
         onMove={moveNote}

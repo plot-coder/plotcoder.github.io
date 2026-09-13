@@ -17,11 +17,15 @@ export type FindingKind =
   /** Two headlines read like the same scene. */
   | "duplicate"
   /** A group runs too long to be one sequence. */
-  | "sequence";
+  | "sequence"
+  /** A character in the roster who is on no card. */
+  | "uncast"
+  /** A character gone for more than a third of the story between two appearances. */
+  | "absent";
 
 export type Finding = {
   kind: FindingKind;
-  /** Card ids, or a group id for "sequence". Empty for "unmarked". */
+  /** Card ids; a group id for "sequence"; a character id (then card ids) for "uncast" and "absent". Empty for "unmarked". */
   ids: string[];
   /** The question, written for a writer. */
   text: string;

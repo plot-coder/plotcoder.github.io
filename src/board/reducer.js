@@ -15,6 +15,37 @@ export const NOTE_COLORS = ["yellow", "pink", "blue", "green", "orange"];
 // why "scene" is first: it is the default a card is born with (R20/R21).
 export const NOTE_RANKS = ["scene", "beat"];
 
+// Characters are a board-level roster (D26): one record per person, referenced
+// from cards by id, so a name changes in one place and the same person is the
+// same person on every card. Long term the record grows — what they look like,
+// the details a writer needs to pull up — which is why it has an id and
+// timestamps now rather than being a word on a card.
+function isCharacter(value) {
+  return Boolean(value) && typeof value.id === "string" && typeof value.name === "string";
+}
+
+function sameName(a, b) {
+  return a.trim().toLowerCase() === b.trim().toLowerCase();
+}
+
+function sameIds(a, b) {
+  return a.length === b.length && a.every((id, index) => id === b[index]);
+}
+
+/** Keep only ids that name someone in the roster, once each, in the order given. */
+function knownCast(ids, characters) {
+  if (!Array.isArray(ids)) return [];
+  const known = new Set(characters.map((character) => character.id));
+  const seen = new Set();
+  const cast = [];
+  for (const id of ids) {
+    if (typeof id !== "string" || !known.has(id) || seen.has(id)) continue;
+    seen.add(id);
+    cast.push(id);
+  }
+  return cast;
+}
+
 // Length is measured in eighths of a page (D23) — the unit a production
 // breakdown uses, and the unit real pages will be measured in when PlotCoder
 // holds them (D22). Today's estimate and tomorrow's measurement agree.
@@ -68,6 +99,7 @@ export function emptyState() {
   return {
     logline: "",
     targetEighths: DEFAULT_TARGET_EIGHTHS,
+    characters: [],
     notes: [],
     groups: [],
     arrows: [],
@@ -75,7 +107,7 @@ export function emptyState() {
 }
 
 export function seedState(now = nowIso()) {
-  const mk = (id, headline, change, color, x, y, rotate, z) => ({
+  const mk = (id, headline, change, color, x, y, rotate, z, characterIds) => ({
     id,
     headline,
     change,
@@ -86,6 +118,7 @@ export function seedState(now = nowIso()) {
     z,
     rank: "scene",
     lengthEighths: DEFAULT_NOTE_EIGHTHS,
+    characterIds,
     createdAt: now,
     updatedAt: now,
   });
@@ -95,10 +128,15 @@ export function seedState(now = nowIso()) {
     // new writer finds out the logline is there at all.
     logline: "",
     targetEighths: DEFAULT_TARGET_EIGHTHS,
+    // Two people, cast on the cards, so a new writer sees what the roster is for.
+    characters: [
+      { id: "maya", name: "Maya", createdAt: now, updatedAt: now },
+      { id: "tom", name: "Tom", createdAt: now, updatedAt: now },
+    ],
     notes: [
-      mk("maya-letter", "Maya finds the letter", "She decides not to tell Tom.", "yellow", 88, 120, -2.2, 1),
-      mk("tom-lies", "Tom lies about the job", "Maya starts to doubt him.", "pink", 320, 168, 1.6, 2),
-      mk("letter-aloud", "The letter is read aloud", "The plan dies in the room.", "blue", 196, 340, 0.8, 3),
+      mk("maya-letter", "Maya finds the letter", "She decides not to tell Tom.", "yellow", 88, 120, -2.2, 1, ["maya"]),
+      mk("tom-lies", "Tom lies about the job", "Maya starts to doubt him.", "pink", 320, 168, 1.6, 2, ["tom", "maya"]),
+      mk("letter-aloud", "The letter is read aloud", "The plan dies in the room.", "blue", 196, 340, 0.8, 3, ["maya", "tom"]),
     ],
     groups: [],
     arrows: [],
@@ -133,9 +171,19 @@ export function normalizeState(value) {
     MAX_TARGET_EIGHTHS,
   );
 
+  // Boards written before R29 have no roster. A card's cast is filtered to the
+  // roster, so a dangling id (a character removed by an older build) is dropped
+  // rather than left to point at nobody.
+  const characters = Array.isArray(value.characters)
+    ? value.characters.filter(isCharacter)
+    : [];
+  const rosterPatched =
+    !Array.isArray(value.characters) || characters.length !== value.characters.length;
+
   // Cards written before R20 have no rank. They are scenes: a beat is something
   // you mark deliberately, so the safe default is the one that claims nothing.
-  // Cards written before R25 have no length; a scene is about a page.
+  // Cards written before R25 have no length; a scene is about a page. Cards
+  // written before R29 have no cast; nobody is in the scene until someone is.
   let patched = false;
   const notes = value.notes.map((note) => {
     const rank = note && NOTE_RANKS.includes(note.rank) ? note.rank : "scene";
@@ -144,18 +192,33 @@ export function normalizeState(value) {
       DEFAULT_NOTE_EIGHTHS,
       MAX_NOTE_EIGHTHS,
     );
-    if (note && note.rank === rank && note.lengthEighths === lengthEighths) return note;
+    const characterIds = knownCast(note?.characterIds, characters);
+    if (
+      note &&
+      note.rank === rank &&
+      note.lengthEighths === lengthEighths &&
+      Array.isArray(note.characterIds) &&
+      sameIds(note.characterIds, characterIds)
+    ) {
+      return note;
+    }
     patched = true;
-    return { ...note, rank, lengthEighths };
+    return { ...note, rank, lengthEighths, characterIds };
   });
 
-  if (value.logline === logline && value.targetEighths === targetEighths && !patched) {
+  if (
+    value.logline === logline &&
+    value.targetEighths === targetEighths &&
+    !rosterPatched &&
+    !patched
+  ) {
     return value;
   }
   return {
     ...value,
     logline,
     targetEighths,
+    characters,
     notes: patched ? notes : value.notes,
   };
 }
@@ -203,6 +266,7 @@ export function applyCommand(state, command, now = nowIso()) {
           DEFAULT_NOTE_EIGHTHS,
           MAX_NOTE_EIGHTHS,
         ),
+        characterIds: knownCast(command.characterIds, state.characters ?? []),
         z: maxZ(state.notes) + 1,
         createdAt: now,
         updatedAt: now,
@@ -446,6 +510,70 @@ export function applyCommand(state, command, now = nowIso()) {
         changed: true,
         result: arrow,
       };
+    }
+
+    // --- Characters (R29): a roster the board maintains ---------------------
+
+    case "add_character": {
+      const name = typeof command.name === "string" ? command.name.trim() : "";
+      if (!name) return { state, changed: false };
+      const existing = state.characters.find((character) => sameName(character.name, name));
+      // The same person twice is the thing a roster exists to prevent. Hand
+      // back who it already is so a tool can say so.
+      if (existing) return { state, changed: false, result: existing };
+      const character = { id: command.id ?? newId(), name, createdAt: now, updatedAt: now };
+      return {
+        state: { ...state, characters: [...state.characters, character] },
+        changed: true,
+        result: character,
+      };
+    }
+
+    case "rename_character": {
+      const name = typeof command.name === "string" ? command.name.trim() : "";
+      if (!name) return { state, changed: false };
+      const current = state.characters.find((character) => character.id === command.id);
+      if (!current || current.name === name) return { state, changed: false };
+      const taken = state.characters.find(
+        (character) => character.id !== command.id && sameName(character.name, name),
+      );
+      if (taken) return { state, changed: false, result: taken };
+      let renamed;
+      const characters = state.characters.map((character) => {
+        if (character.id !== command.id) return character;
+        renamed = { ...character, name, updatedAt: now };
+        return renamed;
+      });
+      return { state: { ...state, characters }, changed: true, result: renamed };
+    }
+
+    case "remove_character": {
+      if (!state.characters.some((character) => character.id === command.id)) {
+        return { state, changed: false };
+      }
+      const characters = state.characters.filter((character) => character.id !== command.id);
+      // Leaving the scene means leaving every card they were in.
+      const notes = state.notes.map((note) =>
+        note.characterIds.includes(command.id)
+          ? bump(note, { characterIds: note.characterIds.filter((id) => id !== command.id) }, now)
+          : note,
+      );
+      return { state: { ...state, characters, notes }, changed: true, result: { id: command.id } };
+    }
+
+    case "set_cast": {
+      const ids = new Set(command.ids);
+      if (ids.size === 0) return { state, changed: false };
+      const cast = knownCast(command.characterIds, state.characters);
+      const touched = [];
+      const notes = state.notes.map((note) => {
+        if (!ids.has(note.id) || sameIds(note.characterIds, cast)) return note;
+        const next = bump(note, { characterIds: [...cast] }, now);
+        touched.push(next);
+        return next;
+      });
+      if (touched.length === 0) return { state, changed: false };
+      return { state: { ...state, notes }, changed: true, result: touched };
     }
 
     case "delete_arrow": {

@@ -169,6 +169,7 @@ body {
   gap: 0.45rem;
 }
 
+.cast-launch,
 .reminders-launch,
 .project-launch {
   min-height: 2.15rem;
@@ -181,6 +182,7 @@ body {
   cursor: pointer;
 }
 
+.cast-launch,
 .reminders-launch {
   padding: 0 0.9rem;
   font-size: 0.72rem;
@@ -1275,4 +1277,287 @@ body {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   cursor: pointer;
+}
+
+/* --- The cast (R29) ------------------------------------------------------ */
+
+.cast-launch.is-open {
+  background: var(--ink);
+  color: var(--canvas);
+}
+
+/* The card's third line: "with Maya, Tom". Typed like the other two (D11).
+   Always present so a card's height does not jump on hover; quiet until it
+   has someone to name. */
+.note__with {
+  display: block;
+  width: 100%;
+  margin: 0.55rem 0 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: rgba(31, 24, 16, 0.7);
+  font: inherit;
+  font-size: 0.92rem;
+  font-style: italic;
+  line-height: 1.4;
+  text-align: left;
+  cursor: text;
+  user-select: text;
+  -webkit-user-select: text;
+  touch-action: auto;
+}
+
+.note__with--empty {
+  color: rgba(31, 24, 16, 0.3);
+}
+
+.note:hover .note__with--empty,
+.note.is-selected .note__with--empty {
+  color: rgba(31, 24, 16, 0.5);
+}
+
+.note__with-prefix {
+  color: rgba(31, 24, 16, 0.45);
+}
+
+.note__with--editing {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  cursor: auto;
+}
+
+.note__with-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid rgba(31, 24, 16, 0.35);
+  border-radius: 0;
+  background: transparent;
+  color: rgba(31, 24, 16, 0.85);
+  font: inherit;
+  outline: none;
+}
+
+.note__with-input::placeholder {
+  color: rgba(31, 24, 16, 0.3);
+}
+
+/* Hangs under the line, over the card's lower controls. */
+.note__complete {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 0.25rem);
+  z-index: 4;
+  min-width: 8.5rem;
+  max-width: 100%;
+  margin: 0;
+  padding: 0.25rem 0;
+  list-style: none;
+  border: 1px solid var(--bar-border);
+  border-radius: 0.24rem;
+  background: var(--bar);
+  color: var(--ink);
+  box-shadow: 0 8px 20px rgba(31, 24, 16, 0.3);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.74rem;
+  font-style: normal;
+}
+
+.note__complete-item {
+  padding: 0.22rem 0.6rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.note__complete-item.is-current {
+  background: var(--slot);
+}
+
+.note__complete-item--add {
+  margin-top: 0.15rem;
+  border-top: 1px solid var(--bar-border);
+  color: var(--muted);
+}
+
+/* Looking at the wall through one person: everyone else steps back. */
+.note {
+  transition: opacity 180ms ease;
+}
+
+.note.is-dim {
+  opacity: 0.22;
+}
+
+/* The lens: a panel under the top-right buttons that stays open while you
+   work. It sits clear of the logline, which is centred, and closes from its
+   own Close, the Cast button, or Escape when you are not typing. */
+.cast-lens {
+  position: fixed;
+  top: 3.7rem;
+  right: 1.1rem;
+  z-index: 11;
+  width: 15rem;
+  padding: 0.6rem 0.45rem 0.55rem;
+  border: 1px solid var(--bar-border);
+  border-radius: 0.55rem;
+  background: var(--bar);
+  color: var(--ink);
+  box-shadow: var(--bar-shadow);
+}
+
+.cast-lens__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0 0.5rem 0.4rem;
+}
+
+.cast-lens__kicker,
+.cast-lens__action,
+.cast-lens__count {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.64rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.cast-lens__kicker {
+  margin: 0;
+  color: var(--muted);
+}
+
+.cast-lens__actions {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.cast-lens__action {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.cast-lens__action:hover {
+  color: var(--ink);
+}
+
+.cast-lens__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cast-lens__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 1.1rem;
+  align-items: baseline;
+  gap: 0.45rem;
+  padding: 0.3rem 0.5rem;
+  border-radius: 0.3rem;
+  cursor: pointer;
+}
+
+.cast-lens__row.is-focus {
+  background: var(--slot);
+}
+
+.cast-lens__row.is-held .cast-lens__name {
+  font-weight: 600;
+}
+
+.cast-lens__name {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 1rem;
+  outline: none;
+  border-radius: 0.14rem;
+  cursor: text;
+}
+
+.cast-lens__name:focus {
+  background: var(--slot);
+  box-shadow: 0 0 0 2px var(--bar);
+}
+
+.cast-lens__name:empty::before {
+  content: attr(data-placeholder);
+  color: var(--muted);
+}
+
+.cast-lens__count {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.cast-lens__count.is-none {
+  color: var(--over);
+}
+
+.cast-lens__remove {
+  width: 1.1rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.cast-lens__row:hover .cast-lens__remove,
+.cast-lens__remove:focus-visible {
+  opacity: 1;
+}
+
+.cast-lens__empty {
+  margin: 0;
+  padding: 0.2rem 0.5rem 0.4rem;
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.cast-lens__add {
+  margin: 0.3rem 0.5rem 0;
+}
+
+.cast-lens__input {
+  width: 100%;
+  padding: 0.35rem 0;
+  border: 0;
+  border-top: 1px solid var(--bar-border);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.95rem;
+  outline: none;
+}
+
+.cast-lens__input::placeholder {
+  color: var(--muted);
+}
+
+.cast-lens__foot {
+  margin: 0.35rem 0 0;
+  padding: 0.45rem 0.5rem 0;
+  border-top: 1px solid var(--bar-border);
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.45;
 }

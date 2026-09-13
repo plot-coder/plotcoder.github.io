@@ -14,7 +14,7 @@
 // do not yet change the order; that is the first refinement to make once this
 // slice has been used.
 
-import { EIGHTHS_PER_PAGE, formatPages, NOTE_HEIGHT } from "./reducer.js";
+import { boardEighths, EIGHTHS_PER_PAGE, formatPages, NOTE_HEIGHT } from "./reducer.js";
 
 /** What create_note writes before a person has. */
 export const PLACEHOLDER_HEADLINE = "New beat";
@@ -27,6 +27,8 @@ const SAG_RATIO = 2;
 const SEQUENCE_MAX_EIGHTHS = 20 * EIGHTHS_PER_PAGE;
 // Two cards whose tops are within half a card of each other share a row.
 const ROW_TOLERANCE = NOTE_HEIGHT / 2;
+// A character gone for more than this share of the story is worth asking about.
+const ABSENCE_FRACTION = 1 / 3;
 // Headlines this alike are probably the same scene twice. Measured on the
 // content words only — "Tom lies about the job" and "Tom lies about his job"
 // are the same scene — and as overlap with the shorter headline, so a headline
@@ -199,6 +201,40 @@ export function readWall(state) {
           text: `${quote(a)} and ${quote(b)} read like the same scene. Are they doing the same job?`,
         });
       }
+    }
+  }
+
+  // The cast (R29): someone who vanishes for a stretch, or never appears.
+  const total = boardEighths(state);
+  const at = new Map();
+  let cursor = 0;
+  for (const note of order) {
+    at.set(note.id, cursor);
+    cursor += note.lengthEighths;
+  }
+  for (const character of state.characters ?? []) {
+    const scenes = order.filter((note) => note.characterIds?.includes(character.id));
+    if (scenes.length === 0) {
+      findings.push({
+        kind: "uncast",
+        ids: [character.id],
+        text: `${character.name} is in the cast but on no card. Where do they come in?`,
+      });
+      continue;
+    }
+    let longest = null;
+    for (let i = 1; i < scenes.length; i += 1) {
+      const prev = scenes[i - 1];
+      const next = scenes[i];
+      const gap = at.get(next.id) - (at.get(prev.id) + prev.lengthEighths);
+      if (!longest || gap > longest.gap) longest = { gap, from: prev, to: next };
+    }
+    if (longest && total > 0 && longest.gap > total * ABSENCE_FRACTION) {
+      findings.push({
+        kind: "absent",
+        ids: [character.id, longest.from.id, longest.to.id],
+        text: `${character.name} is in ${quote(longest.from)} and then not again until ${quote(longest.to)}, about ${pages(longest.gap)} pages later. Where are they in between?`,
+      });
     }
   }
 

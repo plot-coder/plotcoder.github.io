@@ -190,11 +190,19 @@ function where(live) {
 // --- Reporting -------------------------------------------------------------
 
 function summarize(state) {
+  const nameOf = new Map(state.characters.map((character) => [character.id, character.name]));
   const notes = state.notes
-    .map(
-      (note) =>
-        `  - ${note.id} [${note.rank ?? "scene"}, ${formatPages(note.lengthEighths)}pp] — "${note.headline}" (${note.color}) at ${Math.round(note.x)},${Math.round(note.y)}`,
-    )
+    .map((note) => {
+      const cast = note.characterIds.map((id) => nameOf.get(id) ?? id);
+      const who = cast.length ? `, cast: ${cast.join(", ")}` : "";
+      return `  - ${note.id} [${note.rank ?? "scene"}, ${formatPages(note.lengthEighths)}pp${who}] — "${note.headline}" (${note.color}) at ${Math.round(note.x)},${Math.round(note.y)}`;
+    })
+    .join("\n");
+  const cast = state.characters
+    .map((character) => {
+      const on = state.notes.filter((note) => note.characterIds.includes(character.id)).length;
+      return `  - ${character.id} — "${character.name}" on ${on} card${on === 1 ? "" : "s"}`;
+    })
     .join("\n");
   const { beats, scenes } = countRanks(state);
   const headline = (id) =>
@@ -221,7 +229,9 @@ function summarize(state) {
     `logline: ${state.logline ? `"${state.logline}"` : "(not set)"}`,
     `beats: ${beats}, scenes: ${scenes}`,
     `runtime: about ${formatPages(boardEighths(state))} pages of a ${formatPages(state.targetEighths)}-page target (an estimate from the cards)`,
-    `notes: ${state.notes.length}, groups: ${state.groups.length}, arrows: ${state.arrows.length}`,
+    `notes: ${state.notes.length}, groups: ${state.groups.length}, arrows: ${state.arrows.length}, cast: ${state.characters.length}`,
+    "cast:",
+    cast || "  (no one yet — add_character to start the roster)",
     "cards:",
     notes || "  (no cards)",
     "groups:",
@@ -247,7 +257,7 @@ server.registerTool(
   {
     title: "List board",
     description:
-      "Return every card on the PlotCoder board with id, headline, change, color, and position. Read this before moving or updating cards so you use real ids.",
+      "Return the PlotCoder board: the logline, the cast (roster) with ids, then every card with id, headline, change, color, rank, length, cast, and position, then groups and arrows with ids. Read this before moving, updating, or casting cards so you use real ids.",
     inputSchema: {},
   },
   async () => {
@@ -482,6 +492,117 @@ server.registerTool(
         : ["  (none that this reading can see)"]),
     ];
     return ok(lines.join("\n"), reading);
+  },
+);
+
+// --- Characters (R29) -------------------------------------------------------
+
+server.registerTool(
+  "add_character",
+  {
+    title: "Add character",
+    description:
+      "Add a person to the board's cast — the roster every card casts from. One record per person: the same name twice is refused and the existing record returned. Add someone here before casting them on a card.",
+    inputSchema: { name: z.string().min(1) },
+  },
+  async (args) => {
+    const { changed, result, live } = await commit({ type: "add_character", name: args.name });
+    if (!changed) {
+      return result
+        ? ok(`Already in the cast as "${result.name}" (${result.id}). Use that id.`, result)
+        : ok("No character added: the name was empty.");
+    }
+    return ok(`Added "${result.name}" to the cast${where(live)}.`, result);
+  },
+);
+
+server.registerTool(
+  "rename_character",
+  {
+    title: "Rename character",
+    description:
+      "Rename a person in the cast by id. Every card they are on follows, because cards hold the id, not the name.",
+    inputSchema: { id: z.string(), name: z.string().min(1) },
+  },
+  async (args) => {
+    const { state, changed, result, live } = await commit({
+      type: "rename_character",
+      id: args.id,
+      name: args.name,
+    });
+    if (!changed) {
+      if (result) return ok(`Not renamed: "${result.name}" (${result.id}) already has that name.`);
+      return state.characters.some((character) => character.id === args.id)
+        ? ok("Not renamed: that is already the name.")
+        : ok(`No character with id ${args.id}. Call list_board for the cast.`);
+    }
+    return ok(`Renamed to "${result.name}"${where(live)}.`, result);
+  },
+);
+
+server.registerTool(
+  "remove_character",
+  {
+    title: "Remove character",
+    description:
+      "Remove a person from the cast by id. They leave every card they were on. The cards themselves stay.",
+    inputSchema: { id: z.string() },
+  },
+  async (args) => {
+    const { changed, live } = await commit({ type: "remove_character", id: args.id });
+    if (!changed) return ok(`No character with id ${args.id}. Call list_board for the cast.`);
+    return ok(`Removed from the cast and from every card${where(live)}.`);
+  },
+);
+
+server.registerTool(
+  "cast",
+  {
+    title: "Cast a scene",
+    description:
+      "Set who is in one or more cards. Takes card ids and character names or ids; the list replaces the card's cast, so pass everyone who is in the scene. An empty list clears it. Names must already be in the cast — add_character first — and the tool says which names it did not know.",
+    inputSchema: {
+      noteIds: z.array(z.string()).min(1),
+      characters: z.array(z.string()),
+    },
+  },
+  async (args) => {
+    const { state: before } = await readBoard();
+    const unknown = [];
+    const characterIds = [];
+    for (const who of args.characters) {
+      const match = before.characters.find(
+        (character) =>
+          character.id === who || character.name.trim().toLowerCase() === who.trim().toLowerCase(),
+      );
+      if (match) characterIds.push(match.id);
+      else unknown.push(who);
+    }
+    if (unknown.length > 0) {
+      return ok(
+        `No cast set: not in the cast — ${unknown.map((name) => `"${name}"`).join(", ")}. Call add_character for each, then cast again.`,
+      );
+    }
+    const { state, changed, result, live } = await commit({
+      type: "set_cast",
+      ids: args.noteIds,
+      characterIds,
+    });
+    if (!changed) {
+      const missing = args.noteIds.filter((id) => !state.notes.some((note) => note.id === id));
+      return ok(
+        missing.length > 0
+          ? `No cast set: no card with id ${missing.join(", ")}. Call list_board to check.`
+          : "No change: those cards already had exactly that cast.",
+      );
+    }
+    const names = characterIds.map(
+      (id) => state.characters.find((character) => character.id === id)?.name ?? id,
+    );
+    return ok(
+      `${result.length} card(s) now cast ${names.length ? names.join(", ") : "nobody"}${where(live)}.`,
+      result,
+    );
   },
 );
 

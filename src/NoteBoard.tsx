@@ -7,6 +7,7 @@ import {
 } from "react";
 import { arrowLayout, noteAtPoint, previewPath } from "./arrowGeometry";
 import { NoteCard } from "./NoteCard";
+import { type BoardCharacter } from "./board/reducer";
 import {
   NOTE_HEIGHT,
   NOTE_WIDTH,
@@ -39,6 +40,10 @@ type NoteBoardProps = {
   notes: MockNote[];
   groups: MockGroup[];
   arrows: MockArrow[];
+  characters: BoardCharacter[];
+  /** When the cast lens holds or hovers someone, cards without them fade. */
+  castFocusId: string | null;
+  onCastNames: (id: string, names: string[]) => void;
   selectedIds: string[];
   selectedArrowId: string | null;
   onMove: (id: string, x: number, y: number) => void;
@@ -108,6 +113,9 @@ export function NoteBoard({
   notes,
   groups,
   arrows,
+  characters,
+  castFocusId,
+  onCastNames,
   selectedIds,
   selectedArrowId,
   onMove,
@@ -475,6 +483,10 @@ export function NoteBoard({
           selected={selectedIds.includes(note.id)}
           linking={drag?.kind === "arrow" && drag.fromId === note.id}
           dropTarget={drag?.kind === "arrow" && drag.hoverId === note.id}
+          dimmed={castFocusId !== null && !note.characterIds.includes(castFocusId)}
+          characters={characters}
+          onCastNames={onCastNames}
+          onRaise={onRaise}
           onPointerDown={startNoteDrag}
           onArrowPointerDown={startArrowDrag}
           onRecolor={onRecolor}

@@ -261,6 +261,57 @@ describe("findings", () => {
     );
   });
 
+  it("asks where a person in the cast comes in when they are on no card", () => {
+    const state = run(
+      wall({ id: "b1", rank: "beat" }, { id: "s1" }),
+      { type: "add_character", id: "m", name: "Maya" },
+      { type: "add_character", id: "l", name: "The landlord" },
+      { type: "set_cast", ids: ["b1", "s1"], characterIds: ["m"] },
+    );
+    const uncast = readWall(state).findings.filter((f) => f.kind === "uncast");
+    expect(uncast).toEqual([
+      { kind: "uncast", ids: ["l"], text: "The landlord is in the cast but on no card. Where do they come in?" },
+    ]);
+  });
+
+  it("asks where a person went when they vanish for more than a third of the story", () => {
+    // 12 pages total. Tom is in the first page and the last, gone for 10 between.
+    const state = run(
+      wall(
+        { id: "b1", rank: "beat", headline: "Tom arrives" },
+        { id: "s1", pages: 4 },
+        { id: "b2", rank: "beat", pages: 2 },
+        { id: "s2", pages: 4 },
+        { id: "b3", rank: "beat", headline: "Tom returns" },
+      ),
+      { type: "add_character", id: "t", name: "Tom" },
+      { type: "add_character", id: "m", name: "Maya" },
+      { type: "set_cast", ids: ["b1", "b3"], characterIds: ["t"] },
+      { type: "set_cast", ids: ["s1", "b2", "s2"], characterIds: ["m"] },
+    );
+    const absent = readWall(state).findings.filter((f) => f.kind === "absent");
+    expect(absent).toHaveLength(1);
+    expect(absent[0].ids).toEqual(["t", "b1", "b3"]);
+    expect(absent[0].text).toBe(
+      'Tom is in "Tom arrives" and then not again until "Tom returns", about 10 pages later. Where are they in between?',
+    );
+  });
+
+  it("does not ask about a person who keeps turning up", () => {
+    const state = run(
+      wall(
+        { id: "b1", rank: "beat" },
+        { id: "s1", pages: 3 },
+        { id: "b2", rank: "beat" },
+        { id: "s2", pages: 3 },
+        { id: "b3", rank: "beat" },
+      ),
+      { type: "add_character", id: "m", name: "Maya" },
+      { type: "set_cast", ids: ["b1", "b2", "b3"], characterIds: ["m"] },
+    );
+    expect(readWall(state).findings.filter((f) => f.kind === "absent")).toEqual([]);
+  });
+
   it("never mutates the state it reads", () => {
     const state = wall({ id: "b1", rank: "beat" }, { id: "s1" }, { id: "b2", rank: "beat" });
     const snapshot = JSON.stringify(state);

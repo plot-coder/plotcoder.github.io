@@ -21,6 +21,7 @@ import {
 
 const LS_LOGLINE = "plotcoder.logline";
 const LS_TARGET = "plotcoder.target";
+const LS_CHARACTERS = "plotcoder.characters";
 const LS_NOTES = "plotcoder.notes";
 const LS_GROUPS = "plotcoder.groups";
 const LS_ARROWS = "plotcoder.arrows";
@@ -50,9 +51,11 @@ function loadLocal(): BoardState | null {
     // no target; normalizeState fills both in rather than the board being
     // treated as unreadable. A missing target reads as NaN, which it clamps.
     const target = localStorage.getItem(LS_TARGET);
+    const characters = localStorage.getItem(LS_CHARACTERS);
     const state = {
       logline: localStorage.getItem(LS_LOGLINE) ?? "",
       targetEighths: target === null ? undefined : Number(target),
+      characters: characters ? JSON.parse(characters) : [],
       notes: notes ? JSON.parse(notes) : [],
       groups: groups ? JSON.parse(groups) : [],
       arrows: arrows ? JSON.parse(arrows) : [],
@@ -67,6 +70,7 @@ function saveLocal(state: BoardState): void {
   try {
     localStorage.setItem(LS_LOGLINE, state.logline ?? "");
     localStorage.setItem(LS_TARGET, String(state.targetEighths));
+    localStorage.setItem(LS_CHARACTERS, JSON.stringify(state.characters));
     localStorage.setItem(LS_NOTES, JSON.stringify(state.notes));
     localStorage.setItem(LS_GROUPS, JSON.stringify(state.groups));
     localStorage.setItem(LS_ARROWS, JSON.stringify(state.arrows));

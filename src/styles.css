@@ -2359,6 +2359,23 @@ body {
   }
 }
 
+/* --- The small things (Roadmap 2, item 7) ---------------------------------- */
+
+.cast-lens__report {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  align-items: baseline;
+}
+
+.cast-lens__copy {
+  flex: none;
+}
+
+.structure__save {
+  margin-top: 0.9rem;
+}
+
 /* --- Pictures on a person's page (Roadmap 2, item 5) ----------------------- */
 
 .cast-page__text--muted {

@@ -22,6 +22,8 @@ import {
   isProjectRecord,
   moveBoard as moveBoardIn,
   normalizeProject,
+  addStructure,
+  removeStructure as removeStructureFrom,
   reidentifyProject,
   removeBoard as removeBoardFrom,
   renameBoard as renameBoardIn,
@@ -45,6 +47,7 @@ import {
   type CharacterField,
   type Command,
   type NoteColor,
+  noteEighths,
 } from "./reducer";
 
 const LS_PROJECT = "plotcoder.project";
@@ -370,6 +373,31 @@ class BoardStore {
       this.setProject(next);
     }
     return true;
+  };
+
+  /**
+   * A writer's own structure from this wall's beats (Roadmap 2, item 7): each
+   * beat's headline, its change line as the prompt, and where it falls as a
+   * fraction of the wall's pages, in reading order.
+   */
+  saveStructure = (name: string, reading: { order: string[] }): void => {
+    const byId = new Map(this.state.notes.map((note) => [note.id, note]));
+    const order = reading.order.map((id) => byId.get(id)).filter((note): note is BoardState["notes"][number] => Boolean(note));
+    const total = order.reduce((sum, note) => sum + noteEighths(note), 0) || 1;
+    let cursor = 0;
+    const beats: Array<{ name: string; prompt: string; at: number }> = [];
+    for (const note of order) {
+      if (note.rank === "beat") {
+        beats.push({ name: note.headline || "Untitled beat", prompt: note.change || "What turns here?", at: Math.round((cursor / total) * 100) / 100 });
+      }
+      cursor += noteEighths(note);
+    }
+    if (beats.length === 0) return;
+    this.setProject(addStructure(this.project, name, beats).project);
+  };
+
+  removeStructure = (id: string): void => {
+    this.setProject(removeStructureFrom(this.project, id));
   };
 
   renameProject = (name: string): void => {

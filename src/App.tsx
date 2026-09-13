@@ -20,6 +20,8 @@ import {
   boardPlaces,
   isMeasured,
   type BoardNote,
+  atPlace,
+  noteEighths,
 } from "./board/reducer";
 import { organizePoses } from "./board/organize";
 import { ProjectModal } from "./ProjectModal";
@@ -128,7 +130,17 @@ export function App() {
   const castFocusId = castOpen ? (castHeld ?? castHover) : null;
   const placeFocus = castOpen && castFocusId === null ? (placeHeld ?? placeHover) : null;
   // The places on the wall, for the lens and for completion on every card.
-  const places = useMemo(() => boardPlaces(board), [board]);
+  const places = useMemo(
+    () =>
+      boardPlaces(board).map((place) => ({
+        ...place,
+        eighths: board.notes.filter((note) => atPlace(note, place.name)).reduce((sum, note) => sum + noteEighths(note), 0),
+        people: [...new Set(board.notes.filter((note) => atPlace(note, place.name)).flatMap((note) => note.characterIds))]
+          .map((id) => characters.find((character) => character.id === id)?.name)
+          .filter((name): name is string => Boolean(name)),
+      })),
+    [board, characters],
+  );
   const placeNames = useMemo(() => places.map((place) => place.name), [places]);
   // One reading of the wall for the lens and the map, so they agree.
   const reading = useMemo(() => readWall(board), [board]);
@@ -455,12 +467,18 @@ export function App() {
     selectNotes([]);
   }
 
+  // A writer's own structure, saved from this wall's beats (Roadmap 2, item 7).
+  function saveStructure(name: string) {
+    boardStore.saveStructure(name, reading);
+  }
+
   // Lay a structure's beats on the wall (R38): one command, one undo step,
   // then the window fits the wall so the new row is in view.
   function applyTemplate(templateId: string) {
-    const created = boardStore.dispatch({ type: "apply_template", template: templateId }) as
-      | { id: string }[]
-      | undefined;
+    const own = project.structures?.find((structure) => structure.id === templateId);
+    const created = boardStore.dispatch(
+      own ? { type: "apply_template", template: own.id, beats: own.beats } : { type: "apply_template", template: templateId },
+    ) as { id: string }[] | undefined;
     setStructureOpen(false);
     if (!created || created.length === 0) return;
     selectNotes(created.map((note) => note.id));
@@ -631,8 +649,11 @@ export function App() {
         <StructureSheet
           open={structureOpen}
           board={board}
+          own={project.structures ?? []}
           onClose={() => setStructureOpen(false)}
           onApply={applyTemplate}
+          onSave={saveStructure}
+          onForget={(id) => boardStore.removeStructure(id)}
         />
       </div>
       <BriefSheet
@@ -711,6 +732,7 @@ export function App() {
         reading={reading}
         open={mapOpen}
         castFocusId={castFocusId}
+        placeFocus={placeFocus}
         hoverId={hoverNoteId}
         selectedId={selectedIds.length === 1 ? selectedIds[0] : null}
         visibleIds={visibleIds}

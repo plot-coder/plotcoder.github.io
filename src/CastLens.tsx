@@ -45,8 +45,8 @@ type CastLensProps = {
   onAddPictures: (characterId: string, files: File[]) => void;
   onRemovePicture: (assetId: string) => void;
   onDownloadPictures: (characterId: string, name: string) => void;
-  /** The places on the wall (R37): hover lights their scenes, click holds. */
-  places: Array<{ name: string; cards: number }>;
+  /** The places on the wall (R37): hover lights their scenes, click holds; with pages and people (item 7). */
+  places: Array<{ name: string; cards: number; eighths: number; people: string[] }>;
   placeHover: string | null;
   placeHeld: string | null;
   onPlaceHover: (name: string | null) => void;
@@ -157,6 +157,13 @@ export function CastLens({
         (finding) =>
           (finding.kind === "uncast" || finding.kind === "absent") && finding.ids[0] === focus.id,
       ) ?? null
+    : null;
+
+  // The report by place (Roadmap 2, item 7): the held or hovered place in one line.
+  const focusPlace = focusId === null ? (placeHeld ?? placeHover) : null;
+  const reported = focusPlace ? places.find((place) => place.name === focusPlace) : null;
+  const placeReport = reported
+    ? `${reported.name}: ${reported.cards} ${reported.cards === 1 ? "scene" : "scenes"}, ${formatPages(reported.eighths)} ${reported.eighths === 8 ? "page" : "pages"}${reported.people.length ? `, with ${reported.people.join(" and ")}` : ""}.`
     : null;
 
   function countFor(id: string): number {
@@ -377,12 +384,24 @@ export function CastLens({
                     >
                       <span className="cast-lens__name">{place.name}</span>
                       <span className="cast-lens__count">
-                        {place.cards === 1 ? "1 card" : `${place.cards} cards`}
+                        {place.cards === 1 ? "1 card" : `${place.cards} cards`} · {formatPages(place.eighths)} pp
                       </span>
                     </li>
                   );
                 })}
               </ul>
+              {placeReport ? (
+                <p className="cast-lens__foot cast-lens__report">
+                  {placeReport}
+                  <button
+                    type="button"
+                    className="cast-lens__action cast-lens__copy"
+                    onClick={() => void navigator.clipboard?.writeText(placeReport).catch(() => undefined)}
+                  >
+                    Copy
+                  </button>
+                </p>
+              ) : null}
             </>
           ) : null}
 

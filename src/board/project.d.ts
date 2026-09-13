@@ -18,9 +18,20 @@ export type ProjectRecord = {
   premise: string;
   boards: BoardMeta[];
   activeBoardId: string;
+  /** A writer's own structures, saved from a wall's beats (Roadmap 2, item 7). */
+  structures?: OwnStructure[];
   createdAt: string;
   updatedAt: string;
 };
+
+export type OwnStructure = { id: string; name: string; beats: Array<{ name: string; prompt: string; at: number }> };
+export declare function addStructure(
+  project: ProjectRecord,
+  name: string,
+  beats: Array<{ name: string; prompt: string; at: number }>,
+  now?: string,
+): { project: ProjectRecord; structure: OwnStructure };
+export declare function removeStructure(project: ProjectRecord, id: string, now?: string): ProjectRecord;
 
 export declare function newBoardMeta(name: string, now?: string): BoardMeta;
 export declare function emptyProject(now?: string): ProjectRecord;

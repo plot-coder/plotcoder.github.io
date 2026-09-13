@@ -22,6 +22,8 @@ type StoryMapProps = {
   open: boolean;
   /** The person the Cast lens is looking through, if any: their scenes stay bright. */
   castFocusId: string | null;
+  /** A place held or hovered in the lens (R37): its scenes light on the strip. */
+  placeFocus: string | null;
   /** The card under the pointer on the wall, if any. */
   hoverId: string | null;
   /** The one selected card, if exactly one is. */
@@ -49,6 +51,7 @@ export function StoryMap({
   reading,
   open,
   castFocusId,
+  placeFocus,
   hoverId,
   selectedId,
   visibleIds,
@@ -248,8 +251,11 @@ export function StoryMap({
             const left = x(card.start);
             const w = Math.max(x(card.start + card.length) - left - 1, 2);
             const top = open ? (card.beat ? beatTop : blockTop) : axisY - (card.beat ? 8 : 4);
-            const lit = castFocusId !== null && card.characterIds.includes(castFocusId);
-            const dim = castFocusId !== null && !lit;
+            const focused = castFocusId !== null || placeFocus !== null;
+            const lit =
+              (castFocusId !== null && card.characterIds.includes(castFocusId)) ||
+              (placeFocus !== null && card.location.trim().toLowerCase() === placeFocus.trim().toLowerCase());
+            const dim = focused && !lit;
             const hovered = card.id === scrubId || card.id === hoverId;
             return (
               <g

@@ -9,19 +9,27 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { countRanks, formatPages, type BoardState } from "./board/reducer";
 import { beatPage, TEMPLATES } from "./board/templates";
+import type { OwnStructure } from "./board/project";
 
 type StructureSheetProps = {
   open: boolean;
   board: BoardState;
+  /** The writer's own structures, saved from a wall's beats (Roadmap 2, item 7). */
+  own: OwnStructure[];
   onClose: () => void;
   onApply: (templateId: string) => void;
+  onSave: (name: string) => void;
+  onForget: (id: string) => void;
 };
 
-export function StructureSheet({ open, board, onClose, onApply }: StructureSheetProps) {
+export function StructureSheet({ open, board, own, onClose, onApply, onSave, onForget }: StructureSheetProps) {
   const titleId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
   const [chosenId, setChosenId] = useState(TEMPLATES[0].id);
-  const chosen = TEMPLATES.find((template) => template.id === chosenId) ?? TEMPLATES[0];
+  const [saveName, setSaveName] = useState("");
+  const all = [...TEMPLATES, ...own.map((structure) => ({ ...structure, blurb: "your own, saved from a wall" }))];
+  const chosen = all.find((template) => template.id === chosenId) ?? TEMPLATES[0];
+  const isOwn = own.some((structure) => structure.id === chosen.id);
 
   useEffect(() => {
     if (!open) return;
@@ -73,7 +81,7 @@ export function StructureSheet({ open, board, onClose, onApply }: StructureSheet
 
         <div className="structure">
           <ul className="structure__list" aria-label="Structures">
-            {TEMPLATES.map((template) => (
+            {all.map((template) => (
               <li key={template.id}>
                 <button
                   type="button"
@@ -104,7 +112,31 @@ export function StructureSheet({ open, board, onClose, onApply }: StructureSheet
             <button type="button" className="project-action structure__apply" onClick={() => onApply(chosen.id)}>
               {verb}
             </button>
+            {isOwn ? (
+              <button type="button" className="project-action project-action--ghost structure__apply" onClick={() => onForget(chosen.id)}>
+                Forget this one
+              </button>
+            ) : null}
             {note ? <p className="structure__note">{note}</p> : null}
+            {beats > 0 ? (
+              <form
+                className="structure__save"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  if (!saveName.trim()) return;
+                  onSave(saveName.trim());
+                  setSaveName("");
+                }}
+              >
+                <input
+                  className="cast-lens__input"
+                  value={saveName}
+                  placeholder={`Save this wall's ${beats} ${beats === 1 ? "beat" : "beats"} as a structure…`}
+                  aria-label="Save this wall's beats as a structure"
+                  onChange={(event) => setSaveName(event.target.value)}
+                />
+              </form>
+            ) : null}
           </div>
         </div>
       </div>

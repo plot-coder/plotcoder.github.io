@@ -155,7 +155,7 @@ export type Command =
   | { type: "set_cast"; ids: string[]; characterIds: string[] }
   | { type: "set_plant"; ids: string[]; plants: boolean }
   | { type: "set_location"; ids: string[]; location: string }
-  | { type: "apply_template"; template: string }
+  | { type: "apply_template"; template: string; beats?: Array<{ name: string; prompt: string; at: number }> }
   | { type: "set_text"; id: string; text: string };
 
 export type CommandResult = {

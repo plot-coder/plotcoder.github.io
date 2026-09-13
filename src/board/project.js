@@ -67,6 +67,12 @@ export function normalizeProject(value, now = nowIso()) {
   const activeBoardId = boards.some((board) => board.id === value.activeBoardId)
     ? value.activeBoardId
     : boards[0].id;
+  // A writer's own structures (Roadmap 2, item 7): saved from a wall's beats.
+  const structures = Array.isArray(value.structures)
+    ? value.structures.filter(
+        (item) => item && typeof item.id === "string" && typeof item.name === "string" && Array.isArray(item.beats),
+      )
+    : [];
   // `renamed` is reidentifyProject's map for the store, never part of the record.
   const { renamed: _renamed, ...rest } = value;
   return {
@@ -76,6 +82,7 @@ export function normalizeProject(value, now = nowIso()) {
     premise: typeof value.premise === "string" ? value.premise.trim() : "",
     boards,
     activeBoardId,
+    structures,
     createdAt: typeof value.createdAt === "string" ? value.createdAt : now,
     updatedAt: typeof value.updatedAt === "string" ? value.updatedAt : now,
   };
@@ -189,4 +196,16 @@ export function reidentifyProject(project, now = nowIso()) {
     /** Old board id → new, so a store can move each board's state along. */
     renamed: Object.fromEntries(ids),
   };
+}
+
+/** Save a structure on the project: a name and beats { name, prompt, at }. */
+export function addStructure(project, name, beats, now = nowIso()) {
+  const structure = { id: newId(), name: trimmed(name, "My structure"), beats: beats.map((beat) => ({ ...beat })) };
+  return { project: { ...project, structures: [...(project.structures ?? []), structure], updatedAt: now }, structure };
+}
+
+export function removeStructure(project, id, now = nowIso()) {
+  const structures = (project.structures ?? []).filter((item) => item.id !== id);
+  if (structures.length === (project.structures ?? []).length) return project;
+  return { ...project, structures, updatedAt: now };
 }

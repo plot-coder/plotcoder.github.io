@@ -582,11 +582,11 @@ The left column is the activity list already recorded in the combine log from cu
 | --- | --- | --- |
 | Beat Board — cards on a canvas | The wall: cards, colour, groups, directed arrows, rank, pan/zoom | — |
 | Story Map — beats against a page axis with a target | **Built** (R32): a strip under the wall with beats, runs, setups, unpaid folds, and the target; click to jump; the cast lens lights a person's scenes | A lane per person at once, if a season ever needs it |
-| Structure templates | **Built** (R38): five structures as rows of beat cards, the house method first | A writer's own structure, saved from a wall |
+| Structure templates | **Built** (R38, and Roadmap 2 item 7): five structures as rows of beat cards, and the writer's own saved from a wall's beats | — |
 | Outline Editor — scenes with lengths, reordered in a list | **Built** (Roadmap 2 item 4): As outline in the pages panel, drag to reorder and the card moves | — |
 | Index cards bound two ways to the script | **Built** (R23 b): a scene's text lives on its card; click a card to reach its scene, the caret in a scene lights its card | Pagination (R23 c) |
 | Navigator — filter the story by character or location | **Built**: the cast lens (R29) by person, and its Places list (R37) by place | — |
-| Reports — scenes, characters, locations | `list_board` lists the cast with a card count and page lines each, and each card's place | A report by place |
+| Reports — scenes, characters, locations | `list_board` lists the cast with a card count and page lines each, and each card's place; the lens reports a person's scenes and, since item 7, a place's scenes, pages and people with Copy | — |
 | Script editor with industry pagination — page breaks, `(MORE)`/`(CONT'D)`, dual dialogue | **Built** (R23 c): pages on screen and in print, the four rules, dual dialogue, scene numbers by wall order | The page as the editor; locked numbers and A/B pages (question 23) |
 | Revision colours, locked pages, scene numbering | None | The production half. D24 says last, not never. Ordering within "last" is open question 23. |
 | Tagging for a breakdown, cast reports | None | After characters (P15) and pages (R23) |
@@ -769,6 +769,8 @@ Written 2026-09-13 at Robert's ask, after the first roadmap's nine were built an
 - **Size:** one session. Needed before the horizon (item 9) and before workflows run from anywhere.
 
 ### 7 · Small things the file names
+
+- **Status:** **built** 2026-09-13, the drawn ones: holding a place lights its scenes on the strip as holding a person does; Places carry pages; the held or hovered place gives a one-line report with Copy ("the piano shop: 2 scenes, 3 pages, with Maya and Tom."); a wall's beats can be saved as the writer's own structure — headline, change line as the prompt, where each falls as a fraction — kept on the project record, offered beside the five in the Structure sheet, forgettable. Left, as the plan said, until they bite: card-level merging, a lane per person, arrows changing reading order.
 
 Half a session each, no mockup unless a person sees it; take them when they bite.
 
@@ -1013,3 +1015,4 @@ Add a dated heading and your verdict. Challenge requirements, don’t just affir
 | 2026-09-13 | **Roadmap 2, item 2: the page as the editor.** As pages is one continuous page on screen and every scene on it edits in place, each line styled by what it is from the paginator's own rules; the page turns, (MORE) and (CONT'D) are drawn beside the lines and never inside the text. Print stays separate pages. |
 | 2026-09-13 | **Roadmap 2, items 3, 4 and 5.** Final Draft in says what it set aside. The outline is the pages panel's third view, drag to reorder and the card follows. Files on the project: a private bucket with membership rules, an assets table, pictures on a person's page several at a time, and Download all as a zip from a stored-zip writer of our own. |
 | 2026-09-13 | **Roadmap 2, item 6: the remote agent door.** The MCP server signs in as the writer with the writer's own email and password and works the account's rows directly when no app is open, with `list_projects` and `open_project`; changes land on every open wall live, and the server shows under People as an agent. Forty-eight tools. |
+| 2026-09-13 | **Roadmap 2, item 7: the small things.** A place lights the strip; Places carry pages; a report by place with Copy; a writer's own structure saved from a wall's beats and offered beside the five. |

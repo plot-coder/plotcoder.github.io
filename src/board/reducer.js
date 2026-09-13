@@ -756,7 +756,10 @@ export function applyCommand(state, command, now = nowIso()) {
     // one row above the wall's cards, prompts on their change lines. Nothing
     // remembers the template afterwards; there are only cards.
     case "apply_template": {
-      const template = templateById(command.template);
+      // One of the five by id, or a writer's own beats handed in (Roadmap 2, item 7).
+      const template = Array.isArray(command.beats) && command.beats.length
+        ? { id: command.template, beats: command.beats }
+        : templateById(command.template);
       if (!template) return { state, changed: false };
       // Rows read top to bottom, so the block of new rows starts high enough
       // that its last row still clears the wall's top card.

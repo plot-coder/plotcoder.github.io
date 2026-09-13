@@ -157,6 +157,7 @@ describe("plotcoder MCP server", () => {
       "list_reminders",
       "list_structures",
       "list_takes",
+      "list_words",
       "list_workflows",
       "move_note",
       "new_board",
@@ -1188,6 +1189,13 @@ describe("structures of the writer's own", () => {
   afterAll(() => {
     own?.stop();
     if (ownRoot) fs.rmSync(ownRoot, { recursive: true, force: true });
+  });
+
+  it("says what the words mean, the way the app does", async () => {
+    const text = await own.callTool("list_words");
+    expect(text).toContain("A beat: One of the eight to fifteen big turns");
+    expect(text).toContain("The folded corner:");
+    expect(text).not.toMatch(/inciting/i);
   });
 
   it("lists the built-in structures and, at first, none of the writer's", async () => {

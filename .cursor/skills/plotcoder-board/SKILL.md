@@ -181,6 +181,14 @@ reply, call `list_board`, and fix the ids.
 - Arrows are **one-way**. `A→B` does not create `B→A`. Draw both if you mean
   both — that is two arrows, and deleting one leaves the other.
 
+## The words, when the writer asks
+
+PlotCoder's words — beat, logline, change line, the folded corner, eighths —
+are the room's, and many writers are not from the room. `list_words` gives
+every one in a sentence, the app's own meaning; use those sentences rather
+than a dictionary's, so the app and you never explain a word two ways. The
+source is `src/board/words.js`.
+
 ## Do not have opinions about beat count, and do not treat page counts as facts
 
 The app deliberately counts beats and says nothing about the number. Do not tell

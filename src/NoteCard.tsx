@@ -1,4 +1,5 @@
 import { useEffect, useState, type PointerEvent } from "react";
+import { wordSentence } from "./board/words";
 import { CastLine } from "./CastLine";
 import { PlaceLine } from "./PlaceLine";
 import { EditableText } from "./EditableText";
@@ -100,14 +101,14 @@ export function NoteCard({
           like the beat bar, so it reads at Fit zoom and steals no colour. */}
       <button
         type="button"
-        className="note__fold"
+        className="note__fold has-tip"
         aria-label={
           note.plants
             ? `Unfold the corner of ${note.headline}: it no longer plants something`
             : `Fold the corner of ${note.headline}: it plants something to pay off later`
         }
         aria-pressed={note.plants}
-        title={note.plants ? "Folded: this card plants something" : "Fold the corner: this card plants something"}
+        data-tip={wordSentence("corner")}
         onPointerDown={(event) => event.stopPropagation()}
         onClick={() => onSetPlant(note.id, !note.plants)}
       >
@@ -147,10 +148,10 @@ export function NoteCard({
       />
       <button
         type="button"
-        className="note__rank"
+        className="note__rank has-tip"
         aria-label={isBeat ? `Make ${note.headline} a scene` : `Make ${note.headline} a beat`}
         aria-pressed={isBeat}
-        title={isBeat ? "A beat — one of the major turns" : "Mark as a beat"}
+        data-tip={isBeat ? wordSentence("beat") : `Mark as a beat. ${wordSentence("beat")}`}
         onPointerDown={(event) => event.stopPropagation()}
         onClick={() => onSetRank(note.id, isBeat ? "scene" : "beat")}
       >

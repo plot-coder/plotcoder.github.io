@@ -36,6 +36,7 @@ import {
   seedState,
 } from "../src/board/reducer.js";
 import { TEMPLATES } from "../src/board/templates.js";
+import { wordSentence, wordsAsText } from "../src/board/words.js";
 import { fromFountain, mergeFountain, toFountain } from "../src/board/fountain.js";
 import { describeSetAside, fromFdx, toFdx } from "../src/board/fdx.js";
 import { paginate } from "../src/board/paginate.js";
@@ -658,7 +659,7 @@ server.registerTool(
   {
     title: "Set card rank",
     description:
-      "Mark cards as beats or scenes. A beat is one of the 8-to-15 major turns the story hangs on (inciting incident, midpoint, lowest point, climax); everything else is a scene. Rank is carried by the card, not by where it sits, so marking a beat never moves it. Do not volunteer an opinion about how many beats there should be.",
+      `Mark cards as beats or scenes. ${wordSentence("beat")} Rank is carried by the card, not by where it sits. Do not volunteer an opinion about how many beats there should be.`,
     inputSchema: {
       ids: z.array(z.string()).min(1),
       rank: rankSchema,
@@ -1085,6 +1086,17 @@ server.registerTool(
 );
 
 server.registerTool(
+  "list_words",
+  {
+    title: "What these words mean",
+    description:
+      "PlotCoder's words — beat, logline, change line, the folded corner, eighths, structure, brief — one sentence each, the app's own meaning, in the order a new person meets them. Use these sentences when the writer asks what a word means, so the app and you say the same thing.",
+    inputSchema: {},
+  },
+  async () => ok(wordsAsText()),
+);
+
+server.registerTool(
   "list_workflows",
   {
     title: "List workflows",
@@ -1440,7 +1452,7 @@ server.registerTool(
   {
     title: "Fold the corner",
     description:
-      "Mark cards as planting something — a setup whose payoff may not exist yet — or unmark them. A folded corner is a debt: read_wall asks about it until a setup arrow leaves the card (create_arrow with kind 'setup'). Folding never moves a card.",
+      `Mark cards as planting something, or unmark them. ${wordSentence("corner")} The setup arrow is create_arrow with kind 'setup'. Folding never moves a card.`,
     inputSchema: {
       ids: z.array(z.string()).min(1),
       plants: z.boolean(),

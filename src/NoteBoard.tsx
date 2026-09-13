@@ -51,6 +51,8 @@ type NoteBoardProps = {
   onLocation: (id: string, location: string) => void;
   /** The empty wall offers a structure (R38). */
   onStructure: () => void;
+  /** What these words mean (R42). */
+  onWords: () => void;
   /** Pages are open beside the wall (R23 b): the wall keeps to the left. */
   pagesOpen?: boolean;
   /** The page a written scene starts on (R23 c). */
@@ -140,6 +142,7 @@ export function NoteBoard({
   onCastNames,
   onLocation,
   onStructure,
+  onWords,
   pagesOpen = false,
   pageOf,
   numberOf,
@@ -425,9 +428,13 @@ export function NoteBoard({
     >
       {notes.length === 0 && !lasso ? (
         <p className="group-hint group-hint--empty">
-          No cards yet. Add one, or{" "}
+          No cards yet. Add one,{" "}
           <button type="button" className="group-hint__link" onClick={onStructure}>
             start from a structure
+          </button>
+          , or read{" "}
+          <button type="button" className="group-hint__link" onClick={onWords}>
+            what these words mean
           </button>
           .
         </p>

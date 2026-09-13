@@ -543,12 +543,17 @@ Add new items at the bottom of this list. Do not renumber. If a requirement dies
 
 ### R42 — What these words mean
 
-- **Status:** **proposed** 2026-09-13; mocked three ways ("What These Words Mean"), asked, awaiting Robert's choice
+- **Status:** **built** 2026-09-13; mocked three ways ("What These Words Mean"), asked, Robert chose A with B folded in
 - **Date:** 2026-09-13
 - **Statement:** The app carries a place that says what its words mean — **beat**, **logline**, **change line**, **the folded corner**, **setup**, **eighths**, **structure**, **brief** — one sentence each, in PlotCoder's own meaning, for a person who has not sat in a story room.
 - **Why:** Robert, walking the app as that person: "beat" is not a common word outside the room, and nothing in the app explains it. The bar's icons name themselves after a second (R7); the words on the cards and at the top of the wall do not.
 - **Mocked first:** (A) a sheet of the words in the method's order (R18) — First, On a card, Around the wall, Pages, The horizon — opened from a `?` in the bar's strip and a line in the readout, each sentence with *show me* where the word is a thing on the wall, lighting it for a moment; (B) the same sentences as one-second hovers on the beat/scene mark, the folded corner and the logline, with *More* opening A; (C) a four-step tour on first visit. Recommended: A with B folded in, and a link in the empty wall's hint; not C, because PlotCoder does not interrupt and a skipped tour explains nothing. The sentences would live in one pure module beside the kernel so the app, the skill and the MCP tool descriptions say the same thing.
-- **The words as drafted:** on the mockup, grouped by the method; Robert to read them as the person outside the room.
+- **As built:**
+  - **The words** live in `src/board/words.js`, DOM-free: five groups in the method's order, one sentence each, and for the words that are things on the wall the thing they point at. Tested: every word once, every sentence plain (the beat sentence says "eight to fifteen" and never "inciting"; length says "of a script page").
+  - **The sheet** (`WordsSheet`), styled like the wordmark's, opened from a `?` at the end of the bar's strip (named "What these words mean" after a second), from *Words* in the readout's Do line, and from the empty wall's hint, which now reads "No cards yet. Add one, start from a structure, or read what these words mean." *Show me* closes the sheet, fits the wall so the thing is in the window, and outlines it for two seconds — the first beat card, the logline, a folded corner, an arrow, the strip.
+  - **The hovers (B):** the same sentences appear after a second on a card's beat/scene mark and its corner, and on the logline; never while the card or the line is being edited. The `title` tooltips those controls had are gone, so nothing says it twice.
+  - **Agents:** a `list_words` tool returns the words as text; `set_rank` and `set_plant` describe beats and the corner in the same sentences; the skill says to use them when a writer asks. Sixty-four tools.
+- **Notes:** Nothing opens by itself. Words that are not things — the wall, runtime, reminders, an agent — have no show me.
 
 ### R33 — Undo
 
@@ -1037,3 +1042,4 @@ Add a dated heading and your verdict. Challenge requirements, don’t just affir
 | 2026-09-13 | **The Site URL is plotcoder.com.** Changed from Supabase's default `http://localhost:3000` at Robert's word, so the fallback redirect and the email templates' site address both point at the app. |
 | 2026-09-13 | **Back from the reset link.** Robert walked the Forgotten? flow and found the link signed him in with no word about it and no form in sight. Mocked two arrivals — the sheet opening by itself with an arrival line and the field, or a warm line by the wordmark — plus the stale-link door for both; built the first. A pure `linkOutcome` reads a stale link's reason, with tests. |
 | 2026-09-13 | **What these words mean, mocked.** Robert asked what help for the room's words could look like. Three shapes on the paper — a sheet of the words in the method's order with show me, the words explaining themselves where they sit, a first-visit tour — with every sentence drafted; recommended the sheet with the hovers folded in. R42 proposed, not built. |
+| 2026-09-13 | **What these words mean, built (R42).** The words in one pure module; a sheet from the `?` in the bar, the readout and the empty wall's hint, with show me lighting the thing on the wall; the sentences as one-second hovers on the beat mark, the corner and the logline; `list_words` for agents and the same sentences in `set_rank` and `set_plant`. |

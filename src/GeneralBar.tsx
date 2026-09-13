@@ -33,6 +33,8 @@ type GeneralBarProps = {
   onGroup: () => void;
   onOrganize: () => void;
   onStructure: () => void;
+  /** What these words mean (R42). */
+  onWords: () => void;
   /** A card or cards are selected: the brief for that segment (R28). */
   canBrief: boolean;
   onBrief: () => void;
@@ -64,6 +66,7 @@ export function GeneralBar({
   onGroup,
   onOrganize,
   onStructure,
+  onWords,
   canBrief,
   onBrief,
   onTakes,
@@ -196,6 +199,8 @@ export function GeneralBar({
                 <button type="button" className="readout__act" onClick={onOrganize}>Organize</button>
                 <span aria-hidden="true">·</span>
                 <button type="button" className="readout__act" onClick={onStructure}>Structure</button>
+                <span aria-hidden="true">·</span>
+                <button type="button" className="readout__act" onClick={onWords}>Words</button>
                 {canGroup ? (
                   <>
                     <span aria-hidden="true">·</span>
@@ -326,6 +331,15 @@ export function GeneralBar({
                   <GroupIcon className="bar-icon__svg" />
                 </button>
               ) : null}
+              <button
+                type="button"
+                className="bar-icon bar-icon--words"
+                onClick={onWords}
+                aria-label="What these words mean"
+                data-tip="What these words mean"
+              >
+                ?
+              </button>
               <button
                 type="button"
                 className="bar-icon"

@@ -33,6 +33,8 @@ import { paginateBoard } from "./pagesLayout";
 import { BriefSheet } from "./BriefSheet";
 import { TakesPanel } from "./TakesPanel";
 import { AccountSheet } from "./AccountSheet";
+import { WordsSheet } from "./WordsSheet";
+import type { WordTarget } from "./board/words";
 import { ProjectPicker } from "./ProjectPicker";
 import { StoryMap } from "./StoryMap";
 import {
@@ -103,6 +105,7 @@ export function App() {
   const [accountOpen, setAccountOpen] = useState(false);
   // Start from a structure (R38).
   const [structureOpen, setStructureOpen] = useState(false);
+  const [wordsOpen, setWordsOpen] = useState(false);
   // The brief (R28, first step): for the selected card or cards.
   const [briefOpen, setBriefOpen] = useState(false);
   // Takes (R28, item 9): for the selected card or run.
@@ -211,6 +214,31 @@ export function App() {
     }
     return ids;
   }, [view, notes]);
+
+  // Show me (R42): light the thing on the wall a word names, for a moment.
+  // Fit the wall first so the thing is in the window. UI layer only.
+  function showWord(target: WordTarget) {
+    const selectors: Record<WordTarget, string[]> = {
+      card: [".note"],
+      logline: [".logline__question"],
+      beat: [".note.is-beat", ".note"],
+      change: [".note__change"],
+      corner: [".note.is-planted .note__fold", ".note__fold"],
+      arrow: [".note-arrow__line", ".note"],
+      length: [".note__length"],
+      cast: [".note .note__with-prefix", ".note"],
+      place: [".note .note__with-prefix + .note__with-prefix", ".note .note__with-prefix", ".note"],
+      group: [".note-group", ".note"],
+      strip: [".story-map"],
+    };
+    if (target !== "logline" && target !== "strip" && notes.length > 0) fitToWall();
+    window.setTimeout(() => {
+      const el = selectors[target].map((sel) => document.querySelector<HTMLElement>(sel)).find(Boolean);
+      if (!el) return;
+      el.classList.add("is-shown");
+      window.setTimeout(() => el.classList.remove("is-shown"), 2200);
+    }, 60);
+  }
 
   function fitToWall() {
     setView(fitView(notes, viewportSize()));
@@ -682,6 +710,7 @@ export function App() {
           }}
         />
         <AccountSheet open={accountOpen} onClose={() => setAccountOpen(false)} currentProjectId={project.id} />
+        <WordsSheet open={wordsOpen} onClose={() => setWordsOpen(false)} onShow={showWord} />
         <ProjectPicker currentProjectId={project.id} />
         <StructureSheet
           open={structureOpen}
@@ -759,6 +788,7 @@ export function App() {
         onCastNames={castNames}
         onLocation={setLocation}
         onStructure={() => setStructureOpen(true)}
+        onWords={() => setWordsOpen(true)}
         onHoverNote={setHoverNoteId}
         selectedIds={selectedIds}
         selectedArrowId={selectedArrowId}
@@ -808,6 +838,7 @@ export function App() {
         onGroup={groupSelected}
         onOrganize={organizeNotes}
         onStructure={() => setStructureOpen(true)}
+        onWords={() => setWordsOpen(true)}
         canBrief={selectedIds.length > 0}
         onBrief={() => setBriefOpen(true)}
         onTakes={() => {

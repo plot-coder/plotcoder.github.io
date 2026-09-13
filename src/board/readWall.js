@@ -165,7 +165,7 @@ export function readWall(state) {
       findings.push({
         kind: "sag",
         ids: [longest.from, longest.to],
-        text: `About ${pages(longest.eighths)} pages run between "${headline(longest.from)}" and "${headline(longest.to)}"; a typical run here is about ${pages(typical)}. Is something sagging there, or is it one long set piece?`,
+        text: `About ${pages(longest.eighths)} pages run between "${headline(longest.from)}" and "${headline(longest.to)}"; the middle run here is about ${pages(typical)} (a beat's own pages are in no run). Is something sagging there, or is it one long set piece?`,
       });
     }
   }
@@ -308,8 +308,10 @@ export function readWall(state) {
     }
   }
 
-  // A frame too big to be one sequence.
+  // A frame too big to be one sequence. A group titled as an act ("Act two")
+  // is an act, not a sequence, and is not asked about.
   for (const group of state.groups) {
+    if (/^act\b/i.test((group.title ?? "").trim())) continue;
     const members = group.noteIds.map((id) => byId.get(id)).filter(Boolean);
     const total = members.reduce((sum, note) => sum + noteEighths(note), 0);
     if (total > SEQUENCE_MAX_EIGHTHS) {

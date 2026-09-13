@@ -417,3 +417,18 @@ describe("two beats back to back", () => {
     expect(readWall(state).findings.filter((finding) => finding.kind === "empty")).toHaveLength(0);
   });
 });
+
+describe("act groups", () => {
+  it("does not ask whether an act is one sequence or two", () => {
+    let state = emptyState();
+    const ids: string[] = [];
+    for (let i = 0; i < 4; i += 1) {
+      state = applyCommand(state, { type: "create_note", headline: `Scene ${i}`, change: "Something turns.", x: i * 300, y: 0, lengthEighths: 8 * 8 }).state;
+      ids.push(state.notes[i].id);
+    }
+    state = applyCommand(state, { type: "create_group", noteIds: ids, title: "Act two" }).state;
+    expect(readWall(state).findings.filter((finding) => finding.kind === "sequence")).toHaveLength(0);
+    state = applyCommand(state, { type: "rename_group", id: state.groups[0].id, title: "The heist" }).state;
+    expect(readWall(state).findings.filter((finding) => finding.kind === "sequence")).toHaveLength(1);
+  });
+});

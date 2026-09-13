@@ -29,7 +29,7 @@ export const AGENTS = {
     {
       id: "where",
       name: "Where the wall lives",
-      text: "Without an account, a wall is a folder: the app run from that folder shows it, and the server writes it there (PLOTCODER_ROOT). A fresh folder holds the sample; new_board for the writer's wall, or replace the sample. No app running? export_fountain is the wall in order, as text. PLOTCODER_JSON=0 drops the JSON tail from replies.",
+      text: "Without an account, a wall is a folder: any folder, empty is fine — choose one that will outlive your session, never a scratch one. The app run from that folder shows the wall, and the server writes it there (PLOTCODER_ROOT). A fresh folder holds the sample; new_board for the writer's wall, then rename_project. No app running? export_fountain is the wall in order, as text. PLOTCODER_JSON=0 drops the JSON tail from replies.",
     },
   ],
   first: [
@@ -43,7 +43,7 @@ export const AGENTS = {
     "No opinions about how many beats there should be.",
     "Page counts are estimates.",
     "Ask before delete_board, unlock_numbers, remove_file, or claim_account — the writer gives the email and the password; never invent one.",
-    "Do not invent people or a logline. An unnamed person in a treatment is named by their role — Dana's mother, the dispatcher — which is a name until the writer gives one. A beat is a whole card; a setup arrow lands on the scene's card, so a payoff never needs a card of its own. Acts are groups titled Act one, Act two, when the treatment has them. Paper colour means nothing to the app.",
+    "Do not invent people or a logline. What the treatment states — an age, a job, a bad knee — is not invented: it goes in the person's notes. An unnamed person is named by their role — Dana's mother, the dispatcher — which is a name until the writer gives one. A scene is one place and one stretch of time; a new place or time is a new card. A beat is a whole card; a setup arrow lands on the scene's card, so a payoff never needs a card of its own. Acts are groups titled Act one, Act two, when the treatment has them; the wall never asks whether an act is a sequence. Paper colour means nothing to the app. Under target is a fact to report plainly, like over; neither is a verdict.",
   ],
   person:
     "Give your agent the account door only on a machine you trust; it signs in as you and shows under People as “an agent, as you” while it runs. Your agent can also make your account: give it your email and a password of your choosing.",
@@ -53,7 +53,7 @@ export const AGENTS = {
 
 /** The on-ramp as one text: the file at /llms.txt, and what an agent reads. */
 export function agentsAsText() {
-  const lines = ["# PlotCoder — for agents", "", AGENTS.lead, "", "## Doors"];
+  const lines = ["# PlotCoder — for agents", "", AGENTS.lead, "", `The guide, read once before anything: ${AGENTS.guide}.`, "", "## Doors"];
   for (const door of AGENTS.doors) {
     lines.push(`- ${door.name}: ${door.text}`);
     if (door.code) lines.push("", "```", door.code, "```", "");

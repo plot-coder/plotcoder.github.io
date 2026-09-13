@@ -26,9 +26,13 @@ import {
 type PagesPanelProps = {
   open: boolean;
   wide: boolean;
-  /** As text (the editor) or as pages (the print, R23 c). */
-  view: "text" | "pages";
-  onView: (view: "text" | "pages") => void;
+  /** As text (the editor), as pages (the print, R23 c), or as outline (the list, Roadmap 2 item 4). */
+  view: "text" | "pages" | "outline";
+  onView: (view: "text" | "pages" | "outline") => void;
+  /** The outline's drag: put a card after another, on the wall. */
+  onMoveAfter: (id: string, afterId: string | null) => void;
+  /** Where each card is for the outline's lines: places and cast by name. */
+  castNames: (note: BoardNote) => string;
   board: BoardState;
   reading: WallReading | null;
   /** The card whose scene should be in view: the selected one, or the one just clicked. */
@@ -52,7 +56,11 @@ export function PagesPanel({
   onToggleWide,
   onSetText,
   onFocusScene,
+  onMoveAfter,
+  castNames,
 }: PagesPanelProps) {
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [overId, setOverId] = useState<string | null>(null);
   const byId = useMemo(() => new Map(board.notes.map((note) => [note.id, note])), [board.notes]);
   const order = useMemo(
     () => (reading ? reading.order.map((id) => byId.get(id)).filter(Boolean) as BoardNote[] : board.notes),
@@ -81,7 +89,7 @@ export function PagesPanel({
   }, [open, onClose]);
 
   // The pages (R23 c): computed from the same order, never stored.
-  const pages = useMemo(() => (open && view === "pages" ? paginateBoard(board, reading) : null), [open, view, board, reading]);
+  const pages = useMemo(() => (open && view !== "text" ? paginateBoard(board, reading) : null), [open, view, board, reading]);
 
   if (!open) return null;
 
@@ -105,6 +113,9 @@ export function PagesPanel({
             <button type="button" className={`pages__seg-btn ${view === "pages" ? "is-on" : ""}`} aria-pressed={view === "pages"} onClick={() => onView("pages")}>
               As pages
             </button>
+            <button type="button" className={`pages__seg-btn ${view === "outline" ? "is-on" : ""}`} aria-pressed={view === "outline"} onClick={() => onView("outline")}>
+              As outline
+            </button>
           </span>
           {view === "pages" ? (
             <button type="button" className="cast-lens__action" onClick={() => window.print()}>
@@ -120,7 +131,77 @@ export function PagesPanel({
         </div>
       </div>
 
-      {pages ? (
+      {pages && view === "outline" ? (
+        <div className="pages__sheet pages__outline" ref={listRef}>
+          <ol className="outline" aria-label="Outline">
+            <li
+              className={`outline__top ${overId === "__top" ? "is-over" : ""}`}
+              onDragOver={(event) => {
+                event.preventDefault();
+                setOverId("__top");
+              }}
+              onDragLeave={() => setOverId((current) => (current === "__top" ? null : current))}
+              onDrop={(event) => {
+                event.preventDefault();
+                if (dragId) onMoveAfter(dragId, null);
+                setDragId(null);
+                setOverId(null);
+              }}
+            >
+              {dragId ? "Drop here to make it the first scene" : ""}
+            </li>
+            {pages.order.map((note, index) => {
+              const scene = pages.scenes[index];
+              const measured = isMeasured(note);
+              const beat = note.rank === "beat";
+              return (
+                <li
+                  key={note.id}
+                  className={`outline__scene ${beat ? "is-beat" : ""} ${note.id === focusId ? "is-focus" : ""} ${dragId === note.id ? "is-drag" : ""} ${overId === note.id ? "is-over" : ""}`}
+                  data-scene={note.id}
+                  draggable
+                  onDragStart={(event) => {
+                    setDragId(note.id);
+                    event.dataTransfer.effectAllowed = "move";
+                    event.dataTransfer.setData("text/plain", note.id);
+                  }}
+                  onDragEnd={() => {
+                    setDragId(null);
+                    setOverId(null);
+                  }}
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                    setOverId(note.id);
+                  }}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    if (dragId && dragId !== note.id) onMoveAfter(dragId, note.id);
+                    setDragId(null);
+                    setOverId(null);
+                  }}
+                  onClick={() => onFocusScene(note.id)}
+                >
+                  <span className="outline__n">{scene?.number}</span>
+                  <span className={`outline__sw outline__sw--${note.color}`} aria-hidden="true" />
+                  <span className="outline__headline">
+                    {note.headline || "Untitled"}
+                    <span className="outline__meta">
+                      {note.location ? ` · ${note.location}` : ""}
+                      {castNames(note) ? ` · ${castNames(note)}` : ""}
+                    </span>
+                  </span>
+                  <span className="outline__pages">{measured ? `p. ${scene?.page}` : `≈${formatPages(noteEighths(note))} pp`}</span>
+                  <span className="outline__tag">{beat ? "beat" : ""}</span>
+                </li>
+              );
+            })}
+          </ol>
+          <p className="pages__print-note">
+            The wall's reading order as a list. Drag a scene and its card moves on the wall to sit after the
+            one above it; Organize tidies the row.
+          </p>
+        </div>
+      ) : pages ? (
         <div className="pages__sheet pages__sheet--print" ref={listRef}>
           {/* On screen: one continuous page, the editor. The page turns are drawn where the paginator puts them. */}
           <div className="script">

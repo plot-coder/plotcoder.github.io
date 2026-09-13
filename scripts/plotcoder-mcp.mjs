@@ -37,7 +37,7 @@ import {
 } from "../src/board/reducer.js";
 import { TEMPLATES } from "../src/board/templates.js";
 import { fromFountain, mergeFountain, toFountain } from "../src/board/fountain.js";
-import { fromFdx, toFdx } from "../src/board/fdx.js";
+import { describeSetAside, fromFdx, toFdx } from "../src/board/fdx.js";
 import { paginate } from "../src/board/paginate.js";
 import { readingOrder } from "../src/board/readWall.js";
 import { sceneHeading } from "../src/board/fountain.js";
@@ -907,7 +907,8 @@ server.registerTool(
     for (const command of commands) ({ live } = await commit(command));
     const written = commands.filter((command) => command.type === "set_text").length;
     const created = matched.filter((item) => item.created).length;
-    return ok(`Imported ${parsed.scenes.length} scene(s) from Final Draft: ${written} written onto cards, ${created} new card(s)${where(live)}.`, matched);
+    const receipt = describeSetAside(parsed.setAside);
+    return ok(`Imported ${parsed.scenes.length} scene(s) from Final Draft: ${written} written onto cards, ${created} new card(s)${where(live)}.${receipt ? ` ${receipt}` : ""}`, matched);
   },
 );
 

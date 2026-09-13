@@ -66,9 +66,9 @@ export function ProjectModal({ open, onOpen, onClose, onSignIn, onPrint }: Proje
       const text = await file.text();
       if (/\.fdx$/i.test(file.name) || /<FinalDraft\b/.test(text.slice(0, 400))) {
         // A Final Draft script: its scenes land on the open board's cards.
-        const { written, created } = openFdxText(text);
+        const { written, created, setAside } = openFdxText(text);
         setError(null);
-        setNotice(`Read ${file.name}: ${written} scene${written === 1 ? "" : "s"} written onto cards, ${created} new card${created === 1 ? "" : "s"}.`);
+        setNotice(`Read ${file.name}: ${written} scene${written === 1 ? "" : "s"} written onto cards, ${created} new card${created === 1 ? "" : "s"}.${setAside ? ` ${setAside}` : ""}`);
         return;
       }
       if (/\.fountain$/i.test(file.name) || !text.trimStart().startsWith("{")) {

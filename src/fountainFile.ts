@@ -2,7 +2,7 @@
 // `.fountain` file, named for the board. The text itself comes from the
 // kernel-side module every door shares.
 
-import { fromFdx, toFdx } from "./board/fdx";
+import { describeSetAside, fromFdx, toFdx } from "./board/fdx";
 import { fromFountain, mergeFountain, toFountain } from "./board/fountain";
 import { boardById } from "./board/project";
 import { boardStore } from "./board/store";
@@ -74,7 +74,7 @@ export function downloadFdx(): void {
 }
 
 /** Final Draft in: a document's scenes onto the open board's cards, never deleting. */
-export function openFdxText(xml: string): { written: number; created: number } {
+export function openFdxText(xml: string): { written: number; created: number; setAside: string } {
   const parsed = fromFdx(xml);
   const { commands, matched } = mergeFountain(boardStore.getState(), parsed);
   for (const command of commands) boardStore.dispatch(command);
@@ -82,5 +82,6 @@ export function openFdxText(xml: string): { written: number; created: number } {
   return {
     written: commands.filter((command) => command.type === "set_text").length,
     created: matched.filter((item) => item.created).length,
+    setAside: describeSetAside(parsed.setAside),
   };
 }

@@ -2359,6 +2359,175 @@ body {
   }
 }
 
+/* --- Pictures on a person's page (Roadmap 2, item 5) ----------------------- */
+
+.cast-page__text--muted {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.cast-page__pictures.is-over {
+  background: var(--slot);
+  border-radius: 0.3rem;
+}
+
+.cast-page__gallery {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.4rem;
+  margin: 0.3rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cast-page__picture {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  border-radius: 0.25rem;
+  overflow: hidden;
+  background: var(--slot);
+}
+
+.cast-page__picture img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.cast-page__picture-remove {
+  position: absolute;
+  top: 0.2rem;
+  right: 0.2rem;
+  width: 1.3rem;
+  height: 1.3rem;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(17, 17, 16, 0.7);
+  color: #fff;
+  font: inherit;
+  line-height: 1;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.cast-page__picture:hover .cast-page__picture-remove,
+.cast-page__picture-remove:focus-visible {
+  opacity: 1;
+}
+
+.cast-page__picture-actions {
+  display: flex;
+  gap: 0.8rem;
+  margin-top: 0.45rem;
+}
+
+.cast-page__add {
+  cursor: pointer;
+}
+
+/* --- The outline (Roadmap 2, item 4) --------------------------------------- */
+
+.pages__outline {
+  padding: 0.6rem 0.9rem 3rem;
+  font-family: "Iowan Old Style", Palatino, Georgia, serif;
+}
+
+.outline {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.outline__top {
+  min-height: 0.6rem;
+  margin: 0 0 0.2rem;
+  border-radius: 0.3rem;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.66rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.outline__top.is-over {
+  background: var(--slot);
+  padding: 0.3rem;
+}
+
+.outline__scene {
+  display: grid;
+  grid-template-columns: 1.6rem 0.6rem minmax(0, 1fr) auto 2.6rem;
+  gap: 0.5rem;
+  align-items: baseline;
+  padding: 0.35rem 0.45rem;
+  border-radius: 0.3rem;
+  cursor: grab;
+}
+
+.outline__scene:hover {
+  background: var(--slot);
+}
+
+.outline__scene.is-focus {
+  background: var(--slot);
+}
+
+.outline__scene.is-beat {
+  margin-top: 0.6rem;
+  border-top: 1px solid var(--bar-border);
+  padding-top: 0.6rem;
+}
+
+.outline__scene.is-beat .outline__headline {
+  font-weight: 600;
+}
+
+.outline__scene.is-drag {
+  opacity: 0.4;
+}
+
+.outline__scene.is-over {
+  box-shadow: inset 0 -2px 0 var(--over);
+}
+
+.outline__n,
+.outline__pages,
+.outline__tag {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.outline__sw {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 0.12rem;
+  align-self: center;
+}
+
+.outline__sw--yellow { background: #ffe56a; }
+.outline__sw--pink { background: #ffb6c8; }
+.outline__sw--blue { background: #9fd4f5; }
+.outline__sw--green { background: #c4e48a; }
+.outline__sw--orange { background: #ffc98a; }
+
+.outline__headline {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.98rem;
+}
+
+.outline__meta {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
 /* --- The page as the editor (R23 c, Roadmap 2 item 2) ---------------------- */
 
 .print-only {

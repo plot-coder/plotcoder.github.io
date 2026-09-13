@@ -315,7 +315,8 @@ Add new items at the bottom of this list. Do not renumber. If a requirement dies
   - **c3 · Final Draft out** (`src/board/fdx.js`): one Paragraph per element, `DualDialogue` for a pair, `SceneProperties` and `Number` on each heading by wall order, the title page from the project with a line saying numbers are not locked. **Save as Final Draft** on the transfer sheet; `export_fdx` for agents.
   - **c4 · Final Draft in:** a small reader of exactly the tags Final Draft writes — styled `Text` runs joined, entities unescaped, `DualDialogue` flattened with the dual mark, numbers kept — into the same scenes Fountain in produces, then the same merge: by heading and order, never deleting. Open project takes a `.fdx`; `import_fdx` for agents; `page_count` gives an agent the page each scene starts on. **Round trip:** out then in changes nothing on the wall, and Final Draft in reads back exactly what Fountain in reads.
   - **The page as the editor (Roadmap 2, item 2, built 2026-09-13):** As pages is one continuous Letter-wide page on screen, and every scene on it is editable in place (`src/SceneEditor.tsx`): each of the writer's lines is one line, styled by what it is from the same rules the paginator reads by (`classifyLines`, pure, tested), at its column. Nothing computed is inside the text: the page turns are drawn beside the line the paginator says they fall on — a dashed rule with the new page's number, and `(MORE)` above and `NAME (CONT'D)` below when the turn falls inside a speech — and cannot be selected or deleted. Type and the turn moves. The store's copy lands only while the caret is elsewhere, as the card's lines do. Print sets the same script as separate pages.
-  - **Honest limits:** the reader was tested against a file written by hand in Final Draft's shape and against this app's own writer, not yet against a file Final Draft itself wrote; scene numbers are computed and not locked (question 23); no A/B pages or revision colours. Forty-six tools.
+  - **The receipt (Roadmap 2, item 3, built 2026-09-13):** Final Draft in now reads what a production draft carries that the wall does not hold — script notes, revision marks, locked scene numbers, forced page breaks, paragraph types read as action — and says so on the sheet and from the tool: "Kept out of the wall: … Nothing was deleted." A script note's text stays out of the paragraph it was pinned to.
+  - **Honest limits:** the reader is still untested against a file Final Draft itself wrote — the receipt is built from the format's documented attributes; scene numbers are computed and not locked (question 23); no A/B pages or revision colours. Forty-six tools.
 
 ### R24 — The wall is bigger than the window
 
@@ -465,7 +466,7 @@ Add new items at the bottom of this list. Do not renumber. If a requirement dies
 
 - **Status:** **built** 2026-09-13 (roadmap item 3; mocked two homes, asked, revised, built)
 - **Date:** 2026-09-13
-- **Statement:** Every person in the cast has a **page**: what they look like, how they sound, what they want, what they need, and the notes a writer pulls up mid-scene. Five lines, all text, on the roster record R29 gave an id for the purpose. A picture waits for file storage.
+- **Statement:** Every person in the cast has a **page**: what they look like, how they sound, what they want, what they need, and the notes a writer pulls up mid-scene. Five lines, all text, on the roster record R29 gave an id for the purpose — and, since Roadmap 2 item 5, **pictures**, as files on the project.
 - **Why:** The roster promised it ("long term it holds what each person looks like and the details a writer needs to pull up", R29). Looks and voice are what the horizon (R28) hands a video agent for a person; wants and needs are the method's two questions about a person (R18). It is the Navigator finished: the page about Maya answers "where is Maya in Act 2?".
 - **As built:**
   - **Kernel:** `looks`, `voice`, `wants`, `needs`, `notes` on a character, empty by default; `update_character` takes an id and any subset, ignores unknown fields, and changes nothing for the same words. `filledCharacterFields` says which lines are written. **Seventh board migration:** a roster written before the page gets the five lines empty; the seed roster carries them.
@@ -582,7 +583,7 @@ The left column is the activity list already recorded in the combine log from cu
 | Beat Board — cards on a canvas | The wall: cards, colour, groups, directed arrows, rank, pan/zoom | — |
 | Story Map — beats against a page axis with a target | **Built** (R32): a strip under the wall with beats, runs, setups, unpaid folds, and the target; click to jump; the cast lens lights a person's scenes | A lane per person at once, if a season ever needs it |
 | Structure templates | **Built** (R38): five structures as rows of beat cards, the house method first | A writer's own structure, saved from a wall |
-| Outline Editor — scenes with lengths, reordered in a list | Cards carry length; the wall gives the order | A linear outline **view** of the wall (a view, not a second model — see the combine log) |
+| Outline Editor — scenes with lengths, reordered in a list | **Built** (Roadmap 2 item 4): As outline in the pages panel, drag to reorder and the card moves | — |
 | Index cards bound two ways to the script | **Built** (R23 b): a scene's text lives on its card; click a card to reach its scene, the caret in a scene lights its card | Pagination (R23 c) |
 | Navigator — filter the story by character or location | **Built**: the cast lens (R29) by person, and its Places list (R37) by place | — |
 | Reports — scenes, characters, locations | `list_board` lists the cast with a card count and page lines each, and each card's place | A report by place |
@@ -733,6 +734,7 @@ Written 2026-09-13 at Robert's ask, after the first roadmap's nine were built an
 
 ### 3 · Final Draft, against the real thing (R23 c)
 
+- **Status:** the receipt **built** 2026-09-13; the test against a file Final Draft itself wrote still waits for one.
 - **Decide first:** obtain a file Final Draft itself wrote — Robert has the app or knows someone who does.
 - **Mock first — no.** Plumbing.
 - **Build:** the reader tested against that file; whatever it writes that the hand-made sample did not (styles, page-break flags, `ScriptNotes`, revision marks) read or knowingly dropped; the writer's output opened in Final Draft and checked on screen.
@@ -741,6 +743,7 @@ Written 2026-09-13 at Robert's ask, after the first roadmap's nine were built an
 
 ### 4 · The outline — the wall as a list (parity table)
 
+- **Status:** **built** 2026-09-13. As outline, the pages panel's third view: every scene as one line — number, colour, headline, place, cast, pages — beats set off; drag a line and the card moves on the wall to sit after the one above it, on that row; drop at the top to make it first. A view over `readingOrder`, no second model; Organize tidies the row.
 - **Decide first:** what reordering in a list does to a free wall. Recommend: the list is reading order; dragging a scene in it moves the card to sit after the one above it, on the row it now belongs to — an Organize of one card — so the list and the wall never disagree.
 - **Mock first — yes.** A list beside the wall (the pages panel's third view, As outline?) or the Story Map grown tall; scenes with headline, place, cast and pages, beats as headings; drag to reorder.
 - **Build:** a view over `readingOrder`, no second model (the combine log's rule); drag that dispatches `move_note`; the same `pageOf` the cards use.
@@ -749,6 +752,7 @@ Written 2026-09-13 at Robert's ask, after the first roadmap's nine were built an
 
 ### 5 · Files on the project — a picture on a person's page (R36), and the store the horizon needs
 
+- **Status:** **built** 2026-09-13, with Robert's two additions: several pictures at once, and all of them as one package. A private `projects` bucket on PlotCoder's own project, a folder per project, access by membership like the tables; an `assets` row per file (project, kind, subject, path, name, size, type, who, when) carried live over Realtime. On a person's page: drop pictures or add several, a gallery, remove one, **Download all** as a zip written by a small stored-zip module of our own (`src/board/zip.js`, tested against the standard CRC). Signed out, the page says where pictures would live. The same bucket and row are where the horizon's takes go (item 9).
 - **Decide first:** Supabase Storage on PlotCoder's own project, a bucket per project, access by membership like the tables. Recommend yes; it is the last thing the tables cannot hold.
 - **Mock first — yes, small.** The picture on the page, and how it is added (drop, or pick).
 - **Build:** the bucket and its policies; an `assets` table (project, kind, path, who, when); the picture on the person's page; the mirror carrying asset rows. This is also where the horizon's takes and prompts will live (R28), so the shape is decided here.
@@ -1006,3 +1010,4 @@ Add a dated heading and your verdict. Challenge requirements, don’t just affir
 | 2026-09-13 | **Merged and deployed** pull request #8 — pages that print, Final Draft, hover names. Then **Roadmap 2** written at Robert's ask: what remains, in order — put a real story through the app first; the way back from a forgotten password before anyone real signs in; the page as the editor; Final Draft against a real file; the outline as a list; files on the project; the remote agent door; the small things; the production half; the horizon. |
 | 2026-09-13 | **Roadmap 2, item 1: the way back.** Robert chose to make the email the identity rather than a name with an email beside it. The writers table is keyed by email, sharing is by email, the edge function claims and changes an address, and Forgotten? sends Supabase's own reset link, which lands on a new-password form with no rules. The redirect URLs still need adding in the dashboard for the link to land on plotcoder.com. |
 | 2026-09-13 | **Roadmap 2, item 2: the page as the editor.** As pages is one continuous page on screen and every scene on it edits in place, each line styled by what it is from the paginator's own rules; the page turns, (MORE) and (CONT'D) are drawn beside the lines and never inside the text. Print stays separate pages. |
+| 2026-09-13 | **Roadmap 2, items 3, 4 and 5.** Final Draft in says what it set aside. The outline is the pages panel's third view, drag to reorder and the card follows. Files on the project: a private bucket with membership rules, an assets table, pictures on a person's page several at a time, and Download all as a zip from a stored-zip writer of our own. |

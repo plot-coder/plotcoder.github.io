@@ -47,6 +47,24 @@ export type ProjectSummary = {
 
 export type Person = { name: string; role: "owner" | "writer"; userId: string };
 
+/** A file on the project (Roadmap 2, item 5): a picture on a person's page, a take, or anything. */
+export type Asset = {
+  id: string;
+  projectId: string;
+  kind: "picture" | "take" | "file";
+  /** What it is about: a character id, a card id, or empty. */
+  subject: string;
+  path: string;
+  name: string;
+  size: number;
+  contentType: string;
+  owner: string;
+  note: string;
+  createdAt: string;
+  /** A signed address good for an hour, for showing and fetching. */
+  url: string | null;
+};
+
 export type Account = {
   /** The session has been looked for; until then the sheets say nothing about accounts. */
   ready: boolean;
@@ -70,6 +88,10 @@ export type Account = {
   recovering: boolean;
   /** A reset link was sent to this address. */
   resetSentTo: string | null;
+  /** The files on the open project. */
+  assets: Asset[];
+  /** Files on their way up: how many. */
+  uploading: number;
 };
 
 export type NameStatus = "free" | "taken" | "invalid" | "unknown";
@@ -89,6 +111,8 @@ type Bookkeeping = {
 const BOOKKEEPING_KEY = "sb-plotcoder-sync";
 const PROJECTS = "projects";
 const BOARDS = "boards";
+const ASSETS = "assets";
+const BUCKET = "projects";
 const PUSH_DELAY = 800;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -176,6 +200,8 @@ class AccountStore {
     busy: false,
     recovering: false,
     resetSentTo: null,
+    assets: [],
+    uploading: 0,
   };
   private books: Bookkeeping | null = null;
   private client: SupabaseClient | null = null;
@@ -578,9 +604,111 @@ class AccountStore {
 
   // --- live (R41) -----------------------------------------------------------
 
+  // --- files (Roadmap 2, item 5) --------------------------------------------
+
+  /** Every file on the open project, with a signed address for each. */
+  loadAssets = async (): Promise<void> => {
+    if (!this.client || !this.books) return;
+    const { data, error } = await this.client.from(ASSETS).select("*").eq("project_id", this.books.projectId).order("created_at");
+    if (error) return;
+    const rows = (data ?? []) as Array<Record<string, unknown>>;
+    const paths = rows.map((row) => String(row.path));
+    const signed = paths.length ? await this.client.storage.from(BUCKET).createSignedUrls(paths, 3600) : { data: [] as Array<{ path: string | null; signedUrl: string }> };
+    const urlOf = new Map((signed.data ?? []).map((item) => [item.path ?? "", item.signedUrl]));
+    const assets: Asset[] = rows.map((row) => ({
+      id: String(row.id),
+      projectId: String(row.project_id),
+      kind: (row.kind as Asset["kind"]) ?? "file",
+      subject: String(row.subject ?? ""),
+      path: String(row.path),
+      name: String(row.name ?? ""),
+      size: Number(row.size ?? 0),
+      contentType: String(row.content_type ?? "application/octet-stream"),
+      owner: String(row.owner ?? ""),
+      note: String(row.note ?? ""),
+      createdAt: String(row.created_at ?? ""),
+      url: urlOf.get(String(row.path)) ?? null,
+    }));
+    this.set({ assets });
+  };
+
+  /** Add files to the project: a picture on a person's page, or anything about a card. */
+  addFiles = async (files: File[], kind: Asset["kind"], subject: string): Promise<number> => {
+    if (!this.client || !this.books || !this.account.user) {
+      this.set({ error: "Sign in to keep files on the project." });
+      return 0;
+    }
+    const projectId = this.books.projectId;
+    let added = 0;
+    this.set({ uploading: this.account.uploading + files.length, error: null });
+    try {
+      for (const file of files) {
+        const safe = file.name.replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "") || "file";
+        const path = `${projectId}/${kind}/${crypto.randomUUID()}-${safe}`;
+        const up = await this.client.storage.from(BUCKET).upload(path, file, { contentType: file.type || "application/octet-stream", upsert: false });
+        if (up.error) {
+          this.set({ error: up.error.message });
+          continue;
+        }
+        const row = await this.client.from(ASSETS).insert({
+          project_id: projectId,
+          kind,
+          subject,
+          path,
+          name: file.name,
+          size: file.size,
+          content_type: file.type || "application/octet-stream",
+        });
+        if (row.error) {
+          await this.client.storage.from(BUCKET).remove([path]);
+          this.set({ error: row.error.message });
+          continue;
+        }
+        added += 1;
+      }
+    } finally {
+      this.set({ uploading: Math.max(0, this.account.uploading - files.length) });
+    }
+    await this.loadAssets();
+    return added;
+  };
+
+  removeAsset = async (id: string): Promise<boolean> => {
+    if (!this.client || !this.books) return false;
+    const asset = this.account.assets.find((item) => item.id === id);
+    if (!asset) return false;
+    const gone = await this.client.from(ASSETS).delete().eq("id", id);
+    if (gone.error) {
+      this.set({ error: gone.error.message });
+      return false;
+    }
+    await this.client.storage.from(BUCKET).remove([asset.path]);
+    await this.loadAssets();
+    return true;
+  };
+
+  /** The bytes of these files as one zip: <folder>/<name>. */
+  packageAssets = async (assets: Asset[], folder: string): Promise<Uint8Array> => {
+    const { zip } = await import("./zip");
+    const entries: Array<{ name: string; bytes: Uint8Array; date: string }> = [];
+    const seen = new Map<string, number>();
+    for (const asset of assets) {
+      if (!asset.url) continue;
+      const response = await fetch(asset.url);
+      if (!response.ok) continue;
+      const bytes = new Uint8Array(await response.arrayBuffer());
+      const count = (seen.get(asset.name) ?? 0) + 1;
+      seen.set(asset.name, count);
+      const name = count === 1 ? asset.name : asset.name.replace(/(\.[^.]*)?$/, ` ${count}$1`);
+      entries.push({ name: `${folder}/${name}`, bytes, date: asset.createdAt });
+    }
+    return zip(entries);
+  };
+
   private joinChannel(projectId: string): void {
     if (!this.client || !this.account.user) return;
     this.leaveChannel();
+    void this.loadAssets();
     const me = this.account.user;
     const channel = this.client.channel(`project:${projectId}`, { config: { presence: { key: me.id } } });
     channel
@@ -589,6 +717,9 @@ class AccountStore {
       })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: PROJECTS, filter: `id=eq.${projectId}` }, (payload) => {
         void this.onLiveProject(payload.new as Partial<ProjectRow>);
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: ASSETS, filter: `project_id=eq.${projectId}` }, () => {
+        void this.loadAssets();
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "members", filter: `project_id=eq.${projectId}` }, () => {
         void this.loadPeople();
@@ -614,7 +745,7 @@ class AccountStore {
       void this.client.removeChannel(this.channel);
       this.channel = null;
     }
-    this.set({ present: [] });
+    this.set({ present: [], assets: [] });
   }
 
   private async onLiveBoard(event: string, row: Partial<BoardRow>): Promise<void> {

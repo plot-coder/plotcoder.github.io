@@ -7,6 +7,7 @@ import {
   OrganizeIcon,
   StructureIcon,
   BriefIcon,
+  TakesIcon,
   WallIcon,
   RedoIcon,
   ThemeIcon,
@@ -255,32 +256,42 @@ export function GeneralBar({
               </span>
             </div>
 
+            {/* The verbs as their icons (Robert, 2026-09-13), each named after a
+                second like the strip's; the words moved into the names. */}
             <div className="readout__line readout__line--do">
               <span className="readout__k">Do</span>
-              <span className="readout__acts readout__acts--wrap">
-                <button type="button" className="readout__act" onClick={onNewNote}>New note</button>
-                <span aria-hidden="true">·</span>
-                <button type="button" className="readout__act" onClick={onUndo} disabled={!canUndo}>Undo</button>
-                <span aria-hidden="true">·</span>
-                <button type="button" className="readout__act" onClick={onRedo} disabled={!canRedo}>Redo</button>
-                <span aria-hidden="true">·</span>
-                <button type="button" className="readout__act" onClick={onOrganize}>Organize</button>
-                <span aria-hidden="true">·</span>
-                <button type="button" className="readout__act" onClick={onStructure}>Structure</button>
-                <span aria-hidden="true">·</span>
-                <button type="button" className="readout__act" onClick={onWords}>Words</button>
+              <span className="readout__icons">
+                <button type="button" className="bar-icon" onClick={onNewNote} aria-label="New note" data-tip="New note">
+                  <NoteIcon className="bar-icon__svg" />
+                </button>
+                <button type="button" className="bar-icon" onClick={onUndo} disabled={!canUndo} aria-label="Undo" data-tip="Undo">
+                  <UndoIcon className="bar-icon__svg" />
+                </button>
+                <button type="button" className="bar-icon" onClick={onRedo} disabled={!canRedo} aria-label="Redo" data-tip="Redo">
+                  <RedoIcon className="bar-icon__svg" />
+                </button>
+                <button type="button" className="bar-icon" onClick={onOrganize} aria-label="Organize notes" data-tip="Organize notes">
+                  <OrganizeIcon className="bar-icon__svg" />
+                </button>
+                <button type="button" className="bar-icon" onClick={onStructure} aria-label="Start from a structure" data-tip="Start from a structure">
+                  <StructureIcon className="bar-icon__svg" />
+                </button>
+                <button type="button" className="bar-icon bar-icon--words" onClick={onWords} aria-label="What these words mean" data-tip="What these words mean">
+                  ?
+                </button>
                 {canGroup ? (
-                  <>
-                    <span aria-hidden="true">·</span>
-                    <button type="button" className="readout__act" onClick={onGroup}>Group</button>
-                  </>
+                  <button type="button" className="bar-icon" onClick={onGroup} aria-label="Group selected notes" data-tip="Group selected notes">
+                    <GroupIcon className="bar-icon__svg" />
+                  </button>
                 ) : null}
                 {canBrief ? (
                   <>
-                    <span aria-hidden="true">·</span>
-                    <button type="button" className="readout__act" onClick={onBrief}>Brief</button>
-                    <span aria-hidden="true">·</span>
-                    <button type="button" className="readout__act" onClick={onTakes}>Takes</button>
+                    <button type="button" className="bar-icon" onClick={onBrief} aria-label="Brief the selected scenes for video" data-tip="Brief the selected scenes for video">
+                      <BriefIcon className="bar-icon__svg" />
+                    </button>
+                    <button type="button" className="bar-icon" onClick={onTakes} aria-label="Takes for the selected scenes" data-tip="Takes for the selected scenes">
+                      <TakesIcon className="bar-icon__svg" />
+                    </button>
                   </>
                 ) : null}
               </span>

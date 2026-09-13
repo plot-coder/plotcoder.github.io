@@ -210,7 +210,9 @@ export function StoryMap({
           {pageTicks(layout.spanEighths).map((tick) => (
             <g key={tick}>
               <line className="story-map__tick" x1={x(tick)} y1={axisY} x2={x(tick)} y2={axisY + 4} />
-              {open ? (
+              {/* A page number gives way to the target label when the target is
+                  still ahead and the two would share the axis's end (Robert, 2026-09-13). */}
+              {open && !(!layout.targetInRange && x(layout.spanEighths) - x(tick) < 72) ? (
                 <text className="story-map__page" x={x(tick)} y={axisY + 15}>
                   {tick / EIGHTHS_PER_PAGE}
                 </text>
@@ -242,7 +244,7 @@ export function StoryMap({
               x={x(layout.spanEighths)}
               y={axisY + 15}
             >
-              {formatPages(layout.targetEighths)} →
+              target {formatPages(layout.targetEighths)} →
             </text>
           ) : null}
 

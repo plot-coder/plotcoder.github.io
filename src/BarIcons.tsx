@@ -65,6 +65,17 @@ export function WallIcon({ className }: IconProps) {
   );
 }
 
+/** Takes: a clapper over a frame. */
+export function TakesIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="4" y="9" width="16" height="10" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M4 9l2.2-4h13.6L18 9" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M8.5 5.2l2 3.8M12.5 5.2l2 3.8M16.5 5.2l1.8 3.6" stroke="currentColor" strokeWidth="1.4" />
+    </svg>
+  );
+}
+
 export function GroupIcon({ className }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" aria-hidden="true">

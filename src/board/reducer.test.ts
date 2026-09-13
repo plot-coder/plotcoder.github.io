@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { sceneNumbers } from "./numbering";
 import {
+  formatMinutes,
   applyCommand,
   atPlace,
   boardPlaces,
@@ -1148,5 +1149,17 @@ describe("the production half (Roadmap 2, item 8)", () => {
     expect(repaired.lock).toBeNull();
     expect(repaired.revision).toBeNull();
     expect(normalizeState(repaired)).toBe(repaired);
+  });
+});
+
+describe("formatMinutes: a page a minute", () => {
+  it("rounds eighths to whole minutes, and turns to hours past sixty", () => {
+    expect(formatMinutes(0)).toBe("0 minutes");
+    expect(formatMinutes(8)).toBe("1 minute");
+    expect(formatMinutes(17 * 8 + 4)).toBe("17 minutes");
+    expect(formatMinutes(17 * 8 + 7)).toBe("17 minutes");
+    expect(formatMinutes(60 * 8)).toBe("1 hour");
+    expect(formatMinutes(120 * 8)).toBe("2 hours");
+    expect(formatMinutes(124 * 8)).toBe("2 h 4 min");
   });
 });

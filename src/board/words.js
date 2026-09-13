@@ -118,7 +118,7 @@ export const WORD_GROUPS = [
       {
         id: "runtime",
         name: "Runtime and target",
-        sentence: "What the cards add up to, against the length you are aiming at: 120 pages is a feature, 60 an hour, 30 a half.",
+        sentence: "What the cards add up to, against the length you are aiming at: 120 pages is a feature, 60 an hour, 30 a half. A page runs about a minute on screen.",
       },
       {
         id: "reminders",

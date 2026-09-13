@@ -26,6 +26,8 @@ export declare function isMeasured(note: BoardNote): boolean;
 export declare function boardEighths(state: BoardState): number;
 /** Eighths as a breakdown writes them: "1 3/8", "97", "5/8". */
 export declare function formatPages(eighths: number): string;
+/** Eighths as screen time, a page a minute: "17 minutes", "2 hours", "2 h 4 min". */
+export declare function formatMinutes(eighths: number): string;
 
 export declare const NOTE_WIDTH: number;
 export declare const NOTE_HEIGHT: number;

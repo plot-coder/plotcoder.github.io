@@ -7,14 +7,16 @@ import {
   OrganizeIcon,
   StructureIcon,
   BriefIcon,
+  TakesIcon,
   WallIcon,
   RedoIcon,
   ThemeIcon,
   UndoIcon,
 } from "./BarIcons";
 import { EditableText } from "./EditableText";
-import { EIGHTHS_PER_PAGE, formatPages } from "./board/reducer";
-import { formatNextChange, type Theme } from "./theme";
+import { EIGHTHS_PER_PAGE, formatMinutes, formatPages } from "./board/reducer";
+import { formatNextChange, type Theme, type ThemeSource } from "./theme";
+import { wordSentence } from "./board/words";
 
 export type BarLayer = "dock" | "strip" | "tall";
 
@@ -22,6 +24,9 @@ type GeneralBarProps = {
   layer: BarLayer;
   theme: Theme;
   scheduled: Theme;
+  /** Whose choice the canvas is: the clock's, or the writer's until the next clock. */
+  source: ThemeSource;
+  onSetTheme: (mode: Theme | "clock") => void;
   onToggleTheme: () => void;
   onSetLayer: (layer: BarLayer) => void;
   onNewNote: () => void;
@@ -45,6 +50,8 @@ type GeneralBarProps = {
   asks: number;
   onAsks: () => void;
   beats: number;
+  /** Light the beat cards or the scene cards on the wall; with no beats, open Structure. */
+  onShowRank: (rank: "beat" | "scene") => void;
   scenes: number;
   runtimeEighths: number;
   targetEighths: number;
@@ -59,6 +66,8 @@ export function GeneralBar({
   theme,
   scheduled,
   onToggleTheme,
+  source,
+  onSetTheme,
   onSetLayer,
   onNewNote,
   canUndo,
@@ -78,6 +87,7 @@ export function GeneralBar({
   zoom,
   canFit,
   beats,
+  onShowRank,
   scenes,
   runtimeEighths,
   targetEighths,
@@ -131,22 +141,38 @@ export function GeneralBar({
           {/* The readout: the facts the strip cannot say, one line each, and
               the verbs as words for anyone who never found the strip. */}
           <div className="readout">
+            {/* Light | Dark | Clock as words (R9, "The Canvas Line"): the current one
+                in ink, and a plain note saying what the clock does next. */}
             <div className="readout__line">
               <span className="readout__k">Canvas</span>
               <span className="readout__v readout__v--compact">
-                {theme === "dark" ? "Black" : "White"}{" "}
-                <span className="readout__note">· {followingClock ? "follows the clock" : "until the next clock"} · {nextChange.toLowerCase()}</span>
+                <span className="readout__views" role="group" aria-label="Canvas">
+                  {(["light", "dark", "clock"] as const).map((mode, index) => {
+                    const on = mode === "clock" ? source === "auto" : source === "manual" && theme === mode;
+                    return (
+                      <span key={mode} className="readout__view-slot">
+                        {index > 0 ? (
+                          <span className="readout__bar" aria-hidden="true">
+                            |
+                          </span>
+                        ) : null}
+                        <button type="button" className={`readout__view ${on ? "is-on" : ""}`} aria-pressed={on} onClick={() => onSetTheme(mode)}>
+                          {mode === "light" ? "Light" : mode === "dark" ? "Dark" : "Clock"}
+                        </button>
+                      </span>
+                    );
+                  })}
+                </span>
+                <br />
+                <span className="readout__note">
+                  {source === "manual"
+                    ? followingClock
+                      ? `your choice · the clock agrees · ${nextChange.toLowerCase()}`
+                      : `your choice · the clock turns it ${nextChange.toLowerCase()}`
+                    : `light by day, dark from 8:00 pm`}
+                </span>
               </span>
-              <button
-                type="button"
-                className={`theme-switch theme-switch--${theme} theme-switch--small`}
-                onClick={onToggleTheme}
-                aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} canvas`}
-              >
-                <span className="theme-switch__knob" />
-                <span className="theme-switch__sun" aria-hidden="true" />
-                <span className="theme-switch__moon" aria-hidden="true" />
-              </button>
+              <span />
             </div>
 
             {/* The count and nothing else. No nudge under 8, no warning over 15 —
@@ -154,14 +180,36 @@ export function GeneralBar({
             <div className="readout__line">
               <span className="readout__k">Shape</span>
               <span className="readout__v">
-                {beats} {beats === 1 ? "beat" : "beats"} · {scenes} {scenes === 1 ? "scene" : "scenes"}
+                {/* A count points at what it counts: click lights those cards; with
+                    no beats yet, the click opens Structure, the way a wall gets its first. */}
+                <button
+                  type="button"
+                  className="readout__count has-tip"
+                  data-tip={beats === 0 ? `No beats yet. ${wordSentence("beat")} Click to start from a structure.` : `${wordSentence("beat")} Click to light them on the wall.`}
+                  onClick={() => onShowRank("beat")}
+                >
+                  {beats} {beats === 1 ? "beat" : "beats"}
+                </button>
+                {" · "}
+                <button
+                  type="button"
+                  className="readout__count has-tip"
+                  data-tip={`${wordSentence("scene")} Click to light them on the wall.`}
+                  onClick={() => onShowRank("scene")}
+                  disabled={scenes === 0}
+                >
+                  {scenes} {scenes === 1 ? "scene" : "scenes"}
+                </button>
               </span>
               <span />
             </div>
 
             {/* An estimate, and it says so. The target sits beside it — over or
                 under is the only judgement the bar makes. */}
-            <div className={`readout__line ${over > 0 ? "is-over" : ""}`}>
+            <div
+              className={`readout__line has-tip ${over > 0 ? "is-over" : ""}`}
+              data-tip={`A page runs about a minute on screen — fast for dialogue, slow for action — so ${formatPages(runtimeEighths)} pages is about ${formatMinutes(runtimeEighths)}. An estimate: unwritten scenes are your guesses.`}
+            >
               <span className="readout__k">Runtime</span>
               <span className="readout__v">
                 ≈{formatPages(runtimeEighths)} of{" "}
@@ -175,7 +223,10 @@ export function GeneralBar({
                 />{" "}
                 pages
                 {over > 0 ? ` · ${formatPages(over)} over` : ""}
-                <span className="readout__note"> · an estimate from the cards</span>
+                <br />
+                <span className="readout__note">
+                  about {formatMinutes(runtimeEighths)} of {formatMinutes(targetEighths)}
+                </span>
               </span>
               <span />
             </div>
@@ -205,32 +256,42 @@ export function GeneralBar({
               </span>
             </div>
 
+            {/* The verbs as their icons (Robert, 2026-09-13), each named after a
+                second like the strip's; the words moved into the names. */}
             <div className="readout__line readout__line--do">
               <span className="readout__k">Do</span>
-              <span className="readout__acts readout__acts--wrap">
-                <button type="button" className="readout__act" onClick={onNewNote}>New note</button>
-                <span aria-hidden="true">·</span>
-                <button type="button" className="readout__act" onClick={onUndo} disabled={!canUndo}>Undo</button>
-                <span aria-hidden="true">·</span>
-                <button type="button" className="readout__act" onClick={onRedo} disabled={!canRedo}>Redo</button>
-                <span aria-hidden="true">·</span>
-                <button type="button" className="readout__act" onClick={onOrganize}>Organize</button>
-                <span aria-hidden="true">·</span>
-                <button type="button" className="readout__act" onClick={onStructure}>Structure</button>
-                <span aria-hidden="true">·</span>
-                <button type="button" className="readout__act" onClick={onWords}>Words</button>
+              <span className="readout__icons">
+                <button type="button" className="bar-icon" onClick={onNewNote} aria-label="New note" data-tip="New note">
+                  <NoteIcon className="bar-icon__svg" />
+                </button>
+                <button type="button" className="bar-icon" onClick={onUndo} disabled={!canUndo} aria-label="Undo" data-tip="Undo">
+                  <UndoIcon className="bar-icon__svg" />
+                </button>
+                <button type="button" className="bar-icon" onClick={onRedo} disabled={!canRedo} aria-label="Redo" data-tip="Redo">
+                  <RedoIcon className="bar-icon__svg" />
+                </button>
+                <button type="button" className="bar-icon" onClick={onOrganize} aria-label="Organize notes" data-tip="Organize notes">
+                  <OrganizeIcon className="bar-icon__svg" />
+                </button>
+                <button type="button" className="bar-icon" onClick={onStructure} aria-label="Start from a structure" data-tip="Start from a structure">
+                  <StructureIcon className="bar-icon__svg" />
+                </button>
+                <button type="button" className="bar-icon bar-icon--words" onClick={onWords} aria-label="What these words mean" data-tip="What these words mean">
+                  ?
+                </button>
                 {canGroup ? (
-                  <>
-                    <span aria-hidden="true">·</span>
-                    <button type="button" className="readout__act" onClick={onGroup}>Group</button>
-                  </>
+                  <button type="button" className="bar-icon" onClick={onGroup} aria-label="Group selected notes" data-tip="Group selected notes">
+                    <GroupIcon className="bar-icon__svg" />
+                  </button>
                 ) : null}
                 {canBrief ? (
                   <>
-                    <span aria-hidden="true">·</span>
-                    <button type="button" className="readout__act" onClick={onBrief}>Brief</button>
-                    <span aria-hidden="true">·</span>
-                    <button type="button" className="readout__act" onClick={onTakes}>Takes</button>
+                    <button type="button" className="bar-icon" onClick={onBrief} aria-label="Brief the selected scenes for video" data-tip="Brief the selected scenes for video">
+                      <BriefIcon className="bar-icon__svg" />
+                    </button>
+                    <button type="button" className="bar-icon" onClick={onTakes} aria-label="Takes for the selected scenes" data-tip="Takes for the selected scenes">
+                      <TakesIcon className="bar-icon__svg" />
+                    </button>
                   </>
                 ) : null}
               </span>
@@ -254,15 +315,6 @@ export function GeneralBar({
           </button>
           {layer === "strip" ? (
             <div className="general-bar__strip">
-              <button
-                type="button"
-                className="bar-icon"
-                onClick={onToggleTheme}
-                aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} canvas`}
-                data-tip={`Switch to ${theme === "dark" ? "light" : "dark"} canvas`}
-              >
-                <ThemeIcon className="bar-icon__svg" />
-              </button>
               <button
                 type="button"
                 className="bar-icon"
@@ -307,12 +359,22 @@ export function GeneralBar({
                   +, the percent, − and Fit above it; closed, it carries the percent. */}
               <span className="bar-wall">
                 {wallOpen ? (
-                  <div className="bar-fly" role="group" aria-label="Wall zoom">
+                  <div className="bar-fly" role="group" aria-label="The view">
                     <button type="button" className="bar-icon" onClick={onZoomIn} aria-label="Zoom in" data-tip="Zoom in">+</button>
                     <span className="bar-fly__pct">{Math.round(zoom * 100)}%</span>
                     <button type="button" className="bar-icon" onClick={onZoomOut} aria-label="Zoom out" data-tip="Zoom out">−</button>
                     <button type="button" className="bar-icon" onClick={() => { onFit(); setWallOpen(false); }} disabled={!canFit} aria-label="Fit the whole wall" data-tip="Fit the whole wall">
                       <FitIcon className="bar-icon__svg" />
+                    </button>
+                    <span className="bar-fly__rule" aria-hidden="true" />
+                    <button
+                      type="button"
+                      className="bar-icon"
+                      onClick={onToggleTheme}
+                      aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} canvas`}
+                      data-tip={`Switch to ${theme === "dark" ? "light" : "dark"} canvas`}
+                    >
+                      <ThemeIcon className="bar-icon__svg" />
                     </button>
                   </div>
                 ) : null}
@@ -321,8 +383,8 @@ export function GeneralBar({
                   className={`bar-icon bar-icon--wall ${wallOpen ? "is-on" : ""}`}
                   onClick={() => setWallOpen((current) => !current)}
                   aria-expanded={wallOpen}
-                  aria-label="The wall: zoom and fit"
-                  data-tip="The wall: zoom and fit"
+                  aria-label="The view: zoom, fit and canvas"
+                  data-tip="The view: zoom, fit and canvas"
                 >
                   <WallIcon className="bar-icon__svg" />
                   <span className="bar-icon__pct">{Math.round(zoom * 100)}%</span>

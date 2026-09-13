@@ -2,6 +2,7 @@
 // `.fountain` file, named for the board. The text itself comes from the
 // kernel-side module every door shares.
 
+import { fromFdx, toFdx } from "./board/fdx";
 import { fromFountain, mergeFountain, toFountain } from "./board/fountain";
 import { boardById } from "./board/project";
 import { boardStore } from "./board/store";
@@ -40,6 +41,41 @@ export function downloadFountain(): void {
 /** Fountain in: a document's scenes onto the open board's cards, never deleting. */
 export function openFountainText(text: string): { written: number; created: number } {
   const parsed = fromFountain(text);
+  const { commands, matched } = mergeFountain(boardStore.getState(), parsed);
+  for (const command of commands) boardStore.dispatch(command);
+  boardStore.commit();
+  return {
+    written: commands.filter((command) => command.type === "set_text").length,
+    created: matched.filter((item) => item.created).length,
+  };
+}
+
+export function fdxText(): string {
+  const project = boardStore.getProject();
+  const board = boardById(project, project.activeBoardId);
+  return toFdx(boardStore.getState(), {
+    title: board?.name ?? "Untitled",
+    project: project.boards.length > 1 ? project.name : undefined,
+    draftDate: new Date().toISOString(),
+  });
+}
+
+/** Save as Final Draft: the open board as a .fdx file named for the board. */
+export function downloadFdx(): void {
+  const project = boardStore.getProject();
+  const board = boardById(project, project.activeBoardId);
+  const blob = new Blob([fdxText()], { type: "application/xml;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fountainFileName(board?.name ?? "plotcoder").replace(/\.fountain$/, ".fdx");
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+/** Final Draft in: a document's scenes onto the open board's cards, never deleting. */
+export function openFdxText(xml: string): { written: number; created: number } {
+  const parsed = fromFdx(xml);
   const { commands, matched } = mergeFountain(boardStore.getState(), parsed);
   for (const command of commands) boardStore.dispatch(command);
   boardStore.commit();

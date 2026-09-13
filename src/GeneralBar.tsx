@@ -211,6 +211,7 @@ export function GeneralBar({
                 className="bar-icon"
                 onClick={onToggleTheme}
                 aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} canvas`}
+                data-tip={`Switch to ${theme === "dark" ? "light" : "dark"} canvas`}
               >
                 <ThemeIcon className="bar-icon__svg" />
               </button>
@@ -219,6 +220,7 @@ export function GeneralBar({
                 className="bar-icon"
                 onClick={onNewNote}
                 aria-label="New note"
+                data-tip="New note"
               >
                 <NoteIcon className="bar-icon__svg" />
               </button>
@@ -228,6 +230,7 @@ export function GeneralBar({
                 onClick={onUndo}
                 disabled={!canUndo}
                 aria-label="Undo"
+                data-tip="Undo"
                 title="Undo (⌘Z)"
               >
                 <UndoIcon className="bar-icon__svg" />
@@ -238,6 +241,7 @@ export function GeneralBar({
                 onClick={onRedo}
                 disabled={!canRedo}
                 aria-label="Redo"
+                data-tip="Redo"
                 title="Redo (⇧⌘Z)"
               >
                 <RedoIcon className="bar-icon__svg" />
@@ -247,6 +251,7 @@ export function GeneralBar({
                 className="bar-icon"
                 onClick={onOrganize}
                 aria-label="Organize notes"
+                data-tip="Organize notes"
               >
                 <OrganizeIcon className="bar-icon__svg" />
               </button>
@@ -255,6 +260,7 @@ export function GeneralBar({
                 className="bar-icon"
                 onClick={onStructure}
                 aria-label="Start from a structure"
+                data-tip="Start from a structure"
                 title="Start from a structure"
               >
                 <StructureIcon className="bar-icon__svg" />
@@ -265,6 +271,7 @@ export function GeneralBar({
                   className="bar-icon"
                   onClick={onBrief}
                   aria-label="Brief the selected scenes for video"
+                data-tip="Brief the selected scenes for video"
                   title="Brief: everything the wall knows about this segment"
                 >
                   <BriefIcon className="bar-icon__svg" />
@@ -276,6 +283,7 @@ export function GeneralBar({
                   className="bar-icon"
                   onClick={onFit}
                   aria-label="Fit the whole wall"
+                data-tip="Fit the whole wall"
                 >
                   <FitIcon className="bar-icon__svg" />
                 </button>
@@ -286,6 +294,7 @@ export function GeneralBar({
                   className="bar-icon"
                   onClick={onGroup}
                   aria-label="Group selected notes"
+                data-tip="Group selected notes"
                 >
                   <GroupIcon className="bar-icon__svg" />
                 </button>

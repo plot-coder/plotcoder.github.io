@@ -52,6 +52,8 @@ type NoteBoardProps = {
   onStructure: () => void;
   /** Pages are open beside the wall (R23 b): the wall keeps to the left. */
   pagesOpen?: boolean;
+  /** The page a written scene starts on (R23 c). */
+  pageOf: Map<string, number>;
   onHoverNote: (id: string | null) => void;
   selectedIds: string[];
   selectedArrowId: string | null;
@@ -132,6 +134,7 @@ export function NoteBoard({
   onLocation,
   onStructure,
   pagesOpen = false,
+  pageOf,
   onHoverNote,
   selectedIds,
   selectedArrowId,
@@ -524,6 +527,7 @@ export function NoteBoard({
           }
           characters={characters}
           places={places}
+          page={pageOf.get(note.id) ?? null}
           onCastNames={onCastNames}
           onLocation={onLocation}
           onRaise={onRaise}

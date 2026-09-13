@@ -138,7 +138,9 @@ describe("plotcoder MCP server", () => {
       "delete_arrow",
       "delete_board",
       "delete_note",
+      "export_fdx",
       "export_fountain",
+      "import_fdx",
       "import_fountain",
       "list_board",
       "list_boards",
@@ -148,6 +150,7 @@ describe("plotcoder MCP server", () => {
       "new_board",
       "open_board",
       "organize",
+      "page_count",
       "read_pages",
       "read_wall",
       "recolor_note",
@@ -1163,6 +1166,21 @@ describe("the premise and reminders (roadmap item 6)", () => {
     const board = await door.callToolData("list_board");
     expect(board.notes.find((note) => note.id === "tom-lies").text).toBe("He says the job is fine.");
     expect(board.notes.some((note) => note.headline === "The Bank" && note.text === "There is no loan.")).toBe(true);
+  });
+
+  it("counts pages, writes a Final Draft file, and reads one back onto the cards", async () => {
+    const counted = await door.callTool("page_count");
+    expect(counted).toContain("pages: 1 of 120");
+    expect(counted).toContain("1. Maya finds the letter (maya-letter) — p. 1");
+    const target = path.join(doorRoot, "out", "board.fdx");
+    expect(await door.callTool("export_fdx", { path: target })).toContain("Wrote a Final Draft file");
+    const xml = fs.readFileSync(target, "utf8");
+    expect(xml).toContain('<Paragraph Type="Scene Heading" Number="1">');
+    const imported = await door.callTool("import_fdx", {
+      xml: xml.replace("<Text>Rain on the window.", "<Text>Rain, harder now."),
+    });
+    expect(imported).toContain("Imported");
+    expect(await door.callTool("export_fdx")).toContain("<FinalDraft");
   });
 
   it("lists the workflows and briefs a segment from the wall", async () => {

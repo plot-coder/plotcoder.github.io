@@ -37,6 +37,10 @@ import {
 } from "../src/board/reducer.js";
 import { TEMPLATES } from "../src/board/templates.js";
 import { fromFountain, mergeFountain, toFountain } from "../src/board/fountain.js";
+import { fromFdx, toFdx } from "../src/board/fdx.js";
+import { paginate } from "../src/board/paginate.js";
+import { readingOrder } from "../src/board/readWall.js";
+import { sceneHeading } from "../src/board/fountain.js";
 import { segmentBrief, WORKFLOWS } from "../src/board/workflows.js";
 import { DEFAULT_REMINDERS, titleFromBody } from "../src/board/reminders.js";
 import crypto from "node:crypto";
@@ -860,6 +864,72 @@ server.registerTool(
     const brief = segmentBrief(state, args.ids, { title: board?.name });
     if (!brief) return ok(`No cards with ids ${args.ids.join(", ")}. Call list_board.`);
     return ok(brief);
+  },
+);
+
+server.registerTool(
+  "export_fdx",
+  {
+    title: "Export as Final Draft",
+    description:
+      "The open board as a Final Draft .fdx: a heading per card with its scene number by wall order, the scene's text as script paragraphs (action, character, parenthetical, dialogue, dual dialogue, transition) or the change line as action when unwritten, and a title page. Pass a path to write the file; otherwise the XML comes back.",
+    inputSchema: { path: z.string().optional() },
+  },
+  async (args) => {
+    const { state } = await readBoard();
+    const { project } = await readProject();
+    const board = project.boards.find((item) => item.id === project.activeBoardId);
+    const xml = toFdx(state, { title: board?.name, project: project.boards.length > 1 ? project.name : undefined, draftDate: new Date().toISOString() });
+    if (args.path) {
+      fs.mkdirSync(path.dirname(path.resolve(args.path)), { recursive: true });
+      fs.writeFileSync(args.path, xml);
+      return ok(`Wrote a Final Draft file with ${state.notes.length} scene(s) to ${args.path}.`);
+    }
+    return ok(xml);
+  },
+);
+
+server.registerTool(
+  "import_fdx",
+  {
+    title: "Import a Final Draft script",
+    description:
+      "Read a Final Draft .fdx (by path) or its XML onto the open board: each scene's paragraphs become Fountain on the card with the same heading in order, a scene the wall does not have becomes a new card after the last matched one, and nothing is deleted.",
+    inputSchema: { path: z.string().optional(), xml: z.string().optional() },
+  },
+  async (args) => {
+    const source = args.xml ?? (args.path ? fs.readFileSync(args.path, "utf8") : null);
+    if (source === null) return ok("Nothing to import: pass a path or xml.");
+    const { state } = await readBoard();
+    const parsed = fromFdx(source);
+    const { commands, matched } = mergeFountain(state, parsed);
+    let live = false;
+    for (const command of commands) ({ live } = await commit(command));
+    const written = commands.filter((command) => command.type === "set_text").length;
+    const created = matched.filter((item) => item.created).length;
+    return ok(`Imported ${parsed.scenes.length} scene(s) from Final Draft: ${written} written onto cards, ${created} new card(s)${where(live)}.`, matched);
+  },
+);
+
+server.registerTool(
+  "page_count",
+  {
+    title: "Count the pages",
+    description:
+      "The open board paginated as a script — US Letter, Courier 12, fifty-five lines, headings kept with their scenes, dialogue broken with (MORE) and (CONT'D) — with the page each scene starts on. Written scenes are measured; unwritten ones set their change line as action.",
+    inputSchema: {},
+  },
+  async () => {
+    const { state } = await readBoard();
+    const order = readingOrder(state.notes);
+    const result = paginate(
+      order.map((note) => ({ id: note.id, heading: sceneHeading(note).slice(1), text: note.text, change: note.change, written: Boolean(note.text && note.text.trim()) })),
+    );
+    const lines = result.scenes.map((scene) => {
+      const note = order.find((item) => item.id === scene.id);
+      return `  - ${scene.number}. ${note?.headline ?? scene.id} (${scene.id}) — p. ${scene.page}${scene.endPage !== scene.page ? `–${scene.endPage}` : ""}`;
+    });
+    return ok([`pages: ${result.pageCount} of ${Math.round(state.targetEighths / 8)}`, ...lines].join("\n"), result.scenes);
   },
 );
 

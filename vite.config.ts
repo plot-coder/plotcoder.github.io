@@ -1,5 +1,6 @@
 import { defineConfig, type Plugin, type ViteDevServer } from "vite";
 import react from "@vitejs/plugin-react";
+import { VitePWA } from "vite-plugin-pwa";
 import fs from "node:fs";
 import path from "node:path";
 import type { IncomingMessage, ServerResponse } from "node:http";
@@ -244,5 +245,38 @@ function plotcoderBridge(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [react(), plotcoderBridge()],
+  plugins: [
+    react(),
+    plotcoderBridge(),
+    // The progressive web app (R3, D2; roadmap item 7): a manifest so the
+    // wall installs on a phone or a desktop, and a service worker that
+    // precaches the built app so it opens offline. localStorage is already
+    // the record when offline; this makes the app itself available too.
+    // Off in dev, so the dev bridge and the end-to-end suite see plain Vite.
+    VitePWA({
+      registerType: "autoUpdate",
+      includeAssets: ["icon.svg", "apple-touch-icon.png"],
+      manifest: {
+        name: "PlotCoder",
+        short_name: "PlotCoder",
+        description: "A storylining app for screenwriters. Break story on a digital corkboard, then write.",
+        theme_color: "#111110",
+        background_color: "#111110",
+        display: "standalone",
+        start_url: "/",
+        icons: [
+          { src: "icon-192.png", sizes: "192x192", type: "image/png" },
+          { src: "icon-512.png", sizes: "512x512", type: "image/png" },
+          { src: "icon-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+        ],
+      },
+      workbox: {
+        // The whole built app, so a wall opens with no network at all.
+        globPatterns: ["**/*.{js,css,html,svg,png,webmanifest}"],
+        // Never intercept the account (Supabase) or the dev bridge.
+        navigateFallbackDenylist: [/^\/__plotcoder\//],
+      },
+      devOptions: { enabled: false },
+    }),
+  ],
 });

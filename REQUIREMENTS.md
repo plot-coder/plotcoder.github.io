@@ -98,10 +98,11 @@ Add new items at the bottom of this list. Do not renumber. If a requirement dies
 
 ### R3 — Web first, PWA later
 
-- **Status:** confirmed
-- **Date:** 2026-09-12
-- **Statement:** The app must run as a normal website first. It must be structured so it can become an installable PWA without a rewrite.
-- **Why:** Fast to use while we invent it; later, usable on a phone or offline like a real writers’ tool.
+- **Status:** **built** 2026-09-13 (roadmap item 7; no mockup: platform)
+- **Date:** 2026-09-12; built 2026-09-13
+- **Statement:** The app runs as a normal website first, and is an installable progressive web app: a manifest, an icon, and a service worker that caches the built app so it opens offline and installs on a phone or a desktop.
+- **Why:** Fast to use while we invent it; usable on a phone or offline like a real writers' tool.
+- **As built:** `vite-plugin-pwa` in `vite.config.ts` writes the manifest and a Workbox service worker that precaches the whole built app (fourteen files) and updates quietly on the next open; off in dev, so the dev bridge and the end-to-end suite see plain Vite. The icon is a yellow card on black, `public/icon.svg`, rendered to the PNG sizes install needs. The service worker never touches the account or the bridge; localStorage was already the record when offline. **HTTPS:** GitHub Pages issued the certificate for `plotcoder.com` and `www.plotcoder.com` on 2026-09-13 once the custom domain was removed and re-added through the API (it had been stuck since v0.1.0), and Enforce HTTPS is on; the certificate renews itself.
 
 ### R4 — Supabase as the system of record
 
@@ -553,9 +554,9 @@ The left column is the activity list already recorded in the combine log from cu
 
 | Decision | Requirement | Status |
 | --- | --- | --- |
-| Progressive web app | D2 / R3 | not started — no manifest, no service worker |
+| Progressive web app | D2 / R3 | **built** 2026-09-13: manifest, icon, service worker precaching the app |
 | Supabase as system of record | D3 / D9 / R4 | **built** (R4): magic-link sign-in, the project mirrored to the account, conflicts as a second board; no Realtime, one project per writer |
-| HTTPS on plotcoder.com | changelog, v0.1.0 | **still open** — checked 2026-09-12: `https://plotcoder.com` does not answer, `http://` does |
+| HTTPS on plotcoder.com | changelog, v0.1.0 | **done** 2026-09-13: certificate approved for the apex and www, Enforce HTTPS on |
 | Logline on narrow screens | R19 | hidden below 60rem; no small-screen layout for it |
 
 ### Open questions still open
@@ -629,6 +630,7 @@ Five pieces sit uncommitted on the worktree branch — the auto-fitting axis, th
 
 ### 7 · Platform
 
+- **Status:** **built** 2026-09-13; see R3. The certificate needed the domain removed and re-added, not an unproxied DNS record — the records already pointed straight at Pages.
 - **Goal:** installable, and secure. No mockup.
 - **Build:** the progressive web app — a manifest and a service worker that caches the built app, so it opens offline and installs on a phone (R3, D2); the HTTPS certificate on plotcoder.com, which was still failing at the last check — most likely the Cloudflare DNS record must be unproxied for GitHub Pages to issue its certificate, then "Enforce HTTPS" in the Pages settings.
 - **Size:** one session.
@@ -848,3 +850,4 @@ Add a dated heading and your verdict. Challenge requirements, don’t just affir
 | 2026-09-13 | **Roadmap item 4: built R37, where a scene happens.** Mocked a fourth line on the card beside a slugline eyebrow, asked, and kept the line as a phrase in the writer's words: hidden until hover when empty, completing from places already on the wall, with a Places list in the lens that fades the wall to a place, the scrub label reading it, and `set_location` for agents. Eighth board migration; a ninth end-to-end spec. |
 | 2026-09-13 | **Roadmap item 5: built R38, start from a structure, answering question 7.** Mocked a Structure button with a preview sheet beside an empty wall offering chips, asked, and joined them: the empty wall's hint opens the sheet, which previews the beats on this target and says what it will do to this wall. Five structures as data — turns, three acts, eight sequences, fifteen beats, story circle — laid out as beat cards by one kernel command, one undo step, one tool. |
 | 2026-09-13 | **Roadmap item 6: the agent backlog.** Reminders now ride the dev bridge's project channel beside the record and the boards, so `set_premise`, `rename_project`, `list_reminders`, `add_reminder` and `remove_reminder` exist — thirty-seven tools. The built-in reminders moved to a DOM-free module the server shares. Scatter left the bar, as the combine log said it could once undo arrived. `window.plotcoder` gained named methods for rank, length, logline, target, place, page, structure and premise. No mockup: tools and plumbing. |
+| 2026-09-13 | **Roadmap item 7: the platform.** PlotCoder is a progressive web app: a manifest, an icon, and a service worker that precaches the built app so it opens offline and installs. And `https://plotcoder.com` finally answers: the Pages certificate had never been issued since v0.1.0; removing and re-adding the custom domain through the API made GitHub issue it within a minute, and Enforce HTTPS is on. |

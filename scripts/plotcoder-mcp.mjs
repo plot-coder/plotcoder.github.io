@@ -140,6 +140,171 @@ async function findBridge() {
   return null;
 }
 
+// --- The account door (Roadmap 2, item 6) -----------------------------------
+//
+// With PLOTCODER_EMAIL and PLOTCODER_PASSWORD in the environment — the
+// writer's own, never a service key — and no dev bridge answering, the server
+// works the writer's project on the account directly: the same rows, the
+// same revisions, and every change landing on every open wall over Realtime.
+// PLOTCODER_PROJECT picks the project by name or id; otherwise the most
+// recently touched. The password is hashed here exactly as the browser does.
+
+const ACCOUNT = "account";
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? "https://kmpahjsggbleygsnuwug.supabase.co";
+const SUPABASE_KEY = process.env.VITE_SUPABASE_KEY ?? "sb_publishable_nTTiV21Fva9zp8kvcbf6Kg_ZPOgB6Th";
+let accountDoor = null;
+let accountTried = false;
+
+function hashPassword(email, password) {
+  return crypto.createHash("sha256").update(`plotcoder\n${email.trim().toLowerCase()}\n${password}`).digest("hex");
+}
+
+async function findAccount() {
+  const email = process.env.PLOTCODER_EMAIL;
+  const password = process.env.PLOTCODER_PASSWORD;
+  if (!email || !password) return null;
+  if (accountDoor) return accountDoor;
+  if (accountTried) return null;
+  accountTried = true;
+  try {
+    const { createClient } = await import("@supabase/supabase-js");
+    // Node before 22 has no WebSocket of its own; `ws` stands in, for Realtime presence.
+    let transport;
+    try {
+      transport = (await import("ws")).default;
+    } catch {
+      transport = undefined;
+    }
+    const client = createClient(SUPABASE_URL, SUPABASE_KEY, {
+      auth: { persistSession: false, autoRefreshToken: true },
+      ...(transport ? { realtime: { transport } } : {}),
+    });
+    const signedIn = await client.auth.signInWithPassword({ email: email.trim().toLowerCase(), password: hashPassword(email, password) });
+    if (signedIn.error || !signedIn.data.user) {
+      log("account door: sign-in failed:", signedIn.error?.message);
+      return null;
+    }
+    accountDoor = { client, user: signedIn.data.user, email: email.trim().toLowerCase(), projectId: null, channel: null };
+    await chooseProject(process.env.PLOTCODER_PROJECT ?? "");
+    return accountDoor;
+  } catch (error) {
+    log("account door: unavailable:", error);
+    return null;
+  }
+}
+
+/** The writer's projects, newest first. */
+async function accountProjects() {
+  const { data, error } = await accountDoor.client.rpc("my_projects");
+  if (error) throw new Error(error.message);
+  return (data ?? []).filter((row) => isProjectRecord(row.record)).map((row) => ({ ...row, record: normalizeProject(row.record) }));
+}
+
+/** Pick the project by name or id, or the most recent; with none, make one from the file. */
+async function chooseProject(key) {
+  const projects = await accountProjects();
+  const wanted = key.trim().toLowerCase();
+  let chosen =
+    projects.find((row) => row.id === key) ??
+    projects.find((row) => row.record.name.trim().toLowerCase() === wanted) ??
+    (wanted ? null : projects[0]);
+  if (!chosen && wanted && projects.length) {
+    log(`account door: no project called "${key}"; using the most recent`);
+    chosen = projects[0];
+  }
+  if (!chosen) {
+    // The account holds nothing: the file's project becomes its first.
+    const file = readFileProject();
+    const board = readFileBoard();
+    let record = file ? file.project : emptyProject();
+    const boards = file ? file.boards : { [record.activeBoardId]: board.state };
+    record = { ...record, name: record.name || "From the agent" };
+    const inserted = await accountDoor.client.from("projects").insert({ id: record.id, record, reminders: file?.reminders ?? null, rev: 1 });
+    if (inserted.error) throw new Error(inserted.error.message);
+    for (const meta of record.boards) {
+      const state = isBoardState(boards[meta.id]) ? normalizeState(boards[meta.id]) : emptyState();
+      await accountDoor.client.from("boards").insert({ id: meta.id, project_id: record.id, state, rev: 1, updated_by: null });
+    }
+    chosen = { id: record.id, record };
+  }
+  accountDoor.projectId = chosen.id;
+  joinPresence(chosen.id);
+  return chosen;
+}
+
+/** "an agent, as robert" under People while the server is up; best effort. */
+function joinPresence(projectId) {
+  try {
+    if (accountDoor.channel) void accountDoor.client.removeChannel(accountDoor.channel);
+    const channel = accountDoor.client.channel(`project:${projectId}`, { config: { presence: { key: `${accountDoor.user.id}-agent` } } });
+    channel.subscribe((status) => {
+      if (status === "SUBSCRIBED") void channel.track({ name: `an agent, as ${accountDoor.email}` });
+    });
+    accountDoor.channel = channel;
+  } catch (error) {
+    log("account door: presence unavailable:", error);
+  }
+}
+
+async function accountReadProject() {
+  const { data, error } = await accountDoor.client.from("projects").select("id, record, reminders, rev").eq("id", accountDoor.projectId).maybeSingle();
+  if (error || !data || !isProjectRecord(data.record)) throw new Error(error?.message ?? "the project is gone from the account");
+  const project = normalizeProject(data.record);
+  const rows = await accountDoor.client.from("boards").select("id, state, rev").eq("project_id", project.id);
+  const boards = {};
+  const revs = {};
+  for (const row of rows.data ?? []) {
+    if (isBoardState(row.state)) boards[row.id] = normalizeState(row.state);
+    revs[row.id] = row.rev;
+  }
+  return { project, boards, revs, reminders: Array.isArray(data.reminders) ? data.reminders : null, rev: data.rev, base: ACCOUNT, live: ACCOUNT };
+}
+
+async function accountWriteProject(project, boards, rev, reminders) {
+  const patch = { record: project, rev: rev + 1, updated_at: new Date().toISOString(), ...(reminders ? { reminders } : {}) };
+  let done = await accountDoor.client.from("projects").update(patch).eq("id", project.id).eq("rev", rev).select("rev");
+  if (!done.error && done.data && done.data.length === 0) {
+    // Moved elsewhere since we read it: take the account's revision and write over it, once.
+    const fresh = await accountDoor.client.from("projects").select("rev").eq("id", project.id).maybeSingle();
+    const current = fresh.data?.rev ?? rev;
+    done = await accountDoor.client.from("projects").update({ ...patch, rev: current + 1 }).eq("id", project.id).eq("rev", current).select("rev");
+  }
+  if (done.error) throw new Error(done.error.message);
+  // Boards the record names that the account lacks are new; ones it no longer names go.
+  const have = await accountDoor.client.from("boards").select("id").eq("project_id", project.id);
+  const known = new Set((have.data ?? []).map((row) => row.id));
+  for (const meta of project.boards) {
+    if (!known.has(meta.id)) {
+      const state = isBoardState(boards[meta.id]) ? normalizeState(boards[meta.id]) : emptyState();
+      await accountDoor.client.from("boards").insert({ id: meta.id, project_id: project.id, state, rev: 1, updated_by: null });
+    }
+  }
+  const named = new Set(project.boards.map((meta) => meta.id));
+  const gone = [...known].filter((id) => !named.has(id));
+  if (gone.length) await accountDoor.client.from("boards").delete().in("id", gone);
+  return ACCOUNT;
+}
+
+async function accountReadBoard() {
+  const { project, boards, revs } = await accountReadProject();
+  const boardId = project.activeBoardId;
+  return { state: boards[boardId] ?? emptyState(), rev: revs[boardId] ?? 0, boardId, base: ACCOUNT, live: ACCOUNT };
+}
+
+async function accountWriteBoard(next, rev, boardId) {
+  // updated_by is null on purpose: the browser skips its own writes by user
+  // id, and the agent signs in as the writer.
+  const patch = { state: next, rev: rev + 1, updated_by: null, updated_at: new Date().toISOString() };
+  let done = await accountDoor.client.from("boards").update(patch).eq("id", boardId).eq("rev", rev).select("rev");
+  if (!done.error && done.data && done.data.length === 0) {
+    const fresh = await accountDoor.client.from("boards").select("rev").eq("id", boardId).maybeSingle();
+    const current = fresh.data?.rev ?? rev;
+    done = await accountDoor.client.from("boards").update({ ...patch, rev: current + 1 }).eq("id", boardId).eq("rev", current).select("rev");
+  }
+  if (done.error) throw new Error(done.error.message);
+  return ACCOUNT;
+}
+
 // --- Persistence -----------------------------------------------------------
 
 function readFileBoard() {
@@ -217,6 +382,7 @@ async function readProject() {
       log("bridge project read failed, using file:", error);
     }
   }
+  if (await findAccount()) return accountReadProject();
   const file = readFileProject();
   if (file) return { ...file, base: null, live: false };
   const board = readFileBoard();
@@ -229,6 +395,7 @@ async function readProject() {
 }
 
 async function writeProject(project, boards, rev, base, reminders = null) {
+  if (base === ACCOUNT) return accountWriteProject(project, boards, rev, reminders);
   if (base) {
     try {
       const res = await fetch(`${base}/__plotcoder/project`, {
@@ -281,11 +448,13 @@ async function readBoard() {
       log("bridge read failed, using file:", error);
     }
   }
+  if (await findAccount()) return accountReadBoard();
   const file = readFileBoard();
   return { ...file, base: null, live: false };
 }
 
 async function writeBoard(next, rev, base, boardId = null) {
+  if (base === ACCOUNT) return accountWriteBoard(next, rev, boardId);
   if (base) {
     try {
       const res = await fetch(`${base}/__plotcoder/board`, {
@@ -352,6 +521,7 @@ async function commit(command) {
 
 /** Where a change landed, for the tail of a tool's reply. */
 function where(live) {
+  if (live === ACCOUNT) return " (saved to the account; live on every open wall)";
   return live ? " (visible on the open board)" : " (written to file)";
 }
 
@@ -443,7 +613,7 @@ server.registerTool(
       ? `"${board.name}" (${project.boards.findIndex((item) => item.id === board.id) + 1} of ${project.boards.length} in "${project.name}")`
       : "board";
     return ok(
-      `PlotCoder ${which} (${live ? "live: app is open" : "from file: app not running"})\n${summarize(state)}`,
+      `PlotCoder ${which} (${live === ACCOUNT ? "the account, as " + accountDoor.email : live ? "live: app is open" : "from file: app not running"})\n${summarize(state)}`,
       state,
     );
   },
@@ -570,7 +740,7 @@ server.registerTool(
       x: args.x,
       y: args.y,
     });
-    return ok(`Created card${live ? " (visible on the open board)" : " (written to file)"}.`, result);
+    return ok(`Created card${where(live)}.`, result);
   },
 );
 
@@ -1315,7 +1485,7 @@ server.registerTool(
     const { project, boards, live } = await readProject();
     return ok(
       [
-        `Project "${project.name}" (${live ? "live: app is open" : "from file: app not running"})`,
+        `Project "${project.name}" (${live === ACCOUNT ? "the account, as " + accountDoor.email : live ? "live: app is open" : "from file: app not running"})`,
         `premise: ${project.premise ? `"${project.premise}"` : "(not set)"}`,
         `boards: ${project.boards.length}`,
         describeBoards(project, boards),
@@ -1416,6 +1586,51 @@ server.registerTool(
     if (!list.some((item) => item.id === args.id)) return ok(`No reminder with id ${args.id}. Call list_reminders.`);
     await writeProject(project, boards, rev, base, list.filter((item) => item.id !== args.id));
     return ok(`Removed reminder ${args.id}${where(live)}.`);
+  },
+);
+
+server.registerTool(
+  "list_projects",
+  {
+    title: "List the writer's projects",
+    description:
+      "Through the account door (PLOTCODER_EMAIL and PLOTCODER_PASSWORD in the environment, no app open): every project the writer is on, newest first, with its people, marking the one this server is working. Through the dev bridge or the file there is one project, the open one.",
+    inputSchema: {},
+  },
+  async () => {
+    const account = await findAccount();
+    if (!account) {
+      const { project, live } = await readProject();
+      return ok(`No account door: working "${project.name}" ${live ? "on the open app" : "from the file"}. Set PLOTCODER_EMAIL and PLOTCODER_PASSWORD to work the writer's account directly.`);
+    }
+    const projects = await accountProjects();
+    return ok(
+      [
+        `projects: ${projects.length} (as ${account.email})`,
+        ...projects.map((row) => `  - ${row.id} — "${row.record.name}"${row.id === account.projectId ? " (working)" : ""}: ${row.record.boards.length} board(s) · ${(row.people ?? []).join(", ")}`),
+      ].join("\n"),
+      projects.map((row) => ({ id: row.id, name: row.record.name, boards: row.record.boards.length, people: row.people })),
+    );
+  },
+);
+
+server.registerTool(
+  "open_project",
+  {
+    title: "Open a project",
+    description: "Through the account door: work another of the writer's projects, by name or id from list_projects. Every tool then works on it.",
+    inputSchema: { project: z.string().min(1) },
+  },
+  async (args) => {
+    const account = await findAccount();
+    if (!account) return ok("No account door: there is one project here, the open one. Set PLOTCODER_EMAIL and PLOTCODER_PASSWORD to work the writer's account.");
+    const projects = await accountProjects();
+    const wanted = args.project.trim().toLowerCase();
+    const found = projects.find((row) => row.id === args.project) ?? projects.find((row) => row.record.name.trim().toLowerCase() === wanted);
+    if (!found) return ok(`No project called "${args.project}". Call list_projects.`);
+    account.projectId = found.id;
+    joinPresence(found.id);
+    return ok(`Working "${found.record.name}" now (as ${account.email}).`, { id: found.id, name: found.record.name });
   },
 );
 

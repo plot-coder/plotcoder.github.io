@@ -214,3 +214,11 @@ for video. Read `list_reminders` first — they are the house style.
 `segment_brief` (R28, first step) briefs one card or a run of cards for a
 video tool from what the wall holds. It is text for the writer to approve;
 nothing is generated or sent, and no video tool is chosen yet.
+
+## The account door
+
+With `PLOTCODER_EMAIL` and `PLOTCODER_PASSWORD` in your environment — the
+writer's own — and no dev server running, every tool works the writer's
+project on the account directly, and each change lands on every open wall.
+`list_projects` shows what you can work; `open_project` switches. Prefer the
+open app's bridge when it is there; the account door is for when it is not.

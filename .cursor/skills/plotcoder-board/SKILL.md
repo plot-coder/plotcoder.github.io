@@ -89,6 +89,13 @@ lands on the exact same board a person sees.
   an empty list clears it. A name not in the roster is refused by name — call
   `add_character` first. Do not invent people; ask the writer who is in a scene.
 
+### Pages
+
+- `export_fountain` — the open board as a Fountain screenplay in wall order
+  (beats as sections, one scene per card, the change line as action). Pass
+  `path` to write a `.fountain` file. The stepping stone from the wall to a
+  document; pages themselves come after the wall reads right (R23).
+
 ### The project
 
 - `set_premise` / `rename_project` — the line above every board's logline, and

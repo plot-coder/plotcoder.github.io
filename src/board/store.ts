@@ -13,6 +13,7 @@
 //   3. window.plotcoder, so the same commands can be driven from the console.
 
 import { isReminderList, readReminders, writeReminders } from "../reminderStore";
+import { toFountain } from "./fountain";
 import { History } from "./history";
 import {
   addBoard as addBoardTo,
@@ -703,6 +704,8 @@ export type PlotCoderWindowApi = {
   updateCharacter: (id: string, patch: Partial<Record<CharacterField, string>>) => unknown;
   applyTemplate: (template: string) => unknown;
   setPremise: (premise: string) => void;
+  /** The open board as Fountain text (R23, slice a). */
+  fountain: () => string;
 };
 
 let windowApiInstalled = false;
@@ -736,6 +739,16 @@ export function installWindowApi(): void {
     updateCharacter: (id, patch) => boardStore.dispatch({ type: "update_character", id, ...patch }),
     applyTemplate: (template) => boardStore.dispatch({ type: "apply_template", template }),
     setPremise: (premise) => boardStore.setPremise(premise),
+    fountain: () => {
+      const project = boardStore.getProject();
+      const board = project.boards.find((item) => item.id === project.activeBoardId);
+      return toFountain(boardStore.getState(), {
+        title: board?.name,
+        project: project.boards.length > 1 ? project.name : undefined,
+        premise: project.premise || undefined,
+        draftDate: new Date().toISOString(),
+      });
+    },
   };
   (window as unknown as { plotcoder: PlotCoderWindowApi }).plotcoder = api;
 }

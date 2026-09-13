@@ -138,6 +138,7 @@ describe("plotcoder MCP server", () => {
       "delete_arrow",
       "delete_board",
       "delete_note",
+      "export_fountain",
       "list_board",
       "list_boards",
       "list_reminders",
@@ -1130,6 +1131,17 @@ describe("the premise and reminders (roadmap item 6)", () => {
     expect(await door.callTool("rename_project", { name: "The Letter" })).toContain('Project renamed to "The Letter"');
     expect(await door.callTool("list_boards")).toContain('Project "The Letter"');
     expect(await door.callTool("set_premise", { premise: "" })).toContain("Premise cleared");
+  });
+
+  it("exports the wall as Fountain, to the caller or to a file", async () => {
+    const text = await door.callTool("export_fountain");
+    expect(text).toContain("Title: Board 1");
+    expect(text).toContain(".MAYA FINDS THE LETTER");
+    expect(text).toContain("[[with Maya]]");
+    expect(text).toContain("She decides not to tell Tom.");
+    const target = path.join(doorRoot, "out", "board.fountain");
+    expect(await door.callTool("export_fountain", { path: target })).toContain("lines of Fountain");
+    expect(fs.readFileSync(target, "utf8")).toContain(".TOM LIES ABOUT THE JOB");
   });
 
   it("lists the built-in reminders, adds one of the writer's, and removes it", async () => {

@@ -10,6 +10,7 @@ import {
 import { accountStore, savedAgo, type SyncStatus } from "./board/account";
 import { boardStore } from "./board/store";
 import { downloadProject, importProject } from "./projectStore";
+import { downloadFountain } from "./fountainFile";
 
 type ProjectModalProps = {
   open: boolean;
@@ -161,6 +162,14 @@ export function ProjectModal({ open, onOpen, onClose }: ProjectModalProps) {
                 onClick={() => fileRef.current?.click()}
               >
                 Open project
+              </button>
+              <button
+                type="button"
+                className="project-action project-action--ghost"
+                onClick={() => downloadFountain()}
+                title="The open board as a Fountain screenplay, in wall order"
+              >
+                Save as Fountain
               </button>
               {signedIn ? (
                 <button

@@ -34,6 +34,7 @@ import {
   seedState,
 } from "../src/board/reducer.js";
 import { TEMPLATES } from "../src/board/templates.js";
+import { toFountain } from "../src/board/fountain.js";
 import { DEFAULT_REMINDERS, titleFromBody } from "../src/board/reminders.js";
 import crypto from "node:crypto";
 import { describeRuns, describeSetups, readWall } from "../src/board/readWall.js";
@@ -716,6 +717,33 @@ server.registerTool(
     if (!changed) return ok(`No structure called ${args.template}.`);
     const names = result.map((note) => note.headline).join(", ");
     return ok(`Laid out ${result.length} beats${where(live)}: ${names}.`, result);
+  },
+);
+
+server.registerTool(
+  "export_fountain",
+  {
+    title: "Export the wall as Fountain",
+    description:
+      "The open board as a Fountain screenplay: a title page (with the premise and logline in its notes), beats as sections, one scene per card in wall order — a forced heading from the card's place (or its headline), the headline as a synopsis, the cast and the fold as notes, the change line as action. Plain text a writer can open in any Fountain editor. Pass a path to write a .fountain file; otherwise the text comes back.",
+    inputSchema: { path: z.string().optional() },
+  },
+  async (args) => {
+    const { state } = await readBoard();
+    const { project } = await readProject();
+    const board = project.boards.find((item) => item.id === project.activeBoardId);
+    const text = toFountain(state, {
+      title: board?.name,
+      project: project.boards.length > 1 ? project.name : undefined,
+      premise: project.premise || undefined,
+      draftDate: new Date().toISOString(),
+    });
+    if (args.path) {
+      fs.mkdirSync(path.dirname(path.resolve(args.path)), { recursive: true });
+      fs.writeFileSync(args.path, text);
+      return ok(`Wrote ${text.split("\n").length} lines of Fountain to ${args.path}.`);
+    }
+    return ok(text);
   },
 );
 

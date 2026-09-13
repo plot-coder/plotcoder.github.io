@@ -36,7 +36,10 @@ season's episodes, or a writer's stories) under one name and one premise.
 ## Use the MCP tools, not the mouse
 
 The repo ships an MCP server (`plotcoder-board`, wired in `.cursor/mcp.json`
-and `.mcp.json`; run `npm ci` once first). Drive the board through its tools.
+and `.mcp.json`; run `npm ci` once first). That wiring is project-scoped: it
+loads when the session opens with the repo as its folder. To have it in any
+session, once: `claude mcp add plotcoder-board -s user -- node
+/path/to/plotcoder.github.io/scripts/plotcoder-mcp.mjs`. Drive the board through its tools.
 **Do not** open a browser and fake pointer drags — the tools and the human UI
 share one command kernel, so a tool call lands on the exact same board a person
 sees. No MCP where you are? `node scripts/plotcoder-call.mjs <tool> '{json}'`

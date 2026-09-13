@@ -3,7 +3,7 @@
 A storyline wall. Cards are scenes, beats are the big turns, arrows say what follows or pays off what. An agent driven by a person has every tool a person here has; the person directs, the agent operates. Call the tools; never fake a mouse.
 
 ## Doors
-- MCP: For Cursor or Claude Code: the server in the repo, github.com/plot-coder/plotcoder.github.io. Clone it, run npm ci once, then wire it by this. No MCP where you are? node scripts/plotcoder-call.mjs <tool> '{json}' makes one call from a shell; PLOTCODER_ROOT points the server at the folder whose wall you mean.
+- MCP: For Cursor or Claude Code: the server in the repo, github.com/plot-coder/plotcoder.github.io. Clone it, run npm ci once, then wire it by this. The wiring is project-scoped: it loads when a session opens with the repo as its folder. For any session anywhere, once: claude mcp add plotcoder-board -s user -- node /path/to/plotcoder.github.io/scripts/plotcoder-mcp.mjs. No MCP at all? node scripts/plotcoder-call.mjs <tool> '{json}' makes one call from a shell. PLOTCODER_ROOT points the server at the folder whose wall you mean; without it, the server uses the folder it runs from.
 
 ```
 {

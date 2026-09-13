@@ -25,6 +25,8 @@ type GeneralBarProps = {
   onScatter: () => void;
   zoom: number;
   canFit: boolean;
+  beats: number;
+  scenes: number;
   onFit: () => void;
   onZoomIn: () => void;
   onZoomOut: () => void;
@@ -44,6 +46,8 @@ export function GeneralBar({
   onScatter,
   zoom,
   canFit,
+  beats,
+  scenes,
   onFit,
   onZoomIn,
   onZoomOut,
@@ -109,6 +113,18 @@ export function GeneralBar({
               Scatter
             </button>
           ) : null}
+
+          {/* The count and nothing else. No nudge under 8, no warning over 15 —
+              the range is a guide the writer holds, not a rule we enforce (D21). */}
+          <div className="general-bar__item">
+            <div className="general-bar__item-copy">
+              <p className="general-bar__item-label">Shape</p>
+              <p className="general-bar__item-meta">
+                {beats} {beats === 1 ? "beat" : "beats"} · {scenes}{" "}
+                {scenes === 1 ? "scene" : "scenes"}
+              </p>
+            </div>
+          </div>
 
           <div className="general-bar__item">
             <div className="general-bar__item-copy">

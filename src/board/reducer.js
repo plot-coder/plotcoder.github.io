@@ -11,6 +11,10 @@
 
 export const NOTE_COLORS = ["yellow", "pink", "blue", "green", "orange"];
 
+// A beat is one of the 8-to-15 major turns. Everything else is a scene, which is
+// why "scene" is first: it is the default a card is born with (R20/R21).
+export const NOTE_RANKS = ["scene", "beat"];
+
 export const NOTE_WIDTH = 192;
 export const NOTE_HEIGHT = 192;
 
@@ -40,6 +44,7 @@ export function seedState(now = nowIso()) {
     y,
     rotate,
     z,
+    rank: "scene",
     createdAt: now,
     updatedAt: now,
   });
@@ -79,8 +84,25 @@ export function isBoardState(value) {
 export function normalizeState(value) {
   if (!isBoardState(value)) return emptyState();
   const logline = typeof value.logline === "string" ? value.logline : "";
-  if (value.logline === logline) return value;
-  return { ...value, logline };
+
+  // Cards written before R20 have no rank. They are scenes: a beat is something
+  // you mark deliberately, so the safe default is the one that claims nothing.
+  let ranked = false;
+  const notes = value.notes.map((note) => {
+    if (note && NOTE_RANKS.includes(note.rank)) return note;
+    ranked = true;
+    return { ...note, rank: "scene" };
+  });
+
+  if (value.logline === logline && !ranked) return value;
+  return { ...value, logline, notes: ranked ? notes : value.notes };
+}
+
+/** Beats vs scenes. The app shows this number and passes no judgement (D21). */
+export function countRanks(state) {
+  let beats = 0;
+  for (const note of state.notes) if (note.rank === "beat") beats += 1;
+  return { beats, scenes: state.notes.length - beats };
 }
 
 function maxZ(notes) {
@@ -113,6 +135,7 @@ export function applyCommand(state, command, now = nowIso()) {
         x: command.x ?? 140 + (n % 5) * 28,
         y: command.y ?? 140 + (n % 4) * 24,
         rotate: command.rotate ?? ((n % 5) - 2) * 1.1,
+        rank: NOTE_RANKS.includes(command.rank) ? command.rank : "scene",
         z: maxZ(state.notes) + 1,
         createdAt: now,
         updatedAt: now,
@@ -158,6 +181,21 @@ export function applyCommand(state, command, now = nowIso()) {
           : note,
       );
       return { state: { ...state, notes }, changed: true };
+    }
+
+    case "set_rank": {
+      const ids = new Set(command.ids);
+      if (ids.size === 0) return { state, changed: false };
+      const rank = NOTE_RANKS.includes(command.rank) ? command.rank : "scene";
+      const touched = [];
+      const notes = state.notes.map((note) => {
+        if (!ids.has(note.id) || note.rank === rank) return note;
+        const next = bump(note, { rank }, now);
+        touched.push(next);
+        return next;
+      });
+      if (touched.length === 0) return { state, changed: false };
+      return { state: { ...state, notes }, changed: true, result: touched };
     }
 
     case "recolor_notes": {

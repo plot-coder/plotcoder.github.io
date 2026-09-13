@@ -739,6 +739,64 @@ body {
 .note--green { background: #c4e48a; }
 .note--orange { background: #ffc56a; }
 
+/* A beat is marked in the paper, never in the colour: R16 leaves colour's
+   meaning to the writer, so a rank that stole it would fight their own legend
+   (P13). The bar is deliberately heavy — you read structure while zoomed OUT,
+   and at Fit on a feature board a hairline disappears at exactly the moment it
+   is meant to be doing its job. */
+.note.is-beat {
+  border-top: 14px solid rgba(31, 24, 16, 0.82);
+  box-shadow:
+    0 10px 22px rgba(31, 24, 16, 0.26),
+    0 2px 5px rgba(31, 24, 16, 0.2);
+}
+
+.note.is-beat .note__headline {
+  font-weight: 700;
+}
+
+/* Sits opposite the colour tab, so the two things you can say about a card —
+   what it is, and whose legend it belongs to — share one edge. */
+.note__rank {
+  position: absolute;
+  right: 0.5rem;
+  bottom: 0.45rem;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.35rem;
+  height: 1.15rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.note:hover .note__rank,
+.note.is-selected .note__rank,
+.note__rank:focus-visible {
+  opacity: 0.4;
+}
+
+.note:hover .note__rank:hover,
+.note.is-beat .note__rank {
+  opacity: 1;
+}
+
+.note__rank-bar {
+  display: block;
+  width: 1rem;
+  height: 0.28rem;
+  border-radius: 0.06rem;
+  background: rgba(31, 24, 16, 0.8);
+}
+
+.note.is-beat .note__rank-bar {
+  box-shadow: 0 0 0 2px rgba(31, 24, 16, 0.22);
+}
+
 .note__headline,
 .note__change {
   margin: 0;

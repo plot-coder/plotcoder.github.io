@@ -134,6 +134,7 @@ describe("plotcoder MCP server", () => {
       "move_note",
       "recolor_note",
       "set_logline",
+      "set_rank",
       "update_note",
     ]);
   });
@@ -169,6 +170,30 @@ describe("plotcoder MCP server", () => {
 
     expect(await client.callTool("set_logline", { logline: "" })).toContain("cleared");
     expect(await client.callTool("list_board")).toContain("logline: (not set)");
+  });
+
+  it("marks a card as a beat and reports the shape", async () => {
+    const { notes } = await client.callToolData("list_board");
+    const target = notes[0].id;
+
+    const text = await client.callTool("set_rank", { ids: [target], rank: "beat" });
+    expect(text).toContain("are now beat");
+    expect(text).toContain("1 beats");
+
+    const listed = await client.callTool("list_board");
+    expect(listed).toContain("[beat]");
+    expect(listed).toContain("beats: 1, scenes: 2");
+
+    const saved = readBoardFile();
+    expect(saved.state.notes.find((note) => note.id === target).rank).toBe("beat");
+
+    // Rank must not move the card it marks (D20).
+    const before = notes[0];
+    const after = saved.state.notes.find((note) => note.id === target);
+    expect([after.x, after.y]).toEqual([before.x, before.y]);
+
+    await client.callTool("set_rank", { ids: [target], rank: "scene" });
+    expect(await client.callTool("list_board")).toContain("beats: 0, scenes: 3");
   });
 
   // Regression guard: this line used to claim the app was closed even when it

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   applyCommand,
+  countRanks,
   emptyState,
   isBoardState,
   NOTE_HEIGHT,
@@ -350,6 +351,9 @@ describe("no-op commands return the identical state object", () => {
     ["create_arrow onto itself", { type: "create_arrow", from: "a", to: "a" }],
     ["delete_arrow on a missing arrow", { type: "delete_arrow", id: "ghost" }],
     ["set_logline to the value it already has", { type: "set_logline", logline: "" }],
+    ["set_rank with no ids", { type: "set_rank", ids: [], rank: "beat" }],
+    ["set_rank on missing cards", { type: "set_rank", ids: ["ghost"], rank: "beat" }],
+    ["set_rank to the rank a card already has", { type: "set_rank", ids: ["a"], rank: "scene" }],
     ["an unknown command", { type: "not_a_command" } as unknown as Command],
   ];
 
@@ -376,6 +380,75 @@ describe("commands never mutate the state they are given", () => {
     );
 
     expect(start).toEqual(before);
+  });
+});
+
+describe("set_rank", () => {
+  const board = () => boardOf({ id: "a", x: 0, y: 0 }, { id: "b", x: 400, y: 0 });
+
+  it("cards are born as scenes", () => {
+    expect(board().notes.every((note) => note.rank === "scene")).toBe(true);
+    expect(seedState(NOW).notes.every((note) => note.rank === "scene")).toBe(true);
+  });
+
+  it("marks a card as a beat", () => {
+    const state = run(board(), { type: "set_rank", ids: ["a"], rank: "beat" });
+    expect(state.notes.find((note) => note.id === "a")?.rank).toBe("beat");
+    expect(state.notes.find((note) => note.id === "b")?.rank).toBe("scene");
+  });
+
+  it("marks several at once and reports which changed", () => {
+    const outcome = applyCommand(
+      board(),
+      { type: "set_rank", ids: ["a", "b"], rank: "beat" },
+      NOW,
+    );
+    expect(outcome.result).toHaveLength(2);
+  });
+
+  it("demotes a beat back to a scene", () => {
+    const state = run(
+      board(),
+      { type: "set_rank", ids: ["a"], rank: "beat" },
+      { type: "set_rank", ids: ["a"], rank: "scene" },
+    );
+    expect(state.notes.find((note) => note.id === "a")?.rank).toBe("scene");
+  });
+
+  // Rank is carried by the card, not by where it sits (D20).
+  it("never moves the card it marks", () => {
+    const start = board();
+    const state = run(start, { type: "set_rank", ids: ["a", "b"], rank: "beat" });
+    state.notes.forEach((note, i) => {
+      expect(note.x).toBe(start.notes[i].x);
+      expect(note.y).toBe(start.notes[i].y);
+    });
+  });
+
+  it("ignores unknown ids and an unknown rank", () => {
+    expect(
+      applyCommand(board(), { type: "set_rank", ids: ["ghost"], rank: "beat" }, NOW).changed,
+    ).toBe(false);
+    const bent = run(board(), {
+      type: "set_rank",
+      ids: ["a"],
+      rank: "turning-point" as unknown as "beat",
+    });
+    expect(bent.notes.find((note) => note.id === "a")?.rank).toBe("scene");
+  });
+});
+
+describe("countRanks", () => {
+  it("counts beats and scenes without judging the total", () => {
+    const state = run(
+      boardOf({ id: "a", x: 0, y: 0 }, { id: "b", x: 400, y: 0 }, { id: "c", x: 800, y: 0 }),
+      { type: "set_rank", ids: ["a", "b"], rank: "beat" },
+    );
+    expect(countRanks(state)).toEqual({ beats: 2, scenes: 1 });
+  });
+
+  it("is zero on an empty board", () => {
+    expect(countRanks(emptyState())).toEqual({ beats: 0, scenes: 0 });
   });
 });
 
@@ -450,6 +523,57 @@ describe("normalizeState", () => {
   it("returns the same object when nothing needed filling in", () => {
     const state = seedState(NOW);
     expect(normalizeState(state)).toBe(state);
+  });
+
+  // R20 added rank the same way. A card written before it is a scene: a beat is
+  // something you mark deliberately, so the default must claim nothing.
+  it("gives pre-rank cards the scene rank", () => {
+    const old = {
+      logline: "",
+      notes: seedState(NOW).notes.map(({ rank: _drop, ...note }) => note),
+      groups: [],
+      arrows: [],
+    };
+    const normalized = normalizeState(old);
+    expect(normalized.notes.every((note) => note.rank === "scene")).toBe(true);
+    expect(normalized.notes).toHaveLength(3);
+  });
+
+  it("repairs a rank of the wrong type without touching a good one", () => {
+    const bent = {
+      logline: "",
+      notes: [
+        { id: "a", rank: "turning-point" },
+        { id: "b", rank: "beat" },
+        { id: "c" },
+      ],
+      groups: [],
+      arrows: [],
+    };
+    expect(normalizeState(bent).notes.map((note) => note.rank)).toEqual([
+      "scene",
+      "beat",
+      "scene",
+    ]);
+  });
+
+  it("leaves everything else on a card alone while filling rank in", () => {
+    const { rank: _drop, ...note } = seedState(NOW).notes[0];
+    const normalized = normalizeState({ logline: "", notes: [note], groups: [], arrows: [] });
+    expect(normalized.notes[0]).toEqual({ ...note, rank: "scene" });
+  });
+
+  // A board that opened yesterday has to open today, whichever field was added.
+  it("opens a board written before either field existed", () => {
+    const ancient = {
+      notes: seedState(NOW).notes.map(({ rank: _r, ...note }) => note),
+      groups: [],
+      arrows: [],
+    };
+    expect(isBoardState(ancient)).toBe(true);
+    const normalized = normalizeState(ancient);
+    expect(normalized.logline).toBe("");
+    expect(normalized.notes.every((note) => note.rank === "scene")).toBe(true);
   });
 
   it("falls back to an empty board for junk", () => {

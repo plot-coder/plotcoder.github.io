@@ -19,13 +19,16 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
   applyCommand,
+  countRanks,
   isBoardState,
   normalizeState,
   NOTE_COLORS,
+  NOTE_RANKS,
   seedState,
 } from "../src/board/reducer.js";
 
 const colorSchema = z.enum(NOTE_COLORS);
+const rankSchema = z.enum(NOTE_RANKS);
 
 function log(...args) {
   console.error("[plotcoder-mcp]", ...args);
@@ -174,11 +177,13 @@ function summarize(state) {
   const notes = state.notes
     .map(
       (note) =>
-        `  - ${note.id} — "${note.headline}" (${note.color}) at ${Math.round(note.x)},${Math.round(note.y)}`,
+        `  - ${note.id} [${note.rank ?? "scene"}] — "${note.headline}" (${note.color}) at ${Math.round(note.x)},${Math.round(note.y)}`,
     )
     .join("\n");
+  const { beats, scenes } = countRanks(state);
   return [
     `logline: ${state.logline ? `"${state.logline}"` : "(not set)"}`,
+    `beats: ${beats}, scenes: ${scenes}`,
     `notes: ${state.notes.length}, groups: ${state.groups.length}, arrows: ${state.arrows.length}`,
     notes || "  (no notes)",
   ].join("\n");
@@ -232,15 +237,41 @@ server.registerTool(
 );
 
 server.registerTool(
+  "set_rank",
+  {
+    title: "Set card rank",
+    description:
+      "Mark cards as beats or scenes. A beat is one of the 8-to-15 major turns the story hangs on (inciting incident, midpoint, lowest point, climax); everything else is a scene. Rank is carried by the card, not by where it sits, so marking a beat never moves it. Do not volunteer an opinion about how many beats there should be.",
+    inputSchema: {
+      ids: z.array(z.string()).min(1),
+      rank: rankSchema,
+    },
+  },
+  async (args) => {
+    const { state, result, live } = await commit({
+      type: "set_rank",
+      ids: args.ids,
+      rank: args.rank,
+    });
+    const { beats, scenes } = countRanks(state);
+    return ok(
+      `${result?.length ?? 0} card(s) are now ${args.rank}${live ? " (visible on the open board)" : " (written to file)"}. The board holds ${beats} beats and ${scenes} scenes.`,
+      result,
+    );
+  },
+);
+
+server.registerTool(
   "create_note",
   {
     title: "Create note",
     description:
-      "Add a card (post-it) to the board. A card is a beat: a headline plus the change it causes. Provide both headline and change. Optionally set color and x/y position.",
+      "Add a card (post-it) to the board. A card is one scene: a headline plus the change it causes. Provide both headline and change. Optionally set color, x/y position, and rank ('beat' for one of the major turns, otherwise 'scene').",
     inputSchema: {
       headline: z.string().min(1),
       change: z.string().min(1),
       color: colorSchema.optional(),
+      rank: rankSchema.optional(),
       x: z.number().optional(),
       y: z.number().optional(),
     },
@@ -251,6 +282,7 @@ server.registerTool(
       headline: args.headline,
       change: args.change,
       color: args.color,
+      rank: args.rank,
       x: args.x,
       y: args.y,
     });

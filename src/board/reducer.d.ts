@@ -5,6 +5,9 @@
 export declare const NOTE_COLORS: readonly ["yellow", "pink", "blue", "green", "orange"];
 export type NoteColor = (typeof NOTE_COLORS)[number];
 
+export declare const NOTE_RANKS: readonly ["scene", "beat"];
+export type NoteRank = (typeof NOTE_RANKS)[number];
+
 export declare const NOTE_WIDTH: number;
 export declare const NOTE_HEIGHT: number;
 
@@ -17,6 +20,8 @@ export type BoardNote = {
   y: number;
   rotate: number;
   z: number;
+  /** A beat is one of the 8-to-15 major turns; everything else is a scene (R20). */
+  rank: NoteRank;
   createdAt: string;
   updatedAt: string;
 };
@@ -45,6 +50,7 @@ export type Pose = { id: string; x: number; y: number; rotate: number };
 
 export type Command =
   | { type: "set_logline"; logline: string }
+  | { type: "set_rank"; ids: string[]; rank: NoteRank }
   | {
       type: "create_note";
       id?: string;
@@ -54,6 +60,7 @@ export type Command =
       x?: number;
       y?: number;
       rotate?: number;
+      rank?: NoteRank;
     }
   | { type: "update_note"; id: string; headline?: string; change?: string }
   | { type: "move_note"; id: string; x: number; y: number }
@@ -82,6 +89,8 @@ export declare function seedState(now?: string): BoardState;
 export declare function isBoardState(value: unknown): value is BoardState;
 /** Fill in fields added after a board was written. Run at every load boundary. */
 export declare function normalizeState(value: unknown): BoardState;
+/** Beats vs scenes. The app shows this number and passes no judgement (D21). */
+export declare function countRanks(state: BoardState): { beats: number; scenes: number };
 export declare function applyCommand(
   state: BoardState,
   command: Command,

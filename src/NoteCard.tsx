@@ -1,6 +1,6 @@
 import { useEffect, useState, type PointerEvent } from "react";
 import { EditableText } from "./EditableText";
-import { NOTE_COLORS, type MockNote, type NoteColor } from "./noteMock";
+import { NOTE_COLORS, type MockNote, type NoteColor, type NoteRank } from "./noteMock";
 
 type NoteCardProps = {
   note: MockNote;
@@ -11,6 +11,7 @@ type NoteCardProps = {
   onPointerDown: (event: PointerEvent<HTMLElement>, note: MockNote) => void;
   onArrowPointerDown: (event: PointerEvent<HTMLElement>, note: MockNote) => void;
   onRecolor: (id: string, color: NoteColor) => void;
+  onSetRank: (id: string, rank: NoteRank) => void;
   onEdit: (id: string, patch: { headline?: string; change?: string }) => void;
 };
 
@@ -23,8 +24,10 @@ export function NoteCard({
   onPointerDown,
   onArrowPointerDown,
   onRecolor,
+  onSetRank,
   onEdit,
 }: NoteCardProps) {
+  const isBeat = note.rank === "beat";
   const [picking, setPicking] = useState(false);
 
   useEffect(() => {
@@ -33,7 +36,7 @@ export function NoteCard({
 
   return (
     <article
-      className={`note note--${note.color} ${active ? "is-active" : ""} ${selected ? "is-selected" : ""} ${linking ? "is-linking" : ""} ${dropTarget ? "is-drop-target" : ""} ${picking ? "is-picking" : ""}`}
+      className={`note note--${note.color} ${isBeat ? "is-beat" : ""} ${active ? "is-active" : ""} ${selected ? "is-selected" : ""} ${linking ? "is-linking" : ""} ${dropTarget ? "is-drop-target" : ""} ${picking ? "is-picking" : ""}`}
       style={{
         left: note.x,
         top: note.y,
@@ -58,6 +61,17 @@ export function NoteCard({
         ariaLabel="What changes"
         placeholder="What changes?"
       />
+      <button
+        type="button"
+        className="note__rank"
+        aria-label={isBeat ? `Make ${note.headline} a scene` : `Make ${note.headline} a beat`}
+        aria-pressed={isBeat}
+        title={isBeat ? "A beat — one of the major turns" : "Mark as a beat"}
+        onPointerDown={(event) => event.stopPropagation()}
+        onClick={() => onSetRank(note.id, isBeat ? "scene" : "beat")}
+      >
+        <span className="note__rank-bar" aria-hidden="true" />
+      </button>
       <button
         type="button"
         className="note__handle"

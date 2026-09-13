@@ -14,6 +14,7 @@ import {
   type MockGroup,
   type MockNote,
   type NoteColor,
+  type NoteRank,
 } from "./noteMock";
 import {
   panByDrag,
@@ -52,6 +53,7 @@ type NoteBoardProps = {
   onRenameGroup: (id: string, title: string) => void;
   onNoteDropped: (id: string) => void;
   onRecolor: (id: string, color: NoteColor) => void;
+  onSetRank: (id: string, rank: NoteRank) => void;
   onEdit: (id: string, patch: { headline?: string; change?: string }) => void;
   onCommit: () => void;
 };
@@ -119,6 +121,7 @@ export function NoteBoard({
   onRenameGroup,
   onNoteDropped,
   onRecolor,
+  onSetRank,
   onEdit,
   onCommit,
 }: NoteBoardProps) {
@@ -473,6 +476,7 @@ export function NoteBoard({
           onPointerDown={startNoteDrag}
           onArrowPointerDown={startArrowDrag}
           onRecolor={onRecolor}
+          onSetRank={onSetRank}
           onEdit={onEdit}
         />
       ))}

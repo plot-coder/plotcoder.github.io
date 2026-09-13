@@ -5,8 +5,10 @@
 import { NOTE_COLORS, NOTE_HEIGHT, NOTE_WIDTH, seedState } from "./board/reducer";
 
 export { NOTE_COLORS, NOTE_HEIGHT, NOTE_WIDTH };
+export { NOTE_RANKS } from "./board/reducer";
 export type {
   NoteColor,
+  NoteRank,
   BoardNote as MockNote,
   BoardGroup as MockGroup,
   BoardArrow as MockArrow,

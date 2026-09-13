@@ -4,7 +4,8 @@ import { Logline } from "./Logline";
 import { NoteBoard } from "./NoteBoard";
 import { readPremise, writePremise } from "./premiseStore";
 import { boardStore, installWindowApi } from "./board/store";
-import { type NoteColor } from "./noteMock";
+import { type NoteColor, type NoteRank } from "./noteMock";
+import { countRanks } from "./board/reducer";
 import {
   organizeReadingOrder,
   snapshotPoses,
@@ -42,6 +43,7 @@ export function App() {
   // The premise belongs to the project, not the board, so it does not come from
   // the kernel. It lives in its own plotcoder.* key like reminders do.
   const [premise, setPremise] = useState<string>(readPremise);
+  const shape = countRanks(board);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectedArrowId, setSelectedArrowId] = useState<string | null>(null);
   const [scatterPoses, setScatterPoses] = useState<NotePose[] | null>(null);
@@ -122,6 +124,15 @@ export function App() {
     const ids =
       selectedIds.includes(id) && selectedIds.length >= 2 ? selectedIds : [id];
     boardStore.dispatch({ type: "recolor_notes", ids, color });
+  }
+
+  // Marking one card of a selection marks the whole selection, the same way
+  // recolouring does — the gesture should not change meaning because of how
+  // many cards you had picked.
+  function setRank(id: string, rank: NoteRank) {
+    const ids =
+      selectedIds.includes(id) && selectedIds.length >= 2 ? selectedIds : [id];
+    boardStore.dispatch({ type: "set_rank", ids, rank });
   }
 
   function editNote(id: string, patch: { headline?: string; change?: string }) {
@@ -253,6 +264,7 @@ export function App() {
         onRenameGroup={renameGroup}
         onNoteDropped={dropNote}
         onRecolor={recolorNote}
+        onSetRank={setRank}
         onEdit={editNote}
         onCommit={commitBoard}
       />
@@ -270,6 +282,8 @@ export function App() {
         onScatter={scatterNotes}
         zoom={view.scale}
         canFit={notes.length > 0}
+        beats={shape.beats}
+        scenes={shape.scenes}
         onFit={fitToWall}
         onZoomIn={() => zoomBy(1.25)}
         onZoomOut={() => zoomBy(0.8)}

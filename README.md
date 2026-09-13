@@ -14,7 +14,7 @@ The full statement of purpose, every decision, and every requirement lives in [R
 4. **Read the wall**: find the act that sags, the setup with no payoff, the character who disappears.
 5. Only then **write pages**.
 
-Steps 1 to 4 are built. Step 4 reads the runs between beats and the setups and their payoffs, and asks nine kinds of question, including a sagging act, a setup with no payoff, a character who disappears, and two scenes doing the same job, in the Reminders modal and as a `read_wall` tool. A board has a cast: type "with Maya, Tom" on a card, and see the wall by person from the Cast lens. Step 5 is not started. See "What is built and what is left" in the requirements.
+Steps 1 to 4 are built. Step 4 reads the runs between beats and the setups and their payoffs, and asks nine kinds of question, including a sagging act, a setup with no payoff, a character who disappears, and two scenes doing the same job, in the Reminders modal and as a `read_wall` tool. The Story Map, a strip under the wall, draws the same reading along a page axis and jumps the wall to any card you click. A board has a cast: type "with Maya, Tom" on a card, and see the wall by person from the Cast lens. Step 5 is not started. See "What is built and what is left" in the requirements.
 
 ## Run it
 

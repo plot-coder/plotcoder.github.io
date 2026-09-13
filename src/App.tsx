@@ -22,6 +22,7 @@ import {
 } from "./organizeLayout";
 import { ProjectModal } from "./ProjectModal";
 import { RemindersModal } from "./RemindersModal";
+import { StoryMap } from "./StoryMap";
 import {
   applyTheme,
   nextClockChange,
@@ -30,9 +31,18 @@ import {
   writeStoredTheme,
   type Theme,
 } from "./theme";
-import { fitView, IDENTITY_VIEW, zoomAt, type View } from "./viewport";
+import { centerOn, fitView, IDENTITY_VIEW, zoomAt, type View } from "./viewport";
 
 const BAR_KEY = "plotcoder.generalBar.layer";
+const MAP_KEY = "plotcoder.storyMap";
+
+function readMapOpen(): boolean {
+  try {
+    return localStorage.getItem(MAP_KEY) !== "hidden";
+  } catch {
+    return true;
+  }
+}
 const BAR_KEY_LEGACY = "plotcoder.generalBar.expanded";
 
 function readBarLayer(): BarLayer {
@@ -52,10 +62,13 @@ export function App() {
   const [castOpen, setCastOpen] = useState(false);
   const [castHover, setCastHover] = useState<string | null>(null);
   const [castHeld, setCastHeld] = useState<string | null>(null);
+  // The Story Map strip (R32). Whether it is open is per-viewer, like the bar.
+  const [mapOpen, setMapOpen] = useState<boolean>(readMapOpen);
   const board = useSyncExternalStore(boardStore.subscribe, boardStore.getState);
   const { notes, groups, arrows, characters } = board;
   const castFocusId = castOpen ? (castHeld ?? castHover) : null;
-  const castReading = useMemo(() => (castOpen ? readWall(board) : null), [castOpen, board]);
+  // One reading of the wall for the lens and the map, so they agree.
+  const reading = useMemo(() => readWall(board), [board]);
   // The premise belongs to the project, not the board, so it does not come from
   // the kernel. It lives in its own plotcoder.* key like reminders do.
   const [premise, setPremise] = useState<string>(readPremise);
@@ -80,6 +93,27 @@ export function App() {
 
   function fitToWall() {
     setView(fitView(notes, viewportSize()));
+  }
+
+  // A click on the Story Map: bring that card to the middle of the window.
+  function jumpTo(id: string) {
+    const note = notes.find((item) => item.id === id);
+    if (!note) return;
+    setView((current) => centerOn(current, note, viewportSize()));
+    setSelectedIds([id]);
+    setSelectedArrowId(null);
+  }
+
+  function toggleMap() {
+    setMapOpen((current) => {
+      const next = !current;
+      try {
+        localStorage.setItem(MAP_KEY, next ? "open" : "hidden");
+      } catch {
+        /* per-viewer convenience only */
+      }
+      return next;
+    });
   }
 
   function zoomBy(factor: number) {
@@ -304,7 +338,7 @@ export function App() {
   }
 
   return (
-    <div className="canvas">
+    <div className={`canvas ${mapOpen ? "has-map" : "has-ruler"}`}>
       <p className="wordmark">PlotCoder</p>
       <Logline
         logline={board.logline}
@@ -317,7 +351,7 @@ export function App() {
           open={castOpen}
           characters={characters}
           notes={notes}
-          reading={castReading}
+          reading={reading}
           hoverId={castHover}
           heldId={castHeld}
           onOpen={() => setCastOpen(true)}
@@ -370,6 +404,14 @@ export function App() {
         onSetPlant={setPlant}
         onEdit={editNote}
         onCommit={commitBoard}
+      />
+      <StoryMap
+        board={board}
+        reading={reading}
+        open={mapOpen}
+        castFocusId={castFocusId}
+        onToggle={toggleMap}
+        onJump={jumpTo}
       />
       <GeneralBar
         layer={barLayer}

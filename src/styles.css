@@ -1639,3 +1639,189 @@ body {
   font-size: 0.88rem;
   line-height: 1.45;
 }
+
+/* --- The Story Map (R32) ------------------------------------------------- */
+
+/* Screen chrome along the bottom, like the logline along the top. The wall,
+   the bar and the hint all lift to sit above it, so Fit and a jump centre on
+   the part of the window you can actually see. */
+.story-map {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  border-top: 1px solid var(--bar-border);
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+}
+
+.canvas.has-map .note-board {
+  bottom: 88px;
+}
+
+.canvas.has-ruler .note-board {
+  bottom: 22px;
+}
+
+.canvas.has-map .general-bar {
+  bottom: calc(88px + 1.1rem);
+}
+
+.canvas.has-ruler .general-bar {
+  bottom: calc(22px + 1.1rem);
+}
+
+.story-map__svg {
+  display: block;
+  overflow: visible;
+}
+
+.story-map__tab {
+  position: absolute;
+  left: 1.1rem;
+  top: -0.85rem;
+  z-index: 1;
+  padding: 0.12rem 0.55rem;
+  border: 1px solid var(--bar-border);
+  border-radius: 999px;
+  background: var(--bar);
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.story-map__tab:hover {
+  color: var(--ink);
+}
+
+.story-map__readout {
+  position: absolute;
+  right: 1.1rem;
+  top: 0.35rem;
+  margin: 0;
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+.story-map__axis {
+  stroke: var(--ink);
+  stroke-width: 1;
+}
+
+.story-map__tick {
+  stroke: var(--ink);
+  stroke-width: 1;
+  opacity: 0.45;
+}
+
+.story-map__page,
+.story-map__run,
+.story-map__target-label {
+  font-size: 9px;
+  fill: var(--muted);
+  text-anchor: middle;
+  pointer-events: none;
+}
+
+.story-map__target-label {
+  text-anchor: start;
+  fill: var(--over);
+}
+
+.story-map__band {
+  fill: var(--slot);
+}
+
+.story-map__band.is-sag {
+  fill: rgba(180, 83, 31, 0.18);
+}
+
+.story-map__target {
+  stroke: var(--over);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.story-map__overrun {
+  fill: rgba(180, 83, 31, 0.08);
+}
+
+.story-map__card {
+  cursor: pointer;
+}
+
+.story-map__hit {
+  fill: transparent;
+}
+
+.story-map__card:hover .story-map__hit {
+  fill: var(--slot);
+}
+
+.story-map__mark {
+  stroke: var(--ink);
+  stroke-width: 1;
+  opacity: 0.35;
+}
+
+.story-map__card.is-beat .story-map__mark {
+  stroke-width: 3;
+  opacity: 1;
+}
+
+.story-map__card.is-dim .story-map__mark {
+  opacity: 0.12;
+}
+
+.story-map__lit {
+  fill: var(--ink);
+}
+
+.story-map__beat-label {
+  font-size: 9.5px;
+  fill: var(--ink);
+  cursor: pointer;
+}
+
+.story-map__beat-label:hover {
+  text-decoration: underline;
+}
+
+.story-map__setup {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.2;
+  stroke-dasharray: 5 4;
+  opacity: 0.85;
+}
+
+.story-map__unpaid path {
+  fill: none;
+  stroke: var(--over);
+  stroke-width: 1.2;
+  stroke-dasharray: 2 3;
+}
+
+.story-map__unpaid circle {
+  fill: none;
+  stroke: var(--over);
+  stroke-width: 1;
+}
+
+/* The hint sits above the strip too. */
+.canvas.has-map .group-hint {
+  bottom: calc(88px + 1.3rem);
+}
+
+.canvas.has-ruler .group-hint {
+  bottom: calc(22px + 1.3rem);
+}

@@ -1,3 +1,4 @@
+import { centerOn } from "./viewport";
 import { describe, expect, it } from "vitest";
 import { NOTE_HEIGHT, NOTE_WIDTH } from "./noteMock";
 import {
@@ -229,5 +230,22 @@ describe("visible box", () => {
     const box = visibleBox({ x: -300, y: -150, scale: 1 }, VIEWPORT);
     expect(box.x).toBe(300);
     expect(box.y).toBe(150);
+  });
+});
+
+
+describe("centerOn", () => {
+  it("puts the card's centre at the window's centre and keeps the zoom", () => {
+    const view = centerOn({ x: 0, y: 0, scale: 1 }, { x: 1000, y: 500 }, { width: 800, height: 600 });
+    expect(view.scale).toBe(1);
+    // Card centre (1096, 596) lands at (400, 300).
+    expect(1096 * view.scale + view.x).toBeCloseTo(400);
+    expect(596 * view.scale + view.y).toBeCloseTo(300);
+  });
+
+  it("comes in to a readable zoom when the wall is far out", () => {
+    const view = centerOn({ x: 0, y: 0, scale: 0.15 }, { x: 0, y: 0 }, { width: 800, height: 600 });
+    expect(view.scale).toBe(0.6);
+    expect(96 * 0.6 + view.x).toBeCloseTo(400);
   });
 });

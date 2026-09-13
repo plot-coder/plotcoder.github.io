@@ -348,7 +348,8 @@ function summarize(state) {
       const cast = note.characterIds.map((id) => nameOf.get(id) ?? id);
       const who = cast.length ? `, cast: ${cast.join(", ")}` : "";
       const plant = note.plants ? ", plants" : "";
-      return `  - ${note.id} [${note.rank ?? "scene"}, ${formatPages(note.lengthEighths)}pp${who}${plant}] — "${note.headline}" (${note.color}) at ${Math.round(note.x)},${Math.round(note.y)}`;
+      const place = note.location ? `, at: ${note.location}` : "";
+      return `  - ${note.id} [${note.rank ?? "scene"}, ${formatPages(note.lengthEighths)}pp${who}${place}${plant}] — "${note.headline}" (${note.color}) at ${Math.round(note.x)},${Math.round(note.y)}`;
     })
     .join("\n");
   const cast = state.characters
@@ -526,7 +527,7 @@ server.registerTool(
   {
     title: "Create note",
     description:
-      "Add a card (post-it) to the board. A card is one scene: a headline plus the change it causes. Provide both headline and change. Optionally set color, x/y position, rank ('beat' for one of the major turns, otherwise 'scene'), pages (how long it runs; leave it out and the card is taken to be about a page), and plants (true if this scene sets something up that must pay off later).",
+      "Add a card (post-it) to the board. A card is one scene: a headline plus the change it causes. Provide both headline and change. Optionally set color, x/y position, rank ('beat' for one of the major turns, otherwise 'scene'), pages (how long it runs; leave it out and the card is taken to be about a page), plants (true if this scene sets something up that must pay off later), and location (where it happens, as the writer would say it — 'the piano shop', not 'INT. PIANO SHOP').",
     inputSchema: {
       headline: z.string().min(1),
       change: z.string().min(1),
@@ -534,6 +535,7 @@ server.registerTool(
       rank: rankSchema.optional(),
       pages: pagesSchema.optional(),
       plants: z.boolean().optional(),
+      location: z.string().optional(),
       x: z.number().optional(),
       y: z.number().optional(),
     },
@@ -547,6 +549,7 @@ server.registerTool(
       rank: args.rank,
       lengthEighths: args.pages === undefined ? undefined : toEighths(args.pages),
       plants: args.plants,
+      location: args.location,
       x: args.x,
       y: args.y,
     });
@@ -558,11 +561,12 @@ server.registerTool(
   "update_note",
   {
     title: "Update note",
-    description: "Change the headline and/or change text of an existing card by id.",
+    description: "Change the headline, change text and/or location of an existing card by id.",
     inputSchema: {
       id: z.string(),
       headline: z.string().optional(),
       change: z.string().optional(),
+      location: z.string().optional(),
     },
   },
   async (args) => {
@@ -571,6 +575,7 @@ server.registerTool(
       id: args.id,
       headline: args.headline,
       change: args.change,
+      location: args.location,
     });
     if (result === undefined) return ok(`No card with id ${args.id}.`);
     return ok("Updated card.", result);
@@ -815,6 +820,33 @@ server.registerTool(
     }
     const written = Object.keys(patch).join(", ");
     return ok(`Wrote ${written} on ${result.name}'s page${where(live)}.`, result);
+  },
+);
+
+server.registerTool(
+  "set_location",
+  {
+    title: "Set where scenes happen",
+    description:
+      "Set the place of one or more cards: where the scene happens, as the writer would say it ('the piano shop', 'the flat, kitchen') — a phrase, not a slugline. The same phrase on several cards is one place in the lens; an empty string clears it. list_board shows each card's place as 'at: …'.",
+    inputSchema: { ids: z.array(z.string()).min(1), location: z.string() },
+  },
+  async (args) => {
+    const { state, changed, result, live } = await commit({
+      type: "set_location",
+      ids: args.ids,
+      location: args.location,
+    });
+    if (!changed) {
+      const known = args.ids.filter((id) => state.notes.some((note) => note.id === id));
+      if (known.length === 0) return ok(`No cards with ids ${args.ids.join(", ")}. Call list_board.`);
+      return ok("No place changed: those cards already read that way.");
+    }
+    const place = result[0].location;
+    return ok(
+      `${result.length} card(s) now ${place ? `at ${place}` : "nowhere"}${where(live)}.`,
+      result,
+    );
   },
 );
 

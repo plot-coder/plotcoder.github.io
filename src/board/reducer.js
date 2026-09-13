@@ -54,6 +54,38 @@ export function filledCharacterFields(character) {
   return CHARACTER_FIELDS.filter((field) => typeof character[field] === "string" && character[field].trim());
 }
 
+// Where a scene happens (R37): a phrase in the writer's words, not a slug.
+// One string per card, no roster; the wall's places are read off the cards.
+function cleanPlace(value) {
+  return typeof value === "string" ? value.trim().replace(/\s+/g, " ") : "";
+}
+
+function samePlace(a, b) {
+  return a.trim().toLowerCase() === b.trim().toLowerCase();
+}
+
+/**
+ * The places on a wall, in order of first appearance, each with its card
+ * count. Two spellings that differ only in case are one place, spelt the
+ * first way. For the lens and for completion on the card.
+ */
+export function boardPlaces(state) {
+  const places = [];
+  for (const note of state.notes) {
+    const name = cleanPlace(note.location);
+    if (!name) continue;
+    const found = places.find((place) => samePlace(place.name, name));
+    if (found) found.cards += 1;
+    else places.push({ name, cards: 1 });
+  }
+  return places;
+}
+
+/** True when the card is at this place, spelt any way. */
+export function atPlace(note, place) {
+  return Boolean(note.location) && samePlace(note.location, place);
+}
+
 function sameName(a, b) {
   return a.trim().toLowerCase() === b.trim().toLowerCase();
 }
@@ -153,6 +185,7 @@ export function seedState(now = nowIso()) {
     rank: "scene",
     lengthEighths: DEFAULT_NOTE_EIGHTHS,
     characterIds,
+    location: "",
     plants: false,
     createdAt: now,
     updatedAt: now,
@@ -243,18 +276,21 @@ export function normalizeState(value) {
     const characterIds = knownCast(note?.characterIds, characters);
     // Cards written before R31 have no fold; a plant is a claim you make.
     const plants = note?.plants === true;
+    // Cards written before R37 have no place; a scene is nowhere until it is.
+    const location = typeof note?.location === "string" ? note.location : "";
     if (
       note &&
       note.rank === rank &&
       note.lengthEighths === lengthEighths &&
       Array.isArray(note.characterIds) &&
       sameIds(note.characterIds, characterIds) &&
-      note.plants === plants
+      note.plants === plants &&
+      note.location === location
     ) {
       return note;
     }
     patched = true;
-    return { ...note, rank, lengthEighths, characterIds, plants };
+    return { ...note, rank, lengthEighths, characterIds, plants, location };
   });
 
   if (
@@ -321,6 +357,7 @@ export function applyCommand(state, command, now = nowIso()) {
         ),
         characterIds: knownCast(command.characterIds, state.characters ?? []),
         plants: command.plants === true,
+        location: cleanPlace(command.location),
         z: maxZ(state.notes) + 1,
         createdAt: now,
         updatedAt: now,
@@ -339,6 +376,7 @@ export function applyCommand(state, command, now = nowIso()) {
         const patch = {};
         if (command.headline !== undefined) patch.headline = command.headline;
         if (command.change !== undefined) patch.change = command.change;
+        if (command.location !== undefined) patch.location = cleanPlace(command.location);
         updated = bump(note, patch, now);
         return updated;
       });
@@ -676,6 +714,23 @@ export function applyCommand(state, command, now = nowIso()) {
       const notes = state.notes.map((note) => {
         if (!ids.has(note.id) || sameIds(note.characterIds, cast)) return note;
         const next = bump(note, { characterIds: [...cast] }, now);
+        touched.push(next);
+        return next;
+      });
+      if (touched.length === 0) return { state, changed: false };
+      return { state: { ...state, notes }, changed: true, result: touched };
+    }
+
+    // Where a scene happens (R37): one place on one or more cards; an empty
+    // place clears it.
+    case "set_location": {
+      const ids = new Set(command.ids);
+      if (ids.size === 0) return { state, changed: false };
+      const location = cleanPlace(command.location);
+      const touched = [];
+      const notes = state.notes.map((note) => {
+        if (!ids.has(note.id) || note.location === location) return note;
+        const next = bump(note, { location }, now);
         touched.push(next);
         return next;
       });

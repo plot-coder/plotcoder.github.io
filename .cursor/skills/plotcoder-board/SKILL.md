@@ -68,6 +68,10 @@ lands on the exact same board a person sees.
 - `set_plant` — fold or unfold the corner of cards (`plants` true/false). Fold a
   card when the writer says it sets something up; `read_wall` will ask where it
   pays off until a `setup` arrow leaves it.
+- `set_location` — where one or more cards happen, as the writer would say it
+  ("the piano shop", not "INT. PIANO SHOP"). `create_note` and `update_note`
+  take `location` too; `list_board` shows it as `at: …`. No roster of places:
+  the same phrase on several cards is one place in the lens.
 - `delete_note` — remove a card (also drops its arrows and group membership).
 
 ### Cast

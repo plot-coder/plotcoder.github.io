@@ -20,6 +20,8 @@ export type MapCard = {
   characterIds: string[];
   /** The cast by name, in cast order. */
   castNames: string[];
+  /** Where the scene happens (R37), or empty. */
+  location: string;
   /** Where the card starts, in eighths from the top of the story. */
   start: number;
   length: number;
@@ -86,6 +88,7 @@ export function storyMapLayout(state: BoardState, reading: WallReading): StoryMa
       castNames: note.characterIds
         .map((characterId) => nameOf.get(characterId))
         .filter((name): name is string => Boolean(name)),
+      location: note.location ?? "",
       start: cursor,
       length: note.lengthEighths,
     });

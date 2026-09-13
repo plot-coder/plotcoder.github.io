@@ -334,3 +334,52 @@ test("a person's page opens from the cast lens, takes a line, and shows their sc
   await page.getByLabel("Open Maya's page").click();
   await expect(page.getByLabel("Voice of Maya")).toHaveText("Low, and quicker when she lies.");
 });
+
+test("a place typed on a card appears in the lens, fades the wall, and reaches an agent", async ({
+  page,
+  request,
+}) => {
+  await page.goto("/");
+  await expect(page.locator("article.note")).toHaveCount(3);
+
+  // The fourth line: tap it and type where the scene happens.
+  const card = page.locator("article.note", { hasText: "Maya finds the letter" });
+  await card.hover();
+  await card.getByLabel("Place Maya finds the letter").click();
+  await page.keyboard.type("the piano shop");
+  await page.keyboard.press("Enter");
+  await expect(card.getByLabel(/Place of Maya finds the letter/)).toHaveText(/at the piano shop/);
+  await expect
+    .poll(async () => (await boardOnBridge(request)).notes.find((note) => note.id === "maya-letter")?.location)
+    .toBe("the piano shop");
+
+  // A second card completes from the first: type "the p", take the completion.
+  const second = page.locator("article.note", { hasText: "The letter is read aloud" });
+  await second.hover();
+  await second.getByLabel("Place The letter is read aloud").click();
+  await page.keyboard.type("the p");
+  await expect(page.getByRole("option", { name: "the piano shop" })).toBeVisible();
+  await page.keyboard.press("Tab");
+  await expect(second.getByLabel(/Place of The letter is read aloud/)).toHaveText(/at the piano shop/);
+
+  // The lens lists the place with its count; holding it fades the other card.
+  await page.getByRole("button", { name: "Cast", exact: true }).click();
+  const place = page.getByLabel("Places").getByRole("listitem").filter({ hasText: "the piano shop" });
+  await expect(place).toContainText("2 cards");
+  await place.click();
+  await expect(page.locator("article.note.is-dim")).toHaveCount(1);
+  await expect(page.locator("article.note.is-dim")).toContainText("Tom lies about the job");
+
+  // And an agent sees and sets the same line.
+  const mcp = new McpClient();
+  await mcp.start();
+  try {
+    expect(await mcp.callTool("list_board")).toContain('at: the piano shop] — "Maya finds the letter"');
+    expect(await mcp.callTool("set_location", { ids: ["tom-lies"], location: "the flat" })).toContain(
+      "1 card(s) now at the flat",
+    );
+  } finally {
+    mcp.stop();
+  }
+  await expect(page.getByLabel("Places").getByRole("listitem")).toHaveCount(2);
+});

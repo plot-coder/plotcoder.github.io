@@ -150,6 +150,7 @@ describe("plotcoder MCP server", () => {
       "rename_group",
       "set_arrow_kind",
       "set_length",
+      "set_location",
       "set_logline",
       "set_plant",
       "set_rank",
@@ -765,6 +766,19 @@ describe("characters", () => {
       voice: "",
     });
     expect(await cast.callTool("list_board")).toContain('"Maya" on 3 cards · page: looks, wants');
+  });
+
+  it("puts scenes somewhere, and list_board says where", async () => {
+    const text = await cast.callTool("set_location", { ids: ["tom-lies", "letter-aloud"], location: " the piano shop " });
+    expect(text).toContain("2 card(s) now at the piano shop");
+    expect(await cast.callTool("set_location", { ids: ["tom-lies"], location: "the piano shop" })).toContain("No place changed");
+    expect(await cast.callTool("set_location", { ids: ["nope"], location: "x" })).toContain("No cards with ids nope");
+    const listed = await cast.callTool("list_board");
+    expect(listed).toContain("at: the piano shop] — \"The letter is read aloud\"");
+    const made = await cast.callToolData("create_note", { headline: "At the bank", change: "No loan.", location: "the bank" });
+    expect(made.location).toBe("the bank");
+    const board = await cast.callToolData("list_board");
+    expect(board.notes.find((note) => note.id === "letter-aloud").location).toBe("the piano shop");
   });
 
   it("renames a person and every card follows, because cards hold the id", async () => {

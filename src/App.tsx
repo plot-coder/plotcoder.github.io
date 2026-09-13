@@ -16,6 +16,7 @@ import {
   type ArrowKind,
   type BoardCharacter,
   type CharacterField,
+  boardPlaces,
 } from "./board/reducer";
 import { organizePoses } from "./board/organize";
 import { snapshotPoses, type NotePose } from "./organizeLayout";
@@ -62,6 +63,9 @@ export function App() {
   const [castOpen, setCastOpen] = useState(false);
   const [castHover, setCastHover] = useState<string | null>(null);
   const [castHeld, setCastHeld] = useState<string | null>(null);
+  // A place in the lens (R37): the wall seen by where a scene happens.
+  const [placeHover, setPlaceHover] = useState<string | null>(null);
+  const [placeHeld, setPlaceHeld] = useState<string | null>(null);
   // The Story Map strip (R32). Whether it is open is per-viewer, like the bar.
   const [mapOpen, setMapOpen] = useState<boolean>(readMapOpen);
   // The card under the pointer on the wall, so the map can light its block.
@@ -72,6 +76,10 @@ export function App() {
   const project = useSyncExternalStore(boardStore.subscribe, boardStore.getProject);
   const { notes, groups, arrows, characters } = board;
   const castFocusId = castOpen ? (castHeld ?? castHover) : null;
+  const placeFocus = castOpen && castFocusId === null ? (placeHeld ?? placeHover) : null;
+  // The places on the wall, for the lens and for completion on every card.
+  const places = useMemo(() => boardPlaces(board), [board]);
+  const placeNames = useMemo(() => places.map((place) => place.name), [places]);
   // One reading of the wall for the lens and the map, so they agree.
   const reading = useMemo(() => readWall(board), [board]);
   // The premise belongs to the project, not the board (D17).
@@ -287,6 +295,14 @@ export function App() {
     });
   }
 
+  // Where a scene happens (R37), typed on the card. Applies to the whole
+  // selection, like the cast line.
+  function setLocation(id: string, location: string) {
+    const ids =
+      selectedIds.includes(id) && selectedIds.length >= 2 ? selectedIds : [id];
+    boardStore.dispatch({ type: "set_location", ids, location });
+  }
+
   function addCharacter(name: string) {
     boardStore.dispatch({ type: "add_character", name });
   }
@@ -310,6 +326,8 @@ export function App() {
     setCastOpen(false);
     setCastHover(null);
     setCastHeld(null);
+    setPlaceHover(null);
+    setPlaceHeld(null);
   }
 
   // Fold the corner (R31). Folding one card of a selection folds the selection,
@@ -441,6 +459,11 @@ export function App() {
           onClose={closeCast}
           onHover={setCastHover}
           onHold={setCastHeld}
+          places={places}
+          placeHover={placeHover}
+          placeHeld={placeHeld}
+          onPlaceHover={setPlaceHover}
+          onPlaceHold={setPlaceHeld}
           onAdd={addCharacter}
           onRename={renameCharacter}
           onUpdate={updateCharacter}
@@ -468,7 +491,10 @@ export function App() {
         arrows={arrows}
         characters={characters}
         castFocusId={castFocusId}
+        placeFocus={placeFocus}
+        places={placeNames}
         onCastNames={castNames}
+        onLocation={setLocation}
         onHoverNote={setHoverNoteId}
         selectedIds={selectedIds}
         selectedArrowId={selectedArrowId}

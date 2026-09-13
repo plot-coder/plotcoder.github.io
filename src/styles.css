@@ -1747,6 +1747,27 @@ body {
   line-height: 1.45;
 }
 
+/* --- Where a scene happens (R37) ------------------------------------------ */
+
+/* The fourth line sits close under the third: with Maya, at the piano shop. */
+.note__at {
+  margin-top: 0.1rem;
+}
+
+.cast-lens__section {
+  margin: 0.4rem 0 0;
+  padding: 0.45rem 0.5rem 0.2rem;
+  border-top: 1px solid var(--bar-border);
+}
+
+.cast-lens__row--place {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.cast-lens__row--place .cast-lens__name {
+  cursor: pointer;
+}
+
 /* --- The person's page (R36) --------------------------------------------- */
 
 /* The way into a page from the roster: a chevron at the row's end, always

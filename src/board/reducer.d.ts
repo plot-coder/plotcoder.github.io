@@ -46,6 +46,11 @@ export type BoardCharacter = {
 };
 
 /** The page fields a person has filled in, in page order. */
+/** The places on a wall in order of first appearance, with card counts. */
+export declare function boardPlaces(state: BoardState): Array<{ name: string; cards: number }>;
+/** True when the card is at this place, spelt any way. */
+export declare function atPlace(note: BoardNote, place: string): boolean;
+
 export declare function filledCharacterFields(character: BoardCharacter): CharacterField[];
 
 export type BoardNote = {
@@ -65,6 +70,8 @@ export type BoardNote = {
   characterIds: string[];
   /** The corner is folded: this card plants something that must pay off (R31). */
   plants: boolean;
+  /** Where the scene happens (R37): a phrase in the writer's words; empty until set. */
+  location: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -115,8 +122,9 @@ export type Command =
       lengthEighths?: number;
       characterIds?: string[];
       plants?: boolean;
+      location?: string;
     }
-  | { type: "update_note"; id: string; headline?: string; change?: string }
+  | { type: "update_note"; id: string; headline?: string; change?: string; location?: string }
   | { type: "move_note"; id: string; x: number; y: number }
   | { type: "nudge_notes"; ids: string[]; dx: number; dy: number }
   | { type: "recolor_notes"; ids: string[]; color: NoteColor }
@@ -136,7 +144,8 @@ export type Command =
   | { type: "remove_character"; id: string }
   | ({ type: "update_character"; id: string } & Partial<Record<CharacterField, string>>)
   | { type: "set_cast"; ids: string[]; characterIds: string[] }
-  | { type: "set_plant"; ids: string[]; plants: boolean };
+  | { type: "set_plant"; ids: string[]; plants: boolean }
+  | { type: "set_location"; ids: string[]; location: string };
 
 export type CommandResult = {
   state: BoardState;

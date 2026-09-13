@@ -1,5 +1,6 @@
 import { useEffect, useState, type PointerEvent } from "react";
 import { CastLine } from "./CastLine";
+import { PlaceLine } from "./PlaceLine";
 import { EditableText } from "./EditableText";
 import { DEFAULT_NOTE_EIGHTHS, formatPages, type BoardCharacter } from "./board/reducer";
 import { NOTE_COLORS, type MockNote, type NoteColor, type NoteRank } from "./noteMock";
@@ -18,7 +19,10 @@ type NoteCardProps = {
   /** The cast lens is looking at someone who is not in this scene. */
   dimmed: boolean;
   characters: BoardCharacter[];
+  /** Every place on the wall, for completion on the place line (R37). */
+  places: string[];
   onCastNames: (id: string, names: string[]) => void;
+  onLocation: (id: string, location: string) => void;
   onRaise: (id: string) => void;
   /** The pointer is over this card (or has left it): the Story Map lights its block. */
   onHover: (id: string | null) => void;
@@ -39,7 +43,9 @@ export function NoteCard({
   dropTarget,
   dimmed,
   characters,
+  places,
   onCastNames,
+  onLocation,
   onRaise,
   onHover,
   onPointerDown,
@@ -117,6 +123,13 @@ export function NoteCard({
         characters={characters}
         onBegin={() => onRaise(note.id)}
         onCommit={(names) => onCastNames(note.id, names)}
+      />
+      <PlaceLine
+        headline={note.headline}
+        location={note.location}
+        places={places}
+        onBegin={() => onRaise(note.id)}
+        onCommit={(location) => onLocation(note.id, location)}
       />
       <button
         type="button"

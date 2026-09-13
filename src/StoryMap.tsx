@@ -121,6 +121,7 @@ export function StoryMap({
               <span className="story-map__scrub-meta">
                 {formatPages(readCard.length)} {readCard.length === EIGHTHS_PER_PAGE ? "page" : "pages"}
                 {readCard.castNames.length ? ` · with ${readCard.castNames.join(", ")}` : ""}
+                {readCard.location ? ` · at ${readCard.location}` : ""}
               </span>
             </>
           ) : (

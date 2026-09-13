@@ -37,6 +37,12 @@ type CastLensProps = {
   onUpdate: (id: string, patch: Partial<Record<CharacterField, string>>) => void;
   onRemove: (id: string) => void;
   onJump: (noteId: string) => void;
+  /** The places on the wall (R37): hover lights their scenes, click holds. */
+  places: Array<{ name: string; cards: number }>;
+  placeHover: string | null;
+  placeHeld: string | null;
+  onPlaceHover: (name: string | null) => void;
+  onPlaceHold: (name: string | null) => void;
 };
 
 // A blank line asks the question the field exists for (R18), rather than
@@ -105,6 +111,11 @@ export function CastLens({
   onUpdate,
   onRemove,
   onJump,
+  places,
+  placeHover,
+  placeHeld,
+  onPlaceHover,
+  onPlaceHold,
 }: CastLensProps) {
   const titleId = useId();
   const [draft, setDraft] = useState("");
@@ -238,15 +249,25 @@ export function CastLens({
           id={titleId}
           className="cast-lens"
           aria-label="Cast"
-          onMouseLeave={() => onHover(null)}
+          onMouseLeave={() => {
+            onHover(null);
+            onPlaceHover(null);
+          }}
         >
           <div className="cast-lens__head">
             <p className="cast-lens__kicker">
               Cast · {characters.length}
             </p>
             <div className="cast-lens__actions">
-              {heldId ? (
-                <button type="button" className="cast-lens__action" onClick={() => onHold(null)}>
+              {heldId || placeHeld ? (
+                <button
+                  type="button"
+                  className="cast-lens__action"
+                  onClick={() => {
+                    onHold(null);
+                    onPlaceHold(null);
+                  }}
+                >
                   Clear
                 </button>
               ) : null}
@@ -318,6 +339,31 @@ export function CastLens({
               onKeyDown={onDraftKey}
             />
           </form>
+
+          {places.length > 0 ? (
+            <>
+              <p className="cast-lens__kicker cast-lens__section">Places · {places.length}</p>
+              <ul className="cast-lens__list" aria-label="Places">
+                {places.map((place) => {
+                  const held = placeHeld === place.name;
+                  const lit = (placeHeld ?? placeHover) === place.name && focusId === null;
+                  return (
+                    <li
+                      key={place.name}
+                      className={`cast-lens__row cast-lens__row--place ${lit ? "is-focus" : ""} ${held ? "is-held" : ""}`}
+                      onMouseEnter={() => onPlaceHover(place.name)}
+                      onClick={() => onPlaceHold(held ? null : place.name)}
+                    >
+                      <span className="cast-lens__name">{place.name}</span>
+                      <span className="cast-lens__count">
+                        {place.cards === 1 ? "1 card" : `${place.cards} cards`}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
+          ) : null}
 
           {focus ? (
             <p className="cast-lens__foot">

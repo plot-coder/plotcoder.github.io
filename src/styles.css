@@ -2359,6 +2359,136 @@ body {
   }
 }
 
+/* --- The page as the editor (R23 c, Roadmap 2 item 2) ---------------------- */
+
+.print-only {
+  display: none;
+}
+
+/* One continuous page on screen: Letter width, the industry's columns. */
+.script {
+  position: relative;
+  width: min(100%, 51em);
+  margin: 0 auto;
+  padding: 3.2em 5.4em 3em 9.3em;
+  background: #fffdf7;
+  color: #1b1a17;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.22);
+  font-family: "Courier Prime", "Courier New", Courier, monospace;
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.script__number {
+  position: absolute;
+  top: 1.4em;
+  right: 5.4em;
+}
+
+.script__scene {
+  position: relative;
+  margin: 0 0 1.5em;
+  border-radius: 0.2rem;
+}
+
+.script__scene.is-focus {
+  background: rgba(255, 229, 106, 0.18);
+}
+
+.scene-editor {
+  position: relative;
+}
+
+.scene-editor__lines {
+  outline: none;
+  white-space: pre-wrap;
+  min-height: 1.5em;
+}
+
+.scene-editor__lines:empty::before,
+.scene-editor__lines[data-placeholder] > div:only-child:empty::before {
+  content: attr(data-placeholder);
+  color: #9a9589;
+}
+
+.scene-editor__lines > div {
+  min-height: 1.5em;
+  overflow-wrap: anywhere;
+}
+
+/* Each of the writer's lines at its element's column. */
+.sl { position: relative; margin: 0; font: inherit; }
+.sl--heading { font-weight: 700; text-transform: uppercase; margin: 0 0 1.5em; }
+.sl--action { margin: 0; }
+.sl--character { padding-left: 22em; text-transform: uppercase; }
+.sl--parenthetical { padding-left: 16em; padding-right: 10em; }
+.sl--dialogue { padding-left: 10em; padding-right: 15em; }
+.sl--transition { text-align: right; text-transform: uppercase; }
+.sl--centered { text-align: center; }
+.sl--break { text-align: center; color: #9a9589; letter-spacing: 0.3em; }
+.sl--note { color: #9a9589; }
+.sl--blank { min-height: 1.5em; }
+
+/* The page turns, drawn beside the line they fall on; never inside the text. */
+.scene-editor__turn {
+  position: absolute;
+  left: -9.3em;
+  right: -5.4em;
+  transform: translateY(-1.1em);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.scene-editor__turn--between {
+  position: relative;
+  left: auto;
+  right: auto;
+  margin: 0 -5.4em 1.2em -9.3em;
+  transform: none;
+}
+
+.scene-editor__rule {
+  display: block;
+  border-top: 1px dashed rgba(27, 26, 23, 0.35);
+  position: relative;
+  height: 0;
+}
+
+.scene-editor__page {
+  position: absolute;
+  right: 5.4em;
+  top: 0.4em;
+  font-size: 0.86rem;
+  color: #1b1a17;
+  background: #fffdf7;
+  padding: 0 0.3em;
+}
+
+.scene-editor__more {
+  position: absolute;
+  left: 31.3em;
+  top: -1.6em;
+  color: #7a7669;
+}
+
+.scene-editor__contd {
+  position: absolute;
+  left: 31.3em;
+  top: 1.6em;
+  color: #7a7669;
+  text-transform: uppercase;
+}
+
+@media print {
+  .script {
+    display: none;
+  }
+
+  .print-only {
+    display: block;
+  }
+}
+
 /* --- Start from a structure (R38) ----------------------------------------- */
 
 .group-hint--empty {

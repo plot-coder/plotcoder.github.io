@@ -609,13 +609,7 @@ export function App() {
         }}
         onToggleWide={togglePagesWide}
         onSetText={setSceneText}
-        onFocusScene={(id) => {
-          focusScene(id);
-          if (id && pagesView === "pages") {
-            setPagesView("text");
-            writeFlag(PAGES_VIEW_KEY, false);
-          }
-        }}
+        onFocusScene={focusScene}
       />
       <NoteBoard
         boardRef={boardRef}

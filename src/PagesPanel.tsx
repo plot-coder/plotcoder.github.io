@@ -13,6 +13,7 @@ import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { sceneHeading } from "./board/fountain";
 import { paginateBoard } from "./pagesLayout";
 import { type Line } from "./board/paginate";
+import { SceneEditor } from "./SceneEditor";
 import { type WallReading } from "./board/readWall";
 import {
   formatPages,
@@ -120,29 +121,59 @@ export function PagesPanel({
       </div>
 
       {pages ? (
-        <div className="pages__sheet pages__sheet--print print-pages" ref={listRef}>
-          {pages.pages.map((page) => (
-            <div key={page.number} className="print-page" data-page={page.number}>
-              <div className="print-page__number">{page.number}.</div>
-              <div className="print-page__body">
-                {page.lines.map((line, index) => (
-                  <PrintLine
-                    key={index}
-                    line={line}
-                    first={index === 0 || page.lines[index - 1]?.noteId !== line.noteId}
-                    focus={line.noteId === focusId}
-                    onFocus={() => {
-                      if (line.noteId) onFocusScene(line.noteId);
-                    }}
+        <div className="pages__sheet pages__sheet--print" ref={listRef}>
+          {/* On screen: one continuous page, the editor. The page turns are drawn where the paginator puts them. */}
+          <div className="script">
+            <div className="script__number">1.</div>
+            {pages.order.map((note, index) => {
+              const scene = pages.scenes[index];
+              const turns = pages.turnsOf.get(note.id) ?? [];
+              const before = turns.filter((turn) => turn.src < 0);
+              const inside = turns.filter((turn) => turn.src >= 0);
+              return (
+                <section
+                  key={note.id}
+                  className={`script__scene ${note.id === focusId ? "is-focus" : ""}`}
+                  data-scene={note.id}
+                >
+                  {before.map((turn) => (
+                    <div key={turn.page} className="scene-editor__turn scene-editor__turn--between" aria-hidden="true">
+                      <span className="scene-editor__rule"><span className="scene-editor__page">{turn.page}.</span></span>
+                    </div>
+                  ))}
+                  <h3 className="sl sl--heading">
+                    <span className="pl__num pl__num--l">{scene?.number}</span>
+                    {sceneHeading(note).slice(1)}
+                    <span className="pl__num pl__num--r">{scene?.number}</span>
+                  </h3>
+                  <SceneEditor
+                    note={note}
+                    turns={inside}
+                    onCommit={(text) => onSetText(note.id, text)}
+                    onFocus={() => onFocusScene(note.id)}
+                    onBlur={() => onFocusScene(null)}
                   />
-                ))}
+                </section>
+              );
+            })}
+            <p className="pages__print-note">
+              Letter, Courier 12, fifty-five lines. The page turns where the paginator puts it; scene numbers
+              follow the wall's order. Print sets it as separate pages.
+            </p>
+          </div>
+          {/* In print: the same script as separate Letter pages. */}
+          <div className="print-pages print-only" aria-hidden="true">
+            {pages.pages.map((page) => (
+              <div key={page.number} className="print-page" data-page={page.number}>
+                <div className="print-page__number">{page.number}.</div>
+                <div className="print-page__body">
+                  {page.lines.map((line, index) => (
+                    <PrintLine key={index} line={line} first={false} focus={false} onFocus={() => {}} />
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
-          <p className="pages__print-note">
-            Letter, Courier 12, fifty-five lines. Scene numbers follow the wall's order. Click a scene to
-            edit it as text.
-          </p>
+            ))}
+          </div>
         </div>
       ) : (
       <div className="pages__sheet" ref={listRef}>

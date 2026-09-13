@@ -1747,6 +1747,61 @@ body {
   line-height: 1.45;
 }
 
+/* --- Workflows and the brief (R27, R28) ------------------------------------ */
+
+.reminder-tabs {
+  display: inline-flex;
+  gap: 0.15rem;
+  margin: 0 0 1rem;
+  padding: 0.15rem;
+  border: 1px solid var(--bar-border);
+  border-radius: 999px;
+}
+
+.reminder-tab {
+  padding: 0.3rem 0.7rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.reminder-tab.is-on {
+  background: var(--ink);
+  color: var(--canvas);
+}
+
+.reminder__keep {
+  margin: 0.35rem 0 0;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.74rem;
+  color: var(--muted);
+}
+
+.ask-list .reminder-form__note {
+  margin-bottom: 0.8rem;
+}
+
+.brief {
+  margin: 1rem 0 0;
+  max-height: 24rem;
+  overflow: auto;
+  padding: 0.8rem 0.9rem;
+  border-radius: 0.3rem;
+  background: var(--slot);
+  color: var(--ink);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
 /* --- Pages beside the wall (R23 b) ---------------------------------------- */
 
 .pages {

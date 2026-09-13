@@ -143,6 +143,7 @@ describe("plotcoder MCP server", () => {
       "list_board",
       "list_boards",
       "list_reminders",
+      "list_workflows",
       "move_note",
       "new_board",
       "open_board",
@@ -156,6 +157,7 @@ describe("plotcoder MCP server", () => {
       "rename_character",
       "rename_group",
       "rename_project",
+      "segment_brief",
       "set_arrow_kind",
       "set_length",
       "set_location",
@@ -1161,6 +1163,16 @@ describe("the premise and reminders (roadmap item 6)", () => {
     const board = await door.callToolData("list_board");
     expect(board.notes.find((note) => note.id === "tom-lies").text).toBe("He says the job is fine.");
     expect(board.notes.some((note) => note.headline === "The Bank" && note.text === "There is no loan.")).toBe(true);
+  });
+
+  it("lists the workflows and briefs a segment from the wall", async () => {
+    const listed = await door.callTool("list_workflows");
+    expect(listed).toContain("break-a-treatment — Break a treatment into a wall");
+    expect(listed).toContain("keep: Wait for the writer; propose, do not fix.");
+    const brief = await door.callTool("segment_brief", { ids: ["maya-letter"] });
+    expect(brief).toContain("SEGMENT: Maya finds the letter");
+    expect(brief).toContain("PEOPLE: Maya");
+    expect(await door.callTool("segment_brief", { ids: ["nope"] })).toContain("No cards with ids nope");
   });
 
   it("lists the built-in reminders, adds one of the writer's, and removes it", async () => {

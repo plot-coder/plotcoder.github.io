@@ -37,6 +37,7 @@ import {
 } from "../src/board/reducer.js";
 import { TEMPLATES } from "../src/board/templates.js";
 import { fromFountain, mergeFountain, toFountain } from "../src/board/fountain.js";
+import { segmentBrief, WORKFLOWS } from "../src/board/workflows.js";
 import { DEFAULT_REMINDERS, titleFromBody } from "../src/board/reminders.js";
 import crypto from "node:crypto";
 import { describeRuns, describeSetups, readWall } from "../src/board/readWall.js";
@@ -823,6 +824,42 @@ server.registerTool(
       `Imported ${parsed.scenes.length} scene(s): ${written} written onto cards, ${created} new card(s)${where(live)}.`,
       matched,
     );
+  },
+);
+
+server.registerTool(
+  "list_workflows",
+  {
+    title: "List workflows",
+    description:
+      "The workflows a writer can ask for (R27): each a sentence, the tools it composes, and the rule to keep while doing it. When the writer's ask matches one, follow it; when it does not, compose the tools yourself and say what you did.",
+    inputSchema: {},
+  },
+  async () =>
+    ok(
+      WORKFLOWS.map(
+        (workflow) =>
+          `- ${workflow.id} — ${workflow.name}\n  ask: "${workflow.ask}"\n  tools: ${workflow.tools.join(", ")}\n  keep: ${workflow.then}`,
+      ).join("\n"),
+      WORKFLOWS,
+    ),
+);
+
+server.registerTool(
+  "segment_brief",
+  {
+    title: "Brief a segment",
+    description:
+      "The brief for a segment of the movie (R28, first step): one card, or several in wall order for a run between beats. Everything the wall knows — the story, the people with their pages, the places, what changes, the script or 'unwritten', what must be true after — in the order a video tool would need it. Text only; nothing is generated or sent. Hand it to the writer to approve; fix a wrong brief on the cards.",
+    inputSchema: { ids: z.array(z.string()).min(1) },
+  },
+  async (args) => {
+    const { state } = await readBoard();
+    const { project } = await readProject();
+    const board = project.boards.find((item) => item.id === project.activeBoardId);
+    const brief = segmentBrief(state, args.ids, { title: board?.name });
+    if (!brief) return ok(`No cards with ids ${args.ids.join(", ")}. Call list_board.`);
+    return ok(brief);
   },
 );
 

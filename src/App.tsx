@@ -23,6 +23,7 @@ import { ProjectModal } from "./ProjectModal";
 import { RemindersModal } from "./RemindersModal";
 import { StructureSheet } from "./StructureSheet";
 import { PagesPanel } from "./PagesPanel";
+import { BriefSheet } from "./BriefSheet";
 import { StoryMap } from "./StoryMap";
 import {
   applyTheme,
@@ -80,6 +81,8 @@ export function App() {
   const [projectOpen, setProjectOpen] = useState(false);
   // Start from a structure (R38).
   const [structureOpen, setStructureOpen] = useState(false);
+  // The brief (R28, first step): for the selected card or cards.
+  const [briefOpen, setBriefOpen] = useState(false);
   // Pages beside the wall (R23 b): open, and whether it takes the window.
   const [pagesOpen, setPagesOpen] = useState<boolean>(() => readFlag(PAGES_KEY, false));
   const [pagesWide, setPagesWide] = useState<boolean>(() => readFlag(PAGES_WIDE_KEY, false));
@@ -557,6 +560,13 @@ export function App() {
           onApply={applyTemplate}
         />
       </div>
+      <BriefSheet
+        open={briefOpen}
+        board={board}
+        ids={selectedIds}
+        title={project.boards.find((item) => item.id === project.activeBoardId)?.name ?? ""}
+        onClose={() => setBriefOpen(false)}
+      />
       <PagesPanel
         open={pagesOpen}
         wide={pagesWide}
@@ -635,6 +645,8 @@ export function App() {
         onGroup={groupSelected}
         onOrganize={organizeNotes}
         onStructure={() => setStructureOpen(true)}
+        canBrief={selectedIds.length > 0}
+        onBrief={() => setBriefOpen(true)}
         zoom={view.scale}
         canFit={notes.length > 0}
         beats={shape.beats}

@@ -45,6 +45,16 @@ export function StructureIcon({ className }: IconProps) {
   );
 }
 
+/** The brief (R28): a page with a play mark, for the segment it describes. */
+export function BriefIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="4.5" y="3.5" width="15" height="17" rx="1.6" fill="none" stroke="currentColor" strokeWidth="1.4" />
+      <path d="M10 8.5v7l5.5-3.5z" fill="currentColor" />
+    </svg>
+  );
+}
+
 export function GroupIcon({ className }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" aria-hidden="true">

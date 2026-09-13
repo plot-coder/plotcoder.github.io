@@ -5,6 +5,7 @@ import {
   NoteIcon,
   OrganizeIcon,
   StructureIcon,
+  BriefIcon,
   RedoIcon,
   ThemeIcon,
   UndoIcon,
@@ -30,6 +31,9 @@ type GeneralBarProps = {
   onGroup: () => void;
   onOrganize: () => void;
   onStructure: () => void;
+  /** A card or cards are selected: the brief for that segment (R28). */
+  canBrief: boolean;
+  onBrief: () => void;
   zoom: number;
   canFit: boolean;
   beats: number;
@@ -57,6 +61,8 @@ export function GeneralBar({
   onGroup,
   onOrganize,
   onStructure,
+  canBrief,
+  onBrief,
   zoom,
   canFit,
   beats,
@@ -138,6 +144,11 @@ export function GeneralBar({
           <button type="button" className="new-note" onClick={onStructure}>
             Structure
           </button>
+          {canBrief ? (
+            <button type="button" className="new-note" onClick={onBrief}>
+              Brief
+            </button>
+          ) : null}
 
           {/* The count and nothing else. No nudge under 8, no warning over 15 —
               the range is a guide the writer holds, not a rule we enforce (D21). */}
@@ -248,6 +259,17 @@ export function GeneralBar({
               >
                 <StructureIcon className="bar-icon__svg" />
               </button>
+              {canBrief ? (
+                <button
+                  type="button"
+                  className="bar-icon"
+                  onClick={onBrief}
+                  aria-label="Brief the selected scenes for video"
+                  title="Brief: everything the wall knows about this segment"
+                >
+                  <BriefIcon className="bar-icon__svg" />
+                </button>
+              ) : null}
               {canFit ? (
                 <button
                   type="button"

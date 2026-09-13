@@ -197,3 +197,16 @@ edits appear in real time; the change is already saved either way.
 - The **series premise** and **Reminders** live in browser storage, not in the
   board record, so no tool can reach them.
 - **Pan and zoom** are per-viewer state and are deliberately not board data.
+
+## Workflows (R27)
+
+A workflow is what the writer asks for in a sentence; you compose the tools.
+`list_workflows` has the six with the tools each composes and the rule to keep:
+break a treatment into a wall; read the wall and raise questions (change
+nothing); lay a structure over what is here; draft a sequence in Fountain from
+its cards; restick the remaining cards after the pages moved; brief a segment
+for video. Read `list_reminders` first — they are the house style.
+
+`segment_brief` (R28, first step) briefs one card or a run of cards for a
+video tool from what the wall holds. It is text for the writer to approve;
+nothing is generated or sent, and no video tool is chosen yet.

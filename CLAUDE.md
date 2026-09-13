@@ -22,5 +22,5 @@ PlotCoder is a set of tools for building a storyline, covering what a writer doe
 - When Robert states a need, add it to `REQUIREMENTS.md` as a numbered requirement with date, status, and reason. Do not renumber. Record decisions in the file, not only in chat.
 - When two tools overlap, add a row to the combine log rather than building a second model.
 - Update "What is built and what is left" when a status changes.
-- Tests: `npm test` covers the DOM-free half — kernel, pure helpers, MCP server. `npm run test:e2e` is a four-spec Playwright suite over the doors into the kernel (wall, `window.plotcoder`, dev bridge, MCP), not pixels. A change to the kernel or the MCP server needs a unit test; add an end-to-end spec only for a new door or a bug in one. Gestures themselves stay untested.
+- Tests: `npm test` covers the DOM-free half — kernel, pure helpers, MCP server. `npm run test:e2e` is a five-spec Playwright suite over the doors into the kernel (wall, `window.plotcoder`, dev bridge, MCP), not pixels. A change to the kernel or the MCP server needs a unit test; add an end-to-end spec only for a new door or a bug in one. Gestures themselves stay untested.
 - Build: `npm run build` typechecks and bundles. A failing test blocks the Pages deploy.

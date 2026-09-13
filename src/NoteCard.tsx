@@ -20,6 +20,8 @@ type NoteCardProps = {
   characters: BoardCharacter[];
   onCastNames: (id: string, names: string[]) => void;
   onRaise: (id: string) => void;
+  /** The pointer is over this card (or has left it): the Story Map lights its block. */
+  onHover: (id: string | null) => void;
   onPointerDown: (event: PointerEvent<HTMLElement>, note: MockNote) => void;
   onArrowPointerDown: (event: PointerEvent<HTMLElement>, note: MockNote) => void;
   onRecolor: (id: string, color: NoteColor) => void;
@@ -39,6 +41,7 @@ export function NoteCard({
   characters,
   onCastNames,
   onRaise,
+  onHover,
   onPointerDown,
   onArrowPointerDown,
   onRecolor,
@@ -72,6 +75,8 @@ export function NoteCard({
         transform: `rotate(${note.rotate}deg)`,
       }}
       onPointerDown={(event) => onPointerDown(event, note)}
+      onPointerEnter={() => onHover(note.id)}
+      onPointerLeave={() => onHover(null)}
     >
       {/* Fold the corner (R31): this card plants something. Shown in the paper,
           like the beat bar, so it reads at Fit zoom and steals no colour. */}

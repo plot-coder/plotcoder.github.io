@@ -96,31 +96,39 @@ export function arrowLayout(from: MockNote, to: MockNote, paired: boolean): Arro
   const air = Math.min(AIR, Math.max(2, (span - HEAD_LENGTH) / 2));
   const sp = { x: start.x + u.x * air, y: start.y + u.y * air };
   const tip = { x: end.x - u.x * air, y: end.y - u.y * air };
-  const base = { x: tip.x - u.x * HEAD_LENGTH, y: tip.y - u.y * HEAD_LENGTH };
 
-  // The bow is proportional: straight between neighbours, today's curve when far.
+  // One curve from the tail to the tip. The bow is proportional: straight
+  // between neighbours, today's curve when far.
   const bow = short ? 0 : paired ? Math.min(span * 0.2, 40) : Math.min(span * 0.125, 28);
   const ctrl = {
-    x: (sp.x + base.x) / 2 + nx * bow,
-    y: (sp.y + base.y) / 2 + ny * bow,
-  };
-  const mid = {
-    x: (sp.x + 2 * ctrl.x + base.x) / 4,
-    y: (sp.y + 2 * ctrl.y + base.y) / 4,
+    x: (sp.x + tip.x) / 2 + nx * bow,
+    y: (sp.y + tip.y) / 2 + ny * bow,
   };
 
-  // The head follows the curve's arrival direction; on a straight stitch that
-  // collapses to a point, so fall back to the chord.
-  let h = unit(base.x - ctrl.x, base.y - ctrl.y);
-  if (Math.hypot(base.x - ctrl.x, base.y - ctrl.y) < 0.5) h = u;
+  // The shaft is that curve cut a head's length before the tip, so the head
+  // sits on the curve and points where the curve arrives — not along the
+  // straight line between the cards, which at medium range is a visibly
+  // different direction and left the head hanging off the end of the shaft.
+  const chord = Math.hypot(tip.x - sp.x, tip.y - sp.y) || 1;
+  const t = Math.min(1, Math.max(0, 1 - HEAD_LENGTH / chord));
+  const c1 = { x: sp.x + (ctrl.x - sp.x) * t, y: sp.y + (ctrl.y - sp.y) * t };
+  const c2 = { x: ctrl.x + (tip.x - ctrl.x) * t, y: ctrl.y + (tip.y - ctrl.y) * t };
+  const base = { x: c1.x + (c2.x - c1.x) * t, y: c1.y + (c2.y - c1.y) * t };
+  const mid = {
+    x: (sp.x + 2 * c1.x + base.x) / 4,
+    y: (sp.y + 2 * c1.y + base.y) / 4,
+  };
+
+  // The head runs from the shaft's end to the tip; its wings sit square to that.
+  const h = unit(tip.x - base.x, tip.y - base.y);
   const hn = { x: -h.y, y: h.x };
   const head = [
     `${tip.x},${tip.y}`,
-    `${tip.x - h.x * HEAD_LENGTH + hn.x * HEAD_HALF},${tip.y - h.y * HEAD_LENGTH + hn.y * HEAD_HALF}`,
-    `${tip.x - h.x * HEAD_LENGTH - hn.x * HEAD_HALF},${tip.y - h.y * HEAD_LENGTH - hn.y * HEAD_HALF}`,
+    `${base.x + hn.x * HEAD_HALF},${base.y + hn.y * HEAD_HALF}`,
+    `${base.x - hn.x * HEAD_HALF},${base.y - hn.y * HEAD_HALF}`,
   ].join(" ");
 
-  return { d: `M ${sp.x} ${sp.y} Q ${ctrl.x} ${ctrl.y} ${base.x} ${base.y}`, mid, head };
+  return { d: `M ${sp.x} ${sp.y} Q ${c1.x} ${c1.y} ${base.x} ${base.y}`, mid, head };
 }
 
 export function previewPath(from: MockNote, pointer: Point) {

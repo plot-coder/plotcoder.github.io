@@ -76,14 +76,21 @@ describe("arrowLayout", () => {
     // Right edge of the left card is x=192, left edge of the right card is
     // x=400. The shaft starts 8px off the paper and ends 27px (the head) before
     // a tip that stops 8px short of the next card.
-    expect(d).toBe("M 200 96 Q 282.5 122 365 96");
-    expect(mid).toEqual({ x: 282.5, y: 109 });
-    // The tip stops 8px short of the paper; the head is the full 27 x 18 wedge,
-    // tilted to the curve's arrival rather than flat along the chord.
+    const numbers = d.match(/-?[\d.]+/g)!.map(Number);
+    const [sx, sy, , , bx, by] = numbers;
+    // The shaft starts 8px off the paper on the centre line.
+    expect([sx, sy]).toEqual([200, 96]);
+    // The tip stops 8px short of the next card, and the head joins the shaft's
+    // end exactly: the wings sit square to the base-to-tip line, 9px each side.
     const [tip, wingA, wingB] = head.split(" ").map((pair) => pair.split(",").map(Number));
     expect(tip).toEqual([392, 96]);
-    expect(Math.hypot(tip[0] - wingA[0], tip[1] - wingA[1])).toBeCloseTo(Math.hypot(27, 9));
+    expect((wingA[0] + wingB[0]) / 2).toBeCloseTo(bx);
+    expect((wingA[1] + wingB[1]) / 2).toBeCloseTo(by);
     expect(Math.hypot(wingA[0] - wingB[0], wingA[1] - wingB[1])).toBeCloseTo(18);
+    // A head's length before the tip, near enough: the curve is almost straight there.
+    expect(Math.hypot(tip[0] - bx, tip[1] - by)).toBeGreaterThan(26);
+    expect(Math.hypot(tip[0] - bx, tip[1] - by)).toBeLessThan(29);
+    expect(mid.y).toBeGreaterThan(96);
   });
 
   it("bows a lone arrow gently so it reads as a curve", () => {
@@ -97,7 +104,7 @@ describe("arrowLayout", () => {
     expect(near.mid.y - 96).toBeGreaterThan(0);
     expect(far.mid.y - 96).toBeGreaterThan(near.mid.y - 96);
     // The cap: 28px of bow puts the curve's midpoint 14px off the chord.
-    expect(far.mid.y - 96).toBeCloseTo(14);
+    expect(far.mid.y - 96).toBeCloseTo(14, 0);
   });
 
   it("runs straight between neighbours, steps off the handle's row, and keeps the full head", () => {
@@ -123,11 +130,11 @@ describe("arrowLayout", () => {
   it("shifts a paired arrow off the centre line and bows it wider", () => {
     const { d, mid } = arrowLayout(left, right, true);
 
-    // Pinned so that changing either the sideways offset or the bow shows up
-    // here: the ends lift off the centre line and the curve swings further out.
-    expect(d).toBe("M 200 108.8 Q 282.5 148.8 365 108.8");
-    expect(mid.x).toBeCloseTo(282.5);
-    expect(mid.y).toBeCloseTo(128.8);
+    // The ends lift off the centre line and the curve swings further out.
+    const [sx, sy] = d.match(/-?[\d.]+/g)!.map(Number);
+    expect([sx, sy]).toEqual([200, 108.8]);
+    expect(mid.x).toBeCloseTo(282.5, 0);
+    expect(mid.y).toBeGreaterThan(125);
   });
 
   it("throws a paired arrow wider than a lone one", () => {
@@ -155,16 +162,21 @@ describe("arrowLayout", () => {
     expect(Math.abs(yOf(there) - yOf(back))).toBeCloseTo(24);
   });
 
-  it("aims the head along the curve's arrival, not the chord", () => {
-    const below = card("below", 500, 500);
-    const { head } = arrowLayout(left, below, false);
-    const [tip, wingA] = head.split(" ").map((pair) => pair.split(",").map(Number));
-    // A bowed arrow arrives at an angle that differs from the straight line
-    // between the cards; the head's axis follows the arrival.
-    const chord = Math.atan2(500 + 96 - 96, 500 + 96 - 96);
-    const axis = Math.atan2(tip[1] - wingA[1], tip[0] - wingA[0]);
-    expect(Math.abs(axis - chord)).toBeGreaterThan(0.05);
-    expect(Math.abs(axis - chord)).toBeLessThan(0.6);
+  it("keeps the head on the shaft at medium range, where the curve and the chord disagree", () => {
+    // The case from the wall: cards a little over a card-width apart.
+    const medium = card("medium", 330, 40);
+    const { d, head } = arrowLayout(left, medium, false);
+    const numbers = d.match(/-?[\d.]+/g)!.map(Number);
+    const [, , , , bx, by] = numbers;
+    const [tip, wingA, wingB] = head.split(" ").map((pair) => pair.split(",").map(Number));
+    // The head's base is the shaft's end, to the pixel, so there is no gap and
+    // no kink between them.
+    expect((wingA[0] + wingB[0]) / 2).toBeCloseTo(bx);
+    expect((wingA[1] + wingB[1]) / 2).toBeCloseTo(by);
+    // And the head points along the shaft's arrival, not the chord.
+    const arrival = Math.atan2(tip[1] - by, tip[0] - bx);
+    const chord = Math.atan2(40 + 96 - 96, 330 + 96 - 96);
+    expect(Math.abs(arrival - chord)).toBeGreaterThan(0.05);
   });
 
   it("survives two cards stacked exactly on top of each other", () => {

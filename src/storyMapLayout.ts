@@ -5,19 +5,28 @@
 // the map and the questions agree. Pure and DOM-free so it can be tested; the
 // component only draws what this returns.
 
-import { boardEighths, EIGHTHS_PER_PAGE, type BoardState } from "./board/reducer";
+import { boardEighths, EIGHTHS_PER_PAGE, type BoardState, type NoteColor } from "./board/reducer";
 import type { WallReading } from "./board/readWall";
 
 export type MapCard = {
   id: string;
   headline: string;
+  change: string;
+  color: NoteColor;
   beat: boolean;
+  /** 1-based, in wall order; null for a scene. */
+  number: number | null;
   plants: boolean;
   characterIds: string[];
+  /** The cast by name, in cast order. */
+  castNames: string[];
   /** Where the card starts, in eighths from the top of the story. */
   start: number;
   length: number;
 };
+
+/** A group as a span of pages: from its first member's start to its last member's end. */
+export type MapGroup = { id: string; title: string; start: number; end: number };
 
 export type MapBand = { from: string; to: string; start: number; end: number; sag: boolean };
 export type MapSetup = { id: string; from: string; to: string; start: number; end: number };
@@ -29,27 +38,54 @@ export type StoryMapLayout = {
   /** The runs between consecutive beats, as page spans. */
   bands: MapBand[];
   setups: MapSetup[];
+  groups: MapGroup[];
   /** Folded cards nothing pays off, by id. */
   unpaid: string[];
   totalEighths: number;
   targetEighths: number;
-  /** The axis runs to the larger of the runtime and the target. */
+  /** How far the axis runs; see axisSpan. */
   spanEighths: number;
+  /** False while the story is well short of the target and the target sits off the end. */
+  targetInRange: boolean;
 };
+
+// The axis fits the story with a quarter of headroom while the story is well
+// short of the target, so a twenty-page wall fills the strip instead of
+// huddling in a corner of a hundred and twenty. As the story grows the axis
+// grows with it, until the target comes into view and holds; past the target
+// it extends again. Never shorter than ten pages, so an empty wall has a ruler.
+const HEADROOM = 1.25;
+const MIN_SPAN_EIGHTHS = 10 * EIGHTHS_PER_PAGE;
+
+export function axisSpan(totalEighths: number, targetEighths: number): number {
+  const fitted = Math.max(totalEighths * HEADROOM, MIN_SPAN_EIGHTHS);
+  if (fitted < targetEighths) return fitted;
+  return Math.max(totalEighths, targetEighths);
+}
 
 export function storyMapLayout(state: BoardState, reading: WallReading): StoryMapLayout {
   const byId = new Map(state.notes.map((note) => [note.id, note]));
+  const nameOf = new Map(state.characters.map((character) => [character.id, character.name]));
   let cursor = 0;
+  let beatCount = 0;
   const cards: MapCard[] = [];
   for (const id of reading.order) {
     const note = byId.get(id);
     if (!note) continue;
+    const beat = note.rank === "beat";
+    if (beat) beatCount += 1;
     cards.push({
       id,
       headline: note.headline,
-      beat: note.rank === "beat",
+      change: note.change,
+      color: note.color,
+      beat,
+      number: beat ? beatCount : null,
       plants: note.plants,
       characterIds: note.characterIds,
+      castNames: note.characterIds
+        .map((characterId) => nameOf.get(characterId))
+        .filter((name): name is string => Boolean(name)),
       start: cursor,
       length: note.lengthEighths,
     });
@@ -90,17 +126,36 @@ export function storyMapLayout(state: BoardState, reading: WallReading): StoryMa
     .filter((finding) => finding.kind === "unpaid")
     .map((finding) => finding.ids[0]);
 
+  const cardById = new Map(cards.map((card) => [card.id, card]));
+  const groups: MapGroup[] = state.groups
+    .map((group) => {
+      const members = group.noteIds
+        .map((id) => cardById.get(id))
+        .filter((card): card is MapCard => Boolean(card));
+      if (members.length < 2) return null;
+      return {
+        id: group.id,
+        title: group.title,
+        start: Math.min(...members.map((card) => card.start)),
+        end: Math.max(...members.map((card) => card.start + card.length)),
+      };
+    })
+    .filter((group): group is MapGroup => group !== null);
+
   const totalEighths = boardEighths(state);
   const targetEighths = state.targetEighths;
+  const spanEighths = axisSpan(totalEighths, targetEighths);
   return {
     cards,
     beats,
     bands,
     setups,
+    groups,
     unpaid,
     totalEighths,
     targetEighths,
-    spanEighths: Math.max(totalEighths, targetEighths, EIGHTHS_PER_PAGE),
+    spanEighths,
+    targetInRange: targetEighths <= spanEighths,
   };
 }
 
@@ -110,27 +165,28 @@ export function xFor(eighths: number, spanEighths: number, width: number, pad: n
   return pad + (eighths / spanEighths) * usable;
 }
 
-/** Page ticks along the axis: every 10 pages, or every 5 when the story is short. */
+/** Page ticks along the axis: every 10 pages, 5 for a short axis, 2 for a very short one. */
 export function pageTicks(spanEighths: number): number[] {
   const pages = spanEighths / EIGHTHS_PER_PAGE;
-  const step = pages <= 40 ? 5 : 10;
+  const step = pages <= 16 ? 2 : pages <= 40 ? 5 : 10;
   const ticks: number[] = [];
   for (let page = 0; page <= pages; page += step) ticks.push(page * EIGHTHS_PER_PAGE);
   return ticks;
 }
 
-export type BeatLabel = { id: string; text: string; row: 0 | 1; x: number };
+export type BeatLabel = { id: string; text: string; x: number };
 
 // Roughly how wide a label glyph is at the map's label size. Good enough to
 // decide how much of a headline fits; the browser does the real measuring.
-const GLYPH_PX = 5.6;
-const LABEL_GAP_PX = 8;
+const GLYPH_PX = 5.8;
+const LABEL_GAP_PX = 6;
+const MIN_NAME_CHARS = 6;
 
 /**
- * Where each beat's headline goes, and how much of it fits. Labels sit on two
- * rows, alternating, so a label may run until the next beat on its own row.
- * When even a few letters would not fit, the beat's number stands in — a
- * count, not a judgement (D21).
+ * Which beats get a name above their block, and how much of it. One row: a
+ * label may run until the next beat. Every beat block carries its number, so a
+ * name that will not fit is simply left off rather than replaced — the number
+ * is always there to anchor the scrub label.
  */
 export function beatLabels(
   beats: ReadonlyArray<MapCard>,
@@ -138,17 +194,20 @@ export function beatLabels(
   width: number,
   pad: number,
 ): BeatLabel[] {
-  return beats.map((beat, index) => {
-    const row = (index % 2) as 0 | 1;
+  const labels: BeatLabel[] = [];
+  beats.forEach((beat, index) => {
     const x = xFor(beat.start, spanEighths, width, pad);
-    const next = beats[index + 2];
+    const next = beats[index + 1];
     const limit = next ? xFor(next.start, spanEighths, width, pad) : width - pad + LABEL_GAP_PX;
     const room = Math.max(0, limit - x - LABEL_GAP_PX);
-    const fits = Math.floor(room / GLYPH_PX);
-    let text: string;
-    if (fits >= beat.headline.length) text = beat.headline;
-    else if (fits >= 6) text = `${beat.headline.slice(0, fits - 1).trimEnd()}…`;
-    else text = String(index + 1);
-    return { id: beat.id, text, row, x };
+    const prefix = `${beat.number ?? index + 1} · `;
+    const avail = Math.floor(room / GLYPH_PX) - prefix.length;
+    if (avail < MIN_NAME_CHARS) return;
+    const name =
+      avail >= beat.headline.length
+        ? beat.headline
+        : `${beat.headline.slice(0, avail - 1).trimEnd()}…`;
+    labels.push({ id: beat.id, text: `${prefix}${name}`, x });
   });
+  return labels;
 }

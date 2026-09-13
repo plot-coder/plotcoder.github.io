@@ -1665,7 +1665,7 @@ body {
 }
 
 .canvas.has-map .note-board {
-  bottom: 88px;
+  bottom: 120px;
 }
 
 .canvas.has-ruler .note-board {
@@ -1673,7 +1673,7 @@ body {
 }
 
 .canvas.has-map .general-bar {
-  bottom: calc(88px + 1.1rem);
+  bottom: calc(120px + 1.1rem);
 }
 
 .canvas.has-ruler .general-bar {
@@ -1744,6 +1744,11 @@ body {
   fill: var(--over);
 }
 
+/* The target is still ahead: it sits at the end of the axis, pointing on. */
+.story-map__target-label--ahead {
+  text-anchor: end;
+}
+
 .story-map__band {
   fill: var(--slot);
 }
@@ -1770,9 +1775,6 @@ body {
   fill: transparent;
 }
 
-.story-map__card:hover .story-map__hit {
-  fill: var(--slot);
-}
 
 .story-map__mark {
   stroke: var(--ink);
@@ -1826,7 +1828,7 @@ body {
 
 /* The hint sits above the strip too. */
 .canvas.has-map .group-hint {
-  bottom: calc(88px + 1.3rem);
+  bottom: calc(120px + 1.3rem);
 }
 
 .canvas.has-ruler .group-hint {
@@ -1849,4 +1851,108 @@ body {
 .bar-icon:disabled {
   opacity: 0.35;
   cursor: default;
+}
+
+/* --- The filmstrip (R32, second revision) --------------------------------- */
+
+/* The card under the cursor reads itself here: beat number, headline, the
+   change line, cast, pages. Run the cursor along the strip and read the story. */
+.story-map__scrub {
+  position: absolute;
+  left: 8.4rem;
+  top: 0.28rem;
+  right: 12rem;
+  margin: 0;
+  font-family: "Iowan Old Style", Palatino, "Palatino Linotype", Georgia, serif;
+  font-size: 0.9rem;
+  line-height: 1.3;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+.story-map__scrub b {
+  font-weight: 600;
+}
+
+.story-map__scrub-meta {
+  margin-left: 0.6rem;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.story-map__block {
+  stroke: rgba(0, 0, 0, 0.35);
+  stroke-width: 0.5;
+  transition: opacity 180ms ease;
+}
+
+.story-map__card.is-dim .story-map__block {
+  opacity: 0.18;
+}
+
+.story-map__card.is-hover .story-map__block {
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+
+.story-map__card.is-selected .story-map__block {
+  stroke: var(--ink);
+  stroke-width: 2;
+}
+
+.story-map__beat-bar {
+  fill: rgba(31, 24, 16, 0.82);
+  pointer-events: none;
+}
+
+.story-map__fold {
+  fill: rgba(31, 24, 16, 0.5);
+  pointer-events: none;
+}
+
+.story-map__number {
+  font-size: 8px;
+  font-weight: 700;
+  fill: rgba(31, 24, 16, 0.85);
+  text-anchor: middle;
+  pointer-events: none;
+}
+
+.story-map__group {
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 1;
+}
+
+.story-map__group-label {
+  font-size: 8.5px;
+  fill: var(--muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+.story-map__sag {
+  fill: rgba(180, 83, 31, 0.35);
+}
+
+/* You are here: the pages the window is looking at, lit behind the blocks. */
+.story-map__here {
+  fill: var(--ink);
+  opacity: 0.09;
+}
+
+.story-map__setup {
+  stroke-width: 1.6;
+  opacity: 1;
+}
+
+.story-map__unpaid path {
+  stroke-width: 1.6;
 }

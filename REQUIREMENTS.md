@@ -701,6 +701,96 @@ Workflows composed from the tools, then agents building segments of the movie fr
 
 ---
 
+## Roadmap 2 — what remains, in order
+
+Written 2026-09-13 at Robert's ask, after the first roadmap's nine were built and merged, from every open thread this file still holds: the limits recorded inside R23, R36, R39 and R41, the parity table's last column, and the open questions. Every item is to be built or decided. The order is dependency first, then the value to a writer at the desk; the first item is not a feature. Each says what must be **decided** before it starts, whether it is **mocked first** (rule 5), what is **built**, what **done** means, and a **size** in sessions.
+
+### 0 · Put a real story through the app
+
+- **Why first:** R23 said pagination should wait until the pages had been used; the horizon says the brief should be used before any tool makes anything; the workflows are sentences nobody has said yet. Every remaining item below is better decided after one real story — a treatment broken into a wall, read, structured, drafted, printed — has gone through, and the wall has said where it hurts.
+- **Build:** nothing. Robert works a story; the questions that come up become requirements, in this file, with dates.
+- **Done when:** one board has a logline, beats, cards with places and cast, written scenes, and a printed page count, and the list of what hurt is written down.
+- **Size:** Robert's, not a session.
+
+### 1 · The way back — a forgotten password (R39)
+
+- **Decide first:** nothing; the plan is recorded in R39.
+- **Mock first — yes, small.** One line under You — "Add an email so you can reset your password" — the door's "Forgotten?" line, and the reset sheet. Ask whether it is the best we could do.
+- **Build:** an optional recovery email on the writer's row (not the auth address, which stays the name's); a reset by magic link through the plumbing already built; the door offering it only when an email exists.
+- **Done when:** a writer with an email can lose the password and keep the account; one without is told plainly at the door.
+- **Size:** half a session. **Before anyone real signs in**, because it is the only thing that can lose a writer their work.
+
+### 2 · The page as the editor (R23 c, the promise not yet kept)
+
+- **Decide first:** whether the page edits in place — the mockup promised it — or the current click-to-text is enough after item 0. Recommend in place.
+- **Mock first — yes.** Typing on the page with the break moving under the caret; what `(MORE)` and `(CONT'D)` do while you type across them; where the caret goes on Enter (a new action line, a cue after a blank).
+- **Build:** each scene on the page as an editable region whose lines are the paginator's, with the computed marks drawn between and never selectable; commit to the card's Fountain on a pause, as the text view does; the whole document re-paginated as you type.
+- **Done when:** a scene can be written entirely As pages, and Save as PDF prints exactly what was on screen.
+- **Size:** one to two sessions.
+
+### 3 · Final Draft, against the real thing (R23 c)
+
+- **Decide first:** obtain a file Final Draft itself wrote — Robert has the app or knows someone who does.
+- **Mock first — no.** Plumbing.
+- **Build:** the reader tested against that file; whatever it writes that the hand-made sample did not (styles, page-break flags, `ScriptNotes`, revision marks) read or knowingly dropped; the writer's output opened in Final Draft and checked on screen.
+- **Done when:** a script leaves Final Draft, lands on the wall, and goes back with nothing lost that a writer would notice.
+- **Size:** half a session, once the file is in hand.
+
+### 4 · The outline — the wall as a list (parity table)
+
+- **Decide first:** what reordering in a list does to a free wall. Recommend: the list is reading order; dragging a scene in it moves the card to sit after the one above it, on the row it now belongs to — an Organize of one card — so the list and the wall never disagree.
+- **Mock first — yes.** A list beside the wall (the pages panel's third view, As outline?) or the Story Map grown tall; scenes with headline, place, cast and pages, beats as headings; drag to reorder.
+- **Build:** a view over `readingOrder`, no second model (the combine log's rule); drag that dispatches `move_note`; the same `pageOf` the cards use.
+- **Done when:** a writer can restick a whole act from the list and the wall follows.
+- **Size:** one session.
+
+### 5 · Files on the project — a picture on a person's page (R36), and the store the horizon needs
+
+- **Decide first:** Supabase Storage on PlotCoder's own project, a bucket per project, access by membership like the tables. Recommend yes; it is the last thing the tables cannot hold.
+- **Mock first — yes, small.** The picture on the page, and how it is added (drop, or pick).
+- **Build:** the bucket and its policies; an `assets` table (project, kind, path, who, when); the picture on the person's page; the mirror carrying asset rows. This is also where the horizon's takes and prompts will live (R28), so the shape is decided here.
+- **Done when:** a face is on Maya's page on every device the project is on, and the rules refuse a stranger.
+- **Size:** one session.
+
+### 6 · The remote agent door (R4's note)
+
+- **Decide first:** how an agent signs in — recommend the writer's own name and password given to the agent's environment, never a service key in a client; the MCP server gains an account mode that talks to the project directly when no app is open.
+- **Mock first — no.** Plumbing; the skill says how.
+- **Build:** the MCP server reading and writing the account's project through the same mirror rules (revision, conflict as a second board), live changes landing on any open wall through Realtime; `open_project` and `list_projects` tools.
+- **Done when:** an agent with no dev server can break a treatment into a wall that appears on Robert's phone.
+- **Size:** one session. Needed before the horizon (item 9) and before workflows run from anywhere.
+
+### 7 · Small things the file names
+
+Half a session each, no mockup unless a person sees it; take them when they bite.
+
+- A **report by place**, and the Story Map lighting a **place's** scenes as it lights a person's (R37).
+- **A writer's own structure**, saved from a wall's beats, offered beside the five (R38).
+- **Card-level merging** when two writers change one card at the same moment; today the revision wins and the loser's change comes back as an undo-able step (R41). Wait for it to happen once.
+- **A lane per person** on the Story Map, if a season ever needs it (R32).
+- **Arrows changing reading order** (R22's first refinement), if Organize has not already made it moot.
+
+### 8 · The production half — question 23
+
+- **Decide first:** the question itself: the order within "last", and what is a non-goal. Recommend: **locked scene numbers with A/B pages** first (a paid job's first ask), then **revision colours and starred lines**, then **tagging for a breakdown and cast reports** (which the wall can already answer by person and place). Recommend nothing is a non-goal, only late.
+- **Mock first — yes**, each one, because each is a mode the wall has never had and D1 still says the wall is the centre.
+- **Build:** in that order, each as a slice with its own requirement number, none before item 0 has shown a script going to production.
+- **Size:** several sessions. **Not before a paid job needs it.**
+
+### 9 · The horizon proper — R28
+
+- **Decide first:** question 26, which video tool, as a provider behind the same kernel-facing surface; what a take is (a file on the project, item 5); who approves (the writer, from the brief, always).
+- **Mock first — yes**, and it is the biggest interface decision after pages: where a take is seen against its card, how takes are compared, what "use this one" does.
+- **Build:** a `build_segment` tool that hands a brief to the provider and files the take; takes on the card; the review sheet; the workflow "build this sequence as video" composed from it.
+- **Done when:** a sequence of the real story from item 0 exists as video segments the writer chose.
+- **Size:** several sessions, after 5 and 6.
+
+### Questions to decide when they bite
+
+- **3** — what else belongs on a card: nothing until item 0 says so.
+- **6** — a marketing page for plotcoder.com: when a second writer who is not Robert's collaborator arrives.
+- **8 and 9** — the general bar's contents, and whether a manual theme choice survives the clock: item 0.
+
 ## Proposed (not yet confirmed)
 
 These were recommended in conversation. They are defaults until Robert says otherwise.
@@ -910,3 +1000,4 @@ Add a dated heading and your verdict. Challenge requirements, don’t just affir
 | 2026-09-13 | **Roadmap item 9, first step: workflows and the brief.** Mocked workflow buttons in the bar beside a list in Reminders, asked, and kept the list — the app has no agent inside it, so the honest door is the sentence with Copy — and gave the brief a home on the wall. Six workflows as data shared by the app, the skill and the server; Reminders with three tabs; `segmentBrief` for a card or a run, a Brief control in the bar and a `segment_brief` tool. Questions 24 and 25 answered; 26 left open on purpose. Forty-three tools. |
 | 2026-09-13 | **The name on the door, a writer's projects, and people on a project (R39, R40, R41; D27 closed; question 5 answered).** Robert asked for a username-only door, a project picker, and the wordmark as the settings door. Mocked a name only (no lock), a name with a key, and then, on his decision, a name and a password with no rules, two shapes; built the sheet that answers the name. PlotCoder's own Supabase project made ($10 a month), with names, projects, members and boards, row-level security by membership, Realtime, and an edge function for claiming and renaming; the password hashed on the device so any password passes. The picker when there is a choice; the wordmark's sheet with You, Projects and People; share by name; changes live as undo-able steps; here now. Verified with two browsers and two names. Not built: a way back from a forgotten password. |
 | 2026-09-13 | **R23 slice c: pages that print, and Final Draft.** Drew the standard on a page, mocked three homes, asked, and built the plan's four pieces: a pure paginator with the industry's break rules, tested against a sample with known breaks; As pages in the panel with Print and Save as PDF through the browser; Final Draft out with scene numbers by wall order; Final Draft in through the same merge as Fountain, round trip clean. Cards say "p. 12"; every measure comes from the same lines as the page. Every bar icon names itself after a second's hover, at Robert's ask. Forty-six tools. Left: the page as the editor, a file Final Draft itself wrote for the reader's test, locked numbers. |
+| 2026-09-13 | **Merged and deployed** pull request #8 — pages that print, Final Draft, hover names. Then **Roadmap 2** written at Robert's ask: what remains, in order — put a real story through the app first; the way back from a forgotten password before anyone real signs in; the page as the editor; Final Draft against a real file; the outline as a list; files on the project; the remote agent door; the small things; the production half; the horizon. |

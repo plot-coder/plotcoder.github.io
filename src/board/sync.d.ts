@@ -48,3 +48,15 @@ export declare function openOutcome(input: {
   seenRev: number;
   dirty: boolean;
 }): OpenOutcome;
+
+export declare function planSignIn(input: {
+  isSeed: boolean;
+  localProjectId: string;
+  remoteProjectIds: string[];
+}): { pushLocalAsNew: boolean; open: string | null; pick: boolean };
+
+export declare function liveOutcome(input: {
+  remoteRev: number;
+  seenRev: number;
+  dirty: boolean;
+}): "nothing" | "adopt" | "conflict";

@@ -24,6 +24,8 @@ import { RemindersModal } from "./RemindersModal";
 import { StructureSheet } from "./StructureSheet";
 import { PagesPanel } from "./PagesPanel";
 import { BriefSheet } from "./BriefSheet";
+import { AccountSheet } from "./AccountSheet";
+import { ProjectPicker } from "./ProjectPicker";
 import { StoryMap } from "./StoryMap";
 import {
   applyTheme,
@@ -79,6 +81,8 @@ export function App() {
   const [barLayer, setBarLayer] = useState<BarLayer>(readBarLayer);
   const [remindersOpen, setRemindersOpen] = useState(false);
   const [projectOpen, setProjectOpen] = useState(false);
+  // You and your projects (R39, R40): the wordmark's sheet.
+  const [accountOpen, setAccountOpen] = useState(false);
   // Start from a structure (R38).
   const [structureOpen, setStructureOpen] = useState(false);
   // The brief (R28, first step): for the selected card or cards.
@@ -504,6 +508,7 @@ export function App() {
         onRemoveBoard={removeBoard}
         onRenameProject={boardStore.renameProject}
         onSetPremise={savePremise}
+        onOpenAccount={() => setAccountOpen(true)}
       />
       <Logline
         logline={board.logline}
@@ -552,7 +557,10 @@ export function App() {
           open={projectOpen}
           onOpen={() => setProjectOpen(true)}
           onClose={() => setProjectOpen(false)}
+          onSignIn={() => setAccountOpen(true)}
         />
+        <AccountSheet open={accountOpen} onClose={() => setAccountOpen(false)} currentProjectId={project.id} />
+        <ProjectPicker currentProjectId={project.id} />
         <StructureSheet
           open={structureOpen}
           board={board}

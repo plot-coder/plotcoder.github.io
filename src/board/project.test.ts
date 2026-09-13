@@ -13,6 +13,7 @@ import {
   setActiveBoard,
   setPremise,
   type ProjectRecord,
+  reidentifyProject,
 } from "./project";
 
 const NOW = "2026-01-01T00:00:00.000Z";
@@ -160,5 +161,23 @@ describe("normalizeProject", () => {
     const fixed = normalizeProject({ id: "p", boards: [] }, NOW);
     expect(fixed.boards).toHaveLength(1);
     expect(fixed.activeBoardId).toBe(fixed.boards[0].id);
+  });
+});
+
+describe("reidentifyProject (R40)", () => {
+  it("keeps everything but the id, which is fresh", () => {
+    const project = renameProject(emptyProject("2026-01-01T00:00:00.000Z"), "The Letter");
+    const fresh = reidentifyProject(project, "2026-02-01T00:00:00.000Z");
+    expect(fresh.id).not.toBe(project.id);
+    expect(fresh.name).toBe("The Letter");
+    // Every board too, with the open one still the open one, and a map back.
+    expect(fresh.boards).toHaveLength(project.boards.length);
+    expect(fresh.boards[0].id).not.toBe(project.boards[0].id);
+    expect(fresh.boards[0].name).toBe(project.boards[0].name);
+    expect(fresh.activeBoardId).toBe(fresh.boards[0].id);
+    expect(fresh.renamed[project.boards[0].id]).toBe(fresh.boards[0].id);
+    expect(fresh.updatedAt).toBe("2026-02-01T00:00:00.000Z");
+    // The map is not part of the record once normalized.
+    expect("renamed" in normalizeProject(fresh)).toBe(false);
   });
 });

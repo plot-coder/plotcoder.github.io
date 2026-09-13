@@ -49,3 +49,7 @@ export declare function renameProject(project: ProjectRecord, name: string, now?
 export declare function setPremise(project: ProjectRecord, premise: string, now?: string): ProjectRecord;
 export declare function boardById(project: ProjectRecord, id: string): BoardMeta | null;
 export declare function findBoard(project: ProjectRecord, key: string): BoardMeta | null;
+export declare function reidentifyProject(
+  project: ProjectRecord,
+  now?: string,
+): ProjectRecord & { renamed: Record<string, string> };

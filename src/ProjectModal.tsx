@@ -5,7 +5,6 @@ import {
   useState,
   useSyncExternalStore,
   type ChangeEvent,
-  type FormEvent,
 } from "react";
 import { accountStore, savedAgo, type SyncStatus } from "./board/account";
 import { boardStore } from "./board/store";
@@ -16,21 +15,20 @@ type ProjectModalProps = {
   open: boolean;
   onOpen: () => void;
   onClose: () => void;
+  /** Sign in lives on the wordmark's sheet (R39); this opens it. */
+  onSignIn: () => void;
 };
 
 // The transfer sheet (D10, R12, R4): the three ways to carry a project
 // somewhere — a file out, a file in, and an account that carries it for you.
 // Sign in lives here because that is what it is; the state of the mirror lives
 // on the button as a dot, so it is on screen without opening anything.
-export function ProjectModal({ open, onOpen, onClose }: ProjectModalProps) {
+export function ProjectModal({ open, onOpen, onClose, onSignIn }: ProjectModalProps) {
   const titleId = useId();
-  const emailId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [email, setEmail] = useState("");
-  const [sending, setSending] = useState(false);
   const account = useSyncExternalStore(accountStore.subscribe, accountStore.getAccount);
   // The sheet's "saved a moment ago" keeps time while it is open.
   const [, tick] = useState(0);
@@ -80,17 +78,6 @@ export function ProjectModal({ open, onOpen, onClose }: ProjectModalProps) {
       window.location.reload();
     } catch {
       setError("That file could not be opened as a PlotCoder project.");
-    }
-  }
-
-  async function sendLink(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!email.trim() || sending) return;
-    setSending(true);
-    try {
-      await accountStore.signIn(email);
-    } finally {
-      setSending(false);
     }
   }
 
@@ -146,7 +133,7 @@ export function ProjectModal({ open, onOpen, onClose }: ProjectModalProps) {
 
             {signedIn ? (
               <p className="project-copy project-account">
-                Signed in as <strong>{account.user?.email}</strong>
+                Signed in as <strong>{account.user?.name}</strong>
                 <span className="project-account__state">
                   <span className={`transfer-dot transfer-dot--${account.status} transfer-dot--inline`} aria-hidden="true" />
                   {stateLine(account.status, account.lastSavedAt)}
@@ -154,8 +141,7 @@ export function ProjectModal({ open, onOpen, onClose }: ProjectModalProps) {
               </p>
             ) : (
               <p className="project-copy">
-                Download this project as a file, upload one (or a .fountain script onto this board), or sign in
-                to keep it on every device.
+                Download this project as a file, or upload one (or a .fountain script onto this board).
               </p>
             )}
 
@@ -199,37 +185,24 @@ export function ProjectModal({ open, onOpen, onClose }: ProjectModalProps) {
             </div>
 
             {!signedIn && account.ready ? (
-              account.linkSentTo ? (
-                <p className="project-copy project-door">
-                  A link is on its way to <strong>{account.linkSentTo}</strong>. Open it on this device and
-                  you are in.
+              <div className="project-door">
+                <p className="project-copy">
+                  Sign in with a name and a password to keep this project on every device, or share it with
+                  another writer by name.
                 </p>
-              ) : (
-                <form className="project-door" onSubmit={sendLink}>
-                  <label className="project-door__label" htmlFor={emailId}>
+                <div className="project-actions">
+                  <button
+                    type="button"
+                    className="project-action"
+                    onClick={() => {
+                      onClose();
+                      onSignIn();
+                    }}
+                  >
                     Sign in
-                  </label>
-                  <div className="project-door__row">
-                    <input
-                      id={emailId}
-                      className="project-door__input"
-                      type="email"
-                      inputMode="email"
-                      autoComplete="email"
-                      placeholder="you@example.com"
-                      value={email}
-                      onChange={(event) => setEmail(event.target.value)}
-                    />
-                    <button type="submit" className="project-action" disabled={sending || !email.trim()}>
-                      {sending ? "Sending…" : "Send me a link"}
-                    </button>
-                  </div>
-                  <p className="project-copy project-door__hint">
-                    No password. A link arrives by email; open it on this device and you are in. Your wall
-                    stays on this device either way.
-                  </p>
-                </form>
-              )
+                  </button>
+                </div>
+              </div>
             ) : null}
 
             {signedIn ? (

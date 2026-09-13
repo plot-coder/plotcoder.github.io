@@ -1747,6 +1747,187 @@ body {
   line-height: 1.45;
 }
 
+/* --- The name on the door, you and your projects (R39, R40, R41) ---------- */
+
+.crumb__mark--door {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.crumb__mark--door:hover,
+.crumb__mark--door:focus-visible {
+  color: var(--ink);
+  outline: none;
+}
+
+.door {
+  margin-top: 1.1rem;
+}
+
+.door__label {
+  display: block;
+  margin: 0.8rem 0 0.35rem;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.door__input {
+  display: block;
+  width: 100%;
+  min-height: 2.15rem;
+  padding: 0 0.75rem;
+  border: 1px solid var(--bar-border);
+  border-radius: 999px;
+  background: var(--canvas);
+  color: var(--ink);
+  font: inherit;
+}
+
+.door__input:disabled {
+  opacity: 0.5;
+}
+
+.door__input:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+}
+
+.door__row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.door__show {
+  padding: 0 0.6rem;
+  min-height: 2.15rem;
+  border: 1px solid var(--bar-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.door__answer {
+  margin: 0.45rem 0 0;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.door__answer.is-free {
+  color: var(--over);
+}
+
+.account__group {
+  margin-top: 1.1rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--bar-border);
+}
+
+.account__group:first-of-type {
+  margin-top: 0.2rem;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.account__line {
+  margin: 0.2rem 0 0;
+  font-size: 1.05rem;
+}
+
+.account__line strong {
+  font-weight: 600;
+}
+
+.account__meta {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.account__line .account__meta {
+  margin-left: 0.5rem;
+}
+
+.account__meta.is-live {
+  color: #5f9e5f;
+}
+
+.account__form {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+
+.account__list {
+  margin: 0.3rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.account__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 0.6rem;
+  align-items: baseline;
+  width: 100%;
+  padding: 0.35rem 0.5rem;
+  border: 0;
+  border-radius: 0.3rem;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.account__row--person {
+  cursor: default;
+}
+
+.account__row:hover,
+.account__row:focus-visible {
+  background: var(--slot);
+  outline: none;
+}
+
+.account__row.is-on {
+  background: var(--slot);
+}
+
+.account__row.is-on .account__name {
+  font-weight: 600;
+}
+
+.account__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 1rem;
+}
+
+.account__add {
+  margin: 0.3rem 0.5rem 0;
+}
+
 /* --- Workflows and the brief (R27, R28) ------------------------------------ */
 
 .reminder-tabs {

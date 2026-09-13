@@ -134,3 +134,40 @@ export function openOutcome({ remoteRev, seenRev, dirty }) {
   if (remoteRev <= seenRev) return dirty ? "push" : "nothing";
   return dirty ? "conflict" : "adopt";
 }
+
+/**
+ * Meeting an account that can hold many projects (R40).
+ *
+ * - The account has none: this device's project becomes its first.
+ * - This device holds only the untouched seed wall: nothing to carry; open
+ *   the account's one project, or ask which when there are several.
+ * - This device holds work: it becomes a new project of the account, kept
+ *   whole, and the writer picks between it and the rest.
+ *
+ * Returns whether to push the local project as a new one, which project to
+ * open now (null when the writer should pick), and whether to show the picker.
+ */
+export function planSignIn({ isSeed, localProjectId, remoteProjectIds }) {
+  if (remoteProjectIds.length === 0) {
+    return { pushLocalAsNew: true, open: localProjectId, pick: false };
+  }
+  if (isSeed) {
+    return remoteProjectIds.length === 1
+      ? { pushLocalAsNew: false, open: remoteProjectIds[0], pick: false }
+      : { pushLocalAsNew: false, open: null, pick: true };
+  }
+  if (remoteProjectIds.includes(localProjectId)) {
+    return { pushLocalAsNew: false, open: localProjectId, pick: remoteProjectIds.length > 1 };
+  }
+  return { pushLocalAsNew: true, open: localProjectId, pick: true };
+}
+
+/**
+ * A change to a board arrived live from another person (R41). Take it when
+ * it is ahead of what this device saw and this device has nothing unpushed on
+ * that board; otherwise let the next push settle it as a conflict.
+ */
+export function liveOutcome({ remoteRev, seenRev, dirty }) {
+  if (remoteRev <= seenRev) return "nothing";
+  return dirty ? "conflict" : "adopt";
+}

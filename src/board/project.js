@@ -67,8 +67,10 @@ export function normalizeProject(value, now = nowIso()) {
   const activeBoardId = boards.some((board) => board.id === value.activeBoardId)
     ? value.activeBoardId
     : boards[0].id;
+  // `renamed` is reidentifyProject's map for the store, never part of the record.
+  const { renamed: _renamed, ...rest } = value;
   return {
-    ...value,
+    ...rest,
     version: PROJECT_VERSION,
     name: trimmed(value.name, DEFAULT_PROJECT_NAME),
     premise: typeof value.premise === "string" ? value.premise.trim() : "",
@@ -166,4 +168,25 @@ export function findBoard(project, key) {
     return project.boards[number - 1];
   }
   return null;
+}
+
+/**
+ * The same project under fresh ids — its own and every board's (R40). Used
+ * when this device's project is pushed to an account as a new one: the ids it
+ * carried may already be someone else's — every page under the dev bridge
+ * shares them, and a project file carries its author's — and a project's ids
+ * must be its own. The result carries `renamed`, old board id to new, which
+ * normalizeProject drops.
+ */
+export function reidentifyProject(project, now = nowIso()) {
+  const ids = new Map(project.boards.map((board) => [board.id, newId()]));
+  return {
+    ...project,
+    id: newId(),
+    boards: project.boards.map((board) => ({ ...board, id: ids.get(board.id), updatedAt: now })),
+    activeBoardId: ids.get(project.activeBoardId) ?? project.activeBoardId,
+    updatedAt: now,
+    /** Old board id → new, so a store can move each board's state along. */
+    renamed: Object.fromEntries(ids),
+  };
 }

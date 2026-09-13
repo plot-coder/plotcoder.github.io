@@ -23,6 +23,8 @@ type ProjectCrumbProps = {
   onRemoveBoard: (id: string) => void;
   onRenameProject: (name: string) => void;
   onSetPremise: (premise: string) => void;
+  /** The wordmark opens you and your projects (R39, R40). */
+  onOpenAccount: () => void;
 };
 
 function isTyping(target: EventTarget | null): boolean {
@@ -42,6 +44,7 @@ export function ProjectCrumb({
   onRemoveBoard,
   onRenameProject,
   onSetPremise,
+  onOpenAccount,
 }: ProjectCrumbProps) {
   const panelId = useId();
   const [open, setOpen] = useState(false);
@@ -84,7 +87,15 @@ export function ProjectCrumb({
 
   return (
     <div className={`crumb ${open ? "is-open" : ""}`}>
-      <span className="crumb__mark">PlotCoder</span>
+      <button
+        type="button"
+        className="crumb__mark crumb__mark--door"
+        aria-label="PlotCoder: you and your projects"
+        title="You and your projects"
+        onClick={onOpenAccount}
+      >
+        PlotCoder
+      </button>
       {many ? (
         <>
           <span className="crumb__sep" aria-hidden="true">

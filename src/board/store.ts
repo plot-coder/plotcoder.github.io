@@ -22,6 +22,7 @@ import {
   isProjectRecord,
   moveBoard as moveBoardIn,
   normalizeProject,
+  reidentifyProject,
   removeBoard as removeBoardFrom,
   renameBoard as renameBoardIn,
   renameProject as renameProjectTo,
@@ -417,6 +418,46 @@ class BoardStore {
     }
     saveBoard(id, state);
     this.scheduleProjectSync();
+  };
+
+  /**
+   * A whole project from the account lands here (R40): the record and every
+   * board's state replace what this device holds, and its open board is the
+   * wall. Used when the writer picks a project or one arrives on sign-in.
+   */
+  loadProject = (project: ProjectRecord, boards: Record<string, BoardState>): void => {
+    pruneBoards(project);
+    for (const [id, state] of Object.entries(boards)) saveBoard(id, normalizeState(state));
+    this.switchTo(project, boards[project.activeBoardId] ?? loadBoard(project.activeBoardId) ?? emptyState());
+  };
+
+  /** The same project under a fresh id, before it is pushed to an account as a new one (R40). */
+  reidentify = (): ProjectRecord => {
+    const { renamed, ...next } = reidentifyProject(this.project);
+    // Every board's state moves to its new key; the open board's is in hand.
+    for (const [oldId, newId] of Object.entries(renamed)) {
+      const state = oldId === this.project.activeBoardId ? this.state : loadBoard(oldId);
+      if (state) saveBoard(newId, state);
+    }
+    this.project = next;
+    saveProject(next);
+    pruneBoards(next);
+    this.emit();
+    if (this.syncTimer) clearTimeout(this.syncTimer);
+    if (this.projectSyncTimer) clearTimeout(this.projectSyncTimer);
+    void this.pushState();
+    void this.pushProject();
+    return next;
+  };
+
+  /** The record and every board's state, for pushing this device's project whole. */
+  snapshotProject = (): { project: ProjectRecord; boards: Record<string, BoardState> } => {
+    const boards: Record<string, BoardState> = {};
+    for (const board of this.project.boards) {
+      const state = this.boardState(board.id);
+      if (state) boards[board.id] = state;
+    }
+    return { project: this.project, boards };
   };
 
   /** The account's record lands here; a different open board switches the wall. */

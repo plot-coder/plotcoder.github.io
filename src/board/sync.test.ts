@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { addBoard, emptyProject, renameBoard, renameProject } from "./project";
-import { conflictName, deviceName, mergeProjects, openOutcome, pushOutcome, reconcileOnSignIn, resolveBoardConflict } from "./sync";
+import { conflictName, deviceName, liveOutcome, mergeProjects, openOutcome, planSignIn, pushOutcome, reconcileOnSignIn, resolveBoardConflict } from "./sync";
 
 const NOW = new Date("2026-09-13T15:14:00");
 const AT = "2026-01-01T00:00:00.000Z";
@@ -128,5 +128,27 @@ describe("mergeProjects", () => {
     const remote = laptop();
     const local = { ...emptyProject(AT), boards: [], activeBoardId: "gone" };
     expect(mergeProjects(remote, local, NOW)).toBe(remote);
+  });
+});
+
+describe("planSignIn (R40)", () => {
+  it("seeds an empty account, adopts the account's one project over a seed wall, and asks when there are several", () => {
+    expect(planSignIn({ isSeed: false, localProjectId: "L", remoteProjectIds: [] })).toEqual({ pushLocalAsNew: true, open: "L", pick: false });
+    expect(planSignIn({ isSeed: true, localProjectId: "L", remoteProjectIds: ["A"] })).toEqual({ pushLocalAsNew: false, open: "A", pick: false });
+    expect(planSignIn({ isSeed: true, localProjectId: "L", remoteProjectIds: ["A", "B"] })).toEqual({ pushLocalAsNew: false, open: null, pick: true });
+  });
+
+  it("keeps this device's work as a new project and lets the writer pick", () => {
+    expect(planSignIn({ isSeed: false, localProjectId: "L", remoteProjectIds: ["A"] })).toEqual({ pushLocalAsNew: true, open: "L", pick: true });
+    expect(planSignIn({ isSeed: false, localProjectId: "A", remoteProjectIds: ["A", "B"] })).toEqual({ pushLocalAsNew: false, open: "A", pick: true });
+    expect(planSignIn({ isSeed: false, localProjectId: "A", remoteProjectIds: ["A"] })).toEqual({ pushLocalAsNew: false, open: "A", pick: false });
+  });
+});
+
+describe("liveOutcome (R41)", () => {
+  it("adopts a live change that is ahead when this device is clean, and flags it when dirty", () => {
+    expect(liveOutcome({ remoteRev: 2, seenRev: 2, dirty: false })).toBe("nothing");
+    expect(liveOutcome({ remoteRev: 3, seenRev: 2, dirty: false })).toBe("adopt");
+    expect(liveOutcome({ remoteRev: 3, seenRev: 2, dirty: true })).toBe("conflict");
   });
 });

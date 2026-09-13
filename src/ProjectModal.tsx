@@ -1,4 +1,13 @@
-import { useEffect, useId, useRef, useState, type ChangeEvent } from "react";
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type ChangeEvent,
+  type FormEvent,
+} from "react";
+import { accountStore, savedAgo, type SyncStatus } from "./board/account";
 import { boardStore } from "./board/store";
 import { downloadProject, importProject } from "./projectStore";
 
@@ -8,11 +17,21 @@ type ProjectModalProps = {
   onClose: () => void;
 };
 
+// The transfer sheet (D10, R12, R4): the three ways to carry a project
+// somewhere — a file out, a file in, and an account that carries it for you.
+// Sign in lives here because that is what it is; the state of the mirror lives
+// on the button as a dot, so it is on screen without opening anything.
 export function ProjectModal({ open, onOpen, onClose }: ProjectModalProps) {
   const titleId = useId();
+  const emailId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
+  const [email, setEmail] = useState("");
+  const [sending, setSending] = useState(false);
+  const account = useSyncExternalStore(accountStore.subscribe, accountStore.getAccount);
+  // The sheet's "saved a moment ago" keeps time while it is open.
+  const [, tick] = useState(0);
 
   useEffect(() => {
     if (!open) return;
@@ -24,7 +43,11 @@ export function ProjectModal({ open, onOpen, onClose }: ProjectModalProps) {
     }
 
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    const timer = setInterval(() => tick((n) => n + 1), 30_000);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      clearInterval(timer);
+    };
   }, [open, onClose]);
 
   function saveProject() {
@@ -43,11 +66,27 @@ export function ProjectModal({ open, onOpen, onClose }: ProjectModalProps) {
       // The board file must hold the opened wall before the reload, or the
       // reload takes the dev bridge's old copy back (see boardStore.adoptLocal).
       await boardStore.adoptLocal();
+      // Every board of the file is new to the account.
+      accountStore.markAllDirty();
       window.location.reload();
     } catch {
       setError("That file could not be opened as a PlotCoder project.");
     }
   }
+
+  async function sendLink(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!email.trim() || sending) return;
+    setSending(true);
+    try {
+      await accountStore.signIn(email);
+    } finally {
+      setSending(false);
+    }
+  }
+
+  const signedIn = account.user !== null;
+  const dot = signedIn ? dotFor(account.status) : null;
 
   return (
     <>
@@ -55,13 +94,14 @@ export function ProjectModal({ open, onOpen, onClose }: ProjectModalProps) {
         type="button"
         className="project-launch"
         onClick={onOpen}
-        aria-label="Save or open project"
-        title="Save or open project"
+        aria-label={dot ? `Save, open, or sync project — ${dot.label}` : "Save, open, or sync project"}
+        title={dot ? `Save, open, or sync · ${dot.label}` : "Save, open, or sync"}
       >
         <span className="transfer-icon" aria-hidden="true">
           <span className="transfer-icon__up" />
           <span className="transfer-icon__down" />
         </span>
+        {dot ? <span className={`transfer-dot transfer-dot--${account.status}`} aria-hidden="true" /> : null}
       </button>
 
       {open ? (
@@ -82,7 +122,7 @@ export function ProjectModal({ open, onOpen, onClose }: ProjectModalProps) {
               <div>
                 <p className="modal__kicker">Project</p>
                 <h2 id={titleId} className="modal__title">
-                  Save or open
+                  Save, open, or sync
                 </h2>
               </div>
               <button
@@ -95,11 +135,21 @@ export function ProjectModal({ open, onOpen, onClose }: ProjectModalProps) {
               </button>
             </div>
 
-            <p className="project-copy">
-              Download this browser’s local storage as a project file, or upload
-              one to restore it. This is how you move work between computers
-              until Supabase exists.
-            </p>
+            {signedIn ? (
+              <p className="project-copy project-account">
+                Signed in as <strong>{account.user?.email}</strong>
+                <span className="project-account__state">
+                  <span className={`transfer-dot transfer-dot--${account.status} transfer-dot--inline`} aria-hidden="true" />
+                  {stateLine(account.status, account.lastSavedAt)}
+                </span>
+              </p>
+            ) : (
+              <p className="project-copy">
+                Download this project as a file, upload one, or sign in to keep it on every device.
+              </p>
+            )}
+
+            {account.notice ? <p className="project-notice">{account.notice}</p> : null}
 
             <div className="project-actions">
               <button type="button" className="project-action" onClick={saveProject}>
@@ -112,6 +162,15 @@ export function ProjectModal({ open, onOpen, onClose }: ProjectModalProps) {
               >
                 Open project
               </button>
+              {signedIn ? (
+                <button
+                  type="button"
+                  className="project-action project-action--ghost"
+                  onClick={() => void accountStore.signOut()}
+                >
+                  Sign out
+                </button>
+              ) : null}
               <input
                 ref={fileRef}
                 className="project-file"
@@ -121,10 +180,77 @@ export function ProjectModal({ open, onOpen, onClose }: ProjectModalProps) {
               />
             </div>
 
+            {!signedIn && account.ready ? (
+              account.linkSentTo ? (
+                <p className="project-copy project-door">
+                  A link is on its way to <strong>{account.linkSentTo}</strong>. Open it on this device and
+                  you are in.
+                </p>
+              ) : (
+                <form className="project-door" onSubmit={sendLink}>
+                  <label className="project-door__label" htmlFor={emailId}>
+                    Sign in
+                  </label>
+                  <div className="project-door__row">
+                    <input
+                      id={emailId}
+                      className="project-door__input"
+                      type="email"
+                      inputMode="email"
+                      autoComplete="email"
+                      placeholder="you@example.com"
+                      value={email}
+                      onChange={(event) => setEmail(event.target.value)}
+                    />
+                    <button type="submit" className="project-action" disabled={sending || !email.trim()}>
+                      {sending ? "Sending…" : "Send me a link"}
+                    </button>
+                  </div>
+                  <p className="project-copy project-door__hint">
+                    No password. A link arrives by email; open it on this device and you are in. Your wall
+                    stays on this device either way.
+                  </p>
+                </form>
+              )
+            ) : null}
+
+            {signedIn ? (
+              <p className="project-copy project-door__hint">
+                A file is still yours to keep; sync is a mirror, not a lock.
+              </p>
+            ) : null}
+
             {error ? <p className="project-error">{error}</p> : null}
+            {account.error ? <p className="project-error">{account.error}</p> : null}
           </div>
         </div>
       ) : null}
     </>
   );
+}
+
+function dotFor(status: SyncStatus): { label: string } {
+  switch (status) {
+    case "saved":
+      return { label: "saved to your account" };
+    case "saving":
+      return { label: "saving" };
+    case "offline":
+      return { label: "offline, changes waiting" };
+    default:
+      return { label: "signed in" };
+  }
+}
+
+function stateLine(status: SyncStatus, lastSavedAt: string | null): string {
+  switch (status) {
+    case "saving":
+      return "saving…";
+    case "offline":
+      return "offline, changes waiting";
+    case "saved":
+      return `saved ${savedAgo(lastSavedAt)}`;
+    default:
+      return lastSavedAt ? `last saved ${savedAgo(lastSavedAt)}` : "nothing saved yet";
+  }
 }

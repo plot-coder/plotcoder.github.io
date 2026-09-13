@@ -5,6 +5,7 @@ import { GeneralBar, type BarLayer } from "./GeneralBar";
 import { Logline } from "./Logline";
 import { NoteBoard } from "./NoteBoard";
 import { ProjectCrumb } from "./ProjectCrumb";
+import { accountStore } from "./board/account";
 import { boardStore, installWindowApi } from "./board/store";
 import { type NoteColor, type NoteRank } from "./noteMock";
 import { readWall } from "./board/readWall";
@@ -145,6 +146,7 @@ export function App() {
 
   useEffect(() => {
     boardStore.start();
+    accountStore.start();
     installWindowApi();
     return () => boardStore.stop();
   }, []);

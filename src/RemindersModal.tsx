@@ -30,6 +30,8 @@ export function RemindersModal({ open, board, onOpen, onClose }: RemindersModalP
 
   useEffect(() => {
     if (!open) return;
+    // The account mirror may have written reminders since the last look.
+    setReminders(readReminders());
     closeRef.current?.focus();
 
     function onKey(event: KeyboardEvent) {

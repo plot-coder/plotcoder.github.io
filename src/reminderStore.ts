@@ -79,8 +79,20 @@ export function readReminders(): Reminder[] {
   }
 }
 
+// Fired on every write so the account mirror (R4) knows reminders moved.
+export const REMINDERS_EVENT = "plotcoder:reminders";
+
+export function isReminderList(value: unknown): value is Reminder[] {
+  return Array.isArray(value) && value.every(isReminder);
+}
+
 export function writeReminders(reminders: Reminder[]) {
   localStorage.setItem(REMINDERS_KEY, JSON.stringify(reminders));
+  try {
+    window.dispatchEvent(new Event(REMINDERS_EVENT));
+  } catch {
+    /* no window: nothing listening */
+  }
 }
 
 export function titleFromBody(body: string) {

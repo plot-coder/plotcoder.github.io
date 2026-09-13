@@ -270,6 +270,124 @@ body {
   display: none;
 }
 
+/* The account mirror's state (R4): a dot on the transfer button, and the
+   same dot inline in the sheet. Signed out there is no dot at all. */
+.project-launch {
+  position: relative;
+}
+
+.transfer-dot {
+  position: absolute;
+  top: 0.3rem;
+  right: 0.3rem;
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: 50%;
+  background: var(--muted);
+  box-shadow: 0 0 0 2px var(--bar);
+}
+
+.transfer-dot--saved {
+  background: #5f9e5f;
+}
+
+.transfer-dot--saving {
+  animation: transfer-pulse 1s ease-in-out infinite;
+}
+
+.transfer-dot--offline {
+  background: var(--over);
+}
+
+.transfer-dot--inline {
+  position: static;
+  display: inline-block;
+  box-shadow: none;
+  margin-right: 0.4rem;
+  vertical-align: 0.05rem;
+}
+
+@keyframes transfer-pulse {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .transfer-dot--saving {
+    animation: none;
+  }
+}
+
+.project-account strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.project-account__state {
+  display: block;
+  margin-top: 0.25rem;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.78rem;
+}
+
+.project-notice {
+  margin: 0.9rem 0 0;
+  padding: 0.6rem 0.8rem;
+  border-left: 3px solid var(--over);
+  background: var(--slot);
+  line-height: 1.5;
+}
+
+.project-door {
+  margin-top: 1.4rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--bar-border);
+}
+
+.project-door__label {
+  display: block;
+  margin-bottom: 0.45rem;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.project-door__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.project-door__input {
+  flex: 1 1 12rem;
+  min-height: 2.15rem;
+  padding: 0 0.75rem;
+  border: 1px solid var(--bar-border);
+  border-radius: 999px;
+  background: var(--canvas);
+  color: var(--ink);
+  font: inherit;
+}
+
+.project-door__input:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+}
+
+.project-action:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.project-door__hint {
+  margin-top: 0.75rem;
+  font-size: 0.9em;
+}
+
 .project-error {
   margin-top: 0.9rem;
   color: #c45c4a;

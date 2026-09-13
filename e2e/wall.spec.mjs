@@ -113,7 +113,7 @@ test("a saved project reopens with the wall it held", async ({ page, request }) 
   });
   await expect(page.locator("article.note")).toHaveCount(4);
 
-  await page.getByLabel("Save or open project").click();
+  await page.getByLabel(/Save, open, or sync project/).click();
   const [download] = await Promise.all([
     page.waitForEvent("download"),
     page.getByRole("button", { name: "Save project" }).click(),
@@ -133,7 +133,7 @@ test("a saved project reopens with the wall it held", async ({ page, request }) 
   await expect(page.getByLabel("Logline")).toHaveText("");
 
   // Open the file. The app reloads itself after importing.
-  await page.getByLabel("Save or open project").click();
+  await page.getByLabel(/Save, open, or sync project/).click();
   await Promise.all([
     page.waitForEvent("load"),
     page.locator("input.project-file").setInputFiles(saved),

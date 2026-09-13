@@ -15,6 +15,7 @@
 import { History } from "./history";
 import {
   addBoard as addBoardTo,
+  DEFAULT_PROJECT_NAME,
   emptyProject,
   isProjectRecord,
   moveBoard as moveBoardIn,
@@ -350,6 +351,58 @@ class BoardStore {
 
   setPremise = (premise: string): void => {
     this.setProject(setPremiseOn(this.project, premise));
+  };
+
+  // --- the account mirror (R4) --------------------------------------------
+
+  /** The state of any board of the project: the open one live, the rest from storage. */
+  boardState = (id: string): BoardState | null =>
+    id === this.project.activeBoardId ? this.state : loadBoard(id);
+
+  /**
+   * True while this browser holds nothing but the untouched seed wall under
+   * the default project name: not work, so meeting an account with a project
+   * in it adopts that project rather than carrying the seed in beside it.
+   */
+  isSeedProject = (): boolean => {
+    if (this.project.boards.length !== 1) return false;
+    if (this.project.name !== DEFAULT_PROJECT_NAME || this.project.premise) return false;
+    const seed = seedState();
+    const headlines = (state: BoardState) => state.notes.map((note) => note.headline).join("\u0000");
+    return (
+      headlines(this.state) === headlines(seed) &&
+      this.state.arrows.length === seed.arrows.length &&
+      this.state.groups.length === seed.groups.length &&
+      this.state.logline === seed.logline
+    );
+  };
+
+  /**
+   * The account's copy of a board lands here. On the open board it is an undo
+   * step, like an agent's change over the bridge; on another board it goes
+   * straight to storage for the next switch.
+   */
+  replaceBoard = (id: string, state: BoardState): void => {
+    if (id === this.project.activeBoardId) {
+      if (JSON.stringify(state) === JSON.stringify(this.state)) return;
+      this.history.record(this.state);
+      this.setState(state);
+      this.refreshHistory();
+      this.scheduleSync();
+      return;
+    }
+    saveBoard(id, state);
+    this.scheduleProjectSync();
+  };
+
+  /** The account's record lands here; a different open board switches the wall. */
+  adoptProject = (project: ProjectRecord): void => {
+    if (project === this.project) return;
+    if (project.activeBoardId !== this.project.activeBoardId) {
+      this.switchTo(project, loadBoard(project.activeBoardId) ?? emptyState());
+      return;
+    }
+    this.setProject(project);
   };
 
   private switchTo(project: ProjectRecord, state: BoardState): void {

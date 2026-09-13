@@ -61,4 +61,4 @@ An agent should call the tools, never fake mouse drags. The skill in `.cursor/sk
 
 ## Status
 
-Version 0.1.0. A project of boards per browser, no accounts yet. Supabase and the progressive web app are decided but not built. The wall, beats, card length, groups, arrows, pan and zoom, save and open, and the agent surface are in use.
+Version 0.1.0. A project of boards; sign in by email link from the transfer button and the same project follows you to every device (Supabase, R4), or stay signed out and work on this device as before. The progressive web app is decided but not built. The wall, beats, card length, groups, arrows, pan and zoom, save and open, and the agent surface are in use.

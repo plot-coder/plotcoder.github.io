@@ -1,4 +1,6 @@
-// Four checks over the doors into the kernel. Not a pixel suite: each one asks
+// Four checks over the doors into the kernel. Headlines are looked up on the card
+// itself: the Story Map repeats each one as an SVG title, and a text lookup would
+// match both. Not a pixel suite: each one asks
 // whether a change made through one door shows up through the others.
 
 import fs from "node:fs";
@@ -20,7 +22,7 @@ test("the wall loads the seed cards with no console errors", async ({ page }) =>
 
   await expect(page.getByText("PlotCoder", { exact: true })).toBeVisible();
   await expect(page.locator("article.note")).toHaveCount(3);
-  await expect(page.getByText("Maya finds the letter")).toBeVisible();
+  await expect(page.locator(".note__headline", { hasText: "Maya finds the letter" })).toBeVisible();
   await expect(page.getByLabel("Logline")).toHaveText("");
   expect(errors).toEqual([]);
 });
@@ -45,7 +47,7 @@ test("an MCP tool call lands on the open wall", async ({ page, request }) => {
     expect(created?.id).toBeTruthy();
 
     // The wall is what the writer sees; the bridge is what the file holds.
-    await expect(page.getByText("Sam steals the van")).toBeVisible();
+    await expect(page.locator(".note__headline", { hasText: "Sam steals the van" })).toBeVisible();
     await expect(page.locator("article.note")).toHaveCount(4);
     await expect(page.locator("article.note.is-beat")).toHaveCount(1);
 
@@ -137,7 +139,7 @@ test("a saved project reopens with the wall it held", async ({ page, request }) 
 
   await expect(page.getByLabel("Logline")).toHaveText("Can Maya forgive a useful lie?");
   await expect(page.locator("article.note")).toHaveCount(4);
-  await expect(page.getByText("Sam steals the van")).toBeVisible();
+  await expect(page.locator(".note__headline", { hasText: "Sam steals the van" })).toBeVisible();
 
   // And the bridge — the agent's view — holds the reopened wall, not the old one.
   await expect

@@ -132,6 +132,27 @@ export function fitView(
   };
 }
 
+/**
+ * Bring one card to the middle of the window without changing the zoom —
+ * what a click on the Story Map does. If the wall is zoomed out past where a
+ * card is readable, come in to a readable size first.
+ */
+export function centerOn(
+  view: View,
+  note: { x: number; y: number },
+  size: Size,
+  minScale = 0.6,
+): View {
+  const scale = clampScale(Math.max(view.scale, minScale));
+  const cx = note.x + NOTE_WIDTH / 2;
+  const cy = note.y + NOTE_HEIGHT / 2;
+  return {
+    scale,
+    x: size.width / 2 - cx * scale,
+    y: size.height / 2 - cy * scale,
+  };
+}
+
 /** The board-space rectangle currently on screen. Useful for placing new cards. */
 export function visibleBox(view: View, size: Size): Box {
   const topLeft = toBoard({ x: 0, y: 0 }, view);

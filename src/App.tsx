@@ -247,6 +247,7 @@ export function App() {
       <div className="top-actions">
         <RemindersModal
           open={remindersOpen}
+          board={board}
           onOpen={() => setRemindersOpen(true)}
           onClose={() => setRemindersOpen(false)}
         />

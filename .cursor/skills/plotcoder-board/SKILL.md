@@ -38,6 +38,12 @@ lands on the exact same board a person sees.
 - `list_board` — the logline, the beat/scene counts, the runtime estimate against
   the target, then every **card**, **group**, and **arrow** with its **id**. This
   is the only place ids come from.
+- `read_wall` — step 4 of the method. The beats in wall order, the pages of
+  scenes between consecutive beats, and the **questions the wall raises**: a run
+  out of proportion with the others, a card with no change line, a card no arrow
+  touches, two headlines that read like the same scene, a group too long to be
+  one sequence. Put the questions to the writer. Do not act on them unasked, and
+  do not add an opinion about the number of beats.
 
 ### Cards
 

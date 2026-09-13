@@ -121,6 +121,18 @@ class BoardStore {
     void this.pushState();
   };
 
+  // After Open project has rewritten localStorage, make the bridge (and so the
+  // file) match it before the page reloads. Without this the reload adopts the
+  // bridge's copy of the *old* wall — the first bridge frame always wins on a
+  // fresh page — and the opened project is silently undone whenever the dev
+  // server is running. Found by the end-to-end suite; a no-op in production.
+  adoptLocal = async (): Promise<void> => {
+    const local = loadLocal();
+    if (!local) return;
+    this.setState(local);
+    await this.pushState();
+  };
+
   start = (): void => {
     if (this.started) return;
     this.started = true;

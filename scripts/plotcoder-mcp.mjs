@@ -29,6 +29,7 @@ import {
   NOTE_RANKS,
   seedState,
 } from "../src/board/reducer.js";
+import { describeRuns, readWall } from "../src/board/readWall.js";
 
 const colorSchema = z.enum(NOTE_COLORS);
 const rankSchema = z.enum(NOTE_RANKS);
@@ -448,6 +449,39 @@ server.registerTool(
     const { result } = await commit({ type: "delete_note", id: args.id });
     if (result === undefined) return ok(`No card with id ${args.id}.`);
     return ok("Deleted card.", result);
+  },
+);
+
+// --- Read the wall (R22) ----------------------------------------------------
+
+server.registerTool(
+  "read_wall",
+  {
+    title: "Read the wall",
+    description:
+      "Read the board back: the beats in wall order (rows top to bottom, cards left to right), the pages of scenes between consecutive beats, and the questions the wall raises — a run out of proportion with the others, a card with no change line, a card no arrow touches, two headlines that read like the same scene, a group too long to be one sequence. These are questions, not fixes: put them to the writer and do not act on them unasked. It says nothing about how many beats there should be, and neither should you.",
+    inputSchema: {},
+  },
+  async () => {
+    const { state, live } = await readBoard();
+    const reading = readWall(state);
+    const runs = describeRuns(reading, state);
+    // No blank lines: ok() splits prose from payload on the first one.
+    const lines = [
+      `PlotCoder wall (${live ? "live: app is open" : "from file: app not running"})`,
+      `beats in wall order: ${
+        reading.beats.length
+          ? reading.beats.map((beat) => `"${beat.headline}"`).join(", ")
+          : "(none marked)"
+      }`,
+      "runs between beats:",
+      ...(runs.length ? runs.map((line) => `  - ${line}`) : ["  (none)"]),
+      "questions the wall raises:",
+      ...(reading.findings.length
+        ? reading.findings.map((finding) => `  - [${finding.kind}] ${finding.text}`)
+        : ["  (none that this reading can see)"]),
+    ];
+    return ok(lines.join("\n"), reading);
   },
 );
 

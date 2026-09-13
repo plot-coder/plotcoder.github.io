@@ -1,0 +1,26 @@
+# PlotCoder — notes for agents
+
+Read `REQUIREMENTS.md` before reviewing or adding code. It is the source of truth for what PlotCoder is and why. Treat **confirmed** items as constraints and **proposed** or **open** items as discussion. Challenge the design against the requirements rather than inventing scope.
+
+## Purpose
+
+PlotCoder is a set of tools for building a storyline, covering what a writer does in Final Draft, built so that an **agent driven by a person** has every one of those tools (D24, R26). The person directs; the agent operates. A feature is not done until it has a tool. The far horizon (D25, R28) is agents building video segments of the movie from the storyline; nothing is built toward it yet, but do not add a second model for scenes, sequences, or segments — the wall's records are already those things.
+
+## Rules that shape every change
+
+- **One kernel.** Every board mutation goes through `src/board/reducer.js`. The wall, `window.plotcoder`, and the MCP server all call it. Never mutate board records anywhere else.
+- **Keep the kernel DOM-free.** No `window`, `localStorage`, or `import.meta` in `reducer.js`. It runs in Node for the MCP server.
+- **Adding a field** to a card or the board: leave `isBoardState` alone, repair shape in `normalizeState`, and choose the default that claims nothing. Every load boundary already calls `normalizeState`.
+- **Viewport is not board data.** Pan and zoom stay out of `BoardState`, the project file, and later Postgres (D18).
+- **Rank is on the card, not the wall.** Marking a beat never moves it (D20). The app counts beats and stays quiet (D21).
+- **Project data that is not board data** goes in its own `plotcoder.*` key with a small store, like reminders and the premise.
+- **New editable text** uses `src/EditableText.tsx`. Do not write another `contentEditable`.
+- **Agents call tools, never fake pointer drags.** The MCP server is `scripts/plotcoder-mcp.mjs`; the skill is in `.cursor/skills/plotcoder-board/SKILL.md`.
+
+## Process
+
+- When Robert states a need, add it to `REQUIREMENTS.md` as a numbered requirement with date, status, and reason. Do not renumber. Record decisions in the file, not only in chat.
+- When two tools overlap, add a row to the combine log rather than building a second model.
+- Update "What is built and what is left" when a status changes.
+- Tests: `npm test` covers the DOM-free half — kernel, pure helpers, MCP server. `npm run test:e2e` is a four-spec Playwright suite over the doors into the kernel (wall, `window.plotcoder`, dev bridge, MCP), not pixels. A change to the kernel or the MCP server needs a unit test; add an end-to-end spec only for a new door or a bug in one. Gestures themselves stay untested.
+- Build: `npm run build` typechecks and bundles. A failing test blocks the Pages deploy.

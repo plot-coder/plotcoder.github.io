@@ -135,6 +135,7 @@ describe("plotcoder MCP server", () => {
       "delete_note",
       "list_board",
       "move_note",
+      "read_wall",
       "recolor_note",
       "rename_group",
       "set_length",
@@ -585,5 +586,97 @@ describe("plotcoder MCP server with the app open", () => {
     await liveClient.callTool("move_note", { id: "tom-lies", x: 900, y: 40 });
     const moved = bridge.getState().notes.find((note) => note.id === "tom-lies");
     expect(moved).toMatchObject({ x: 900, y: 40 });
+  });
+});
+
+
+// Step 4 of the method through the agent door: the wall read back as runs and
+// questions. Built on its own board so the narrative above stays untouched.
+describe("read_wall", () => {
+  let reader;
+  let readerRoot;
+
+  beforeAll(async () => {
+    readerRoot = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-read-"));
+    reader = new McpClient(readerRoot);
+    await reader.start();
+
+    // A fresh board starts from the seed cards; clear them so the reading is
+    // over the wall this test lays out, and nothing else.
+    for (const seeded of ["maya-letter", "tom-lies", "letter-aloud"]) {
+      await reader.callTool("delete_note", { id: seeded });
+    }
+
+    const cards = [
+      ["Inciting", "beat", 1],
+      ["Setup a", "scene", 3],
+      ["Lock in", "beat", 1],
+      ["Long b", "scene", 4],
+      ["Long c", "scene", 4],
+      ["Long d", "scene", 4],
+      ["Midpoint", "beat", 1],
+      ["Fall e", "scene", 3],
+      ["All is lost", "beat", 1],
+    ];
+    for (const [index, [headline, rank, pages]] of cards.entries()) {
+      await reader.callTool("create_note", {
+        headline,
+        change: `${headline} changes things.`,
+        rank,
+        pages,
+        x: 100 + index * 230,
+        y: 100,
+      });
+    }
+  }, 30000);
+
+  afterAll(() => {
+    reader?.stop();
+    if (readerRoot) fs.rmSync(readerRoot, { recursive: true, force: true });
+  });
+
+  it("is listed as a tool", async () => {
+    const { tools } = await reader.request("tools/list", {});
+    expect(tools.map((tool) => tool.name)).toContain("read_wall");
+  });
+
+  it("reports the beats in wall order and the runs between them", async () => {
+    const text = await reader.callTool("read_wall");
+    expect(text).toContain("from file: app not running");
+    expect(text).toContain(
+      'beats in wall order: "Inciting", "Lock in", "Midpoint", "All is lost"',
+    );
+    expect(text).toContain('"Inciting" → "Lock in": about 3 pages, 1 card');
+    expect(text).toContain('"Lock in" → "Midpoint": about 12 pages, 3 cards');
+    expect(text).toContain('"Midpoint" → "All is lost": about 3 pages, 1 card');
+  });
+
+  it("raises the sag as a question, with the ids in the payload", async () => {
+    const text = await reader.callTool("read_wall");
+    expect(text).toContain('[sag] About 12 pages run between "Lock in" and "Midpoint"');
+    expect(text).toMatch(/set piece\?/);
+
+    const reading = await reader.callToolData("read_wall");
+    const sag = reading.findings.find((finding) => finding.kind === "sag");
+    expect(sag.ids).toHaveLength(2);
+    expect(reading.order).toHaveLength(9);
+    expect(reading.runs).toHaveLength(3);
+  });
+
+  it("says nothing about the number of beats", async () => {
+    const text = await reader.callTool("read_wall");
+    expect(text).not.toMatch(/too (many|few)/);
+    expect(text).not.toMatch(/\b(8|15) beats\b/);
+  });
+
+  it("notices a card that has not been written yet", async () => {
+    await reader.callTool("create_note", {
+      headline: "Coda",
+      change: "What changes?",
+      x: 100,
+      y: 500,
+    });
+    const text = await reader.callTool("read_wall");
+    expect(text).toContain('[unwritten] "Coda" has no change line. What is different when it ends?');
   });
 });

@@ -19,7 +19,11 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 // This plugin never ships to production (GitHub Pages) because it only attaches
 // to the dev server.
 function plotcoderBridge(): Plugin {
-  const boardPath = path.resolve(process.cwd(), ".plotcoder/board.json");
+  // PLOTCODER_BOARD_FILE lets a test run point the bridge at a throwaway file,
+  // so end-to-end tests never overwrite the writer's own .plotcoder/board.json.
+  const boardPath = process.env.PLOTCODER_BOARD_FILE
+    ? path.resolve(process.env.PLOTCODER_BOARD_FILE)
+    : path.resolve(process.cwd(), ".plotcoder/board.json");
   let state: unknown = null;
   let rev = 0;
   const clients = new Set<ServerResponse>();

@@ -388,6 +388,50 @@ body {
   line-height: 1.55;
 }
 
+/* Read the wall (R22): the principles checked against the actual board. */
+.wall-read {
+  margin-top: 1.35rem;
+  padding-top: 1.15rem;
+  border-top: 1px solid var(--bar-border);
+}
+
+.wall-read__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.wall-read__runs {
+  margin: 0.6rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.wall-read__findings {
+  margin: 0.8rem 0 0;
+  padding-left: 1.2rem;
+}
+
+.wall-read__finding {
+  font-size: 1.02rem;
+  line-height: 1.55;
+}
+
+.wall-read__finding + .wall-read__finding {
+  margin-top: 0.5rem;
+}
+
+.wall-read__quiet {
+  margin: 0.6rem 0 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
 .reminder-form {
   margin-top: 1.35rem;
   padding-top: 1.15rem;

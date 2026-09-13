@@ -6,3 +6,8 @@ dist
 
 # Local board state written by the dev bridge / MCP server.
 .plotcoder/
+
+# Playwright output.
+test-results/
+playwright-report/
+blob-report/

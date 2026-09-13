@@ -529,7 +529,7 @@ A status inventory, dated 2026-09-12. This is the checklist R26 refers to. Keep 
 | 2. Beats | R20 | built | `set_rank` |
 | 3. Scene cards | R21 | satisfied by R20 | `create_note`, `update_note`, `move_note`, `set_length` |
 | 4. Read the wall | R22 | **built** — runs between beats, setups and payoffs, nine kinds of question, all four the statement names | `read_wall` |
-| 5. Pages | R23 | **not started**, deliberately last | none |
+| 5. Pages | R23 | **built, slices a and b** — Fountain out and in, a scene's text on its card, pages beside the wall; slice c (pagination) not started | `export_fountain`, `read_pages`, `write_scene`, `import_fountain` |
 
 R18 itself is still `proposed`: the method is built against but has never been confirmed as a requirement in its own right.
 
@@ -545,14 +545,14 @@ The left column is the activity list already recorded in the combine log from cu
 | Story Map — beats against a page axis with a target | **Built** (R32): a strip under the wall with beats, runs, setups, unpaid folds, and the target; click to jump; the cast lens lights a person's scenes | A lane per person at once, if a season ever needs it |
 | Structure templates | **Built** (R38): five structures as rows of beat cards, the house method first | A writer's own structure, saved from a wall |
 | Outline Editor — scenes with lengths, reordered in a list | Cards carry length; the wall gives the order | A linear outline **view** of the wall (a view, not a second model — see the combine log) |
-| Index cards bound two ways to the script | No script | R23 |
+| Index cards bound two ways to the script | **Built** (R23 b): a scene's text lives on its card; click a card to reach its scene, the caret in a scene lights its card | Pagination (R23 c) |
 | Navigator — filter the story by character or location | **Built**: the cast lens (R29) by person, and its Places list (R37) by place | — |
 | Reports — scenes, characters, locations | `list_board` lists the cast with a card count and page lines each, and each card's place | A report by place |
 | Script editor with industry pagination — page breaks, `(MORE)`/`(CONT'D)`, dual dialogue | None | R23: Fountain first, then pagination. The deep part. |
 | Revision colours, locked pages, scene numbering | None | The production half. D24 says last, not never. Ordering within "last" is open question 23. |
 | Tagging for a breakdown, cast reports | None | After characters (P15) and pages (R23) |
 | `.fdx` import and export | None | R23, second step — the moat |
-| Real-time collaboration | None; one browser, localStorage | Supabase (D3) and open question 5 |
+| Real-time collaboration | One writer's project on every device (R4); a second device's conflicting edit becomes a second board | Two people on one board: Realtime, open question 5 |
 | More than one script per writer | **Built** (R35): a project of boards, in order, under one premise; signed in, the same project on every device (R4) | Several projects per writer |
 
 ### Agent surface (R17 measured against R26)

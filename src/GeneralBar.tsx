@@ -4,8 +4,10 @@ import {
   GroupIcon,
   NoteIcon,
   OrganizeIcon,
+  RedoIcon,
   ScatterIcon,
   ThemeIcon,
+  UndoIcon,
 } from "./BarIcons";
 import { EditableText } from "./EditableText";
 import { EIGHTHS_PER_PAGE, formatPages } from "./board/reducer";
@@ -20,6 +22,10 @@ type GeneralBarProps = {
   onToggleTheme: () => void;
   onSetLayer: (layer: BarLayer) => void;
   onNewNote: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
+  onUndo: () => void;
+  onRedo: () => void;
   canGroup: boolean;
   onGroup: () => void;
   onOrganize: () => void;
@@ -44,6 +50,10 @@ export function GeneralBar({
   onToggleTheme,
   onSetLayer,
   onNewNote,
+  canUndo,
+  canRedo,
+  onUndo,
+  onRedo,
   canGroup,
   onGroup,
   onOrganize,
@@ -109,6 +119,16 @@ export function GeneralBar({
             <span className="new-note__pad" aria-hidden="true" />
             New note
           </button>
+          {/* Undo takes back the last step whoever made it — a drag, a typed
+              line, or an agent's tool call that arrived through the bridge. */}
+          <div className="undo-row">
+            <button type="button" className="new-note new-note--half" onClick={onUndo} disabled={!canUndo}>
+              Undo
+            </button>
+            <button type="button" className="new-note new-note--half" onClick={onRedo} disabled={!canRedo}>
+              Redo
+            </button>
+          </div>
           {canGroup ? (
             <button type="button" className="new-note new-note--group" onClick={onGroup}>
               Group
@@ -194,6 +214,26 @@ export function GeneralBar({
                 aria-label="New note"
               >
                 <NoteIcon className="bar-icon__svg" />
+              </button>
+              <button
+                type="button"
+                className="bar-icon"
+                onClick={onUndo}
+                disabled={!canUndo}
+                aria-label="Undo"
+                title="Undo (⌘Z)"
+              >
+                <UndoIcon className="bar-icon__svg" />
+              </button>
+              <button
+                type="button"
+                className="bar-icon"
+                onClick={onRedo}
+                disabled={!canRedo}
+                aria-label="Redo"
+                title="Redo (⇧⌘Z)"
+              >
+                <RedoIcon className="bar-icon__svg" />
               </button>
               <button
                 type="button"

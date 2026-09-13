@@ -39,9 +39,9 @@ Pushes to `main` run both suites and deploy `dist/` to GitHub Pages. A failing t
 
 Every board verb goes through one command kernel, `src/board/reducer.js`, and there are three doors into it:
 
-- **The wall.** Tap the words to type, drag the paper to move. Lasso to select, then Group. Drag a card's handle onto another card for an arrow.
+- **The wall.** Tap the words to type, drag the paper to move. Lasso to select, then Group. Drag a card's handle onto another card for an arrow. ⌘Z takes back any change, whichever door made it.
 - **`window.plotcoder`** on the page, for a console or a CDP session.
-- **The MCP server**, `scripts/plotcoder-mcp.mjs`, wired for Cursor in `.cursor/mcp.json` and for Claude Code in `.mcp.json`. Twenty-three tools: `list_board`, `read_wall`, `new_board`, `set_logline`, `set_target`, and the card, cast, group, and arrow verbs. If the dev app is open, a tool call lands on the wall within a second; if not, it edits the board file and the wall catches up on the next load.
+- **The MCP server**, `scripts/plotcoder-mcp.mjs`, wired for Cursor in `.cursor/mcp.json` and for Claude Code in `.mcp.json`. Twenty-four tools: `list_board`, `read_wall`, `new_board`, `undo`, `set_logline`, `set_target`, and the card, cast, group, and arrow verbs. If the dev app is open, a tool call lands on the wall within a second; if not, it edits the board file and the wall catches up on the next load.
 
 An agent should call the tools, never fake mouse drags. The skill in `.cursor/skills/plotcoder-board/SKILL.md` says how; `.claude/skills/plotcoder-board` is a symlink to the same file.
 

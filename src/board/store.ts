@@ -9,6 +9,7 @@
 //   3. window.plotcoder, so the same commands can be driven from the console or
 //      a CDP session on the deployed site.
 
+import { History } from "./history";
 import {
   applyCommand,
   isBoardState,
@@ -30,6 +31,27 @@ const BRIDGE_BOARD = "/__plotcoder/board";
 const BRIDGE_EVENTS = "/__plotcoder/events";
 
 type DispatchOptions = { sync?: boolean };
+
+export type HistorySnapshot = { canUndo: boolean; canRedo: boolean };
+
+// Consecutive edits to the same line are one undo step: typing a headline is
+// one thing you did, not one thing per keystroke burst.
+function coalesceKey(command: Command): string | null {
+  switch (command.type) {
+    case "update_note":
+      return `update_note:${command.id}`;
+    case "set_logline":
+      return "set_logline";
+    case "rename_group":
+      return `rename_group:${command.id}`;
+    case "rename_character":
+      return `rename_character:${command.id}`;
+    case "set_target":
+      return "set_target";
+    default:
+      return null;
+  }
+}
 
 type BridgePayload = { state: BoardState | null; rev: number };
 
@@ -87,6 +109,15 @@ class BoardStore {
   private source: EventSource | null = null;
   private syncTimer: ReturnType<typeof setTimeout> | undefined;
   private readonly listeners = new Set<() => void>();
+  // Undo (R33). A drag is one step; typing a line is one step; a change an
+  // agent made through the bridge is a step the person can take back.
+  private readonly history = new History<BoardState>();
+  private historySnapshot: HistorySnapshot = { canUndo: false, canRedo: false };
+  // Bodies of our own writes still in flight. The bridge echoes every write
+  // back over the event stream; an echo must never be mistaken for a change
+  // someone else made — or an undo pressed right after a drop would see the
+  // drop come back as a "remote" step and re-apply it.
+  private readonly inflight = new Set<string>();
 
   constructor() {
     this.state = loadLocal() ?? seedState();
@@ -105,6 +136,15 @@ class BoardStore {
     for (const listener of this.listeners) listener();
   }
 
+  getHistory = (): HistorySnapshot => this.historySnapshot;
+
+  private refreshHistory(): void {
+    const { canUndo, canRedo } = this.history;
+    if (canUndo === this.historySnapshot.canUndo && canRedo === this.historySnapshot.canRedo) return;
+    this.historySnapshot = { canUndo, canRedo };
+    this.emit();
+  }
+
   private setState(next: BoardState): void {
     this.state = next;
     saveLocal(next);
@@ -112,17 +152,47 @@ class BoardStore {
   }
 
   dispatch = (command: Command, options: DispatchOptions = {}): unknown => {
-    const { state, changed, result } = applyCommand(this.state, command);
+    const before = this.state;
+    const { state, changed, result } = applyCommand(before, command);
+    if (options.sync === false) {
+      // Mid-gesture (a drag): the whole gesture becomes one step at commit.
+      this.history.beginGesture(before);
+      if (changed) this.history.touchGesture();
+    } else if (changed) {
+      this.history.record(before, coalesceKey(command));
+    }
     if (changed) this.setState(state);
     if (options.sync !== false) this.scheduleSync();
+    this.refreshHistory();
     return result;
   };
 
   // Force the current state to the dev bridge now (used at the end of a drag so
-  // the file matches the wall the instant the pointer lifts).
+  // the file matches the wall the instant the pointer lifts). Also closes the
+  // gesture, so the drag is one undo step.
   commit = (): void => {
+    this.history.endGesture();
+    this.refreshHistory();
     if (this.syncTimer) clearTimeout(this.syncTimer);
     void this.pushState();
+  };
+
+  undo = (): boolean => {
+    const previous = this.history.undo(this.state);
+    this.refreshHistory();
+    if (!previous) return false;
+    this.setState(previous);
+    this.scheduleSync();
+    return true;
+  };
+
+  redo = (): boolean => {
+    const next = this.history.redo(this.state);
+    this.refreshHistory();
+    if (!next) return false;
+    this.setState(next);
+    this.scheduleSync();
+    return true;
   };
 
   // After Open project has rewritten localStorage, make the bridge (and so the
@@ -176,9 +246,22 @@ class BoardStore {
     }
     if (!isBoardState(payload.state)) return;
     if (this.adopted && payload.rev <= this.rev) return;
+    const incoming = normalizeState(payload.state);
+    const incomingJson = JSON.stringify(incoming);
+    if (this.adopted) {
+      // Our own write coming back, or nothing new: take the revision, nothing else.
+      if (this.inflight.has(incomingJson) || incomingJson === JSON.stringify(this.state)) {
+        this.rev = payload.rev;
+        return;
+      }
+      // A later frame that differs is someone else's change — an agent,
+      // usually. Make it an undo step so the person can take it back.
+      this.history.record(this.state);
+    }
     this.adopted = true;
     this.rev = payload.rev;
-    this.setState(normalizeState(payload.state));
+    this.setState(incoming);
+    this.refreshHistory();
   }
 
   private scheduleSync(): void {
@@ -191,18 +274,23 @@ class BoardStore {
 
   private async pushState(): Promise<void> {
     if (!isDev()) return;
+    const stateJson = JSON.stringify(this.state);
+    this.inflight.add(stateJson);
     try {
       const response = await fetch(BRIDGE_BOARD, {
         method: "PUT",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ state: this.state, rev: this.rev }),
+        body: `{"state":${stateJson},"rev":${this.rev}}`,
       });
       if (!response.ok) return;
       const payload = (await response.json()) as BridgePayload;
       this.adopted = true;
-      this.rev = payload.rev;
+      if (payload.rev > this.rev) this.rev = payload.rev;
     } catch {
       /* bridge down: localStorage remains the record */
+    } finally {
+      // Keep it one more tick: the echo can land after the response resolves.
+      setTimeout(() => this.inflight.delete(stateJson), 1000);
     }
   }
 }
@@ -231,6 +319,8 @@ export type PlotCoderWindowApi = {
   deleteArrow: (id: string) => unknown;
   createGroup: (noteIds: string[], title?: string) => unknown;
   dispatch: (command: Command) => unknown;
+  undo: () => boolean;
+  redo: () => boolean;
 };
 
 let windowApiInstalled = false;
@@ -251,6 +341,8 @@ export function installWindowApi(): void {
     createGroup: (noteIds, title) =>
       boardStore.dispatch({ type: "create_group", noteIds, title }),
     dispatch: (command) => boardStore.dispatch(command),
+    undo: () => boardStore.undo(),
+    redo: () => boardStore.redo(),
   };
   (window as unknown as { plotcoder: PlotCoderWindowApi }).plotcoder = api;
 }

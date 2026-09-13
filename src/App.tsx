@@ -65,6 +65,7 @@ export function App() {
   // The Story Map strip (R32). Whether it is open is per-viewer, like the bar.
   const [mapOpen, setMapOpen] = useState<boolean>(readMapOpen);
   const board = useSyncExternalStore(boardStore.subscribe, boardStore.getState);
+  const history = useSyncExternalStore(boardStore.subscribe, boardStore.getHistory);
   const { notes, groups, arrows, characters } = board;
   const castFocusId = castOpen ? (castHeld ?? castHover) : null;
   // One reading of the wall for the lens and the map, so they agree.
@@ -130,6 +131,33 @@ export function App() {
   useEffect(() => {
     applyTheme(theme);
   }, [theme]);
+
+  // ⌘Z / ⇧⌘Z (Ctrl on other platforms) undo and redo on the wall. Inside a
+  // field the browser's own undo of the text keeps working instead.
+  useEffect(() => {
+    function isTyping(target: EventTarget | null) {
+      const el = target as HTMLElement | null;
+      return Boolean(
+        el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable),
+      );
+    }
+    function onKey(event: KeyboardEvent) {
+      if (!(event.metaKey || event.ctrlKey) || isTyping(event.target)) return;
+      const key = event.key.toLowerCase();
+      if (key === "z" && event.shiftKey) {
+        event.preventDefault();
+        boardStore.redo();
+      } else if (key === "z") {
+        event.preventDefault();
+        boardStore.undo();
+      } else if (key === "y") {
+        event.preventDefault();
+        boardStore.redo();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   useEffect(() => {
     function syncFromClock() {
@@ -420,6 +448,10 @@ export function App() {
         onToggleTheme={toggleTheme}
         onSetLayer={setLayer}
         onNewNote={addNote}
+        canUndo={history.canUndo}
+        canRedo={history.canRedo}
+        onUndo={() => boardStore.undo()}
+        onRedo={() => boardStore.redo()}
         canGroup={selectedIds.length >= 2}
         onGroup={groupSelected}
         onOrganize={organizeNotes}

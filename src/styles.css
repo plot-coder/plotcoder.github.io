@@ -1307,6 +1307,13 @@ body {
   stroke-width: 2.25;
 }
 
+/* The head is drawn, not a marker, so it can keep its size in a tight gap and
+   follow a curve's arrival angle. Same wedge, same size, everywhere. */
+.note-arrow__head {
+  fill: currentColor;
+  pointer-events: none;
+}
+
 .note-arrow.is-selected .note-arrow__line {
   stroke-width: 2.6;
 }
@@ -1824,4 +1831,22 @@ body {
 
 .canvas.has-ruler .group-hint {
   bottom: calc(22px + 1.3rem);
+}
+
+/* --- Undo (R33) ---------------------------------------------------------- */
+
+.undo-row {
+  display: flex;
+  gap: 0.45rem;
+}
+
+.new-note--half {
+  flex: 1;
+  justify-content: center;
+}
+
+.new-note:disabled,
+.bar-icon:disabled {
+  opacity: 0.35;
+  cursor: default;
 }

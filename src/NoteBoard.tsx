@@ -473,11 +473,8 @@ export function NoteBoard({
                   onSelectArrow(arrow.id);
                 }}
               />
-              <path
-                className="note-arrow__line"
-                d={layout.d}
-                markerEnd="url(#note-arrow-head)"
-              />
+              <path className="note-arrow__line" d={layout.d} />
+              <polygon className="note-arrow__head" points={layout.head} />
             </g>
           );
         })}

@@ -16,6 +16,7 @@ PlotCoder is a set of tools for building a storyline, covering what a writer doe
 - **Project data** — the boards, their order, the premise — lives on the project record in `src/board/project.js`; reminders keep their own `plotcoder.*` key but ride the bridge's project channel so agents can read and add them (defaults in `src/board/reminders.js`). One `plotcoder.board.<id>` per board.
 - **New editable text** uses `src/EditableText.tsx`. Do not write another `contentEditable`.
 - **The account mirror is a mirror, not a lock.** `src/board/account.ts` keeps a signed-in writer's project on Supabase; the rules are in `src/board/sync.js` and are pure — change them there, with a test. Signed out, none of it runs; tests and the e2e suite never touch the network. Never put a secret in the client: the URL and publishable key are meant to ship, and row-level security is the wall.
+- **A card's length is `noteEighths(note)`**, never `lengthEighths` read directly: measured from the scene's text when there is one, the writer's estimate otherwise (R23 b). Every total, position and reading goes through it.
 - **Undo lives in the store, not the kernel.** `src/board/history.ts` decides what a step is; the reducer never knows history exists. A new command that edits one line should get a coalesce key in `store.ts`.
 - **Agents call tools, never fake pointer drags.** The MCP server is `scripts/plotcoder-mcp.mjs`; the skill is in `.cursor/skills/plotcoder-board/SKILL.md`.
 
@@ -25,5 +26,5 @@ PlotCoder is a set of tools for building a storyline, covering what a writer doe
 - **Mock before building anything a person will see**, on the app's own paper beside what ships, then ask in writing whether it is the best we could do, then build. Tools and plumbing skip the mockup, not the question.
 - When two tools overlap, add a row to the combine log rather than building a second model.
 - Update "What is built and what is left" when a status changes.
-- Tests: `npm test` covers the DOM-free half — kernel, pure helpers, MCP server. `npm run test:e2e` is a nine-spec Playwright suite over the doors into the kernel (wall, `window.plotcoder`, dev bridge, MCP), not pixels. A change to the kernel or the MCP server needs a unit test; add an end-to-end spec only for a new door or a bug in one. Gestures themselves stay untested.
+- Tests: `npm test` covers the DOM-free half — kernel, pure helpers, MCP server. `npm run test:e2e` is a ten-spec Playwright suite over the doors into the kernel (wall, `window.plotcoder`, dev bridge, MCP), not pixels. A change to the kernel or the MCP server needs a unit test; add an end-to-end spec only for a new door or a bug in one. Gestures themselves stay untested.
 - Build: `npm run build` typechecks and bundles. A failing test blocks the Pages deploy.

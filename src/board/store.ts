@@ -706,6 +706,8 @@ export type PlotCoderWindowApi = {
   setPremise: (premise: string) => void;
   /** The open board as Fountain text (R23, slice a). */
   fountain: () => string;
+  /** A scene's text onto its card (R23, slice b). */
+  writeScene: (id: string, text: string) => unknown;
 };
 
 let windowApiInstalled = false;
@@ -739,6 +741,7 @@ export function installWindowApi(): void {
     updateCharacter: (id, patch) => boardStore.dispatch({ type: "update_character", id, ...patch }),
     applyTemplate: (template) => boardStore.dispatch({ type: "apply_template", template }),
     setPremise: (premise) => boardStore.setPremise(premise),
+    writeScene: (id, text) => boardStore.dispatch({ type: "set_text", id, text }),
     fountain: () => {
       const project = boardStore.getProject();
       const board = project.boards.find((item) => item.id === project.activeBoardId);

@@ -17,6 +17,12 @@ export declare const EIGHTHS_PER_PAGE: number;
 export declare const DEFAULT_NOTE_EIGHTHS: number;
 export declare const DEFAULT_TARGET_EIGHTHS: number;
 /** Total estimated length of the board, in eighths. */
+export declare const LINES_PER_PAGE: number;
+/** Eighths the scene's text runs to; 0 when there is no text. */
+export declare function measuredEighths(text: string | undefined): number;
+/** Measured when written, the estimate otherwise. Every reading uses this. */
+export declare function noteEighths(note: BoardNote): number;
+export declare function isMeasured(note: BoardNote): boolean;
 export declare function boardEighths(state: BoardState): number;
 /** Eighths as a breakdown writes them: "1 3/8", "97", "5/8". */
 export declare function formatPages(eighths: number): string;
@@ -72,6 +78,8 @@ export type BoardNote = {
   plants: boolean;
   /** Where the scene happens (R37): a phrase in the writer's words; empty until set. */
   location: string;
+  /** The scene's text in Fountain (R23 b): action, cues, dialogue; empty until written. */
+  text: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -123,6 +131,7 @@ export type Command =
       characterIds?: string[];
       plants?: boolean;
       location?: string;
+      text?: string;
     }
   | { type: "update_note"; id: string; headline?: string; change?: string; location?: string }
   | { type: "move_note"; id: string; x: number; y: number }
@@ -146,7 +155,8 @@ export type Command =
   | { type: "set_cast"; ids: string[]; characterIds: string[] }
   | { type: "set_plant"; ids: string[]; plants: boolean }
   | { type: "set_location"; ids: string[]; location: string }
-  | { type: "apply_template"; template: string };
+  | { type: "apply_template"; template: string }
+  | { type: "set_text"; id: string; text: string };
 
 export type CommandResult = {
   state: BoardState;

@@ -2,7 +2,7 @@ import { useEffect, useState, type PointerEvent } from "react";
 import { CastLine } from "./CastLine";
 import { PlaceLine } from "./PlaceLine";
 import { EditableText } from "./EditableText";
-import { DEFAULT_NOTE_EIGHTHS, formatPages, type BoardCharacter } from "./board/reducer";
+import { DEFAULT_NOTE_EIGHTHS, formatPages, isMeasured, noteEighths, type BoardCharacter } from "./board/reducer";
 import { NOTE_COLORS, type MockNote, type NoteColor, type NoteRank } from "./noteMock";
 
 // The sizes a writer actually reaches for, in eighths of a page. Not a slider:
@@ -144,17 +144,17 @@ export function NoteCard({
       </button>
       <button
         type="button"
-        className="note__length"
-        aria-label={`Length of ${note.headline}: ${formatPages(note.lengthEighths)} pages`}
+        className={`note__length ${isMeasured(note) ? "is-measured" : ""}`}
+        aria-label={`Length of ${note.headline}: ${formatPages(noteEighths(note))} pages${isMeasured(note) ? ", measured from its scene" : ""}`}
         aria-expanded={sizing}
-        title="How long this runs"
+        title={isMeasured(note) ? "Measured from the scene's text; the estimate is underneath" : "How long this runs"}
         onPointerDown={(event) => event.stopPropagation()}
         onClick={() => {
           setPicking(false);
           setSizing((open) => !open);
         }}
       >
-        {formatPages(note.lengthEighths)}
+        {formatPages(noteEighths(note))}
       </button>
       {sizing ? (
         <div className="note__lengths" onPointerDown={(event) => event.stopPropagation()}>

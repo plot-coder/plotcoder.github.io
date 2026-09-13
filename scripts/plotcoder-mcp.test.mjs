@@ -139,6 +139,7 @@ describe("plotcoder MCP server", () => {
       "delete_board",
       "delete_note",
       "export_fountain",
+      "import_fountain",
       "list_board",
       "list_boards",
       "list_reminders",
@@ -146,6 +147,7 @@ describe("plotcoder MCP server", () => {
       "new_board",
       "open_board",
       "organize",
+      "read_pages",
       "read_wall",
       "recolor_note",
       "remove_character",
@@ -166,6 +168,7 @@ describe("plotcoder MCP server", () => {
       "ungroup",
       "update_character",
       "update_note",
+      "write_scene",
     ]);
   });
 
@@ -1142,6 +1145,22 @@ describe("the premise and reminders (roadmap item 6)", () => {
     const target = path.join(doorRoot, "out", "board.fountain");
     expect(await door.callTool("export_fountain", { path: target })).toContain("lines of Fountain");
     expect(fs.readFileSync(target, "utf8")).toContain(".TOM LIES ABOUT THE JOB");
+  });
+
+  it("writes a scene onto a card, measures it, reads the pages with ids, and imports a script", async () => {
+    const wrote = await door.callTool("write_scene", { id: "maya-letter", text: "Rain on the window.\n\nMAYA\nTom?" });
+    expect(wrote).toContain('Wrote "Maya finds the letter": 1/8 page(s) measured');
+    expect(await door.callTool("list_board")).toContain("[scene, 1/8pp written");
+    const pages = await door.callTool("read_pages");
+    expect(pages).toContain(".MAYA FINDS THE LETTER    [[id: maya-letter · measured 1/8pp]]");
+    expect(pages).toContain(".TOM LIES ABOUT THE JOB    [[id: tom-lies · estimated 1pp]]");
+    const imported = await door.callTool("import_fountain", {
+      text: ".TOM LIES ABOUT THE JOB\n\nHe says the job is fine.\n\n.THE BANK\n\nThere is no loan.\n",
+    });
+    expect(imported).toContain("Imported 2 scene(s): 1 written onto cards, 1 new card(s)");
+    const board = await door.callToolData("list_board");
+    expect(board.notes.find((note) => note.id === "tom-lies").text).toBe("He says the job is fine.");
+    expect(board.notes.some((note) => note.headline === "The Bank" && note.text === "There is no loan.")).toBe(true);
   });
 
   it("lists the built-in reminders, adds one of the writer's, and removes it", async () => {

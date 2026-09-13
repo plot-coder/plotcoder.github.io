@@ -24,3 +24,25 @@ export type FountainOptions = {
 };
 
 export declare function toFountain(state: BoardState, options?: FountainOptions): string;
+
+export type FountainScene = {
+  /** The heading as written, without the forcing dot. */
+  heading: string;
+  forced: boolean;
+  synopsis: string;
+  section: string | null;
+  notes: string[];
+  /** The body under the heading: action, cues, dialogue. */
+  text: string;
+};
+
+export declare function fromFountain(text: string): {
+  titles: Record<string, string>;
+  scenes: FountainScene[];
+};
+
+import type { Command } from "./reducer";
+export declare function mergeFountain(
+  state: BoardState,
+  parsed: { scenes: FountainScene[] },
+): { commands: Command[]; matched: Array<{ id: string; heading: string; created: boolean }> };

@@ -127,11 +127,31 @@ function clampEighths(value, fallback, max) {
 }
 
 /** Total estimated length of the board, in eighths. */
+// Pages beside the wall (R23, slice b): a scene's text lives on its card. A
+// card with text is measured — its lines against a page's worth — in the
+// same eighths the estimate uses (D23); a card without keeps the estimate.
+export const LINES_PER_PAGE = 55;
+
+/** Eighths of a page the scene's text runs to; 0 when there is no text. */
+export function measuredEighths(text) {
+  if (typeof text !== "string" || !text.trim()) return 0;
+  const lines = text.trim().split("\n").length;
+  return Math.max(1, Math.round((lines / LINES_PER_PAGE) * EIGHTHS_PER_PAGE));
+}
+
+/** The card's length as every reading should take it: measured when written, estimated otherwise. */
+export function noteEighths(note) {
+  const measured = measuredEighths(note?.text);
+  return measured > 0 ? measured : (note?.lengthEighths ?? DEFAULT_NOTE_EIGHTHS);
+}
+
+/** True when the card's length comes from its text rather than the estimate. */
+export function isMeasured(note) {
+  return measuredEighths(note?.text) > 0;
+}
+
 export function boardEighths(state) {
-  return state.notes.reduce(
-    (total, note) => total + (note.lengthEighths ?? DEFAULT_NOTE_EIGHTHS),
-    0,
-  );
+  return state.notes.reduce((total, note) => total + noteEighths(note), 0);
 }
 
 /**
@@ -190,6 +210,7 @@ export function seedState(now = nowIso()) {
     lengthEighths: DEFAULT_NOTE_EIGHTHS,
     characterIds,
     location: "",
+    text: "",
     plants: false,
     createdAt: now,
     updatedAt: now,
@@ -282,6 +303,8 @@ export function normalizeState(value) {
     const plants = note?.plants === true;
     // Cards written before R37 have no place; a scene is nowhere until it is.
     const location = typeof note?.location === "string" ? note.location : "";
+    // Cards written before pages (R23 b) have no text; a scene is unwritten until it is.
+    const text = typeof note?.text === "string" ? note.text : "";
     if (
       note &&
       note.rank === rank &&
@@ -289,12 +312,13 @@ export function normalizeState(value) {
       Array.isArray(note.characterIds) &&
       sameIds(note.characterIds, characterIds) &&
       note.plants === plants &&
-      note.location === location
+      note.location === location &&
+      note.text === text
     ) {
       return note;
     }
     patched = true;
-    return { ...note, rank, lengthEighths, characterIds, plants, location };
+    return { ...note, rank, lengthEighths, characterIds, plants, location, text };
   });
 
   if (
@@ -362,6 +386,7 @@ export function applyCommand(state, command, now = nowIso()) {
         characterIds: knownCast(command.characterIds, state.characters ?? []),
         plants: command.plants === true,
         location: cleanPlace(command.location),
+        text: typeof command.text === "string" ? command.text : "",
         z: maxZ(state.notes) + 1,
         createdAt: now,
         updatedAt: now,
@@ -753,10 +778,27 @@ export function applyCommand(state, command, now = nowIso()) {
         characterIds: [],
         plants: false,
         location: "",
+        text: "",
         createdAt: now,
         updatedAt: now,
       }));
       return { state: { ...state, notes: [...state.notes, ...created] }, changed: true, result: created };
+    }
+
+    // Pages (R23 b): the scene's text, on its card. Trailing whitespace is
+    // trimmed so a stray newline is not a change.
+    case "set_text": {
+      const text = typeof command.text === "string" ? command.text.replace(/\s+$/, "") : "";
+      let updated;
+      const notes = state.notes.map((note) => {
+        if (note.id !== command.id || note.text === text) return note;
+        updated = bump(note, { text }, now);
+        return updated;
+      });
+      if (!updated) {
+        return { state, changed: false, result: state.notes.find((note) => note.id === command.id) };
+      }
+      return { state: { ...state, notes }, changed: true, result: updated };
     }
 
     // Where a scene happens (R37): one place on one or more cards; an empty

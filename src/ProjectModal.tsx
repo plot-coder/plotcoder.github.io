@@ -10,7 +10,7 @@ import {
 import { accountStore, savedAgo, type SyncStatus } from "./board/account";
 import { boardStore } from "./board/store";
 import { downloadProject, importProject } from "./projectStore";
-import { downloadFountain } from "./fountainFile";
+import { downloadFountain, openFountainText } from "./fountainFile";
 
 type ProjectModalProps = {
   open: boolean;
@@ -28,6 +28,7 @@ export function ProjectModal({ open, onOpen, onClose }: ProjectModalProps) {
   const closeRef = useRef<HTMLButtonElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [sending, setSending] = useState(false);
   const account = useSyncExternalStore(accountStore.subscribe, accountStore.getAccount);
@@ -63,6 +64,13 @@ export function ProjectModal({ open, onOpen, onClose }: ProjectModalProps) {
 
     try {
       const text = await file.text();
+      if (/\.fountain$/i.test(file.name) || !text.trimStart().startsWith("{")) {
+        // A screenplay, not a project: its scenes land on the open board's cards.
+        const { written, created } = openFountainText(text);
+        setError(null);
+        setNotice(`Read ${file.name}: ${written} scene${written === 1 ? "" : "s"} written onto cards, ${created} new card${created === 1 ? "" : "s"}.`);
+        return;
+      }
       importProject(JSON.parse(text));
       // The board file must hold the opened wall before the reload, or the
       // reload takes the dev bridge's old copy back (see boardStore.adoptLocal).
@@ -146,7 +154,8 @@ export function ProjectModal({ open, onOpen, onClose }: ProjectModalProps) {
               </p>
             ) : (
               <p className="project-copy">
-                Download this project as a file, upload one, or sign in to keep it on every device.
+                Download this project as a file, upload one (or a .fountain script onto this board), or sign in
+                to keep it on every device.
               </p>
             )}
 
@@ -184,7 +193,7 @@ export function ProjectModal({ open, onOpen, onClose }: ProjectModalProps) {
                 ref={fileRef}
                 className="project-file"
                 type="file"
-                accept="application/json,.json"
+                accept="application/json,.json,.fountain,text/plain"
                 onChange={openProject}
               />
             </div>
@@ -229,6 +238,7 @@ export function ProjectModal({ open, onOpen, onClose }: ProjectModalProps) {
               </p>
             ) : null}
 
+            {notice ? <p className="project-notice">{notice}</p> : null}
             {error ? <p className="project-error">{error}</p> : null}
             {account.error ? <p className="project-error">{account.error}</p> : null}
           </div>

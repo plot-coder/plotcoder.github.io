@@ -50,6 +50,8 @@ type NoteBoardProps = {
   onLocation: (id: string, location: string) => void;
   /** The empty wall offers a structure (R38). */
   onStructure: () => void;
+  /** Pages are open beside the wall (R23 b): the wall keeps to the left. */
+  pagesOpen?: boolean;
   onHoverNote: (id: string | null) => void;
   selectedIds: string[];
   selectedArrowId: string | null;
@@ -129,6 +131,7 @@ export function NoteBoard({
   onCastNames,
   onLocation,
   onStructure,
+  pagesOpen = false,
   onHoverNote,
   selectedIds,
   selectedArrowId,
@@ -399,7 +402,7 @@ export function NoteBoard({
   return (
     <div
       ref={boardRef}
-      className={`note-board${spaceHeld ? " is-grabbable" : ""}${
+      className={`note-board${pagesOpen ? " board--pages" : ""}${spaceHeld ? " is-grabbable" : ""}${
         drag?.kind === "pan" ? " is-panning" : ""
       }`}
       onPointerDown={startBoardDrag}

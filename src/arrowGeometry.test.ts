@@ -17,6 +17,7 @@ function card(id: string, x: number, y: number, z = 1): MockNote {
   characterIds: [],
   plants: false,
   location: "",
+  text: "",
     createdAt: "2026-01-01T00:00:00.000Z",
     updatedAt: "2026-01-01T00:00:00.000Z",
   };

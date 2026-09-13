@@ -41,7 +41,7 @@ Every board verb goes through one command kernel, `src/board/reducer.js`, and th
 
 - **The wall.** Tap the words to type, drag the paper to move. Lasso to select, then Group. Drag a card's handle onto another card for an arrow. ⌘Z takes back any change, whichever door made it.
 - **`window.plotcoder`** on the page, for a console or a CDP session.
-- **The MCP server**, `scripts/plotcoder-mcp.mjs`, wired for Cursor in `.cursor/mcp.json` and for Claude Code in `.mcp.json`. Thirty-eight tools: `list_board`, `read_wall`, `undo`, `organize`, `apply_template`, `export_fountain`; the project's `list_boards`, `open_board`, `new_board`, `rename_board`, `delete_board`, `set_premise`, `rename_project` and the reminders; `set_logline`, `set_target`, and the card, cast, place, group, and arrow verbs. If the dev app is open, a tool call lands on the wall within a second; if not, it edits the board file and the wall catches up on the next load.
+- **The MCP server**, `scripts/plotcoder-mcp.mjs`, wired for Cursor in `.cursor/mcp.json` and for Claude Code in `.mcp.json`. Forty-one tools: `list_board`, `read_wall`, `read_pages`, `undo`, `organize`, `apply_template`, `export_fountain`, `import_fountain`, `write_scene`; the project's `list_boards`, `open_board`, `new_board`, `rename_board`, `delete_board`, `set_premise`, `rename_project` and the reminders; `set_logline`, `set_target`, and the card, cast, place, group, and arrow verbs. If the dev app is open, a tool call lands on the wall within a second; if not, it edits the board file and the wall catches up on the next load.
 
 An agent should call the tools, never fake mouse drags. The skill in `.cursor/skills/plotcoder-board/SKILL.md` says how; `.claude/skills/plotcoder-board` is a symlink to the same file.
 
@@ -61,4 +61,4 @@ An agent should call the tools, never fake mouse drags. The skill in `.cursor/sk
 
 ## Status
 
-Version 0.1.0. A project of boards; sign in by email link from the transfer button and the same project follows you to every device (Supabase, R4), or stay signed out and work on this device as before. It installs as a progressive web app and opens offline; plotcoder.com serves over HTTPS. The wall, beats, card length, groups, arrows, pan and zoom, save and open, and the agent surface are in use.
+Version 0.1.0. A project of boards; sign in by email link from the transfer button and the same project follows you to every device (Supabase, R4), or stay signed out and work on this device as before. Pages sit beside the wall: a scene's text lives on its card, measures it, and goes out and comes in as Fountain. It installs as a progressive web app and opens offline; plotcoder.com serves over HTTPS. The wall, beats, card length, groups, arrows, pan and zoom, save and open, and the agent surface are in use.

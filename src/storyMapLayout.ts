@@ -5,7 +5,14 @@
 // the map and the questions agree. Pure and DOM-free so it can be tested; the
 // component only draws what this returns.
 
-import { boardEighths, EIGHTHS_PER_PAGE, type BoardState, type NoteColor } from "./board/reducer";
+import {
+  boardEighths,
+  EIGHTHS_PER_PAGE,
+  isMeasured,
+  noteEighths,
+  type BoardState,
+  type NoteColor,
+} from "./board/reducer";
 import type { WallReading } from "./board/readWall";
 
 export type MapCard = {
@@ -22,6 +29,8 @@ export type MapCard = {
   castNames: string[];
   /** Where the scene happens (R37), or empty. */
   location: string;
+  /** True when the length is measured from the scene's text (R23 b). */
+  measured: boolean;
   /** Where the card starts, in eighths from the top of the story. */
   start: number;
   length: number;
@@ -90,9 +99,10 @@ export function storyMapLayout(state: BoardState, reading: WallReading): StoryMa
         .filter((name): name is string => Boolean(name)),
       location: note.location ?? "",
       start: cursor,
-      length: note.lengthEighths,
+      length: noteEighths(note),
+      measured: isMeasured(note),
     });
-    cursor += note.lengthEighths;
+    cursor += noteEighths(note);
   }
   const startOf = new Map(cards.map((card) => [card.id, card.start]));
   const beats = cards.filter((card) => card.beat);

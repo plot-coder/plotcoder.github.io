@@ -14,7 +14,7 @@
 // do not yet change the order; that is the first refinement to make once this
 // slice has been used.
 
-import { boardEighths, EIGHTHS_PER_PAGE, formatPages, NOTE_HEIGHT } from "./reducer.js";
+import { boardEighths, EIGHTHS_PER_PAGE, formatPages, NOTE_HEIGHT, noteEighths } from "./reducer.js";
 
 /** What create_note writes before a person has. */
 export const PLACEHOLDER_HEADLINE = "New beat";
@@ -120,7 +120,7 @@ export function readWall(state) {
       eighths = 0;
       cards = 0;
     } else {
-      eighths += note.lengthEighths;
+      eighths += noteEighths(note);
       cards += 1;
     }
   }
@@ -136,7 +136,7 @@ export function readWall(state) {
   let offset = 0;
   for (const note of order) {
     startAt.set(note.id, offset);
-    offset += note.lengthEighths;
+    offset += noteEighths(note);
   }
   const setups = state.arrows
     .filter((arrow) => arrow.kind === "setup" && byId.has(arrow.from) && byId.has(arrow.to))
@@ -255,7 +255,7 @@ export function readWall(state) {
   let cursor = 0;
   for (const note of order) {
     at.set(note.id, cursor);
-    cursor += note.lengthEighths;
+    cursor += noteEighths(note);
   }
   for (const character of state.characters ?? []) {
     const scenes = order.filter((note) => note.characterIds?.includes(character.id));
@@ -271,7 +271,7 @@ export function readWall(state) {
     for (let i = 1; i < scenes.length; i += 1) {
       const prev = scenes[i - 1];
       const next = scenes[i];
-      const gap = at.get(next.id) - (at.get(prev.id) + prev.lengthEighths);
+      const gap = at.get(next.id) - (at.get(prev.id) + noteEighths(prev));
       if (!longest || gap > longest.gap) longest = { gap, from: prev, to: next };
     }
     if (longest && total > 0 && longest.gap > total * ABSENCE_FRACTION) {
@@ -286,7 +286,7 @@ export function readWall(state) {
   // A frame too big to be one sequence.
   for (const group of state.groups) {
     const members = group.noteIds.map((id) => byId.get(id)).filter(Boolean);
-    const total = members.reduce((sum, note) => sum + note.lengthEighths, 0);
+    const total = members.reduce((sum, note) => sum + noteEighths(note), 0);
     if (total > SEQUENCE_MAX_EIGHTHS) {
       findings.push({
         kind: "sequence",

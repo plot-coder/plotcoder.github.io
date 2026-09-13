@@ -15,6 +15,7 @@ import {
   CHARACTER_FIELDS,
   EIGHTHS_PER_PAGE,
   formatPages,
+  noteEighths,
   type BoardCharacter,
   type BoardNote,
   type CharacterField,
@@ -81,15 +82,15 @@ function scenesOf(id: string, notes: BoardNote[], reading: WallReading | null): 
       scenes.push(scene);
       previous = scene;
     }
-    cursor += note.lengthEighths;
+    cursor += noteEighths(note);
   }
   return scenes;
 
   function previousEnd(scene: Scene): number | null {
     let at = 0;
     for (const note of order) {
-      if (note.id === scene.note.id) return at + note.lengthEighths;
-      at += note.lengthEighths;
+      if (note.id === scene.note.id) return at + noteEighths(note);
+      at += noteEighths(note);
     }
     return null;
   }
@@ -378,7 +379,7 @@ export function CastLens({
 
 function PageMeta({ id, notes, reading }: { id: string; notes: BoardNote[]; reading: WallReading | null }) {
   const scenes = scenesOf(id, notes, reading);
-  const eighths = scenes.reduce((sum, scene) => sum + scene.note.lengthEighths, 0);
+  const eighths = scenes.reduce((sum, scene) => sum + noteEighths(scene.note), 0);
   const cards = scenes.length;
   const line =
     cards === 0

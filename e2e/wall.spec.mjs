@@ -385,3 +385,48 @@ test("a place typed on a card appears in the lens, fades the wall, and reaches a
   }
   await expect(page.getByLabel("Places").getByRole("listitem")).toHaveCount(2);
 });
+
+test("pages open beside the wall: a scene typed there lands on its card, measured", async ({
+  page,
+  request,
+}) => {
+  await page.goto("/");
+  await expect(page.locator("article.note")).toHaveCount(3);
+
+  // The panel: the whole script in wall order, one scene per card.
+  await page.getByRole("button", { name: "Pages", exact: true }).click();
+  const panel = page.getByRole("complementary", { name: "Pages" });
+  await expect(panel).toBeVisible();
+  await expect(panel.locator(".scene")).toHaveCount(3);
+  await expect(panel.locator(".scene__heading").first()).toContainText("MAYA FINDS THE LETTER");
+
+  // Type a scene; its card is measured and the text reaches the bridge.
+  const scene = panel.getByLabel("Scene text of Maya finds the letter");
+  await scene.click();
+  await scene.fill("Rain on the shop window.\n\nMAYA\nTom?");
+  await scene.blur();
+  await expect
+    .poll(async () => (await boardOnBridge(request)).notes.find((note) => note.id === "maya-letter")?.text)
+    .toBe("Rain on the shop window.\n\nMAYA\nTom?");
+  await expect(panel.locator(".scene").first()).toHaveClass(/is-measured/);
+  await expect(page.locator("article.note", { hasText: "Maya finds the letter" }).locator(".note__length")).toHaveClass(/is-measured/);
+
+  // The caret in a scene selects its card on the wall.
+  await panel.getByLabel("Scene text of Tom lies about the job").click();
+  await expect(page.locator("article.note.is-selected .note__headline")).toHaveText("Tom lies about the job");
+
+  // Widen takes the window; Close gives the wall back.
+  await panel.getByRole("button", { name: "Widen" }).click();
+  await expect(panel).toHaveClass(/pages--wide/);
+  await panel.getByRole("button", { name: "Close" }).click();
+  await expect(page.getByRole("complementary", { name: "Pages" })).toHaveCount(0);
+
+  // The export carries the scene as the body.
+  const mcp = new McpClient();
+  await mcp.start();
+  try {
+    expect(await mcp.callTool("export_fountain")).toContain("Rain on the shop window.");
+  } finally {
+    mcp.stop();
+  }
+});

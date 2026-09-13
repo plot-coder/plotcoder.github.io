@@ -92,9 +92,15 @@ lands on the exact same board a person sees.
 ### Pages
 
 - `export_fountain` — the open board as a Fountain screenplay in wall order
-  (beats as sections, one scene per card, the change line as action). Pass
-  `path` to write a `.fountain` file. The stepping stone from the wall to a
-  document; pages themselves come after the wall reads right (R23).
+  (beats as sections, one scene per card, the scene's text or its change line
+  as the body). Pass `path` to write a `.fountain` file.
+- `read_pages` — the same script with each card's id beside its heading and
+  whether it is measured (written) or estimated. Read it before writing.
+- `write_scene` — a card's scene text in Fountain, by id; the card is then
+  measured from its lines. Write only scenes the writer asked for.
+- `import_fountain` — a `.fountain` file or text onto the open board: scenes
+  land on the cards with the same heading in order; unknown scenes become new
+  cards; nothing is deleted.
 
 ### The project
 

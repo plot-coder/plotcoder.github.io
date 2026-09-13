@@ -2,7 +2,7 @@
 // `.fountain` file, named for the board. The text itself comes from the
 // kernel-side module every door shares.
 
-import { toFountain } from "./board/fountain";
+import { fromFountain, mergeFountain, toFountain } from "./board/fountain";
 import { boardById } from "./board/project";
 import { boardStore } from "./board/store";
 
@@ -35,4 +35,16 @@ export function downloadFountain(): void {
   link.download = fountainFileName(board?.name ?? "plotcoder");
   link.click();
   URL.revokeObjectURL(url);
+}
+
+/** Fountain in: a document's scenes onto the open board's cards, never deleting. */
+export function openFountainText(text: string): { written: number; created: number } {
+  const parsed = fromFountain(text);
+  const { commands, matched } = mergeFountain(boardStore.getState(), parsed);
+  for (const command of commands) boardStore.dispatch(command);
+  boardStore.commit();
+  return {
+    written: commands.filter((command) => command.type === "set_text").length,
+    created: matched.filter((item) => item.created).length,
+  };
 }

@@ -22,6 +22,7 @@ import { organizePoses } from "./board/organize";
 import { ProjectModal } from "./ProjectModal";
 import { RemindersModal } from "./RemindersModal";
 import { StructureSheet } from "./StructureSheet";
+import { PagesPanel } from "./PagesPanel";
 import { StoryMap } from "./StoryMap";
 import {
   applyTheme,
@@ -45,6 +46,25 @@ function readMapOpen(): boolean {
   }
 }
 const BAR_KEY_LEGACY = "plotcoder.generalBar.expanded";
+const PAGES_KEY = "plotcoder.pages.open";
+const PAGES_WIDE_KEY = "plotcoder.pages.wide";
+
+function readFlag(key: string, fallback: boolean): boolean {
+  try {
+    const stored = localStorage.getItem(key);
+    return stored === null ? fallback : stored === "1";
+  } catch {
+    return fallback;
+  }
+}
+
+function writeFlag(key: string, value: boolean): void {
+  try {
+    localStorage.setItem(key, value ? "1" : "0");
+  } catch {
+    /* per-viewer convenience only */
+  }
+}
 
 function readBarLayer(): BarLayer {
   const stored = localStorage.getItem(BAR_KEY);
@@ -60,6 +80,11 @@ export function App() {
   const [projectOpen, setProjectOpen] = useState(false);
   // Start from a structure (R38).
   const [structureOpen, setStructureOpen] = useState(false);
+  // Pages beside the wall (R23 b): open, and whether it takes the window.
+  const [pagesOpen, setPagesOpen] = useState<boolean>(() => readFlag(PAGES_KEY, false));
+  const [pagesWide, setPagesWide] = useState<boolean>(() => readFlag(PAGES_WIDE_KEY, false));
+  // The scene with the caret: its card lights on the wall.
+  const [sceneFocusId, setSceneFocusId] = useState<string | null>(null);
   // The cast lens (R29): who the wall is being looked at through. Hover is a
   // glance, hold is a click; neither is board data.
   const [castOpen, setCastOpen] = useState(false);
@@ -399,6 +424,39 @@ export function App() {
     setView(fitView(boardStore.getState().notes, viewportSize()));
   }
 
+  // Pages (R23 b): the scene's text onto its card.
+  function setSceneText(id: string, text: string) {
+    boardStore.dispatch({ type: "set_text", id, text });
+  }
+
+  function togglePages() {
+    setPagesOpen((current) => {
+      writeFlag(PAGES_KEY, !current);
+      return !current;
+    });
+  }
+
+  function togglePagesWide() {
+    setPagesWide((current) => {
+      writeFlag(PAGES_WIDE_KEY, !current);
+      return !current;
+    });
+  }
+
+  // The caret is in a scene: light its card, and pan to it if it is off screen.
+  function focusScene(id: string | null) {
+    setSceneFocusId(id);
+    if (!id) return;
+    const note = notes.find((item) => item.id === id);
+    if (!note) return;
+    setSelectedIds([id]);
+    setSelectedArrowId(null);
+    const box = visibleBox(view, viewportSize());
+    const inside =
+      note.x >= box.x && note.x + NOTE_WIDTH <= box.x + box.w && note.y >= box.y && note.y + NOTE_HEIGHT <= box.y + box.h;
+    if (!inside) setView((current) => centerOn(current, note, viewportSize()));
+  }
+
   function selectNotes(ids: string[]) {
     setSelectedIds(ids);
     setSelectedArrowId(null);
@@ -451,6 +509,14 @@ export function App() {
         onSetPremise={savePremise}
       />
       <div className="top-actions">
+        <button
+          type="button"
+          className={`cast-launch ${pagesOpen ? "is-open" : ""}`}
+          aria-pressed={pagesOpen}
+          onClick={togglePages}
+        >
+          Pages
+        </button>
         <CastLens
           open={castOpen}
           characters={characters}
@@ -491,8 +557,24 @@ export function App() {
           onApply={applyTemplate}
         />
       </div>
+      <PagesPanel
+        open={pagesOpen}
+        wide={pagesWide}
+        board={board}
+        reading={reading}
+        focusId={sceneFocusId ?? (selectedIds.length === 1 ? selectedIds[0] : null)}
+        onClose={() => {
+          setPagesOpen(false);
+          writeFlag(PAGES_KEY, false);
+          setSceneFocusId(null);
+        }}
+        onToggleWide={togglePagesWide}
+        onSetText={setSceneText}
+        onFocusScene={focusScene}
+      />
       <NoteBoard
         boardRef={boardRef}
+        pagesOpen={pagesOpen && !pagesWide}
         view={view}
         onView={updateView}
         notes={notes}

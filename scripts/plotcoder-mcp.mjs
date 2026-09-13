@@ -28,13 +28,15 @@ import {
   filledCharacterFields,
   formatPages,
   isBoardState,
+  isMeasured,
   normalizeState,
+  noteEighths,
   NOTE_COLORS,
   NOTE_RANKS,
   seedState,
 } from "../src/board/reducer.js";
 import { TEMPLATES } from "../src/board/templates.js";
-import { toFountain } from "../src/board/fountain.js";
+import { fromFountain, mergeFountain, toFountain } from "../src/board/fountain.js";
 import { DEFAULT_REMINDERS, titleFromBody } from "../src/board/reminders.js";
 import crypto from "node:crypto";
 import { describeRuns, describeSetups, readWall } from "../src/board/readWall.js";
@@ -358,7 +360,8 @@ function summarize(state) {
       const who = cast.length ? `, cast: ${cast.join(", ")}` : "";
       const plant = note.plants ? ", plants" : "";
       const place = note.location ? `, at: ${note.location}` : "";
-      return `  - ${note.id} [${note.rank ?? "scene"}, ${formatPages(note.lengthEighths)}pp${who}${place}${plant}] — "${note.headline}" (${note.color}) at ${Math.round(note.x)},${Math.round(note.y)}`;
+      const pages = `${formatPages(noteEighths(note))}pp${isMeasured(note) ? " written" : ""}`;
+      return `  - ${note.id} [${note.rank ?? "scene"}, ${pages}${who}${place}${plant}] — "${note.headline}" (${note.color}) at ${Math.round(note.x)},${Math.round(note.y)}`;
     })
     .join("\n");
   const cast = state.characters
@@ -744,6 +747,82 @@ server.registerTool(
       return ok(`Wrote ${text.split("\n").length} lines of Fountain to ${args.path}.`);
     }
     return ok(text);
+  },
+);
+
+server.registerTool(
+  "write_scene",
+  {
+    title: "Write a scene",
+    description:
+      "Write a card's scene text in Fountain — action, character cues in capitals, dialogue under them — onto the card by id. The card is then measured (its lines against a page) instead of estimated. An empty string clears it. Read read_pages first so the scene fits what is around it, and do not write scenes the writer has not asked for.",
+    inputSchema: { id: z.string(), text: z.string() },
+  },
+  async (args) => {
+    const { changed, result, live } = await commit({ type: "set_text", id: args.id, text: args.text });
+    if (!changed) {
+      if (!result) return ok(`No card with id ${args.id}. Call list_board.`);
+      return ok(`Nothing changed: "${result.headline}" already reads that way.`);
+    }
+    return ok(
+      `Wrote "${result.headline}": ${formatPages(noteEighths(result))} page(s) measured${where(live)}.`,
+      result,
+    );
+  },
+);
+
+server.registerTool(
+  "read_pages",
+  {
+    title: "Read the pages",
+    description:
+      "The open board as a script in wall order, with each card's id beside its heading and whether its length is measured (written) or estimated. The same text export_fountain writes, plus the ids, so a scene can be written back with write_scene.",
+    inputSchema: {},
+  },
+  async () => {
+    const { state } = await readBoard();
+    const { project } = await readProject();
+    const board = project.boards.find((item) => item.id === project.activeBoardId);
+    const text = toFountain(state, { title: board?.name, premise: project.premise || undefined });
+    const parsed = fromFountain(text);
+    const ids = mergeFountain(state, parsed).matched.map((item) => item.id);
+    const lines = [];
+    let index = 0;
+    for (const line of text.split("\n")) {
+      if (/^\.(?!\.)/.test(line) && index < ids.length) {
+        const note = state.notes.find((item) => item.id === ids[index]);
+        index += 1;
+        lines.push(`${line}    [[id: ${note?.id ?? "?"} · ${note && isMeasured(note) ? "measured" : "estimated"} ${formatPages(note ? noteEighths(note) : 0)}pp]]`);
+      } else {
+        lines.push(line);
+      }
+    }
+    return ok(lines.join("\n"));
+  },
+);
+
+server.registerTool(
+  "import_fountain",
+  {
+    title: "Import a Fountain script",
+    description:
+      "Read a .fountain file (by path) or Fountain text onto the open board: each scene's text goes onto the card with the same heading in order, a scene the wall does not have becomes a new card after the last matched one, and nothing is deleted. Say what was matched and what was made.",
+    inputSchema: { path: z.string().optional(), text: z.string().optional() },
+  },
+  async (args) => {
+    const source = args.text ?? (args.path ? fs.readFileSync(args.path, "utf8") : null);
+    if (source === null) return ok("Nothing to import: pass a path or text.");
+    const { state } = await readBoard();
+    const parsed = fromFountain(source);
+    const { commands, matched } = mergeFountain(state, parsed);
+    let live = false;
+    for (const command of commands) ({ live } = await commit(command));
+    const written = commands.filter((command) => command.type === "set_text").length;
+    const created = matched.filter((item) => item.created).length;
+    return ok(
+      `Imported ${parsed.scenes.length} scene(s): ${written} written onto cards, ${created} new card(s)${where(live)}.`,
+      matched,
+    );
   },
 );
 

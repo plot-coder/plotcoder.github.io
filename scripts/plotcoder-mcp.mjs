@@ -19,6 +19,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
   applyCommand,
+  ARROW_KINDS,
   boardEighths,
   countRanks,
   EIGHTHS_PER_PAGE,
@@ -29,9 +30,11 @@ import {
   NOTE_RANKS,
   seedState,
 } from "../src/board/reducer.js";
+import { describeRuns, describeSetups, readWall } from "../src/board/readWall.js";
 
 const colorSchema = z.enum(NOTE_COLORS);
 const rankSchema = z.enum(NOTE_RANKS);
+const arrowKindSchema = z.enum(ARROW_KINDS);
 // Agents get pages, not eighths. Eighths are the storage unit (D23); asking a
 // model to convert is a needless chance to be wrong by a factor of eight.
 const pagesSchema = z.number().positive();
@@ -189,11 +192,20 @@ function where(live) {
 // --- Reporting -------------------------------------------------------------
 
 function summarize(state) {
+  const nameOf = new Map(state.characters.map((character) => [character.id, character.name]));
   const notes = state.notes
-    .map(
-      (note) =>
-        `  - ${note.id} [${note.rank ?? "scene"}, ${formatPages(note.lengthEighths)}pp] — "${note.headline}" (${note.color}) at ${Math.round(note.x)},${Math.round(note.y)}`,
-    )
+    .map((note) => {
+      const cast = note.characterIds.map((id) => nameOf.get(id) ?? id);
+      const who = cast.length ? `, cast: ${cast.join(", ")}` : "";
+      const plant = note.plants ? ", plants" : "";
+      return `  - ${note.id} [${note.rank ?? "scene"}, ${formatPages(note.lengthEighths)}pp${who}${plant}] — "${note.headline}" (${note.color}) at ${Math.round(note.x)},${Math.round(note.y)}`;
+    })
+    .join("\n");
+  const cast = state.characters
+    .map((character) => {
+      const on = state.notes.filter((note) => note.characterIds.includes(character.id)).length;
+      return `  - ${character.id} — "${character.name}" on ${on} card${on === 1 ? "" : "s"}`;
+    })
     .join("\n");
   const { beats, scenes } = countRanks(state);
   const headline = (id) =>
@@ -210,7 +222,7 @@ function summarize(state) {
   const arrows = state.arrows
     .map(
       (arrow) =>
-        `  - ${arrow.id} — ${arrow.from} → ${arrow.to}  ("${headline(arrow.from)}" → "${headline(arrow.to)}")`,
+        `  - ${arrow.id} [${arrow.kind ?? "follows"}] — ${arrow.from} → ${arrow.to}  ("${headline(arrow.from)}" ${arrow.kind === "setup" ? "sets up" : "→"} "${headline(arrow.to)}")`,
     )
     .join("\n");
 
@@ -220,7 +232,9 @@ function summarize(state) {
     `logline: ${state.logline ? `"${state.logline}"` : "(not set)"}`,
     `beats: ${beats}, scenes: ${scenes}`,
     `runtime: about ${formatPages(boardEighths(state))} pages of a ${formatPages(state.targetEighths)}-page target (an estimate from the cards)`,
-    `notes: ${state.notes.length}, groups: ${state.groups.length}, arrows: ${state.arrows.length}`,
+    `notes: ${state.notes.length}, groups: ${state.groups.length}, arrows: ${state.arrows.length}, cast: ${state.characters.length}`,
+    "cast:",
+    cast || "  (no one yet — add_character to start the roster)",
     "cards:",
     notes || "  (no cards)",
     "groups:",
@@ -246,7 +260,7 @@ server.registerTool(
   {
     title: "List board",
     description:
-      "Return every card on the PlotCoder board with id, headline, change, color, and position. Read this before moving or updating cards so you use real ids.",
+      "Return the PlotCoder board: the logline, the cast (roster) with ids, then every card with id, headline, change, color, rank, length, cast, and position, then groups and arrows with ids. Read this before moving, updating, or casting cards so you use real ids.",
     inputSchema: {},
   },
   async () => {
@@ -353,13 +367,14 @@ server.registerTool(
   {
     title: "Create note",
     description:
-      "Add a card (post-it) to the board. A card is one scene: a headline plus the change it causes. Provide both headline and change. Optionally set color, x/y position, rank ('beat' for one of the major turns, otherwise 'scene'), and pages (how long it runs; leave it out and the card is taken to be about a page).",
+      "Add a card (post-it) to the board. A card is one scene: a headline plus the change it causes. Provide both headline and change. Optionally set color, x/y position, rank ('beat' for one of the major turns, otherwise 'scene'), pages (how long it runs; leave it out and the card is taken to be about a page), and plants (true if this scene sets something up that must pay off later).",
     inputSchema: {
       headline: z.string().min(1),
       change: z.string().min(1),
       color: colorSchema.optional(),
       rank: rankSchema.optional(),
       pages: pagesSchema.optional(),
+      plants: z.boolean().optional(),
       x: z.number().optional(),
       y: z.number().optional(),
     },
@@ -372,6 +387,7 @@ server.registerTool(
       color: args.color,
       rank: args.rank,
       lengthEighths: args.pages === undefined ? undefined : toEighths(args.pages),
+      plants: args.plants,
       x: args.x,
       y: args.y,
     });
@@ -451,6 +467,182 @@ server.registerTool(
   },
 );
 
+// --- Read the wall (R22) ----------------------------------------------------
+
+server.registerTool(
+  "read_wall",
+  {
+    title: "Read the wall",
+    description:
+      "Read the board back: the beats in wall order (rows top to bottom, cards left to right), the pages of scenes between consecutive beats, and the questions the wall raises — a run out of proportion with the others, a card with no change line, a card no arrow touches, two headlines that read like the same scene, a group too long to be one sequence. These are questions, not fixes: put them to the writer and do not act on them unasked. It says nothing about how many beats there should be, and neither should you.",
+    inputSchema: {},
+  },
+  async () => {
+    const { state, live } = await readBoard();
+    const reading = readWall(state);
+    const runs = describeRuns(reading, state);
+    // No blank lines: ok() splits prose from payload on the first one.
+    const lines = [
+      `PlotCoder wall (${live ? "live: app is open" : "from file: app not running"})`,
+      `beats in wall order: ${
+        reading.beats.length
+          ? reading.beats.map((beat) => `"${beat.headline}"`).join(", ")
+          : "(none marked)"
+      }`,
+      "runs between beats:",
+      ...(runs.length ? runs.map((line) => `  - ${line}`) : ["  (none)"]),
+      "setups and payoffs:",
+      ...(reading.setups.length
+        ? describeSetups(reading, state).map((line) => `  - ${line}`)
+        : ["  (no arrow is marked as a setup)"]),
+      "questions the wall raises:",
+      ...(reading.findings.length
+        ? reading.findings.map((finding) => `  - [${finding.kind}] ${finding.text}`)
+        : ["  (none that this reading can see)"]),
+    ];
+    return ok(lines.join("\n"), reading);
+  },
+);
+
+server.registerTool(
+  "set_plant",
+  {
+    title: "Fold the corner",
+    description:
+      "Mark cards as planting something — a setup whose payoff may not exist yet — or unmark them. A folded corner is a debt: read_wall asks about it until a setup arrow leaves the card (create_arrow with kind 'setup'). Folding never moves a card.",
+    inputSchema: {
+      ids: z.array(z.string()).min(1),
+      plants: z.boolean(),
+    },
+  },
+  async (args) => {
+    const { result, live } = await commit({
+      type: "set_plant",
+      ids: args.ids,
+      plants: args.plants,
+    });
+    const count = result?.length ?? 0;
+    if (count === 0) return ok("No change: those cards were already that way, or the ids are not on the board.");
+    return ok(
+      args.plants
+        ? `${count} card(s) now plant something${where(live)}. read_wall will ask about each until a setup arrow pays it off.`
+        : `${count} card(s) no longer marked as planting${where(live)}.`,
+      result,
+    );
+  },
+);
+
+// --- Characters (R29) -------------------------------------------------------
+
+server.registerTool(
+  "add_character",
+  {
+    title: "Add character",
+    description:
+      "Add a person to the board's cast — the roster every card casts from. One record per person: the same name twice is refused and the existing record returned. Add someone here before casting them on a card.",
+    inputSchema: { name: z.string().min(1) },
+  },
+  async (args) => {
+    const { changed, result, live } = await commit({ type: "add_character", name: args.name });
+    if (!changed) {
+      return result
+        ? ok(`Already in the cast as "${result.name}" (${result.id}). Use that id.`, result)
+        : ok("No character added: the name was empty.");
+    }
+    return ok(`Added "${result.name}" to the cast${where(live)}.`, result);
+  },
+);
+
+server.registerTool(
+  "rename_character",
+  {
+    title: "Rename character",
+    description:
+      "Rename a person in the cast by id. Every card they are on follows, because cards hold the id, not the name.",
+    inputSchema: { id: z.string(), name: z.string().min(1) },
+  },
+  async (args) => {
+    const { state, changed, result, live } = await commit({
+      type: "rename_character",
+      id: args.id,
+      name: args.name,
+    });
+    if (!changed) {
+      if (result) return ok(`Not renamed: "${result.name}" (${result.id}) already has that name.`);
+      return state.characters.some((character) => character.id === args.id)
+        ? ok("Not renamed: that is already the name.")
+        : ok(`No character with id ${args.id}. Call list_board for the cast.`);
+    }
+    return ok(`Renamed to "${result.name}"${where(live)}.`, result);
+  },
+);
+
+server.registerTool(
+  "remove_character",
+  {
+    title: "Remove character",
+    description:
+      "Remove a person from the cast by id. They leave every card they were on. The cards themselves stay.",
+    inputSchema: { id: z.string() },
+  },
+  async (args) => {
+    const { changed, live } = await commit({ type: "remove_character", id: args.id });
+    if (!changed) return ok(`No character with id ${args.id}. Call list_board for the cast.`);
+    return ok(`Removed from the cast and from every card${where(live)}.`);
+  },
+);
+
+server.registerTool(
+  "cast",
+  {
+    title: "Cast a scene",
+    description:
+      "Set who is in one or more cards. Takes card ids and character names or ids; the list replaces the card's cast, so pass everyone who is in the scene. An empty list clears it. Names must already be in the cast — add_character first — and the tool says which names it did not know.",
+    inputSchema: {
+      noteIds: z.array(z.string()).min(1),
+      characters: z.array(z.string()),
+    },
+  },
+  async (args) => {
+    const { state: before } = await readBoard();
+    const unknown = [];
+    const characterIds = [];
+    for (const who of args.characters) {
+      const match = before.characters.find(
+        (character) =>
+          character.id === who || character.name.trim().toLowerCase() === who.trim().toLowerCase(),
+      );
+      if (match) characterIds.push(match.id);
+      else unknown.push(who);
+    }
+    if (unknown.length > 0) {
+      return ok(
+        `No cast set: not in the cast — ${unknown.map((name) => `"${name}"`).join(", ")}. Call add_character for each, then cast again.`,
+      );
+    }
+    const { state, changed, result, live } = await commit({
+      type: "set_cast",
+      ids: args.noteIds,
+      characterIds,
+    });
+    if (!changed) {
+      const missing = args.noteIds.filter((id) => !state.notes.some((note) => note.id === id));
+      return ok(
+        missing.length > 0
+          ? `No cast set: no card with id ${missing.join(", ")}. Call list_board to check.`
+          : "No change: those cards already had exactly that cast.",
+      );
+    }
+    const names = characterIds.map(
+      (id) => state.characters.find((character) => character.id === id)?.name ?? id,
+    );
+    return ok(
+      `${result.length} card(s) now cast ${names.length ? names.join(", ") : "nobody"}${where(live)}.`,
+      result,
+    );
+  },
+);
+
 // --- Groups (R14) -----------------------------------------------------------
 
 server.registerTool(
@@ -525,14 +717,15 @@ server.registerTool(
   {
     title: "Create arrow",
     description:
-      "Draw a directed arrow from one card to another to show what comes after what, or what sets up what. Arrows are one-way: A→B does not create B→A. If you want both, call this twice — that is two arrows, not one two-headed line. A card cannot point at itself, and the same direction cannot be drawn twice.",
-    inputSchema: { from: z.string(), to: z.string() },
+      "Draw a directed arrow from one card to another. kind 'follows' (the default) says what comes after what; kind 'setup' says the first card plants something the second pays off. Arrows are one-way: A→B does not create B→A. If you want both, call this twice — that is two arrows, not one two-headed line. A card cannot point at itself, and the same direction cannot be drawn twice, whatever its kind; use set_arrow_kind to change one.",
+    inputSchema: { from: z.string(), to: z.string(), kind: arrowKindSchema.optional() },
   },
   async (args) => {
     const { state, changed, result, live } = await commit({
       type: "create_arrow",
       from: args.from,
       to: args.to,
+      kind: args.kind,
     });
     if (!changed) {
       // Say which of the three reasons it was. "Something went wrong" makes an
@@ -548,7 +741,49 @@ server.registerTool(
               : "that arrow already exists";
       return ok(`No arrow drawn: ${why}. Call list_board to check.`);
     }
-    return ok(`Drew ${args.from} → ${args.to}${where(live)}.`, result);
+    return ok(
+      result.kind === "setup"
+        ? `Drew ${args.from} → ${args.to} as a setup${where(live)}.`
+        : `Drew ${args.from} → ${args.to}${where(live)}.`,
+      result,
+    );
+  },
+);
+
+server.registerTool(
+  "set_arrow_kind",
+  {
+    title: "Set arrow kind",
+    description:
+      "Change what an arrow means: 'follows' (what comes after what) or 'setup' (the tail plants something the head pays off). Needs the arrow's id from list_board.",
+    inputSchema: { id: z.string(), kind: arrowKindSchema },
+  },
+  async (args) => {
+    const { state, changed, live } = await commit({
+      type: "set_arrow_kind",
+      id: args.id,
+      kind: args.kind,
+    });
+    if (!changed) {
+      return state.arrows.some((arrow) => arrow.id === args.id)
+        ? ok(`That arrow is already '${args.kind}'.`)
+        : ok(`No arrow with id ${args.id}. Call list_board for the real ids.`);
+    }
+    return ok(`That arrow is now '${args.kind}'${where(live)}.`);
+  },
+);
+
+server.registerTool(
+  "new_board",
+  {
+    title: "New board",
+    description:
+      "Start an empty wall: removes every card, group, arrow and the cast, and clears the logline. The target length stays. This cannot be undone, so on a board that has work on it, ask the writer first and suggest Save project.",
+    inputSchema: {},
+  },
+  async () => {
+    const { live } = await commit({ type: "new_board" });
+    return ok(`The wall is empty${where(live)}. Set the logline, then start on the beats.`);
   },
 );
 

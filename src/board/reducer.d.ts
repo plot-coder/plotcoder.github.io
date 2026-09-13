@@ -8,6 +8,10 @@ export type NoteColor = (typeof NOTE_COLORS)[number];
 export declare const NOTE_RANKS: readonly ["scene", "beat"];
 export type NoteRank = (typeof NOTE_RANKS)[number];
 
+/** What an arrow means: what comes after what, or a setup and its payoff (R30). */
+export declare const ARROW_KINDS: readonly ["follows", "setup"];
+export type ArrowKind = (typeof ARROW_KINDS)[number];
+
 /** Length is measured in eighths of a page (D23). */
 export declare const EIGHTHS_PER_PAGE: number;
 export declare const DEFAULT_NOTE_EIGHTHS: number;
@@ -19,6 +23,18 @@ export declare function formatPages(eighths: number): string;
 
 export declare const NOTE_WIDTH: number;
 export declare const NOTE_HEIGHT: number;
+
+/**
+ * One person in the board's roster (R29, D26). Referenced from cards by id.
+ * The record is expected to grow — what they look like, the details a writer
+ * pulls up — so it carries an id and timestamps from the start.
+ */
+export type BoardCharacter = {
+  id: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+};
 
 export type BoardNote = {
   id: string;
@@ -33,6 +49,10 @@ export type BoardNote = {
   rank: NoteRank;
   /** Estimated screen time, in eighths of a page (R25). */
   lengthEighths: number;
+  /** Who is in the scene: ids from the roster, in the order they were cast (R29). */
+  characterIds: string[];
+  /** The corner is folded: this card plants something that must pay off (R31). */
+  plants: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -47,6 +67,8 @@ export type BoardArrow = {
   id: string;
   from: string;
   to: string;
+  /** "follows" unless the writer says the tail sets up the head. */
+  kind: ArrowKind;
 };
 
 export type BoardState = {
@@ -54,6 +76,8 @@ export type BoardState = {
   logline: string;
   /** Target script length in eighths of a page; 120 pages for a feature (R25). */
   targetEighths: number;
+  /** The roster: every person in the story, whether or not they are on a card yet (R29). */
+  characters: BoardCharacter[];
   notes: BoardNote[];
   groups: BoardGroup[];
   arrows: BoardArrow[];
@@ -77,6 +101,8 @@ export type Command =
       rotate?: number;
       rank?: NoteRank;
       lengthEighths?: number;
+      characterIds?: string[];
+      plants?: boolean;
     }
   | { type: "update_note"; id: string; headline?: string; change?: string }
   | { type: "move_note"; id: string; x: number; y: number }
@@ -89,8 +115,15 @@ export type Command =
   | { type: "create_group"; title?: string; noteIds: string[] }
   | { type: "ungroup"; id: string }
   | { type: "rename_group"; id: string; title: string }
-  | { type: "create_arrow"; from: string; to: string }
-  | { type: "delete_arrow"; id: string };
+  | { type: "create_arrow"; from: string; to: string; kind?: ArrowKind }
+  | { type: "delete_arrow"; id: string }
+  | { type: "set_arrow_kind"; id: string; kind: ArrowKind }
+  | { type: "new_board" }
+  | { type: "add_character"; name: string; id?: string }
+  | { type: "rename_character"; id: string; name: string }
+  | { type: "remove_character"; id: string }
+  | { type: "set_cast"; ids: string[]; characterIds: string[] }
+  | { type: "set_plant"; ids: string[]; plants: boolean };
 
 export type CommandResult = {
   state: BoardState;

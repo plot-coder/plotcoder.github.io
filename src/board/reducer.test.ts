@@ -5,6 +5,7 @@ import {
   countRanks,
   DEFAULT_NOTE_EIGHTHS,
   DEFAULT_TARGET_EIGHTHS,
+  EIGHTHS_PER_PAGE,
   emptyState,
   formatPages,
   isBoardState,
@@ -667,7 +668,9 @@ describe("normalizeState", () => {
   it("leaves everything else on a card alone while filling rank in", () => {
     const { rank: _drop, ...note } = seedState(NOW).notes[0];
     const normalized = normalizeState({ logline: "", notes: [note], groups: [], arrows: [] });
-    expect(normalized.notes[0]).toEqual({ ...note, rank: "scene" });
+    // The board handed in has no roster, so the seed card's cast id names
+    // nobody and is dropped (R29). Everything else survives untouched.
+    expect(normalized.notes[0]).toEqual({ ...note, rank: "scene", characterIds: [] });
   });
 
   // R25 added length the same way. An unsized card is an ordinary page, which
@@ -756,5 +759,229 @@ describe("state helpers", () => {
   it("agrees with the card size the layout helpers assume", () => {
     expect(NOTE_WIDTH).toBe(192);
     expect(NOTE_HEIGHT).toBe(192);
+  });
+});
+
+describe("characters (R29)", () => {
+  it("seeds a small cast on the seed cards", () => {
+    const state = seedState(NOW);
+    expect(state.characters.map((character) => character.name)).toEqual(["Maya", "Tom"]);
+    expect(state.notes.map((note) => note.characterIds)).toEqual([
+      ["maya"],
+      ["tom", "maya"],
+      ["maya", "tom"],
+    ]);
+  });
+
+  it("adds a person once, trimmed, and refuses the same name in another case", () => {
+    const first = applyCommand(emptyState(), { type: "add_character", name: "  Maya " }, NOW);
+    expect(first.changed).toBe(true);
+    expect(first.result).toMatchObject({ name: "Maya", createdAt: NOW });
+
+    const again = applyCommand(first.state, { type: "add_character", name: "maya" }, NOW);
+    expect(again.changed).toBe(false);
+    expect(again.state).toBe(first.state);
+    expect(again.result).toBe(first.state.characters[0]);
+
+    const blank = applyCommand(first.state, { type: "add_character", name: "   " }, NOW);
+    expect(blank.changed).toBe(false);
+  });
+
+  it("renames a person, refuses a clash, and is a no-op for the same name", () => {
+    const state = run(
+      emptyState(),
+      { type: "add_character", id: "m", name: "Maya" },
+      { type: "add_character", id: "t", name: "Tom" },
+    );
+    const renamed = applyCommand(state, { type: "rename_character", id: "m", name: "Maya Reed" }, NOW);
+    expect(renamed.changed).toBe(true);
+    expect(renamed.state.characters[0]).toMatchObject({ id: "m", name: "Maya Reed" });
+
+    const clash = applyCommand(renamed.state, { type: "rename_character", id: "t", name: "maya reed" }, NOW);
+    expect(clash.changed).toBe(false);
+    expect(clash.result).toMatchObject({ id: "m" });
+
+    expect(applyCommand(renamed.state, { type: "rename_character", id: "m", name: "Maya Reed" }, NOW).changed).toBe(false);
+    expect(applyCommand(renamed.state, { type: "rename_character", id: "nobody", name: "X" }, NOW).changed).toBe(false);
+  });
+
+  it("casts cards from the roster only, once each, in the order given", () => {
+    const state = run(
+      boardOf({ id: "a", x: 0, y: 0 }, { id: "b", x: 300, y: 0 }),
+      { type: "add_character", id: "m", name: "Maya" },
+      { type: "add_character", id: "t", name: "Tom" },
+    );
+    const cast = applyCommand(
+      state,
+      { type: "set_cast", ids: ["a", "b"], characterIds: ["t", "ghost", "m", "t"] },
+      NOW,
+    );
+    expect(cast.changed).toBe(true);
+    expect(cast.state.notes.map((note) => note.characterIds)).toEqual([
+      ["t", "m"],
+      ["t", "m"],
+    ]);
+    expect(cast.result).toHaveLength(2);
+
+    const same = applyCommand(cast.state, { type: "set_cast", ids: ["a"], characterIds: ["t", "m"] }, NOW);
+    expect(same.changed).toBe(false);
+    expect(same.state).toBe(cast.state);
+
+    const cleared = applyCommand(cast.state, { type: "set_cast", ids: ["a"], characterIds: [] }, NOW);
+    expect(cleared.state.notes[0].characterIds).toEqual([]);
+    expect(cleared.state.notes[1].characterIds).toEqual(["t", "m"]);
+  });
+
+  it("removing a person takes them off every card and leaves the cards", () => {
+    const state = run(
+      boardOf({ id: "a", x: 0, y: 0 }, { id: "b", x: 300, y: 0 }),
+      { type: "add_character", id: "m", name: "Maya" },
+      { type: "add_character", id: "t", name: "Tom" },
+      { type: "set_cast", ids: ["a"], characterIds: ["m", "t"] },
+      { type: "set_cast", ids: ["b"], characterIds: ["t"] },
+    );
+    const removed = applyCommand(state, { type: "remove_character", id: "t" }, NOW);
+    expect(removed.changed).toBe(true);
+    expect(removed.state.characters.map((character) => character.id)).toEqual(["m"]);
+    expect(removed.state.notes.map((note) => note.characterIds)).toEqual([["m"], []]);
+    expect(removed.state.notes).toHaveLength(2);
+    expect(applyCommand(removed.state, { type: "remove_character", id: "t" }, NOW).changed).toBe(false);
+  });
+
+  it("create_note takes a cast, filtered to the roster", () => {
+    const state = run(emptyState(), { type: "add_character", id: "m", name: "Maya" });
+    const created = applyCommand(
+      state,
+      { type: "create_note", id: "a", characterIds: ["m", "nobody"] },
+      NOW,
+    );
+    expect(created.state.notes[0].characterIds).toEqual(["m"]);
+    expect(applyCommand(state, { type: "create_note", id: "b" }, NOW).state.notes[0].characterIds).toEqual([]);
+  });
+
+  it("normalizeState gives a pre-R29 board an empty roster and every card an empty cast", () => {
+    const old = {
+      logline: "",
+      targetEighths: DEFAULT_TARGET_EIGHTHS,
+      notes: [{ ...seedState(NOW).notes[0], characterIds: undefined }],
+      groups: [],
+      arrows: [],
+    } as unknown as BoardState;
+    const fixed = normalizeState(old);
+    expect(fixed.characters).toEqual([]);
+    expect(fixed.notes[0].characterIds).toEqual([]);
+  });
+
+  it("normalizeState drops a cast id that names nobody in the roster, and keeps the rest", () => {
+    const state = run(
+      boardOf({ id: "a", x: 0, y: 0 }),
+      { type: "add_character", id: "m", name: "Maya" },
+      { type: "set_cast", ids: ["a"], characterIds: ["m"] },
+    );
+    const damaged = {
+      ...state,
+      characters: [...state.characters, { id: 42, name: "bad" }],
+      notes: [{ ...state.notes[0], characterIds: ["m", "ghost"] }],
+    } as unknown as BoardState;
+    const fixed = normalizeState(damaged);
+    expect(fixed.characters.map((character) => character.id)).toEqual(["m"]);
+    expect(fixed.notes[0].characterIds).toEqual(["m"]);
+    expect(normalizeState(state)).toBe(state);
+  });
+});
+
+describe("typed arrows (R30)", () => {
+  const board = () => boardOf({ id: "a", x: 0, y: 0 }, { id: "b", x: 300, y: 0 });
+
+  it("draws 'follows' unless told otherwise, and ignores a kind it does not know", () => {
+    const plain = applyCommand(board(), { type: "create_arrow", from: "a", to: "b" }, NOW);
+    expect(plain.state.arrows[0].kind).toBe("follows");
+    const setup = applyCommand(
+      board(),
+      { type: "create_arrow", from: "a", to: "b", kind: "setup" },
+      NOW,
+    );
+    expect(setup.state.arrows[0].kind).toBe("setup");
+    const odd = applyCommand(
+      board(),
+      { type: "create_arrow", from: "a", to: "b", kind: "label" as never },
+      NOW,
+    );
+    expect(odd.state.arrows[0].kind).toBe("follows");
+  });
+
+  it("keeps one arrow per direction whatever the kind", () => {
+    const state = run(board(), { type: "create_arrow", from: "a", to: "b", kind: "setup" });
+    const again = applyCommand(state, { type: "create_arrow", from: "a", to: "b" }, NOW);
+    expect(again.changed).toBe(false);
+    expect(again.state).toBe(state);
+  });
+
+  it("changes an arrow's kind, and is a no-op for the same kind or an unknown arrow", () => {
+    const state = run(board(), { type: "create_arrow", from: "a", to: "b" });
+    const id = state.arrows[0].id;
+    const changed = applyCommand(state, { type: "set_arrow_kind", id, kind: "setup" }, NOW);
+    expect(changed.changed).toBe(true);
+    expect(changed.state.arrows[0]).toMatchObject({ id, from: "a", to: "b", kind: "setup" });
+    expect(applyCommand(changed.state, { type: "set_arrow_kind", id, kind: "setup" }, NOW).changed).toBe(false);
+    expect(applyCommand(state, { type: "set_arrow_kind", id: "nope", kind: "setup" }, NOW).changed).toBe(false);
+  });
+
+  it("normalizeState gives a pre-kind arrow 'follows' and leaves a kinded one alone", () => {
+    const state = run(board(), { type: "create_arrow", from: "a", to: "b", kind: "setup" });
+    const old = {
+      ...state,
+      arrows: [{ id: "x", from: "a", to: "b" }],
+    } as unknown as BoardState;
+    expect(normalizeState(old).arrows[0]).toEqual({ id: "x", from: "a", to: "b", kind: "follows" });
+    expect(normalizeState(state)).toBe(state);
+  });
+});
+
+describe("new_board", () => {
+  it("empties everything but the target", () => {
+    const state = run(
+      seedState(NOW),
+      { type: "set_logline", logline: "Can Maya forgive?" },
+      { type: "set_target", targetEighths: 60 * EIGHTHS_PER_PAGE },
+      { type: "create_arrow", from: "maya-letter", to: "tom-lies" },
+    );
+    const fresh = applyCommand(state, { type: "new_board" }, NOW);
+    expect(fresh.changed).toBe(true);
+    expect(fresh.state).toEqual({ ...emptyState(), targetEighths: 60 * EIGHTHS_PER_PAGE });
+  });
+});
+
+describe("set_plant (R31)", () => {
+  it("folds and unfolds without moving the card, and skips cards already that way", () => {
+    const state = boardOf({ id: "a", x: 40, y: 50 }, { id: "b", x: 300, y: 50 });
+    expect(state.notes.every((note) => note.plants === false)).toBe(true);
+    const folded = applyCommand(state, { type: "set_plant", ids: ["a", "b"], plants: true }, NOW);
+    expect(folded.changed).toBe(true);
+    expect(folded.state.notes.map((note) => note.plants)).toEqual([true, true]);
+    expect(folded.state.notes[0]).toMatchObject({ x: 40, y: 50 });
+    expect(folded.result).toHaveLength(2);
+
+    const again = applyCommand(folded.state, { type: "set_plant", ids: ["a"], plants: true }, NOW);
+    expect(again.changed).toBe(false);
+    expect(again.state).toBe(folded.state);
+
+    const unfolded = applyCommand(folded.state, { type: "set_plant", ids: ["a", "nope"], plants: false }, NOW);
+    expect(unfolded.state.notes.map((note) => note.plants)).toEqual([false, true]);
+  });
+
+  it("create_note takes plants, and treats anything but true as false", () => {
+    const planted = applyCommand(emptyState(), { type: "create_note", id: "a", plants: true }, NOW);
+    expect(planted.state.notes[0].plants).toBe(true);
+    const odd = applyCommand(emptyState(), { type: "create_note", id: "b", plants: "yes" as never }, NOW);
+    expect(odd.state.notes[0].plants).toBe(false);
+  });
+
+  it("normalizeState gives a pre-fold card plants: false and leaves a folded one alone", () => {
+    const state = run(boardOf({ id: "a", x: 0, y: 0 }), { type: "set_plant", ids: ["a"], plants: true });
+    const { plants: _drop, ...bare } = state.notes[0];
+    const fixed = normalizeState({ ...state, notes: [bare] } as unknown as BoardState);
+    expect(fixed.notes[0].plants).toBe(false);
+    expect(normalizeState(state)).toBe(state);
   });
 });

@@ -1,4 +1,6 @@
-import { useEffect, useId, useRef, useState, type FormEvent } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from "react";
+import { describeRuns, describeSetups, readWall } from "./board/readWall";
+import { type BoardState } from "./board/reducer";
 import {
   createReminder,
   readReminders,
@@ -8,12 +10,20 @@ import {
 
 type RemindersModalProps = {
   open: boolean;
+  board: BoardState;
   onOpen: () => void;
   onClose: () => void;
 };
 
-export function RemindersModal({ open, onOpen, onClose }: RemindersModalProps) {
+export function RemindersModal({ open, board, onOpen, onClose }: RemindersModalProps) {
   const titleId = useId();
+  const wallId = useId();
+  // Read the wall (R22) is Reminders grown up (P17): the principles above, and
+  // below them the same principles checked against the actual board. Read only
+  // while the modal is open — it is a pass over every card and every pair.
+  const reading = useMemo(() => (open ? readWall(board) : null), [open, board]);
+  const runs = reading ? describeRuns(reading, board) : [];
+  const setups = reading ? describeSetups(reading, board) : [];
   const closeRef = useRef<HTMLButtonElement>(null);
   const [reminders, setReminders] = useState<Reminder[]>(readReminders);
   const [draft, setDraft] = useState("");
@@ -102,6 +112,43 @@ export function RemindersModal({ open, onOpen, onClose }: RemindersModalProps) {
                 </li>
               ))}
             </ol>
+
+            {reading ? (
+              <section className="wall-read" aria-labelledby={wallId}>
+                <p className="modal__kicker">Your board</p>
+                <h3 id={wallId} className="wall-read__title">
+                  Read the wall
+                </h3>
+                {runs.length > 0 ? (
+                  <ul className="wall-read__runs" aria-label="Runs between beats">
+                    {runs.map((line) => (
+                      <li key={line}>{line}</li>
+                    ))}
+                  </ul>
+                ) : null}
+                {setups.length > 0 ? (
+                  <ul className="wall-read__runs" aria-label="Setups and payoffs">
+                    {setups.map((line) => (
+                      <li key={line}>{line}</li>
+                    ))}
+                  </ul>
+                ) : null}
+                {reading.findings.length > 0 ? (
+                  <ol className="wall-read__findings">
+                    {reading.findings.map((finding) => (
+                      <li key={`${finding.kind}:${finding.ids.join(",")}`} className="wall-read__finding">
+                        {finding.text}
+                      </li>
+                    ))}
+                  </ol>
+                ) : (
+                  <p className="wall-read__quiet">
+                    Nothing this reading can see. It looks at the runs between beats, change
+                    lines, arrows, repeated headlines, and long groups — and it only asks.
+                  </p>
+                )}
+              </section>
+            ) : null}
 
             <form className="reminder-form" onSubmit={addReminder}>
               <label className="reminder-form__label" htmlFor="new-reminder">

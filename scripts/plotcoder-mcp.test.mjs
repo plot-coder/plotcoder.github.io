@@ -128,6 +128,8 @@ describe("plotcoder MCP server", () => {
   it("exposes the board tools an agent needs", async () => {
     const { tools } = await client.request("tools/list", {});
     expect(tools.map((tool) => tool.name).sort()).toEqual([
+      "add_character",
+      "cast",
       "create_arrow",
       "create_group",
       "create_note",
@@ -135,10 +137,16 @@ describe("plotcoder MCP server", () => {
       "delete_note",
       "list_board",
       "move_note",
+      "new_board",
+      "read_wall",
       "recolor_note",
+      "remove_character",
+      "rename_character",
       "rename_group",
+      "set_arrow_kind",
       "set_length",
       "set_logline",
+      "set_plant",
       "set_rank",
       "set_target",
       "ungroup",
@@ -188,7 +196,7 @@ describe("plotcoder MCP server", () => {
     expect(text).toContain("1 beats");
 
     const listed = await client.callTool("list_board");
-    expect(listed).toContain("[beat, 1pp]");
+    expect(listed).toContain("[beat, 1pp");
     expect(listed).toContain("beats: 1, scenes: 2");
 
     const saved = readBoardFile();
@@ -215,7 +223,7 @@ describe("plotcoder MCP server", () => {
       expect(text).toContain("about 5 pages");
 
       const listed = await client.callTool("list_board");
-      expect(listed).toContain("[scene, 3pp]");
+      expect(listed).toContain("[scene, 3pp");
       expect(listed).toContain("120-page target");
 
       // Length is a property of the card, not of where it sits.
@@ -232,7 +240,7 @@ describe("plotcoder MCP server", () => {
 
       await client.callTool("set_length", { ids: [id], pages: 0.5 });
       expect(readBoardFile().state.notes.find((note) => note.id === id).lengthEighths).toBe(4);
-      expect(await client.callTool("list_board")).toContain("[scene, 4/8pp]");
+      expect(await client.callTool("list_board")).toContain("[scene, 4/8pp");
 
       await client.callTool("set_length", { ids: [id], pages: 1 });
     });
@@ -585,5 +593,284 @@ describe("plotcoder MCP server with the app open", () => {
     await liveClient.callTool("move_note", { id: "tom-lies", x: 900, y: 40 });
     const moved = bridge.getState().notes.find((note) => note.id === "tom-lies");
     expect(moved).toMatchObject({ x: 900, y: 40 });
+  });
+});
+
+
+// Step 4 of the method through the agent door: the wall read back as runs and
+// questions. Built on its own board so the narrative above stays untouched.
+describe("read_wall", () => {
+  let reader;
+  let readerRoot;
+
+  beforeAll(async () => {
+    readerRoot = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-read-"));
+    reader = new McpClient(readerRoot);
+    await reader.start();
+
+    // A fresh board starts from the seed cards; clear them so the reading is
+    // over the wall this test lays out, and nothing else.
+    for (const seeded of ["maya-letter", "tom-lies", "letter-aloud"]) {
+      await reader.callTool("delete_note", { id: seeded });
+    }
+
+    const cards = [
+      ["Inciting", "beat", 1],
+      ["Setup a", "scene", 3],
+      ["Lock in", "beat", 1],
+      ["Long b", "scene", 4],
+      ["Long c", "scene", 4],
+      ["Long d", "scene", 4],
+      ["Midpoint", "beat", 1],
+      ["Fall e", "scene", 3],
+      ["All is lost", "beat", 1],
+    ];
+    for (const [index, [headline, rank, pages]] of cards.entries()) {
+      await reader.callTool("create_note", {
+        headline,
+        change: `${headline} changes things.`,
+        rank,
+        pages,
+        x: 100 + index * 230,
+        y: 100,
+      });
+    }
+  }, 30000);
+
+  afterAll(() => {
+    reader?.stop();
+    if (readerRoot) fs.rmSync(readerRoot, { recursive: true, force: true });
+  });
+
+  it("is listed as a tool", async () => {
+    const { tools } = await reader.request("tools/list", {});
+    expect(tools.map((tool) => tool.name)).toContain("read_wall");
+  });
+
+  it("reports the beats in wall order and the runs between them", async () => {
+    const text = await reader.callTool("read_wall");
+    expect(text).toContain("from file: app not running");
+    expect(text).toContain(
+      'beats in wall order: "Inciting", "Lock in", "Midpoint", "All is lost"',
+    );
+    expect(text).toContain('"Inciting" → "Lock in": about 3 pages, 1 card');
+    expect(text).toContain('"Lock in" → "Midpoint": about 12 pages, 3 cards');
+    expect(text).toContain('"Midpoint" → "All is lost": about 3 pages, 1 card');
+  });
+
+  it("raises the sag as a question, with the ids in the payload", async () => {
+    const text = await reader.callTool("read_wall");
+    expect(text).toContain('[sag] About 12 pages run between "Lock in" and "Midpoint"');
+    expect(text).toMatch(/set piece\?/);
+
+    const reading = await reader.callToolData("read_wall");
+    const sag = reading.findings.find((finding) => finding.kind === "sag");
+    expect(sag.ids).toHaveLength(2);
+    expect(reading.order).toHaveLength(9);
+    expect(reading.runs).toHaveLength(3);
+  });
+
+  it("says nothing about the number of beats", async () => {
+    const text = await reader.callTool("read_wall");
+    expect(text).not.toMatch(/too (many|few)/);
+    expect(text).not.toMatch(/\b(8|15) beats\b/);
+  });
+
+  it("notices a card that has not been written yet", async () => {
+    await reader.callTool("create_note", {
+      headline: "Coda",
+      change: "What changes?",
+      x: 100,
+      y: 500,
+    });
+    const text = await reader.callTool("read_wall");
+    expect(text).toContain('[unwritten] "Coda" has no change line. What is different when it ends?');
+  });
+});
+
+
+// The cast (R29): a roster the board maintains, and cards that point into it.
+describe("characters", () => {
+  let cast;
+  let castRoot;
+
+  beforeAll(async () => {
+    castRoot = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-cast-"));
+    cast = new McpClient(castRoot);
+    await cast.start();
+  }, 30000);
+
+  afterAll(() => {
+    cast?.stop();
+    if (castRoot) fs.rmSync(castRoot, { recursive: true, force: true });
+  });
+
+  it("starts with the seed cast on the seed cards", async () => {
+    const text = await cast.callTool("list_board");
+    expect(text).toContain('maya — "Maya" on 3 cards');
+    expect(text).toContain('tom — "Tom" on 2 cards');
+    expect(text).toContain("cast: Maya]");
+  });
+
+  it("adds a person once, and says who it already is the second time", async () => {
+    const added = await cast.callToolData("add_character", { name: "  Sam " });
+    expect(added.name).toBe("Sam");
+    const again = await cast.callTool("add_character", { name: "sam" });
+    expect(again).toContain(`Already in the cast as "Sam" (${added.id})`);
+  });
+
+  it("casts a card by name and refuses a name that is not in the cast", async () => {
+    const refused = await cast.callTool("cast", {
+      noteIds: ["maya-letter"],
+      characters: ["Maya", "Reed"],
+    });
+    expect(refused).toContain('not in the cast — "Reed"');
+
+    const text = await cast.callTool("cast", {
+      noteIds: ["maya-letter"],
+      characters: ["Maya", "sam"],
+    });
+    expect(text).toContain("1 card(s) now cast Maya, Sam");
+    const board = await cast.callToolData("list_board");
+    expect(board.notes.find((note) => note.id === "maya-letter").characterIds).toEqual([
+      "maya",
+      board.characters.find((character) => character.name === "Sam").id,
+    ]);
+  });
+
+  it("renames a person and every card follows, because cards hold the id", async () => {
+    const text = await cast.callTool("rename_character", { id: "maya", name: "Maya Reed" });
+    expect(text).toContain('Renamed to "Maya Reed"');
+    const board = await cast.callTool("list_board");
+    expect(board).toContain("cast: Maya Reed, Sam]");
+    const clash = await cast.callTool("rename_character", { id: "tom", name: "maya reed" });
+    expect(clash).toContain("already has that name");
+  });
+
+  it("removes a person from the cast and from every card", async () => {
+    await cast.callTool("remove_character", { id: "tom" });
+    const board = await cast.callToolData("list_board");
+    expect(board.characters.map((character) => character.id)).not.toContain("tom");
+    expect(board.notes.every((note) => !note.characterIds.includes("tom"))).toBe(true);
+    expect(await cast.callTool("remove_character", { id: "tom" })).toContain("No character with id tom");
+  });
+
+  it("read_wall asks about a person in the cast who is on no card", async () => {
+    await cast.callTool("add_character", { name: "The landlord" });
+    const text = await cast.callTool("read_wall");
+    expect(text).toContain("[uncast] The landlord is in the cast but on no card. Where do they come in?");
+  });
+});
+
+// Typed arrows (R30): a setup and its payoff, and a fresh wall.
+describe("typed arrows and new_board", () => {
+  let typed;
+  let typedRoot;
+
+  beforeAll(async () => {
+    typedRoot = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-typed-"));
+    typed = new McpClient(typedRoot);
+    await typed.start();
+  }, 30000);
+
+  afterAll(() => {
+    typed?.stop();
+    if (typedRoot) fs.rmSync(typedRoot, { recursive: true, force: true });
+  });
+
+  it("draws a setup arrow and lists it as one", async () => {
+    const text = await typed.callTool("create_arrow", {
+      from: "maya-letter",
+      to: "letter-aloud",
+      kind: "setup",
+    });
+    expect(text).toContain("as a setup");
+    const listed = await typed.callTool("list_board");
+    expect(listed).toContain('[setup] — maya-letter → letter-aloud  ("Maya finds the letter" sets up "The letter is read aloud")');
+  });
+
+  it("refuses the same direction again even with a different kind, and changes the kind instead", async () => {
+    const dup = await typed.callTool("create_arrow", { from: "maya-letter", to: "letter-aloud" });
+    expect(dup).toContain("that arrow already exists");
+    const { arrows } = await typed.callToolData("list_board");
+    const changed = await typed.callTool("set_arrow_kind", { id: arrows[0].id, kind: "follows" });
+    expect(changed).toContain("now 'follows'");
+    expect(await typed.callTool("set_arrow_kind", { id: arrows[0].id, kind: "follows" })).toContain("already 'follows'");
+    await typed.callTool("set_arrow_kind", { id: arrows[0].id, kind: "setup" });
+  });
+
+  it("read_wall reports setups with their distance, and asks about one that runs backwards", async () => {
+    const reading = await typed.callTool("read_wall");
+    // maya-letter (y 120) reads before letter-aloud (y 340): forward, two pages apart.
+    expect(reading).toContain('"Maya finds the letter" sets up "The letter is read aloud", about 2 pages later');
+
+    await typed.callTool("create_arrow", { from: "letter-aloud", to: "tom-lies", kind: "setup" });
+    const again = await typed.callTool("read_wall");
+    expect(again).toContain(
+      '[backwards] "The letter is read aloud" sets up "Tom lies about the job", but on the wall the payoff comes first. Which order do you mean?',
+    );
+  });
+
+  it("new_board empties the wall but keeps the target", async () => {
+    await typed.callTool("set_target", { pages: 60 });
+    const text = await typed.callTool("new_board");
+    expect(text).toContain("The wall is empty");
+    const board = await typed.callToolData("list_board");
+    expect(board.notes).toEqual([]);
+    expect(board.arrows).toEqual([]);
+    expect(board.characters).toEqual([]);
+    expect(board.logline).toBe("");
+    expect(board.targetEighths).toBe(60 * 8);
+  });
+});
+
+// The folded corner (R31): a plant with no payoff yet.
+describe("set_plant", () => {
+  let fold;
+  let foldRoot;
+
+  beforeAll(async () => {
+    foldRoot = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-fold-"));
+    fold = new McpClient(foldRoot);
+    await fold.start();
+  }, 30000);
+
+  afterAll(() => {
+    fold?.stop();
+    if (foldRoot) fs.rmSync(foldRoot, { recursive: true, force: true });
+  });
+
+  it("folds a corner, shows it in list_board, and read_wall asks about it", async () => {
+    const text = await fold.callTool("set_plant", { ids: ["maya-letter"], plants: true });
+    expect(text).toContain("1 card(s) now plant something");
+    expect(await fold.callTool("list_board")).toContain("cast: Maya, plants] — \"Maya finds the letter\"");
+    expect(await fold.callTool("read_wall")).toContain(
+      '[unpaid] "Maya finds the letter" plants something, and no arrow pays it off. Where does it come back?',
+    );
+    // Folding never moves the card.
+    const { notes } = await fold.callToolData("list_board");
+    expect(notes.find((note) => note.id === "maya-letter")).toMatchObject({ x: 88, y: 120, plants: true });
+  });
+
+  it("goes quiet once a setup arrow leaves the card, and stays folded", async () => {
+    await fold.callTool("create_arrow", { from: "maya-letter", to: "letter-aloud", kind: "setup" });
+    const text = await fold.callTool("read_wall");
+    expect(text).not.toContain("[unpaid]");
+    const { notes } = await fold.callToolData("list_board");
+    expect(notes.find((note) => note.id === "maya-letter").plants).toBe(true);
+  });
+
+  it("is a no-op the second time and says so", async () => {
+    expect(await fold.callTool("set_plant", { ids: ["maya-letter"], plants: true })).toContain("No change");
+    expect(await fold.callTool("set_plant", { ids: ["maya-letter"], plants: false })).toContain("no longer marked");
+  });
+
+  it("create_note can plant from the start", async () => {
+    const created = await fold.callToolData("create_note", {
+      headline: "The gun on the wall",
+      change: "Nobody mentions it.",
+      plants: true,
+    });
+    expect(created.plants).toBe(true);
   });
 });

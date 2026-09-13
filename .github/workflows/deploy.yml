@@ -34,6 +34,11 @@ jobs:
       # A broken kernel should never reach the wall.
       - run: npm test
 
+      # Nor a broken door into it: the wall, window.plotcoder, the dev bridge
+      # and the MCP server, driven end to end in a real browser.
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+
       - run: npm run build
 
       - uses: actions/configure-pages@v5

@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState, type ChangeEvent } from "react";
+import { boardStore } from "./board/store";
 import { downloadProject, importProject } from "./projectStore";
 
 type ProjectModalProps = {
@@ -39,6 +40,9 @@ export function ProjectModal({ open, onOpen, onClose }: ProjectModalProps) {
     try {
       const text = await file.text();
       importProject(JSON.parse(text));
+      // The board file must hold the opened wall before the reload, or the
+      // reload takes the dev bridge's old copy back (see boardStore.adoptLocal).
+      await boardStore.adoptLocal();
       window.location.reload();
     } catch {
       setError("That file could not be opened as a PlotCoder project.");

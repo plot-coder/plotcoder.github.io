@@ -21,6 +21,8 @@ function card(id: string, x: number, y: number, rotate = -2.2): MockNote {
     z: 1,
     rank: "scene",
     lengthEighths: 8,
+  characterIds: [],
+  plants: false,
     createdAt: "2026-01-01T00:00:00.000Z",
     updatedAt: "2026-01-01T00:00:00.000Z",
   };

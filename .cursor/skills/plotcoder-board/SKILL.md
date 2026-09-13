@@ -20,8 +20,14 @@ The board holds five kinds of thing:
   turns the story hangs on. Rank is carried by the card, never by where it sits.
 - **length** — how many pages a card runs. An unsized card is taken to be about
   one page. Like rank, it belongs to the card and never moves it.
+- **plants** — the corner is folded: this scene sets something up that must
+  pay off later. A setup arrow leaving the card is the payoff.
 - **groups** — a named frame around two or more cards: a sequence, a set piece.
-- **arrows** — directed links between cards: what follows what, what sets up what.
+- **arrows** — directed links between cards, each with a `kind`: `follows` (what
+  comes after what, the default) or `setup` (the tail plants what the head pays
+  off).
+- **cast** — the roster: every person in the story, one record each with an id.
+  A card says who is in the scene by pointing at people in the roster.
 
 Above them all sits the **logline**: the central question, what the story is
 arguing.
@@ -38,6 +44,15 @@ lands on the exact same board a person sees.
 - `list_board` — the logline, the beat/scene counts, the runtime estimate against
   the target, then every **card**, **group**, and **arrow** with its **id**. This
   is the only place ids come from.
+- `read_wall` — step 4 of the method. The beats in wall order, the pages of
+  scenes between consecutive beats, and the **questions the wall raises**: a run
+  out of proportion with the others, a card with no change line, a card no arrow
+  touches, two headlines that read like the same scene, a group too long to be
+  one sequence, a person in the cast who is on no card, a person gone for more
+  than a third of the story, a payoff that comes before its setup on the wall,
+  a folded card no setup arrow pays off. It also lists every setup with the
+  distance to its payoff. Put the questions to the writer. Do not act on them
+  unasked, and do not add an opinion about the number of beats.
 
 ### Cards
 
@@ -49,7 +64,21 @@ lands on the exact same board a person sees.
 - `set_rank` — mark cards `beat` or `scene`. Takes a list of ids.
 - `set_length` — how long cards run, in `pages`. Takes a list of ids. Fractions
   are fine (`0.5`); they are stored in eighths of a page.
+- `set_plant` — fold or unfold the corner of cards (`plants` true/false). Fold a
+  card when the writer says it sets something up; `read_wall` will ask where it
+  pays off until a `setup` arrow leaves it.
 - `delete_note` — remove a card (also drops its arrows and group membership).
+
+### Cast
+
+- `add_character` — add a person to the roster by `name`. The same name twice is
+  refused and the existing record returned; use its id.
+- `rename_character` / `remove_character` — by id. Renaming carries to every
+  card; removing takes them off every card and leaves the cards.
+- `cast` — set who is in one or more cards: `noteIds` plus `characters` (names
+  or ids). The list **replaces** the card's cast, so pass everyone in the scene;
+  an empty list clears it. A name not in the roster is refused by name — call
+  `add_character` first. Do not invent people; ask the writer who is in a scene.
 
 ### Structure
 
@@ -57,8 +86,14 @@ lands on the exact same board a person sees.
 - `set_target` — target script length in `pages`: 120 feature, 60 hour, 30 half.
 - `create_group` — frame two or more cards, with an optional `title`.
 - `rename_group` / `ungroup` — by group id. Ungrouping leaves the cards alone.
-- `create_arrow` — a directed arrow, `from` → `to`.
+- `create_arrow` — a directed arrow, `from` → `to`, with an optional `kind`
+  (`follows` or `setup`).
+- `set_arrow_kind` — change an arrow's kind by id. One arrow per direction, so
+  change the kind rather than drawing it again.
 - `delete_arrow` — by arrow id. Removes that direction only.
+- `new_board` — an empty wall. **Destructive**: every card, group, arrow and
+  the cast go. On a wall with work on it, ask the writer first and suggest Save
+  project.
 
 ## Workflow
 

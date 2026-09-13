@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "plotcoder-board": {
+      "command": "node",
+      "args": ["scripts/plotcoder-mcp.mjs"]
+    }
+  }
+}

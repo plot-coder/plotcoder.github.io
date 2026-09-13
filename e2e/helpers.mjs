@@ -29,6 +29,15 @@ export async function resetBoard(request, state = seedState()) {
 }
 
 /**
+ * A fresh page follows the dev bridge's first frames, so anything dispatched
+ * before they land is replaced by them. Wait for them before driving the wall.
+ * @param {import("@playwright/test").Page} page
+ */
+export async function waitForBridge(page) {
+  await page.waitForFunction(() => window.plotcoder && window.plotcoder.bridged(), null, { timeout: 15000 });
+}
+
+/**
  * The board as the open page holds it, through the window.plotcoder door.
  * @param {import("@playwright/test").Page} page
  * @returns {Promise<BoardState>}

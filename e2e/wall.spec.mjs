@@ -121,9 +121,11 @@ test("a saved project reopens with the wall it held", async ({ page, request }) 
   const saved = await download.path();
   const project = JSON.parse(fs.readFileSync(saved, "utf8"));
   expect(project.app).toBe("plotcoder");
-  // The logline lives inside the board's own key now (R35): one board per key.
-  const boardKey = Object.keys(project.storage).find((key) => key.startsWith("plotcoder.board."));
-  expect(JSON.parse(project.storage[boardKey]).logline).toBe("Can Maya forgive a useful lie?");
+  // The logline lives inside the open board's own key now (R35): one board per key.
+  const record = JSON.parse(project.storage["plotcoder.project"]);
+  const boardKeys = Object.keys(project.storage).filter((key) => key.startsWith("plotcoder.board."));
+  expect(boardKeys).toEqual([`plotcoder.board.${record.activeBoardId}`]);
+  expect(JSON.parse(project.storage[boardKeys[0]]).logline).toBe("Can Maya forgive a useful lie?");
   await page.getByRole("button", { name: "Close", exact: true }).click();
 
   // Lose the work: a fresh board on the bridge, and a reload to adopt it.

@@ -34,6 +34,8 @@ import {
   seedState,
 } from "../src/board/reducer.js";
 import { TEMPLATES } from "../src/board/templates.js";
+import { DEFAULT_REMINDERS, titleFromBody } from "../src/board/reminders.js";
+import crypto from "node:crypto";
 import { describeRuns, describeSetups, readWall } from "../src/board/readWall.js";
 import { organizePoses } from "../src/board/organize.js";
 import {
@@ -46,6 +48,8 @@ import {
   removeBoard,
   renameBoard,
   setActiveBoard,
+  setPremise,
+  renameProject,
 } from "../src/board/project.js";
 
 const colorSchema = z.enum(NOTE_COLORS);
@@ -163,6 +167,7 @@ function readFileProject() {
       return {
         project: normalizeProject(parsed.project),
         boards: parsed.boards && typeof parsed.boards === "object" ? parsed.boards : {},
+        reminders: Array.isArray(parsed.reminders) ? parsed.reminders : null,
         rev: typeof parsed.rev === "number" ? parsed.rev : 0,
       };
     }
@@ -172,9 +177,10 @@ function readFileProject() {
   return null;
 }
 
-function writeFileProject(project, boards, rev) {
+function writeFileProject(project, boards, rev, reminders = null) {
   fs.mkdirSync(path.dirname(PROJECT_FILE), { recursive: true });
-  const payload = { app: "plotcoder", version: 2, rev, project, boards };
+  const kept = reminders ?? readFileProject()?.reminders ?? null;
+  const payload = { app: "plotcoder", version: 2, rev, project, boards, ...(kept ? { reminders: kept } : {}) };
   fs.writeFileSync(PROJECT_FILE, `${JSON.stringify(payload, null, 2)}\n`);
 }
 
@@ -193,6 +199,7 @@ async function readProject() {
         return {
           project: normalizeProject(data.project),
           boards: data.boards && typeof data.boards === "object" ? data.boards : {},
+          reminders: Array.isArray(data.reminders) ? data.reminders : null,
           rev: typeof data.rev === "number" ? data.rev : 0,
           base,
           live: true,
@@ -213,25 +220,25 @@ async function readProject() {
   return { project: record, boards: { [id]: board.state }, rev: 0, base: null, live: false };
 }
 
-async function writeProject(project, boards, rev, base) {
+async function writeProject(project, boards, rev, base, reminders = null) {
   if (base) {
     try {
       const res = await fetch(`${base}/__plotcoder/project`, {
         method: "PUT",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ project, boards, rev }),
+        body: JSON.stringify({ project, boards, rev, ...(reminders ? { reminders } : {}) }),
         signal: AbortSignal.timeout(1500),
       });
       if (res.ok) {
         const data = await res.json();
-        writeFileProject(data.project ?? project, data.boards ?? boards, data.rev ?? rev + 1);
+        writeFileProject(data.project ?? project, data.boards ?? boards, data.rev ?? rev + 1, data.reminders ?? reminders);
         return true;
       }
     } catch (error) {
       log("bridge project write failed, falling back to file:", error);
     }
   }
-  writeFileProject(project, boards, rev + 1);
+  writeFileProject(project, boards, rev + 1, reminders);
   return false;
 }
 
@@ -1100,6 +1107,100 @@ server.registerTool(
       ].join("\n"),
       project,
     );
+  },
+);
+
+server.registerTool(
+  "set_premise",
+  {
+    title: "Set the project's premise",
+    description:
+      "Set the project's premise: the series- or story-level line above every board's logline (D17). An empty string clears it. Boards keep their own loglines.",
+    inputSchema: { premise: z.string() },
+  },
+  async (args) => {
+    const { project, boards, rev, base, live } = await readProject();
+    const next = setPremise(project, args.premise);
+    if (next === project) return ok("Premise unchanged.");
+    await writeProject(next, boards, rev, base);
+    return ok(`Premise ${next.premise ? `set to "${next.premise}"` : "cleared"}${where(live)}.`, next);
+  },
+);
+
+server.registerTool(
+  "rename_project",
+  {
+    title: "Rename the project",
+    description: "Rename the project — the name at the top of the wall, over every board.",
+    inputSchema: { name: z.string().min(1) },
+  },
+  async (args) => {
+    const { project, boards, rev, base, live } = await readProject();
+    const next = renameProject(project, args.name);
+    if (next === project) return ok("Project name unchanged.");
+    await writeProject(next, boards, rev, base);
+    return ok(`Project renamed to "${next.name}"${where(live)}.`, next);
+  },
+);
+
+// Reminders (R10, R11): the writer's principles, read before touching the wall.
+function currentReminders(reminders) {
+  return Array.isArray(reminders) ? reminders : DEFAULT_REMINDERS;
+}
+
+server.registerTool(
+  "list_reminders",
+  {
+    title: "List reminders",
+    description:
+      "The writer's reminders: the principles they keep in front of themselves (six built in, plus their own). Read these before building or reading a wall; they are the house style.",
+    inputSchema: {},
+  },
+  async () => {
+    const { reminders, live } = await readProject();
+    const list = currentReminders(reminders);
+    return ok(
+      [
+        `reminders: ${list.length}${where(live)}`,
+        ...list.map((item) => `  - ${item.id}${item.builtIn ? " (built in)" : ""} — ${item.title}: ${item.body}`),
+      ].join("\n"),
+      list,
+    );
+  },
+);
+
+server.registerTool(
+  "add_reminder",
+  {
+    title: "Add a reminder",
+    description:
+      "Add a reminder to the writer's list: a body (the principle, a sentence or two) and an optional title; without one the first sentence is the title. Add only what the writer asked to keep in front of them.",
+    inputSchema: { body: z.string().min(1), title: z.string().optional() },
+  },
+  async (args) => {
+    const { project, boards, reminders, rev, base, live } = await readProject();
+    const list = currentReminders(reminders);
+    const body = args.body.trim();
+    const title = args.title?.trim() || titleFromBody(body) || "Reminder";
+    const reminder = { id: crypto.randomUUID(), title, body, builtIn: false, createdAt: new Date().toISOString() };
+    await writeProject(project, boards, rev, base, [...list, reminder]);
+    return ok(`Added reminder "${title}"${where(live)}.`, reminder);
+  },
+);
+
+server.registerTool(
+  "remove_reminder",
+  {
+    title: "Remove a reminder",
+    description: "Remove a reminder by id, built in or the writer's own. list_reminders has the ids.",
+    inputSchema: { id: z.string() },
+  },
+  async (args) => {
+    const { project, boards, reminders, rev, base, live } = await readProject();
+    const list = currentReminders(reminders);
+    if (!list.some((item) => item.id === args.id)) return ok(`No reminder with id ${args.id}. Call list_reminders.`);
+    await writeProject(project, boards, rev, base, list.filter((item) => item.id !== args.id));
+    return ok(`Removed reminder ${args.id}${where(live)}.`);
   },
 );
 

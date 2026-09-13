@@ -65,16 +65,6 @@ export function GroupIcon({ className }: IconProps) {
   );
 }
 
-export function ScatterIcon({ className }: IconProps) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
-      <rect x="2.4" y="3.6" width="5.2" height="7.4" rx="0.7" fill="currentColor" transform="rotate(-18 5 7.3)" />
-      <rect x="15.2" y="3.2" width="5.2" height="7.4" rx="0.7" fill="currentColor" transform="rotate(17 17.8 6.9)" />
-      <rect x="8.6" y="13" width="5.2" height="7.4" rx="0.7" fill="currentColor" transform="rotate(-8 11.2 16.7)" />
-    </svg>
-  );
-}
-
 // Stand back and see the whole wall: corner brackets pulling outward around
 // the cards.
 export function FitIcon({ className }: IconProps) {

@@ -12,6 +12,7 @@
 //      so an agent can read, write and switch boards while the app is open.
 //   3. window.plotcoder, so the same commands can be driven from the console.
 
+import { isReminderList, readReminders, writeReminders } from "../reminderStore";
 import { History } from "./history";
 import {
   addBoard as addBoardTo,
@@ -39,6 +40,7 @@ import {
   nowIso,
   seedState,
   type BoardState,
+  type CharacterField,
   type Command,
   type NoteColor,
 } from "./reducer";
@@ -70,6 +72,8 @@ type BoardPayload = { state: BoardState | null; rev: number; boardId?: string | 
 type ProjectPayload = {
   project: ProjectRecord | null;
   boards: Record<string, unknown>;
+  /** Reminders (R11) ride on the project channel so agents can read and add them. */
+  reminders?: unknown;
   rev: number;
 };
 
@@ -151,6 +155,22 @@ function saveBoard(id: string, state: BoardState): void {
     localStorage.setItem(boardKey(id), JSON.stringify(state));
   } catch {
     /* storage might be full or blocked; the app still works in memory */
+  }
+}
+
+/**
+ * Drop board keys the project no longer names. A fresh page under the bridge
+ * seeds a local project, then adopts the bridge's; without this the seed
+ * board's key lingers and Save project carries a board nobody can open.
+ */
+function pruneBoards(project: ProjectRecord): void {
+  try {
+    const keep = new Set(project.boards.map((board) => boardKey(board.id)));
+    for (const key of Object.keys(localStorage)) {
+      if (key.startsWith("plotcoder.board.") && !keep.has(key)) localStorage.removeItem(key);
+    }
+  } catch {
+    /* nothing to prune */
   }
 }
 
@@ -401,6 +421,7 @@ class BoardStore {
   /** The account's record lands here; a different open board switches the wall. */
   adoptProject = (project: ProjectRecord): void => {
     if (project === this.project) return;
+    pruneBoards(project);
     if (project.activeBoardId !== this.project.activeBoardId) {
       this.switchTo(project, loadBoard(project.activeBoardId) ?? emptyState());
       return;
@@ -547,6 +568,10 @@ class BoardStore {
     this.projectRev = payload.rev;
     if (this.inflight.has(incomingJson) || incomingJson === JSON.stringify(this.project)) return;
 
+    // Reminders ride along too: an agent may have added one.
+    if (isReminderList(payload.reminders) && JSON.stringify(payload.reminders) !== JSON.stringify(readReminders())) {
+      writeReminders(payload.reminders);
+    }
     // Other boards' states ride along; keep them so a switch finds them.
     for (const [id, state] of Object.entries(payload.boards ?? {})) {
       if (id !== this.project.activeBoardId && isBoardState(state)) {
@@ -562,6 +587,7 @@ class BoardStore {
         : loadBoard(incoming.activeBoardId) ?? emptyState();
       this.project = incoming;
       saveProject(incoming);
+      pruneBoards(incoming);
       this.history = new History<BoardState>();
       this.state = state;
       saveBoard(incoming.activeBoardId, state);
@@ -570,6 +596,7 @@ class BoardStore {
       return;
     }
     this.setProject(incoming, false);
+    pruneBoards(incoming);
   }
 
   private scheduleSync(): void {
@@ -625,7 +652,7 @@ class BoardStore {
       const response = await fetch(BRIDGE_PROJECT, {
         method: "PUT",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ project: this.project, boards, rev: this.projectRev }),
+        body: JSON.stringify({ project: this.project, boards, reminders: readReminders(), rev: this.projectRev }),
       });
       if (!response.ok) return;
       const payload = (await response.json()) as ProjectPayload;
@@ -668,6 +695,14 @@ export type PlotCoderWindowApi = {
   redo: () => boolean;
   openBoard: (id: string) => boolean;
   newBoard: (name: string) => BoardMeta;
+  setRank: (id: string, rank: "beat" | "scene") => unknown;
+  setLength: (id: string, lengthEighths: number) => unknown;
+  setLogline: (logline: string) => unknown;
+  setTarget: (targetEighths: number) => unknown;
+  setLocation: (ids: string[], location: string) => unknown;
+  updateCharacter: (id: string, patch: Partial<Record<CharacterField, string>>) => unknown;
+  applyTemplate: (template: string) => unknown;
+  setPremise: (premise: string) => void;
 };
 
 let windowApiInstalled = false;
@@ -693,6 +728,14 @@ export function installWindowApi(): void {
     redo: () => boardStore.redo(),
     openBoard: (id) => boardStore.openBoard(id),
     newBoard: (name) => boardStore.addBoard(name),
+    setRank: (id, rank) => boardStore.dispatch({ type: "set_rank", ids: [id], rank }),
+    setLength: (id, lengthEighths) => boardStore.dispatch({ type: "set_length", ids: [id], lengthEighths }),
+    setLogline: (logline) => boardStore.dispatch({ type: "set_logline", logline }),
+    setTarget: (targetEighths) => boardStore.dispatch({ type: "set_target", targetEighths }),
+    setLocation: (ids, location) => boardStore.dispatch({ type: "set_location", ids, location }),
+    updateCharacter: (id, patch) => boardStore.dispatch({ type: "update_character", id, ...patch }),
+    applyTemplate: (template) => boardStore.dispatch({ type: "apply_template", template }),
+    setPremise: (premise) => boardStore.setPremise(premise),
   };
   (window as unknown as { plotcoder: PlotCoderWindowApi }).plotcoder = api;
 }

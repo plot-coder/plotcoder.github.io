@@ -6,7 +6,6 @@ import {
   OrganizeIcon,
   StructureIcon,
   RedoIcon,
-  ScatterIcon,
   ThemeIcon,
   UndoIcon,
 } from "./BarIcons";
@@ -31,8 +30,6 @@ type GeneralBarProps = {
   onGroup: () => void;
   onOrganize: () => void;
   onStructure: () => void;
-  canScatter: boolean;
-  onScatter: () => void;
   zoom: number;
   canFit: boolean;
   beats: number;
@@ -60,8 +57,6 @@ export function GeneralBar({
   onGroup,
   onOrganize,
   onStructure,
-  canScatter,
-  onScatter,
   zoom,
   canFit,
   beats,
@@ -143,11 +138,6 @@ export function GeneralBar({
           <button type="button" className="new-note" onClick={onStructure}>
             Structure
           </button>
-          {canScatter ? (
-            <button type="button" className="new-note" onClick={onScatter}>
-              Scatter
-            </button>
-          ) : null}
 
           {/* The count and nothing else. No nudge under 8, no warning over 15 —
               the range is a guide the writer holds, not a rule we enforce (D21). */}
@@ -276,16 +266,6 @@ export function GeneralBar({
                   aria-label="Group selected notes"
                 >
                   <GroupIcon className="bar-icon__svg" />
-                </button>
-              ) : null}
-              {canScatter ? (
-                <button
-                  type="button"
-                  className="bar-icon"
-                  onClick={onScatter}
-                  aria-label="Scatter notes"
-                >
-                  <ScatterIcon className="bar-icon__svg" />
                 </button>
               ) : null}
               <button

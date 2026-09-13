@@ -89,6 +89,14 @@ lands on the exact same board a person sees.
   an empty list clears it. A name not in the roster is refused by name — call
   `add_character` first. Do not invent people; ask the writer who is in a scene.
 
+### The project
+
+- `set_premise` / `rename_project` — the line above every board's logline, and
+  the project's name. `list_boards` shows both.
+- `list_reminders` / `add_reminder` / `remove_reminder` — the writer's
+  principles. Read them before building or reading a wall; add only what the
+  writer asked to keep in front of them.
+
 ### Structure
 
 - `apply_template` — lay a structure's named beats on the wall as beat cards

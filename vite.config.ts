@@ -33,6 +33,9 @@ function plotcoderBridge(): Plugin {
   // The project: its record plus every board's state, keyed by id (R35).
   let project: unknown = null;
   let boards: Record<string, unknown> = {};
+  // Reminders (R11) are project-level data too; they ride on the same channel
+  // so an agent can read and add them (R17 backlog, roadmap item 6).
+  let reminders: unknown = null;
   let projectRev = 0;
   const clients = new Set<ServerResponse>();
 
@@ -52,6 +55,7 @@ function plotcoderBridge(): Plugin {
       if (parsed && typeof parsed === "object") {
         project = "project" in parsed ? parsed.project : null;
         boards = parsed.boards && typeof parsed.boards === "object" ? parsed.boards : {};
+        reminders = Array.isArray(parsed.reminders) ? parsed.reminders : null;
         projectRev = typeof parsed.rev === "number" ? parsed.rev : 0;
       }
     } catch {
@@ -76,7 +80,7 @@ function plotcoderBridge(): Plugin {
       fs.mkdirSync(path.dirname(projectPath), { recursive: true });
       fs.writeFileSync(
         projectPath,
-        `${JSON.stringify({ app: "plotcoder", version: 2, rev: projectRev, project, boards }, null, 2)}\n`,
+        `${JSON.stringify({ app: "plotcoder", version: 2, rev: projectRev, project, boards, reminders }, null, 2)}\n`,
       );
     } catch (error) {
       console.warn("[plotcoder] could not write project file:", error);
@@ -88,7 +92,7 @@ function plotcoderBridge(): Plugin {
   }
 
   function projectFrame(): string {
-    return `event: project\ndata: ${JSON.stringify({ project, boards, rev: projectRev })}\n\n`;
+    return `event: project\ndata: ${JSON.stringify({ project, boards, reminders, rev: projectRev })}\n\n`;
   }
 
   function broadcast(payload: string): void {
@@ -209,7 +213,7 @@ function plotcoderBridge(): Plugin {
         "/__plotcoder/project",
         (req: IncomingMessage, res: ServerResponse) => {
           if (req.method === "GET") {
-            sendJson(res, { project, boards, rev: projectRev });
+            sendJson(res, { project, boards, reminders, rev: projectRev });
             return;
           }
           if (req.method === "PUT") {
@@ -218,10 +222,12 @@ function plotcoderBridge(): Plugin {
                 const parsed = JSON.parse(body);
                 project = parsed && "project" in parsed ? parsed.project : null;
                 boards = parsed && parsed.boards && typeof parsed.boards === "object" ? parsed.boards : {};
+                // A writer that does not carry reminders leaves them as they were.
+                if (parsed && Array.isArray(parsed.reminders)) reminders = parsed.reminders;
                 projectRev += 1;
                 persistProject();
                 broadcast(projectFrame());
-                sendJson(res, { project, boards, rev: projectRev });
+                sendJson(res, { project, boards, reminders, rev: projectRev });
               })
               .catch(() => {
                 res.statusCode = 400;

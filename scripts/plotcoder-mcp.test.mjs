@@ -129,6 +129,7 @@ describe("plotcoder MCP server", () => {
     const { tools } = await client.request("tools/list", {});
     expect(tools.map((tool) => tool.name).sort()).toEqual([
       "add_character",
+      "add_reminder",
       "apply_template",
       "cast",
       "create_arrow",
@@ -139,6 +140,7 @@ describe("plotcoder MCP server", () => {
       "delete_note",
       "list_board",
       "list_boards",
+      "list_reminders",
       "move_note",
       "new_board",
       "open_board",
@@ -146,14 +148,17 @@ describe("plotcoder MCP server", () => {
       "read_wall",
       "recolor_note",
       "remove_character",
+      "remove_reminder",
       "rename_board",
       "rename_character",
       "rename_group",
+      "rename_project",
       "set_arrow_kind",
       "set_length",
       "set_location",
       "set_logline",
       "set_plant",
+      "set_premise",
       "set_rank",
       "set_target",
       "undo",
@@ -1100,5 +1105,44 @@ describe("boards of a project", () => {
     await season.callTool("delete_board", { board: "Episode 1" });
     expect(await season.callTool("list_boards")).toContain("boards: 1");
     expect(await season.callTool("delete_board", { board: "Episode 2" })).toContain("keeps at least one board");
+  });
+});
+
+describe("the premise and reminders (roadmap item 6)", () => {
+  let door;
+  let doorRoot;
+
+  beforeAll(async () => {
+    doorRoot = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-door-"));
+    door = new McpClient(doorRoot);
+    await door.start();
+  }, 30000);
+
+  afterAll(() => {
+    door?.stop();
+    if (doorRoot) fs.rmSync(doorRoot, { recursive: true, force: true });
+  });
+
+  it("sets and clears the premise, and renames the project", async () => {
+    expect(await door.callTool("set_premise", { premise: "A season about a lie." })).toContain('Premise set to "A season about a lie."');
+    expect(await door.callTool("list_boards")).toContain('premise: "A season about a lie."');
+    expect(await door.callTool("set_premise", { premise: "A season about a lie." })).toContain("Premise unchanged");
+    expect(await door.callTool("rename_project", { name: "The Letter" })).toContain('Project renamed to "The Letter"');
+    expect(await door.callTool("list_boards")).toContain('Project "The Letter"');
+    expect(await door.callTool("set_premise", { premise: "" })).toContain("Premise cleared");
+  });
+
+  it("lists the built-in reminders, adds one of the writer's, and removes it", async () => {
+    const listed = await door.callTool("list_reminders");
+    expect(listed).toContain("reminders: 6");
+    expect(listed).toContain("story-is-change (built in) — Story is change");
+    const added = await door.callToolData("add_reminder", { body: "Every scene ends on a question. Even the quiet ones." });
+    expect(added.title).toBe("Every scene ends on a question");
+    expect(added.builtIn).toBe(false);
+    const after = await door.callToolData("list_reminders");
+    expect(after).toHaveLength(7);
+    expect(await door.callTool("remove_reminder", { id: added.id })).toContain("Removed reminder");
+    expect(await door.callToolData("list_reminders")).toHaveLength(6);
+    expect(await door.callTool("remove_reminder", { id: "nope" })).toContain("No reminder with id nope");
   });
 });

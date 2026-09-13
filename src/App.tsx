@@ -19,7 +19,6 @@ import {
   boardPlaces,
 } from "./board/reducer";
 import { organizePoses } from "./board/organize";
-import { snapshotPoses, type NotePose } from "./organizeLayout";
 import { ProjectModal } from "./ProjectModal";
 import { RemindersModal } from "./RemindersModal";
 import { StructureSheet } from "./StructureSheet";
@@ -90,7 +89,6 @@ export function App() {
   const shape = countRanks(board);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectedArrowId, setSelectedArrowId] = useState<string | null>(null);
-  const [scatterPoses, setScatterPoses] = useState<NotePose[] | null>(null);
   // The window is a viewport onto an unbounded wall (D15). This is per-viewer
   // state on purpose: it never enters the board record, the project file, or
   // later Postgres, because where you are looking is not part of the story.
@@ -232,12 +230,11 @@ export function App() {
     boardStore.setPremise(text);
   }
 
-  // Switching boards clears what belongs to the old wall: selection, scatter memory, the view.
+  // Switching boards clears what belongs to the old wall: selection and the view.
   function openBoard(id: string) {
     if (!boardStore.openBoard(id)) return;
     setSelectedIds([]);
     setSelectedArrowId(null);
-    setScatterPoses(null);
     setView(IDENTITY_VIEW);
   }
 
@@ -245,7 +242,6 @@ export function App() {
     boardStore.addBoard(name);
     setSelectedIds([]);
     setSelectedArrowId(null);
-    setScatterPoses(null);
     setView(IDENTITY_VIEW);
   }
 
@@ -253,7 +249,6 @@ export function App() {
     if (!boardStore.removeBoard(id)) return;
     setSelectedIds([]);
     setSelectedArrowId(null);
-    setScatterPoses(null);
     setView(IDENTITY_VIEW);
   }
 
@@ -384,7 +379,6 @@ export function App() {
 
   // Organize along the arrows (R34): the same module the agent's tool uses.
   function organizeNotes() {
-    setScatterPoses((current) => current ?? snapshotPoses(notes));
     const poses = organizePoses(boardStore.getState(), {
       onlyIds: selectedIds.length >= 2 ? selectedIds : undefined,
     });
@@ -403,12 +397,6 @@ export function App() {
     if (!created || created.length === 0) return;
     selectNotes(created.map((note) => note.id));
     setView(fitView(boardStore.getState().notes, viewportSize()));
-  }
-
-  function scatterNotes() {
-    if (!scatterPoses) return;
-    boardStore.dispatch({ type: "apply_poses", poses: scatterPoses });
-    setScatterPoses(null);
   }
 
   function selectNotes(ids: string[]) {
@@ -565,8 +553,6 @@ export function App() {
         onGroup={groupSelected}
         onOrganize={organizeNotes}
         onStructure={() => setStructureOpen(true)}
-        canScatter={scatterPoses !== null}
-        onScatter={scatterNotes}
         zoom={view.scale}
         canFit={notes.length > 0}
         beats={shape.beats}

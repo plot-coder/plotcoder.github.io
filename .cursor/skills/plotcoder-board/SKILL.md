@@ -20,6 +20,8 @@ The board holds five kinds of thing:
   turns the story hangs on. Rank is carried by the card, never by where it sits.
 - **length** — how many pages a card runs. An unsized card is taken to be about
   one page. Like rank, it belongs to the card and never moves it.
+- **plants** — the corner is folded: this scene sets something up that must
+  pay off later. A setup arrow leaving the card is the payoff.
 - **groups** — a named frame around two or more cards: a sequence, a set piece.
 - **arrows** — directed links between cards, each with a `kind`: `follows` (what
   comes after what, the default) or `setup` (the tail plants what the head pays
@@ -47,8 +49,9 @@ lands on the exact same board a person sees.
   out of proportion with the others, a card with no change line, a card no arrow
   touches, two headlines that read like the same scene, a group too long to be
   one sequence, a person in the cast who is on no card, a person gone for more
-  than a third of the story, a payoff that comes before its setup on the wall.
-  It also lists every setup with the distance to its payoff. Put the questions to the writer. Do not act on them
+  than a third of the story, a payoff that comes before its setup on the wall,
+  a folded card no setup arrow pays off. It also lists every setup with the
+  distance to its payoff. Put the questions to the writer. Do not act on them
   unasked, and do not add an opinion about the number of beats.
 
 ### Cards
@@ -61,6 +64,9 @@ lands on the exact same board a person sees.
 - `set_rank` — mark cards `beat` or `scene`. Takes a list of ids.
 - `set_length` — how long cards run, in `pages`. Takes a list of ids. Fractions
   are fine (`0.5`); they are stored in eighths of a page.
+- `set_plant` — fold or unfold the corner of cards (`plants` true/false). Fold a
+  card when the writer says it sets something up; `read_wall` will ask where it
+  pays off until a `setup` arrow leaves it.
 - `delete_note` — remove a card (also drops its arrows and group membership).
 
 ### Cast

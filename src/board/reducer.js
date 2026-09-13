@@ -125,6 +125,7 @@ export function seedState(now = nowIso()) {
     rank: "scene",
     lengthEighths: DEFAULT_NOTE_EIGHTHS,
     characterIds,
+    plants: false,
     createdAt: now,
     updatedAt: now,
   });
@@ -209,17 +210,20 @@ export function normalizeState(value) {
       MAX_NOTE_EIGHTHS,
     );
     const characterIds = knownCast(note?.characterIds, characters);
+    // Cards written before R31 have no fold; a plant is a claim you make.
+    const plants = note?.plants === true;
     if (
       note &&
       note.rank === rank &&
       note.lengthEighths === lengthEighths &&
       Array.isArray(note.characterIds) &&
-      sameIds(note.characterIds, characterIds)
+      sameIds(note.characterIds, characterIds) &&
+      note.plants === plants
     ) {
       return note;
     }
     patched = true;
-    return { ...note, rank, lengthEighths, characterIds };
+    return { ...note, rank, lengthEighths, characterIds, plants };
   });
 
   if (
@@ -285,6 +289,7 @@ export function applyCommand(state, command, now = nowIso()) {
           MAX_NOTE_EIGHTHS,
         ),
         characterIds: knownCast(command.characterIds, state.characters ?? []),
+        plants: command.plants === true,
         z: maxZ(state.notes) + 1,
         createdAt: now,
         updatedAt: now,
@@ -614,6 +619,23 @@ export function applyCommand(state, command, now = nowIso()) {
       const notes = state.notes.map((note) => {
         if (!ids.has(note.id) || sameIds(note.characterIds, cast)) return note;
         const next = bump(note, { characterIds: [...cast] }, now);
+        touched.push(next);
+        return next;
+      });
+      if (touched.length === 0) return { state, changed: false };
+      return { state: { ...state, notes }, changed: true, result: touched };
+    }
+
+    // Fold the corner (R31): this card plants something. A claim about the
+    // card, like rank, so it never moves it and never touches its arrows.
+    case "set_plant": {
+      const ids = new Set(command.ids);
+      if (ids.size === 0) return { state, changed: false };
+      const plants = command.plants === true;
+      const touched = [];
+      const notes = state.notes.map((note) => {
+        if (!ids.has(note.id) || note.plants === plants) return note;
+        const next = bump(note, { plants }, now);
         touched.push(next);
         return next;
       });

@@ -847,6 +847,61 @@ body {
   box-shadow: 0 0 0 2px rgba(31, 24, 16, 0.22);
 }
 
+/* Fold the corner (R31). A dog-ear at the top-left says "something is planted
+   here" — what a writer does to a real index card. It is drawn on the paper,
+   not cut from it: a clip-path would take the arrow handle and the pickers
+   with it. Quiet until folded; a hint on hover so the gesture can be found. */
+.note__fold {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 2;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.note__fold-flap {
+  position: absolute;
+  inset: 0;
+  clip-path: polygon(0 100%, 100% 0, 100% 100%);
+  background: linear-gradient(
+    135deg,
+    transparent 50%,
+    rgba(31, 24, 16, 0.3) 50%,
+    rgba(31, 24, 16, 0.14) 100%
+  );
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.note:hover .note__fold-flap,
+.note.is-selected .note__fold-flap,
+.note__fold:focus-visible .note__fold-flap {
+  opacity: 0.35;
+}
+
+.note.is-planted .note__fold-flap {
+  opacity: 1;
+}
+
+/* The corner "behind" the flap: the canvas showing through the cut. */
+.note.is-planted .note__fold::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+  background: var(--canvas);
+  opacity: 0.55;
+}
+
+.note.is-beat .note__fold {
+  top: -14px;
+}
+
 /* The length lives in the corner a breakdown writes it in, and it earns its
    place the same way: an ordinary card is about a page and says nothing, while
    the three-pagers and the half-page beats wear the number. What you read at a

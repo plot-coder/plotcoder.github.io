@@ -951,3 +951,37 @@ describe("new_board", () => {
     expect(fresh.state).toEqual({ ...emptyState(), targetEighths: 60 * EIGHTHS_PER_PAGE });
   });
 });
+
+describe("set_plant (R31)", () => {
+  it("folds and unfolds without moving the card, and skips cards already that way", () => {
+    const state = boardOf({ id: "a", x: 40, y: 50 }, { id: "b", x: 300, y: 50 });
+    expect(state.notes.every((note) => note.plants === false)).toBe(true);
+    const folded = applyCommand(state, { type: "set_plant", ids: ["a", "b"], plants: true }, NOW);
+    expect(folded.changed).toBe(true);
+    expect(folded.state.notes.map((note) => note.plants)).toEqual([true, true]);
+    expect(folded.state.notes[0]).toMatchObject({ x: 40, y: 50 });
+    expect(folded.result).toHaveLength(2);
+
+    const again = applyCommand(folded.state, { type: "set_plant", ids: ["a"], plants: true }, NOW);
+    expect(again.changed).toBe(false);
+    expect(again.state).toBe(folded.state);
+
+    const unfolded = applyCommand(folded.state, { type: "set_plant", ids: ["a", "nope"], plants: false }, NOW);
+    expect(unfolded.state.notes.map((note) => note.plants)).toEqual([false, true]);
+  });
+
+  it("create_note takes plants, and treats anything but true as false", () => {
+    const planted = applyCommand(emptyState(), { type: "create_note", id: "a", plants: true }, NOW);
+    expect(planted.state.notes[0].plants).toBe(true);
+    const odd = applyCommand(emptyState(), { type: "create_note", id: "b", plants: "yes" as never }, NOW);
+    expect(odd.state.notes[0].plants).toBe(false);
+  });
+
+  it("normalizeState gives a pre-fold card plants: false and leaves a folded one alone", () => {
+    const state = run(boardOf({ id: "a", x: 0, y: 0 }), { type: "set_plant", ids: ["a"], plants: true });
+    const { plants: _drop, ...bare } = state.notes[0];
+    const fixed = normalizeState({ ...state, notes: [bare] } as unknown as BoardState);
+    expect(fixed.notes[0].plants).toBe(false);
+    expect(normalizeState(state)).toBe(state);
+  });
+});

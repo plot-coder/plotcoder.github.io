@@ -23,7 +23,9 @@ export type FindingKind =
   /** A character gone for more than a third of the story between two appearances. */
   | "absent"
   /** A setup arrow whose payoff comes before its setup on the wall. */
-  | "backwards";
+  | "backwards"
+  /** A card with a folded corner and no setup arrow leaving it. */
+  | "unpaid";
 
 export type Finding = {
   kind: FindingKind;

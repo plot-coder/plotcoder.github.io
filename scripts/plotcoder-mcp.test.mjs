@@ -146,6 +146,7 @@ describe("plotcoder MCP server", () => {
       "set_arrow_kind",
       "set_length",
       "set_logline",
+      "set_plant",
       "set_rank",
       "set_target",
       "ungroup",
@@ -820,5 +821,56 @@ describe("typed arrows and new_board", () => {
     expect(board.characters).toEqual([]);
     expect(board.logline).toBe("");
     expect(board.targetEighths).toBe(60 * 8);
+  });
+});
+
+// The folded corner (R31): a plant with no payoff yet.
+describe("set_plant", () => {
+  let fold;
+  let foldRoot;
+
+  beforeAll(async () => {
+    foldRoot = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-fold-"));
+    fold = new McpClient(foldRoot);
+    await fold.start();
+  }, 30000);
+
+  afterAll(() => {
+    fold?.stop();
+    if (foldRoot) fs.rmSync(foldRoot, { recursive: true, force: true });
+  });
+
+  it("folds a corner, shows it in list_board, and read_wall asks about it", async () => {
+    const text = await fold.callTool("set_plant", { ids: ["maya-letter"], plants: true });
+    expect(text).toContain("1 card(s) now plant something");
+    expect(await fold.callTool("list_board")).toContain("cast: Maya, plants] — \"Maya finds the letter\"");
+    expect(await fold.callTool("read_wall")).toContain(
+      '[unpaid] "Maya finds the letter" plants something, and no arrow pays it off. Where does it come back?',
+    );
+    // Folding never moves the card.
+    const { notes } = await fold.callToolData("list_board");
+    expect(notes.find((note) => note.id === "maya-letter")).toMatchObject({ x: 88, y: 120, plants: true });
+  });
+
+  it("goes quiet once a setup arrow leaves the card, and stays folded", async () => {
+    await fold.callTool("create_arrow", { from: "maya-letter", to: "letter-aloud", kind: "setup" });
+    const text = await fold.callTool("read_wall");
+    expect(text).not.toContain("[unpaid]");
+    const { notes } = await fold.callToolData("list_board");
+    expect(notes.find((note) => note.id === "maya-letter").plants).toBe(true);
+  });
+
+  it("is a no-op the second time and says so", async () => {
+    expect(await fold.callTool("set_plant", { ids: ["maya-letter"], plants: true })).toContain("No change");
+    expect(await fold.callTool("set_plant", { ids: ["maya-letter"], plants: false })).toContain("no longer marked");
+  });
+
+  it("create_note can plant from the start", async () => {
+    const created = await fold.callToolData("create_note", {
+      headline: "The gun on the wall",
+      change: "Nobody mentions it.",
+      plants: true,
+    });
+    expect(created.plants).toBe(true);
   });
 });

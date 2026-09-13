@@ -197,7 +197,8 @@ function summarize(state) {
     .map((note) => {
       const cast = note.characterIds.map((id) => nameOf.get(id) ?? id);
       const who = cast.length ? `, cast: ${cast.join(", ")}` : "";
-      return `  - ${note.id} [${note.rank ?? "scene"}, ${formatPages(note.lengthEighths)}pp${who}] — "${note.headline}" (${note.color}) at ${Math.round(note.x)},${Math.round(note.y)}`;
+      const plant = note.plants ? ", plants" : "";
+      return `  - ${note.id} [${note.rank ?? "scene"}, ${formatPages(note.lengthEighths)}pp${who}${plant}] — "${note.headline}" (${note.color}) at ${Math.round(note.x)},${Math.round(note.y)}`;
     })
     .join("\n");
   const cast = state.characters
@@ -366,13 +367,14 @@ server.registerTool(
   {
     title: "Create note",
     description:
-      "Add a card (post-it) to the board. A card is one scene: a headline plus the change it causes. Provide both headline and change. Optionally set color, x/y position, rank ('beat' for one of the major turns, otherwise 'scene'), and pages (how long it runs; leave it out and the card is taken to be about a page).",
+      "Add a card (post-it) to the board. A card is one scene: a headline plus the change it causes. Provide both headline and change. Optionally set color, x/y position, rank ('beat' for one of the major turns, otherwise 'scene'), pages (how long it runs; leave it out and the card is taken to be about a page), and plants (true if this scene sets something up that must pay off later).",
     inputSchema: {
       headline: z.string().min(1),
       change: z.string().min(1),
       color: colorSchema.optional(),
       rank: rankSchema.optional(),
       pages: pagesSchema.optional(),
+      plants: z.boolean().optional(),
       x: z.number().optional(),
       y: z.number().optional(),
     },
@@ -385,6 +387,7 @@ server.registerTool(
       color: args.color,
       rank: args.rank,
       lengthEighths: args.pages === undefined ? undefined : toEighths(args.pages),
+      plants: args.plants,
       x: args.x,
       y: args.y,
     });
@@ -498,6 +501,34 @@ server.registerTool(
         : ["  (none that this reading can see)"]),
     ];
     return ok(lines.join("\n"), reading);
+  },
+);
+
+server.registerTool(
+  "set_plant",
+  {
+    title: "Fold the corner",
+    description:
+      "Mark cards as planting something — a setup whose payoff may not exist yet — or unmark them. A folded corner is a debt: read_wall asks about it until a setup arrow leaves the card (create_arrow with kind 'setup'). Folding never moves a card.",
+    inputSchema: {
+      ids: z.array(z.string()).min(1),
+      plants: z.boolean(),
+    },
+  },
+  async (args) => {
+    const { result, live } = await commit({
+      type: "set_plant",
+      ids: args.ids,
+      plants: args.plants,
+    });
+    const count = result?.length ?? 0;
+    if (count === 0) return ok("No change: those cards were already that way, or the ids are not on the board.");
+    return ok(
+      args.plants
+        ? `${count} card(s) now plant something${where(live)}. read_wall will ask about each until a setup arrow pays it off.`
+        : `${count} card(s) no longer marked as planting${where(live)}.`,
+      result,
+    );
   },
 );
 

@@ -51,6 +51,8 @@ export type BoardNote = {
   lengthEighths: number;
   /** Who is in the scene: ids from the roster, in the order they were cast (R29). */
   characterIds: string[];
+  /** The corner is folded: this card plants something that must pay off (R31). */
+  plants: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -100,6 +102,7 @@ export type Command =
       rank?: NoteRank;
       lengthEighths?: number;
       characterIds?: string[];
+      plants?: boolean;
     }
   | { type: "update_note"; id: string; headline?: string; change?: string }
   | { type: "move_note"; id: string; x: number; y: number }
@@ -119,7 +122,8 @@ export type Command =
   | { type: "add_character"; name: string; id?: string }
   | { type: "rename_character"; id: string; name: string }
   | { type: "remove_character"; id: string }
-  | { type: "set_cast"; ids: string[]; characterIds: string[] };
+  | { type: "set_cast"; ids: string[]; characterIds: string[] }
+  | { type: "set_plant"; ids: string[]; plants: boolean };
 
 export type CommandResult = {
   state: BoardState;

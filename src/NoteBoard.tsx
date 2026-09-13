@@ -61,6 +61,7 @@ type NoteBoardProps = {
   onRecolor: (id: string, color: NoteColor) => void;
   onSetRank: (id: string, rank: NoteRank) => void;
   onSetLength: (id: string, lengthEighths: number) => void;
+  onSetPlant: (id: string, plants: boolean) => void;
   onEdit: (id: string, patch: { headline?: string; change?: string }) => void;
   onCommit: () => void;
 };
@@ -134,6 +135,7 @@ export function NoteBoard({
   onRecolor,
   onSetRank,
   onSetLength,
+  onSetPlant,
   onEdit,
   onCommit,
 }: NoteBoardProps) {
@@ -505,6 +507,7 @@ export function NoteBoard({
           onRecolor={onRecolor}
           onSetRank={onSetRank}
           onSetLength={onSetLength}
+          onSetPlant={onSetPlant}
           onEdit={onEdit}
         />
       ))}

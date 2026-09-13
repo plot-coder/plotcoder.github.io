@@ -197,6 +197,14 @@ export function App() {
     setCastHeld(null);
   }
 
+  // Fold the corner (R31). Folding one card of a selection folds the selection,
+  // the same way rank and colour behave.
+  function setPlant(id: string, plants: boolean) {
+    const ids =
+      selectedIds.includes(id) && selectedIds.length >= 2 ? selectedIds : [id];
+    boardStore.dispatch({ type: "set_plant", ids, plants });
+  }
+
   function setTarget(pages: number) {
     boardStore.dispatch({
       type: "set_target",
@@ -359,6 +367,7 @@ export function App() {
         onRecolor={recolorNote}
         onSetRank={setRank}
         onSetLength={setLength}
+        onSetPlant={setPlant}
         onEdit={editNote}
         onCommit={commitBoard}
       />

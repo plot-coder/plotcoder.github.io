@@ -352,6 +352,32 @@ describe("findings", () => {
     expect(describeSetups(reading, state)[0]).toContain("about 2 pages earlier");
   });
 
+  it("asks where a folded card pays off until a setup arrow leaves it", () => {
+    const base = run(
+      wall(
+        { id: "b1", rank: "beat", headline: "The gun on the wall" },
+        { id: "s1" },
+        { id: "b2", rank: "beat", headline: "The gun goes off" },
+      ),
+      { type: "set_plant", ids: ["b1"], plants: true },
+    );
+    const unpaid = readWall(base).findings.filter((f) => f.kind === "unpaid");
+    expect(unpaid).toEqual([
+      {
+        kind: "unpaid",
+        ids: ["b1"],
+        text: '"The gun on the wall" plants something, and no arrow pays it off. Where does it come back?',
+      },
+    ]);
+
+    // A plain "follows" arrow is not a payoff.
+    const follows = run(base, { type: "create_arrow", from: "b1", to: "s1" });
+    expect(readWall(follows).findings.filter((f) => f.kind === "unpaid")).toHaveLength(1);
+
+    const paid = run(base, { type: "create_arrow", from: "b1", to: "b2", kind: "setup" });
+    expect(readWall(paid).findings.filter((f) => f.kind === "unpaid")).toEqual([]);
+  });
+
   it("never mutates the state it reads", () => {
     const state = wall({ id: "b1", rank: "beat" }, { id: "s1" }, { id: "b2", rank: "beat" });
     const snapshot = JSON.stringify(state);

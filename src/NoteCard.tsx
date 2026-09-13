@@ -25,6 +25,7 @@ type NoteCardProps = {
   onRecolor: (id: string, color: NoteColor) => void;
   onSetRank: (id: string, rank: NoteRank) => void;
   onSetLength: (id: string, lengthEighths: number) => void;
+  onSetPlant: (id: string, plants: boolean) => void;
   onEdit: (id: string, patch: { headline?: string; change?: string }) => void;
 };
 
@@ -43,6 +44,7 @@ export function NoteCard({
   onRecolor,
   onSetRank,
   onSetLength,
+  onSetPlant,
   onEdit,
 }: NoteCardProps) {
   const isBeat = note.rank === "beat";
@@ -62,7 +64,7 @@ export function NoteCard({
 
   return (
     <article
-      className={`note note--${note.color} ${isBeat ? "is-beat" : ""} ${sized ? "is-sized" : ""} ${active ? "is-active" : ""} ${selected ? "is-selected" : ""} ${linking ? "is-linking" : ""} ${dropTarget ? "is-drop-target" : ""} ${picking || sizing ? "is-picking" : ""} ${dimmed ? "is-dim" : ""}`}
+      className={`note note--${note.color} ${isBeat ? "is-beat" : ""} ${sized ? "is-sized" : ""} ${active ? "is-active" : ""} ${selected ? "is-selected" : ""} ${linking ? "is-linking" : ""} ${dropTarget ? "is-drop-target" : ""} ${picking || sizing ? "is-picking" : ""} ${dimmed ? "is-dim" : ""} ${note.plants ? "is-planted" : ""}`}
       style={{
         left: note.x,
         top: note.y,
@@ -71,6 +73,23 @@ export function NoteCard({
       }}
       onPointerDown={(event) => onPointerDown(event, note)}
     >
+      {/* Fold the corner (R31): this card plants something. Shown in the paper,
+          like the beat bar, so it reads at Fit zoom and steals no colour. */}
+      <button
+        type="button"
+        className="note__fold"
+        aria-label={
+          note.plants
+            ? `Unfold the corner of ${note.headline}: it no longer plants something`
+            : `Fold the corner of ${note.headline}: it plants something to pay off later`
+        }
+        aria-pressed={note.plants}
+        title={note.plants ? "Folded: this card plants something" : "Fold the corner: this card plants something"}
+        onPointerDown={(event) => event.stopPropagation()}
+        onClick={() => onSetPlant(note.id, !note.plants)}
+      >
+        <span className="note__fold-flap" aria-hidden="true" />
+      </button>
       <EditableText
         as="h3"
         className="note__headline"

@@ -233,6 +233,22 @@ export function readWall(state) {
     }
   }
 
+  // A folded corner nothing has paid off (R31). The fold says "this plants
+  // something"; a setup arrow leaving the card is the payoff. Until one does,
+  // the debt is open.
+  const paysOff = new Set(
+    state.arrows.filter((arrow) => arrow.kind === "setup").map((arrow) => arrow.from),
+  );
+  for (const note of order) {
+    if (note.plants && !paysOff.has(note.id)) {
+      findings.push({
+        kind: "unpaid",
+        ids: [note.id],
+        text: `${quote(note)} plants something, and no arrow pays it off. Where does it come back?`,
+      });
+    }
+  }
+
   // The cast (R29): someone who vanishes for a stretch, or never appears.
   const total = boardEighths(state);
   const at = new Map();

@@ -14,7 +14,7 @@ The full statement of purpose, every decision, and every requirement lives in [R
 4. **Read the wall**: find the act that sags, the setup with no payoff, the character who disappears.
 5. Only then **write pages**.
 
-Steps 1 to 3 are built. Step 4 reads the runs between beats and the setups and their payoffs, and asks eight kinds of question, including a character who disappears, in the Reminders modal and as a `read_wall` tool. A board has a cast: type "with Maya, Tom" on a card, and see the wall by person from the Cast lens. Step 5 is not started. See "What is built and what is left" in the requirements.
+Steps 1 to 4 are built. Step 4 reads the runs between beats and the setups and their payoffs, and asks nine kinds of question, including a sagging act, a setup with no payoff, a character who disappears, and two scenes doing the same job, in the Reminders modal and as a `read_wall` tool. A board has a cast: type "with Maya, Tom" on a card, and see the wall by person from the Cast lens. Step 5 is not started. See "What is built and what is left" in the requirements.
 
 ## Run it
 
@@ -41,7 +41,7 @@ Every board verb goes through one command kernel, `src/board/reducer.js`, and th
 
 - **The wall.** Tap the words to type, drag the paper to move. Lasso to select, then Group. Drag a card's handle onto another card for an arrow.
 - **`window.plotcoder`** on the page, for a console or a CDP session.
-- **The MCP server**, `scripts/plotcoder-mcp.mjs`, wired for Cursor in `.cursor/mcp.json` and for Claude Code in `.mcp.json`. Twenty-two tools: `list_board`, `read_wall`, `new_board`, `set_logline`, `set_target`, and the card, cast, group, and arrow verbs. If the dev app is open, a tool call lands on the wall within a second; if not, it edits the board file and the wall catches up on the next load.
+- **The MCP server**, `scripts/plotcoder-mcp.mjs`, wired for Cursor in `.cursor/mcp.json` and for Claude Code in `.mcp.json`. Twenty-three tools: `list_board`, `read_wall`, `new_board`, `set_logline`, `set_target`, and the card, cast, group, and arrow verbs. If the dev app is open, a tool call lands on the wall within a second; if not, it edits the board file and the wall catches up on the next load.
 
 An agent should call the tools, never fake mouse drags. The skill in `.cursor/skills/plotcoder-board/SKILL.md` says how; `.claude/skills/plotcoder-board` is a symlink to the same file.
 

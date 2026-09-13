@@ -26,6 +26,11 @@ export const AGENTS = {
       name: "The page",
       text: "window.plotcoder on an open wall, for a browser session.",
     },
+    {
+      id: "where",
+      name: "Where the wall lives",
+      text: "Without an account, a wall is a folder: the app run from that folder shows it, and the server writes it there (PLOTCODER_ROOT). A fresh folder holds the sample; new_board for the writer's wall, or replace the sample. No app running? export_fountain is the wall in order, as text. PLOTCODER_JSON=0 drops the JSON tail from replies.",
+    },
   ],
   first: [
     { tool: "list_words", why: "the room's words, the app's meaning." },
@@ -38,7 +43,7 @@ export const AGENTS = {
     "No opinions about how many beats there should be.",
     "Page counts are estimates.",
     "Ask before delete_board, unlock_numbers, remove_file, or claim_account — the writer gives the email and the password; never invent one.",
-    "Do not invent people or a logline. An unnamed person in a treatment is named by their role — Dana's mother, the dispatcher — which is a name until the writer gives one. A beat is a whole card. Acts are not a thing on the wall; a structure's beats are the act breaks.",
+    "Do not invent people or a logline. An unnamed person in a treatment is named by their role — Dana's mother, the dispatcher — which is a name until the writer gives one. A beat is a whole card; a setup arrow lands on the scene's card, so a payoff never needs a card of its own. Acts are groups titled Act one, Act two, when the treatment has them. Paper colour means nothing to the app.",
   ],
   person:
     "Give your agent the account door only on a machine you trust; it signs in as you and shows under People as “an agent, as you” while it runs. Your agent can also make your account: give it your email and a password of your choosing.",

@@ -51,9 +51,14 @@ change anything.
 
 ### Reading
 
+Three reads, three things: `list_boards` is the **project** (its boards);
+`list_board` is **one board's records**; `read_wall` is the **reading** of that
+board — what it asks. With no app running, `export_fountain` is the wall in
+order as text, the nearest thing to a look at it.
+
 - `list_board` — the logline, the beat/scene counts, the runtime estimate against
-  the target, then every **card**, **group**, and **arrow** with its **id**. This
-  is the only place ids come from.
+  the target, then every **card**, **group**, and **arrow** with its **id**. Ids
+  come from here and from the reply of the tool that made the thing.
 - `read_wall` — step 4 of the method. The beats in wall order, the pages of
   scenes between consecutive beats, and the **questions the wall raises**: a run
   out of proportion with the others, a card with no change line, a card no arrow
@@ -104,9 +109,23 @@ change anything.
   An **unnamed** person in a treatment — "their mother", "the dispatcher" —
   is named by their role: `Dana's mother`, `The dispatcher`. A role is a name
   until the writer gives one; leaving them off the card is the error.
-- **Acts** are not a thing on the wall. It reads left to right; a structure's
-  beats are the act breaks. Use a colour or a group to mark one only if the
-  writer asks.
+- **Acts** are not a thing the app knows. The wall reads left to right and a
+  structure's beats are the act breaks. When a treatment comes in acts, put each
+  act's cards in a **group** titled for it (`create_group`, title "Act one"), so
+  the break is on the wall without an opinion about beats. **Paper colour**
+  means nothing to the app; use it as the writer does.
+- **A setup arrow lands on the scene's card.** If the payoff is a moment inside
+  a scene, the card is still the scene; never split a scene to give the payoff
+  a card of its own.
+- **Who is not on the wall.** A person in the treatment who is in no scene
+  (a daughter spoken of, a name on a wall) belongs in the **notes** of the
+  person they matter to, not the roster — the roster asks about anyone on no
+  card. Age, job, a bad knee: `notes` too, unless they are how the person looks
+  or sounds.
+- **A whole treatment at once:** write it as Fountain — `# Act one` sections,
+  a scene heading and a line per scene, `[[with Maya]]` for the cast — and
+  `import_fountain`; then cast, place and fold what needs it. Faster than a
+  card at a time for anything over ten scenes.
 
 ### Pages
 
@@ -185,7 +204,7 @@ change anything.
    for a card that belongs somewhere the arrows do not say. Cards are 192px;
    leave ~30px gaps for a readable row.
 4. Mark the major turns with `set_rank`. Marking a beat never moves it.
-5. Leave lengths alone unless you are told one or the card plainly states it (a
+5. Give lengths when the writer asks for your estimate or the card plainly states one; otherwise leave them (a
    montage, a one-line sting, a long set piece). The estimate is the writer's.
 
 ## What the tools will refuse

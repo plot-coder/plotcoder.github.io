@@ -3,6 +3,9 @@
   --ink: #111110;
   --muted: #6a6860;
   --bar: #f6f4ef;
+  /* Over target. Warm rather than alarm-red: running long is a note to yourself,
+     not an error, and the bar does not get to be alarmed about your draft. */
+  --over: #b4531f;
   --bar-border: rgba(17, 17, 16, 0.1);
   --bar-shadow: 0 14px 40px rgba(17, 17, 16, 0.1);
   --slot: rgba(17, 17, 16, 0.05);
@@ -17,6 +20,7 @@
   --ink: #f4f1ea;
   --muted: #9a9589;
   --bar: #1c1c1a;
+  --over: #e08b52;
   --bar-border: rgba(244, 241, 234, 0.18);
   --bar-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
   --slot: rgba(244, 241, 234, 0.06);
@@ -795,6 +799,101 @@ body {
 
 .note.is-beat .note__rank-bar {
   box-shadow: 0 0 0 2px rgba(31, 24, 16, 0.22);
+}
+
+/* The length lives in the corner a breakdown writes it in, and it earns its
+   place the same way: an ordinary card is about a page and says nothing, while
+   the three-pagers and the half-page beats wear the number. What you read at a
+   glance is the exceptions, which is the only part of a guess worth trusting. */
+.note__length {
+  position: absolute;
+  right: 0.4rem;
+  top: 0.35rem;
+  z-index: 2;
+  padding: 0.05rem 0.2rem;
+  border: 0;
+  border-radius: 0.16rem;
+  background: transparent;
+  color: rgba(31, 24, 16, 0.62);
+  font: inherit;
+  font-size: 0.62rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.note:hover .note__length,
+.note.is-selected .note__length,
+.note.is-sized .note__length,
+.note__length:focus-visible {
+  opacity: 1;
+}
+
+.note.is-sized .note__length {
+  background: rgba(31, 24, 16, 0.09);
+  color: rgba(31, 24, 16, 0.78);
+}
+
+.note__length:hover {
+  background: rgba(31, 24, 16, 0.16);
+}
+
+/* Hangs clear of the headline: the headline is how you know which card you are
+   sizing, so the one thing this must never cover is the words at the top. */
+.note__lengths {
+  position: absolute;
+  right: 0.35rem;
+  top: 2.5rem;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.18rem;
+  padding: 0.28rem;
+  border: 1px solid var(--bar-border);
+  border-radius: 0.24rem;
+  background: var(--bar);
+  box-shadow: 0 8px 20px rgba(31, 24, 16, 0.3);
+}
+
+.note__length-option {
+  min-width: 1.55rem;
+  padding: 0.16rem 0.1rem;
+  border: 1px solid transparent;
+  border-radius: 0.14rem;
+  background: rgba(127, 127, 127, 0.16);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.62rem;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.note__length-option:hover {
+  background: rgba(127, 127, 127, 0.34);
+}
+
+.note__length-option.is-current {
+  border-color: var(--ink);
+  background: rgba(127, 127, 127, 0.34);
+}
+
+/* The target is typed, not stepped: a target is a decision you already made
+   somewhere else — 30 for a half-hour, 120 for a feature — not one you discover
+   by nudging a number up and down. */
+.general-bar__target {
+  padding: 0 0.18rem;
+  border-radius: 0.14rem;
+  background: rgba(127, 127, 127, 0.14);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  outline: none;
+  cursor: text;
+}
+
+.general-bar__item.is-over .general-bar__item-meta {
+  color: var(--over);
 }
 
 .note__headline,

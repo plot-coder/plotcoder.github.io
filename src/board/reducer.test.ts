@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   applyCommand,
+  boardEighths,
   countRanks,
+  DEFAULT_NOTE_EIGHTHS,
+  DEFAULT_TARGET_EIGHTHS,
   emptyState,
+  formatPages,
   isBoardState,
   NOTE_HEIGHT,
   NOTE_WIDTH,
@@ -354,6 +358,13 @@ describe("no-op commands return the identical state object", () => {
     ["set_rank with no ids", { type: "set_rank", ids: [], rank: "beat" }],
     ["set_rank on missing cards", { type: "set_rank", ids: ["ghost"], rank: "beat" }],
     ["set_rank to the rank a card already has", { type: "set_rank", ids: ["a"], rank: "scene" }],
+    ["set_length with no ids", { type: "set_length", ids: [], lengthEighths: 16 }],
+    ["set_length on missing cards", { type: "set_length", ids: ["ghost"], lengthEighths: 16 }],
+    [
+      "set_length to the length a card already has",
+      { type: "set_length", ids: ["a"], lengthEighths: DEFAULT_NOTE_EIGHTHS },
+    ],
+    ["set_target to the target it already has", { type: "set_target", targetEighths: DEFAULT_TARGET_EIGHTHS }],
     ["an unknown command", { type: "not_a_command" } as unknown as Command],
   ];
 
@@ -449,6 +460,102 @@ describe("countRanks", () => {
 
   it("is zero on an empty board", () => {
     expect(countRanks(emptyState())).toEqual({ beats: 0, scenes: 0 });
+  });
+});
+
+describe("set_length", () => {
+  const board = () => boardOf({ id: "a", x: 0, y: 0 }, { id: "b", x: 400, y: 0 });
+
+  it("gives a new card an ordinary page", () => {
+    expect(board().notes[0].lengthEighths).toBe(DEFAULT_NOTE_EIGHTHS);
+  });
+
+  it("sizes a card in eighths", () => {
+    const state = run(board(), { type: "set_length", ids: ["a"], lengthEighths: 20 });
+    expect(state.notes.find((note) => note.id === "a")?.lengthEighths).toBe(20);
+  });
+
+  it("sizes a whole selection at once", () => {
+    const outcome = applyCommand(
+      board(),
+      { type: "set_length", ids: ["a", "b"], lengthEighths: 4 },
+      NOW,
+    );
+    expect(outcome.result).toHaveLength(2);
+  });
+
+  // Length is a property of the card, the same way rank is (D20).
+  it("never moves the card it sizes", () => {
+    const start = board();
+    const state = run(start, { type: "set_length", ids: ["a", "b"], lengthEighths: 32 });
+    state.notes.forEach((note, i) => {
+      expect(note.x).toBe(start.notes[i].x);
+      expect(note.y).toBe(start.notes[i].y);
+    });
+  });
+
+  it("refuses nonsense lengths rather than storing them", () => {
+    const zero = run(board(), { type: "set_length", ids: ["a"], lengthEighths: 0 });
+    expect(zero.notes.find((note) => note.id === "a")?.lengthEighths).toBe(1);
+
+    const negative = run(board(), { type: "set_length", ids: ["a"], lengthEighths: -5 });
+    expect(negative.notes.find((note) => note.id === "a")?.lengthEighths).toBe(1);
+
+    // A single card longer than a short film is a typo, not a scene.
+    const absurd = run(board(), { type: "set_length", ids: ["a"], lengthEighths: 99999 });
+    expect(absurd.notes.find((note) => note.id === "a")?.lengthEighths).toBe(30 * 8);
+
+    const fractional = run(board(), { type: "set_length", ids: ["a"], lengthEighths: 6.4 });
+    expect(fractional.notes.find((note) => note.id === "a")?.lengthEighths).toBe(6);
+  });
+});
+
+describe("set_target", () => {
+  it("starts a board at feature length", () => {
+    expect(emptyState().targetEighths).toBe(120 * 8);
+  });
+
+  it("retargets for a half-hour", () => {
+    const state = run(emptyState(), { type: "set_target", targetEighths: 30 * 8 });
+    expect(state.targetEighths).toBe(240);
+  });
+
+  it("leaves the cards alone", () => {
+    const start = seedState(NOW);
+    const state = run(start, { type: "set_target", targetEighths: 240 });
+    expect(state.notes).toBe(start.notes);
+  });
+});
+
+describe("boardEighths", () => {
+  it("adds the cards up", () => {
+    const state = run(
+      boardOf({ id: "a", x: 0, y: 0 }, { id: "b", x: 400, y: 0 }, { id: "c", x: 800, y: 0 }),
+      { type: "set_length", ids: ["a"], lengthEighths: 24 },
+      { type: "set_length", ids: ["b"], lengthEighths: 4 },
+    );
+    // three pages, half a page, and one default page
+    expect(boardEighths(state)).toBe(24 + 4 + 8);
+  });
+
+  it("is zero on an empty board", () => {
+    expect(boardEighths(emptyState())).toBe(0);
+  });
+});
+
+// Written the way a breakdown writes them, because that is the notation the
+// people who will read this number already use (D23).
+describe("formatPages", () => {
+  it.each([
+    [8, "1"],
+    [16, "2"],
+    [4, "4/8"],
+    [1, "1/8"],
+    [12, "1 4/8"],
+    [963, "120 3/8"],
+    [0, "0"],
+  ])("%i eighths reads as %s", (eighths, expected) => {
+    expect(formatPages(eighths)).toBe(expected);
   });
 });
 
@@ -563,17 +670,61 @@ describe("normalizeState", () => {
     expect(normalized.notes[0]).toEqual({ ...note, rank: "scene" });
   });
 
+  // R25 added length the same way. An unsized card is an ordinary page, which
+  // is what an index card has always silently meant.
+  it("gives pre-length cards an ordinary page", () => {
+    const old = {
+      logline: "",
+      notes: seedState(NOW).notes.map(({ lengthEighths: _drop, ...note }) => note),
+      groups: [],
+      arrows: [],
+    };
+    const normalized = normalizeState(old);
+    expect(normalized.notes.every((note) => note.lengthEighths === DEFAULT_NOTE_EIGHTHS)).toBe(
+      true,
+    );
+  });
+
+  it("gives a pre-target board a feature-length target", () => {
+    const { targetEighths: _drop, ...old } = seedState(NOW);
+    expect(normalizeState(old).targetEighths).toBe(DEFAULT_TARGET_EIGHTHS);
+  });
+
+  it("repairs a length of the wrong type or an impossible size", () => {
+    const bent = {
+      logline: "",
+      notes: [
+        { id: "a", rank: "scene", lengthEighths: "two pages" },
+        { id: "b", rank: "scene", lengthEighths: -4 },
+        { id: "c", rank: "scene", lengthEighths: 12 },
+      ],
+      groups: [],
+      arrows: [],
+    };
+    expect(normalizeState(bent).notes.map((note) => note.lengthEighths)).toEqual([8, 1, 12]);
+  });
+
   // A board that opened yesterday has to open today, whichever field was added.
-  it("opens a board written before either field existed", () => {
+  it("opens a board written before any of the three fields existed", () => {
     const ancient = {
-      notes: seedState(NOW).notes.map(({ rank: _r, ...note }) => note),
+      notes: seedState(NOW).notes.map(
+        ({ rank: _r, lengthEighths: _l, ...note }) => note,
+      ),
       groups: [],
       arrows: [],
     };
     expect(isBoardState(ancient)).toBe(true);
     const normalized = normalizeState(ancient);
     expect(normalized.logline).toBe("");
+    expect(normalized.targetEighths).toBe(DEFAULT_TARGET_EIGHTHS);
     expect(normalized.notes.every((note) => note.rank === "scene")).toBe(true);
+    expect(normalized.notes.every((note) => note.lengthEighths === DEFAULT_NOTE_EIGHTHS)).toBe(
+      true,
+    );
+    // and the words survive the trip, which is the only part that matters
+    expect(normalized.notes.map((note) => note.headline)).toEqual(
+      seedState(NOW).notes.map((note) => note.headline),
+    );
   });
 
   it("falls back to an empty board for junk", () => {

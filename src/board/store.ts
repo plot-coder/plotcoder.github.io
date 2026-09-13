@@ -20,6 +20,7 @@ import {
 } from "./reducer";
 
 const LS_LOGLINE = "plotcoder.logline";
+const LS_TARGET = "plotcoder.target";
 const LS_NOTES = "plotcoder.notes";
 const LS_GROUPS = "plotcoder.groups";
 const LS_ARROWS = "plotcoder.arrows";
@@ -45,10 +46,13 @@ function loadLocal(): BoardState | null {
     const groups = localStorage.getItem(LS_GROUPS);
     const arrows = localStorage.getItem(LS_ARROWS);
     if (notes === null && groups === null && arrows === null) return null;
-    // A board saved before R19 has no logline key; normalizeState fills it in
-    // rather than the board being treated as unreadable.
+    // A board saved before R19 has no logline key and one saved before R25 has
+    // no target; normalizeState fills both in rather than the board being
+    // treated as unreadable. A missing target reads as NaN, which it clamps.
+    const target = localStorage.getItem(LS_TARGET);
     const state = {
       logline: localStorage.getItem(LS_LOGLINE) ?? "",
+      targetEighths: target === null ? undefined : Number(target),
       notes: notes ? JSON.parse(notes) : [],
       groups: groups ? JSON.parse(groups) : [],
       arrows: arrows ? JSON.parse(arrows) : [],
@@ -62,6 +66,7 @@ function loadLocal(): BoardState | null {
 function saveLocal(state: BoardState): void {
   try {
     localStorage.setItem(LS_LOGLINE, state.logline ?? "");
+    localStorage.setItem(LS_TARGET, String(state.targetEighths));
     localStorage.setItem(LS_NOTES, JSON.stringify(state.notes));
     localStorage.setItem(LS_GROUPS, JSON.stringify(state.groups));
     localStorage.setItem(LS_ARROWS, JSON.stringify(state.arrows));

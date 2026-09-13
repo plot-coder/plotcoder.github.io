@@ -137,8 +137,10 @@ describe("plotcoder MCP server", () => {
       "move_note",
       "recolor_note",
       "rename_group",
+      "set_length",
       "set_logline",
       "set_rank",
+      "set_target",
       "ungroup",
       "update_note",
     ]);
@@ -186,7 +188,7 @@ describe("plotcoder MCP server", () => {
     expect(text).toContain("1 beats");
 
     const listed = await client.callTool("list_board");
-    expect(listed).toContain("[beat]");
+    expect(listed).toContain("[beat, 1pp]");
     expect(listed).toContain("beats: 1, scenes: 2");
 
     const saved = readBoardFile();
@@ -199,6 +201,49 @@ describe("plotcoder MCP server", () => {
 
     await client.callTool("set_rank", { ids: [target], rank: "scene" });
     expect(await client.callTool("list_board")).toContain("beats: 0, scenes: 3");
+  });
+
+  describe("length", () => {
+    it("sizes cards in pages and reports the runtime against the target", async () => {
+      const { notes } = await client.callToolData("list_board");
+      const target = notes[0].id;
+      const before = notes[0];
+
+      const text = await client.callTool("set_length", { ids: [target], pages: 3 });
+      expect(text).toContain("run about 3 page(s)");
+      // Three seed cards: one at three pages, two still at the default page each.
+      expect(text).toContain("about 5 pages");
+
+      const listed = await client.callTool("list_board");
+      expect(listed).toContain("[scene, 3pp]");
+      expect(listed).toContain("120-page target");
+
+      // Length is a property of the card, not of where it sits.
+      const after = readBoardFile().state.notes.find((note) => note.id === target);
+      expect([after.x, after.y]).toEqual([before.x, before.y]);
+      expect(after.lengthEighths).toBe(24);
+
+      await client.callTool("set_length", { ids: [target], pages: 1 });
+    });
+
+    it("takes a fraction of a page and writes it in eighths", async () => {
+      const { notes } = await client.callToolData("list_board");
+      const id = notes[0].id;
+
+      await client.callTool("set_length", { ids: [id], pages: 0.5 });
+      expect(readBoardFile().state.notes.find((note) => note.id === id).lengthEighths).toBe(4);
+      expect(await client.callTool("list_board")).toContain("[scene, 4/8pp]");
+
+      await client.callTool("set_length", { ids: [id], pages: 1 });
+    });
+
+    it("sets the target for something that is not a feature", async () => {
+      expect(await client.callTool("set_target", { pages: 30 })).toContain("Target is 30 pages");
+      expect(await client.callTool("list_board")).toContain("30-page target");
+      expect(readBoardFile().state.targetEighths).toBe(240);
+
+      await client.callTool("set_target", { pages: 120 });
+    });
   });
 
   describe("groups", () => {

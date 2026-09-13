@@ -54,6 +54,7 @@ type NoteBoardProps = {
   onNoteDropped: (id: string) => void;
   onRecolor: (id: string, color: NoteColor) => void;
   onSetRank: (id: string, rank: NoteRank) => void;
+  onSetLength: (id: string, lengthEighths: number) => void;
   onEdit: (id: string, patch: { headline?: string; change?: string }) => void;
   onCommit: () => void;
 };
@@ -122,6 +123,7 @@ export function NoteBoard({
   onNoteDropped,
   onRecolor,
   onSetRank,
+  onSetLength,
   onEdit,
   onCommit,
 }: NoteBoardProps) {
@@ -477,6 +479,7 @@ export function NoteBoard({
           onArrowPointerDown={startArrowDrag}
           onRecolor={onRecolor}
           onSetRank={onSetRank}
+          onSetLength={onSetLength}
           onEdit={onEdit}
         />
       ))}

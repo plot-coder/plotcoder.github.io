@@ -1,6 +1,12 @@
 import { useEffect, useState, type PointerEvent } from "react";
 import { EditableText } from "./EditableText";
+import { DEFAULT_NOTE_EIGHTHS, formatPages } from "./board/reducer";
 import { NOTE_COLORS, type MockNote, type NoteColor, type NoteRank } from "./noteMock";
+
+// The sizes a writer actually reaches for, in eighths of a page. Not a slider:
+// nobody knows a scene is 1 3/8 pages before it exists, and pretending to that
+// precision would invite fiddling with a number that is a guess either way.
+const LENGTH_PRESETS = [2, 4, 8, 12, 16, 24, 32, 48];
 
 type NoteCardProps = {
   note: MockNote;
@@ -12,6 +18,7 @@ type NoteCardProps = {
   onArrowPointerDown: (event: PointerEvent<HTMLElement>, note: MockNote) => void;
   onRecolor: (id: string, color: NoteColor) => void;
   onSetRank: (id: string, rank: NoteRank) => void;
+  onSetLength: (id: string, lengthEighths: number) => void;
   onEdit: (id: string, patch: { headline?: string; change?: string }) => void;
 };
 
@@ -25,18 +32,27 @@ export function NoteCard({
   onArrowPointerDown,
   onRecolor,
   onSetRank,
+  onSetLength,
   onEdit,
 }: NoteCardProps) {
   const isBeat = note.rank === "beat";
+  // The ordinary card is about a page. Only the exceptions wear their length on
+  // the wall, so what you see while zoomed out is the outliers — which is the
+  // only part of the estimate worth reading at a glance (R25).
+  const sized = note.lengthEighths !== DEFAULT_NOTE_EIGHTHS;
   const [picking, setPicking] = useState(false);
+  const [sizing, setSizing] = useState(false);
 
   useEffect(() => {
-    if (active) setPicking(false);
+    if (active) {
+      setPicking(false);
+      setSizing(false);
+    }
   }, [active]);
 
   return (
     <article
-      className={`note note--${note.color} ${isBeat ? "is-beat" : ""} ${active ? "is-active" : ""} ${selected ? "is-selected" : ""} ${linking ? "is-linking" : ""} ${dropTarget ? "is-drop-target" : ""} ${picking ? "is-picking" : ""}`}
+      className={`note note--${note.color} ${isBeat ? "is-beat" : ""} ${sized ? "is-sized" : ""} ${active ? "is-active" : ""} ${selected ? "is-selected" : ""} ${linking ? "is-linking" : ""} ${dropTarget ? "is-drop-target" : ""} ${picking || sizing ? "is-picking" : ""}`}
       style={{
         left: note.x,
         top: note.y,
@@ -74,6 +90,38 @@ export function NoteCard({
       </button>
       <button
         type="button"
+        className="note__length"
+        aria-label={`Length of ${note.headline}: ${formatPages(note.lengthEighths)} pages`}
+        aria-expanded={sizing}
+        title="How long this runs"
+        onPointerDown={(event) => event.stopPropagation()}
+        onClick={() => {
+          setPicking(false);
+          setSizing((open) => !open);
+        }}
+      >
+        {formatPages(note.lengthEighths)}
+      </button>
+      {sizing ? (
+        <div className="note__lengths" onPointerDown={(event) => event.stopPropagation()}>
+          {LENGTH_PRESETS.map((eighths) => (
+            <button
+              key={eighths}
+              type="button"
+              className={`note__length-option ${note.lengthEighths === eighths ? "is-current" : ""}`}
+              aria-pressed={note.lengthEighths === eighths}
+              onClick={() => {
+                onSetLength(note.id, eighths);
+                setSizing(false);
+              }}
+            >
+              {formatPages(eighths)}
+            </button>
+          ))}
+        </div>
+      ) : null}
+      <button
+        type="button"
         className="note__handle"
         aria-label={`Draw arrow from ${note.headline}`}
         onPointerDown={(event) => {
@@ -87,7 +135,10 @@ export function NoteCard({
         aria-label={`Change color of ${note.headline}`}
         aria-expanded={picking}
         onPointerDown={(event) => event.stopPropagation()}
-        onClick={() => setPicking((open) => !open)}
+        onClick={() => {
+          setSizing(false);
+          setPicking((open) => !open);
+        }}
       >
         <span className="note__color-stack" aria-hidden="true">
           <span className="note__color-chip note__color-chip--yellow" />

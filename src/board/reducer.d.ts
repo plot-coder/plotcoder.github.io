@@ -8,6 +8,15 @@ export type NoteColor = (typeof NOTE_COLORS)[number];
 export declare const NOTE_RANKS: readonly ["scene", "beat"];
 export type NoteRank = (typeof NOTE_RANKS)[number];
 
+/** Length is measured in eighths of a page (D23). */
+export declare const EIGHTHS_PER_PAGE: number;
+export declare const DEFAULT_NOTE_EIGHTHS: number;
+export declare const DEFAULT_TARGET_EIGHTHS: number;
+/** Total estimated length of the board, in eighths. */
+export declare function boardEighths(state: BoardState): number;
+/** Eighths as a breakdown writes them: "1 3/8", "97", "5/8". */
+export declare function formatPages(eighths: number): string;
+
 export declare const NOTE_WIDTH: number;
 export declare const NOTE_HEIGHT: number;
 
@@ -22,6 +31,8 @@ export type BoardNote = {
   z: number;
   /** A beat is one of the 8-to-15 major turns; everything else is a scene (R20). */
   rank: NoteRank;
+  /** Estimated screen time, in eighths of a page (R25). */
+  lengthEighths: number;
   createdAt: string;
   updatedAt: string;
 };
@@ -41,6 +52,8 @@ export type BoardArrow = {
 export type BoardState = {
   /** The board's central question — what this story is arguing (R19). */
   logline: string;
+  /** Target script length in eighths of a page; 120 pages for a feature (R25). */
+  targetEighths: number;
   notes: BoardNote[];
   groups: BoardGroup[];
   arrows: BoardArrow[];
@@ -51,6 +64,8 @@ export type Pose = { id: string; x: number; y: number; rotate: number };
 export type Command =
   | { type: "set_logline"; logline: string }
   | { type: "set_rank"; ids: string[]; rank: NoteRank }
+  | { type: "set_length"; ids: string[]; lengthEighths: number }
+  | { type: "set_target"; targetEighths: number }
   | {
       type: "create_note";
       id?: string;
@@ -61,6 +76,7 @@ export type Command =
       y?: number;
       rotate?: number;
       rank?: NoteRank;
+      lengthEighths?: number;
     }
   | { type: "update_note"; id: string; headline?: string; change?: string }
   | { type: "move_note"; id: string; x: number; y: number }

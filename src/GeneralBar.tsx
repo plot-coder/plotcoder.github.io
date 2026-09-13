@@ -7,6 +7,8 @@ import {
   ScatterIcon,
   ThemeIcon,
 } from "./BarIcons";
+import { EditableText } from "./EditableText";
+import { EIGHTHS_PER_PAGE, formatPages } from "./board/reducer";
 import { formatNextChange, type Theme } from "./theme";
 
 export type BarLayer = "dock" | "strip" | "tall";
@@ -27,6 +29,9 @@ type GeneralBarProps = {
   canFit: boolean;
   beats: number;
   scenes: number;
+  runtimeEighths: number;
+  targetEighths: number;
+  onSetTarget: (pages: number) => void;
   onFit: () => void;
   onZoomIn: () => void;
   onZoomOut: () => void;
@@ -48,12 +53,16 @@ export function GeneralBar({
   canFit,
   beats,
   scenes,
+  runtimeEighths,
+  targetEighths,
+  onSetTarget,
   onFit,
   onZoomIn,
   onZoomOut,
 }: GeneralBarProps) {
   const nextChange = formatNextChange(theme);
   const followingClock = theme === scheduled;
+  const over = runtimeEighths - targetEighths;
 
   return (
     <aside
@@ -122,6 +131,28 @@ export function GeneralBar({
               <p className="general-bar__item-meta">
                 {beats} {beats === 1 ? "beat" : "beats"} · {scenes}{" "}
                 {scenes === 1 ? "scene" : "scenes"}
+              </p>
+            </div>
+          </div>
+
+          {/* An estimate, and it says so. The number that matters is not the
+              total but where the runtime went, which is why the target sits
+              beside it — over or under is the only judgement the bar makes. */}
+          <div className={`general-bar__item ${over > 0 ? "is-over" : ""}`}>
+            <div className="general-bar__item-copy">
+              <p className="general-bar__item-label">Runtime</p>
+              <p className="general-bar__item-meta">
+                ≈{formatPages(runtimeEighths)} of{" "}
+                <EditableText
+                  as="span"
+                  className="general-bar__target"
+                  value={String(Math.round(targetEighths / EIGHTHS_PER_PAGE))}
+                  onCommit={(text) => onSetTarget(Number(text.replace(/[^0-9]/g, "")))}
+                  ariaLabel="Target script length in pages"
+                  placeholder="120"
+                />{" "}
+                pages
+                {over > 0 ? ` · ${formatPages(over)} over` : ""}
               </p>
             </div>
           </div>

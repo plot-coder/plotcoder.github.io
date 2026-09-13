@@ -5,7 +5,7 @@ import { NoteBoard } from "./NoteBoard";
 import { readPremise, writePremise } from "./premiseStore";
 import { boardStore, installWindowApi } from "./board/store";
 import { type NoteColor, type NoteRank } from "./noteMock";
-import { countRanks } from "./board/reducer";
+import { boardEighths, countRanks, EIGHTHS_PER_PAGE } from "./board/reducer";
 import {
   organizeReadingOrder,
   snapshotPoses,
@@ -133,6 +133,19 @@ export function App() {
     const ids =
       selectedIds.includes(id) && selectedIds.length >= 2 ? selectedIds : [id];
     boardStore.dispatch({ type: "set_rank", ids, rank });
+  }
+
+  function setLength(id: string, lengthEighths: number) {
+    const ids =
+      selectedIds.includes(id) && selectedIds.length >= 2 ? selectedIds : [id];
+    boardStore.dispatch({ type: "set_length", ids, lengthEighths });
+  }
+
+  function setTarget(pages: number) {
+    boardStore.dispatch({
+      type: "set_target",
+      targetEighths: pages * EIGHTHS_PER_PAGE,
+    });
   }
 
   function editNote(id: string, patch: { headline?: string; change?: string }) {
@@ -265,6 +278,7 @@ export function App() {
         onNoteDropped={dropNote}
         onRecolor={recolorNote}
         onSetRank={setRank}
+        onSetLength={setLength}
         onEdit={editNote}
         onCommit={commitBoard}
       />
@@ -284,6 +298,9 @@ export function App() {
         canFit={notes.length > 0}
         beats={shape.beats}
         scenes={shape.scenes}
+        runtimeEighths={boardEighths(board)}
+        targetEighths={board.targetEighths}
+        onSetTarget={setTarget}
         onFit={fitToWall}
         onZoomIn={() => zoomBy(1.25)}
         onZoomOut={() => zoomBy(0.8)}

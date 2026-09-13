@@ -2,22 +2,24 @@
 name: plotcoder-board
 description: >-
   Build and rearrange the PlotCoder storyboard from an agent: cards, groups,
-  arrows, beat rank, and the logline. Use when asked to build or rearrange the
-  PlotCoder wall, add beats, or change the board — instead of simulating mouse
-  drags in a browser.
+  arrows, beat rank, scene length, and the logline. Use when asked to build or
+  rearrange the PlotCoder wall, add beats, size scenes, or change the board —
+  instead of simulating mouse drags in a browser.
 ---
 
 # PlotCoder board
 
 PlotCoder is a storylining wall of cards (post-its). Each card is one **scene**:
 a `headline` plus the `change` it causes. Cards also have a `color`, a position
-(`x`,`y`), a rotation, and a `rank`.
+(`x`,`y`), a rotation, a `rank`, and a `length`.
 
-The board holds four kinds of thing:
+The board holds five kinds of thing:
 
 - **cards** — one scene each.
 - **rank** — a card is a `scene` or a `beat`. A beat is one of the 8–15 major
   turns the story hangs on. Rank is carried by the card, never by where it sits.
+- **length** — how many pages a card runs. An unsized card is taken to be about
+  one page. Like rank, it belongs to the card and never moves it.
 - **groups** — a named frame around two or more cards: a sequence, a set piece.
 - **arrows** — directed links between cards: what follows what, what sets up what.
 
@@ -33,22 +35,26 @@ lands on the exact same board a person sees.
 
 ### Reading
 
-- `list_board` — the logline, the beat/scene counts, then every **card**,
-  **group**, and **arrow** with its **id**. This is the only place ids come from.
+- `list_board` — the logline, the beat/scene counts, the runtime estimate against
+  the target, then every **card**, **group**, and **arrow** with its **id**. This
+  is the only place ids come from.
 
 ### Cards
 
 - `create_note` — add a card. Requires `headline` **and** `change`. Optional
-  `color` (yellow, pink, blue, green, orange), `rank`, and `x`/`y`.
+  `color` (yellow, pink, blue, green, orange), `rank`, `pages`, and `x`/`y`.
 - `update_note` — change a card's `headline` and/or `change` by `id`.
 - `move_note` — set a card's absolute `x`,`y` (top-left, pixels).
 - `recolor_note` — change a card's paper `color` by `id`.
 - `set_rank` — mark cards `beat` or `scene`. Takes a list of ids.
+- `set_length` — how long cards run, in `pages`. Takes a list of ids. Fractions
+  are fine (`0.5`); they are stored in eighths of a page.
 - `delete_note` — remove a card (also drops its arrows and group membership).
 
 ### Structure
 
 - `set_logline` — set the board's central question. Empty string clears it.
+- `set_target` — target script length in `pages`: 120 feature, 60 hour, 30 half.
 - `create_group` — frame two or more cards, with an optional `title`.
 - `rename_group` / `ungroup` — by group id. Ungrouping leaves the cards alone.
 - `create_arrow` — a directed arrow, `from` → `to`.
@@ -63,6 +69,8 @@ lands on the exact same board a person sees.
 3. To lay cards out, `move_note` each one. Cards are 192px; leave ~30px gaps for
    a readable row.
 4. Mark the major turns with `set_rank`. Marking a beat never moves it.
+5. Leave lengths alone unless you are told one or the card plainly states it (a
+   montage, a one-line sting, a long set piece). The estimate is the writer's.
 
 ## What the tools will refuse
 
@@ -76,10 +84,14 @@ reply, call `list_board`, and fix the ids.
 - Arrows are **one-way**. `A→B` does not create `B→A`. Draw both if you mean
   both — that is two arrows, and deleting one leaves the other.
 
-## Do not have opinions about beat count
+## Do not have opinions about beat count, and do not treat page counts as facts
 
 The app deliberately counts beats and says nothing about the number. Do not tell
 the user they have too many or too few. Report the count if asked.
+
+The runtime is an **estimate built from guesses**, most of them the default page.
+Say "about" when you report it. Never tell a writer their script is too long on
+the strength of it.
 
 ## Live vs. file
 

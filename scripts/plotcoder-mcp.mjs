@@ -19,7 +19,10 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
   applyCommand,
+  boardEighths,
   countRanks,
+  EIGHTHS_PER_PAGE,
+  formatPages,
   isBoardState,
   normalizeState,
   NOTE_COLORS,
@@ -29,6 +32,10 @@ import {
 
 const colorSchema = z.enum(NOTE_COLORS);
 const rankSchema = z.enum(NOTE_RANKS);
+// Agents get pages, not eighths. Eighths are the storage unit (D23); asking a
+// model to convert is a needless chance to be wrong by a factor of eight.
+const pagesSchema = z.number().positive();
+const toEighths = (pages) => Math.round(pages * EIGHTHS_PER_PAGE);
 
 function log(...args) {
   console.error("[plotcoder-mcp]", ...args);
@@ -185,7 +192,7 @@ function summarize(state) {
   const notes = state.notes
     .map(
       (note) =>
-        `  - ${note.id} [${note.rank ?? "scene"}] — "${note.headline}" (${note.color}) at ${Math.round(note.x)},${Math.round(note.y)}`,
+        `  - ${note.id} [${note.rank ?? "scene"}, ${formatPages(note.lengthEighths)}pp] — "${note.headline}" (${note.color}) at ${Math.round(note.x)},${Math.round(note.y)}`,
     )
     .join("\n");
   const { beats, scenes } = countRanks(state);
@@ -212,6 +219,7 @@ function summarize(state) {
   return [
     `logline: ${state.logline ? `"${state.logline}"` : "(not set)"}`,
     `beats: ${beats}, scenes: ${scenes}`,
+    `runtime: about ${formatPages(boardEighths(state))} pages of a ${formatPages(state.targetEighths)}-page target (an estimate from the cards)`,
     `notes: ${state.notes.length}, groups: ${state.groups.length}, arrows: ${state.arrows.length}`,
     "cards:",
     notes || "  (no cards)",
@@ -297,16 +305,61 @@ server.registerTool(
 );
 
 server.registerTool(
+  "set_length",
+  {
+    title: "Set card length",
+    description:
+      "Set how long cards run, in pages. An ordinary scene is about 1; a quick beat might be 0.25; a set piece might be 3 or 4. This is an estimate the writer owns — set it when you are told a length or when the card plainly describes one, and do not silently re-estimate a card someone has already sized.",
+    inputSchema: {
+      ids: z.array(z.string()).min(1),
+      pages: pagesSchema,
+    },
+  },
+  async (args) => {
+    const { state, result, live } = await commit({
+      type: "set_length",
+      ids: args.ids,
+      lengthEighths: toEighths(args.pages),
+    });
+    return ok(
+      `${result?.length ?? 0} card(s) now run about ${args.pages} page(s)${where(live)}. The board runs about ${formatPages(boardEighths(state))} pages against a ${formatPages(state.targetEighths)}-page target.`,
+      result,
+    );
+  },
+);
+
+server.registerTool(
+  "set_target",
+  {
+    title: "Set target length",
+    description:
+      "Set the board's target script length in pages. 120 for a feature, 30 for a half-hour, 60 for an hour drama. This is what the runtime estimate is measured against.",
+    inputSchema: { pages: pagesSchema },
+  },
+  async (args) => {
+    const { state, live } = await commit({
+      type: "set_target",
+      targetEighths: toEighths(args.pages),
+    });
+    return ok(
+      `Target is ${formatPages(state.targetEighths)} pages${where(live)}. The cards add up to about ${formatPages(boardEighths(state))}.`,
+      { targetEighths: state.targetEighths },
+    );
+  },
+);
+
+server.registerTool(
   "create_note",
   {
     title: "Create note",
     description:
-      "Add a card (post-it) to the board. A card is one scene: a headline plus the change it causes. Provide both headline and change. Optionally set color, x/y position, and rank ('beat' for one of the major turns, otherwise 'scene').",
+      "Add a card (post-it) to the board. A card is one scene: a headline plus the change it causes. Provide both headline and change. Optionally set color, x/y position, rank ('beat' for one of the major turns, otherwise 'scene'), and pages (how long it runs; leave it out and the card is taken to be about a page).",
     inputSchema: {
       headline: z.string().min(1),
       change: z.string().min(1),
       color: colorSchema.optional(),
       rank: rankSchema.optional(),
+      pages: pagesSchema.optional(),
       x: z.number().optional(),
       y: z.number().optional(),
     },
@@ -318,6 +371,7 @@ server.registerTool(
       change: args.change,
       color: args.color,
       rank: args.rank,
+      lengthEighths: args.pages === undefined ? undefined : toEighths(args.pages),
       x: args.x,
       y: args.y,
     });

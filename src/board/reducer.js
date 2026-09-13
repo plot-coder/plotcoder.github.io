@@ -15,6 +15,40 @@ export const NOTE_COLORS = ["yellow", "pink", "blue", "green", "orange"];
 // why "scene" is first: it is the default a card is born with (R20/R21).
 export const NOTE_RANKS = ["scene", "beat"];
 
+// Length is measured in eighths of a page (D23) — the unit a production
+// breakdown uses, and the unit real pages will be measured in when PlotCoder
+// holds them (D22). Today's estimate and tomorrow's measurement agree.
+export const EIGHTHS_PER_PAGE = 8;
+export const DEFAULT_NOTE_EIGHTHS = EIGHTHS_PER_PAGE; // a scene is about a page
+export const DEFAULT_TARGET_EIGHTHS = 120 * EIGHTHS_PER_PAGE; // a feature
+const MAX_NOTE_EIGHTHS = 30 * EIGHTHS_PER_PAGE;
+const MAX_TARGET_EIGHTHS = 600 * EIGHTHS_PER_PAGE;
+
+function clampEighths(value, fallback, max) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return fallback;
+  return Math.min(max, Math.max(1, Math.round(value)));
+}
+
+/** Total estimated length of the board, in eighths. */
+export function boardEighths(state) {
+  return state.notes.reduce(
+    (total, note) => total + (note.lengthEighths ?? DEFAULT_NOTE_EIGHTHS),
+    0,
+  );
+}
+
+/**
+ * Eighths as pages the way a breakdown writes them: "1 3/8", "97", "2 1/2"
+ * reduced to "2 4/8"'s plain form. Whole pages lose the fraction entirely.
+ */
+export function formatPages(eighths) {
+  const whole = Math.floor(eighths / EIGHTHS_PER_PAGE);
+  const part = eighths % EIGHTHS_PER_PAGE;
+  if (part === 0) return `${whole}`;
+  if (whole === 0) return `${part}/8`;
+  return `${whole} ${part}/8`;
+}
+
 export const NOTE_WIDTH = 192;
 export const NOTE_HEIGHT = 192;
 
@@ -31,7 +65,13 @@ export function nowIso() {
 }
 
 export function emptyState() {
-  return { logline: "", notes: [], groups: [], arrows: [] };
+  return {
+    logline: "",
+    targetEighths: DEFAULT_TARGET_EIGHTHS,
+    notes: [],
+    groups: [],
+    arrows: [],
+  };
 }
 
 export function seedState(now = nowIso()) {
@@ -45,6 +85,7 @@ export function seedState(now = nowIso()) {
     rotate,
     z,
     rank: "scene",
+    lengthEighths: DEFAULT_NOTE_EIGHTHS,
     createdAt: now,
     updatedAt: now,
   });
@@ -53,6 +94,7 @@ export function seedState(now = nowIso()) {
     // Left empty on purpose: the placeholder asks the question, which is how a
     // new writer finds out the logline is there at all.
     logline: "",
+    targetEighths: DEFAULT_TARGET_EIGHTHS,
     notes: [
       mk("maya-letter", "Maya finds the letter", "She decides not to tell Tom.", "yellow", 88, 120, -2.2, 1),
       mk("tom-lies", "Tom lies about the job", "Maya starts to doubt him.", "pink", 320, 168, 1.6, 2),
@@ -85,17 +127,37 @@ export function normalizeState(value) {
   if (!isBoardState(value)) return emptyState();
   const logline = typeof value.logline === "string" ? value.logline : "";
 
+  const targetEighths = clampEighths(
+    value.targetEighths,
+    DEFAULT_TARGET_EIGHTHS,
+    MAX_TARGET_EIGHTHS,
+  );
+
   // Cards written before R20 have no rank. They are scenes: a beat is something
   // you mark deliberately, so the safe default is the one that claims nothing.
-  let ranked = false;
+  // Cards written before R25 have no length; a scene is about a page.
+  let patched = false;
   const notes = value.notes.map((note) => {
-    if (note && NOTE_RANKS.includes(note.rank)) return note;
-    ranked = true;
-    return { ...note, rank: "scene" };
+    const rank = note && NOTE_RANKS.includes(note.rank) ? note.rank : "scene";
+    const lengthEighths = clampEighths(
+      note?.lengthEighths,
+      DEFAULT_NOTE_EIGHTHS,
+      MAX_NOTE_EIGHTHS,
+    );
+    if (note && note.rank === rank && note.lengthEighths === lengthEighths) return note;
+    patched = true;
+    return { ...note, rank, lengthEighths };
   });
 
-  if (value.logline === logline && !ranked) return value;
-  return { ...value, logline, notes: ranked ? notes : value.notes };
+  if (value.logline === logline && value.targetEighths === targetEighths && !patched) {
+    return value;
+  }
+  return {
+    ...value,
+    logline,
+    targetEighths,
+    notes: patched ? notes : value.notes,
+  };
 }
 
 /** Beats vs scenes. The app shows this number and passes no judgement (D21). */
@@ -136,6 +198,11 @@ export function applyCommand(state, command, now = nowIso()) {
         y: command.y ?? 140 + (n % 4) * 24,
         rotate: command.rotate ?? ((n % 5) - 2) * 1.1,
         rank: NOTE_RANKS.includes(command.rank) ? command.rank : "scene",
+        lengthEighths: clampEighths(
+          command.lengthEighths,
+          DEFAULT_NOTE_EIGHTHS,
+          MAX_NOTE_EIGHTHS,
+        ),
         z: maxZ(state.notes) + 1,
         createdAt: now,
         updatedAt: now,
@@ -181,6 +248,41 @@ export function applyCommand(state, command, now = nowIso()) {
           : note,
       );
       return { state: { ...state, notes }, changed: true };
+    }
+
+    case "set_length": {
+      const ids = new Set(command.ids);
+      if (ids.size === 0) return { state, changed: false };
+      const lengthEighths = clampEighths(
+        command.lengthEighths,
+        DEFAULT_NOTE_EIGHTHS,
+        MAX_NOTE_EIGHTHS,
+      );
+      const touched = [];
+      const notes = state.notes.map((note) => {
+        if (!ids.has(note.id) || note.lengthEighths === lengthEighths) return note;
+        const next = bump(note, { lengthEighths }, now);
+        touched.push(next);
+        return next;
+      });
+      if (touched.length === 0) return { state, changed: false };
+      return { state: { ...state, notes }, changed: true, result: touched };
+    }
+
+    case "set_target": {
+      const targetEighths = clampEighths(
+        command.targetEighths,
+        DEFAULT_TARGET_EIGHTHS,
+        MAX_TARGET_EIGHTHS,
+      );
+      if (targetEighths === (state.targetEighths ?? DEFAULT_TARGET_EIGHTHS)) {
+        return { state, changed: false };
+      }
+      return {
+        state: { ...state, targetEighths },
+        changed: true,
+        result: { targetEighths },
+      };
     }
 
     case "set_rank": {

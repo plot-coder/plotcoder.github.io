@@ -103,16 +103,46 @@ export function AccountSheet({ open, onClose, currentProjectId }: AccountSheetPr
           account.ready ? (
             <>
               <p className="project-copy">
-                A name and a password, and this project follows you to every device. Share a project with a
-                name and you write it together.
+                Your email and a password, and this project follows you to every device. Share a project with
+                another writer's email and you write it together.
               </p>
-              <NameDoor busy={account.busy} error={account.error} onDone={onClose} />
+              <NameDoor busy={account.busy} error={account.error} resetSentTo={account.resetSentTo} onDone={onClose} />
             </>
           ) : (
             <p className="project-copy">…</p>
           )
         ) : (
           <>
+            {account.recovering ? (
+              <section className="account__group" aria-label="New password">
+                <p className="cast-lens__kicker">A new password</p>
+                <p className="project-copy">You came in on a reset link. Set a new password — any password, no rules.</p>
+                <form
+                  className="account__form"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    void accountStore.setNewPassword(next).then((ok) => {
+                      if (ok) setNext("");
+                    });
+                  }}
+                >
+                  <input
+                    className="door__input"
+                    type="password"
+                    autoComplete="new-password"
+                    placeholder="your new password — anything"
+                    value={next}
+                    onChange={(event) => setNext(event.target.value)}
+                  />
+                  <div className="project-actions">
+                    <button type="submit" className="project-action" disabled={account.busy || !next}>
+                      Set the password
+                    </button>
+                  </div>
+                </form>
+              </section>
+            ) : null}
+
             <section className="account__group" aria-label="You">
               <p className="cast-lens__kicker">You</p>
               <p className="account__line">
@@ -137,16 +167,16 @@ export function AccountSheet({ open, onClose, currentProjectId }: AccountSheetPr
                   />
                   <input
                     className="door__input"
-                    type={mode === "name" ? "text" : "password"}
+                    type={mode === "name" ? "email" : "password"}
                     autoComplete={mode === "name" ? "username" : "new-password"}
                     autoCapitalize="off"
-                    placeholder={mode === "name" ? "your new name" : "your new password — anything"}
+                    placeholder={mode === "name" ? "your new email" : "your new password — anything"}
                     value={next}
                     onChange={(event) => setNext(event.target.value)}
                   />
                   <div className="project-actions">
                     <button type="submit" className="project-action" disabled={account.busy || !current || !next}>
-                      {mode === "name" ? "Change name" : "Change password"}
+                      {mode === "name" ? "Change email" : "Change password"}
                     </button>
                     <button type="button" className="project-action project-action--ghost" onClick={() => setMode("none")}>
                       Cancel
@@ -156,7 +186,7 @@ export function AccountSheet({ open, onClose, currentProjectId }: AccountSheetPr
               ) : (
                 <div className="project-actions">
                   <button type="button" className="project-action project-action--ghost" onClick={() => setMode("name")}>
-                    Change name
+                    Change email
                   </button>
                   <button type="button" className="project-action project-action--ghost" onClick={() => setMode("password")}>
                     Change password
@@ -247,8 +277,8 @@ export function AccountSheet({ open, onClose, currentProjectId }: AccountSheetPr
                     <input
                       className="cast-lens__input"
                       value={mode === "share" ? next : ""}
-                      placeholder="Share with a name…"
-                      aria-label="Share with a name"
+                      placeholder="Share with an email…"
+                      aria-label="Share with an email"
                       spellCheck={false}
                       autoComplete="off"
                       autoCapitalize="off"

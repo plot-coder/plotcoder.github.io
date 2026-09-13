@@ -216,8 +216,8 @@ export function ProjectModal({ open, onOpen, onClose, onSignIn, onPrint }: Proje
             {!signedIn && account.ready ? (
               <div className="project-door">
                 <p className="project-copy">
-                  Sign in with a name and a password to keep this project on every device, or share it with
-                  another writer by name.
+                  Sign in with your email and a password to keep this project on every device, or share it
+                  with another writer.
                 </p>
                 <div className="project-actions">
                   <button

@@ -1,12 +1,11 @@
-// PlotCoder: the name on the door (R39). Deployed to the live project through
-// the Supabase connector as `account` (verify_jwt off; it checks the caller's
-// token itself where it matters); kept here so the function lives in git.
+// PlotCoder: the door (R39, revised to email). Deployed through the connector
+// as `account`; kept here so the function lives in git.
 //
-// A writer signs in with a name and a password with no rules. Underneath it is
-// Supabase's own email-and-password auth with a synthetic address per name and
-// the password hashed on the device. Claiming a name and renaming one need the
-// service role (to create a confirmed user, and to move the address), so they
-// live here; signing in and changing a password happen in the browser.
+// A writer signs in with an email and a password with no rules. Underneath it
+// is Supabase's own email-and-password auth with the password hashed on the
+// device. Claiming an address and changing it need the service role (to
+// create a confirmed user, and to move the address), so they live here;
+// signing in, changing a password and recovery happen in the browser.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 
@@ -23,15 +22,11 @@ function json(body: unknown, status = 200): Response {
   });
 }
 
-const NAME = /^[a-z0-9][a-z0-9._-]{0,31}$/;
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-function cleanName(value: unknown): string | null {
-  const name = String(value ?? "").trim().toLowerCase();
-  return NAME.test(name) ? name : null;
-}
-
-function emailFor(name: string): string {
-  return `${name}@names.plotcoder.com`;
+function cleanEmail(value: unknown): string | null {
+  const email = String(value ?? "").trim().toLowerCase();
+  return EMAIL.test(email) && email.length <= 254 ? email : null;
 }
 
 Deno.serve(async (req) => {
@@ -42,56 +37,45 @@ Deno.serve(async (req) => {
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
 
-  let body: { action?: string; name?: string; password?: string };
+  let body: { action?: string; email?: string; password?: string };
   try {
     body = await req.json();
   } catch {
     return json({ error: "bad request" }, 400);
   }
 
-  const name = cleanName(body.name);
-  if (!name) {
-    return json({ error: "A name is letters and numbers, with dots, dashes or underscores, up to 32 long." }, 400);
-  }
+  const email = cleanEmail(body.email);
+  if (!email) return json({ error: "That does not look like an email address." }, 400);
 
   if (body.action === "claim") {
     const password = String(body.password ?? "");
     if (!password) return json({ error: "A password is needed, any password." }, 400);
-    const taken = await admin.rpc("name_taken", { candidate: name });
+    const taken = await admin.rpc("email_taken", { candidate: email });
     if (taken.error) return json({ error: taken.error.message }, 500);
     if (taken.data) return json({ error: "taken" }, 409);
-    const created = await admin.auth.admin.createUser({
-      email: emailFor(name),
-      password,
-      email_confirm: true,
-      user_metadata: { name },
-    });
+    const created = await admin.auth.admin.createUser({ email, password, email_confirm: true });
     if (created.error || !created.data.user) {
       return json({ error: created.error?.message ?? "could not create" }, 400);
     }
-    const inserted = await admin.from("names").insert({ user_id: created.data.user.id, name });
+    const inserted = await admin.from("writers").insert({ user_id: created.data.user.id, email });
     if (inserted.error) {
       await admin.auth.admin.deleteUser(created.data.user.id);
       return json({ error: "taken" }, 409);
     }
-    return json({ ok: true, name, email: emailFor(name) });
+    return json({ ok: true, email });
   }
 
-  if (body.action === "rename") {
+  if (body.action === "change_email") {
     const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
     const who = await admin.auth.getUser(token);
     if (who.error || !who.data.user) return json({ error: "sign in first" }, 401);
-    const taken = await admin.rpc("name_taken", { candidate: name });
+    const taken = await admin.rpc("email_taken", { candidate: email });
     if (taken.data) return json({ error: "taken" }, 409);
-    const moved = await admin.from("names").update({ name }).eq("user_id", who.data.user.id);
+    const moved = await admin.from("writers").update({ email }).eq("user_id", who.data.user.id);
     if (moved.error) return json({ error: "taken" }, 409);
-    const updated = await admin.auth.admin.updateUserById(who.data.user.id, {
-      email: emailFor(name),
-      email_confirm: true,
-      user_metadata: { name },
-    });
+    const updated = await admin.auth.admin.updateUserById(who.data.user.id, { email, email_confirm: true });
     if (updated.error) return json({ error: updated.error.message }, 400);
-    return json({ ok: true, name, email: emailFor(name) });
+    return json({ ok: true, email });
   }
 
   return json({ error: "unknown action" }, 400);

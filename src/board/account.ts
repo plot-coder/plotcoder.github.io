@@ -66,6 +66,10 @@ export type Account = {
   needsPick: boolean;
   /** A door action in flight. */
   busy: boolean;
+  /** The writer arrived on a reset link: the next password they set is the new one. */
+  recovering: boolean;
+  /** A reset link was sent to this address. */
+  resetSentTo: string | null;
 };
 
 export type NameStatus = "free" | "taken" | "invalid" | "unknown";
@@ -86,25 +90,27 @@ const BOOKKEEPING_KEY = "sb-plotcoder-sync";
 const PROJECTS = "projects";
 const BOARDS = "boards";
 const PUSH_DELAY = 800;
-const NAME = /^[a-z0-9][a-z0-9._-]{0,31}$/;
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type ProjectRow = { id: string; record: unknown; reminders: unknown; rev: number; updated_at?: string; owner?: string; people?: string[] };
 type BoardRow = { id: string; project_id: string; state: unknown; rev: number; updated_by?: string | null };
 
+/** The address as the account keeps it: trimmed, lower-cased. */
 export function cleanName(value: string): string {
   return value.trim().toLowerCase();
 }
 
 export function isValidName(value: string): boolean {
-  return NAME.test(cleanName(value));
+  const email = cleanName(value);
+  return EMAIL.test(email) && email.length <= 254;
 }
 
-function emailFor(name: string): string {
-  return `${cleanName(name)}@names.plotcoder.com`;
+function emailFor(email: string): string {
+  return cleanName(email);
 }
 
 /**
- * The password as Supabase sees it: a hash of the name and what was typed,
+ * The password as Supabase sees it: a hash of the address and what was typed,
  * so a password of any length — no rules — passes Supabase's own minimum,
  * and the clear text never leaves this device.
  */
@@ -168,6 +174,8 @@ class AccountStore {
     present: [],
     needsPick: false,
     busy: false,
+    recovering: false,
+    resetSentTo: null,
   };
   private books: Bookkeeping | null = null;
   private client: SupabaseClient | null = null;
@@ -226,7 +234,8 @@ class AccountStore {
       this.set({ ready: true });
       return;
     }
-    this.client.auth.onAuthStateChange((_event, session) => {
+    this.client.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY") this.set({ recovering: true });
       void this.onSession(session);
     });
     void this.client.auth.getSession().then(({ data }) => this.onSession(data.session));
@@ -267,7 +276,7 @@ class AccountStore {
   nameStatus = async (name: string): Promise<NameStatus> => {
     if (!isValidName(name)) return "invalid";
     if (!this.client) return "unknown";
-    const { data, error } = await this.client.rpc("name_taken", { candidate: cleanName(name) });
+    const { data, error } = await this.client.rpc("email_taken", { candidate: cleanName(name) });
     if (error) return "unknown";
     return data ? "taken" : "free";
   };
@@ -276,7 +285,7 @@ class AccountStore {
   claim = async (name: string, password: string): Promise<boolean> => {
     if (!this.client) return false;
     if (!isValidName(name)) {
-      this.set({ error: "A name is letters and numbers, with dots, dashes or underscores, up to 32 long." });
+      this.set({ error: "That does not look like an email address." });
       return false;
     }
     if (!password) {
@@ -289,11 +298,11 @@ class AccountStore {
       const response = await fetch(`${SUPABASE_URL}/functions/v1/account`, {
         method: "POST",
         headers: { "content-type": "application/json", apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
-        body: JSON.stringify({ action: "claim", name: cleanName(name), password: hashed }),
+        body: JSON.stringify({ action: "claim", email: cleanName(name), password: hashed }),
       });
       const payload = (await response.json().catch(() => ({}))) as { error?: string };
       if (!response.ok) {
-        this.set({ error: payload.error === "taken" ? `${cleanName(name)} is taken.` : payload.error ?? "Could not claim that name." });
+        this.set({ error: payload.error === "taken" ? `${cleanName(name)} already has a password. Sign in, or use Forgotten?` : payload.error ?? "Could not claim that address." });
         return false;
       }
       return await this.signIn(name, password);
@@ -320,6 +329,50 @@ class AccountStore {
     } catch {
       this.set({ error: "Could not reach the account. Try again when the network is back." });
       return false;
+    } finally {
+      this.set({ busy: false });
+    }
+  };
+
+  /** Forgotten? Supabase sends a reset link to the address; it lands back here. */
+  recover = async (email: string): Promise<boolean> => {
+    if (!this.client) return false;
+    if (!isValidName(email)) {
+      this.set({ error: "That does not look like an email address." });
+      return false;
+    }
+    this.set({ busy: true, error: null });
+    try {
+      const { error } = await this.client.auth.resetPasswordForEmail(cleanName(email), {
+        redirectTo: window.location.origin + window.location.pathname,
+      });
+      if (error) {
+        this.set({ error: error.message });
+        return false;
+      }
+      this.set({ resetSentTo: cleanName(email) });
+      return true;
+    } finally {
+      this.set({ busy: false });
+    }
+  };
+
+  /** After a reset link: the new password, any password. */
+  setNewPassword = async (next: string): Promise<boolean> => {
+    if (!this.client || !this.account.user) return false;
+    if (!next) {
+      this.set({ error: "A password is needed — any password." });
+      return false;
+    }
+    this.set({ busy: true, error: null });
+    try {
+      const { error } = await this.client.auth.updateUser({ password: await hashPassword(this.account.user.name, next) });
+      if (error) {
+        this.set({ error: error.message });
+        return false;
+      }
+      this.set({ recovering: false, notice: "Password set." });
+      return true;
     } finally {
       this.set({ busy: false });
     }
@@ -359,11 +412,11 @@ class AccountStore {
     }
   };
 
-  /** Change the name; the current password is asked once. The password stays the same word. */
+  /** Change the address; the current password is asked once. The password stays the same word. */
   changeName = async (current: string, next: string): Promise<boolean> => {
     if (!this.client || !this.account.user) return false;
     if (!isValidName(next)) {
-      this.set({ error: "A name is letters and numbers, with dots, dashes or underscores, up to 32 long." });
+      this.set({ error: "That does not look like an email address." });
       return false;
     }
     this.set({ busy: true, error: null });
@@ -381,11 +434,11 @@ class AccountStore {
           apikey: SUPABASE_KEY,
           Authorization: `Bearer ${check.data.session.access_token}`,
         },
-        body: JSON.stringify({ action: "rename", name: cleanName(next) }),
+        body: JSON.stringify({ action: "change_email", email: cleanName(next) }),
       });
       const payload = (await response.json().catch(() => ({}))) as { error?: string };
       if (!response.ok) {
-        this.set({ error: payload.error === "taken" ? `${cleanName(next)} is taken.` : payload.error ?? "Could not change the name." });
+        this.set({ error: payload.error === "taken" ? `${cleanName(next)} already has an account.` : payload.error ?? "Could not change the address." });
         return false;
       }
       // The password hash is salted with the name, so it moves with it.

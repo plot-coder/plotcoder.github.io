@@ -257,15 +257,6 @@ export function GeneralBar({
               <button
                 type="button"
                 className="bar-icon"
-                onClick={onToggleTheme}
-                aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} canvas`}
-                data-tip={`Switch to ${theme === "dark" ? "light" : "dark"} canvas`}
-              >
-                <ThemeIcon className="bar-icon__svg" />
-              </button>
-              <button
-                type="button"
-                className="bar-icon"
                 onClick={onNewNote}
                 aria-label="New note"
                 data-tip="New note"
@@ -307,12 +298,22 @@ export function GeneralBar({
                   +, the percent, − and Fit above it; closed, it carries the percent. */}
               <span className="bar-wall">
                 {wallOpen ? (
-                  <div className="bar-fly" role="group" aria-label="Wall zoom">
+                  <div className="bar-fly" role="group" aria-label="The view">
                     <button type="button" className="bar-icon" onClick={onZoomIn} aria-label="Zoom in" data-tip="Zoom in">+</button>
                     <span className="bar-fly__pct">{Math.round(zoom * 100)}%</span>
                     <button type="button" className="bar-icon" onClick={onZoomOut} aria-label="Zoom out" data-tip="Zoom out">−</button>
                     <button type="button" className="bar-icon" onClick={() => { onFit(); setWallOpen(false); }} disabled={!canFit} aria-label="Fit the whole wall" data-tip="Fit the whole wall">
                       <FitIcon className="bar-icon__svg" />
+                    </button>
+                    <span className="bar-fly__rule" aria-hidden="true" />
+                    <button
+                      type="button"
+                      className="bar-icon"
+                      onClick={onToggleTheme}
+                      aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} canvas`}
+                      data-tip={`Switch to ${theme === "dark" ? "light" : "dark"} canvas`}
+                    >
+                      <ThemeIcon className="bar-icon__svg" />
                     </button>
                   </div>
                 ) : null}
@@ -321,8 +322,8 @@ export function GeneralBar({
                   className={`bar-icon bar-icon--wall ${wallOpen ? "is-on" : ""}`}
                   onClick={() => setWallOpen((current) => !current)}
                   aria-expanded={wallOpen}
-                  aria-label="The wall: zoom and fit"
-                  data-tip="The wall: zoom and fit"
+                  aria-label="The view: zoom, fit and canvas"
+                  data-tip="The view: zoom, fit and canvas"
                 >
                   <WallIcon className="bar-icon__svg" />
                   <span className="bar-icon__pct">{Math.round(zoom * 100)}%</span>

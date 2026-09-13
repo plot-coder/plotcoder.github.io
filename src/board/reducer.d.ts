@@ -8,6 +8,10 @@ export type NoteColor = (typeof NOTE_COLORS)[number];
 export declare const NOTE_RANKS: readonly ["scene", "beat"];
 export type NoteRank = (typeof NOTE_RANKS)[number];
 
+/** What an arrow means: what comes after what, or a setup and its payoff (R30). */
+export declare const ARROW_KINDS: readonly ["follows", "setup"];
+export type ArrowKind = (typeof ARROW_KINDS)[number];
+
 /** Length is measured in eighths of a page (D23). */
 export declare const EIGHTHS_PER_PAGE: number;
 export declare const DEFAULT_NOTE_EIGHTHS: number;
@@ -61,6 +65,8 @@ export type BoardArrow = {
   id: string;
   from: string;
   to: string;
+  /** "follows" unless the writer says the tail sets up the head. */
+  kind: ArrowKind;
 };
 
 export type BoardState = {
@@ -106,8 +112,10 @@ export type Command =
   | { type: "create_group"; title?: string; noteIds: string[] }
   | { type: "ungroup"; id: string }
   | { type: "rename_group"; id: string; title: string }
-  | { type: "create_arrow"; from: string; to: string }
+  | { type: "create_arrow"; from: string; to: string; kind?: ArrowKind }
   | { type: "delete_arrow"; id: string }
+  | { type: "set_arrow_kind"; id: string; kind: ArrowKind }
+  | { type: "new_board" }
   | { type: "add_character"; name: string; id?: string }
   | { type: "rename_character"; id: string; name: string }
   | { type: "remove_character"; id: string }

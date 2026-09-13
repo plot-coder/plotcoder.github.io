@@ -19,6 +19,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
   applyCommand,
+  ARROW_KINDS,
   boardEighths,
   countRanks,
   EIGHTHS_PER_PAGE,
@@ -29,10 +30,11 @@ import {
   NOTE_RANKS,
   seedState,
 } from "../src/board/reducer.js";
-import { describeRuns, readWall } from "../src/board/readWall.js";
+import { describeRuns, describeSetups, readWall } from "../src/board/readWall.js";
 
 const colorSchema = z.enum(NOTE_COLORS);
 const rankSchema = z.enum(NOTE_RANKS);
+const arrowKindSchema = z.enum(ARROW_KINDS);
 // Agents get pages, not eighths. Eighths are the storage unit (D23); asking a
 // model to convert is a needless chance to be wrong by a factor of eight.
 const pagesSchema = z.number().positive();
@@ -219,7 +221,7 @@ function summarize(state) {
   const arrows = state.arrows
     .map(
       (arrow) =>
-        `  - ${arrow.id} — ${arrow.from} → ${arrow.to}  ("${headline(arrow.from)}" → "${headline(arrow.to)}")`,
+        `  - ${arrow.id} [${arrow.kind ?? "follows"}] — ${arrow.from} → ${arrow.to}  ("${headline(arrow.from)}" ${arrow.kind === "setup" ? "sets up" : "→"} "${headline(arrow.to)}")`,
     )
     .join("\n");
 
@@ -486,6 +488,10 @@ server.registerTool(
       }`,
       "runs between beats:",
       ...(runs.length ? runs.map((line) => `  - ${line}`) : ["  (none)"]),
+      "setups and payoffs:",
+      ...(reading.setups.length
+        ? describeSetups(reading, state).map((line) => `  - ${line}`)
+        : ["  (no arrow is marked as a setup)"]),
       "questions the wall raises:",
       ...(reading.findings.length
         ? reading.findings.map((finding) => `  - [${finding.kind}] ${finding.text}`)
@@ -680,14 +686,15 @@ server.registerTool(
   {
     title: "Create arrow",
     description:
-      "Draw a directed arrow from one card to another to show what comes after what, or what sets up what. Arrows are one-way: A→B does not create B→A. If you want both, call this twice — that is two arrows, not one two-headed line. A card cannot point at itself, and the same direction cannot be drawn twice.",
-    inputSchema: { from: z.string(), to: z.string() },
+      "Draw a directed arrow from one card to another. kind 'follows' (the default) says what comes after what; kind 'setup' says the first card plants something the second pays off. Arrows are one-way: A→B does not create B→A. If you want both, call this twice — that is two arrows, not one two-headed line. A card cannot point at itself, and the same direction cannot be drawn twice, whatever its kind; use set_arrow_kind to change one.",
+    inputSchema: { from: z.string(), to: z.string(), kind: arrowKindSchema.optional() },
   },
   async (args) => {
     const { state, changed, result, live } = await commit({
       type: "create_arrow",
       from: args.from,
       to: args.to,
+      kind: args.kind,
     });
     if (!changed) {
       // Say which of the three reasons it was. "Something went wrong" makes an
@@ -703,7 +710,49 @@ server.registerTool(
               : "that arrow already exists";
       return ok(`No arrow drawn: ${why}. Call list_board to check.`);
     }
-    return ok(`Drew ${args.from} → ${args.to}${where(live)}.`, result);
+    return ok(
+      result.kind === "setup"
+        ? `Drew ${args.from} → ${args.to} as a setup${where(live)}.`
+        : `Drew ${args.from} → ${args.to}${where(live)}.`,
+      result,
+    );
+  },
+);
+
+server.registerTool(
+  "set_arrow_kind",
+  {
+    title: "Set arrow kind",
+    description:
+      "Change what an arrow means: 'follows' (what comes after what) or 'setup' (the tail plants something the head pays off). Needs the arrow's id from list_board.",
+    inputSchema: { id: z.string(), kind: arrowKindSchema },
+  },
+  async (args) => {
+    const { state, changed, live } = await commit({
+      type: "set_arrow_kind",
+      id: args.id,
+      kind: args.kind,
+    });
+    if (!changed) {
+      return state.arrows.some((arrow) => arrow.id === args.id)
+        ? ok(`That arrow is already '${args.kind}'.`)
+        : ok(`No arrow with id ${args.id}. Call list_board for the real ids.`);
+    }
+    return ok(`That arrow is now '${args.kind}'${where(live)}.`);
+  },
+);
+
+server.registerTool(
+  "new_board",
+  {
+    title: "New board",
+    description:
+      "Start an empty wall: removes every card, group, arrow and the cast, and clears the logline. The target length stays. This cannot be undone, so on a board that has work on it, ask the writer first and suggest Save project.",
+    inputSchema: {},
+  },
+  async () => {
+    const { live } = await commit({ type: "new_board" });
+    return ok(`The wall is empty${where(live)}. Set the logline, then start on the beats.`);
   },
 );
 

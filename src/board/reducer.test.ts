@@ -5,6 +5,7 @@ import {
   countRanks,
   DEFAULT_NOTE_EIGHTHS,
   DEFAULT_TARGET_EIGHTHS,
+  EIGHTHS_PER_PAGE,
   emptyState,
   formatPages,
   isBoardState,
@@ -886,5 +887,67 @@ describe("characters (R29)", () => {
     expect(fixed.characters.map((character) => character.id)).toEqual(["m"]);
     expect(fixed.notes[0].characterIds).toEqual(["m"]);
     expect(normalizeState(state)).toBe(state);
+  });
+});
+
+describe("typed arrows (R30)", () => {
+  const board = () => boardOf({ id: "a", x: 0, y: 0 }, { id: "b", x: 300, y: 0 });
+
+  it("draws 'follows' unless told otherwise, and ignores a kind it does not know", () => {
+    const plain = applyCommand(board(), { type: "create_arrow", from: "a", to: "b" }, NOW);
+    expect(plain.state.arrows[0].kind).toBe("follows");
+    const setup = applyCommand(
+      board(),
+      { type: "create_arrow", from: "a", to: "b", kind: "setup" },
+      NOW,
+    );
+    expect(setup.state.arrows[0].kind).toBe("setup");
+    const odd = applyCommand(
+      board(),
+      { type: "create_arrow", from: "a", to: "b", kind: "label" as never },
+      NOW,
+    );
+    expect(odd.state.arrows[0].kind).toBe("follows");
+  });
+
+  it("keeps one arrow per direction whatever the kind", () => {
+    const state = run(board(), { type: "create_arrow", from: "a", to: "b", kind: "setup" });
+    const again = applyCommand(state, { type: "create_arrow", from: "a", to: "b" }, NOW);
+    expect(again.changed).toBe(false);
+    expect(again.state).toBe(state);
+  });
+
+  it("changes an arrow's kind, and is a no-op for the same kind or an unknown arrow", () => {
+    const state = run(board(), { type: "create_arrow", from: "a", to: "b" });
+    const id = state.arrows[0].id;
+    const changed = applyCommand(state, { type: "set_arrow_kind", id, kind: "setup" }, NOW);
+    expect(changed.changed).toBe(true);
+    expect(changed.state.arrows[0]).toMatchObject({ id, from: "a", to: "b", kind: "setup" });
+    expect(applyCommand(changed.state, { type: "set_arrow_kind", id, kind: "setup" }, NOW).changed).toBe(false);
+    expect(applyCommand(state, { type: "set_arrow_kind", id: "nope", kind: "setup" }, NOW).changed).toBe(false);
+  });
+
+  it("normalizeState gives a pre-kind arrow 'follows' and leaves a kinded one alone", () => {
+    const state = run(board(), { type: "create_arrow", from: "a", to: "b", kind: "setup" });
+    const old = {
+      ...state,
+      arrows: [{ id: "x", from: "a", to: "b" }],
+    } as unknown as BoardState;
+    expect(normalizeState(old).arrows[0]).toEqual({ id: "x", from: "a", to: "b", kind: "follows" });
+    expect(normalizeState(state)).toBe(state);
+  });
+});
+
+describe("new_board", () => {
+  it("empties everything but the target", () => {
+    const state = run(
+      seedState(NOW),
+      { type: "set_logline", logline: "Can Maya forgive?" },
+      { type: "set_target", targetEighths: 60 * EIGHTHS_PER_PAGE },
+      { type: "create_arrow", from: "maya-letter", to: "tom-lies" },
+    );
+    const fresh = applyCommand(state, { type: "new_board" }, NOW);
+    expect(fresh.changed).toBe(true);
+    expect(fresh.state).toEqual({ ...emptyState(), targetEighths: 60 * EIGHTHS_PER_PAGE });
   });
 });

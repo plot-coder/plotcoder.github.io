@@ -1,5 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from "react";
-import { describeRuns, readWall } from "./board/readWall";
+import { describeRuns, describeSetups, readWall } from "./board/readWall";
 import { type BoardState } from "./board/reducer";
 import {
   createReminder,
@@ -23,6 +23,7 @@ export function RemindersModal({ open, board, onOpen, onClose }: RemindersModalP
   // while the modal is open — it is a pass over every card and every pair.
   const reading = useMemo(() => (open ? readWall(board) : null), [open, board]);
   const runs = reading ? describeRuns(reading, board) : [];
+  const setups = reading ? describeSetups(reading, board) : [];
   const closeRef = useRef<HTMLButtonElement>(null);
   const [reminders, setReminders] = useState<Reminder[]>(readReminders);
   const [draft, setDraft] = useState("");
@@ -121,6 +122,13 @@ export function RemindersModal({ open, board, onOpen, onClose }: RemindersModalP
                 {runs.length > 0 ? (
                   <ul className="wall-read__runs" aria-label="Runs between beats">
                     {runs.map((line) => (
+                      <li key={line}>{line}</li>
+                    ))}
+                  </ul>
+                ) : null}
+                {setups.length > 0 ? (
+                  <ul className="wall-read__runs" aria-label="Setups and payoffs">
+                    {setups.map((line) => (
                       <li key={line}>{line}</li>
                     ))}
                   </ul>

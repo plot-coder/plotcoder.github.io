@@ -129,6 +129,23 @@ export function readWall(state) {
   const findings = [];
   const byId = new Map(state.notes.map((note) => [note.id, note]));
   const headline = (id) => (id ? byId.get(id)?.headline ?? id : null);
+  const position = new Map(order.map((note, index) => [note.id, index]));
+
+  // Setups (R30): where each one is planted and paid off, in pages.
+  const startAt = new Map();
+  let offset = 0;
+  for (const note of order) {
+    startAt.set(note.id, offset);
+    offset += note.lengthEighths;
+  }
+  const setups = state.arrows
+    .filter((arrow) => arrow.kind === "setup" && byId.has(arrow.from) && byId.has(arrow.to))
+    .map((arrow) => ({
+      id: arrow.id,
+      from: arrow.from,
+      to: arrow.to,
+      eighths: startAt.get(arrow.to) - startAt.get(arrow.from),
+    }));
 
   // Step 2 has not been done, so step 4 cannot read runs. A fact, not a nudge.
   if (state.notes.length > 0 && beats.length === 0) {
@@ -204,6 +221,18 @@ export function readWall(state) {
     }
   }
 
+  // A payoff that lands before its setup. The wall gives the order (D20), so
+  // if the arrow and the wall disagree, one of them is wrong — ask which.
+  for (const setup of setups) {
+    if (position.get(setup.to) < position.get(setup.from)) {
+      findings.push({
+        kind: "backwards",
+        ids: [setup.id, setup.from, setup.to],
+        text: `${quote(byId.get(setup.from))} sets up ${quote(byId.get(setup.to))}, but on the wall the payoff comes first. Which order do you mean?`,
+      });
+    }
+  }
+
   // The cast (R29): someone who vanishes for a stretch, or never appears.
   const total = boardEighths(state);
   const at = new Map();
@@ -255,8 +284,24 @@ export function readWall(state) {
     order: order.map((note) => note.id),
     beats: beats.map((note) => ({ id: note.id, headline: note.headline })),
     runs,
+    setups,
     findings,
   };
+}
+
+/** The setups as prose lines: what plants what, and how far apart. */
+export function describeSetups(reading, state) {
+  const byId = new Map(state.notes.map((note) => [note.id, note]));
+  const name = (id) => byId.get(id)?.headline ?? id;
+  return reading.setups.map((setup) => {
+    const distance =
+      setup.eighths > 0
+        ? `about ${pages(setup.eighths)} pages later`
+        : setup.eighths === 0
+          ? "in the same place on the wall"
+          : `about ${pages(-setup.eighths)} pages earlier`;
+    return `"${name(setup.from)}" sets up "${name(setup.to)}", ${distance}`;
+  });
 }
 
 /** The reading as prose lines, shared by the modal and the MCP tool. */

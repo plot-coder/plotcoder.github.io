@@ -15,6 +15,12 @@ export const NOTE_COLORS = ["yellow", "pink", "blue", "green", "orange"];
 // why "scene" is first: it is the default a card is born with (R20/R21).
 export const NOTE_RANKS = ["scene", "beat"];
 
+// An arrow says what kind of link it is (R15, P16). "follows" is what comes
+// after what — the default, and the only kind there was. "setup" says the card
+// at the tail plants something the card at the head pays off. A kind is not a
+// label: R15 keeps free text off arrows on purpose.
+export const ARROW_KINDS = ["follows", "setup"];
+
 // Characters are a board-level roster (D26): one record per person, referenced
 // from cards by id, so a name changes in one place and the same person is the
 // same person on every card. Long term the record grows — what they look like,
@@ -171,6 +177,16 @@ export function normalizeState(value) {
     MAX_TARGET_EIGHTHS,
   );
 
+  // Arrows written before R30 have no kind. They are "follows": a setup is a
+  // claim you make deliberately, so the default has to be the one that claims
+  // nothing.
+  let arrowsPatched = false;
+  const arrows = value.arrows.map((arrow) => {
+    if (arrow && ARROW_KINDS.includes(arrow.kind)) return arrow;
+    arrowsPatched = true;
+    return { ...arrow, kind: "follows" };
+  });
+
   // Boards written before R29 have no roster. A card's cast is filtered to the
   // roster, so a dangling id (a character removed by an older build) is dropped
   // rather than left to point at nobody.
@@ -210,6 +226,7 @@ export function normalizeState(value) {
     value.logline === logline &&
     value.targetEighths === targetEighths &&
     !rosterPatched &&
+    !arrowsPatched &&
     !patched
   ) {
     return value;
@@ -220,6 +237,7 @@ export function normalizeState(value) {
     targetEighths,
     characters,
     notes: patched ? notes : value.notes,
+    arrows: arrowsPatched ? arrows : value.arrows,
   };
 }
 
@@ -504,11 +522,38 @@ export function applyCommand(state, command, now = nowIso()) {
       if (state.arrows.some((arrow) => arrow.from === command.from && arrow.to === command.to)) {
         return { state, changed: false };
       }
-      const arrow = { id: newId(), from: command.from, to: command.to };
+      const arrow = {
+        id: newId(),
+        from: command.from,
+        to: command.to,
+        kind: ARROW_KINDS.includes(command.kind) ? command.kind : "follows",
+      };
       return {
         state: { ...state, arrows: [...state.arrows, arrow] },
         changed: true,
         result: arrow,
+      };
+    }
+
+    case "set_arrow_kind": {
+      const kind = ARROW_KINDS.includes(command.kind) ? command.kind : "follows";
+      let changedArrow;
+      const arrows = state.arrows.map((arrow) => {
+        if (arrow.id !== command.id || arrow.kind === kind) return arrow;
+        changedArrow = { ...arrow, kind };
+        return changedArrow;
+      });
+      if (!changedArrow) return { state, changed: false };
+      return { state: { ...state, arrows }, changed: true, result: changedArrow };
+    }
+
+    // A fresh wall. Everything goes, including the cast and the logline; the
+    // target stays, because it belongs to the kind of thing you are writing,
+    // not to the cards you had.
+    case "new_board": {
+      return {
+        state: { ...emptyState(), targetEighths: state.targetEighths ?? DEFAULT_TARGET_EIGHTHS },
+        changed: true,
       };
     }
 

@@ -7,7 +7,7 @@ import {
 } from "react";
 import { arrowLayout, noteAtPoint, previewPath } from "./arrowGeometry";
 import { NoteCard } from "./NoteCard";
-import { type BoardCharacter } from "./board/reducer";
+import { type ArrowKind, type BoardCharacter } from "./board/reducer";
 import {
   NOTE_HEIGHT,
   NOTE_WIDTH,
@@ -30,7 +30,7 @@ type DragState =
   | { kind: "note"; id: string; offsetX: number; offsetY: number }
   | { kind: "group"; id: string; lastX: number; lastY: number }
   | { kind: "lasso"; x: number; y: number; w: number; h: number }
-  | { kind: "arrow"; fromId: string; x: number; y: number; hoverId: string | null }
+  | { kind: "arrow"; fromId: string; x: number; y: number; hoverId: string | null; setup: boolean }
   | { kind: "pan"; lastX: number; lastY: number };
 
 type NoteBoardProps = {
@@ -51,8 +51,9 @@ type NoteBoardProps = {
   onRaise: (id: string) => void;
   onSelect: (ids: string[]) => void;
   onSelectArrow: (id: string | null) => void;
-  onAddArrow: (from: string, to: string) => void;
+  onAddArrow: (from: string, to: string, kind: ArrowKind) => void;
   onDeleteArrow: (id: string) => void;
+  onSetArrowKind: (id: string, kind: ArrowKind) => void;
   onGroup: () => void;
   onUngroup: (id: string) => void;
   onRenameGroup: (id: string, title: string) => void;
@@ -125,6 +126,7 @@ export function NoteBoard({
   onSelectArrow,
   onAddArrow,
   onDeleteArrow,
+  onSetArrowKind,
   onGroup,
   onUngroup,
   onRenameGroup,
@@ -268,7 +270,15 @@ export function NoteBoard({
     const point = boardPoint(event, boardRef.current, view);
     onSelect([]);
     onSelectArrow(null);
-    setDrag({ kind: "arrow", fromId: note.id, x: point.x, y: point.y, hoverId: null });
+    // Shift while drawing makes it a setup: the tail plants, the head pays off.
+    setDrag({
+      kind: "arrow",
+      fromId: note.id,
+      x: point.x,
+      y: point.y,
+      hoverId: null,
+      setup: event.shiftKey,
+    });
   }
 
   function movePointer(event: PointerEvent<HTMLDivElement>) {
@@ -310,6 +320,7 @@ export function NoteBoard({
         x: point.x,
         y: point.y,
         hoverId: hover && hover.id !== drag.fromId ? hover.id : null,
+        setup: drag.setup || event.shiftKey,
       });
       return;
     }
@@ -325,7 +336,9 @@ export function NoteBoard({
     const wasEditing =
       drag?.kind === "note" || drag?.kind === "group" || drag?.kind === "arrow";
     if (drag?.kind === "note") onNoteDropped(drag.id);
-    if (drag?.kind === "arrow" && drag.hoverId) onAddArrow(drag.fromId, drag.hoverId);
+    if (drag?.kind === "arrow" && drag.hoverId) {
+      onAddArrow(drag.fromId, drag.hoverId, drag.setup ? "setup" : "follows");
+    }
     if (drag?.kind === "lasso") {
       const box = {
         x: Math.min(drag.x, drag.x + drag.w),
@@ -447,7 +460,7 @@ export function NoteBoard({
           return (
             <g
               key={arrow.id}
-              className={`note-arrow ${arrow.id === selectedArrowId ? "is-selected" : ""}`}
+              className={`note-arrow note-arrow--${arrow.kind} ${arrow.id === selectedArrowId ? "is-selected" : ""}`}
             >
               <path
                 className="note-arrow__hit"
@@ -468,7 +481,7 @@ export function NoteBoard({
         })}
         {drag?.kind === "arrow" && drawingFrom ? (
           <path
-            className="note-arrow__preview"
+            className={`note-arrow__preview ${drag.setup ? "note-arrow__preview--setup" : ""}`}
             d={previewPath(drawingFrom, { x: drag.x, y: drag.y })}
             markerEnd="url(#note-arrow-head)"
           />
@@ -510,16 +523,37 @@ export function NoteBoard({
         </button>
       ) : null}
 
-      {selectedLayout ? (
-        <button
-          type="button"
-          className="arrow-remove"
+      {selectedLayout && selectedArrow ? (
+        <div
+          className="arrow-chips"
           style={{ left: selectedLayout.mid.x, top: selectedLayout.mid.y }}
           onPointerDown={(event) => event.stopPropagation()}
-          onClick={() => onDeleteArrow(selectedArrowId!)}
         >
-          Remove
-        </button>
+          {/* What the arrow means (R30). A setup is a claim, so the chip reads
+              as the claim: press it to say this card sets that one up. */}
+          <button
+            type="button"
+            className={`arrow-chip ${selectedArrow.kind === "setup" ? "is-on" : ""}`}
+            aria-pressed={selectedArrow.kind === "setup"}
+            title={
+              selectedArrow.kind === "setup"
+                ? "A setup: the first card plants what the second pays off. Press to make it plain sequence."
+                : "Press to mark this as a setup and its payoff."
+            }
+            onClick={() =>
+              onSetArrowKind(selectedArrow.id, selectedArrow.kind === "setup" ? "follows" : "setup")
+            }
+          >
+            Sets up
+          </button>
+          <button
+            type="button"
+            className="arrow-chip arrow-chip--remove"
+            onClick={() => onDeleteArrow(selectedArrowId!)}
+          >
+            Remove
+          </button>
+        </div>
       ) : null}
       </div>
     </div>

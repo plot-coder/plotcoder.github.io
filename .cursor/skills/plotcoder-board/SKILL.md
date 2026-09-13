@@ -21,7 +21,9 @@ The board holds five kinds of thing:
 - **length** — how many pages a card runs. An unsized card is taken to be about
   one page. Like rank, it belongs to the card and never moves it.
 - **groups** — a named frame around two or more cards: a sequence, a set piece.
-- **arrows** — directed links between cards: what follows what, what sets up what.
+- **arrows** — directed links between cards, each with a `kind`: `follows` (what
+  comes after what, the default) or `setup` (the tail plants what the head pays
+  off).
 - **cast** — the roster: every person in the story, one record each with an id.
   A card says who is in the scene by pointing at people in the roster.
 
@@ -45,7 +47,8 @@ lands on the exact same board a person sees.
   out of proportion with the others, a card with no change line, a card no arrow
   touches, two headlines that read like the same scene, a group too long to be
   one sequence, a person in the cast who is on no card, a person gone for more
-  than a third of the story. Put the questions to the writer. Do not act on them
+  than a third of the story, a payoff that comes before its setup on the wall.
+  It also lists every setup with the distance to its payoff. Put the questions to the writer. Do not act on them
   unasked, and do not add an opinion about the number of beats.
 
 ### Cards
@@ -77,8 +80,14 @@ lands on the exact same board a person sees.
 - `set_target` — target script length in `pages`: 120 feature, 60 hour, 30 half.
 - `create_group` — frame two or more cards, with an optional `title`.
 - `rename_group` / `ungroup` — by group id. Ungrouping leaves the cards alone.
-- `create_arrow` — a directed arrow, `from` → `to`.
+- `create_arrow` — a directed arrow, `from` → `to`, with an optional `kind`
+  (`follows` or `setup`).
+- `set_arrow_kind` — change an arrow's kind by id. One arrow per direction, so
+  change the kind rather than drawing it again.
 - `delete_arrow` — by arrow id. Removes that direction only.
+- `new_board` — an empty wall. **Destructive**: every card, group, arrow and
+  the cast go. On a wall with work on it, ask the writer first and suggest Save
+  project.
 
 ## Workflow
 

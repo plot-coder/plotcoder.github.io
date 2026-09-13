@@ -6,7 +6,7 @@ import {
   type BoardState,
   type Command,
 } from "./reducer";
-import { describeRuns, readingOrder, readWall } from "./readWall";
+import { describeRuns, describeSetups, readingOrder, readWall } from "./readWall";
 
 const NOW = "2026-01-01T00:00:00.000Z";
 
@@ -128,7 +128,7 @@ describe("findings", () => {
 
   it("returns nothing at all for an empty board", () => {
     const reading = readWall(emptyState());
-    expect(reading).toEqual({ order: [], beats: [], runs: [], findings: [] });
+    expect(reading).toEqual({ order: [], beats: [], runs: [], setups: [], findings: [] });
   });
 
   it("notes that runs cannot be read until a beat is marked, and passes no judgement on the count", () => {
@@ -310,6 +310,46 @@ describe("findings", () => {
       { type: "set_cast", ids: ["b1", "b2", "b3"], characterIds: ["m"] },
     );
     expect(readWall(state).findings.filter((f) => f.kind === "absent")).toEqual([]);
+  });
+
+  it("reads setups with the distance to their payoff, and says nothing when they run forward", () => {
+    const state = run(
+      wall(
+        { id: "b1", rank: "beat", headline: "The gun on the wall" },
+        { id: "s1", pages: 3 },
+        { id: "s2", pages: 2 },
+        { id: "b2", rank: "beat", headline: "The gun goes off" },
+      ),
+      { type: "create_arrow", from: "b1", to: "b2", kind: "setup" },
+      { type: "create_arrow", from: "b1", to: "s1" },
+    );
+    const reading = readWall(state);
+    expect(reading.setups).toEqual([
+      { id: state.arrows[0].id, from: "b1", to: "b2", eighths: 6 * 8 },
+    ]);
+    expect(describeSetups(reading, state)).toEqual([
+      '"The gun on the wall" sets up "The gun goes off", about 6 pages later',
+    ]);
+    expect(reading.findings.filter((f) => f.kind === "backwards")).toEqual([]);
+  });
+
+  it("asks which order is meant when a payoff comes before its setup on the wall", () => {
+    const state = run(
+      wall(
+        { id: "b1", rank: "beat", headline: "The gun goes off" },
+        { id: "s1" },
+        { id: "b2", rank: "beat", headline: "The gun on the wall" },
+      ),
+      { type: "create_arrow", from: "b2", to: "b1", kind: "setup" },
+    );
+    const reading = readWall(state);
+    const backwards = reading.findings.filter((f) => f.kind === "backwards");
+    expect(backwards).toHaveLength(1);
+    expect(backwards[0].ids).toEqual([state.arrows[0].id, "b2", "b1"]);
+    expect(backwards[0].text).toBe(
+      '"The gun on the wall" sets up "The gun goes off", but on the wall the payoff comes first. Which order do you mean?',
+    );
+    expect(describeSetups(reading, state)[0]).toContain("about 2 pages earlier");
   });
 
   it("never mutates the state it reads", () => {

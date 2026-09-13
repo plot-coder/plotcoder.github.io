@@ -137,11 +137,13 @@ describe("plotcoder MCP server", () => {
       "delete_note",
       "list_board",
       "move_note",
+      "new_board",
       "read_wall",
       "recolor_note",
       "remove_character",
       "rename_character",
       "rename_group",
+      "set_arrow_kind",
       "set_length",
       "set_logline",
       "set_rank",
@@ -756,5 +758,67 @@ describe("characters", () => {
     await cast.callTool("add_character", { name: "The landlord" });
     const text = await cast.callTool("read_wall");
     expect(text).toContain("[uncast] The landlord is in the cast but on no card. Where do they come in?");
+  });
+});
+
+// Typed arrows (R30): a setup and its payoff, and a fresh wall.
+describe("typed arrows and new_board", () => {
+  let typed;
+  let typedRoot;
+
+  beforeAll(async () => {
+    typedRoot = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-typed-"));
+    typed = new McpClient(typedRoot);
+    await typed.start();
+  }, 30000);
+
+  afterAll(() => {
+    typed?.stop();
+    if (typedRoot) fs.rmSync(typedRoot, { recursive: true, force: true });
+  });
+
+  it("draws a setup arrow and lists it as one", async () => {
+    const text = await typed.callTool("create_arrow", {
+      from: "maya-letter",
+      to: "letter-aloud",
+      kind: "setup",
+    });
+    expect(text).toContain("as a setup");
+    const listed = await typed.callTool("list_board");
+    expect(listed).toContain('[setup] — maya-letter → letter-aloud  ("Maya finds the letter" sets up "The letter is read aloud")');
+  });
+
+  it("refuses the same direction again even with a different kind, and changes the kind instead", async () => {
+    const dup = await typed.callTool("create_arrow", { from: "maya-letter", to: "letter-aloud" });
+    expect(dup).toContain("that arrow already exists");
+    const { arrows } = await typed.callToolData("list_board");
+    const changed = await typed.callTool("set_arrow_kind", { id: arrows[0].id, kind: "follows" });
+    expect(changed).toContain("now 'follows'");
+    expect(await typed.callTool("set_arrow_kind", { id: arrows[0].id, kind: "follows" })).toContain("already 'follows'");
+    await typed.callTool("set_arrow_kind", { id: arrows[0].id, kind: "setup" });
+  });
+
+  it("read_wall reports setups with their distance, and asks about one that runs backwards", async () => {
+    const reading = await typed.callTool("read_wall");
+    // maya-letter (y 120) reads before letter-aloud (y 340): forward, two pages apart.
+    expect(reading).toContain('"Maya finds the letter" sets up "The letter is read aloud", about 2 pages later');
+
+    await typed.callTool("create_arrow", { from: "letter-aloud", to: "tom-lies", kind: "setup" });
+    const again = await typed.callTool("read_wall");
+    expect(again).toContain(
+      '[backwards] "The letter is read aloud" sets up "Tom lies about the job", but on the wall the payoff comes first. Which order do you mean?',
+    );
+  });
+
+  it("new_board empties the wall but keeps the target", async () => {
+    await typed.callTool("set_target", { pages: 60 });
+    const text = await typed.callTool("new_board");
+    expect(text).toContain("The wall is empty");
+    const board = await typed.callToolData("list_board");
+    expect(board.notes).toEqual([]);
+    expect(board.arrows).toEqual([]);
+    expect(board.characters).toEqual([]);
+    expect(board.logline).toBe("");
+    expect(board.targetEighths).toBe(60 * 8);
   });
 });

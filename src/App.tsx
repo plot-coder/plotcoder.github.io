@@ -12,6 +12,7 @@ import {
   boardEighths,
   countRanks,
   EIGHTHS_PER_PAGE,
+  type ArrowKind,
   type BoardCharacter,
 } from "./board/reducer";
 import {
@@ -272,8 +273,12 @@ export function App() {
     if (id) setSelectedIds([]);
   }
 
-  function addArrow(from: string, to: string) {
-    boardStore.dispatch({ type: "create_arrow", from, to });
+  function addArrow(from: string, to: string, kind: ArrowKind) {
+    boardStore.dispatch({ type: "create_arrow", from, to, kind });
+  }
+
+  function setArrowKind(id: string, kind: ArrowKind) {
+    boardStore.dispatch({ type: "set_arrow_kind", id, kind });
   }
 
   function deleteArrow(id: string) {
@@ -346,6 +351,7 @@ export function App() {
         onSelectArrow={selectArrow}
         onAddArrow={addArrow}
         onDeleteArrow={deleteArrow}
+        onSetArrowKind={setArrowKind}
         onGroup={groupSelected}
         onUngroup={ungroup}
         onRenameGroup={renameGroup}

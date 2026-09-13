@@ -21,11 +21,13 @@ export type FindingKind =
   /** A character in the roster who is on no card. */
   | "uncast"
   /** A character gone for more than a third of the story between two appearances. */
-  | "absent";
+  | "absent"
+  /** A setup arrow whose payoff comes before its setup on the wall. */
+  | "backwards";
 
 export type Finding = {
   kind: FindingKind;
-  /** Card ids; a group id for "sequence"; a character id (then card ids) for "uncast" and "absent". Empty for "unmarked". */
+  /** Card ids; a group id for "sequence"; a character id (then card ids) for "uncast" and "absent"; an arrow id (then card ids) for "backwards". Empty for "unmarked". */
   ids: string[];
   /** The question, written for a writer. */
   text: string;
@@ -39,11 +41,15 @@ export type Run = {
   cards: number;
 };
 
+/** A setup arrow, with the distance from where it is planted to where it pays off. Negative means backwards. */
+export type Setup = { id: string; from: string; to: string; eighths: number };
+
 export type WallReading = {
   /** Every card id in reading order. */
   order: string[];
   beats: Array<{ id: string; headline: string }>;
   runs: Run[];
+  setups: Setup[];
   findings: Finding[];
 };
 
@@ -51,3 +57,4 @@ export type WallReading = {
 export declare function readingOrder(notes: BoardNote[]): BoardNote[];
 export declare function readWall(state: BoardState): WallReading;
 export declare function describeRuns(reading: WallReading, state: BoardState): string[];
+export declare function describeSetups(reading: WallReading, state: BoardState): string[];

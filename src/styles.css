@@ -1261,22 +1261,45 @@ body {
   stroke-dasharray: 5 4;
 }
 
-.arrow-remove {
+/* A setup is drawn as a dashed line: the same arrow, said differently. It
+   reads at a glance without a label, which R15 keeps off arrows (R30). */
+.note-arrow--setup .note-arrow__line {
+  stroke-dasharray: 7 5;
+}
+
+.note-arrow__preview--setup {
+  stroke-dasharray: 2 4;
+}
+
+/* The chips at the middle of a selected arrow: what it means, and Remove. */
+.arrow-chips {
   position: absolute;
   z-index: 46;
+  display: flex;
+  gap: 0.3rem;
   transform: translate(-50%, -50%);
+}
+
+.arrow-chip {
   min-height: 1.7rem;
   padding: 0 0.7rem;
-  border: 0;
+  border: 1px solid var(--ink);
   border-radius: 999px;
-  background: var(--ink);
-  color: var(--canvas);
+  background: var(--canvas);
+  color: var(--ink);
   font-family: ui-sans-serif, system-ui, sans-serif;
   font-size: 0.68rem;
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
+  white-space: nowrap;
   cursor: pointer;
+}
+
+.arrow-chip.is-on,
+.arrow-chip--remove {
+  background: var(--ink);
+  color: var(--canvas);
 }
 
 /* --- The cast (R29) ------------------------------------------------------ */

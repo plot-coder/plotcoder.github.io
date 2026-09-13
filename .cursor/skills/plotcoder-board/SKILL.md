@@ -91,6 +91,10 @@ lands on the exact same board a person sees.
 - `set_arrow_kind` — change an arrow's kind by id. One arrow per direction, so
   change the kind rather than drawing it again.
 - `delete_arrow` — by arrow id. Removes that direction only.
+- `organize` — tidy the wall along the arrows: story order from the `follows`
+  arrows, a row per beat with the scenes that follow it, groups kept together.
+  Pass `noteIds` to tidy only those. Prefer it to moving cards one by one, and
+  draw the arrows first — it is the arrows that make the layout right.
 - `new_board` — an empty wall. **Destructive**: every card, group, arrow and
   the cast go. On a wall with work on it, ask the writer first and suggest Save
   project.
@@ -106,8 +110,9 @@ lands on the exact same board a person sees.
    edit, group, or arrow. Never guess ids.
 2. Give every card a real `headline` and `change` — not placeholders. A card
    whose change line is empty is a card that has not earned its place.
-3. To lay cards out, `move_note` each one. Cards are 192px; leave ~30px gaps for
-   a readable row.
+3. To lay cards out, draw the arrows and call `organize`. Use `move_note` only
+   for a card that belongs somewhere the arrows do not say. Cards are 192px;
+   leave ~30px gaps for a readable row.
 4. Mark the major turns with `set_rank`. Marking a beat never moves it.
 5. Leave lengths alone unless you are told one or the card plainly states it (a
    montage, a one-line sting, a long set piece). The estimate is the writer's.
@@ -147,8 +152,7 @@ edits appear in real time; the change is already saved either way.
 
 ## Not available to agents
 
-- **Organize** and **Scatter** are UI-layer layout actions, not kernel commands.
-  Lay cards out with `move_note` instead.
+- **Scatter** is a UI-layer action with no tool; undo covers it.
 - The **series premise** and **Reminders** live in browser storage, not in the
   board record, so no tool can reach them.
 - **Pan and zoom** are per-viewer state and are deliberately not board data.

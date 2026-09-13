@@ -7,7 +7,7 @@ import {
   type BoardState,
   type Command,
 } from "./board/reducer";
-import { beatLabels, pageTicks, storyMapLayout, xFor } from "./storyMapLayout";
+import { axisSpan, beatLabels, pageTicks, storyMapLayout, xFor } from "./storyMapLayout";
 
 const NOW = "2026-01-01T00:00:00.000Z";
 
@@ -55,9 +55,14 @@ describe("storyMapLayout", () => {
       ["s1", 16, 24],
       ["b2", 40, 8],
     ]);
+    expect(layout.cards.map((card) => card.number)).toEqual([1, null, 2]);
+    expect(layout.cards[0]).toMatchObject({ change: "Something changes.", color: "yellow" });
     expect(layout.totalEighths).toBe(48);
     expect(layout.targetEighths).toBe(120 * EIGHTHS_PER_PAGE);
-    expect(layout.spanEighths).toBe(120 * EIGHTHS_PER_PAGE);
+    // Six pages of story on a 120-page target: the axis fits the story, not
+    // the target, so it never runs shorter than ten pages.
+    expect(layout.spanEighths).toBe(10 * EIGHTHS_PER_PAGE);
+    expect(layout.targetInRange).toBe(false);
   });
 
   it("runs the axis past the target when the story is longer than it", () => {
@@ -66,6 +71,22 @@ describe("storyMapLayout", () => {
       targetEighths: 20 * EIGHTHS_PER_PAGE,
     });
     expect(layoutOf(state).spanEighths).toBe(30 * EIGHTHS_PER_PAGE);
+    expect(layoutOf(state).targetInRange).toBe(true);
+  });
+
+  it("grows the axis with the story until the target comes into view, then holds", () => {
+    const P = EIGHTHS_PER_PAGE;
+    // Short: a quarter of headroom over the story.
+    expect(axisSpan(40 * P, 120 * P)).toBe(50 * P);
+    expect(axisSpan(80 * P, 120 * P)).toBe(100 * P);
+    // Near: the target is within the headroom, so the axis holds at it.
+    expect(axisSpan(100 * P, 120 * P)).toBe(120 * P);
+    expect(axisSpan(120 * P, 120 * P)).toBe(120 * P);
+    // Over: the axis follows the story again.
+    expect(axisSpan(130 * P, 120 * P)).toBe(130 * P);
+    // Never shorter than ten pages.
+    expect(axisSpan(0, 120 * P)).toBe(10 * P);
+    expect(axisSpan(3 * P, 120 * P)).toBe(10 * P);
   });
 
   it("draws a band for each run between beats and marks the one read the wall asked about", () => {
@@ -101,11 +122,23 @@ describe("storyMapLayout", () => {
     expect(layout.unpaid).toEqual(["s1"]);
   });
 
+  it("carries groups as page spans, and the cast by name", () => {
+    const state = run(
+      wall({ id: "a", pages: 2 }, { id: "b", pages: 3 }, { id: "c" }),
+      { type: "create_group", title: "The heist", noteIds: ["a", "b"] },
+      { type: "add_character", id: "m", name: "Maya" },
+      { type: "set_cast", ids: ["c"], characterIds: ["m"] },
+    );
+    const layout = layoutOf(state);
+    expect(layout.groups).toEqual([{ id: state.groups[0].id, title: "The heist", start: 0, end: 40 }]);
+    expect(layout.cards[2].castNames).toEqual(["Maya"]);
+  });
+
   it("gives an empty board an axis one page long and nothing on it", () => {
     const layout = layoutOf(emptyState());
     expect(layout.cards).toEqual([]);
     expect(layout.bands).toEqual([]);
-    expect(layout.spanEighths).toBe(120 * EIGHTHS_PER_PAGE);
+    expect(layout.spanEighths).toBe(10 * EIGHTHS_PER_PAGE);
   });
 });
 
@@ -121,49 +154,61 @@ describe("xFor and pageTicks", () => {
       0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120,
     ]);
     expect(pageTicks(30 * EIGHTHS_PER_PAGE).map((t) => t / 8)).toEqual([0, 5, 10, 15, 20, 25, 30]);
+    expect(pageTicks(10 * EIGHTHS_PER_PAGE).map((t) => t / 8)).toEqual([0, 2, 4, 6, 8, 10]);
   });
 });
 
 describe("beatLabels", () => {
-  const beat = (id: string, headline: string, page: number) => ({
+  const beat = (id: string, headline: string, page: number, number: number) => ({
     id,
     headline,
+    change: "",
+    color: "yellow" as const,
     beat: true,
+    number,
     plants: false,
     characterIds: [],
+    castNames: [],
     start: page * 8,
     length: 8,
   });
 
-  it("alternates rows and gives a label the room up to the next beat on its row", () => {
+  it("numbers every name and gives a label the room up to the next beat", () => {
     const beats = [
-      beat("a", "Inciting incident", 0),
-      beat("b", "Lock in", 20),
-      beat("c", "Midpoint", 60),
-      beat("d", "All is lost", 90),
+      beat("a", "Inciting incident", 0, 1),
+      beat("b", "Lock in", 20, 2),
+      beat("c", "Midpoint", 60, 3),
+      beat("d", "All is lost", 90, 4),
     ];
     const labels = beatLabels(beats, 120 * 8, 1200, 20);
-    expect(labels.map((label) => label.row)).toEqual([0, 1, 0, 1]);
     expect(labels.map((label) => label.text)).toEqual([
-      "Inciting incident",
-      "Lock in",
-      "Midpoint",
-      "All is lost",
+      "1 · Inciting incident",
+      "2 · Lock in",
+      "3 · Midpoint",
+      "4 · All is lost",
     ]);
   });
 
-  it("shortens a headline that will not fit, and falls back to the beat's number", () => {
+  it("shortens a headline that will not fit, and leaves the name off when even a few letters would not", () => {
     const beats = [
-      beat("a", "A very long headline for a beat", 0),
-      beat("b", "Second", 2),
-      beat("c", "Third beat here", 4),
-      beat("d", "Fourth", 6),
+      beat("a", "A very long headline for a beat", 0, 1),
+      beat("b", "Second", 2, 2),
+      beat("c", "Third beat here", 4, 3),
+      beat("d", "Fourth", 6, 4),
     ];
     const tight = beatLabels(beats, 120 * 8, 400, 10);
-    expect(tight[0].text).toBe("1");
-    expect(tight[1].text).toBe("2");
-    const roomy = beatLabels([beat("a", "A very long headline for a beat", 0), beat("b", "Next", 40), beat("c", "After", 60)], 120 * 8, 300, 10);
+    // Two pages apart on a 400px axis is a few pixels: no name fits, and the
+    // block's own number stands for it, so no label is made.
+    expect(tight.map((label) => label.id)).not.toContain("a");
+    expect(tight.map((label) => label.id)).not.toContain("b");
+    const roomy = beatLabels(
+      [beat("a", "A very long headline for a beat", 0, 1), beat("b", "Next", 30, 2)],
+      120 * 8,
+      500,
+      10,
+    );
+    expect(roomy[0].text.startsWith("1 · ")).toBe(true);
     expect(roomy[0].text.endsWith("…")).toBe(true);
-    expect(roomy[0].text.length).toBeLessThan("A very long headline for a beat".length);
+    expect(roomy[0].text.length).toBeLessThan("1 · A very long headline for a beat".length);
   });
 });

@@ -138,6 +138,7 @@ describe("plotcoder MCP server", () => {
       "list_board",
       "move_note",
       "new_board",
+      "organize",
       "read_wall",
       "recolor_note",
       "remove_character",
@@ -929,5 +930,56 @@ describe("undo", () => {
     const board = JSON.parse(fs.readFileSync(file(), "utf8")).state;
     expect(board.logline).toBe("Can Maya forgive?");
     expect(board.notes[0].headline).toBe("Maya finds the letter, again");
+  });
+});
+
+// Organize along the arrows (R34), through the agent door.
+describe("organize", () => {
+  let tidy;
+  let tidyRoot;
+
+  beforeAll(async () => {
+    tidyRoot = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-organize-"));
+    tidy = new McpClient(tidyRoot);
+    await tidy.start();
+    for (const seeded of ["maya-letter", "tom-lies", "letter-aloud"]) {
+      await tidy.callTool("delete_note", { id: seeded });
+    }
+    // Placed out of story order on purpose; the arrows say what follows what.
+    await tidy.callTool("create_note", { headline: "Lock in", change: "x", rank: "beat", x: 900, y: 500 });
+    await tidy.callTool("create_note", { headline: "Maya finds the letter", change: "x", rank: "beat", x: 100, y: 100 });
+    await tidy.callTool("create_note", { headline: "Tom lies", change: "x", x: 900, y: 100 });
+    await tidy.callTool("create_note", { headline: "Dinner", change: "x", x: 100, y: 500 });
+    const { notes } = await tidy.callToolData("list_board");
+    const id = (headline) => notes.find((note) => note.headline === headline).id;
+    await tidy.callTool("create_arrow", { from: id("Maya finds the letter"), to: id("Tom lies") });
+    await tidy.callTool("create_arrow", { from: id("Tom lies"), to: id("Dinner") });
+    await tidy.callTool("create_arrow", { from: id("Dinner"), to: id("Lock in") });
+  }, 30000);
+
+  afterAll(() => {
+    tidy?.stop();
+    if (tidyRoot) fs.rmSync(tidyRoot, { recursive: true, force: true });
+  });
+
+  it("lays the wall out along the arrows, a row per beat", async () => {
+    const text = await tidy.callTool("organize");
+    expect(text).toContain("Organized 4 card(s) along the arrows into 2 row(s), one per beat");
+    const { notes } = await tidy.callToolData("list_board");
+    const at = (headline) => notes.find((note) => note.headline === headline);
+    expect(at("Maya finds the letter")).toMatchObject({ x: 88, y: 110 });
+    expect(at("Tom lies").y).toBe(110);
+    expect(at("Dinner").y).toBe(110);
+    expect(at("Tom lies").x).toBeLessThan(at("Dinner").x);
+    expect(at("Lock in")).toMatchObject({ x: 88 });
+    expect(at("Lock in").y).toBeGreaterThan(110);
+  });
+
+  it("can tidy just a selection and says so", async () => {
+    const { notes } = await tidy.callToolData("list_board");
+    const ids = notes.filter((note) => note.headline !== "Lock in").map((note) => note.id);
+    const text = await tidy.callTool("organize", { noteIds: ids });
+    expect(text).toContain("Organized 3 card(s)");
+    expect(await tidy.callTool("undo")).toContain("Undid apply_poses");
   });
 });

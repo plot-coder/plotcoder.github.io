@@ -44,6 +44,7 @@ type NoteBoardProps = {
   /** When the cast lens holds or hovers someone, cards without them fade. */
   castFocusId: string | null;
   onCastNames: (id: string, names: string[]) => void;
+  onHoverNote: (id: string | null) => void;
   selectedIds: string[];
   selectedArrowId: string | null;
   onMove: (id: string, x: number, y: number) => void;
@@ -118,6 +119,7 @@ export function NoteBoard({
   characters,
   castFocusId,
   onCastNames,
+  onHoverNote,
   selectedIds,
   selectedArrowId,
   onMove,
@@ -499,6 +501,7 @@ export function NoteBoard({
           characters={characters}
           onCastNames={onCastNames}
           onRaise={onRaise}
+          onHover={onHoverNote}
           onPointerDown={startNoteDrag}
           onArrowPointerDown={startArrowDrag}
           onRecolor={onRecolor}

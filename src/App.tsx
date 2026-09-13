@@ -15,11 +15,8 @@ import {
   type ArrowKind,
   type BoardCharacter,
 } from "./board/reducer";
-import {
-  organizeReadingOrder,
-  snapshotPoses,
-  type NotePose,
-} from "./organizeLayout";
+import { organizePoses } from "./board/organize";
+import { snapshotPoses, type NotePose } from "./organizeLayout";
 import { ProjectModal } from "./ProjectModal";
 import { RemindersModal } from "./RemindersModal";
 import { StoryMap } from "./StoryMap";
@@ -31,7 +28,8 @@ import {
   writeStoredTheme,
   type Theme,
 } from "./theme";
-import { centerOn, fitView, IDENTITY_VIEW, zoomAt, type View } from "./viewport";
+import { centerOn, fitView, IDENTITY_VIEW, visibleBox, zoomAt, type View } from "./viewport";
+import { NOTE_HEIGHT, NOTE_WIDTH } from "./noteMock";
 
 const BAR_KEY = "plotcoder.generalBar.layer";
 const MAP_KEY = "plotcoder.storyMap";
@@ -64,6 +62,8 @@ export function App() {
   const [castHeld, setCastHeld] = useState<string | null>(null);
   // The Story Map strip (R32). Whether it is open is per-viewer, like the bar.
   const [mapOpen, setMapOpen] = useState<boolean>(readMapOpen);
+  // The card under the pointer on the wall, so the map can light its block.
+  const [hoverNoteId, setHoverNoteId] = useState<string | null>(null);
   const board = useSyncExternalStore(boardStore.subscribe, boardStore.getState);
   const history = useSyncExternalStore(boardStore.subscribe, boardStore.getHistory);
   const { notes, groups, arrows, characters } = board;
@@ -91,6 +91,26 @@ export function App() {
     const rect = boardRef.current?.getBoundingClientRect();
     return { width: rect?.width ?? 0, height: rect?.height ?? 0 };
   }, []);
+
+  // Which cards the window is looking at, so the map can say "you are here".
+  // Recomputed from the view; the board's size is read when it changes.
+  const visibleIds = useMemo(() => {
+    const rect = boardRef.current?.getBoundingClientRect();
+    if (!rect) return new Set<string>();
+    const box = visibleBox(view, { width: rect.width, height: rect.height });
+    const ids = new Set<string>();
+    for (const note of notes) {
+      if (
+        note.x < box.x + box.w &&
+        note.x + NOTE_WIDTH > box.x &&
+        note.y < box.y + box.h &&
+        note.y + NOTE_HEIGHT > box.y
+      ) {
+        ids.add(note.id);
+      }
+    }
+    return ids;
+  }, [view, notes]);
 
   function fitToWall() {
     setView(fitView(notes, viewportSize()));
@@ -308,22 +328,14 @@ export function App() {
     boardStore.dispatch({ type: "settle_note", id });
   }
 
+  // Organize along the arrows (R34): the same module the agent's tool uses.
   function organizeNotes() {
     setScatterPoses((current) => current ?? snapshotPoses(notes));
-    const arranged = organizeReadingOrder(
-      notes,
-      groups,
-      selectedIds.length >= 2 ? selectedIds : undefined,
-    );
-    boardStore.dispatch({
-      type: "apply_poses",
-      poses: arranged.map((note) => ({
-        id: note.id,
-        x: note.x,
-        y: note.y,
-        rotate: note.rotate,
-      })),
+    const poses = organizePoses(boardStore.getState(), {
+      onlyIds: selectedIds.length >= 2 ? selectedIds : undefined,
     });
+    if (poses.length === 0) return;
+    boardStore.dispatch({ type: "apply_poses", poses });
     selectNotes([]);
   }
 
@@ -412,6 +424,7 @@ export function App() {
         characters={characters}
         castFocusId={castFocusId}
         onCastNames={castNames}
+        onHoverNote={setHoverNoteId}
         selectedIds={selectedIds}
         selectedArrowId={selectedArrowId}
         onMove={moveNote}
@@ -438,6 +451,9 @@ export function App() {
         reading={reading}
         open={mapOpen}
         castFocusId={castFocusId}
+        hoverId={hoverNoteId}
+        selectedId={selectedIds.length === 1 ? selectedIds[0] : null}
+        visibleIds={visibleIds}
         onToggle={toggleMap}
         onJump={jumpTo}
       />

@@ -21,6 +21,7 @@ PlotCoder is a set of tools for building a storyline, covering what a writer doe
 ## Process
 
 - When Robert states a need, add it to `REQUIREMENTS.md` as a numbered requirement with date, status, and reason. Do not renumber. Record decisions in the file, not only in chat.
+- **Mock before building anything a person will see**, on the app's own paper beside what ships, then ask in writing whether it is the best we could do, then build. Tools and plumbing skip the mockup, not the question.
 - When two tools overlap, add a row to the combine log rather than building a second model.
 - Update "What is built and what is left" when a status changes.
 - Tests: `npm test` covers the DOM-free half — kernel, pure helpers, MCP server. `npm run test:e2e` is a six-spec Playwright suite over the doors into the kernel (wall, `window.plotcoder`, dev bridge, MCP), not pixels. A change to the kernel or the MCP server needs a unit test; add an end-to-end spec only for a new door or a bug in one. Gestures themselves stay untested.

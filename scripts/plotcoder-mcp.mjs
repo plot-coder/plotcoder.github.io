@@ -31,6 +31,7 @@ import {
   seedState,
 } from "../src/board/reducer.js";
 import { describeRuns, describeSetups, readWall } from "../src/board/readWall.js";
+import { organizePoses } from "../src/board/organize.js";
 
 const colorSchema = z.enum(NOTE_COLORS);
 const rankSchema = z.enum(NOTE_RANKS);
@@ -526,6 +527,31 @@ server.registerTool(
         : ["  (none that this reading can see)"]),
     ];
     return ok(lines.join("\n"), reading);
+  },
+);
+
+server.registerTool(
+  "organize",
+  {
+    title: "Organize the wall",
+    description:
+      "Tidy the wall along the arrows. Cards are ordered by their 'follows' arrows (a card comes after everything that points at it), then by reading order. With beats on the wall, each beat starts a row and the scenes that follow it fill the row to its right, wrapping under themselves when a run is long; with no beats yet, rows wrap five cards wide. Groups stay together. Pass noteIds to tidy only those cards, from their own top-left. Undoable from the wall.",
+    inputSchema: { noteIds: z.array(z.string()).min(2).optional() },
+  },
+  async (args) => {
+    const { state } = await readBoard();
+    const poses = organizePoses(state, { onlyIds: args.noteIds });
+    if (poses.length === 0) return ok("Nothing to organize: no cards in scope.");
+    const { changed, live } = await commit({ type: "apply_poses", poses });
+    if (!changed) return ok("Nothing moved.");
+    const rows = new Set(poses.map((pose) => pose.y)).size;
+    const beats = state.notes.filter(
+      (note) => note.rank === "beat" && poses.some((pose) => pose.id === note.id),
+    ).length;
+    return ok(
+      `Organized ${poses.length} card(s) along the arrows into ${rows} row(s)${beats ? `, one per beat` : ""}${where(live)}.`,
+      poses,
+    );
   },
 );
 

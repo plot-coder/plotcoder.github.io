@@ -12,6 +12,7 @@ Other agents: read this file before reviewing or adding code. Treat **Confirmed*
 2. We add it here as a numbered requirement with date, status, and the reason.
 3. Periodically we review the list and ask: should two tools be one? Is this requirement still true? Is there a simpler way?
 4. Other agents review against this document and write their perspective in [Reviewer notes](#reviewer-notes-other-agents).
+5. **Anything a person will see is mocked before it is built** — on the app's own paper, beside what ships today — and the mockup is followed by one honest question, *is this the best we could do?*, answered in writing before a line of interface is written. Robert's standing instruction, 2026-09-13. Tools and plumbing skip the mockup, not the question.
 
 Status values: `confirmed` · `proposed` · `open` · `dropped`
 
@@ -70,6 +71,7 @@ These came from Robert. Do not quietly reverse them.
 | D23 | **Length is measured in eighths of a page**, the unit a production breakdown uses and the unit Final Draft's Outline Editor already works in. Chosen so that today's *estimate* and tomorrow's *measurement* share one unit: when real pages exist (D22), they replace the estimate without a migration or a change of meaning. | 2026-09-12 |
 | D24 | PlotCoder is **a tool set for an agent driven by a person**. The target is parity with the activities Final Draft offers, reached one tool at a time; after that, **workflows** composed from those tools (R27). The human UI and the agent surface are two doors onto one kernel (R17), and the agent door is not optional: a feature without a tool is unfinished (R26). Restates the aim behind D22 and softens the combine-log rows that skipped Final Draft's production half *entirely* — it is last, not never. The order of work does not change: the wall first, pages last (R23). | 2026-09-12 |
 | D26 | **Characters are a board-level roster the board maintains.** One record per person with a stable id; cards point at it, never at a name. Chosen because the record will grow — what they look like, the finer details a writer needs to pull up — and a person has to be one entity across the whole wall for that, for the disappearing-character check, and for the horizon (R28). Answers open question 17. | 2026-09-12 |
+| D27 | **PlotCoder's data goes into the `beehealers` Supabase project for now** (ref `pibdszubmfnooimnuawf`, us-east-1), in its own `plotcoder` Postgres schema so it shares nothing with what is already there and can be lifted out whole. Robert's call, 2026-09-13, revised the same hour from `charity-tooling` to the quieter project: Bee Healers holds fifteen small tables and five profiles, where the charity app holds a live customer base. **Caveat recorded:** a shared project still means shared limits, shared keys and one authentication user pool; before another writer signs in, PlotCoder should move to its own project, and the schema boundary is what makes that a copy rather than a rewrite. **The cost of that move, checked with the Supabase connector:** the organisation is on the Pro plan and a new project bills $10 a month for its compute — which is why a shared project is the right call today. | 2026-09-13 |
 | D25 | **The horizon is the movie.** After the storyline is made with the tools, PlotCoder helps the person drive agents that build **segments of the film** with video generation tools (Grok Video is the first named; the choice is open). Stated as a long-term vision, explicitly *very far down the line*, with a lot to build first. It changes no ordering and starts nothing now; it is recorded so the tools are built as things that compose toward it (R27, R28). | 2026-09-12 |
 
 ---
@@ -195,7 +197,7 @@ Add new items at the bottom of this list. Do not renumber. If a requirement dies
 - **Why:** Sequence is not only left-to-right position. Loops and mutual cause are real in story (“they keep triggering each other”).
 - **Proposed draw (P8):** A small outbound handle on a card (visible when the card is selected or hovered). Drag from that handle onto another card to create A→B. Repeat the other way for B→A. Opposite arrows sit on **offset paths** so both heads stay readable. Click an arrow to select it; delete removes that direction only. Arrows stick to cards when cards move, organize, or group.
 - **Drawn, 2026-09-13 (mocked before and after, at Robert's ask):** the big head stays at full size everywhere — Robert's call, twice. What changed is the path: **air** of up to 8px off the paper at both ends, so an arrow floats between cards instead of touching them; a **bow proportional to length**, capped at the old 28px, so a neighbour's arrow is a straight stitch and a long one curves as before; and between side-by-side neighbours the arrow **steps below the handle's row**, so the head and the handle stop sharing one gap. In a gap too tight for head plus air, the head keeps its size and the air is what is left, split evenly. The head is now a drawn shape rather than an SVG marker, so it can follow a curve's arrival angle and hold its size; same wedge, same 27×18. All in `src/arrowGeometry.ts`, tested.
-- **Notes:** An arrow is not a group. Organize still uses reading order unless we later add “organize along arrows.” Do not auto-create the reverse. No unlabeled spaghetti: if we later need a label on an arrow, that is a new requirement. **2026-09-12:** it was, and it became a *kind* rather than a label — `follows` or `setup` (R30). Still no free text on an arrow.
+- **Notes:** An arrow is not a group. Organize still uses reading order unless we later add “organize along arrows.” Do not auto-create the reverse. No unlabeled spaghetti: if we later need a label on an arrow, that is a new requirement. **2026-09-12:** it was, and it became a *kind* rather than a label — `follows` or `setup` (R30). Still no free text on an arrow. **Later that day:** the first floated-arrow build ended the shaft along the straight line between the cards while the head followed the curve, which at medium range left the head hanging off the shaft — Robert caught it. The shaft is now the curve itself, cut a head's length before the tip, and the head hangs off that point. Pinned by a medium-range test.
 
 ### R16 — Change a card’s paper color
 
@@ -213,7 +215,7 @@ Add new items at the bottom of this list. Do not renumber. If a requirement dies
 - **Statement:** An agent or robot (including this assistant) can create cards and move things around without driving the mouse. The same operations a human does by hand — new note, move, recolor, edit, delete — are available as callable commands, and they land on the same board a human sees.
 - **Why:** Robert wants to build the wall with an agent, not only by dragging paper. If the agent and the human edit through different code paths they will drift.
 - **Proposed mechanism (P11):** One command kernel that both the human UI and the agent call. Three doors into it: the human gestures, a `window.plotcoder` API on the page, and an MCP server in the repo. A workspace board file lets commands work with the app closed.
-- **As built:** twenty-four tools, covering every board verb a person has — `list_board`, `read_wall` (R22), `new_board` and `undo` (R33); the cast (`add_character`, `rename_character`, `remove_character`, `cast`, R29); `set_arrow_kind` (R30); `set_plant` (R31); cards (`create_note`, `update_note`, `move_note`, `recolor_note`, `set_rank`, `set_length`, `delete_note`); structure (`set_logline`, `set_target`, `create_group`, `rename_group`, `ungroup`, `create_arrow`, `delete_arrow`). Verified end to end by building a nine-card wall with beats, a named group and three arrows through the live bridge, with nothing faked.
+- **As built:** twenty-five tools, covering every board verb a person has — `list_board`, `read_wall` (R22), `new_board`, `undo` (R33) and `organize` (R34); the cast (`add_character`, `rename_character`, `remove_character`, `cast`, R29); `set_arrow_kind` (R30); `set_plant` (R31); cards (`create_note`, `update_note`, `move_note`, `recolor_note`, `set_rank`, `set_length`, `delete_note`); structure (`set_logline`, `set_target`, `create_group`, `rename_group`, `ungroup`, `create_arrow`, `delete_arrow`). Verified end to end by building a nine-card wall with beats, a named group and three arrows through the live bridge, with nothing faked.
 - **Not exposed when built:** Organize and Scatter (UI-layer layout, not kernel commands), the series premise and Reminders (browser storage, not board data), and pan/zoom (per-viewer, D18). **R26 has since made the first four a backlog**, not a boundary; pan/zoom stays out on purpose.
 - **Clients:** the server is wired for Cursor in `.cursor/mcp.json` and for Claude Code in `.mcp.json` at the repo root. One skill, `.cursor/skills/plotcoder-board/SKILL.md`, is shared by both: `.claude/skills/plotcoder-board` is a symlink to it, so there is one copy to keep true.
 - **Refusals name their cause.** A tool that reports success on a rejected command teaches the agent the board is in a state it is not, so `create_arrow` distinguishes a self-link from an unknown id from a duplicate, and `create_group` names the ids that were not on the board. An agent that is told what is wrong fixes its input; an agent told "it failed" retries the same call.
@@ -396,7 +398,23 @@ Add new items at the bottom of this list. Do not renumber. If a requirement dies
   - **The cast lens shows on it.** Hold or hover a person in the lens and their scenes light on the axis while the rest fade — option C's lane, one person at a time, for free.
   - **A view, never a model.** `src/storyMapLayout.ts` computes every position from the same reading `readWall` makes, and the component dispatches nothing. D20 holds.
 - **Mocked first:** three homes on the app's paper — the strip, a small map inside the tall general bar under Runtime, and a full Map view over the wall with a lane per person. The panel was too narrow for names and only there when the bar is open. The overlay had the best picture and hid the wall, which is what the job forbids. The strip won; the overlay's lanes are where it grows.
+- **The axis fits the story (2026-09-13).** Robert found the strip more useful with a 30-page target than a 120-page one, and asked for a setting to "auto expand" it. The cause was the axis: it ran to the larger of the runtime and the target, so a twenty-page wall on a feature target huddled in the left sixth of the strip. No setting: the axis now **fits the story with a quarter of headroom while the story is well short of the target**, grows with it, holds at the target once the story comes within reach of it, and follows the story again past it. Never shorter than ten pages. While the target is off the end it is shown as a marker at the axis's end, "120 →", so the container is never forgotten. Ticks tighten to every two pages on a short axis.
+- **Second revision, the filmstrip (2026-09-13; mocked, then asked "is this the best we could do?", then mocked again).** Robert found the strip hard to navigate: every scene was an anonymous hairline, hover was a browser tooltip, and the map did not know where you were. Now **every card is a block** in its paper colour, as wide as its pages; beats are taller, wear their top bar and **carry their number**; names sit above only where they fit. **Move along the strip and the card under the cursor reads itself** at the top — beat number, headline, the change line, cast, pages — so a pass of the cursor reads the story in order. **Groups are brackets** with titles. The sag is a warm underline under the axis. **You are here** is a lit band behind the pages on screen; the selected card is outlined, and hovering a card on the wall lights its block. The strip is 120px open. The second look added the reading scrub, the numbers, the brackets, and kept dimming as the lens's alone; the first version had dimmed off-screen cards too, which was one dim too many.
 - **Notes:** The general bar keeps its bottom-right home (D6), lifted by the strip's height. If a season ever needs the full-lane picture, that is a Map view opened from the same strip, not a replacement for it.
+
+### R34 — Organize along the arrows
+
+- **Status:** **built** 2026-09-13 (mocked four ways, asked "is this the best we could do?", then built the revision)
+- **Date:** 2026-09-13
+- **Statement:** Organize lays the wall out in **story order**, and the arrows say what that is. Reading order is the base; each "follows" arrow pulls its source in front of its target, so a card is never placed before something that points at it. Setups are not sequence and order nothing. A two-way pair is a tie and reading order keeps it.
+- **Why:** Robert pressed Organize on a wall with arrows and got a neat grid with the arrows pointing every way across it. Organize predated arrows and ignored the one thing on the wall that says what follows what.
+- **As built:**
+  - **Two layouts, one Organize.** With beats on the wall, **each beat starts a row** and the scenes that follow it fill the row to its right; a run longer than five cards wraps under itself, indented one card, so the beat keeps the row's left edge. This is the spine D20 said Organize could arrange *into* — a view, never the model — and the length of a row is the length of a run, so the sag reads on the wall itself. With no beats yet, rows wrap by width as before.
+  - **Groups travel as blocks** to where their first card falls, in order.
+  - **A row is five cards wide on the wall, on any screen.** Answers open question 21: the width was the window's, so one wall organized differently on a laptop and a monitor.
+  - **One module, two doors:** `src/board/organize.js` beside the kernel, pure and tested; the bar's Organize and a new **`organize` tool** both call it and apply the poses through `apply_poses`, so undo takes either back. With a selection, both organize just those cards from their own top-left.
+- **Mocked first:** the wall as it ships, along the arrows wrapped by width, along the arrows with a row per beat, and — after the second look — the revision with groups kept, long runs wrapped, a fixed row width, and the width-wrap as the fallback for a wall with no beats. The second look also settled that reading order must be **the same** reading order read the wall uses (rows banded by half a card), so Organize, the Story Map and the questions agree.
+- **Notes:** Scatter stays for now; undo makes it redundant, and the combine log records that it can go. Arrows still do not change read the wall's own order; after an Organize they agree because the cards moved.
 
 ### R33 — Undo
 
@@ -455,7 +473,7 @@ The left column is the activity list already recorded in the combine log from cu
 
 ### Agent surface (R17 measured against R26)
 
-- Not exposed to agents: **Organize**, **Scatter**, the **series premise**, **Reminders**. R26 makes these a backlog.
+- Not exposed to agents: ~~**Organize**~~ (done 2026-09-13, R34), **Scatter**, the **series premise**, **Reminders**. R26 makes the rest a backlog.
 - ~~No tool to start a **new board** or clear one.~~ **Done 2026-09-12:** `new_board` (R30).
 - ~~No **undo** anywhere, for people or agents.~~ **Done 2026-09-13:** R33 — ⌘Z on the wall for any door's change; an `undo` tool for the agent's own.
 - `window.plotcoder` has named methods for cards, arrows and groups but not for rank, length, logline or target — those go through the generic `dispatch`.
@@ -473,6 +491,84 @@ The left column is the activity list already recorded in the combine log from cu
 ### Open questions still open
 
 2, 3, 5, 6, 7, 8, 9, 17, 21, and the new 23 and 24. Questions 1, 4, and 10 through 16, 18 through 20, and 22 are answered.
+
+---
+
+## Roadmap — the next nine, in order
+
+Written 2026-09-13 at Robert's ask, from the list in [What is built and what is left](#what-is-built-and-what-is-left). Every one of these is to be built. The order is dependency order first and value second: the project model must precede Supabase because Supabase needs a shape to hold; everything else is independent of those two and slots between them by size; pages stay last, and the horizon waits for all of it. Each item says whether it is **mocked first** (rule 5 above: anything a person sees) and what has to be **decided** before it starts. Sizes are in sessions, not dates.
+
+### 0 · Land what is built
+
+Five pieces sit uncommitted on the worktree branch — the auto-fitting axis, the filmstrip, the arrow fix, undo's echo fix, Organize along the arrows. Commit, merge, deploy. Not a feature; a precondition.
+
+### 1 · The project model — R35
+
+- **Goal:** a **project** holds many **boards**. A writer holds more than one story; a season holds its episodes; the premise (D17) finally has more than one board under it. `new_board` becomes "add a board" and stops being destructive.
+- **Decide first:** the words (project, story, season, episode — recommend *project* and *board* in the code, and let the writer name boards whatever the form is); where the switcher lives; whether a board can move between projects (recommend not yet).
+- **Mock first — yes, the switcher.** Three homes drawn on the app's paper: the wordmark growing into "PlotCoder · *project* · *board*" with a menu; a Boards button beside Cast; a board picker sheet on first run and from the transfer button. Ask whether it is the best we could do; build the winner.
+- **Build:** a project record `{ id, name, premise, boards: [{ id, name, createdAt, updatedAt }], activeBoardId }` and one `BoardState` per board, in localStorage under per-board keys, with a migration that turns today's single-board keys into board one. The kernel is untouched; a project layer sits above the board store. Save/Open writes file version 2 (every board plus the project) and opens version 1. The dev bridge and `.plotcoder/board.json` carry the active board; agents get `list_boards`, `open_board`, `new_board` (with a name), `rename_board`, `delete_board` (which asks first). Reminders stay on the project.
+- **Tests:** a pure project module; MCP tests for the board tools; an end-to-end spec that adds a board, switches, and finds the first one intact.
+- **Done when:** two stories live in one browser and switch cleanly, one file carries both, and an agent can list and open boards.
+- **Size:** two sessions.
+
+### 2 · Supabase — R4, at last
+
+- **Goal:** sign in, and the same project on every device. Later, two people on one board.
+- **Where:** D27 — the `beehealers` project, `plotcoder` schema.
+- **Decide first:** the sign-in method (recommend email magic link: no passwords, and it suits a PWA); what syncs (recommend **boards as documents** — a `state` JSON column plus a `rev`, exactly the shape the dev bridge already speaks — and normalize into tables only when a query needs it, which character details may); what happens on conflict (recommend last write wins, with undo as the safety net, and a visible "someone else changed this" note; true merging waits for Realtime).
+- **Mock first — yes, but small.** The account door (a Sign in beside the transfer button), the sync state ("saved", "saving", "offline", "changed elsewhere"), and the first-run choice between "keep working on this device" and "sign in to sync". Ask whether it is the best we could do.
+- **Build:** the schema — `plotcoder.projects` (owner, name, premise, reminders JSON), `plotcoder.boards` (project, name, state JSON, rev) — with row-level security by owner; a sync module in the store that keeps localStorage as the cache and the record when offline, pushes on change with the rev, and pulls on open; the project model's file format doubles as the export. The public URL and anon key ship in the built app, as Supabase intends. The MCP server keeps talking to the open app through the bridge; a remote agent door with a service key is a later item.
+- **Tests:** the sync and conflict logic as a pure module; end-to-end against a local Supabase stack or a test schema, decided during the build; the deploy workflow gains nothing secret.
+- **Done when:** the same project appears on two browsers after sign-in, an edit on one shows on the other after a reload, and pulling the network cable changes nothing about working.
+- **Size:** three sessions, plus the move to its own project before anyone else signs in.
+
+### 3 · Character details — R36
+
+- **Goal:** what each person looks like and the notes you pull up, on the roster record that already has an id for the purpose.
+- **Decide first:** which fields. Recommend a few named ones — looks, voice, wants, needs — plus free notes, all text; a picture later, once Supabase holds files.
+- **Mock first — yes.** The person's page, opened from their name in the Cast lens: a card-shaped sheet on the app's paper, beside the alternative of a modal. Ask whether it is the best we could do.
+- **Build:** fields on the character record with the usual migration; `update_character` for agents; `list_board` shows what is filled in; the scrub label and read-the-wall untouched.
+- **Size:** one session.
+
+### 4 · Location on cards — R37
+
+- **Goal:** where a scene happens, so the Navigator can filter by place as well as person.
+- **Decide first:** roster or free text. Recommend free text with completion from locations already on the wall, and no roster until the horizon asks for one; a person is an entity, a place is usually just a name.
+- **Mock first — yes, small.** A fourth line on the card, "at the piano shop", beside the cast line; and the lens growing a Places list under the people.
+- **Build:** `location` on the card, `set_location` for agents, the lens filter, a location line in the scrub label.
+- **Size:** one session.
+
+### 5 · Structure templates — closes open question 7, then R38
+
+- **Decide first:** the question itself. Recommend **yes, as beat templates**: a template is a list of named beats with a page each falls near, applied by creating beat cards laid along the Story Map, with the house method (unnamed turns, 8 to 15) as the default. Not a mode, not a lock: applying one is a set of cards you can rename, move or delete.
+- **Mock first — yes.** The template picker and what applying one does to an empty wall, and to a wall that already has beats.
+- **Build:** templates as data in the repo (three acts, eight sequences, a fifteen-beat sheet, a story circle; names described generically where a book's names are its own); `apply_template` for agents; Organize lays the result out.
+- **Size:** one session, after the decision.
+
+### 6 · Agent backlog — finishing R26
+
+- **Goal:** every verb a person has, as a tool. No mockup.
+- **Build:** the premise and Reminders are project data in browser storage that the bridge does not carry; extend the bridge to mirror project-level data to `.plotcoder/project.json` so `set_premise`, `list_reminders`, `add_reminder` and `remove_reminder` can exist. Remove Scatter from the bar (the combine log already says why). Falls out naturally after item 1, which is when project data gets a shape.
+- **Size:** half a session.
+
+### 7 · Platform
+
+- **Goal:** installable, and secure. No mockup.
+- **Build:** the progressive web app — a manifest and a service worker that caches the built app, so it opens offline and installs on a phone (R3, D2); the HTTPS certificate on plotcoder.com, which was still failing at the last check — most likely the Cloudflare DNS record must be unproxied for GitHub Pages to issue its certificate, then "Enforce HTTPS" in the Pages settings.
+- **Size:** one session.
+
+### 8 · Pages — R23, in three slices
+
+- **Goal:** where the writing happens, after the wall reads right. Last on purpose.
+- **Decide first:** nothing new; the route is recorded in R23.
+- **Slice a — Fountain out.** Export the wall as Fountain: a scene heading from the headline and location, action from the change line, in wall order. A stepping stone that already gives a writer a real document from a real wall. Half a session; a mockup of the text, not an interface.
+- **Slice b — pages beside the wall.** A page view bound to cards, Fountain in and out, so writing a scene and moving its card are one object. **Mock first — yes**, and it is the biggest interface decision left in the app: where the page lives, how a card and its pages point at each other, what the Story Map does once pages are measured rather than estimated (D23 says the unit does not change). Several sessions.
+- **Slice c — Final Draft round-trip.** `.fdx` in and out, and industry pagination, which is a standards problem: page breaks, `(MORE)` and `(CONT'D)`, dual dialogue, scene numbers. The moat, and the deepest work. Not before a and b have been used.
+
+### 9 · The horizon — R27, then R28
+
+Workflows composed from the tools, then agents building segments of the movie from the storyline. Planned in detail only once 1 to 8 are done and used; recorded here so the eight are built as things that compose toward it.
 
 ---
 
@@ -527,7 +623,7 @@ Answer these in this file when we decide. Do not hide decisions only in chat.
 18. ~~Does the logline belong to the **board** or to a **project**, if a project later holds more than one board (a season of episodes)?~~ **Answered 2026-09-12: both** (D16, D17). The board owns the central question; the project owns the series premise above it.
 19. ~~Do beats and scenes share one z-order and one Organize, or does ranking change what Organize does?~~ **Closed 2026-09-12: not a separate question.** It is decided by question 15. If the spine wins, Organize must lay scenes under their beat; if rank-on-the-free-wall wins, Organize does not change. Do not decide it on its own.
 20. ~~Should the pan/zoom view survive a reload, and should Save project carry it?~~ **Answered 2026-09-12: no** (D18). Built that way; the lean became the decision.
-21. Organize picks its row width from `window.innerWidth` (capped at 920px). With zoom, the same board organizes differently on a laptop and a monitor. Should the row width become a fixed board-space constant instead?
+21. ~~Organize picks its row width from `window.innerWidth` (capped at 920px). Should the row width become a fixed board-space constant instead?~~ **Answered 2026-09-13: yes, five cards** (R34). The wall is the wall on any screen.
 22. ~~How far out should zoom go — far enough to read 53 cards, or far enough for a whole season?~~ **Answered 2026-09-12: 15% to 250%** (D19). Far enough for a feature; a season is a different object, not more zoom.
 23. "The tools Final Draft has" (D24, R26) — does that include the production half: revision colours, locked pages, scene numbering, tagging, cast reports? D24 says last, not never. What is the order within "last", and is any of it a non-goal?
 24. What is a workflow (R27)? A skill or script in the repo, or data the writer keeps in the project? Deterministic (a script over the kernel) or agentic (a prompt the agent interprets)? Decide only once the tools it would compose exist.
@@ -550,6 +646,7 @@ Use this when two requirements or tools overlap. Other agents should add rows if
 | 2026-09-12 | Groups vs act lanes vs stacks vs a separate beat-sheet tool. | Same cards. A group is a named frame around notes, not a new document type. Stacks (alternates) are a later verb. |
 | 2026-09-12 | Arrows were deferred as “flowchart.” Robert wants them. | Add directed arrows as their own objects. They do not replace groups or organize. A two-way link is two arrows. |
 | 2026-09-12 | Card color could have been a general-bar control or a long-press menu. | Color lives on the card. The bar is canvas chrome. Long-press is not required. |
+| 2026-09-13 | Scatter existed to undo Organize before there was undo. | Now ⌘Z does that, and better — it also takes back an Organize an agent asked for. Scatter can go; kept for one more round so its removal is a deliberate change, not a side effect of R34. |
 | 2026-09-12 | The agent could have driven the board by simulating mouse drags in a browser. | Rejected. Human gestures and agent tools both call one command kernel. Faked pointer drags are brittle and drift from the real state. |
 | 2026-09-12 | Tests could have covered the React components and drag gestures too. | Rejected for now. The kernel is where the logic lives and two of its three doors have no visual feedback, so that is what is tested. Component tests would be rewritten every time a gesture changes. **Revisited the same day, below.** |
 | 2026-09-12 | Three gestures had since been locked (R14–R16), and R26 made the agent door primary — so the reason for the row above was weaker, but its point still held: do not test pixels. | Added a **narrow Playwright suite** (`npm run test:e2e`, four specs in `e2e/`) that tests the **doors**, not the paint: the wall loads, an MCP tool call appears on the open wall, a dragged card lands where it was dropped on the wall *and* in the file, and a saved project reopens. Each spec asks whether a change through one door shows up through the others. It runs in the deploy workflow. **Its first run found a real bug:** with the dev server running, Open project was silently undone, because a fresh page always adopts the bridge's first frame — the old wall — over the localStorage it had just imported. Fixed by pushing the imported board to the bridge before the reload (`boardStore.adoptLocal`). Production never had the bug; every session where Robert builds with an agent did. |
@@ -586,6 +683,7 @@ Use this when two requirements or tools overlap. Other agents should add rows if
 - **Project-level data that is not board data** goes in its own `plotcoder.*` key with a small store, the way `src/reminderStore.ts` and `src/premiseStore.ts` do. Save/Open needs no wiring for it: `listProjectKeys` sweeps every `plotcoder.*` key. Such data is invisible to the MCP server and the board file, which only carry `BoardState`.
 - `src/EditableText.tsx` is the one caret-safe editable line, used by both the cards and the logline strip. The words are uncontrolled — React never renders them as children — so it cannot rewrite text out from under the caret mid-keystroke; the value is pushed in only while the field is unfocused. Use it for any new tap-the-words-to-type field (D11) rather than writing another `contentEditable`.
 - **The cast (R29)** is the fourth board migration and the model for the next: a list on `BoardState` (`characters`) and ids on the card (`characterIds`), both repaired in `normalizeState`. Name handling is in `src/castNames.ts` (pure, tested): typed names → roster ids, ids → "Maya, Tom", completions for a fragment. The card's line is `src/CastLine.tsx` (an `<input>` while editing, not a third `contentEditable`, because completion needs a controlled value); the panel is `src/CastLens.tsx`; the app resolves typed names and adds strangers in `castNames` in `App.tsx`. The browser mirrors the roster to `plotcoder.characters`.
+- **Organize (R34)** is `src/board/organize.js` (plain ESM + `organize.d.ts`, like the kernel): `arrowOrder` and `organizePoses`. `src/organizeLayout.ts` keeps only Scatter's snapshot helpers now.
 - **Undo (R33)** is `src/board/history.ts` (pure: a stack with gesture and coalescing rules, tested) owned by the browser store, which records a step on every changed dispatch, on `commit` for a drag, and on adopting a bridge frame that differs from what it holds. `boardStore.undo()` / `redo()` restore a state and push it to the bridge; `getHistory()` is a stable snapshot for React. The MCP server keeps its own trail of `{ before, after }` per commit and its `undo` tool refuses when the board no longer matches `after`.
 - **The Story Map (R32)** is `src/storyMapLayout.ts` (pure: positions from the wall's reading order and lengths, label placement, page ticks; tested) drawn by `src/StoryMap.tsx` as a fixed strip. The layout module is named for what it does rather than `storyMap.ts` because a Mac filesystem cannot tell that apart from `StoryMap.tsx`. `centerOn` in `viewport.ts` is the jump. The strip's open state lives in `plotcoder.storyMap`, per viewer.
 - **The fold (R31)** is the sixth migration: `plants` on a card, repaired to `false`. The dog-ear is `.note__fold` at the card's top-left, drawn with a gradient flap and a canvas-coloured "cut" rather than a clip-path, so nothing that hangs off the card is clipped. On a beat card it rides up over the top bar.
@@ -660,3 +758,7 @@ Add a dated heading and your verdict. Challenge requirements, don’t just affir
 | 2026-09-13 | **Merged and deployed.** Pull request #1 took the day's four commits to main; the deploy ran both suites and plotcoder.com now serves read the wall, the cast, typed arrows and the fold. Then **built R32, the Story Map**, after mocking three homes for it — a strip under the wall, a panel in the bar, an overlay with lanes — and choosing the strip. Beats along a page axis with runs, setups, unpaid folds and the target; click to jump the wall to a card; labels that yield to the room; the cast lens lights a person's scenes on it. A view of the wall's order and lengths, dispatching nothing. |
 | 2026-09-13 | **Built R33, undo.** A history in the browser store, not the kernel: a drag is one step, typing a line is one step, and a change that arrived from an agent through the bridge is a step the person can take back with ⌘Z. Undo and Redo in the general bar. An `undo` tool lets an agent walk back its own changes and refuses over anything done since. Six end-to-end specs, 296 unit tests. Its tests found that dropping the first card of a row-group in place ejected it — fixed. |
 | 2026-09-13 | **Arrows up close.** Robert liked the big arrows and disliked how they sat between neighbouring cards. Mocked before and after at true scale, twice, keeping the head at full size both times at his ask. Built: air at both ends, a proportional bow, and a step off the handle's row between neighbours; the head is a drawn shape now so it can follow a curve's arrival and keep its size in a tight gap. Geometry only; nothing about what an arrow means changes. |
+| 2026-09-13 | **The Story Map's axis fits the story.** Robert asked for an "auto expand" setting on Runtime; unpacked, the need was the axis, which ran to the target and left a short wall huddled at one end. Now it fits the story with headroom until the target comes into view, then holds. The target waits at the end of the axis as "120 →" until then. No setting. |
+| 2026-09-13 | **The filmstrip, and a medium-range arrow fix.** Robert found the Story Map hard to navigate. Mocked the strip as it ships beside a filmstrip revision, asked whether that was the best we could do, and revised again: blocks in paper colour, numbered beats, a scrub label that reads the card under the cursor, group brackets, a lit band for the pages on screen. Built the second revision. Robert then caught the floated arrows failing at medium range — the head hanging off the shaft — fixed by cutting the curve itself a head before the tip. Screenshot pass over every recent change: arrows at three ranges, the pair, the fold, the chips, the strip, the lens. |
+| 2026-09-13 | **Built R34, Organize along the arrows.** Mocked the same wall tidied four ways, asked whether the row-per-beat version was the best we could do, and built the revision: story order from the arrows over reading order, a row per beat with long runs wrapped under themselves, groups kept as blocks, five cards to a row on any screen (question 21 closed), and the width-wrap as the fallback for a wall with no beats. One pure module beside the kernel; the bar and a new `organize` tool both use it. |
+| 2026-09-13 | **The roadmap.** Robert asked for a careful plan for the nine things left, each mocked first with the question asked, each to be built; and decided PlotCoder's data goes into a shared Supabase project for now — `beehealers`, the quietest — in its own schema (D27, caveat and the $10-a-month cost of a project of its own recorded). Written as a Roadmap section: dependency order, what to decide first, what to mock, what to build, what done means, and a size for each. Rule 5 added to how this file is used: anything a person sees is mocked before it is built. |

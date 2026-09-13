@@ -608,6 +608,16 @@ export function App() {
     });
   }
 
+  // A card's scene number is the script's address for it: open Pages there.
+  // The panel scrolls to the one selected card when nothing else has focus.
+  function openPagesAt(id: string) {
+    setPagesOpen(true);
+    writeFlag(PAGES_KEY, true);
+    setSceneFocusId(null);
+    setSelectedIds([id]);
+    setSelectedArrowId(null);
+  }
+
   // The caret is in a scene: light its card, and pan to it if it is off screen.
   function focusScene(id: string | null) {
     setSceneFocusId(id);
@@ -810,6 +820,7 @@ export function App() {
         revision={board.revision}
         hasTake={hasTake}
         payoffOf={payoffOf}
+        onOpenPages={openPagesAt}
         notes={notes}
         groups={groups}
         arrows={arrows}

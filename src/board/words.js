@@ -144,7 +144,7 @@ export const WORD_GROUPS = [
       {
         id: "revisions",
         name: "Locked numbers, revisions",
-        sentence: "Once a draft goes out, scene numbers stop moving and changes print in a colour. For after the writing.",
+        sentence: "Once a draft goes out, scene numbers stop moving and changes print in a colour; a scene added after the lock keeps its own letter, 2A after 2. For after the writing.",
       },
     ],
   },

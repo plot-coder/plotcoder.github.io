@@ -32,6 +32,8 @@ type NoteCardProps = {
   hasTake: boolean;
   /** When folded: the scene that pays it off, as printed ("14"), or null while unpaid. */
   payoff: string | null;
+  /** Open Pages at this scene: the number is the script's address for it. */
+  onOpenPages: (id: string) => void;
   onCastNames: (id: string, names: string[]) => void;
   onLocation: (id: string, location: string) => void;
   onRaise: (id: string) => void;
@@ -60,6 +62,7 @@ export function NoteCard({
   revised,
   hasTake,
   payoff,
+  onOpenPages,
   onCastNames,
   onLocation,
   onRaise,
@@ -118,20 +121,38 @@ export function NoteCard({
       >
         <span className="note__fold-flap" aria-hidden="true" />
       </button>
-      {/* The fold's state, beside the ear: a debt in the warm colour until a setup
-          arrow leaves the card, then the scene that pays it off. */}
-      {note.plants ? (
-        <span className={`note__plant ${payoff ? "" : "is-unpaid"}`} aria-live="polite">
-          {payoff ? (
-            <>
-              Plants · <b>paid off in {payoff}</b>
-            </>
-          ) : (
-            "Plants · unpaid"
-          )}
+      {/* The top edge, right of the fold's square: the locked scene number (a
+          button — the number is the script's address, so it opens Pages there),
+          then the fold's state, a debt in the warm colour until a setup arrow
+          leaves the card. One line, one home, whether or not the corner folds. */}
+      {sceneNumber || note.plants ? (
+        <span className="note__edge">
+          {sceneNumber ? (
+            <button
+              type="button"
+              className="note__number has-tip"
+              aria-label={`Scene ${sceneNumber}: open it in Pages`}
+              data-tip={`Scene ${sceneNumber}. The numbers are locked, so every scene keeps its number${/[A-Z]/.test(sceneNumber) ? ", and this one, added after the lock, keeps its own letter" : ""}; the numbers already out stay true. Click to open it in Pages.`}
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={() => onOpenPages(note.id)}
+            >
+              {sceneNumber}
+            </button>
+          ) : null}
+          {note.plants ? (
+            <span className={`note__plant ${payoff ? "" : "is-unpaid"}`} aria-live="polite">
+              {sceneNumber ? <span aria-hidden="true">· </span> : null}
+              {payoff ? (
+                <>
+                  Plants · <b>paid off in {payoff}</b>
+                </>
+              ) : (
+                "Plants · unpaid"
+              )}
+            </span>
+          ) : null}
         </span>
       ) : null}
-      {sceneNumber ? <span className="note__scene-number" aria-label={`Scene ${sceneNumber}`}>{sceneNumber}</span> : null}
       {hasTake ? <span className="note__take" aria-label="A take exists for this scene" title="A take exists" /> : null}
       <EditableText
         as="h3"

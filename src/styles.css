@@ -1976,11 +1976,15 @@ body {
 
 /* --- The fold's state on the card, and what the wall asks ----------------- */
 
-.note__plant {
+.note__edge {
   position: absolute;
   left: 2.2rem;
-  top: 0.5rem;
+  right: 2.4rem;
+  top: 0.45rem;
   z-index: 2;
+  display: flex;
+  align-items: baseline;
+  gap: 0.3rem;
   font-family: ui-sans-serif, system-ui, sans-serif;
   font-size: 0.42rem;
   font-weight: 700;
@@ -1988,6 +1992,29 @@ body {
   text-transform: uppercase;
   color: rgba(42, 38, 24, 0.62);
   white-space: nowrap;
+  overflow: hidden;
+}
+
+.note__number {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: rgba(42, 38, 24, 0.75);
+  font: inherit;
+  font-size: 0.5rem;
+  letter-spacing: 0.08em;
+  text-decoration: underline;
+  text-decoration-color: rgba(42, 38, 24, 0.3);
+  text-underline-offset: 0.2em;
+  cursor: pointer;
+}
+
+.note__number:hover {
+  color: var(--paper-ink, #2a2618);
+  text-decoration-color: currentColor;
+}
+
+.note__plant {
   pointer-events: none;
 }
 
@@ -2907,17 +2934,6 @@ body {
     inset 0.35rem 0 0 var(--rev),
     0 1px 0 rgba(255, 255, 255, 0.35) inset,
     0 12px 28px rgba(0, 0, 0, 0.18);
-}
-
-.note__scene-number {
-  position: absolute;
-  top: 0.35rem;
-  left: 0.6rem;
-  font-family: ui-sans-serif, system-ui, sans-serif;
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  color: rgba(42, 38, 24, 0.7);
 }
 
 .script__scene.is-revised .sl.is-starred,

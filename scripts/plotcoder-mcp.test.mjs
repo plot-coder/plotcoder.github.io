@@ -810,7 +810,7 @@ describe("characters", () => {
     const again = await cast.callTool("update_character", { id: "maya", looks: "Thirty-four, tall, a coat too good for the flat." });
     expect(again).toContain("Nothing changed on Maya's page");
     const nobody = await cast.callTool("update_character", { id: "nobody", looks: "x" });
-    expect(nobody).toContain("No character with id nobody");
+    expect(nobody).toContain('Nobody called "nobody" in the cast');
     const after = await cast.callToolData("list_board");
     expect(after.characters.find((character) => character.id === "maya")).toMatchObject({
       looks: "Thirty-four, tall, a coat too good for the flat.",
@@ -1277,7 +1277,7 @@ describe("after the blind run", () => {
 
   it("names the card's id and casts it in one call, adding a role-named person to the roster", async () => {
     const text = await blind.callTool("create_note", { headline: "Dana calls their mother", change: "She lies about where they are.", characters: ["Maya", "Dana's mother"] });
-    expect(text).toMatch(/^Created card [A-Za-z0-9_-]+ \(/);
+    expect(text).toMatch(/^Created card [A-Za-z0-9_-]+: a scene, /);
     expect(text).toContain("Cast: Maya, Dana's mother (added to the roster: Dana's mother)");
     const board = await blind.callToolData("list_board");
     const mother = board.characters.find((person) => person.name === "Dana's mother");
@@ -1290,6 +1290,8 @@ describe("after the blind run", () => {
   it("says over or under in words, and what page_count counts", async () => {
     expect(await blind.callTool("set_target", { pages: 2 })).toMatch(/— [0-9 /]+ (over|under)\./);
     expect(await blind.callTool("list_board")).toMatch(/runtime: about .* — .* (over|under) \(an estimate/);
+    const written = await blind.callToolData("list_board");
+    await blind.callTool("write_scene", { id: written.notes[0].id, text: "INT. KITCHEN - NIGHT\n\nMaya reads it twice." });
     const pages = await blind.callTool("page_count");
     expect(pages).toContain("unwritten and count as one line each");
     expect(await blind.callTool("new_board", { name: "Ep 2" })).toContain("leave it empty rather than invent it");
@@ -1325,6 +1327,32 @@ describe("after the blind run", () => {
     } finally {
       terse.stop();
       fs.rmSync(terseRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("after round three: echoes what a card landed with, writes a page by name, counts no pages when nothing is written", async () => {
+    const third = new McpClient(fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-three-")));
+    await third.start();
+    try {
+      const made = await third.callTool("new_board", { name: "The Long Way Round" });
+      expect(made).toContain('The project is still "Untitled project": rename_project names it.');
+      expect(made).toContain("The sample stays as Board 1; delete_board drops it.");
+      const card = await third.callTool("create_note", { headline: "The gate", change: "Miguel checks the glovebox.", rank: "beat", pages: 4, plants: true, location: "the prison gate", characters: ["Dana"] });
+      expect(card).toMatch(/^Created card \S+: a beat, 4 pages, \w+ paper \(the next in the cycle; pass color to choose\), corner folded, at the prison gate/);
+      expect(card).toContain("Cards stack until organize");
+      expect(await third.callTool("update_character", { name: "dana", notes: "38, a bad knee and a good ear." })).toContain("Wrote notes on Dana's page");
+      expect(await third.callTool("update_character", { name: "nobody", notes: "x" })).toContain('Nobody called "nobody" in the cast');
+      const pages = await third.callTool("page_count");
+      expect(pages).toContain("No pages to count yet: none of the 1 scenes is written.");
+      expect(pages).toContain("about 4 of 120 pages");
+      await third.callTool("create_note", { headline: "The diner", change: "Miguel pockets the tips.", pages: 6, x: 400, y: 0 });
+      const board = await third.callToolData("list_board");
+      await third.callTool("create_group", { noteIds: board.notes.map((note) => note.id), title: "Act one" });
+      await third.callTool("set_length", { ids: board.notes.map((note) => note.id), pages: 15 });
+      expect(await third.callTool("read_wall")).not.toMatch(/\[sequence\]/);
+      expect(await third.callTool("read_wall")).toContain("a beat's own pages are in no run");
+    } finally {
+      third.stop();
     }
   });
 

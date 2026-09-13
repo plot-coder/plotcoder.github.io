@@ -36,7 +36,10 @@ season's episodes, or a writer's stories) under one name and one premise.
 ## Use the MCP tools, not the mouse
 
 The repo ships an MCP server (`plotcoder-board`, wired in `.cursor/mcp.json`
-and `.mcp.json`; run `npm ci` once first). Drive the board through its tools.
+and `.mcp.json`; run `npm ci` once first). That wiring is project-scoped: it
+loads when the session opens with the repo as its folder. To have it in any
+session, once: `claude mcp add plotcoder-board -s user -- node
+/path/to/plotcoder.github.io/scripts/plotcoder-mcp.mjs`. Drive the board through its tools.
 **Do not** open a browser and fake pointer drags — the tools and the human UI
 share one command kernel, so a tool call lands on the exact same board a person
 sees. No MCP where you are? `node scripts/plotcoder-call.mjs <tool> '{json}'`
@@ -74,7 +77,9 @@ order as text, the nearest thing to a look at it.
 - `create_note` — add a card. Requires `headline` **and** `change`. Optional
   `color` (yellow, pink, blue, green, orange), `rank`, `pages`, `plants`,
   `location`, `characters` (names; a name not in the cast is added to it), and
-  `x`/`y`. The reply names the card's id. A **beat is a whole card** — the
+  `x`/`y`. The reply names the card's id and what landed. **A scene is one
+  place and one stretch of time**: a new place or a new time is a new card,
+  which is how a treatment's paragraph splits. A **beat is a whole card** — the
   scene where the turn happens — not a moment inside one; when a treatment's
   "midpoint" spans two scenes, mark the card where the turn lands.
 - `update_note` — change a card's `headline` and/or `change` by `id`.
@@ -122,6 +127,8 @@ order as text, the nearest thing to a look at it.
   person they matter to, not the roster — the roster asks about anyone on no
   card. Age, job, a bad knee: `notes` too, unless they are how the person looks
   or sounds.
+- **Under target** is reported as plainly as over — a number and "an
+  estimate" — never as a verdict either way.
 - **A whole treatment at once:** write it as Fountain — `# Act one` sections,
   a scene heading and a line per scene, `[[with Maya]]` for the cast — and
   `import_fountain`; then cast, place and fold what needs it. Faster than a
@@ -196,8 +203,9 @@ order as text, the nearest thing to a look at it.
 
 ## Workflow
 
-1. **Call `list_board` first.** Use the real `id`s it returns for every move,
-   edit, group, or arrow. Never guess ids.
+1. **Start as the on-ramp says** — `list_words`, `read_wall`, `list_workflows`,
+   `list_reminders` — then `list_board` before any move, edit, group, or arrow,
+   and use the real `id`s it returns. Never guess ids.
 2. Give every card a real `headline` and `change` — not placeholders. A card
    whose change line is empty is a card that has not earned its place.
 3. To lay cards out, draw the arrows and call `organize`. Use `move_note` only

@@ -31,7 +31,9 @@ if (rawArgs) {
   }
 }
 
-const child = spawn("node", [SERVER], { stdio: ["pipe", "pipe", "inherit"], env: process.env });
+// The server's own log lines ("ready", "account door") stay off the reply
+// unless PLOTCODER_VERBOSE=1 asks for them.
+const child = spawn("node", [SERVER], { stdio: ["pipe", "pipe", process.env.PLOTCODER_VERBOSE ? "inherit" : "ignore"], env: process.env });
 let buffer = "";
 const pending = new Map();
 let nextId = 1;

@@ -24,7 +24,7 @@ export const WORD_GROUPS = [
       {
         id: "card",
         name: "A card",
-        sentence: "One scene of the movie. A headline on top, and under it the change line: what is different after the scene than before.",
+        sentence: "One scene of the movie: one place, one stretch of time. A headline on top, and under it the change line: what is different after the scene than before. A new place or a new time is a new card.",
         target: "card",
       },
       {
@@ -67,7 +67,7 @@ export const WORD_GROUPS = [
         id: "corner",
         name: "The folded corner",
         sentence:
-          "This card plants something — a gun on the wall — that must pay off later. The card says unpaid, and the bar’s Asks line keeps asking, until a setup arrow leaves it.",
+          "This card plants something — a gun on the wall — that must pay off later. The card says unpaid, and the bar’s Asks line keeps asking, until a setup arrow leaves it. One thing, three words: the corner is folded, the tool’s flag is plants, the wall’s question is unpaid.",
         target: "corner",
       },
       {
@@ -80,7 +80,7 @@ export const WORD_GROUPS = [
         id: "length",
         name: "Length",
         sentence:
-          "How long the scene runs, in eighths of a script page, the industry’s unit. Written scenes measure themselves; the rest is your guess.",
+          "How long the scene runs, in eighths of a script page, the industry’s unit; the tools take pages, and a fraction is fine. Written scenes measure themselves; the rest is your guess.",
         target: "length",
       },
       {

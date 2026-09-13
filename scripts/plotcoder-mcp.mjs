@@ -794,7 +794,15 @@ server.registerTool(
       if (ids.length) await commit({ type: "set_cast", ids: [result.id], characterIds: ids });
       castLine = ` Cast: ${args.characters.map((name) => name.trim()).join(", ")}${added.length ? ` (added to the roster: ${added.join(", ")})` : ""}.`;
     }
-    return ok(`Created card ${result?.id ?? ""}${where(live)}.${castLine}`, result);
+    const landed = [
+      result?.rank === "beat" ? "a beat" : "a scene",
+      `${formatPages(noteEighths(result))} ${formatPages(noteEighths(result)) === "1" ? "page" : "pages"}`,
+      result?.color ? `${result.color} paper${args.color ? "" : " (the next in the cycle; pass color to choose)"}` : null,
+      result?.plants ? "corner folded" : null,
+      result?.location ? `at ${result.location}` : null,
+    ].filter(Boolean).join(", ");
+    const placed = args.x === undefined && args.y === undefined ? " Cards stack until organize lays them out along the arrows." : "";
+    return ok(`Created card ${result?.id ?? ""}: ${landed}${where(live)}.${castLine}${placed}`, result);
   },
 );
 
@@ -894,7 +902,7 @@ server.registerTool(
           ? reading.beats.map((beat) => `"${beat.headline}"`).join(", ")
           : "(none marked)"
       }`,
-      "runs between beats:",
+      "runs between beats (the scenes between two turns; a beat's own pages are in no run):",
       ...(runs.length ? runs.map((line) => `  - ${line}`) : ["  (none)"]),
       "setups and payoffs:",
       ...(reading.setups.length
@@ -907,7 +915,7 @@ server.registerTool(
       `checked and clean: ${CHECKS.filter((kind) => !reading.findings.some((finding) => finding.kind === kind)).join(", ") || "(nothing — every check found something)"}`,
     ];
     if (isSampleWall(state)) lines.unshift(SAMPLE_NOTE);
-    return ok(lines.join("\n"), reading);
+    return ok(lines.join("\n"), { ...reading, sample: isSampleWall(state) });
   },
 );
 
@@ -1038,7 +1046,7 @@ server.registerTool(
     const board = project.boards.find((item) => item.id === project.activeBoardId);
     const text = toFountain(state, {
       title: board?.name,
-      project: project.boards.length > 1 ? project.name : undefined,
+      project: project.boards.length > 1 && project.name !== "Untitled project" ? project.name : undefined,
       premise: project.premise || undefined,
       draftDate: new Date().toISOString(),
     });
@@ -1238,6 +1246,12 @@ server.registerTool(
       return `  - ${scene.number}. ${note?.headline ?? scene.id} (${scene.id}) — p. ${scene.page}${scene.endPage !== scene.page ? `–${scene.endPage}` : ""}`;
     });
     const unwritten = order.filter((note) => !(note.text && note.text.trim())).length;
+    if (order.length > 0 && unwritten === order.length) {
+      return ok(
+        `No pages to count yet: none of the ${order.length} scenes is written. The runtime is list_board's estimate from the cards' lengths — about ${formatPages(boardEighths(state))} of ${formatPages(state.targetEighths)} pages.`,
+        { pageCount: 0, unwritten, scenes: [] },
+      );
+    }
     const note = unwritten
       ? [`${unwritten} of ${order.length} scenes are unwritten and count as one line each here; for the estimate from the cards' lengths, see list_board's runtime line.`]
       : [];
@@ -1498,7 +1512,7 @@ server.registerTool(
   {
     title: "Fold the corner",
     description:
-      `Mark cards as planting something, or unmark them. ${wordSentence("corner")} The setup arrow is create_arrow with kind 'setup'. Folding never moves a card.`,
+      `Fold the corner of cards — mark them as planting something — or unfold them. ${wordSentence("corner")} One thing, three words: the card's corner is folded, plants is the flag, and read_wall calls a fold with no payoff yet 'unpaid'. The setup arrow is create_arrow with kind 'setup'. Folding never moves a card.`,
     inputSchema: {
       ids: z.array(z.string()).min(1),
       plants: z.boolean(),
@@ -1571,9 +1585,10 @@ server.registerTool(
   {
     title: "Update a person's page",
     description:
-      "Write any of the five lines of a person's page, by id: looks (what a stranger would notice), voice (how they sound, and how it changes when they lie), wants (the clear want), needs (what they need and will not admit), notes (anything to pull up mid-scene). All text; pass only the lines you are setting; an empty string clears one. Ask the writer before inventing looks or a voice — the page is theirs.",
+      "Write any of the five lines of a person's page, by id or by name: looks (what a stranger would notice), voice (how they sound, and how it changes when they lie), wants (the clear want), needs (what they need and will not admit), notes (anything to pull up mid-scene). All text; pass only the lines you are setting; an empty string clears one. Ask the writer before inventing looks or a voice — the page is theirs.",
     inputSchema: {
-      id: z.string(),
+      id: z.string().optional(),
+      name: z.string().optional(),
       looks: z.string().optional(),
       voice: z.string().optional(),
       wants: z.string().optional(),
@@ -1586,9 +1601,15 @@ server.registerTool(
     for (const field of CHARACTER_FIELDS) {
       if (typeof args[field] === "string") patch[field] = args[field];
     }
-    const { changed, result, live } = await commit({ type: "update_character", id: args.id, ...patch });
+    const key = (args.id ?? args.name ?? "").trim();
+    if (!key) return ok("Say who: the person's id or name from list_board.");
+    const { state: before } = await readBoard();
+    const wanted = key.toLowerCase();
+    const person = before.characters.find((item) => item.id === key) ?? before.characters.find((item) => item.name.trim().toLowerCase() === wanted);
+    if (!person) return ok(`Nobody called "${key}" in the cast. Call list_board for the cast, or add_character.`);
+    const { changed, result, live } = await commit({ type: "update_character", id: person.id, ...patch });
     if (!changed) {
-      if (!result) return ok(`No character with id ${args.id}. Call list_board for the cast.`);
+      if (!result) return ok(`No character with id ${person.id}. Call list_board for the cast.`);
       return ok(`Nothing changed on ${result.name}'s page: those lines already read that way.`, result);
     }
     const written = Object.keys(patch).join(", ");
@@ -2096,7 +2117,7 @@ server.registerTool(
     const fresh = { ...emptyState(), ...(target ? { targetEighths: target } : {}) };
     const { live } = await openBoardEverywhere(next, { ...boards, [board.id]: fresh }, rev, base, board.id);
     return ok(
-      `Added "${board.name}" (${board.id}) and opened it${where(live)}. It is empty. The logline is the story's question when the writer has one — leave it empty rather than invent it — and the cards come next.`,
+      `Added "${board.name}" (${board.id}) and opened it${where(live)}. It is empty. The logline is the story's question when the writer has one — leave it empty rather than invent it — and the cards come next.${next.name === "Untitled project" ? " The project is still \"Untitled project\": rename_project names it." : ""}${next.boards.length === 2 && isSampleWall(isBoardState(boards[next.boards[0].id]) ? normalizeState(boards[next.boards[0].id]) : emptyState()) ? " The sample stays as Board 1; delete_board drops it." : ""}`,
       board,
     );
   },

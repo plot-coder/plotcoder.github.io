@@ -49,6 +49,7 @@ import { describeRuns, describeSetups, readWall } from "../src/board/readWall.js
 import { organizePoses } from "../src/board/organize.js";
 import {
   addBoard,
+  addStructure,
   boardById,
   emptyProject,
   findBoard,
@@ -56,8 +57,10 @@ import {
   normalizeProject,
   removeBoard,
   renameBoard,
+  removeStructure,
   setActiveBoard,
   setPremise,
+  structureBeats,
   renameProject,
 } from "../src/board/project.js";
 
@@ -494,6 +497,8 @@ function syncProjectFileBoard(boardId, state) {
 // person made on the wall since.
 const TRAIL_CAP = 50;
 const trail = [];
+/** What undo took back, newest last; a new change of this server's clears it. */
+const undone = [];
 
 function describeCommand(command) {
   switch (command.type) {
@@ -517,6 +522,7 @@ async function commit(command) {
   const live = await writeBoard(next, rev, base, boardId);
   trail.push({ before: state, after: JSON.stringify(next), what: describeCommand(command) });
   if (trail.length > TRAIL_CAP) trail.shift();
+  undone.length = 0;
   return { state: next, changed, result, live };
 }
 
@@ -887,6 +893,13 @@ server.registerTool(
   },
 );
 
+/** One of the writer's own structures, by id or name. */
+function findStructure(project, key) {
+  const wanted = key.trim().toLowerCase();
+  const own = project.structures ?? [];
+  return own.find((structure) => structure.id === key) ?? own.find((structure) => structure.name.trim().toLowerCase() === wanted) ?? null;
+}
+
 server.registerTool(
   "apply_template",
   {
@@ -894,14 +907,77 @@ server.registerTool(
     description:
       "Lay a structure's named beats on the wall as beat cards, prompts on their change lines, in one row above the cards already there (or at the top of an empty wall). One undo step. Structures: " +
       TEMPLATES.map((template) => `${template.id} (${template.name}, ${template.beats.length} beats — ${template.blurb})`).join("; ") +
-      ". The house method, turns, is the default. Ask the writer which structure before applying one; nothing remembers the template afterwards, there are only cards.",
-    inputSchema: { template: z.enum(TEMPLATES.map((template) => template.id)) },
+      "; or one of the writer's own, by name or id (list_structures). The house method, turns, is the default. Ask the writer which structure before applying one; nothing remembers the template afterwards, there are only cards.",
+    inputSchema: { template: z.string().min(1) },
   },
   async (args) => {
-    const { changed, result, live } = await commit({ type: "apply_template", template: args.template });
-    if (!changed) return ok(`No structure called ${args.template}.`);
+    const { project } = await readProject();
+    const own = findStructure(project, args.template);
+    const command = own
+      ? { type: "apply_template", template: own.id, beats: own.beats }
+      : { type: "apply_template", template: args.template };
+    const { changed, result, live } = await commit(command);
+    if (!changed) return ok(`No structure called ${args.template}. Call list_structures for the real ones.`);
     const names = result.map((note) => note.headline).join(", ");
-    return ok(`Laid out ${result.length} beats${where(live)}: ${names}.`, result);
+    return ok(`Laid out ${result.length} beats${own ? ` of "${own.name}"` : ""}${where(live)}: ${names}.`, result);
+  },
+);
+
+// The writer's own structures (R38, Roadmap 2 item 7): saved from a wall's
+// beats onto the project, laid on another wall with apply_template.
+server.registerTool(
+  "list_structures",
+  {
+    title: "List the structures",
+    description: "The structures apply_template can lay on a wall: the built-in ones, and the writer's own saved from their walls (save_structure), each with its beats.",
+    inputSchema: {},
+  },
+  async () => {
+    const { project } = await readProject();
+    const own = project.structures ?? [];
+    const lines = [
+      `built in: ${TEMPLATES.length}`,
+      ...TEMPLATES.map((template) => `  - ${template.id} — "${template.name}" (${template.beats.length} beats)`),
+      `the writer's own: ${own.length}`,
+      ...own.map((structure) => `  - ${structure.id} — "${structure.name}" (${structure.beats.length} beats: ${structure.beats.map((beat) => beat.name).join(", ")})`),
+    ];
+    return ok(lines.join("\n"), { builtIn: TEMPLATES.map((template) => ({ id: template.id, name: template.name, beats: template.beats })), own });
+  },
+);
+
+server.registerTool(
+  "save_structure",
+  {
+    title: "Save this wall's beats as a structure",
+    description:
+      "Save the open board's beats — in reading order, each one's headline as the beat's name, its change line as the prompt, and where it falls as a share of the wall — as one of the writer's own structures on the project, to lay on another wall with apply_template. Needs at least one card marked as a beat (set_rank).",
+    inputSchema: { name: z.string().min(1) },
+  },
+  async (args) => {
+    const { state } = await readBoard();
+    const order = readingOrder(state.notes).map((note) => note.id);
+    const beats = structureBeats(state.notes, order);
+    if (beats.length === 0) return ok("Nothing to save: no card on this board is marked as a beat. Mark the turns with set_rank first.");
+    const { project, boards, rev, base, live } = await readProject();
+    const { project: next, structure } = addStructure(project, args.name, beats);
+    await writeProject(next, boards, rev, base);
+    return ok(`Saved "${structure.name}" with ${beats.length} beats${where(live)}: ${beats.map((beat) => beat.name).join(", ")}.`, structure);
+  },
+);
+
+server.registerTool(
+  "remove_structure",
+  {
+    title: "Remove one of the writer's structures",
+    description: "Remove one of the writer's own structures from the project, by name or id. The built-in ones stay. Cards laid from it before are untouched — there are only cards.",
+    inputSchema: { structure: z.string().min(1) },
+  },
+  async (args) => {
+    const { project, boards, rev, base, live } = await readProject();
+    const found = findStructure(project, args.structure);
+    if (!found) return ok(`No structure of the writer's called "${args.structure}". Call list_structures.`);
+    await writeProject(removeStructure(project, found.id), boards, rev, base);
+    return ok(`Removed "${found.name}"${where(live)}.`, { id: found.id, name: found.name });
   },
 );
 
@@ -1205,6 +1281,30 @@ server.registerTool(
   },
 );
 
+/** Upload a file by path into the project's bucket and file an assets row for it. */
+async function fileAsset(account, kind, subject, filePath, note = "") {
+  const bytes = fs.readFileSync(filePath);
+  const name = path.basename(filePath);
+  const safe = name.replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "") || kind;
+  const ext = path.extname(name).toLowerCase();
+  const contentType =
+    { ".mp4": "video/mp4", ".webm": "video/webm", ".mov": "video/quicktime", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".gif": "image/gif", ".webp": "image/webp", ".pdf": "application/pdf", ".txt": "text/plain", ".fountain": "text/plain", ".fdx": "application/xml" }[ext] ??
+    "application/octet-stream";
+  const storagePath = `${account.projectId}/${kind}/${crypto.randomUUID()}-${safe}`;
+  const up = await account.client.storage.from("projects").upload(storagePath, bytes, { contentType, upsert: false });
+  if (up.error) return { error: `Could not upload ${name}: ${up.error.message}` };
+  const row = await account.client
+    .from("assets")
+    .insert({ project_id: account.projectId, kind, subject, path: storagePath, name, size: bytes.length, content_type: contentType, note })
+    .select("id")
+    .maybeSingle();
+  if (row.error) {
+    await account.client.storage.from("projects").remove([storagePath]);
+    return { error: `Uploaded, but could not file ${name}: ${row.error.message}` };
+  }
+  return { id: row.data?.id, name };
+}
+
 server.registerTool(
   "add_take",
   {
@@ -1216,26 +1316,71 @@ server.registerTool(
   async (args) => {
     const account = await findAccount();
     if (!account) return ok("No account door: set PLOTCODER_EMAIL and PLOTCODER_PASSWORD to file takes on the project.");
-    const bytes = fs.readFileSync(args.path);
-    const name = path.basename(args.path);
-    const safe = name.replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "") || "take";
-    const ext = path.extname(name).toLowerCase();
-    const contentType = ext === ".mp4" ? "video/mp4" : ext === ".webm" ? "video/webm" : ext === ".mov" ? "video/quicktime" : ext === ".png" ? "image/png" : ext === ".jpg" || ext === ".jpeg" ? "image/jpeg" : "application/octet-stream";
-    const storagePath = `${account.projectId}/take/${crypto.randomUUID()}-${safe}`;
-    const up = await account.client.storage.from("projects").upload(storagePath, bytes, { contentType, upsert: false });
-    if (up.error) return ok(`Could not upload the take: ${up.error.message}`);
-    const row = await account.client.from("assets").insert({
-      project_id: account.projectId,
-      kind: "take",
-      subject: args.subject,
-      path: storagePath,
-      name,
-      size: bytes.length,
-      content_type: contentType,
-      note: args.chosen ? "chosen" : "",
-    }).select("id").maybeSingle();
-    if (row.error) return ok(`Uploaded, but could not file the take: ${row.error.message}`);
-    return ok(`Filed "${name}" as a take on ${args.subject}${args.chosen ? ", chosen" : ""} (saved to the account; the writer's Takes panel has it).`, { id: row.data?.id, subject: args.subject });
+    const filed = await fileAsset(account, "take", args.subject, args.path, args.chosen ? "chosen" : "");
+    if (filed.error) return ok(filed.error);
+    return ok(`Filed "${filed.name}" as a take on ${args.subject}${args.chosen ? ", chosen" : ""} (saved to the account; the writer's Takes panel has it).`, { id: filed.id, subject: args.subject });
+  },
+);
+
+server.registerTool(
+  "add_picture",
+  {
+    title: "Add a picture to a person's page",
+    description:
+      "Through the account door: put a picture — an image file by path — on a person's page (R36), by the character's id or name. The writer sees it in the page's gallery; the first picture is the face on their page.",
+    inputSchema: { character: z.string().min(1), path: z.string().min(1) },
+  },
+  async (args) => {
+    const account = await findAccount();
+    if (!account) return ok("No account door: pictures are files on the project, and need PLOTCODER_EMAIL and PLOTCODER_PASSWORD to add.");
+    const { state } = await readBoard();
+    const wanted = args.character.trim().toLowerCase();
+    const person = state.characters.find((item) => item.id === args.character) ?? state.characters.find((item) => item.name.trim().toLowerCase() === wanted);
+    if (!person) return ok(`Nobody called "${args.character}" on this board. Call list_board for the cast, or add_character.`);
+    const filed = await fileAsset(account, "picture", person.id, args.path);
+    if (filed.error) return ok(filed.error);
+    return ok(`Added "${filed.name}" to ${person.name}'s page (saved to the account; the writer's gallery has it).`, { id: filed.id, character: person.id });
+  },
+);
+
+server.registerTool(
+  "list_files",
+  {
+    title: "List the project's files",
+    description:
+      "Through the account door: every file on the working project — pictures on people's pages, takes on cards, other files — with its id, kind, what it is about (a character id, a card id, or run:<ids>), name and size.",
+    inputSchema: {},
+  },
+  async () => {
+    const account = await findAccount();
+    if (!account) return ok("No account door: files live on the project, and need PLOTCODER_EMAIL and PLOTCODER_PASSWORD to read.");
+    const { data, error } = await account.client.from("assets").select("id, kind, subject, name, size, note, created_at").eq("project_id", account.projectId).order("created_at");
+    if (error) return ok(`Could not read the files: ${error.message}`);
+    const rows = data ?? [];
+    return ok(
+      [`files: ${rows.length}`, ...rows.map((row) => `  - ${row.id} — ${row.kind} — ${row.subject || "(the project)"} — ${row.name} (${row.size} bytes)${row.note === "chosen" ? " (chosen)" : ""}`)].join("\n"),
+      rows,
+    );
+  },
+);
+
+server.registerTool(
+  "remove_file",
+  {
+    title: "Remove a file from the project",
+    description: "Through the account door: remove one file — a picture, a take, anything — from the working project by its id from list_files. Cannot be undone: ask the writer first.",
+    inputSchema: { id: z.string().min(1) },
+  },
+  async (args) => {
+    const account = await findAccount();
+    if (!account) return ok("No account door: files live on the project, and need PLOTCODER_EMAIL and PLOTCODER_PASSWORD to remove.");
+    const found = await account.client.from("assets").select("id, path, name").eq("project_id", account.projectId).eq("id", args.id).maybeSingle();
+    if (found.error) return ok(`Could not find the file: ${found.error.message}`);
+    if (!found.data) return ok(`No file with id ${args.id} on this project. Call list_files.`);
+    const gone = await account.client.from("assets").delete().eq("id", args.id);
+    if (gone.error) return ok(`Could not remove ${found.data.name}: ${gone.error.message}`);
+    await account.client.storage.from("projects").remove([found.data.path]);
+    return ok(`Removed "${found.data.name}" (saved to the account; gone from every open wall).`, { id: args.id });
   },
 );
 
@@ -1257,12 +1402,36 @@ server.registerTool(
       );
     }
     trail.pop();
+    undone.push(last);
     const { boardId } = await readBoard();
     const live = await writeBoard(last.before, rev, base, boardId);
     return ok(
       `Undid ${last.what}${where(live)}. ${trail.length} more of mine can be undone.`,
       last.before,
     );
+  },
+);
+
+server.registerTool(
+  "redo",
+  {
+    title: "Redo what I undid",
+    description:
+      "Put back the last change this server undid, newest first. Refuses if the board has changed since the undo — a person moved on, or another agent did — so it never tramples work. Any new change of mine clears what could be redone.",
+    inputSchema: {},
+  },
+  async () => {
+    const last = undone[undone.length - 1];
+    if (!last) return ok("Nothing of mine to redo.");
+    const { state, rev, base, boardId } = await readBoard();
+    if (JSON.stringify(state) !== JSON.stringify(last.before)) {
+      return ok(`Not redone: the board has changed since I undid my ${last.what}. Redoing now would trample that.`);
+    }
+    undone.pop();
+    const after = JSON.parse(last.after);
+    const live = await writeBoard(after, rev, base, boardId);
+    trail.push(last);
+    return ok(`Redid ${last.what}${where(live)}. ${undone.length} more can be redone.`, after);
   },
 );
 
@@ -1766,6 +1935,28 @@ server.registerTool(
     account.projectId = found.id;
     joinPresence(found.id);
     return ok(`Working "${found.record.name}" now (as ${account.email}).`, { id: found.id, name: found.record.name });
+  },
+);
+
+server.registerTool(
+  "new_project",
+  {
+    title: "Start a project",
+    description:
+      "Through the account door: start a new project of the writer's with this name — one empty board, nothing on it — and work it from now on. The writer sees it under Projects on every device.",
+    inputSchema: { name: z.string().min(1) },
+  },
+  async (args) => {
+    const account = await findAccount();
+    if (!account) return ok("No account door: there is one project here, the open one. Set PLOTCODER_EMAIL and PLOTCODER_PASSWORD to start another on the writer's account.");
+    const record = renameProject(emptyProject(), args.name.trim());
+    const inserted = await account.client.from("projects").insert({ id: record.id, record, reminders: null, rev: 1 });
+    if (inserted.error) return ok(`Could not start the project: ${inserted.error.message}`);
+    const board = await account.client.from("boards").insert({ id: record.activeBoardId, project_id: record.id, state: emptyState(), rev: 1, updated_by: null });
+    if (board.error) return ok(`Started "${record.name}" but could not make its first board: ${board.error.message}`);
+    account.projectId = record.id;
+    joinPresence(record.id);
+    return ok(`Started "${record.name}" and working it now (as ${account.email}).`, { id: record.id, name: record.name });
   },
 );
 

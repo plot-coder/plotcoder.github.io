@@ -9,7 +9,7 @@
 // Plain ESM with a sibling .d.ts, like the kernel, so the browser store and the
 // MCP server share one idea of what a project is. Keep it free of `window`.
 
-import { newId, nowIso } from "./reducer.js";
+import { newId, noteEighths, nowIso } from "./reducer.js";
 
 export const PROJECT_VERSION = 2;
 export const DEFAULT_PROJECT_NAME = "Untitled project";
@@ -196,6 +196,31 @@ export function reidentifyProject(project, now = nowIso()) {
     /** Old board id → new, so a store can move each board's state along. */
     renamed: Object.fromEntries(ids),
   };
+}
+
+/**
+ * A structure's beats from a wall (Roadmap 2, item 7): each beat card in
+ * reading order, its headline as the beat's name, its change line as the
+ * prompt, and where it falls as a share of the wall's length. Empty when the
+ * wall has no beats — there is nothing to save then.
+ */
+export function structureBeats(notes, order) {
+  const byId = new Map(notes.map((note) => [note.id, note]));
+  const ordered = order.map((id) => byId.get(id)).filter(Boolean);
+  const total = ordered.reduce((sum, note) => sum + noteEighths(note), 0) || 1;
+  let cursor = 0;
+  const beats = [];
+  for (const note of ordered) {
+    if (note.rank === "beat") {
+      beats.push({
+        name: note.headline || "Untitled beat",
+        prompt: note.change || "What turns here?",
+        at: Math.round((cursor / total) * 100) / 100,
+      });
+    }
+    cursor += noteEighths(note);
+  }
+  return beats;
 }
 
 /** Save a structure on the project: a name and beats { name, prompt, at }. */

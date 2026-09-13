@@ -1,5 +1,7 @@
 // Type surface for project.js — the project record (R35).
 
+import type { BoardNote } from "./reducer";
+
 export declare const PROJECT_VERSION: number;
 export declare const DEFAULT_PROJECT_NAME: string;
 
@@ -25,6 +27,10 @@ export type ProjectRecord = {
 };
 
 export type OwnStructure = { id: string; name: string; beats: Array<{ name: string; prompt: string; at: number }> };
+export declare function structureBeats(
+  notes: ReadonlyArray<BoardNote>,
+  order: ReadonlyArray<string>,
+): OwnStructure["beats"];
 export declare function addStructure(
   project: ProjectRecord,
   name: string,

@@ -133,6 +133,7 @@ describe("plotcoder MCP server", () => {
   const SORTED_TOOLS = [
       "add_character",
       "add_reminder",
+      "add_picture",
       "add_take",
       "apply_template",
       "build_segment",
@@ -150,13 +151,16 @@ describe("plotcoder MCP server", () => {
       "import_fountain",
       "list_board",
       "list_boards",
+      "list_files",
       "list_projects",
       "lock_numbers",
       "list_reminders",
+      "list_structures",
       "list_takes",
       "list_workflows",
       "move_note",
       "new_board",
+      "new_project",
       "open_board",
       "open_project",
       "organize",
@@ -164,12 +168,16 @@ describe("plotcoder MCP server", () => {
       "read_pages",
       "read_wall",
       "recolor_note",
+      "redo",
       "remove_character",
+      "remove_file",
       "remove_reminder",
+      "remove_structure",
       "rename_board",
       "rename_character",
       "rename_group",
       "rename_project",
+      "save_structure",
       "segment_brief",
       "set_arrow_kind",
       "set_length",
@@ -1005,6 +1013,44 @@ describe("undo", () => {
     expect(await back.callTool("undo")).toContain("Nothing of mine to undo");
   });
 
+  it("redoes what it undid, newest first, and a new change clears the way back", async () => {
+    // The undos above are redoable until the server changes something new.
+    expect(await back.callTool("redo")).toContain("Redid");
+    await back.callTool("set_logline", { logline: "A clean slate" });
+    expect(await back.callTool("redo")).toContain("Nothing of mine to redo");
+    await back.callTool("create_note", { headline: "The second gun", change: "Somebody mentions it." });
+    await back.callTool("set_logline", { logline: "Will the gun go off?" });
+    await back.callTool("undo");
+    await back.callTool("undo");
+    let board = JSON.parse(fs.readFileSync(file(), "utf8")).state;
+    expect(board.notes.some((note) => note.headline === "The second gun")).toBe(false);
+
+    const first = await back.callTool("redo");
+    expect(first).toContain('Redid create_note "The second gun"');
+    expect(first).toContain("1 more can be redone");
+    board = JSON.parse(fs.readFileSync(file(), "utf8")).state;
+    expect(board.notes.some((note) => note.headline === "The second gun")).toBe(true);
+    expect(board.logline).not.toBe("Will the gun go off?");
+
+    // A new change of the server's own forgets what was undone.
+    await back.callTool("set_target", { pages: 90 });
+    expect(await back.callTool("redo")).toContain("Nothing of mine to redo");
+    // And the redone change is undoable again.
+    expect(await back.callTool("undo")).toContain("Undid set_target");
+    expect(await back.callTool("undo")).toContain('Undid create_note "The second gun"');
+  });
+
+  it("refuses to redo over a change somebody else made since", async () => {
+    await back.callTool("set_logline", { logline: "A question to take back" });
+    await back.callTool("undo");
+    const saved = JSON.parse(fs.readFileSync(file(), "utf8"));
+    saved.state.notes[0].change = "Something else happened.";
+    saved.rev += 1;
+    fs.writeFileSync(file(), JSON.stringify(saved));
+    expect(await back.callTool("redo")).toContain("Not redone: the board has changed since I undid my set_logline");
+    expect(JSON.parse(fs.readFileSync(file(), "utf8")).state.logline).not.toBe("A question to take back");
+  });
+
   it("refuses to undo over a change somebody else made since", async () => {
     await back.callTool("set_logline", { logline: "Can Maya forgive?" });
     // The person edits the wall in the meantime: the file moves on.
@@ -1125,6 +1171,65 @@ describe("boards of a project", () => {
     await season.callTool("delete_board", { board: "Episode 1" });
     expect(await season.callTool("list_boards")).toContain("boards: 1");
     expect(await season.callTool("delete_board", { board: "Episode 2" })).toContain("keeps at least one board");
+  });
+});
+
+// The writer's own structures (R38), through the agent door.
+describe("structures of the writer's own", () => {
+  let own;
+  let ownRoot;
+
+  beforeAll(async () => {
+    ownRoot = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-structures-"));
+    own = new McpClient(ownRoot);
+    await own.start();
+  }, 30000);
+
+  afterAll(() => {
+    own?.stop();
+    if (ownRoot) fs.rmSync(ownRoot, { recursive: true, force: true });
+  });
+
+  it("lists the built-in structures and, at first, none of the writer's", async () => {
+    const text = await own.callTool("list_structures");
+    expect(text).toContain("built in: 5");
+    expect(text).toContain('turns — "Turns"');
+    expect(text).toContain("the writer's own: 0");
+  });
+
+  it("refuses to save a wall with no beats, then saves the beats in reading order", async () => {
+    expect(await own.callTool("save_structure", { name: "Maya's shape" })).toContain("Nothing to save");
+    const board = await own.callToolData("list_board");
+    const [first, , third] = board.notes.map((note) => note.id);
+    await own.callTool("set_rank", { ids: [third, first], rank: "beat" });
+    const saved = await own.callToolData("save_structure", { name: "  Maya's shape " });
+    expect(saved.name).toBe("Maya's shape");
+    expect(saved.beats).toHaveLength(2);
+    expect(saved.beats[0].name).toBe(board.notes[0].headline);
+    expect(saved.beats[0].at).toBe(0);
+    expect(saved.beats[1].at).toBeGreaterThan(0);
+    expect(await own.callTool("list_structures")).toContain("the writer's own: 1");
+    // It is on the project record, where the app reads it.
+    const project = JSON.parse(fs.readFileSync(path.join(ownRoot, ".plotcoder", "project.json"), "utf8")).project;
+    expect(project.structures.map((structure) => structure.name)).toEqual(["Maya's shape"]);
+  });
+
+  it("lays one of the writer's own on the wall by name, and removes it by name", async () => {
+    const before = (await own.callToolData("list_board")).notes.length;
+    const laid = await own.callTool("apply_template", { template: "maya's shape" });
+    expect(laid).toContain('Laid out 2 beats of "Maya\'s shape"');
+    expect((await own.callToolData("list_board")).notes).toHaveLength(before + 2);
+    expect(await own.callTool("remove_structure", { structure: "nope" })).toContain("No structure of the writer's");
+    expect(await own.callTool("remove_structure", { structure: "Maya's shape" })).toContain('Removed "Maya\'s shape"');
+    expect(await own.callTool("list_structures")).toContain("the writer's own: 0");
+    expect(await own.callTool("apply_template", { template: "maya's shape" })).toContain("No structure called");
+  });
+
+  it("answers plainly when the account door is shut", async () => {
+    expect(await own.callTool("new_project", { name: "Another" })).toContain("No account door");
+    expect(await own.callTool("add_picture", { character: "maya", path: "nowhere.png" })).toContain("No account door");
+    expect(await own.callTool("list_files")).toContain("No account door");
+    expect(await own.callTool("remove_file", { id: "x" })).toContain("No account door");
   });
 });
 

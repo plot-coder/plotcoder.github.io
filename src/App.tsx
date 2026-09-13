@@ -35,6 +35,7 @@ import { TakesPanel } from "./TakesPanel";
 import { AccountSheet } from "./AccountSheet";
 import { WordsSheet } from "./WordsSheet";
 import { AsksSheet } from "./AsksSheet";
+import { AgentsSheet } from "./AgentsSheet";
 import type { WordTarget } from "./board/words";
 import { ProjectPicker } from "./ProjectPicker";
 import { StoryMap } from "./StoryMap";
@@ -112,6 +113,7 @@ export function App() {
   const [structureOpen, setStructureOpen] = useState(false);
   const [wordsOpen, setWordsOpen] = useState(false);
   const [asksOpen, setAsksOpen] = useState(false);
+  const [agentsOpen, setAgentsOpen] = useState(false);
   // The brief (R28, first step): for the selected card or cards.
   const [briefOpen, setBriefOpen] = useState(false);
   // Takes (R28, item 9): for the selected card or run.
@@ -776,8 +778,9 @@ export function App() {
             window.setTimeout(() => window.print(), 400);
           }}
         />
-        <AccountSheet open={accountOpen} onClose={() => setAccountOpen(false)} currentProjectId={project.id} />
-        <WordsSheet open={wordsOpen} onClose={() => setWordsOpen(false)} onShow={showWord} />
+        <AccountSheet open={accountOpen} onClose={() => setAccountOpen(false)} currentProjectId={project.id} onAgents={() => setAgentsOpen(true)} />
+        <WordsSheet open={wordsOpen} onClose={() => setWordsOpen(false)} onShow={showWord} onAgents={() => setAgentsOpen(true)} />
+        <AgentsSheet open={agentsOpen} onClose={() => setAgentsOpen(false)} />
         <AsksSheet open={asksOpen} findings={reading.findings} onClose={() => setAsksOpen(false)} onShow={showCards} />
         <ProjectPicker currentProjectId={project.id} />
         <StructureSheet
@@ -859,6 +862,7 @@ export function App() {
         onLocation={setLocation}
         onStructure={() => setStructureOpen(true)}
         onWords={() => setWordsOpen(true)}
+        onAgents={() => setAgentsOpen(true)}
         onHoverNote={setHoverNoteId}
         selectedIds={selectedIds}
         selectedArrowId={selectedArrowId}

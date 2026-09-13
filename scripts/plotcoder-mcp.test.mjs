@@ -138,6 +138,7 @@ describe("plotcoder MCP server", () => {
       "apply_template",
       "build_segment",
       "cast",
+      "claim_account",
       "create_arrow",
       "create_group",
       "create_note",
@@ -1231,6 +1232,10 @@ describe("structures of the writer's own", () => {
     expect(await own.callTool("remove_structure", { structure: "Maya's shape" })).toContain('Removed "Maya\'s shape"');
     expect(await own.callTool("list_structures")).toContain("the writer's own: 0");
     expect(await own.callTool("apply_template", { template: "maya's shape" })).toContain("No structure called");
+  });
+
+  it("refuses to make an account for something that is not an address, without touching the network", async () => {
+    expect(await own.callTool("claim_account", { email: "robert", password: "x" })).toContain("does not look like an email address");
   });
 
   it("answers plainly when the account door is shut", async () => {

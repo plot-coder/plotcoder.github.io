@@ -16,11 +16,13 @@ type AccountSheetProps = {
   onClose: () => void;
   /** The open project's id, so the list can mark it. */
   currentProjectId: string;
+  /** Are you an agent? Start here (R43); the sheet closes first. */
+  onAgents: () => void;
 };
 
 type Mode = "none" | "name" | "password" | "share";
 
-export function AccountSheet({ open, onClose, currentProjectId }: AccountSheetProps) {
+export function AccountSheet({ open, onClose, currentProjectId, onAgents }: AccountSheetProps) {
   const titleId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
   const account = useSyncExternalStore(accountStore.subscribe, accountStore.getAccount);
@@ -200,6 +202,19 @@ export function AccountSheet({ open, onClose, currentProjectId }: AccountSheetPr
                   </button>
                 </div>
               )}
+              <p className="agents__line">
+                Your agent can work this account too.{" "}
+                <button
+                  type="button"
+                  className="agents__start"
+                  onClick={() => {
+                    onClose();
+                    onAgents();
+                  }}
+                >
+                  Start here.
+                </button>
+              </p>
             </section>
 
             <section className="account__group" aria-label="Projects">

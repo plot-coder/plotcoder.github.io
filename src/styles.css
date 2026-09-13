@@ -2141,6 +2141,86 @@ body {
   margin-top: 0.8rem;
 }
 
+/* --- Are you an agent? Start here (R43) ----------------------------------- */
+
+.group-hint__agent {
+  display: block;
+  margin-top: 0.7rem;
+  font-size: 0.68rem;
+  opacity: 0.8;
+}
+
+.agents__line {
+  margin: 0.8rem 0 0;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--bar-border);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.74rem;
+  color: var(--muted);
+}
+
+.agents__start {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--bar-border);
+  text-underline-offset: 0.25em;
+  cursor: pointer;
+}
+
+.agents__start:hover {
+  text-decoration-color: var(--over);
+}
+
+.agents__door + .agents__door {
+  margin-top: 0.6rem;
+}
+
+.agents__text {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.agents__code {
+  position: relative;
+  margin: 0.4rem 0 0;
+  padding: 0.5rem 0.65rem;
+  border-radius: 0.3rem;
+  background: var(--slot);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.7rem;
+  line-height: 1.45;
+  white-space: pre;
+  overflow-x: auto;
+  color: var(--ink);
+}
+
+.agents__copy {
+  position: absolute;
+  right: 0.5rem;
+  top: 0.45rem;
+}
+
+.agents__first {
+  margin: 0;
+  padding-left: 1.2rem;
+  line-height: 1.5;
+}
+
+.agents__first code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9em;
+}
+
+.agents__link {
+  color: var(--ink);
+  text-decoration-color: var(--bar-border);
+  text-underline-offset: 0.25em;
+}
+
 /* --- What these words mean (R42): the sheet, and show me ------------------ */
 
 .words__list {
@@ -3352,8 +3432,12 @@ body {
 
 /* --- Start from a structure (R38) ----------------------------------------- */
 
+/* The empty wall's hint has links in it: above the board's layer, which
+   otherwise takes every click (found 2026-09-13 — the structure link had
+   been unreachable by mouse). */
 .group-hint--empty {
   pointer-events: auto;
+  z-index: 6;
 }
 
 .group-hint__link {

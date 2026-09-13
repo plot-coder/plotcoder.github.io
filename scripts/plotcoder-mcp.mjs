@@ -1951,6 +1951,48 @@ server.registerTool(
 );
 
 server.registerTool(
+  "claim_account",
+  {
+    title: "Make the writer's account",
+    description:
+      "Make a PlotCoder account for the writer: their email and a password they chose (any password, no rules). Ask them for both; never invent a password. The account is the same one the door makes; the writer signs in at the wordmark on any device with it. This server then works the account for the rest of the session, and the wall it was working on becomes the account's first project. Refuses an address that already has an account.",
+    inputSchema: { email: z.string().min(3), password: z.string().min(1) },
+  },
+  async (args) => {
+    const email = args.email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return ok("That does not look like an email address.");
+    if (process.env.PLOTCODER_EMAIL && accountDoor) return ok(`Already signed in as ${accountDoor.email}. Sign out of the environment first to make another account.`);
+    let response;
+    try {
+      response = await fetch(`${SUPABASE_URL}/functions/v1/account`, {
+        method: "POST",
+        headers: { "content-type": "application/json", apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+        body: JSON.stringify({ action: "claim", email, password: hashPassword(email, args.password) }),
+        signal: AbortSignal.timeout(8000),
+      });
+    } catch (error) {
+      return ok(`Could not reach the account service: ${error instanceof Error ? error.message : String(error)}`);
+    }
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      if (payload.error === "taken") return ok(`${email} already has an account. Sign in with it (PLOTCODER_EMAIL and PLOTCODER_PASSWORD), or the writer can use Forgotten? at the door.`);
+      return ok(`Could not make the account: ${payload.error ?? response.status}`);
+    }
+    // Work it from here on: the door reads the environment, so set it for this process.
+    process.env.PLOTCODER_EMAIL = email;
+    process.env.PLOTCODER_PASSWORD = args.password;
+    accountDoor = null;
+    accountTried = false;
+    const account = await findAccount();
+    if (!account) return ok(`Made the account for ${email}, but could not sign in with it yet. Set PLOTCODER_EMAIL and PLOTCODER_PASSWORD and try again.`);
+    return ok(
+      `Made the account for ${email} and working it now. The wall here is its first project; the writer signs in at the wordmark on any device with this email and the password they gave.`,
+      { email, project: account.projectId },
+    );
+  },
+);
+
+server.registerTool(
   "new_project",
   {
     title: "Start a project",

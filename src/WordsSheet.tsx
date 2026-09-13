@@ -13,9 +13,11 @@ type WordsSheetProps = {
   onClose: () => void;
   /** Light the thing on the wall the word names; the sheet closes first. */
   onShow: (target: WordTarget) => void;
+  /** Are you an agent? Start here (R43); the sheet closes first. */
+  onAgents: () => void;
 };
 
-export function WordsSheet({ open, onClose, onShow }: WordsSheetProps) {
+export function WordsSheet({ open, onClose, onShow, onAgents }: WordsSheetProps) {
   const titleId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
 
@@ -79,6 +81,19 @@ export function WordsSheet({ open, onClose, onShow }: WordsSheetProps) {
             </dl>
           </section>
         ))}
+        <p className="agents__line">
+          Are you an agent?{" "}
+          <button
+            type="button"
+            className="agents__start"
+            onClick={() => {
+              onClose();
+              onAgents();
+            }}
+          >
+            Start here.
+          </button>
+        </p>
       </div>
     </div>
   );

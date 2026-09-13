@@ -52,6 +52,8 @@ export type WallReading = {
   beats: Array<{ id: string; headline: string }>;
   runs: Run[];
   setups: Setup[];
+  /** Every planted card: the scene that pays it off (first setup arrow, by wall order), or null while unpaid. */
+  payoffs: Record<string, string | null>;
   findings: Finding[];
 };
 

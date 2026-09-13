@@ -63,6 +63,8 @@ type NoteBoardProps = {
   revision: BoardState["revision"];
   /** Cards with a take filed on them (item 9). */
   hasTake: Set<string>;
+  /** Planted card id → the printed number of the scene that pays it off, or null. */
+  payoffOf: Map<string, string | null>;
   onHoverNote: (id: string | null) => void;
   selectedIds: string[];
   selectedArrowId: string | null;
@@ -148,6 +150,7 @@ export function NoteBoard({
   numberOf,
   revision,
   hasTake,
+  payoffOf,
   onHoverNote,
   selectedIds,
   selectedArrowId,
@@ -547,6 +550,7 @@ export function NoteBoard({
           page={pageOf.get(note.id) ?? null}
           sceneNumber={numberOf.get(note.id) ?? null}
           hasTake={hasTake.has(note.id)}
+          payoff={payoffOf.get(note.id) ?? null}
           revised={revision && isRevised(note, revision.snapshot[note.id]) ? revision.color : null}
           onCastNames={onCastNames}
           onLocation={onLocation}

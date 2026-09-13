@@ -41,6 +41,9 @@ type GeneralBarProps = {
   onTakes: () => void;
   zoom: number;
   canFit: boolean;
+  /** What the wall asks right now (R22), and the door to it. */
+  asks: number;
+  onAsks: () => void;
   beats: number;
   scenes: number;
   runtimeEighths: number;
@@ -67,6 +70,8 @@ export function GeneralBar({
   onOrganize,
   onStructure,
   onWords,
+  asks,
+  onAsks,
   canBrief,
   onBrief,
   onTakes,
@@ -173,6 +178,19 @@ export function GeneralBar({
                 <span className="readout__note"> · an estimate from the cards</span>
               </span>
               <span />
+            </div>
+
+            {/* Step four of the method (R22): what the wall asks, and the way in. */}
+            <div className="readout__line">
+              <span className="readout__k">Asks</span>
+              <span className="readout__v">
+                {asks === 0 ? "nothing to ask" : `${asks} ${asks === 1 ? "question" : "questions"}`}
+              </span>
+              <span className="readout__acts">
+                <button type="button" className={`readout__act ${asks > 0 ? "is-warm" : ""}`} onClick={onAsks}>
+                  read the wall
+                </button>
+              </span>
             </div>
 
             <div className="readout__line">

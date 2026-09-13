@@ -67,7 +67,7 @@ export const WORD_GROUPS = [
         id: "corner",
         name: "The folded corner",
         sentence:
-          "This card plants something — a gun on the wall — that must pay off later. Read the wall keeps asking about it until a setup arrow leaves the card.",
+          "This card plants something — a gun on the wall — that must pay off later. The card says unpaid, and the bar’s Asks line keeps asking, until a setup arrow leaves it.",
         target: "corner",
       },
       {

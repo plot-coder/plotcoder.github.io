@@ -34,6 +34,7 @@ import { BriefSheet } from "./BriefSheet";
 import { TakesPanel } from "./TakesPanel";
 import { AccountSheet } from "./AccountSheet";
 import { WordsSheet } from "./WordsSheet";
+import { AsksSheet } from "./AsksSheet";
 import type { WordTarget } from "./board/words";
 import { ProjectPicker } from "./ProjectPicker";
 import { StoryMap } from "./StoryMap";
@@ -106,6 +107,7 @@ export function App() {
   // Start from a structure (R38).
   const [structureOpen, setStructureOpen] = useState(false);
   const [wordsOpen, setWordsOpen] = useState(false);
+  const [asksOpen, setAsksOpen] = useState(false);
   // The brief (R28, first step): for the selected card or cards.
   const [briefOpen, setBriefOpen] = useState(false);
   // Takes (R28, item 9): for the selected card or run.
@@ -214,6 +216,34 @@ export function App() {
     }
     return ids;
   }, [view, notes]);
+
+  // The scene that pays each plant off, as printed on the card (R31).
+  const payoffOf = useMemo(() => {
+    const map = new Map<string, string | null>();
+    for (const [from, to] of Object.entries(reading.payoffs)) {
+      // The scene's printed number: the lock's when locked, else its place in reading order.
+      const number = to ? (numberOf.get(to) ?? (reading.order.includes(to) ? String(reading.order.indexOf(to) + 1) : null)) : null;
+      map.set(from, to ? (number ?? notes.find((note) => note.id === to)?.headline ?? null) : null);
+    }
+    return map;
+  }, [reading, numberOf, notes]);
+
+  // Light elements on the wall for a moment; fit first so they are in the window.
+  function light(find: () => HTMLElement[]) {
+    if (notes.length > 0) fitToWall();
+    window.setTimeout(() => {
+      const els = find();
+      for (const el of els) el.classList.add("is-shown");
+      window.setTimeout(() => {
+        for (const el of els) el.classList.remove("is-shown");
+      }, 2200);
+    }, 60);
+  }
+
+  /** Show me from the Asks sheet: the cards a question is about. */
+  function showCards(ids: string[]) {
+    light(() => ids.map((id) => document.querySelector<HTMLElement>(`.note[data-note="${CSS.escape(id)}"]`)).filter((el): el is HTMLElement => Boolean(el)));
+  }
 
   // Show me (R42): light the thing on the wall a word names, for a moment.
   // Fit the wall first so the thing is in the window. UI layer only.
@@ -711,6 +741,7 @@ export function App() {
         />
         <AccountSheet open={accountOpen} onClose={() => setAccountOpen(false)} currentProjectId={project.id} />
         <WordsSheet open={wordsOpen} onClose={() => setWordsOpen(false)} onShow={showWord} />
+        <AsksSheet open={asksOpen} findings={reading.findings} onClose={() => setAsksOpen(false)} onShow={showCards} />
         <ProjectPicker currentProjectId={project.id} />
         <StructureSheet
           open={structureOpen}
@@ -778,6 +809,7 @@ export function App() {
         numberOf={numberOf}
         revision={board.revision}
         hasTake={hasTake}
+        payoffOf={payoffOf}
         notes={notes}
         groups={groups}
         arrows={arrows}
@@ -839,6 +871,8 @@ export function App() {
         onOrganize={organizeNotes}
         onStructure={() => setStructureOpen(true)}
         onWords={() => setWordsOpen(true)}
+        asks={reading.findings.length}
+        onAsks={() => setAsksOpen(true)}
         canBrief={selectedIds.length > 0}
         onBrief={() => setBriefOpen(true)}
         onTakes={() => {

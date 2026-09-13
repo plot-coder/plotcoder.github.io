@@ -236,9 +236,22 @@ export function readWall(state) {
   // A folded corner nothing has paid off (R31). The fold says "this plants
   // something"; a setup arrow leaving the card is the payoff. Until one does,
   // the debt is open.
+  // Which scene pays each plant off: the first setup arrow leaving the card,
+  // by wall order of its head. Every planted card is here, paid or not
+  // (null), so a card can say its state.
   const paysOff = new Set(
     state.arrows.filter((arrow) => arrow.kind === "setup").map((arrow) => arrow.from),
   );
+  const wallIndex = new Map(order.map((note, index) => [note.id, index]));
+  const payoffs = {};
+  for (const note of order) {
+    if (!note.plants) continue;
+    const heads = state.arrows
+      .filter((arrow) => arrow.kind === "setup" && arrow.from === note.id)
+      .map((arrow) => arrow.to)
+      .sort((a, b) => (wallIndex.get(a) ?? Infinity) - (wallIndex.get(b) ?? Infinity));
+    payoffs[note.id] = heads[0] ?? null;
+  }
   for (const note of order) {
     if (note.plants && !paysOff.has(note.id)) {
       findings.push({
@@ -301,6 +314,7 @@ export function readWall(state) {
     beats: beats.map((note) => ({ id: note.id, headline: note.headline })),
     runs,
     setups,
+    payoffs,
     findings,
   };
 }

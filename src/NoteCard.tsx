@@ -30,6 +30,8 @@ type NoteCardProps = {
   revised: string | null;
   /** A take is filed on this scene (item 9). */
   hasTake: boolean;
+  /** When folded: the scene that pays it off, as printed ("14"), or null while unpaid. */
+  payoff: string | null;
   onCastNames: (id: string, names: string[]) => void;
   onLocation: (id: string, location: string) => void;
   onRaise: (id: string) => void;
@@ -57,6 +59,7 @@ export function NoteCard({
   sceneNumber,
   revised,
   hasTake,
+  payoff,
   onCastNames,
   onLocation,
   onRaise,
@@ -93,6 +96,7 @@ export function NoteCard({
         zIndex: note.z + 10,
         transform: `rotate(${note.rotate}deg)`,
       }}
+      data-note={note.id}
       onPointerDown={(event) => onPointerDown(event, note)}
       onPointerEnter={() => onHover(note.id)}
       onPointerLeave={() => onHover(null)}
@@ -114,6 +118,19 @@ export function NoteCard({
       >
         <span className="note__fold-flap" aria-hidden="true" />
       </button>
+      {/* The fold's state, beside the ear: a debt in the warm colour until a setup
+          arrow leaves the card, then the scene that pays it off. */}
+      {note.plants ? (
+        <span className={`note__plant ${payoff ? "" : "is-unpaid"}`} aria-live="polite">
+          {payoff ? (
+            <>
+              Plants · <b>paid off in {payoff}</b>
+            </>
+          ) : (
+            "Plants · unpaid"
+          )}
+        </span>
+      ) : null}
       {sceneNumber ? <span className="note__scene-number" aria-label={`Scene ${sceneNumber}`}>{sceneNumber}</span> : null}
       {hasTake ? <span className="note__take" aria-label="A take exists for this scene" title="A take exists" /> : null}
       <EditableText

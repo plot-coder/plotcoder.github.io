@@ -1974,6 +1974,68 @@ body {
   }
 }
 
+/* --- The fold's state on the card, and what the wall asks ----------------- */
+
+.note__plant {
+  position: absolute;
+  left: 2.2rem;
+  top: 0.5rem;
+  z-index: 2;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.42rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(42, 38, 24, 0.62);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.note__plant b {
+  color: var(--paper-ink, #2a2618);
+  font-weight: 700;
+}
+
+.note__plant.is-unpaid {
+  color: var(--over);
+}
+
+.readout__act.is-warm {
+  color: var(--over);
+}
+
+.asks__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.asks__q {
+  padding: 0.55rem 0;
+  border-top: 1px solid var(--bar-border);
+}
+
+.asks__q:first-child {
+  border-top: 0;
+}
+
+.asks__q .cast-lens__kicker {
+  margin-bottom: 0.15rem;
+}
+
+.asks__kind--warm {
+  color: var(--over);
+}
+
+.asks__text {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.asks__none {
+  margin-top: 0.8rem;
+}
+
 /* --- What these words mean (R42): the sheet, and show me ------------------ */
 
 .words__list {

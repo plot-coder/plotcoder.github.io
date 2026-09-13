@@ -128,7 +128,7 @@ describe("findings", () => {
 
   it("returns nothing at all for an empty board", () => {
     const reading = readWall(emptyState());
-    expect(reading).toEqual({ order: [], beats: [], runs: [], setups: [], findings: [] });
+    expect(reading).toEqual({ order: [], beats: [], runs: [], setups: [], payoffs: {}, findings: [] });
   });
 
   it("notes that runs cannot be read until a beat is marked, and passes no judgement on the count", () => {
@@ -383,5 +383,23 @@ describe("findings", () => {
     const snapshot = JSON.stringify(state);
     readWall(state);
     expect(JSON.stringify(state)).toBe(snapshot);
+  });
+});
+
+describe("payoffs: which scene pays each plant off", () => {
+  it("names the first setup arrow's head by wall order, and null while unpaid", () => {
+    let state = emptyState();
+    const plant = applyCommand(state, { type: "create_note", headline: "The gun on the wall", change: "Nobody mentions it.", x: 0, y: 0, plants: true }).result as { id: string };
+    state = applyCommand(state, { type: "create_note", headline: "The gun on the wall", change: "Nobody mentions it.", x: 0, y: 0, plants: true }).state;
+    const first = state.notes[0];
+    state = applyCommand(state, { type: "create_note", headline: "Later", change: "It goes off.", x: 600, y: 0 }).state;
+    state = applyCommand(state, { type: "create_note", headline: "Latest", change: "It goes off again.", x: 1200, y: 0 }).state;
+    const [, later, latest] = state.notes;
+    expect(readWall(state).payoffs).toEqual({ [first.id]: null });
+    state = applyCommand(state, { type: "create_arrow", from: first.id, to: latest.id, kind: "setup" }).state;
+    state = applyCommand(state, { type: "create_arrow", from: first.id, to: later.id, kind: "setup" }).state;
+    expect(readWall(state).payoffs).toEqual({ [first.id]: later.id });
+    expect(readWall(state).findings.filter((f) => f.kind === "unpaid")).toEqual([]);
+    void plant;
   });
 });

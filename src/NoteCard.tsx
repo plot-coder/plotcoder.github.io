@@ -21,6 +21,8 @@ type NoteCardProps = {
   characters: BoardCharacter[];
   /** Every place on the wall, for completion on the place line (R37). */
   places: string[];
+  /** The page this scene starts on once it is written and paginated (R23 c). */
+  page: number | null;
   onCastNames: (id: string, names: string[]) => void;
   onLocation: (id: string, location: string) => void;
   onRaise: (id: string) => void;
@@ -44,6 +46,7 @@ export function NoteCard({
   dimmed,
   characters,
   places,
+  page,
   onCastNames,
   onLocation,
   onRaise,
@@ -154,7 +157,7 @@ export function NoteCard({
           setSizing((open) => !open);
         }}
       >
-        {formatPages(noteEighths(note))}
+        {page !== null && isMeasured(note) ? `p. ${page}` : formatPages(noteEighths(note))}
       </button>
       {sizing ? (
         <div className="note__lengths" onPointerDown={(event) => event.stopPropagation()}>

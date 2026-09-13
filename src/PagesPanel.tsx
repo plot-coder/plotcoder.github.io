@@ -11,6 +11,8 @@
 
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { sceneHeading } from "./board/fountain";
+import { paginateBoard } from "./pagesLayout";
+import { type Line } from "./board/paginate";
 import { type WallReading } from "./board/readWall";
 import {
   formatPages,
@@ -23,6 +25,9 @@ import {
 type PagesPanelProps = {
   open: boolean;
   wide: boolean;
+  /** As text (the editor) or as pages (the print, R23 c). */
+  view: "text" | "pages";
+  onView: (view: "text" | "pages") => void;
   board: BoardState;
   reading: WallReading | null;
   /** The card whose scene should be in view: the selected one, or the one just clicked. */
@@ -37,6 +42,8 @@ type PagesPanelProps = {
 export function PagesPanel({
   open,
   wide,
+  view,
+  onView,
   board,
   reading,
   focusId,
@@ -72,18 +79,37 @@ export function PagesPanel({
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
+  // The pages (R23 c): computed from the same order, never stored.
+  const pages = useMemo(() => (open && view === "pages" ? paginateBoard(board, reading) : null), [open, view, board, reading]);
+
   if (!open) return null;
 
   const written = order.filter((note) => isMeasured(note)).length;
+  const focusScene = pages?.scenes.find((scene) => scene.id === focusId) ?? null;
   let beat = 0;
 
   return (
     <aside className={`pages ${wide ? "pages--wide" : ""}`} aria-label="Pages">
       <div className="pages__head">
         <p className="cast-lens__kicker">
-          Pages · {order.length} {order.length === 1 ? "scene" : "scenes"} · {written} written
+          {pages
+            ? `Pages · ${pages.pageCount} of ${Math.round(board.targetEighths / 8)}${focusScene ? ` · scene ${focusScene.number} on p. ${focusScene.page}` : ""}`
+            : `Pages · ${order.length} ${order.length === 1 ? "scene" : "scenes"} · ${written} written`}
         </p>
         <div className="cast-lens__actions">
+          <span className="pages__seg" role="group" aria-label="View">
+            <button type="button" className={`pages__seg-btn ${view === "text" ? "is-on" : ""}`} aria-pressed={view === "text"} onClick={() => onView("text")}>
+              As text
+            </button>
+            <button type="button" className={`pages__seg-btn ${view === "pages" ? "is-on" : ""}`} aria-pressed={view === "pages"} onClick={() => onView("pages")}>
+              As pages
+            </button>
+          </span>
+          {view === "pages" ? (
+            <button type="button" className="cast-lens__action" onClick={() => window.print()}>
+              Print
+            </button>
+          ) : null}
           <button type="button" className="cast-lens__action" onClick={onToggleWide}>
             {wide ? "Beside the wall" : "Widen"}
           </button>
@@ -93,6 +119,32 @@ export function PagesPanel({
         </div>
       </div>
 
+      {pages ? (
+        <div className="pages__sheet pages__sheet--print print-pages" ref={listRef}>
+          {pages.pages.map((page) => (
+            <div key={page.number} className="print-page" data-page={page.number}>
+              <div className="print-page__number">{page.number}.</div>
+              <div className="print-page__body">
+                {page.lines.map((line, index) => (
+                  <PrintLine
+                    key={index}
+                    line={line}
+                    first={index === 0 || page.lines[index - 1]?.noteId !== line.noteId}
+                    focus={line.noteId === focusId}
+                    onFocus={() => {
+                      if (line.noteId) onFocusScene(line.noteId);
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+          <p className="pages__print-note">
+            Letter, Courier 12, fifty-five lines. Scene numbers follow the wall's order. Click a scene to
+            edit it as text.
+          </p>
+        </div>
+      ) : (
       <div className="pages__sheet" ref={listRef}>
         {order.length === 0 ? (
           <p className="pages__empty">No cards yet. The script is the wall read out; add a card and its scene appears here.</p>
@@ -127,7 +179,27 @@ export function PagesPanel({
           );
         })}
       </div>
+      )}
     </aside>
+  );
+}
+
+// One line of a printed page, at the element's column. A dual line is two.
+function PrintLine({ line, first, focus, onFocus }: { line: Line; first: boolean; focus: boolean; onFocus: () => void }) {
+  if (line.kind === "dual") {
+    return (
+      <div className={`pl pl--dual ${focus ? "is-focus" : ""}`} data-scene={first ? line.noteId : undefined} onClick={onFocus}>
+        <span className={`pl pl--${line.left?.kind ?? "blank"} pl--col`}>{line.left?.text}</span>
+        <span className={`pl pl--${line.right?.kind ?? "blank"} pl--col`}>{line.right?.text}</span>
+      </div>
+    );
+  }
+  return (
+    <div className={`pl pl--${line.kind} ${focus ? "is-focus" : ""}`} data-scene={first ? line.noteId : undefined} onClick={onFocus}>
+      {line.kind === "heading" && line.sceneNumber ? <span className="pl__num pl__num--l">{line.sceneNumber}</span> : null}
+      {line.text}
+      {line.kind === "heading" && line.sceneNumber ? <span className="pl__num pl__num--r">{line.sceneNumber}</span> : null}
+    </div>
   );
 }
 

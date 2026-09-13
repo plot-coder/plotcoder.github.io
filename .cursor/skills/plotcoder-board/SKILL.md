@@ -101,6 +101,10 @@ lands on the exact same board a person sees.
 - `import_fountain` — a `.fountain` file or text onto the open board: scenes
   land on the cards with the same heading in order; unknown scenes become new
   cards; nothing is deleted.
+- `page_count` — the board paginated as a script (Letter, Courier 12, 55
+  lines, the industry's break rules) with the page each scene starts on.
+- `export_fdx` / `import_fdx` — Final Draft's file, out (scene numbers by
+  wall order, not locked) and in (the same merge as Fountain in).
 
 ### The project
 

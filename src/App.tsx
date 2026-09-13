@@ -17,12 +17,14 @@ import {
   type BoardCharacter,
   type CharacterField,
   boardPlaces,
+  isMeasured,
 } from "./board/reducer";
 import { organizePoses } from "./board/organize";
 import { ProjectModal } from "./ProjectModal";
 import { RemindersModal } from "./RemindersModal";
 import { StructureSheet } from "./StructureSheet";
 import { PagesPanel } from "./PagesPanel";
+import { paginateBoard } from "./pagesLayout";
 import { BriefSheet } from "./BriefSheet";
 import { AccountSheet } from "./AccountSheet";
 import { ProjectPicker } from "./ProjectPicker";
@@ -51,6 +53,7 @@ function readMapOpen(): boolean {
 const BAR_KEY_LEGACY = "plotcoder.generalBar.expanded";
 const PAGES_KEY = "plotcoder.pages.open";
 const PAGES_WIDE_KEY = "plotcoder.pages.wide";
+const PAGES_VIEW_KEY = "plotcoder.pages.asPages";
 
 function readFlag(key: string, fallback: boolean): boolean {
   try {
@@ -90,6 +93,7 @@ export function App() {
   // Pages beside the wall (R23 b): open, and whether it takes the window.
   const [pagesOpen, setPagesOpen] = useState<boolean>(() => readFlag(PAGES_KEY, false));
   const [pagesWide, setPagesWide] = useState<boolean>(() => readFlag(PAGES_WIDE_KEY, false));
+  const [pagesView, setPagesView] = useState<"text" | "pages">(() => (readFlag(PAGES_VIEW_KEY, false) ? "pages" : "text"));
   // The scene with the caret: its card lights on the wall.
   const [sceneFocusId, setSceneFocusId] = useState<string | null>(null);
   // The cast lens (R29): who the wall is being looked at through. Hover is a
@@ -116,6 +120,11 @@ export function App() {
   const placeNames = useMemo(() => places.map((place) => place.name), [places]);
   // One reading of the wall for the lens and the map, so they agree.
   const reading = useMemo(() => readWall(board), [board]);
+  // The page each written scene starts on (R23 c), for the card's corner.
+  const pageOf = useMemo(() => {
+    if (!board.notes.some((note) => isMeasured(note))) return new Map<string, number>();
+    return paginateBoard(board, reading).pageOf;
+  }, [board, reading]);
   // The premise belongs to the project, not the board (D17).
   const premise = project.premise;
   const shape = countRanks(board);
@@ -558,6 +567,13 @@ export function App() {
           onOpen={() => setProjectOpen(true)}
           onClose={() => setProjectOpen(false)}
           onSignIn={() => setAccountOpen(true)}
+          onPrint={() => {
+            setPagesOpen(true);
+            writeFlag(PAGES_KEY, true);
+            setPagesView("pages");
+            writeFlag(PAGES_VIEW_KEY, true);
+            window.setTimeout(() => window.print(), 400);
+          }}
         />
         <AccountSheet open={accountOpen} onClose={() => setAccountOpen(false)} currentProjectId={project.id} />
         <ProjectPicker currentProjectId={project.id} />
@@ -578,6 +594,11 @@ export function App() {
       <PagesPanel
         open={pagesOpen}
         wide={pagesWide}
+        view={pagesView}
+        onView={(next) => {
+          setPagesView(next);
+          writeFlag(PAGES_VIEW_KEY, next === "pages");
+        }}
         board={board}
         reading={reading}
         focusId={sceneFocusId ?? (selectedIds.length === 1 ? selectedIds[0] : null)}
@@ -588,13 +609,20 @@ export function App() {
         }}
         onToggleWide={togglePagesWide}
         onSetText={setSceneText}
-        onFocusScene={focusScene}
+        onFocusScene={(id) => {
+          focusScene(id);
+          if (id && pagesView === "pages") {
+            setPagesView("text");
+            writeFlag(PAGES_VIEW_KEY, false);
+          }
+        }}
       />
       <NoteBoard
         boardRef={boardRef}
         pagesOpen={pagesOpen && !pagesWide}
         view={view}
         onView={updateView}
+        pageOf={pageOf}
         notes={notes}
         groups={groups}
         arrows={arrows}

@@ -1747,6 +1747,46 @@ body {
   line-height: 1.45;
 }
 
+/* --- Names on hover: every bar icon says what it is after a second -------- */
+
+.bar-icon[data-tip] {
+  position: relative;
+}
+
+.bar-icon[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 0.5rem);
+  transform: translateX(-50%);
+  padding: 0.3rem 0.55rem;
+  border-radius: 0.3rem;
+  background: var(--ink);
+  color: var(--canvas);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+  transition-delay: 0s;
+  z-index: 20;
+}
+
+.bar-icon[data-tip]:hover::after,
+.bar-icon[data-tip]:focus-visible::after {
+  opacity: 1;
+  transition-delay: 1s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bar-icon[data-tip]::after {
+    transition: none;
+  }
+}
+
 /* --- The name on the door, you and your projects (R39, R40, R41) ---------- */
 
 .crumb__mark--door {
@@ -2126,6 +2166,197 @@ body {
 
 .story-map__estimate {
   pointer-events: none;
+}
+
+/* --- Pages that print (R23 c) ---------------------------------------------- */
+
+.pages__seg {
+  display: inline-flex;
+  gap: 0.1rem;
+  padding: 0.1rem;
+  border: 1px solid var(--bar-border);
+  border-radius: 999px;
+}
+
+.pages__seg-btn {
+  padding: 0.15rem 0.55rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.pages__seg-btn.is-on {
+  background: var(--ink);
+  color: var(--canvas);
+}
+
+.pages__sheet--print {
+  padding: 1.2rem 1rem 3rem;
+  background: var(--slot);
+}
+
+/* A US Letter page at Courier 12: 60 columns across 6 inches, 55 lines. */
+.print-page {
+  position: relative;
+  width: min(100%, 51em);
+  margin: 0 auto 1.2rem;
+  padding: 6.1% 9.1% 6.1% 15.6%;
+  aspect-ratio: 8.5 / 11;
+  background: #fffdf7;
+  color: #1b1a17;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.22);
+  font-family: "Courier Prime", "Courier New", Courier, monospace;
+  font-size: 0.86rem;
+  line-height: 1.5;
+  overflow: hidden;
+}
+
+.print-page__number {
+  position: absolute;
+  top: 3.6%;
+  right: 9.1%;
+}
+
+.pl {
+  position: relative;
+  min-height: 1.5em;
+  white-space: pre;
+  cursor: text;
+}
+
+.pl.is-focus {
+  background: rgba(255, 229, 106, 0.35);
+}
+
+.pl--heading {
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.pl--character {
+  padding-left: 22em;
+  text-transform: uppercase;
+}
+
+.pl--parenthetical {
+  padding-left: 16em;
+}
+
+.pl--dialogue {
+  padding-left: 10em;
+}
+
+.pl--more {
+  padding-left: 22em;
+}
+
+.pl--transition {
+  text-align: right;
+  text-transform: uppercase;
+}
+
+.pl--centered {
+  text-align: center;
+}
+
+.pl--dual {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2em;
+}
+
+.pl--col {
+  padding-left: 0;
+}
+
+.pl--col.pl--character {
+  padding-left: 8em;
+}
+
+.pl--col.pl--dialogue {
+  padding-left: 0;
+}
+
+.pl__num {
+  position: absolute;
+  color: #7a7669;
+}
+
+.pl__num--l {
+  left: -6em;
+}
+
+.pl__num--r {
+  right: -5em;
+}
+
+.pages__print-note {
+  margin: 0.4rem 0 0;
+  text-align: center;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.68rem;
+  color: var(--muted);
+}
+
+@media print {
+  @page {
+    size: letter;
+    margin: 1in 1in 1in 1.5in;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  .print-pages,
+  .print-pages * {
+    visibility: visible;
+  }
+
+  .print-pages {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    padding: 0;
+    background: transparent;
+  }
+
+  .print-page {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    aspect-ratio: auto;
+    box-shadow: none;
+    background: transparent;
+    font-size: 12pt;
+    line-height: 1;
+    page-break-after: always;
+    break-after: page;
+    overflow: visible;
+  }
+
+  .print-page__number {
+    position: absolute;
+    top: -0.5in;
+    right: 0;
+  }
+
+  .pl {
+    min-height: 12pt;
+    line-height: 12pt;
+  }
+
+  .pages__print-note {
+    display: none;
+  }
 }
 
 /* --- Start from a structure (R38) ----------------------------------------- */

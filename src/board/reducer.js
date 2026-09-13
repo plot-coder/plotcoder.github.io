@@ -24,6 +24,8 @@ export const ARROW_KINDS = ["follows", "setup"];
 // Structure templates (R38) are data beside the kernel; applying one is a
 // kernel command so it is one undo step and one tool call.
 import { templateById } from "./templates.js";
+// The same lines the page has, so the panel's count and the print agree (R23 c).
+import { sceneLineCount } from "./paginate.js";
 
 // Characters are a board-level roster (D26): one record per person, referenced
 // from cards by id, so a name changes in one place and the same person is the
@@ -132,10 +134,10 @@ function clampEighths(value, fallback, max) {
 // same eighths the estimate uses (D23); a card without keeps the estimate.
 export const LINES_PER_PAGE = 55;
 
-/** Eighths of a page the scene's text runs to; 0 when there is no text. */
+/** Eighths of a page the scene's text runs to on the page; 0 when there is no text. */
 export function measuredEighths(text) {
-  if (typeof text !== "string" || !text.trim()) return 0;
-  const lines = text.trim().split("\n").length;
+  const lines = sceneLineCount(text);
+  if (lines === 0) return 0;
   return Math.max(1, Math.round((lines / LINES_PER_PAGE) * EIGHTHS_PER_PAGE));
 }
 

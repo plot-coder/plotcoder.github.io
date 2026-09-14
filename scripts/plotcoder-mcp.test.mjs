@@ -1288,12 +1288,16 @@ describe("after the blind run", () => {
     expect(read).toContain("no card without a headline or change line");
     expect(read).not.toMatch(/checked and clean:.*unwritten/);
     expect(read).toContain("pages: all estimates — no scene is written yet");
+    expect(read).toContain("(distances in estimated pages)");
+    expect(read).toMatch(/checks: 11 run — asking about [a-z, ]+; checked and clean:/);
   });
 
   it("names the card's id and casts it in one call, adding a role-named person to the roster", async () => {
     const text = await blind.callTool("create_note", { headline: "Dana calls their mother", change: "She lies about where they are.", characters: ["Maya", "Dana's mother"] });
     expect(text).toMatch(/^Created card [A-Za-z0-9_-]+: a scene, /);
-    expect(text).toContain("Cast: Maya, Dana's mother (added to the roster: Dana's mother)");
+    expect(text).toContain("no place yet (location here, or set_location)");
+    expect(text).toMatch(/added to the roster: .*Dana's mother \([^)]+\)/);
+    expect(text).toMatch(/Cast: Maya, Dana's mother \(added to the roster: Dana's mother \([^)]+\)\)/);
     const board = await blind.callToolData("list_board");
     const mother = board.characters.find((person) => person.name === "Dana's mother");
     expect(mother).toBeTruthy();
@@ -1546,6 +1550,56 @@ describe("the shell caller, one server per call", () => {
     } finally {
       one.stop();
       fs.rmSync(oneRoot, { recursive: true, force: true });
+    }
+  }, 30000);
+});
+
+// The account wins over an open app when the sign-in is set: the sign-in is
+// the agent saying which wall it means (run five, finding 9 — five calls on
+// another worktree's wall). Here the account refuses, so the reply is the
+// refusal, and the bridge that is answering is never read.
+describe("the account door beside an open app", () => {
+  it("goes to the account, not the app, when the sign-in is set", async () => {
+    const bridge = startFakeBridge();
+    const url = await bridge.listen();
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-both-"));
+    const both = new McpClient(root, {
+      PLOTCODER_NO_BRIDGE: "0",
+      PLOTCODER_BRIDGE_URL: url,
+      PLOTCODER_EMAIL: "test@test.com",
+      PLOTCODER_PASSWORD: "wrong",
+      VITE_SUPABASE_URL: "http://127.0.0.1:1",
+    });
+    await both.start();
+    try {
+      const read = await both.callTool("list_board");
+      expect(read).toContain("The account door refused test@test.com");
+      expect(read).not.toContain("the open app");
+      expect(bridge.puts).toHaveLength(0);
+    } finally {
+      both.stop();
+      bridge.close();
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  }, 30000);
+});
+
+// The front door answers in words when the server cannot start (rounds four
+// and five: "Connection closed" was all an agent saw of a folder without
+// npm ci). One tool, whose description is the reason and the fix.
+describe("the launcher, when dependencies are missing", () => {
+  it("serves one tool that says to run npm ci in the folder", async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-bare-"));
+    const bare = new McpClient(root, { PLOTCODER_PRETEND_NOT_INSTALLED: "1" });
+    await bare.start();
+    try {
+      const { tools } = await bare.request("tools/list", {});
+      expect(tools.map((tool) => tool.name)).toEqual(["plotcoder_not_installed"]);
+      expect(tools[0].description).toContain("npm ci");
+      expect(await bare.callTool("list_board")).toContain("Run `npm ci`");
+    } finally {
+      bare.stop();
+      fs.rmSync(root, { recursive: true, force: true });
     }
   }, 30000);
 });

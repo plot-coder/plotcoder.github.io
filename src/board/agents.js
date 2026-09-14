@@ -12,14 +12,14 @@ export const AGENTS = {
     {
       id: "mcp",
       name: "MCP",
-      text: "For Cursor or Claude Code: the server in the repo, github.com/plot-coder/plotcoder.github.io. Read the guide first, at the address above; then clone the repo, run npm ci once, and wire the server by this. The wiring is project-scoped: it loads when a session opens with the repo as its folder. For any session anywhere, once: claude mcp add plotcoder-board -s user -- node /path/to/plotcoder.github.io/scripts/plotcoder-mcp.mjs. No MCP at all? node scripts/plotcoder-call.mjs <tool> '{json}' makes one call from a shell — one server per call, so undo and the project you opened do not carry to the next call; PLOTCODER_PROJECT names the project for each. PLOTCODER_ROOT points the server at the folder whose wall you mean; without it, the server uses the folder it runs from.",
-      code: '{\n  "mcpServers": {\n    "plotcoder-board": {\n      "command": "node",\n      "args": ["scripts/plotcoder-mcp.mjs"]\n    }\n  }\n}',
+      text: "For Cursor or Claude Code: the server in the repo, github.com/plot-coder/plotcoder.github.io. Read the guide first, at the address above; then clone the repo, run npm ci once in it, and wire the server. From any session anywhere, once, with the repo's real path: claude mcp add plotcoder-board -s user -- node /path/to/plotcoder.github.io/scripts/plotcoder-mcp.mjs — then start the session again; a server added mid-session connects on the next one. The block below is the same wiring for a config file; give it the absolute path too, since a relative one only works with the repo as the session's folder. A server that comes up with one tool, plotcoder_not_installed, is telling you npm ci was not run in that folder. No MCP at all? node scripts/plotcoder-call.mjs <tool> '{json}' makes one call from a shell — one server per call, so undo and the project you opened do not carry to the next call; PLOTCODER_PROJECT names the project for each, and PLOTCODER_JSON=0 drops the JSON tail from its replies. PLOTCODER_ROOT points the server at the folder whose wall you mean; without it, the server uses the folder it runs from.",
+      code: '{\n  "mcpServers": {\n    "plotcoder-board": {\n      "command": "node",\n      "args": ["/path/to/plotcoder.github.io/scripts/plotcoder-mcp.mjs"]\n    }\n  }\n}',
     },
     {
       id: "account",
       name: "The account",
-      text: "With the writer's own sign-in in the server's environment, the same server works their project from anywhere, live on every open wall. The two variables go where the server is started: in the MCP config's env, as -e flags on claude mcp add, or exported in the shell before plotcoder-call. A wrong password is refused by every tool, never worked around. No account yet? claim_account makes one with the writer's email and a password they chose, and starts it empty.",
-      code: '{\n  "mcpServers": {\n    "plotcoder-board": {\n      "command": "node",\n      "args": ["scripts/plotcoder-mcp.mjs"],\n      "env": {\n        "PLOTCODER_EMAIL": "you@example.com",\n        "PLOTCODER_PASSWORD": "…",\n        "PLOTCODER_PROJECT": "The Letter"\n      }\n    }\n  }\n}\n\nclaude mcp add plotcoder-board -s user \\\n  -e PLOTCODER_EMAIL=you@example.com \\\n  -e PLOTCODER_PASSWORD=… \\\n  -- node /path/to/plotcoder.github.io/scripts/plotcoder-mcp.mjs',
+      text: "With the writer's own sign-in in the server's environment, the same server works their project from anywhere, live on every open wall. The two variables go where the server is started: in the MCP config's env, as -e flags on claude mcp add, or exported in the shell before plotcoder-call. With the sign-in set, the account is the wall, even when a dev app is open on the machine. Without PLOTCODER_PROJECT it works the project touched most recently; every reply's first line names the project it read, and list_projects shows the rest. A wrong password is refused by every tool, never worked around. No account yet? claim_account makes one with the writer's email and a password they chose, and starts it empty.",
+      code: '{\n  "mcpServers": {\n    "plotcoder-board": {\n      "command": "node",\n      "args": ["/path/to/plotcoder.github.io/scripts/plotcoder-mcp.mjs"],\n      "env": {\n        "PLOTCODER_EMAIL": "you@example.com",\n        "PLOTCODER_PASSWORD": "…",\n        "PLOTCODER_PROJECT": "The Letter"\n      }\n    }\n  }\n}\n\nclaude mcp add plotcoder-board -s user \\\n  -e PLOTCODER_EMAIL=you@example.com \\\n  -e PLOTCODER_PASSWORD=… \\\n  -- node /path/to/plotcoder.github.io/scripts/plotcoder-mcp.mjs',
     },
     {
       id: "page",
@@ -32,6 +32,7 @@ export const AGENTS = {
       text: "Without an account, a wall is a folder: any folder, empty is fine — choose one that will outlive your session, never a scratch one. The app run from that folder shows the wall, and the server writes it there (PLOTCODER_ROOT). A fresh folder holds the sample; new_board for the writer's wall, then rename_project. No app running? export_fountain is the wall in order, as text. PLOTCODER_JSON=0 drops the JSON tail from replies.",
     },
   ],
+  firstNote: "On the wall you will work, so after open_project or open_board, read_wall again.",
   first: [
     { tool: "list_words", why: "the room's words, the app's meaning." },
     { tool: "read_wall", why: "what is here, and what it asks. A fresh folder holds a sample wall (Maya, Tom, the letter) and says so; it is not the writer's." },
@@ -58,7 +59,7 @@ export function agentsAsText() {
     lines.push(`- ${door.name}: ${door.text}`);
     if (door.code) lines.push("", "```", door.code, "```", "");
   }
-  lines.push("## Call these first");
+  lines.push("## Call these first", AGENTS.firstNote);
   AGENTS.first.forEach((item, index) => lines.push(`${index + 1}. ${item.tool} — ${item.why}`));
   lines.push("", "## Rules");
   for (const rule of AGENTS.rules) lines.push(`- ${rule}`);

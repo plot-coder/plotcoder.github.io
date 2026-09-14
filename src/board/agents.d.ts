@@ -4,6 +4,7 @@ export type AgentDoor = { id: string; name: string; text: string; code?: string 
 export declare const AGENTS: {
   lead: string;
   doors: AgentDoor[];
+  firstNote: string;
   first: Array<{ tool: string; why: string }>;
   rules: string[];
   person: string;

@@ -77,6 +77,7 @@ export function AgentsSheet({ open, onClose }: AgentsSheetProps) {
 
         <section className="account__group" aria-label="Call these first">
           <p className="cast-lens__kicker">Call these first</p>
+          <p className="agents__text">{AGENTS.firstNote}</p>
           <ol className="agents__first">
             {AGENTS.first.map((item) => (
               <li key={item.tool}>

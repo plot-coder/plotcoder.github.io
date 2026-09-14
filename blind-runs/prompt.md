@@ -48,7 +48,7 @@ script refuses or fails, tell me and stop.
 
 ## The round
 
-Now read this and only this:
+Now read this, and whatever it tells you to read, and nothing else:
 
     https://plotcoder.com/llms.txt
 

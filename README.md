@@ -87,7 +87,8 @@ next round into a test of `claim_account` instead of the door it meant to test.
 | `src/App.tsx`, `src/NoteBoard.tsx`, `src/NoteCard.tsx` | The wall. |
 | `src/GeneralBar.tsx`, `src/Logline.tsx` | Screen chrome: the bottom-right bar and the logline strip. |
 | `src/viewport.ts`, `src/arrowGeometry.ts`, `src/organizeLayout.ts` | Pure helpers, tested. |
-| `scripts/plotcoder-mcp.mjs` | The MCP server. |
+| `scripts/plotcoder-mcp.mjs` | The MCP server's front door: starts `plotcoder-mcp-server.mjs`, or answers in words when `npm ci` has not been run. |
+| `scripts/plotcoder-mcp-server.mjs` | The MCP server. |
 | `vite.config.ts` | The dev bridge that mirrors the board to a file on localhost. Never ships. |
 | `.github/workflows/deploy.yml` | Test, build, deploy to Pages. |
 | `blind-runs/` | The blind-run practice: the rules, the rounds, and each round's prompt and treatment. |

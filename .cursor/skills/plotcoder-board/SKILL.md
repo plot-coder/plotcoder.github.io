@@ -110,7 +110,7 @@ order as text, the nearest thing to a look at it.
 - `read_character` — a person's page back, by id or name: the five lines as
   they stand and the cards they are on. `list_board` says which lines are
   written; this says what they say.
-- `update_character` — write a person's page by id: `looks`, `voice`, `wants`,
+- `update_character` — write a person's page by `id` or `name`: `looks`, `voice`, `wants`,
   `needs`, `notes`, any subset, all text. `list_board` says which lines each
   person has ("page: looks, wants" or "page: empty"). Looks and voice are what
   a video agent will be handed later, so ask the writer before inventing them.
@@ -138,10 +138,15 @@ order as text, the nearest thing to a look at it.
   or sounds.
 - **Under target** is reported as plainly as over — a number and "an
   estimate" — never as a verdict either way.
-- **A whole treatment at once:** write it as Fountain — `# Act one` sections,
-  a scene heading and a line per scene, `[[with Maya]]` for the cast — and
-  `import_fountain`; then cast, place and fold what needs it. Faster than a
-  card at a time for anything over ten scenes.
+- **A treatment is cards, one call each.** `import_fountain` is the door for
+  pages, not a treatment: a new card takes its headline from the `= synopsis`
+  line (else the heading), its place from a forced heading (`.the piano shop`)
+  with a synopsis, its text from the body and its change line from the body's
+  first sentence — and a card with text is measured from it, so a one-line
+  body makes a card of a few lines, not a page. Rank, the fold, the cast,
+  arrows and acts do not travel. Thirteen `create_note` calls with
+  `characters`, `location`, `rank` and `plants` is the right size for a
+  treatment.
 
 ### Pages
 
@@ -290,8 +295,12 @@ nothing is generated or sent, and no video tool is chosen yet.
 With `PLOTCODER_EMAIL` and `PLOTCODER_PASSWORD` in your environment — the
 writer's own — and no dev server running, every tool works the writer's
 project on the account directly, and each change lands on every open wall.
-`list_projects` shows what you can work; `open_project` switches;
-`new_project` starts an empty one and works it. **No account yet?**
+`list_projects` shows what you can work; `open_project` (`project`: a name
+or id from the list) switches; `new_project` (`name`, and `pages` or
+`minutes` for its target) starts an empty one and works it. With the sign-in
+set, the account is the wall even when a dev app is open on the machine;
+without `PLOTCODER_PROJECT` the server works the project touched most
+recently, and every reply's first line names it. **No account yet?**
 `claim_account` makes one with the writer's email and a password — ask the
 writer for both and never invent a password; say what was made (the email,
 that the wall here is its first project, that they sign in at the wordmark);
@@ -299,8 +308,8 @@ one account per writer, so a taken address is refused, not varied. The
 on-ramp in the app and at plotcoder.com/llms.txt says the same. Files on the project go
 through this door too: `add_picture` puts an image on a person's page,
 `add_take` files a take on a card or a run, `list_files` shows everything,
-`remove_file` takes one away (ask first; it cannot be undone). Prefer the
-open app's bridge when it is there; the account door is for when it is not.
+`remove_file` takes one away (ask first; it cannot be undone). The
+sign-in set is you saying which wall you mean, so it wins over an open app.
 
 ## The production half
 

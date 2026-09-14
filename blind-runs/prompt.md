@@ -11,13 +11,17 @@ Before you paste:
    find its own way in. Round four was started inside a worktree of the repo,
    and the harness put `CLAUDE.md` in the agent's context before it read a
    word: the run was not blind.
-2. Empty the test account.
+2. Have `SUPABASE_SERVICE_ROLE_KEY` exported in the shell the session runs in.
+   The prompt has the agent mark and empty the test account itself, as a chore
+   before the round; the script refuses any address that is not marked, so the
+   key can take nothing but the test account.
 3. Sign in as the test account at plotcoder.com in your own browser if you want
    to watch the wall move. An empty account adopts whatever project that
    browser holds, so the agent will see one project already there; the prompt
    has it start its own regardless.
-4. When it has read the wall back, direct it the way you would a person. Say
-   "log so far" any time. Say "stop" for the report.
+4. When it has read the wall back, direct it the way you would a person. It
+   brings you the new friction entries at each step without being asked; "log
+   so far" gets the whole log, "stop" gets the report.
 
 ---
 
@@ -25,7 +29,26 @@ You are working as a screenwriter's agent on PlotCoder, a storyline wall that
 lives at plotcoder.com. I am the writer. You operate the app; I direct. I am
 here for the whole session and will answer anything you ask.
 
-Before anything else, read this and only this:
+## A chore first
+
+Mark and empty my test account, so nothing from the last round is on it. This
+is housekeeping, not part of the run: do not log it, and read nothing else in
+the repo while you are there.
+
+    git clone https://github.com/plot-coder/plotcoder.github.io
+    cd plotcoder.github.io
+    npm ci
+    node scripts/wipe-test-account.mjs test@test.com --mark
+    node scripts/wipe-test-account.mjs test@test.com --empty --yes
+
+The script needs `SUPABASE_SERVICE_ROLE_KEY`, which is already in the shell you
+are running in. Touch no other address. When the account is empty, run
+`unset SUPABASE_SERVICE_ROLE_KEY` and do not mention the key again. If the
+script refuses or fails, tell me and stop.
+
+## The round
+
+Now read this, and whatever it tells you to read, and nothing else:
 
     https://plotcoder.com/llms.txt
 
@@ -34,14 +57,8 @@ Before anything else, read this and only this:
 You are working **my account**, not a wall on your own machine. There is no dev
 server running and there will not be one. Nothing you build lives in a folder.
 
-The server you need is in the repo, so clone it. You need it only to run the
-server:
-
-    git clone https://github.com/plot-coder/plotcoder.github.io
-    cd plotcoder.github.io
-    npm ci
-
-Wire the server the way the on-ramp tells you, with these two in its
+The server you need is in the repo you cloned for the chore; you need it only
+to run the server. Wire the server the way the on-ramp tells you, with these two in its
 environment:
 
     PLOTCODER_EMAIL=test@test.com
@@ -64,9 +81,12 @@ nothing you do touches my other work.
 5. **Then wait for me.** I will answer your questions and give you directions,
    one at a time. Do what I ask and nothing more. When a direction could mean
    two things on this wall, ask before you act. After each direction, tell me
-   in a line what you did and what the app said back, and quote the reply
-   whenever it surprised you.
+   in a line what you did and what the app said back, quote the reply whenever
+   it surprised you, and give me the friction entries that direction produced.
 6. Keep going until I say **stop**. Then hand me the report.
+
+I will not ask you for the log. You bring it to me, as it grows, at the
+places the next section names.
 
 Ask me about anything the treatment does not say. I would rather answer four
 questions than read four inventions.
@@ -95,8 +115,20 @@ Include the small ones: a word that read two ways, a reply that did not say what
 it had done, a direction of mine you could not map onto any tool. Number them in
 the order they happened and say which part of the session each one came from:
 the way in, the build, the reading, or my directions. Do not rank them and do
-not fix them; that is my job. If I say **log so far**, show me the log as it
-stands and carry on.
+not fix them; that is my job.
+
+**Show me the new entries without being asked**, at four points:
+
+- when you are wired in and have made the first calls, before you build;
+- when the wall is built, before you read it back;
+- with the reading, when you hand me the wall and its questions;
+- after every direction of mine, with the line that says what you did.
+
+Each time, the entries since the last time, numbered on from where the log
+left off, and "nothing new" when there is nothing new. Never wait for me to
+ask, and never hold an entry back for the report: if a reply made you guess,
+I want to hear it in the same message as the guess. If I say **log so far**,
+show me the whole log as it stands and carry on.
 
 ## The report I want at the end
 

@@ -17,29 +17,36 @@ const SERVER = fileURLToPath(new URL("./plotcoder-mcp.mjs", import.meta.url));
 const [tool, rawArgs] = process.argv.slice(2);
 
 const USAGE = `usage: node scripts/plotcoder-call.mjs <tool> ['{json arguments}']
+       node scripts/plotcoder-call.mjs --batch < calls.jsonl   many calls on one server
        node scripts/plotcoder-call.mjs tools        every tool, with its description
        node scripts/plotcoder-call.mjs --help
 
 One call, one server: each run starts scripts/plotcoder-mcp.mjs, makes the call,
 and stops it. So undo, and the project new_project or open_project chose, do not
 carry from one call to the next — set PLOTCODER_PROJECT for the calls that need
-it. An MCP session keeps one server for the whole conversation and has both.
+it, or run them as a batch: one call per line on stdin, as
+{"tool": "create_note", "arguments": {"headline": "…", "change": "…"}},
+all on one server, so undo and the opened project hold within the batch. Each
+reply is printed under a line naming its tool. An MCP session keeps one server
+for the whole conversation.
 
 The environment is the server's:
   PLOTCODER_ROOT       the folder whose wall you mean (default: this one)
   PLOTCODER_EMAIL      the writer's sign-in: the account door, no app needed
   PLOTCODER_PASSWORD   a wrong password is refused by every tool, never worked around
   PLOTCODER_PROJECT    which of the writer's projects, by name or id
-  PLOTCODER_JSON=0     drop the JSON tail from replies
+  PLOTCODER_SESSION=0  sign in on every call instead of keeping the sign-in in .plotcoder/
+  PLOTCODER_JSON=1     keep the JSON tail on replies (off on this door)
   PLOTCODER_VERBOSE=1  show the server's own log lines`;
 
+const batch = tool === "--batch";
 if (!tool || tool === "--help" || tool === "-h" || tool === "help") {
   console.error(USAGE);
   process.exit(tool ? 0 : 2);
 }
 
 let args = {};
-if (rawArgs) {
+if (rawArgs && !batch) {
   try {
     args = JSON.parse(rawArgs);
   } catch (error) {
@@ -52,7 +59,11 @@ if (rawArgs) {
 // unless PLOTCODER_VERBOSE=1 asks for them.
 // PLOTCODER_ONE_CALL tells the server it will not live past this call, so its
 // replies can say what does not carry to the next one.
-const child = spawn("node", [SERVER], { stdio: ["pipe", "pipe", process.env.PLOTCODER_VERBOSE ? "inherit" : "ignore"], env: { ...process.env, PLOTCODER_ONE_CALL: "1" } });
+// The JSON tail is off on this door unless asked for: the text carries the ids.
+const child = spawn("node", [SERVER], {
+  stdio: ["pipe", "pipe", process.env.PLOTCODER_VERBOSE ? "inherit" : "ignore"],
+  env: { ...process.env, PLOTCODER_ONE_CALL: "1", PLOTCODER_JSON: process.env.PLOTCODER_JSON === "1" ? "1" : "0" },
+});
 let buffer = "";
 const pending = new Map();
 let nextId = 1;
@@ -97,6 +108,26 @@ try {
   if (tool === "tools") {
     const { tools } = await request("tools/list", {});
     for (const item of tools) console.log(`${item.name} — ${item.description}\n`);
+  } else if (batch) {
+    // One server for every line: undo and the opened project hold within the batch.
+    let input = "";
+    for await (const chunk of process.stdin) input += chunk;
+    const lines = input.split("\n").map((line) => line.trim()).filter(Boolean);
+    for (const line of lines) {
+      let call;
+      try {
+        call = JSON.parse(line);
+      } catch {
+        console.log(`--- (skipped: not JSON) ${line.slice(0, 80)}`);
+        process.exitCode = 1;
+        continue;
+      }
+      const name = call.tool ?? call.name;
+      console.log(`--- ${name}`);
+      const result = await request("tools/call", { name, arguments: call.arguments ?? call.args ?? {} });
+      for (const part of result.content ?? []) if (part.type === "text") console.log(part.text);
+      if (result.isError) process.exitCode = 1;
+    }
   } else {
     const result = await request("tools/call", { name: tool, arguments: args });
     for (const part of result.content ?? []) if (part.type === "text") console.log(part.text);

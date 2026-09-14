@@ -45,8 +45,12 @@ share one command kernel, so a tool call lands on the exact same board a person
 sees. No MCP where you are? `node scripts/plotcoder-call.mjs <tool> '{json}'`
 makes one call from a shell — one server per call, so `undo` and the project
 `new_project` or `open_project` chose do not carry to the next call; set
-`PLOTCODER_PROJECT` for the calls that need it. `PLOTCODER_ROOT` points the
-server at the folder whose wall you mean.
+`PLOTCODER_PROJECT` for the calls that need it, or run them as a batch
+(`--batch < calls.jsonl`, one `{"tool", "arguments"}` per line) on one server.
+The sign-in is kept between calls in the repo's `.plotcoder` folder. An agent
+already inside a session uses this door: a server wired mid-session connects
+only on the next session. `PLOTCODER_ROOT` points the server at the folder
+whose wall you mean.
 
 **Call these first, in this order:** `list_words` (the room's words), `read_wall`
 (what is here and what it asks — a fresh folder holds a sample wall, Maya and
@@ -262,13 +266,18 @@ The runtime is an **estimate built from guesses**, most of them the default page
 Say "about" when you report it. Never tell a writer their script is too long on
 the strength of it.
 
-## Live vs. file
+## The account, the app, or the file
 
-- If the PlotCoder dev app is **running** (`npm run dev`), edits appear on the
-  open wall within a second. `list_board` reports "live: app is open".
-- If the app is **not running**, tools still work: they read and write
-  `.plotcoder/board.json`, and `list_board` reports "from file: app not
-  running". The wall catches up the next time the app loads.
+Every read of the wall or the project says which it read, on its first line.
+
+- **The account** (`PLOTCODER_EMAIL` and `PLOTCODER_PASSWORD` set): "the
+  account, as you@…, working "Low Season"". Every change lands on every open
+  wall of that project. The account wins over an open app.
+- **The open app** (`npm run dev`, no sign-in): "the open app at
+  http://localhost:5173". Edits appear on the wall within a second.
+- **The file** (neither): "the file at …/.plotcoder/board.json; no app
+  running". Tools still work; the wall catches up the next time the app loads
+  from that folder.
 
 If a tool result says the change was "written to file" but you expected it live,
 the app is not open. Tell the user to run `npm run dev` if they want to watch

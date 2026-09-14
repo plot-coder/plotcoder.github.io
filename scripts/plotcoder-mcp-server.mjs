@@ -29,6 +29,7 @@ import {
   formatPages,
   isBoardState,
   isMeasured,
+  DEFAULT_TARGET_EIGHTHS,
   normalizeState,
   noteEighths,
   NOTE_COLORS,
@@ -649,6 +650,9 @@ async function commit(command) {
   return { state: next, changed, result, live };
 }
 
+/** Said once per session: that cards stack until organize (round seven, finding 11). */
+let saidStack = false;
+
 /** Which door a read came through, for the head of a reply: the account as whom, the open app, or the file at which path. */
 function door(live, base = null) {
   if (live === ACCOUNT) {
@@ -705,7 +709,7 @@ function summarize(state) {
       const plant = note.plants ? ", plants" : "";
       const place = note.location ? `, at: ${note.location}` : "";
       const count = formatPages(noteEighths(note));
-      const pages = `${count} ${count === "1" ? "page" : "pages"}${isMeasured(note) ? ", written" : ""}`;
+      const pages = `${count} ${count === "1" ? "page" : "pages"}${isMeasured(note) ? ", written" : note.lengthEighths === null ? ", unsized" : ""}`;
       return `  - ${note.id} [${note.rank ?? "scene"}, ${pages}${who}${place}${plant}] — "${note.headline}" (${note.color}) at ${Math.round(note.x)},${Math.round(note.y)}`;
     })
     .join("\n");
@@ -752,7 +756,7 @@ function summarize(state) {
     `logline: ${state.logline ? `"${state.logline}"` : "(not set)"}`,
     ...production,
     `beats: ${beats}, scenes: ${scenes}`,
-    `runtime: about ${formatPages(runtime)} pages of a ${formatPages(state.targetEighths)}-page target — ${over > 0 ? `${formatPages(over)} over` : over < 0 ? `${formatPages(-over)} under` : "on it"} (an estimate from the cards; a page runs about a minute)`,
+    `runtime: about ${formatPages(runtime)} pages of a ${formatPages(state.targetEighths)}-page target — ${over > 0 ? `${formatPages(over)} over` : over < 0 ? `${formatPages(-over)} under` : "on it"} (an estimate from the cards; a page runs about a minute)${state.targetEighths === DEFAULT_TARGET_EIGHTHS ? " — the target is the feature default, nobody's choice yet; set_target for a pilot or a half-hour" : ""}`,
     `notes: ${state.notes.length}, groups: ${state.groups.length}, arrows: ${state.arrows.length}, cast: ${state.characters.length}`,
     "cast:",
     cast || "  (no one yet — add_character to start the roster)",
@@ -828,7 +832,7 @@ server.registerTool(
     const { state, live } = await commit({ type: "set_logline", logline: args.logline });
     return ok(
       state.logline
-        ? `Logline set${where(live)}.`
+        ? `Logline set: "${state.logline}"${where(live)}.`
         : "Logline cleared.",
       { logline: state.logline },
     );
@@ -961,12 +965,13 @@ server.registerTool(
     }
     const landed = [
       result?.rank === "beat" ? "a beat" : "a scene",
-      `${formatPages(noteEighths(result))} ${formatPages(noteEighths(result)) === "1" ? "page" : "pages"}`,
+      result?.lengthEighths === null ? "about a page (unsized: the writer's guess until set_length)" : `${formatPages(noteEighths(result))} ${formatPages(noteEighths(result)) === "1" ? "page" : "pages"}`,
       result?.color ? `${result.color} paper${args.color ? "" : " (pass color to choose)"}` : null,
       result?.plants ? "corner folded" : null,
       result?.location ? `at ${result.location}` : "no place yet (location here, or set_location)",
     ].filter(Boolean).join(", ");
-    const placed = args.x === undefined && args.y === undefined ? " Cards stack until organize lays them out along the arrows." : "";
+    const placed = args.x === undefined && args.y === undefined && !saidStack ? " Cards stack until organize lays them out along the arrows." : "";
+    if (placed) saidStack = true;
     return ok(`Created card ${result?.id ?? ""}: ${landed}${where(live)}.${castLine}${placed}`, result);
   },
 );
@@ -1058,11 +1063,15 @@ server.registerTool(
   async () => {
     const { state, live, base } = await readBoard();
     const reading = readWall(state);
-    const runs = describeRuns(reading, state);
+    const runs = describeRuns(reading, state).map((line, index) => {
+      const ids = reading.runs[index]?.ids ?? [];
+      return ids.length ? `${line} — ${ids.map((id) => `"${state.notes.find((note) => note.id === id)?.headline ?? id}"`).join(", ")}` : line;
+    });
     // No blank lines: ok() splits prose from payload on the first one.
     const written = state.notes.filter((note) => isMeasured(note)).length;
     const lines = [
       `PlotCoder wall (${door(live, base)})`,
+      `logline: ${state.logline ? `"${state.logline}"` : "(none yet)"}`,
       `pages: ${written === 0 ? "all estimates — no scene is written yet, so every card is the writer's guess" : written === state.notes.length ? "measured — every scene is written" : `estimates — ${written} of ${state.notes.length} cards are written, the rest are guesses`}`,
       `beats in wall order: ${
         reading.beats.length
@@ -1114,10 +1123,10 @@ server.registerTool(
       const first = byRow.get(y).sort((a, b) => a.x - b.x)[0];
       const note = state.notes.find((item) => item.id === first.id);
       if (note?.rank === "beat") currentBeat = note;
-      else if (currentBeat && !wrappedUnder.includes(currentBeat)) wrappedUnder.push(currentBeat);
+      else if (currentBeat && note && !wrappedUnder.some((item) => item.beat === currentBeat)) wrappedUnder.push({ beat: currentBeat, first: note });
     }
     const shape = beats
-      ? `${beats} row(s), one per beat${wrappedUnder.length ? `; ${wrappedUnder.map((note) => `"${note.headline}"`).join(", ")} ${wrappedUnder.length === 1 ? "wraps" : "wrap"} under` : ""}`
+      ? `${beats} row(s), one per beat${wrappedUnder.length ? `; ${wrappedUnder.map((item) => `the row of "${item.beat.headline}" wraps under from "${item.first.headline}"`).join(", ")}` : ""}`
       : `${rows} row(s)`;
     return ok(`Organized ${poses.length} card(s) along the arrows into ${shape}${where(live)}.`, poses);
   },
@@ -1820,8 +1829,13 @@ server.registerTool(
       if (!result) return ok(`No character with id ${person.id}. Call list_board for the cast.`);
       return ok(`Nothing changed on ${result.name}'s page: those lines already read that way.`, result);
     }
-    const written = Object.keys(patch).join(", ");
-    return ok(`Wrote ${written} on ${result.name}'s page${where(live)}.`, result);
+    const trim = (text) => (text.length > 140 ? `${text.slice(0, 137)}…` : text);
+    const lines = Object.keys(patch).map((field) => {
+      const had = (person[field] ?? "").trim();
+      const now = (result[field] ?? "").trim();
+      return `${field}${had && now ? " (replacing what was there)" : had && !now ? " (cleared)" : ""}: ${now ? `"${trim(now)}"` : "(empty)"}`;
+    });
+    return ok(`Set ${lines.join("; ")} on ${result.name}'s page${where(live)}. A line set here replaces the old one.`, result);
   },
 );
 
@@ -2017,9 +2031,10 @@ server.registerTool(
       return ok(`No arrow drawn: ${why}. Call list_board to check.`);
     }
     const name = (id) => `"${state.notes.find((note) => note.id === id)?.headline ?? id}"`;
+    const paidOff = result.kind === "setup" && state.notes.find((note) => note.id === args.from)?.plants ? ` The fold on ${name(args.from)} is paid off now; the wall stops asking where it comes back.` : "";
     return ok(
       result.kind === "setup"
-        ? `Drew ${name(args.from)} → ${name(args.to)} as a setup: the first plants what the second pays off${where(live)}.`
+        ? `Drew ${name(args.from)} → ${name(args.to)} as a setup: the first plants what the second pays off${where(live)}.${paidOff}`
         : `Drew ${name(args.from)} → ${name(args.to)}: the second follows the first${where(live)}.`,
       result,
     );
@@ -2045,7 +2060,10 @@ server.registerTool(
         ? ok(`That arrow is already '${args.kind}'.`)
         : ok(`No arrow with id ${args.id}. Call list_board for the real ids.`);
     }
-    return ok(`That arrow is now '${args.kind}'${where(live)}.`);
+    const arrow = state.arrows.find((item) => item.id === args.id);
+    const tail = arrow ? state.notes.find((note) => note.id === arrow.from) : null;
+    const paidOff = args.kind === "setup" && tail?.plants ? ` The fold on "${tail.headline}" is paid off now; the wall stops asking where it comes back.` : "";
+    return ok(`That arrow is now '${args.kind}'${where(live)}.${paidOff}`);
   },
 );
 
@@ -2470,11 +2488,11 @@ server.registerTool(
     title: "Open board",
     description:
       "Open another board of the project by id, name, or number from list_boards. Every card tool then works on that board; the open wall switches too.",
-    inputSchema: { board: z.string().min(1) },
+    inputSchema: { board: z.union([z.string().min(1), z.number()]) },
   },
   async (args) => {
     const { project, boards, rev, base } = await readProject();
-    const target = findBoard(project, args.board);
+    const target = findBoard(project, String(args.board));
     if (!target) return ok(`No board matches "${args.board}". Call list_boards for the real ones.`);
     if (target.id === project.activeBoardId) return ok(`"${target.name}" is already open.`);
     const { live } = await openBoardEverywhere(project, boards, rev, base, target.id);
@@ -2510,11 +2528,11 @@ server.registerTool(
   {
     title: "Rename board",
     description: "Rename a board of the project by id, name, or number.",
-    inputSchema: { board: z.string().min(1), name: z.string().min(1) },
+    inputSchema: { board: z.union([z.string().min(1), z.number()]), name: z.string().min(1) },
   },
   async (args) => {
     const { project, boards, rev, base } = await readProject();
-    const target = findBoard(project, args.board);
+    const target = findBoard(project, String(args.board));
     if (!target) return ok(`No board matches "${args.board}". Call list_boards for the real ones.`);
     const next = renameBoard(project, target.id, args.name);
     if (next === project) return ok(`"${target.name}" already has that name.`);
@@ -2529,11 +2547,11 @@ server.registerTool(
     title: "Delete board",
     description:
       "Remove a board and everything on it. This cannot be undone — not from the wall either — so ask the writer first, say how many cards it holds, and suggest Save project. The last board of a project cannot be deleted. If the open board goes, the one before it opens.",
-    inputSchema: { board: z.string().min(1) },
+    inputSchema: { board: z.union([z.string().min(1), z.number()]) },
   },
   async (args) => {
     const { project, boards, rev, base } = await readProject();
-    const target = findBoard(project, args.board);
+    const target = findBoard(project, String(args.board));
     if (!target) return ok(`No board matches "${args.board}". Call list_boards for the real ones.`);
     if (project.boards.length <= 1) return ok("Not deleted: a project keeps at least one board.");
     const next = removeBoard(project, target.id);

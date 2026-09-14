@@ -29,6 +29,9 @@ const SEQUENCE_MAX_EIGHTHS = 20 * EIGHTHS_PER_PAGE;
 const ROW_TOLERANCE = NOTE_HEIGHT / 2;
 // A character gone for more than this share of the story is worth asking about.
 const ABSENCE_FRACTION = 1 / 3;
+// ...and at least this long, so a short wall of one-page estimates does not
+// call every gap a disappearance (round seven, finding 20): ten pages, a reel.
+const ABSENCE_FLOOR_EIGHTHS = 10 * EIGHTHS_PER_PAGE;
 // Headlines this alike are probably the same scene twice. Measured on the
 // content words only — "Tom lies about the job" and "Tom lies about his job"
 // are the same scene — and as overlap with the shorter headline, so a headline
@@ -118,18 +121,21 @@ export function readWall(state) {
   let from = null;
   let eighths = 0;
   let cards = 0;
+  let ids = [];
   for (const note of order) {
     if (note.rank === "beat") {
-      if (from !== null || cards > 0) runs.push({ from, to: note.id, eighths, cards });
+      if (from !== null || cards > 0) runs.push({ from, to: note.id, eighths, cards, ids });
       from = note.id;
       eighths = 0;
       cards = 0;
+      ids = [];
     } else {
       eighths += noteEighths(note);
       cards += 1;
+      ids.push(note.id);
     }
   }
-  if (from !== null && cards > 0) runs.push({ from, to: null, eighths, cards });
+  if (from !== null && cards > 0) runs.push({ from, to: null, eighths, cards, ids });
 
   const findings = [];
   const byId = new Map(state.notes.map((note) => [note.id, note]));
@@ -334,7 +340,7 @@ export function readWall(state) {
       const gap = at.get(next.id) - (at.get(prev.id) + noteEighths(prev));
       if (!longest || gap > longest.gap) longest = { gap, from: prev, to: next };
     }
-    if (longest && total > 0 && longest.gap > total * ABSENCE_FRACTION) {
+    if (longest && total > 0 && longest.gap > total * ABSENCE_FRACTION && longest.gap >= ABSENCE_FLOOR_EIGHTHS) {
       findings.push({
         kind: "absent",
         ids: [character.id, longest.from.id, longest.to.id],

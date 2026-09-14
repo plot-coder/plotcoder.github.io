@@ -45,6 +45,8 @@ export type Run = {
   to: string | null;
   eighths: number;
   cards: number;
+  /** The scene cards in the run, in reading order. */
+  ids: string[];
 };
 
 /** A setup arrow, with the distance from where it is planted to where it pays off. Negative means backwards. */

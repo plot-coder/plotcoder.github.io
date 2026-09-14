@@ -815,7 +815,8 @@ describe("characters", () => {
       looks: "Thirty-four, tall, a coat too good for the flat.",
       wants: "To keep the flat, and Tom in it.",
     });
-    expect(text).toContain("Wrote looks, wants on Maya's page");
+    expect(text).toContain('Set looks: "Thirty-four, tall, a coat too good for the flat."; wants: "To keep the flat, and Tom in it." on Maya\'s page');
+    expect(text).toContain("A line set here replaces the old one");
     const again = await cast.callTool("update_character", { id: "maya", looks: "Thirty-four, tall, a coat too good for the flat." });
     expect(again).toContain("Nothing changed on Maya's page");
     const nobody = await cast.callTool("update_character", { id: "nobody", looks: "x" });
@@ -1367,7 +1368,7 @@ describe("after the blind run", () => {
       const card = await third.callTool("create_note", { headline: "The gate", change: "Miguel checks the glovebox.", rank: "beat", pages: 4, plants: true, location: "the prison gate", characters: ["Dana"] });
       expect(card).toMatch(/^Created card \S+: a beat, 4 pages, yellow paper \(pass color to choose\), corner folded, at the prison gate/);
       expect(card).toContain("Cards stack until organize");
-      expect(await third.callTool("update_character", { name: "dana", notes: "38, a bad knee and a good ear." })).toContain("Wrote notes on Dana's page");
+      expect(await third.callTool("update_character", { name: "dana", notes: "38, a bad knee and a good ear." })).toContain('Set notes: "38, a bad knee and a good ear." on Dana\'s page');
       expect(await third.callTool("update_character", { name: "nobody", notes: "x" })).toContain('Nobody called "nobody" in the cast');
       const pages = await third.callTool("page_count");
       expect(pages).toContain("No pages to count yet: none of the 1 scenes is written.");
@@ -1664,5 +1665,51 @@ describe("the project as a file", () => {
     const board = await files.callToolData("list_board");
     expect(board.notes).toHaveLength(4);
     expect(await files.callTool("undo")).toContain("Nothing of mine to undo");
+  });
+});
+
+// Round seven's replies: a board by number, an unsized card that says so,
+// the logline echoed, a fold paid off by its arrow, a run's cards named.
+describe("round seven's replies", () => {
+  let sevenRoot;
+  let seven;
+
+  beforeAll(async () => {
+    sevenRoot = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-seven-"));
+    seven = new McpClient(sevenRoot);
+    await seven.start();
+  }, 30000);
+
+  afterAll(() => {
+    seven?.stop();
+    if (sevenRoot) fs.rmSync(sevenRoot, { recursive: true, force: true });
+  });
+
+  it("takes a board by its number as a number, and names the logline it set", async () => {
+    expect(await seven.callTool("rename_board", { board: 1, name: "Pilot" })).toContain('"Pilot"');
+    expect(await seven.callTool("set_logline", { logline: "What was her father being paid for?" })).toContain('Logline set: "What was her father being paid for?"');
+  });
+
+  it("says a new card is unsized, once that cards stack, and where a fold is paid off", async () => {
+    const first = await seven.callTool("create_note", { headline: "The ledger", change: "A question nobody answers.", plants: true, rank: "beat" });
+    expect(first).toContain("about a page (unsized: the writer's guess until set_length)");
+    expect(first).toContain("Cards stack until organize");
+    const second = await seven.callTool("create_note", { headline: "The cash arrives", change: "An envelope, no name.", rank: "beat" });
+    expect(second).not.toContain("Cards stack until organize");
+    const board = await seven.callToolData("list_board");
+    const ledger = board.notes.find((note) => note.headline === "The ledger");
+    const cash = board.notes.find((note) => note.headline === "The cash arrives");
+    expect(await seven.callTool("list_board")).toContain("unsized");
+    expect(await seven.callTool("list_board")).toContain("the target is the feature default");
+    const arrow = await seven.callTool("create_arrow", { from: ledger.id, to: cash.id, kind: "setup" });
+    expect(arrow).toContain('The fold on "The ledger" is paid off now');
+  });
+
+  it("reads the wall with its logline and each run's cards", async () => {
+    await seven.callTool("create_note", { headline: "Fiona at the launderette", change: "Sell it and go." });
+    const read = await seven.callTool("read_wall");
+    expect(read).toContain('logline: "What was her father being paid for?"');
+    expect(read).toContain('Before "The ledger": about 2 pages, 2 cards — "Maya finds the letter", "Fiona at the launderette"');
+    expect(read).toContain('"The ledger" → "The cash arrives": about 0 pages, 0 cards');
   });
 });

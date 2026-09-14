@@ -162,7 +162,9 @@ describe("Fountain in (R23, slice b)", () => {
     expect(measuredEighths("One line.")).toBe(1);
     const other = state.notes.find((note) => note.id === "tom-lies")!;
     expect(isMeasured(other)).toBe(false);
-    expect(noteEighths(other)).toBe(other.lengthEighths);
+    // Unwritten and unsized: the estimate is the default page, and the card claims nothing.
+    expect(other.lengthEighths).toBeNull();
+    expect(noteEighths(other)).toBe(8);
     // Fountain out prints the text as the scene body, the change line otherwise.
     const text = toFountain(state, { title: "B" });
     expect(text).toContain("A line.\nA line.");

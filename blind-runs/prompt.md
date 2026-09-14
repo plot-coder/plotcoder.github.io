@@ -70,8 +70,8 @@ it. If the account is already empty, say so and carry on.
    anything.
 2. Read the treatment at the end of this message.
 3. Build it as a wall: the scenes as cards, the major turns marked, the cast,
-   the places, the arrows, the acts, the episode's central question, and the
-   series premise above it.
+   the places, the arrows, the acts if the treatment has them, the episode's
+   central question, and the series premise above it.
 4. Read the wall back to me: what is there, and what it asks.
 5. **Then wait for me.** I will answer your questions and give you directions,
    one at a time. Do what I ask and nothing more. When a direction could mean
@@ -114,7 +114,9 @@ not fix them; that is my job.
 
 **Show me the new entries without being asked**, at four points:
 
-- when you are wired in and have made the first calls, before you build;
+- when you are wired in and have made the first calls, before you build —
+  and **stop there and wait** for me to say go on, so I see the way in
+  before the wall;
 - when the wall is built, before you read it back;
 - with the reading, when you hand me the wall and its questions;
 - after every direction of mine, with the line that says what you did.

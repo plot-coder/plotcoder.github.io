@@ -85,7 +85,8 @@ describe("runs between beats", () => {
     );
     const reading = readWall(state);
     expect(reading.beats.map((beat) => beat.id)).toEqual(["b1", "b2", "b3"]);
-    expect(reading.runs).toEqual([
+    expect(reading.runs.map((run) => run.ids)).toEqual([["open"], ["s1", "s2"], ["s3"], ["tail"]]);
+    expect(reading.runs.map(({ ids: _ids, ...run }) => run)).toEqual([
       { from: null, to: "b1", eighths: 2 * 8, cards: 1 },
       { from: "b1", to: "b2", eighths: 4 * 8, cards: 2 },
       { from: "b2", to: "b3", eighths: 2 * 8, cards: 1 },
@@ -95,7 +96,7 @@ describe("runs between beats", () => {
 
   it("omits an empty opening or closing run but keeps an empty run between beats", () => {
     const state = wall({ id: "b1", rank: "beat" }, { id: "b2", rank: "beat" });
-    expect(readWall(state).runs).toEqual([{ from: "b1", to: "b2", eighths: 0, cards: 0 }]);
+    expect(readWall(state).runs).toEqual([{ from: "b1", to: "b2", eighths: 0, cards: 0, ids: [] }]);
   });
 
   it("describes runs by headline for a person", () => {
@@ -295,6 +296,13 @@ describe("findings", () => {
     expect(absent[0].text).toBe(
       'Tom is in "Tom arrives" and then not again until "Tom returns", about 10 pages later. Where are they in between?',
     );
+  });
+
+  it("does not call a gap on a short wall a disappearance: a third of the story, and ten pages at least", () => {
+    // 13 one-page cards, Maya on the second and the ninth: a gap of 6 pages, nearly half the wall.
+    const cards = Array.from({ length: 13 }, (_, i) => ({ id: `c${i}`, rank: (i === 0 ? "beat" : "scene") as "beat" | "scene" }));
+    const state = run(wall(...cards), { type: "add_character", id: "m", name: "Maya" }, { type: "set_cast", ids: ["c1", "c8"], characterIds: ["m"] });
+    expect(readWall(state).findings.filter((f) => f.kind === "absent")).toEqual([]);
   });
 
   it("does not ask about a person who keeps turning up", () => {

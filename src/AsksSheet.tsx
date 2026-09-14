@@ -3,7 +3,9 @@
 // tool gives — the sag, the setup with no payoff, the person who disappears,
 // two scenes doing one job — as a sheet of questions under their kinds, each
 // with show me to light the cards it is about. Questions, never fixes, and
-// never dismissable: a question goes away when the wall answers it.
+// never dismissed: a question goes away when the wall answers it — or when
+// the writer does, with "leave it" (R53), which the wall writes down and
+// takes back on its own the moment the question would read differently.
 
 import { useEffect, useId, useRef } from "react";
 import type { Finding, FindingKind } from "./board/readWall";
@@ -11,9 +13,15 @@ import type { Finding, FindingKind } from "./board/readWall";
 type AsksSheetProps = {
   open: boolean;
   findings: Finding[];
+  /** Questions the writer has left, for now (R53). */
+  left: Array<Finding & { since: string }>;
   onClose: () => void;
   /** Light these cards on the wall; the sheet closes first. */
   onShow: (ids: string[]) => void;
+  /** The writer's word on a question: leave it. */
+  onLeave: (finding: Finding) => void;
+  /** Take the word back: ask it again now. */
+  onAskAgain: (finding: Finding) => void;
 };
 
 export const KIND_NAMES: Record<FindingKind, string> = {
@@ -34,7 +42,7 @@ export const KIND_NAMES: Record<FindingKind, string> = {
 /** The kinds a debt is: shown warm. */
 const WARM: ReadonlySet<FindingKind> = new Set(["unpaid", "backwards"]);
 
-export function AsksSheet({ open, findings, onClose, onShow }: AsksSheetProps) {
+export function AsksSheet({ open, findings, left, onClose, onShow, onLeave, onAskAgain }: AsksSheetProps) {
   const titleId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
 
@@ -70,7 +78,9 @@ export function AsksSheet({ open, findings, onClose, onShow }: AsksSheetProps) {
           doing one job. Questions, not fixes.
         </p>
         {findings.length === 0 ? (
-          <p className="project-copy asks__none">Nothing to ask. The wall answers every question it knows how to put.</p>
+          <p className="project-copy asks__none">
+            {left.length ? "Nothing to ask that you have not left." : "Nothing to ask. The wall answers every question it knows how to put."}
+          </p>
         ) : (
           <ol className="asks__list">
             {findings.map((finding, index) => (
@@ -92,12 +102,38 @@ export function AsksSheet({ open, findings, onClose, onShow }: AsksSheetProps) {
                         show me
                       </button>
                     </>
-                  ) : null}
+                  ) : null}{" "}
+                  <button type="button" className="words__show asks__leave" onClick={() => onLeave(finding)}>
+                    leave it
+                  </button>
                 </p>
               </li>
             ))}
           </ol>
         )}
+        {left.length > 0 ? (
+          <div className="asks__left">
+            <p className="cast-lens__kicker cast-lens__section">Left, for now · {left.length}</p>
+            <ol className="asks__list">
+              {left.map((finding, index) => (
+                <li key={`left-${finding.kind}-${index}`} className="asks__q asks__q--left">
+                  <p className="cast-lens__kicker">
+                    {KIND_NAMES[finding.kind]} · left {finding.since.slice(0, 10)}
+                  </p>
+                  <p className="asks__text">
+                    {finding.text}{" "}
+                    <button type="button" className="words__show" onClick={() => onAskAgain(finding)}>
+                      ask again
+                    </button>
+                  </p>
+                </li>
+              ))}
+            </ol>
+            <p className="project-copy project-door__hint">
+              A left question is written on the wall, and comes back on its own the moment it would read differently.
+            </p>
+          </div>
+        ) : null}
         <p className="project-copy project-door__hint">The same reading an agent gets from read_wall. Nothing here moves a card.</p>
       </div>
     </div>

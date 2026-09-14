@@ -1,6 +1,6 @@
 // Type surface for project.js — the project record (R35).
 
-import type { BoardNote } from "./reducer";
+import type { BoardCharacter, BoardNote, BoardState } from "./reducer";
 
 export declare const PROJECT_VERSION: number;
 export declare const DEFAULT_PROJECT_NAME: string;
@@ -22,6 +22,8 @@ export type ProjectRecord = {
   activeBoardId: string;
   /** A writer's own structures, saved from a wall's beats (Roadmap 2, item 7). */
   structures?: OwnStructure[];
+  /** The project's cast (R51): one roster every board draws from. Absent until liftCast has run. */
+  characters?: BoardCharacter[];
   createdAt: string;
   updatedAt: string;
 };
@@ -70,3 +72,19 @@ export declare function reidentifyProject(
   project: ProjectRecord,
   now?: string,
 ): ProjectRecord & { renamed: Record<string, string> };
+
+/** A board's state composed with the project's cast (R51). */
+export declare function withRoster(state: BoardState, project: ProjectRecord): BoardState;
+export declare function sameRoster(a: BoardCharacter[] | undefined, b: BoardCharacter[] | undefined): boolean;
+export declare function liftCast(
+  project: ProjectRecord,
+  boards: Record<string, BoardState>,
+  now?: string,
+): { project: ProjectRecord; boards: Record<string, BoardState>; changed: boolean };
+export type CastElsewhere = Record<string, Array<{ board: string; boardId: string; cards: number }>>;
+export declare function castElsewhere(project: ProjectRecord, boards: Record<string, BoardState>, activeBoardId: string): CastElsewhere;
+export declare function mergeRoster(
+  project: ProjectRecord,
+  state: BoardState,
+  now?: string,
+): { project: ProjectRecord; state: BoardState };

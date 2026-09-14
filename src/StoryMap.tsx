@@ -15,6 +15,7 @@ import { useEffect, useRef, useState } from "react";
 import { EIGHTHS_PER_PAGE, formatPages, type BoardState } from "./board/reducer";
 import type { WallReading } from "./board/readWall";
 import { beatLabels, pageTicks, storyMapLayout, xFor } from "./storyMapLayout";
+import type { TemplateBeat } from "./board/templates";
 
 type StoryMapProps = {
   board: BoardState;
@@ -32,7 +33,12 @@ type StoryMapProps = {
   visibleIds: ReadonlySet<string>;
   onToggle: () => void;
   onJump: (id: string) => void;
+  /** A structure set over the strip (R52): its beats as marks at their pages. Null shows none. */
+  structure: { name: string; beats: ReadonlyArray<Pick<TemplateBeat, "name" | "at">> } | null;
 };
+
+/** Room above the blocks for the structure's marks and names. */
+const STRUCTURE_ROW = 34;
 
 const PAPER: Record<string, string> = {
   yellow: "#ffe56a",
@@ -57,6 +63,7 @@ export function StoryMap({
   visibleIds,
   onToggle,
   onJump,
+  structure,
 }: StoryMapProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
@@ -73,7 +80,7 @@ export function StoryMap({
   }, []);
 
   const layout = storyMapLayout(board, reading);
-  const height = open ? HEIGHT_OPEN : HEIGHT_RULER;
+  const height = (open ? HEIGHT_OPEN : HEIGHT_RULER) + (open && structure ? STRUCTURE_ROW : 0);
   const axisY = open ? height - 24 : height - 8;
   const blockTop = axisY - 14;
   const beatTop = axisY - 24;
@@ -206,6 +213,40 @@ export function StoryMap({
               })
             : null}
 
+          {/* A structure over the strip (R52): a mark at each beat's page, named where there is room. A view: nothing on the wall moves. */}
+          {open && structure
+            ? (() => {
+                const marks = structure.beats.map((beat) => ({ name: beat.name, eighths: beat.at * board.targetEighths }));
+                const shown = marks.filter((mark) => mark.eighths <= layout.spanEighths);
+                const past = marks.length - shown.length;
+                let lastLabelX = -Infinity;
+                return (
+                  <g className="story-map__structure">
+                    {shown.map((mark, index) => {
+                      const mx = x(mark.eighths);
+                      const labelled = mx - lastLabelX > 58;
+                      if (labelled) lastLabelX = mx;
+                      return (
+                        <g key={mark.name}>
+                          <line className="story-map__structure-line" x1={mx} y1={38} x2={mx} y2={beatTop - 30} />
+                          <path className="story-map__structure-mark" d={`M ${mx - 3} 34 L ${mx + 3} 34 L ${mx} 39 Z`} />
+                          {labelled ? (
+                            <text className="story-map__structure-label" x={mx + 5} y={37}>
+                              {index === 0 ? `${structure.name} · ${mark.name}` : mark.name}
+                            </text>
+                          ) : null}
+                        </g>
+                      );
+                    })}
+                    {past > 0 ? (
+                      <text className="story-map__structure-past" x={width - PAD} y={37}>
+                        {past} more past the end of the story so far →
+                      </text>
+                    ) : null}
+                  </g>
+                );
+              })()
+            : null}
           <line className="story-map__axis" x1={x(0)} y1={axisY} x2={x(layout.spanEighths)} y2={axisY} />
           {pageTicks(layout.spanEighths).map((tick) => (
             <g key={tick}>

@@ -31,6 +31,9 @@ import {
   setActiveBoard,
   setPremise as setPremiseOn,
   structureBeats,
+  liftCast,
+  sameRoster,
+  withRoster,
   type BoardMeta,
   type ProjectRecord,
 } from "./project";
@@ -236,6 +239,26 @@ class BoardStore {
     // a card is; a board someone made and left empty stays empty.
     this.state = stored ?? seedState();
     if (!stored) saveBoard(this.project.activeBoardId, this.state);
+    this.liftLocalCast();
+    this.state = withRoster(this.state, this.project);
+  }
+
+  /**
+   * The project's cast (R51): a record written before it takes its boards'
+   * rosters, merged by name, and every board is composed with the result.
+   */
+  private liftLocalCast(): void {
+    if (Array.isArray(this.project.characters)) return;
+    const boards: Record<string, BoardState> = {};
+    for (const meta of this.project.boards) {
+      const state = meta.id === this.project.activeBoardId ? this.state : loadBoard(meta.id);
+      if (state) boards[meta.id] = state;
+    }
+    const lifted = liftCast(this.project, boards);
+    for (const [id, state] of Object.entries(lifted.boards)) saveBoard(id, state);
+    this.project = lifted.project;
+    saveProject(lifted.project);
+    if (lifted.boards[this.project.activeBoardId]) this.state = lifted.boards[this.project.activeBoardId];
   }
 
   getState = (): BoardState => this.state;
@@ -265,6 +288,11 @@ class BoardStore {
   private setState(next: BoardState): void {
     this.state = next;
     saveBoard(this.project.activeBoardId, next);
+    // A kernel command that changed the roster changed the project's cast (R51).
+    if (!sameRoster(next.characters, this.project.characters)) {
+      this.setProject({ ...this.project, characters: next.characters, updatedAt: nowIso() });
+      return;
+    }
     this.emit();
   }
 
@@ -400,9 +428,12 @@ class BoardStore {
 
   // --- the account mirror (R4) --------------------------------------------
 
-  /** The state of any board of the project: the open one live, the rest from storage. */
-  boardState = (id: string): BoardState | null =>
-    id === this.project.activeBoardId ? this.state : loadBoard(id);
+  /** The state of any board of the project: the open one live, the rest from storage, each with the project's cast. */
+  boardState = (id: string): BoardState | null => {
+    if (id === this.project.activeBoardId) return this.state;
+    const stored = loadBoard(id);
+    return stored ? withRoster(stored, this.project) : null;
+  };
 
   /**
    * True while this browser holds nothing but the untouched seed wall under
@@ -436,7 +467,7 @@ class BoardStore {
       this.scheduleSync();
       return;
     }
-    saveBoard(id, state);
+    saveBoard(id, withRoster(state, this.project));
     this.scheduleProjectSync();
   };
 
@@ -447,8 +478,11 @@ class BoardStore {
    */
   loadProject = (project: ProjectRecord, boards: Record<string, BoardState>): void => {
     pruneBoards(project);
-    for (const [id, state] of Object.entries(boards)) saveBoard(id, normalizeState(state));
-    this.switchTo(project, boards[project.activeBoardId] ?? loadBoard(project.activeBoardId) ?? emptyState());
+    const normalized: Record<string, BoardState> = {};
+    for (const [id, state] of Object.entries(boards)) normalized[id] = normalizeState(state);
+    const lifted = liftCast(project, normalized);
+    for (const [id, state] of Object.entries(lifted.boards)) saveBoard(id, state);
+    this.switchTo(lifted.project, lifted.boards[lifted.project.activeBoardId] ?? loadBoard(lifted.project.activeBoardId) ?? emptyState());
   };
 
   /** The same project under a fresh id, before it is pushed to an account as a new one (R40). */
@@ -489,13 +523,27 @@ class BoardStore {
       return;
     }
     this.setProject(project);
+    this.composeCast();
   };
+
+  /** The open board takes the project's cast (R51) after the record changed under it. */
+  private composeCast(): void {
+    if (!Array.isArray(this.project.characters)) {
+      this.liftLocalCast();
+      this.scheduleProjectSync();
+    }
+    const composed = withRoster(this.state, this.project);
+    if (composed === this.state) return;
+    this.state = composed;
+    saveBoard(this.project.activeBoardId, composed);
+    this.emit();
+  }
 
   private switchTo(project: ProjectRecord, state: BoardState): void {
     this.project = project;
     saveProject(project);
     this.history = new History<BoardState>();
-    this.state = state;
+    this.state = withRoster(state, project);
     saveBoard(project.activeBoardId, state);
     this.emit();
     this.refreshHistory();
@@ -555,6 +603,8 @@ class BoardStore {
   adoptLocal = async (): Promise<void> => {
     this.project = loadProject();
     this.state = loadBoard(this.project.activeBoardId) ?? seedState();
+    this.liftLocalCast();
+    this.state = withRoster(this.state, this.project);
     this.history = new History<BoardState>();
     this.emit();
     await Promise.all([this.pushState(), this.pushProject()]);
@@ -569,7 +619,7 @@ class BoardStore {
     }
     if (!isBoardState(payload.state)) return;
     if (this.adopted && payload.rev <= this.rev) return;
-    const incoming = normalizeState(payload.state);
+    const incoming = withRoster(normalizeState(payload.state), this.project);
     const incomingJson = JSON.stringify(incoming);
     const boardId = typeof payload.boardId === "string" ? payload.boardId : this.project.activeBoardId;
 
@@ -637,7 +687,7 @@ class BoardStore {
     // Other boards' states ride along; keep them so a switch finds them.
     for (const [id, state] of Object.entries(payload.boards ?? {})) {
       if (id !== this.project.activeBoardId && isBoardState(state)) {
-        saveBoard(id, normalizeState(state));
+        saveBoard(id, withRoster(normalizeState(state), incoming));
       }
     }
     if (incoming.activeBoardId !== this.project.activeBoardId) {
@@ -651,14 +701,15 @@ class BoardStore {
       saveProject(incoming);
       pruneBoards(incoming);
       this.history = new History<BoardState>();
-      this.state = state;
-      saveBoard(incoming.activeBoardId, state);
+      this.state = withRoster(state, incoming);
+      saveBoard(incoming.activeBoardId, this.state);
       this.emit();
       this.refreshHistory();
       return;
     }
     this.setProject(incoming, false);
     pruneBoards(incoming);
+    this.composeCast();
   }
 
   private scheduleSync(): void {

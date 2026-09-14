@@ -63,11 +63,20 @@ export type WallReading = {
   payoffs: Record<string, string[]>;
   /** Folded cards that pay off on another board of the project (R50): the card and the board. */
   later: { id: string; boardId: string }[];
+  /** The questions the wall asks now. A left one (R53) is not here while its words hold. */
   findings: Finding[];
+  /** Questions the writer has left, for now: the same question, with when it was left. */
+  left: Array<Finding & { since: string }>;
 };
 
 /** Rows top to bottom, cards left to right within a row. */
 export declare function readingOrder(notes: BoardNote[]): BoardNote[];
-export declare function readWall(state: BoardState): WallReading;
+export declare function readWall(
+  state: BoardState,
+  options?: {
+    /** Cast ids on a card of another board of the project (R51): not asked about as uncast here. */
+    elsewhere?: string[];
+  },
+): WallReading;
 export declare function describeRuns(reading: WallReading, state: BoardState): string[];
 export declare function describeSetups(reading: WallReading, state: BoardState): string[];

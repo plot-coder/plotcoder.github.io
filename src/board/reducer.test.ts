@@ -1195,3 +1195,35 @@ describe("formatMinutes: a page a minute", () => {
     expect(formatMinutes(124 * 8)).toBe("2 h 4 min");
   });
 });
+
+describe("leaving a question (R53)", () => {
+  it("writes the writer's word on the wall, replaces it for the same question, and takes it back", () => {
+    let state = emptyState();
+    const left = applyCommand(state, { type: "leave_question", kind: "sag", ids: ["a", "b"], text: "About 7 pages run…" }, NOW);
+    expect(left.changed).toBe(true);
+    expect(left.state.left).toEqual([{ kind: "sag", ids: ["a", "b"], text: "About 7 pages run…", since: NOW }]);
+    state = left.state;
+    // The same question left again with new words replaces the entry, never doubles it.
+    state = applyCommand(state, { type: "leave_question", kind: "sag", ids: ["a", "b"], text: "About 9 pages run…" }, NOW).state;
+    expect(state.left).toHaveLength(1);
+    expect(state.left[0].text).toBe("About 9 pages run…");
+    state = applyCommand(state, { type: "leave_question", kind: "empty", ids: ["b", "c"], text: "Nothing runs between…" }, NOW).state;
+    expect(state.left).toHaveLength(2);
+    // Nothing to leave without a kind and words.
+    expect(applyCommand(state, { type: "leave_question", kind: "", ids: [], text: "" }, NOW).changed).toBe(false);
+    // ask_again by kind and ids, or by kind alone.
+    const again = applyCommand(state, { type: "ask_again", kind: "sag", ids: ["a", "b"] }, NOW);
+    expect(again.changed).toBe(true);
+    expect(again.state.left.map((item) => item.kind)).toEqual(["empty"]);
+    expect(applyCommand(again.state, { type: "ask_again", kind: "sag" }, NOW).changed).toBe(false);
+    expect(applyCommand(again.state, { type: "ask_again", kind: "empty" }, NOW).state.left).toEqual([]);
+  });
+
+  it("fills left in for older boards and drops entries that are not questions (eleventh migration)", () => {
+    const { left: _drop, ...older } = seedState(NOW);
+    const filled = normalizeState(older as unknown as BoardState);
+    expect(filled.left).toEqual([]);
+    const messy = { ...seedState(NOW), left: [{ kind: "sag", ids: ["a"], text: "x", since: NOW }, { kind: 3 }, "no"] };
+    expect(normalizeState(messy as unknown as BoardState).left).toEqual([{ kind: "sag", ids: ["a"], text: "x", since: NOW }]);
+  });
+});

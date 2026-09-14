@@ -9,6 +9,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { countRanks, formatPages, type BoardState } from "./board/reducer";
 import { beatPage, TEMPLATES } from "./board/templates";
+import { compareStructure, driftWord, MATCH_PAGES, NEAR_PAGES } from "./board/compareStructure";
 import type { OwnStructure } from "./board/project";
 
 type StructureSheetProps = {
@@ -20,9 +21,12 @@ type StructureSheetProps = {
   onApply: (templateId: string) => void;
   onSave: (name: string) => void;
   onForget: (id: string) => void;
+  /** The structure shown on the story map's strip, if any (R52). */
+  stripId: string | null;
+  onStrip: (id: string | null) => void;
 };
 
-export function StructureSheet({ open, board, own, onClose, onApply, onSave, onForget }: StructureSheetProps) {
+export function StructureSheet({ open, board, own, onClose, onApply, onSave, onForget, stripId, onStrip }: StructureSheetProps) {
   const titleId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
   const [chosenId, setChosenId] = useState(TEMPLATES[0].id);
@@ -45,6 +49,9 @@ export function StructureSheet({ open, board, own, onClose, onApply, onSave, onF
 
   const { beats, scenes } = countRanks(board);
   const count = chosen.beats.length;
+  // The structure beside the wall (R52): a reading, so it costs nothing to show.
+  const comparison = beats > 0 ? compareStructure(board, chosen.beats) : null;
+  const shownOnStrip = stripId === chosen.id;
   const verb =
     beats > 0
       ? `Lay out ${count} beats beside the ${beats} you have`
@@ -53,7 +60,7 @@ export function StructureSheet({ open, board, own, onClose, onApply, onSave, onF
         : `Lay out ${count} beats`;
   const note =
     beats > 0
-      ? `This wall already has ${beats} ${beats === 1 ? "beat" : "beats"}. These ${count} go in above them; delete the ones you do not need.`
+      ? `Under each of the ${count}: the nearest of your ${beats} ${beats === 1 ? "beat" : "beats"} by page, within ${MATCH_PAGES} pages, and how far off it is. Nothing here moves a card; laying them out still makes ${count} cards above yours.`
       : scenes > 0
         ? `This wall has ${scenes} ${scenes === 1 ? "scene" : "scenes"} and no beats. The beats go in a row above them; Organize then gives each beat its row.`
         : null;
@@ -98,19 +105,46 @@ export function StructureSheet({ open, board, own, onClose, onApply, onSave, onF
 
           <div className="structure__preview">
             <p className="cast-lens__kicker">
-              {chosen.name} · {chosen.blurb} · near these pages of {formatPages(board.targetEighths)}
+              {chosen.name} · {chosen.blurb} ·{" "}
+              {comparison ? `beside this wall's ${beats} ${beats === 1 ? "beat" : "beats"}, of ${formatPages(board.targetEighths)} pages` : `near these pages of ${formatPages(board.targetEighths)}`}
             </p>
             <ol className="structure__beats">
-              {chosen.beats.map((item, index) => (
-                <li key={item.name} className="structure__beat">
-                  <span className="structure__n">{index + 1}</span>
-                  <span className="structure__headline">{item.name}</span>
-                  <span className="structure__pg">p. {beatPage(item.at, board.targetEighths)}</span>
-                </li>
-              ))}
+              {chosen.beats.map((item, index) => {
+                const row = comparison?.rows[index] ?? null;
+                const word = row ? driftWord(row.drift) : null;
+                const off = row?.drift !== null && row?.drift !== undefined && Math.abs(row.drift) > NEAR_PAGES;
+                return (
+                  <li key={item.name} className={`structure__beat ${row ? "structure__beat--compared" : ""}`}>
+                    <span className="structure__n">{index + 1}</span>
+                    <span className="structure__headline">{item.name}</span>
+                    <span className="structure__pg">p. {beatPage(item.at, board.targetEighths)}</span>
+                    {row ? (
+                      <span className={`structure__yours ${off ? "is-off" : ""}`}>
+                        {row.match ? (
+                          <>
+                            yours: <i>“{row.match.headline}”</i> p. {row.match.page} · {word}
+                          </>
+                        ) : row.beyond ? (
+                          <>nothing yet — past p. {comparison?.soFar}, the story so far</>
+                        ) : (
+                          <>none of yours within {MATCH_PAGES} pages</>
+                        )}
+                      </span>
+                    ) : null}
+                  </li>
+                );
+              })}
             </ol>
             <button type="button" className="project-action structure__apply" onClick={() => onApply(chosen.id)}>
               {verb}
+            </button>
+            <button
+              type="button"
+              className="project-action project-action--ghost structure__apply"
+              aria-pressed={shownOnStrip}
+              onClick={() => onStrip(shownOnStrip ? null : chosen.id)}
+            >
+              {shownOnStrip ? `Take ${chosen.name} off the strip` : `Show ${chosen.name} on the strip`}
             </button>
             {isOwn ? (
               <button type="button" className="project-action project-action--ghost structure__apply" onClick={() => onForget(chosen.id)}>

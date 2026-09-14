@@ -254,8 +254,7 @@ reply, call `list_board`, and fix the ids.
 PlotCoder's words — beat, logline, change line, the folded corner, eighths —
 are the room's, and many writers are not from the room. `list_words` gives
 every one in a sentence, the app's own meaning; use those sentences rather
-than a dictionary's, so the app and you never explain a word two ways. The
-source is `src/board/words.js`.
+than a dictionary's, so the app and you never explain a word two ways.
 
 ## Do not have opinions about beat count, and do not treat page counts as facts
 
@@ -290,7 +289,7 @@ edits appear in real time; the change is already saved either way.
   writer's decisions at the door; no tool does them.
 - **Pan and zoom** are per-viewer state and are deliberately not board data.
 
-## Workflows (R27)
+## Workflows
 
 A workflow is what the writer asks for in a sentence; you compose the tools.
 `list_workflows` has the six with the tools each composes and the rule to keep:
@@ -299,7 +298,7 @@ nothing); lay a structure over what is here; draft a sequence in Fountain from
 its cards; restick the remaining cards after the pages moved; brief a segment
 for video. Read `list_reminders` first — they are the house style.
 
-`segment_brief` (R28, first step) briefs one card or a run of cards for a
+`segment_brief` briefs one card or a run of cards for a
 video tool from what the wall holds. It is text for the writer to approve;
 nothing is generated or sent, and no video tool is chosen yet.
 

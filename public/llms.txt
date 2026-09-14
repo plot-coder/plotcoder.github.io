@@ -45,7 +45,7 @@ claude mcp add plotcoder-board -s user \
 - The page: window.plotcoder on an open wall, for a browser session.
 - Where the wall lives, without an account: Skip this when the account is the wall. Without an account, a wall is a folder: any folder, empty is fine — choose one that will outlive your session, never a scratch one. The app run from that folder shows the wall, and the server writes it there (PLOTCODER_ROOT). A fresh folder holds the sample; new_board for the writer's wall, then rename_project. No app running? export_fountain is the wall in order, as text.
 ## Call these first
-On the wall you will work, so after open_project or open_board, read_wall again.
+On the wall you will work, so after open_project or open_board, read_wall again. No server in front of you, and no shell to take the shell door? Nothing gets you in from inside the session: say so, and ask the person to wire the server and start a new session.
 1. list_words — the room's words, the app's meaning.
 2. read_wall — what is here, and what it asks. A fresh folder holds a sample wall (Maya, Tom, the letter) and says so; it is not the writer's.
 3. list_workflows — what a writer can ask you for.

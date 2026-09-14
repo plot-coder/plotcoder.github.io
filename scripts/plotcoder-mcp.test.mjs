@@ -139,9 +139,11 @@ describe("plotcoder MCP server", () => {
       "add_picture",
       "add_take",
       "apply_template",
+      "ask_again",
       "build_segment",
       "cast",
       "claim_account",
+      "compare_structure",
       "create_arrow",
       "create_group",
       "create_note",
@@ -158,6 +160,7 @@ describe("plotcoder MCP server", () => {
       "import_fdx",
       "import_fountain",
       "import_project",
+      "leave_question",
       "list_board",
       "list_boards",
       "list_files",
@@ -935,7 +938,8 @@ describe("typed arrows and new_board", () => {
     const board = await typed.callToolData("list_board");
     expect(board.notes).toEqual([]);
     expect(board.arrows).toEqual([]);
-    expect(board.characters).toEqual([]);
+    // The cast is the project's (R51): the new board has the same people to cast from.
+    expect(board.characters.map((person) => person.id)).toEqual(["maya", "tom"]);
     expect(board.logline).toBe("");
     expect(board.targetEighths).toBe(60 * 8);
     // The board that was open is still there, untouched.
@@ -1977,5 +1981,127 @@ describe("round eleven's directions", () => {
     const arrowLines = listed.split("\n").filter((line) => /^  - [0-9a-z-]+ \[(follows|setup)\]/.test(line));
     expect(arrowLines.length).toBeGreaterThanOrEqual(2);
     expect(arrowLines[0]).toContain(`${a} → ${b}`);
+  });
+});
+
+describe("round twelve's decisions: leaving a question, a structure beside the wall", () => {
+  let twelveRoot;
+  let twelve;
+
+  beforeAll(async () => {
+    twelveRoot = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-twelve-"));
+    twelve = new McpClient(twelveRoot);
+    await twelve.start();
+    // A bare wall: the sample's cards would sit among these.
+    const sample = await twelve.callToolData("list_board");
+    for (const note of sample.notes) await twelve.callTool("delete_note", { id: note.id });
+    for (const person of sample.characters ?? []) await twelve.callTool("remove_character", { id: person.id });
+  }, 30000);
+
+  afterAll(() => {
+    twelve?.stop();
+    if (twelveRoot) fs.rmSync(twelveRoot, { recursive: true, force: true });
+  });
+
+  it("leaves a question on the writer's word, lists it, asks it again when it would read differently, and takes the word back", async () => {
+    await twelve.callTool("set_target", { pages: 60 });
+    const a = await twelve.callToolData("create_note", { headline: "A", change: "Turns.", rank: "beat", x: 100, y: 100 });
+    await twelve.callToolData("create_note", { headline: "S1", change: "Turns.", x: 330, y: 100, pages: 1 });
+    const b = await twelve.callToolData("create_note", { headline: "B", change: "Turns.", rank: "beat", x: 560, y: 100 });
+    await twelve.callToolData("create_note", { headline: "S2", change: "Turns.", x: 790, y: 100, pages: 4 });
+    const s3 = await twelve.callToolData("create_note", { headline: "S3", change: "Turns.", x: 1020, y: 100, pages: 4 });
+    const c = await twelve.callToolData("create_note", { headline: "C", change: "Turns.", rank: "beat", x: 1250, y: 100 });
+    await twelve.callToolData("create_note", { headline: "S4", change: "Turns.", x: 1480, y: 100, pages: 1 });
+    await twelve.callToolData("create_note", { headline: "D", change: "Turns.", rank: "beat", x: 1710, y: 100 });
+    expect(await twelve.callTool("read_wall")).toContain("[sag]");
+    expect(await twelve.callTool("leave_question", { kind: "unpaid" })).toContain('not asking a question of kind "unpaid"');
+    const left = await twelve.callTool("leave_question", { kind: "sag" });
+    expect(left).toContain("Left, for now: [sag] About 8 pages run between");
+    expect(left).toContain("asks again on its own when the question would read differently");
+    const read = await twelve.callTool("read_wall");
+    expect(read.split("left, for now")[0]).not.toContain("[sag]");
+    expect(read).toContain("left, for now (the writer's word");
+    expect(read).toContain(`[sag] About 8 pages run between "B" and "C"`);
+    expect(read).toContain("1 left by the writer");
+    expect(await twelve.callTool("leave_question", { kind: "sag" })).toContain("Already left");
+    // A page moves in the run, and the wall asks again on its own.
+    await twelve.callTool("set_length", { ids: [s3.id], pages: 6 });
+    const again = await twelve.callTool("read_wall");
+    expect(again).toContain("  - [sag] About 10 pages run");
+    expect(again).not.toContain("left, for now");
+    // Back as it was, the word holds; ask_again takes it back now.
+    await twelve.callTool("set_length", { ids: [s3.id], pages: 4 });
+    expect(await twelve.callTool("read_wall")).toContain("left, for now");
+    expect(await twelve.callTool("ask_again", { kind: "empty" })).toContain('Nothing of kind "empty"');
+    const back = await twelve.callTool("ask_again", { kind: "sag", ids: [b.id, c.id] });
+    expect(back).toContain("Asked again");
+    expect(back).toContain("the wall asks it now");
+    expect(await twelve.callTool("read_wall")).toContain("  - [sag]");
+  });
+
+  it("sets a structure beside the wall's beats and lays nothing", async () => {
+    const before = await twelve.callToolData("list_board");
+    const compared = await twelve.callTool("compare_structure", {});
+    expect(compared).toContain(`"Turns" beside this wall's 4 beats, of 60 pages`);
+    expect(compared).toContain('Opening image (p. 1) — yours: "A" p. 1 · here');
+    expect(compared).toContain('The inciting incident (p. 6) — yours: "B" p. 3 · 3 pp early');
+    expect(compared).toContain("The midpoint (p. 30) — nothing yet: past p.");
+    expect(compared).toContain("Nothing moved and nothing was made");
+    const after = await twelve.callToolData("list_board");
+    expect(after.notes.length).toBe(before.notes.length);
+    expect(await twelve.callTool("compare_structure", { structure: "hero" })).toContain('No structure called "hero"');
+    expect(await twelve.callTool("list_structures")).toContain("compare_structure sets one of these beside this wall's beats");
+  });
+});
+
+describe("one cast for the project (R51)", () => {
+  let castRoot;
+  let one;
+
+  beforeAll(async () => {
+    castRoot = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-cast-"));
+    one = new McpClient(castRoot);
+    await one.start();
+  }, 30000);
+
+  afterAll(() => {
+    one?.stop();
+    if (castRoot) fs.rmSync(castRoot, { recursive: true, force: true });
+  });
+
+  it("is one roster across the boards: a second board has the pilot's people, the same name is one record, and a removal waits for every board", async () => {
+    // The sample's Maya and Tom are lifted onto the project the first time it is read.
+    const first = await one.callTool("list_board");
+    expect(first).toContain("cast (the project's; every board of it casts from here):");
+    const added = await one.callTool("add_character", { name: "Nessa Boyd" });
+    expect(added).toContain("to the project's cast");
+    expect(added).toContain("every board of the project casts from it");
+    const pilot = await one.callToolData("list_board");
+    const nessa = pilot.characters.find((person) => person.name === "Nessa Boyd");
+    const maya = pilot.characters.find((person) => person.id === "maya");
+    expect(nessa).toBeDefined();
+    const opened = await one.callTool("new_board", { name: "Episode two" });
+    expect(opened).toContain("the project's cast is already there to cast from");
+    const two = await one.callToolData("list_board");
+    expect(two.notes).toHaveLength(0);
+    expect(two.characters.map((person) => person.name)).toEqual(pilot.characters.map((person) => person.name));
+    // The same name on the second board is the one record, not a second Nessa.
+    expect(await one.callTool("add_character", { name: "nessa boyd" })).toContain(`Already in the cast as "Nessa Boyd" (${nessa.id})`);
+    // Maya is on the pilot's cards: not asked about here, and not removable from here.
+    const read = await one.callTool("read_wall");
+    expect(read).not.toContain("Maya is in the cast but on no card");
+    expect(read).toContain("Nessa Boyd is in the cast but on no card");
+    const refused = await one.callTool("remove_character", { id: maya.id });
+    expect(refused).toContain('"Maya" stays: the cast is the project\'s');
+    expect(refused).toContain('of "Board 1"');
+    // A page written here is the page everywhere.
+    await one.callTool("update_character", { name: "Nessa Boyd", notes: "Back after fourteen years." });
+    await one.callTool("open_board", { board: "1" });
+    const back = await one.callToolData("list_board");
+    expect(back.characters.find((person) => person.id === nessa.id)?.notes).toBe("Back after fourteen years.");
+    // Nobody has Nessa on a card: she can go, from either board.
+    expect(await one.callTool("remove_character", { id: nessa.id })).toContain('Removed "Nessa Boyd" from the project\'s cast');
+    await one.callTool("open_board", { board: "2" });
+    expect((await one.callToolData("list_board")).characters.some((person) => person.id === nessa.id)).toBe(false);
   });
 });

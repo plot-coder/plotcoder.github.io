@@ -117,9 +117,24 @@ export type BoardState = {
   lock: import("./numbering").Lock | null;
   /** The revision in progress — a name, a colour, a snapshot — or null. */
   revision: import("./numbering").Revision | null;
+  /** Questions the writer has left, for now (R53): kept until the question would read differently. */
+  left: LeftQuestion[];
+};
+
+/** A question the wall asked and the writer left (R53). */
+export type LeftQuestion = {
+  kind: string;
+  ids: string[];
+  /** The question's words when it was left; it comes back when they would differ. */
+  text: string;
+  since: string;
 };
 
 export type Pose = { id: string; x: number; y: number; rotate: number };
+
+export declare function isCharacter(value: unknown): value is { id: string; name: string };
+export declare function fillCharacter(character: { id: string; name: string } & Partial<BoardCharacter>): BoardCharacter;
+export declare function sameName(a: string, b: string): boolean;
 
 export type Command =
   | { type: "set_logline"; logline: string }
@@ -170,7 +185,9 @@ export type Command =
   | { type: "lock_numbers"; order?: string[] }
   | { type: "unlock_numbers" }
   | { type: "start_revision"; name: string; color?: string }
-  | { type: "end_revision" };
+  | { type: "end_revision" }
+  | { type: "leave_question"; kind: string; ids: string[]; text: string }
+  | { type: "ask_again"; kind: string; ids?: string[] };
 
 export type CommandResult = {
   state: BoardState;

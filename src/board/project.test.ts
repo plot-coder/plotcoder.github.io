@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { emptyState } from "./reducer";
 import {
+  castElsewhere,
+  liftCast,
+  mergeRoster,
+  sameRoster,
+  withRoster,
   addBoard,
   emptyProject,
   findBoard,
@@ -194,5 +200,67 @@ describe("a writer's own structures (Roadmap 2, item 7)", () => {
     expect(normalizeProject(base).structures).toEqual([]);
     expect(removeStructure(project, structure.id).structures).toEqual([]);
     expect(removeStructure(project, "nope")).toBe(project);
+  });
+});
+
+describe("one cast for the project (R51)", () => {
+  const NOW = "2026-09-14T00:00:00.000Z";
+  const person = (id: string, name: string, notes = "") => ({ id, name, looks: "", voice: "", wants: "", needs: "", notes, createdAt: NOW, updatedAt: NOW });
+  const card = (id: string, characterIds: string[]) => ({
+    id, headline: id, change: "Turns.", color: "yellow" as const, x: 0, y: 0, rotate: 0, z: 1, rank: "scene" as const, lengthEighths: null, characterIds, plants: false, payoffBoardId: null, location: "", text: "", createdAt: NOW, updatedAt: NOW,
+  });
+
+  it("lifts the boards' rosters onto a record written before it, merging by name and recasting folded ids", () => {
+    const project = { ...emptyProject(NOW), boards: [{ id: "pilot", name: "Pilot", createdAt: NOW, updatedAt: NOW }, { id: "ep2", name: "Episode two", createdAt: NOW, updatedAt: NOW }], activeBoardId: "pilot" };
+    delete (project as { characters?: unknown }).characters;
+    const boards = {
+      pilot: { ...emptyState(), characters: [person("n1", "Nessa Boyd"), person("d1", "Dessie Kane", "a bad knee")], notes: [card("a", ["n1", "d1"])] },
+      ep2: { ...emptyState(), characters: [person("n2", "nessa boyd", "back after fourteen years"), person("f1", "Fiona Boyd")], notes: [card("b", ["n2", "f1"])] },
+    };
+    const lifted = liftCast(project, boards, NOW);
+    expect(lifted.changed).toBe(true);
+    expect(lifted.project.characters?.map((item) => item.id)).toEqual(["n1", "d1", "f1"]);
+    // The first board's record keeps its id; a page line fills from the board that had it.
+    expect(lifted.project.characters?.[0].notes).toBe("back after fourteen years");
+    expect(lifted.boards.ep2.notes[0].characterIds).toEqual(["n1", "f1"]);
+    expect(lifted.boards.ep2.characters).toBe(lifted.project.characters);
+    // Lifted once, a second lift composes and changes nothing.
+    const again = liftCast(lifted.project, lifted.boards, NOW);
+    expect(again.changed).toBe(false);
+    expect(again.project).toBe(lifted.project);
+  });
+
+  it("composes a board with the project's cast and drops a cast id the project no longer has", () => {
+    const project = { ...emptyProject(NOW), characters: [person("n1", "Nessa Boyd")] };
+    const state = { ...emptyState(), characters: [person("n1", "Nessa Boyd"), person("t1", "Tom")], notes: [card("a", ["n1", "t1"])] };
+    const composed = withRoster(state, project);
+    expect(composed.characters).toEqual(project.characters);
+    expect(composed.notes[0].characterIds).toEqual(["n1"]);
+    expect(withRoster(composed, project)).toBe(composed);
+    expect(sameRoster(project.characters, [person("n1", "Nessa Boyd")])).toBe(true);
+    expect(sameRoster(project.characters, [person("n1", "Nessa")])).toBe(false);
+  });
+
+  it("merges a board's own roster into the project's, keeping the record a name already has", () => {
+    const project = { ...emptyProject(NOW), characters: [person("n1", "Nessa Boyd", "kept")] };
+    const state = { ...emptyState(), characters: [person("n9", "Nessa Boyd"), person("f1", "Fiona Boyd")], notes: [card("a", ["n9", "f1"])] };
+    const merged = mergeRoster(project, state, NOW);
+    expect(merged.project.characters?.map((item) => item.id)).toEqual(["n1", "f1"]);
+    expect(merged.project.characters?.[0].notes).toBe("kept");
+    expect(merged.state.notes[0].characterIds).toEqual(["n1", "f1"]);
+    expect(merged.state.characters).toBe(merged.project.characters);
+    // Nothing new: the same record and a composed state.
+    const same = mergeRoster(merged.project, merged.state, NOW);
+    expect(same.project).toBe(merged.project);
+  });
+
+  it("says who is on a card of another board, and leaves the cast absent from a record that has none", () => {
+    const project = { ...emptyProject(NOW), boards: [{ id: "pilot", name: "Pilot", createdAt: NOW, updatedAt: NOW }, { id: "ep2", name: "Episode two", createdAt: NOW, updatedAt: NOW }], activeBoardId: "ep2" };
+    const boards = { pilot: { ...emptyState(), notes: [card("a", ["n1", "d1"]), card("b", ["n1"])] }, ep2: { ...emptyState(), notes: [] } };
+    expect(castElsewhere(project, boards, "ep2")).toEqual({ n1: [{ board: "Pilot", boardId: "pilot", cards: 2 }], d1: [{ board: "Pilot", boardId: "pilot", cards: 1 }] });
+    expect(castElsewhere(project, boards, "pilot")).toEqual({});
+    const bare = normalizeProject({ id: "p", boards: [{ id: "b", name: "B" }] } as unknown as Parameters<typeof normalizeProject>[0], NOW);
+    expect("characters" in bare).toBe(false);
+    expect(normalizeProject({ ...bare, characters: [person("n1", "Nessa"), { id: 3 }] } as unknown as Parameters<typeof normalizeProject>[0], NOW).characters).toEqual([person("n1", "Nessa")]);
   });
 });

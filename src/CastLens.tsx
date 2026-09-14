@@ -23,6 +23,7 @@ import {
 } from "./board/reducer";
 import { EditableText } from "./EditableText";
 import type { Asset } from "./board/account";
+import type { CastElsewhere } from "./board/project";
 
 type CastLensProps = {
   open: boolean;
@@ -52,6 +53,10 @@ type CastLensProps = {
   placeHeld: string | null;
   onPlaceHover: (name: string | null) => void;
   onPlaceHold: (name: string | null) => void;
+  /** The cast is the project's (R51): its name, how many boards it has, and who is on a card of another board. */
+  projectName: string;
+  boardCount: number;
+  elsewhere: CastElsewhere;
 };
 
 // A blank line asks the question the field exists for (R18), rather than
@@ -130,6 +135,9 @@ export function CastLens({
   placeHeld,
   onPlaceHover,
   onPlaceHold,
+  projectName,
+  boardCount,
+  elsewhere,
 }: CastLensProps) {
   const titleId = useId();
   const [draft, setDraft] = useState("");
@@ -223,16 +231,22 @@ export function CastLens({
               </button>
             }
             aside={
-              <button
-                type="button"
-                className="cast-lens__action"
-                onClick={() => {
-                  closePage();
-                  onRemove(page.id);
-                }}
-              >
-                Remove
-              </button>
+              elsewhere[page.id]?.length ? (
+                <span className="cast-lens__stays" title="The cast is the project's: a person leaves it only when no board has them on a card.">
+                  on {elsewhere[page.id].map((item) => item.board).join(", ")}
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  className="cast-lens__action"
+                  onClick={() => {
+                    closePage();
+                    onRemove(page.id);
+                  }}
+                >
+                  Remove
+                </button>
+              )
             }
             onClose={onClose}
           />
@@ -286,7 +300,7 @@ export function CastLens({
         >
           <PanelHead
             title="Cast"
-            note={`${characters.length}`}
+            note={boardCount > 1 ? `${characters.length} · ${projectName}` : `${characters.length}`}
             aside={
               heldId || placeHeld ? (
                 <button
@@ -332,7 +346,13 @@ export function CastLens({
                       placeholder="Name"
                     />
                     <span className={`cast-lens__count ${count === 0 ? "is-none" : ""}`}>
-                      {count === 0 ? "no card" : count === 1 ? "1 card" : `${count} cards`}
+                      {count === 0
+                        ? elsewhere[character.id]?.length
+                          ? elsewhere[character.id].map((item) => `on ${item.board} · ${item.cards}`).join(", ")
+                          : "no card"
+                        : count === 1
+                          ? "1 card"
+                          : `${count} cards`}
                     </span>
                     <button
                       type="button"
@@ -408,6 +428,8 @@ export function CastLens({
             <p className="cast-lens__foot">
               {question ? question.text : `${focus.name}: nothing to ask.`}
             </p>
+          ) : boardCount > 1 ? (
+            <p className="cast-lens__foot">One cast for the project. A name on any of its boards is in it; their page is the same page everywhere.</p>
           ) : null}
         </section>
       ) : null}

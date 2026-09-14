@@ -110,7 +110,10 @@ function list(notes) {
  * Read the board. Returns the reading and the findings; see readWall.d.ts for
  * the shape. Never mutates the state.
  */
-export function readWall(state) {
+export function readWall(state, options = {}) {
+  // People on a card of another board of the project (R51) are cast, and
+  // are not asked about here.
+  const elsewhere = new Set(Array.isArray(options.elsewhere) ? options.elsewhere : []);
   const order = readingOrder(state.notes);
   const beats = order.filter((note) => note.rank === "beat");
 
@@ -334,6 +337,7 @@ export function readWall(state) {
   for (const character of state.characters ?? []) {
     const scenes = order.filter((note) => note.characterIds?.includes(character.id));
     if (scenes.length === 0) {
+      if (elsewhere.has(character.id)) continue;
       findings.push({
         kind: "uncast",
         ids: [character.id],
@@ -372,6 +376,21 @@ export function readWall(state) {
     }
   }
 
+  // A question the writer has left (R53) is held back while it is still the
+  // same question — same kind, same cards, same words. The moment it would
+  // read differently (a page moved, a headline changed, the median shifted)
+  // it is a new question and is asked. The kernel never decides this; the
+  // reading does, on every read.
+  const left = [];
+  const asked = findings.filter((finding) => {
+    const entry = (state.left ?? []).find(
+      (item) => item.kind === finding.kind && sameList(item.ids, finding.ids) && item.text === finding.text,
+    );
+    if (!entry) return true;
+    left.push({ ...finding, since: entry.since });
+    return false;
+  });
+
   return {
     order: order.map((note) => note.id),
     beats: beats.map((note) => ({ id: note.id, headline: note.headline })),
@@ -379,8 +398,13 @@ export function readWall(state) {
     setups,
     payoffs,
     later,
-    findings,
+    findings: asked,
+    left,
   };
+}
+
+function sameList(a, b) {
+  return a.length === b.length && a.every((id, index) => id === b[index]);
 }
 
 /** The setups as prose lines: what plants what, and how far apart. */

@@ -33,7 +33,7 @@ import { lockFrom, REVISION_COLORS } from "./numbering.js";
 // same person on every card. Long term the record grows — what they look like,
 // the details a writer needs to pull up — which is why it has an id and
 // timestamps now rather than being a word on a card.
-function isCharacter(value) {
+export function isCharacter(value) {
   return Boolean(value) && typeof value.id === "string" && typeof value.name === "string";
 }
 
@@ -45,7 +45,7 @@ function isCharacter(value) {
 export const CHARACTER_FIELDS = ["looks", "voice", "wants", "needs", "notes"];
 
 /** A roster record with every page field present, so the page never reads undefined. */
-function fillCharacter(character) {
+export function fillCharacter(character) {
   let filled = character;
   for (const field of CHARACTER_FIELDS) {
     if (typeof filled[field] !== "string") {
@@ -93,12 +93,25 @@ export function atPlace(note, place) {
   return Boolean(note.location) && samePlace(note.location, place);
 }
 
-function sameName(a, b) {
+export function sameName(a, b) {
   return a.trim().toLowerCase() === b.trim().toLowerCase();
 }
 
 function sameIds(a, b) {
   return a.length === b.length && a.every((id, index) => id === b[index]);
+}
+
+/** A question the writer has left (R53): its kind, the cards it was about, and the words it had. */
+function isLeftQuestion(value) {
+  return (
+    !!value &&
+    typeof value === "object" &&
+    typeof value.kind === "string" &&
+    Array.isArray(value.ids) &&
+    value.ids.every((id) => typeof id === "string") &&
+    typeof value.text === "string" &&
+    typeof value.since === "string"
+  );
 }
 
 /** Keep only ids that name someone in the roster, once each, in the order given. */
@@ -213,6 +226,7 @@ export function emptyState() {
     arrows: [],
     lock: null,
     revision: null,
+    left: [],
   };
 }
 
@@ -259,6 +273,7 @@ export function seedState(now = nowIso()) {
     arrows: [],
     lock: null,
     revision: null,
+    left: [],
   };
 }
 
@@ -355,6 +370,10 @@ export function normalizeState(value) {
   // lock and no revision; both are null until a draft goes out.
   const lock = value.lock && typeof value.lock === "object" && value.lock.numbers ? value.lock : null;
   const revision = value.revision && typeof value.revision === "object" && typeof value.revision.name === "string" ? value.revision : null;
+  // Boards written before R53 have no left questions: nothing is left until
+  // the writer leaves it.
+  const left = Array.isArray(value.left) ? value.left.filter(isLeftQuestion) : [];
+  const leftPatched = !Array.isArray(value.left) || left.length !== value.left.length;
   if (
     value.logline === logline &&
     value.targetEighths === targetEighths &&
@@ -362,7 +381,8 @@ export function normalizeState(value) {
     !arrowsPatched &&
     !patched &&
     value.lock === lock &&
-    value.revision === revision
+    value.revision === revision &&
+    !leftPatched
   ) {
     return value;
   }
@@ -375,6 +395,7 @@ export function normalizeState(value) {
     arrows: arrowsPatched ? arrows : value.arrows,
     lock,
     revision,
+    left,
   };
 }
 
@@ -877,6 +898,31 @@ export function applyCommand(state, command, now = nowIso()) {
     case "end_revision": {
       if (!state.revision) return { state, changed: false };
       return { state: { ...state, revision: null }, changed: true, result: null };
+    }
+
+    // Leaving a question (R53): the writer's word on a question the wall
+    // asks, written on the wall as the question's kind, the cards it was
+    // about and the words it had. The reading holds it back while a question
+    // with those words is still what the wall would ask, and asks again on
+    // its own the moment the question would read differently. Never a
+    // dismissal: the kernel records the word; the reading decides.
+    case "leave_question": {
+      const kind = typeof command.kind === "string" ? command.kind : "";
+      const ids = Array.isArray(command.ids) ? command.ids.filter((id) => typeof id === "string") : [];
+      const text = typeof command.text === "string" ? command.text : "";
+      if (!kind || !text) return { state, changed: false };
+      const entry = { kind, ids, text, since: now };
+      const rest = (state.left ?? []).filter((item) => !(item.kind === kind && sameIds(item.ids, ids)));
+      return { state: { ...state, left: [...rest, entry] }, changed: true, result: entry };
+    }
+
+    case "ask_again": {
+      const kind = typeof command.kind === "string" ? command.kind : "";
+      const ids = Array.isArray(command.ids) ? command.ids : null;
+      const gone = (state.left ?? []).filter((item) => item.kind === kind && (!ids || sameIds(item.ids, ids)));
+      if (gone.length === 0) return { state, changed: false };
+      const left = (state.left ?? []).filter((item) => !gone.includes(item));
+      return { state: { ...state, left }, changed: true, result: gone };
     }
 
     // Where a scene happens (R37): one place on one or more cards; an empty

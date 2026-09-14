@@ -129,7 +129,7 @@ describe("findings", () => {
 
   it("returns nothing at all for an empty board", () => {
     const reading = readWall(emptyState());
-    expect(reading).toEqual({ order: [], beats: [], runs: [], setups: [], payoffs: {}, later: [], findings: [] });
+    expect(reading).toEqual({ order: [], beats: [], runs: [], setups: [], payoffs: {}, later: [], findings: [], left: [] });
   });
 
   it("notes that runs cannot be read until a beat is marked, and passes no judgement on the count", () => {
@@ -499,5 +499,50 @@ describe("act groups", () => {
     expect(readWall(state).findings.filter((finding) => finding.kind === "sequence")).toHaveLength(0);
     state = applyCommand(state, { type: "rename_group", id: state.groups[0].id, title: "The heist" }).state;
     expect(readWall(state).findings.filter((finding) => finding.kind === "sequence")).toHaveLength(1);
+  });
+});
+
+describe("a left question (R53)", () => {
+  it("is held back while it is the same question, and asked again the moment it would read differently", () => {
+    // Three beats; the middle run is long, so the wall asks about the sag.
+    let state = wall(
+      { id: "a", rank: "beat" },
+      { id: "s1", pages: 1 },
+      { id: "b", rank: "beat" },
+      { id: "s2", pages: 4 },
+      { id: "s3", pages: 4 },
+      { id: "c", rank: "beat" },
+      { id: "s4", pages: 1 },
+      { id: "d", rank: "beat" },
+    );
+    const first = readWall(state);
+    const sag = first.findings.find((finding) => finding.kind === "sag");
+    expect(sag).toBeDefined();
+    expect(first.left).toEqual([]);
+    state = run(state, { type: "leave_question", kind: "sag", ids: sag!.ids, text: sag!.text });
+    const held = readWall(state);
+    expect(held.findings.find((finding) => finding.kind === "sag")).toBeUndefined();
+    expect(held.left).toEqual([{ ...sag, since: NOW }]);
+    // A page moves in the run: the question would read differently, so it is asked again.
+    const changed = run(state, { type: "set_length", ids: ["s3"], lengthEighths: 6 * EIGHTHS_PER_PAGE });
+    const again = readWall(changed);
+    expect(again.findings.find((finding) => finding.kind === "sag")).toBeDefined();
+    expect(again.left).toEqual([]);
+    // Back to how it was, and the writer's word holds again.
+    const restored = run(changed, { type: "set_length", ids: ["s3"], lengthEighths: 4 * EIGHTHS_PER_PAGE });
+    expect(readWall(restored).left).toHaveLength(1);
+    // ask_again takes the word back now.
+    expect(readWall(run(restored, { type: "ask_again", kind: "sag" })).findings.find((finding) => finding.kind === "sag")).toBeDefined();
+  });
+});
+
+describe("the cast is the project's (R51)", () => {
+  it("does not ask about a person on no card here who is on a card of another board", () => {
+    let state = wall({ id: "a" });
+    state = run(state, { type: "add_character", name: "Nessa", id: "nessa" }, { type: "add_character", name: "Fiona", id: "fiona" });
+    const alone = readWall(state).findings.filter((finding) => finding.kind === "uncast").map((finding) => finding.ids[0]);
+    expect(alone).toEqual(["nessa", "fiona"]);
+    const withOthers = readWall(state, { elsewhere: ["nessa"] }).findings.filter((finding) => finding.kind === "uncast").map((finding) => finding.ids[0]);
+    expect(withOthers).toEqual(["fiona"]);
   });
 });

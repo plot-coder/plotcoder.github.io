@@ -9,7 +9,7 @@
 // Plain ESM with a sibling .d.ts, like the kernel, so the browser store and the
 // MCP server share one idea of what a project is. Keep it free of `window`.
 
-import { newId, noteEighths, nowIso } from "./reducer.js";
+import { CHARACTER_FIELDS, fillCharacter, isCharacter, newId, normalizeState, noteEighths, nowIso, sameName } from "./reducer.js";
 
 export const PROJECT_VERSION = 2;
 export const DEFAULT_PROJECT_NAME = "Untitled project";
@@ -75,7 +75,7 @@ export function normalizeProject(value, now = nowIso()) {
     : [];
   // `renamed` is reidentifyProject's map for the store, never part of the record.
   const { renamed: _renamed, ...rest } = value;
-  return {
+  const record = {
     ...rest,
     version: PROJECT_VERSION,
     name: trimmed(value.name, DEFAULT_PROJECT_NAME),
@@ -86,6 +86,138 @@ export function normalizeProject(value, now = nowIso()) {
     createdAt: typeof value.createdAt === "string" ? value.createdAt : now,
     updatedAt: typeof value.updatedAt === "string" ? value.updatedAt : now,
   };
+  // The project's cast (R51). A record with none has not been lifted yet —
+  // its boards still carry their own rosters — and liftCast does that at the
+  // next load boundary; so absent stays absent, and never becomes [].
+  if (Array.isArray(value.characters)) record.characters = value.characters.filter(isCharacter).map(fillCharacter);
+  else delete record.characters;
+  return record;
+}
+
+// --- The project's cast (R51) -----------------------------------------
+//
+// One roster for the project, on the record, that every board draws from.
+// A board's state still carries `characters`, but as a copy of the
+// project's: every load boundary composes it with withRoster, and every
+// store lifts a roster a kernel command changed back onto the record. So
+// the kernel, the readings and the wall go on reading state.characters,
+// and there is one Nessa across the pilot and episode two.
+
+/** A board's state with the project's cast in it; unknown cast ids on cards drop. */
+export function withRoster(state, project) {
+  if (!Array.isArray(project.characters) || sameRoster(project.characters, state.characters)) return state;
+  const next = normalizeState({ ...state, characters: project.characters });
+  return next.characters === project.characters ? next : { ...next, characters: project.characters };
+}
+
+/** True when two rosters are the same people with the same pages. */
+export function sameRoster(a, b) {
+  if (a === b) return true;
+  if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
+  return a.every((character, index) => {
+    const other = b[index];
+    return other && character.id === other.id && character.name === other.name && CHARACTER_FIELDS.every((field) => (character[field] ?? "") === (other[field] ?? ""));
+  });
+}
+
+/**
+ * Lift the cast onto the project. A record that already has one composes
+ * every board with it. A record with none — written before R51 — takes the
+ * boards' rosters in board order and merges them by name: the first record
+ * of a name keeps its id, later ones fold into it (a page line fills from the
+ * first board that had it), and every card that cast a folded id casts the
+ * kept one. Returns the record, every board composed, and whether anything
+ * changed.
+ */
+export function liftCast(project, boards, now = nowIso()) {
+  if (Array.isArray(project.characters)) {
+    let changed = false;
+    const out = {};
+    for (const [id, state] of Object.entries(boards)) {
+      const next = withRoster(state, project);
+      if (next !== state) changed = true;
+      out[id] = next;
+    }
+    return { project, boards: out, changed };
+  }
+  const roster = [];
+  const folded = {};
+  const order = [
+    ...project.boards.map((meta) => meta.id).filter((id) => boards[id]),
+    ...Object.keys(boards).filter((id) => !project.boards.some((meta) => meta.id === id)),
+  ];
+  for (const boardId of order) {
+    const map = {};
+    for (const character of boards[boardId].characters ?? []) {
+      if (!isCharacter(character)) continue;
+      const kept = roster.find((item) => sameName(item.name, character.name));
+      if (!kept) {
+        roster.push(fillCharacter({ ...character }));
+        continue;
+      }
+      map[character.id] = kept.id;
+      for (const field of CHARACTER_FIELDS) {
+        if (!kept[field].trim() && typeof character[field] === "string" && character[field].trim()) kept[field] = character[field];
+      }
+    }
+    folded[boardId] = map;
+  }
+  const lifted = { ...project, characters: roster, updatedAt: now };
+  const out = {};
+  for (const [boardId, state] of Object.entries(boards)) {
+    const map = folded[boardId] ?? {};
+    const notes = state.notes.map((note) => {
+      const ids = [...new Set(note.characterIds.map((id) => map[id] ?? id))];
+      return ids.length === note.characterIds.length && ids.every((id, index) => id === note.characterIds[index]) ? note : { ...note, characterIds: ids };
+    });
+    out[boardId] = normalizeState({ ...state, notes, characters: roster });
+  }
+  return { project: lifted, boards: out, changed: true };
+}
+
+/**
+ * A board with a roster of its own — an imported file, a board opened from
+ * elsewhere — joins the project's cast without shrinking it: a name the
+ * project already has keeps the project's record (its cards recast to that
+ * id), a new name is appended with the record it came with. Returns the
+ * record and the board composed with it.
+ */
+export function mergeRoster(project, state, now = nowIso()) {
+  if (!Array.isArray(project.characters)) return { project, state };
+  const roster = [...project.characters];
+  const map = {};
+  let grew = false;
+  for (const character of state.characters ?? []) {
+    if (!isCharacter(character)) continue;
+    const kept = roster.find((item) => sameName(item.name, character.name));
+    if (kept) {
+      if (kept.id !== character.id) map[character.id] = kept.id;
+      continue;
+    }
+    roster.push(fillCharacter({ ...character }));
+    grew = true;
+  }
+  const next = grew ? { ...project, characters: roster, updatedAt: now } : project;
+  const notes = state.notes.map((note) => {
+    const ids = [...new Set(note.characterIds.map((id) => map[id] ?? id))];
+    return ids.length === note.characterIds.length && ids.every((id, index) => id === note.characterIds[index]) ? note : { ...note, characterIds: ids };
+  });
+  const recast = notes.some((note, index) => note !== state.notes[index]) ? { ...state, notes } : state;
+  return { project: next, state: withRoster(recast, next) };
+}
+
+/** Which other boards of the project have each person on a card: id -> [{ board, cards }]. */
+export function castElsewhere(project, boards, activeBoardId) {
+  const map = {};
+  for (const meta of project.boards) {
+    if (meta.id === activeBoardId) continue;
+    const state = boards[meta.id];
+    if (!state) continue;
+    const counts = {};
+    for (const note of state.notes) for (const id of note.characterIds ?? []) counts[id] = (counts[id] ?? 0) + 1;
+    for (const [id, cards] of Object.entries(counts)) (map[id] ??= []).push({ board: meta.name, boardId: meta.id, cards });
+  }
+  return map;
 }
 
 function touch(project, patch, now) {

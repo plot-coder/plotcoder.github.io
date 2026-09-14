@@ -21,6 +21,7 @@ import {
   boardPlaces,
   isMeasured,
   type BoardNote,
+  type BoardState,
   atPlace,
   noteEighths,
 } from "./board/reducer";
@@ -28,6 +29,8 @@ import { organizePoses } from "./board/organize";
 import { ProjectModal } from "./ProjectModal";
 import { RemindersModal } from "./RemindersModal";
 import { StructureSheet } from "./StructureSheet";
+import { castElsewhere } from "./board/project";
+import { TEMPLATES } from "./board/templates";
 import { PagesPanel } from "./PagesPanel";
 import { paginateBoard } from "./pagesLayout";
 import { BriefSheet } from "./BriefSheet";
@@ -111,6 +114,8 @@ export function App() {
   const [accountOpen, setAccountOpen] = useState(false);
   // Start from a structure (R38).
   const [structureOpen, setStructureOpen] = useState(false);
+  // The structure shown over the story map's strip (R52): a view, kept with the session and never in the file.
+  const [stripStructureId, setStripStructureId] = useState<string | null>(null);
   const [wordsOpen, setWordsOpen] = useState(false);
   const [asksOpen, setAsksOpen] = useState(false);
   const [agentsOpen, setAgentsOpen] = useState(false);
@@ -159,7 +164,24 @@ export function App() {
   );
   const placeNames = useMemo(() => places.map((place) => place.name), [places]);
   // One reading of the wall for the lens and the map, so they agree.
-  const reading = useMemo(() => readWall(board), [board]);
+  // Who is on a card of another board of the project (R51): the lens says where, and the reading does not ask.
+  const castElsewhereMap = useMemo(() => {
+    const boards: Record<string, BoardState> = {};
+    for (const meta of project.boards) {
+      if (meta.id === project.activeBoardId) continue;
+      const state = boardStore.boardState(meta.id);
+      if (state) boards[meta.id] = state;
+    }
+    return castElsewhere(project, boards, project.activeBoardId);
+    // The open board is a dependency so a change that reached another board through the record recomputes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [project, board]);
+  const reading = useMemo(() => readWall(board, { elsewhere: Object.keys(castElsewhereMap) }), [board, castElsewhereMap]);
+  const stripStructure = useMemo(() => {
+    if (!stripStructureId) return null;
+    const found = TEMPLATES.find((template) => template.id === stripStructureId) ?? (project.structures ?? []).find((structure) => structure.id === stripStructureId);
+    return found ? { name: found.name, beats: found.beats } : null;
+  }, [stripStructureId, project.structures]);
   // Cards with a take filed on them, alone or in a run (item 9): a mark on the card.
   const hasTake = useMemo(() => {
     const marked = new Set<string>();
@@ -519,6 +541,8 @@ export function App() {
   }
 
   function removeCharacter(id: string) {
+    // The cast is the project's (R51): a person on another board's cards stays.
+    if (castElsewhereMap[id]?.length) return;
     boardStore.dispatch({ type: "remove_character", id });
     setCastHeld((current) => (current === id ? null : current));
     setCastHover((current) => (current === id ? null : current));
@@ -737,6 +761,9 @@ export function App() {
         <CastLens
           open={castOpen}
           characters={characters}
+          projectName={project.name}
+          boardCount={project.boards.length}
+          elsewhere={castElsewhereMap}
           notes={notes}
           reading={reading}
           hoverId={castHover}
@@ -787,7 +814,15 @@ export function App() {
         <AccountSheet open={accountOpen} onClose={() => setAccountOpen(false)} currentProjectId={project.id} onAgents={() => setAgentsOpen(true)} />
         <WordsSheet open={wordsOpen} onClose={() => setWordsOpen(false)} onShow={showWord} onAgents={() => setAgentsOpen(true)} />
         <AgentsSheet open={agentsOpen} onClose={() => setAgentsOpen(false)} />
-        <AsksSheet open={asksOpen} findings={reading.findings} onClose={() => setAsksOpen(false)} onShow={showCards} />
+        <AsksSheet
+          open={asksOpen}
+          findings={reading.findings}
+          left={reading.left}
+          onClose={() => setAsksOpen(false)}
+          onShow={showCards}
+          onLeave={(finding) => boardStore.dispatch({ type: "leave_question", kind: finding.kind, ids: finding.ids, text: finding.text })}
+          onAskAgain={(finding) => boardStore.dispatch({ type: "ask_again", kind: finding.kind, ids: finding.ids })}
+        />
         <ProjectPicker currentProjectId={project.id} />
         <StructureSheet
           open={structureOpen}
@@ -797,6 +832,8 @@ export function App() {
           onApply={applyTemplate}
           onSave={saveStructure}
           onForget={(id) => boardStore.removeStructure(id)}
+          stripId={stripStructureId}
+          onStrip={setStripStructureId}
         />
       </div>
       <BriefSheet
@@ -894,6 +931,7 @@ export function App() {
       <StoryMap
         board={board}
         reading={reading}
+        structure={stripStructure}
         open={mapOpen}
         castFocusId={castFocusId}
         placeFocus={placeFocus}

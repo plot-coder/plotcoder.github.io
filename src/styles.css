@@ -4282,3 +4282,82 @@ body {
 .project-action.account__danger:not(.project-action--ghost) {
   border-color: currentColor;
 }
+
+/* --- A structure beside the wall (R52) ---------------------------------- */
+
+.structure__beat--compared {
+  grid-template-rows: auto auto;
+}
+
+.structure__yours {
+  grid-column: 2 / 4;
+  margin-top: -0.1rem;
+  margin-bottom: 0.2rem;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.72rem;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.structure__yours.is-off {
+  color: var(--over);
+}
+
+.story-map__structure-line {
+  stroke: var(--over);
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+  opacity: 0.8;
+}
+
+.story-map__structure-mark {
+  fill: var(--over);
+}
+
+.story-map__structure-label {
+  font-size: 9px;
+  fill: var(--over);
+  pointer-events: none;
+}
+
+.story-map__structure-past {
+  font-size: 9px;
+  fill: var(--muted);
+  text-anchor: end;
+  pointer-events: none;
+}
+
+/* --- Leaving a question (R53) -------------------------------------------- */
+
+.asks__leave {
+  color: var(--muted);
+}
+
+.asks__left {
+  margin-top: 0.9rem;
+}
+
+.asks__left .cast-lens__section {
+  margin-top: 0;
+}
+
+.asks__q--left {
+  color: var(--muted);
+}
+
+.asks__q--left .asks__text {
+  font-size: 0.92em;
+}
+
+/* --- One cast for the project (R51) -------------------------------------- */
+
+.cast-lens__stays {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}

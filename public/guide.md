@@ -87,6 +87,13 @@ order as text, the nearest thing to a look at it.
   distance to its payoff. The tool's own description carries the same list,
   and a reply names each question's kind. Put the questions to the writer. Do
   not act on them unasked, and do not add an opinion about the number of beats.
+- `leave_question` / `ask_again` — the writer's word on a question: "leave
+  it". Pass the kind as `read_wall` names it, and the ids when that kind is
+  asked more than once. The wall stops asking and lists it under "left, for
+  now"; it asks again on its own the moment the question would read
+  differently (a card in it changes, a page moves), and `ask_again` brings it
+  back now. Only on the writer's word, never unasked; a left question is not
+  a dismissed one.
 
 ### Cards
 
@@ -124,10 +131,20 @@ order as text, the nearest thing to a look at it.
 
 ### Cast
 
-- `add_character` — add a person to the roster by `name`. The same name twice is
-  refused and the existing record returned; use its id.
+The cast is the **project's**: one roster every board of it casts from, so a
+person is one record across the pilot and the episodes after it, with one
+page. A new board has the whole cast to cast from and nobody on a card yet.
+`list_board` shows the cast with the cards on this board; the Cast panel says
+where a person on no card here is instead ("on Pilot · 13"). Someone on a
+card of another board is not asked about as uncast here.
+
+- `add_character` — add a person to the project's cast by `name`. The same
+  name twice, on any board, is refused and the existing record returned; use
+  its id.
 - `rename_character` / `remove_character` — by id. Renaming carries to every
-  card; removing takes them off every card and leaves the cards.
+  card on every board; removing takes them off every card here and leaves the
+  cards, and is refused while another board has them on a card — cast them
+  off there first, or leave them.
 - `read_character` — a person's page back, by id or name: the five lines as
   they stand and the cards they are on. `list_board` says which lines are
   written; this says what they say.
@@ -213,6 +230,13 @@ order as text, the nearest thing to a look at it.
   `eight-sequences`, `fifteen-beats`, `story-circle`, or one of the writer's
   own by name). One undo step. Ask the writer which; afterwards there are only
   cards, nothing remembers the template.
+- `compare_structure` — a structure beside the wall, without laying anything:
+  each of its beats with the page it falls near on this board's target, and
+  the nearest of the wall's own beats within six pages, one to one and in
+  order, with how far off it is. A reading, like `read_wall`; the app shows
+  the same rows in the Structure sheet and the structure's marks on the story
+  map's strip. Use it when the writer asks how the wall sits against a
+  structure; lay the beats only when they ask for cards.
 - `list_structures` / `save_structure` / `remove_structure` — the writer's own
   structures live on the project: save the open wall's beats as one (reading
   order, headline as the beat, change line as the prompt), list them beside

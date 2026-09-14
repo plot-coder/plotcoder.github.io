@@ -809,7 +809,8 @@ export function applyCommand(state, command, now = nowIso()) {
         id: newId(),
         headline: item.name,
         change: item.prompt,
-        color: NOTE_COLORS[(state.notes.length + index) % NOTE_COLORS.length],
+        // One colour: paper means nothing to the app, and a structure is not a pattern (round eleven).
+        color: "yellow",
         x: left + (index % 5) * (NOTE_WIDTH + 28),
         y: top + Math.floor(index / 5) * (NOTE_HEIGHT + 40),
         rotate: ((index % 5) - 2) * 0.8,

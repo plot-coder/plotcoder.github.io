@@ -2,7 +2,7 @@
 
 A storyline wall. Cards are scenes, beats are the big turns, arrows say what follows or pays off what. An agent driven by a person has every tool a person here has; the person directs, the agent operates. Call the tools; never fake a mouse. Already have the plotcoder-board tools in front of you? Skip the doors and go to Call these first.
 
-The guide, read once before anything: https://plotcoder.com/guide.md. The guide is the whole and this page is its first page; where the two differ, the guide wins.
+The guide: https://plotcoder.com/guide.md. Read it once, before your first call if you can; it is the whole and this page is its first page, and where the two differ, the guide wins. Then Call these first, below. The doors between are for wiring a server in; skip them when the tools are already in front of you.
 
 ## Doors
 - MCP, for the next session: For Cursor or Claude Code, once, from any folder — nothing to clone: claude mcp add plotcoder-board -s user -- npx -y plotcoder-board@latest — then start the session again. A server wired from inside a session connects on the next one, never the one you are in; an agent already inside a session takes the shell door below. The block is the same wiring for a config file; npx fetches the current server each time. A server that comes up with one tool, plotcoder_not_installed, is a checkout of the repo whose npm ci was never run: that only happens with the repo as the session's folder.
@@ -47,11 +47,11 @@ claude mcp add plotcoder-board -s user \
 - Where the wall lives, without an account: Skip this when the account is the wall. Without an account, a wall is a folder: any folder, empty is fine — choose one that will outlive your session, never a scratch one. The app run from that folder shows the wall, and the server writes it there (PLOTCODER_ROOT, or the folder it is run from). A fresh folder holds the sample; new_board for the writer's wall, then rename_project. No app running? export_fountain is the wall in order, as text.
 ## Call these first
 1. list_words — the room's words, the app's meaning.
-2. read_wall — what is here, and what it asks. A fresh folder holds a sample wall (Maya, Tom, the letter) and says so; it is not the writer's.
+2. read_wall — the reading: the beats, the runs, the setups, and what the wall asks. The records — every card, the cast, the places — are list_board's. A fresh folder holds a sample wall (Maya, Tom, the letter) and says so; it is not the writer's.
 3. list_workflows — what a writer can ask you for.
-4. list_reminders — the house principles the app starts with, and the writer's own; read them before you change anything.
+4. list_reminders — the house principles the app starts with, and the writer's own; read them before you change anything. Reminders live on the project and go with it.
 
-These four are about the wall you will work, so after open_project, open_board, new_project or empty_account, read_wall again. On an account with no project yet, read_wall has nothing to read and says so, and list_reminders gives the house principles every project starts with; new_project, then the four again. No server in front of you, and no shell to take the shell door? Nothing gets you in from inside the session: say so, and ask the person to wire the server and start a new session.
+Make these four before anything else; none depends on another, so any order is fine. They are about the wall you will work, so after open_project, open_board, new_project or empty_account, read_wall again. On an account with no project yet, read_wall has nothing to read and says so, and list_reminders gives the house principles every project starts with; new_project, then the four again. No server in front of you, and no shell to take the shell door? Nothing gets you in from inside the session: say so, and ask the person to wire the server and start a new session.
 
 ## Rules
 - Questions, not fixes, until the writer says.

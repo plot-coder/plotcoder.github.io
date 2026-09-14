@@ -250,7 +250,7 @@ describe("plotcoder MCP server", () => {
     expect(text).toContain("1 beats");
 
     const listed = await client.callTool("list_board");
-    expect(listed).toContain("[beat, 1 page");
+    expect(listed).toContain("[beat, about a page, unsized");
     expect(listed).toContain("beats: 1, scenes: 2");
 
     const saved = readBoardFile();
@@ -435,7 +435,7 @@ describe("plotcoder MCP server", () => {
     expect(await client.callTool("move_note", { id, x: 100, y: 200 })).toContain("Moved card.");
     expect(await client.callTool("recolor_note", { id, color: "pink" })).toContain("Recolored");
     expect(await client.callTool("update_note", { id, change: "Tom will never know." })).toContain(
-      "Updated card.",
+      'Updated "',
     );
 
     const note = readBoardFile().state.notes.find((item) => item.id === id);
@@ -1222,8 +1222,8 @@ describe("structures of the writer's own", () => {
 
   it("lists the built-in structures and, at first, none of the writer's", async () => {
     const text = await own.callTool("list_structures");
-    expect(text).toContain("built in: 5");
-    expect(text).toContain('turns — "Turns"');
+    expect(text).toContain("built in: 5 —");
+    expect(text).toContain('turns "Turns"');
     expect(text).toContain("the writer's own: 0");
   });
 
@@ -1469,8 +1469,8 @@ describe("the premise and reminders (roadmap item 6)", () => {
     expect(fdx).toMatch(/Number="\d+A"/);
     expect(await door.callTool("start_revision", { name: "blue draft", color: "blue" })).toContain('Started the blue revision "blue draft"');
     expect(await door.callTool("list_board")).toContain('revision: "blue draft" in blue');
-    expect(await door.callTool("end_revision")).toContain("Revision ended");
-    expect(await door.callTool("unlock_numbers")).toContain("Unlocked");
+    expect(await door.callTool("end_revision")).toMatch(/Revision "blue draft" \(blue\) ended/);
+    expect(await door.callTool("unlock_numbers")).toMatch(/Unlocked \d+ scene number\(s\)/);
     expect(await door.callTool("unlock_numbers")).toContain("were not locked");
   });
 
@@ -1680,7 +1680,7 @@ describe("the project as a file", () => {
     await files.callTool("create_note", { headline: "Nessa comes back", change: "She decides to sell.", rank: "beat" });
     const out = path.join(fileRoot, "out", "low-season.json");
     const text = await files.callTool("export_project", { path: out });
-    expect(text).toContain('Saved "Low Season": 1 board(s), 4 card(s)');
+    expect(text).toContain('Saved "Low Season": 1 board(s) — "Board 1" (4 cards)');
     expect(text).toContain("Pictures and takes on the account are not in the file");
     const file = JSON.parse(fs.readFileSync(out, "utf8"));
     expect(file.app).toBe("plotcoder");
@@ -1945,7 +1945,7 @@ describe("round eleven's directions", () => {
     expect(await eleven.callTool("list_board")).toContain("plants → pays off later");
     expect(await eleven.callTool("set_plant", { ids: [key.id], plants: true, later: "" })).toContain("forgotten");
     expect(await eleven.callTool("read_wall")).toContain("[unpaid]");
-    expect(await eleven.callTool("set_plant", { ids: [key.id], plants: true, later: "Episode nine" })).toContain('No board matches "Episode nine"');
+    expect(await eleven.callTool("set_plant", { ids: [key.id], plants: true, later: "Episode nine" })).toContain('No board called "Episode nine" yet');
   });
 
   it("says the rows are as they were, that a length is the writer's, and where a rename left the page", async () => {

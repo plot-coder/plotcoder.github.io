@@ -52,6 +52,7 @@ import { DEFAULT_REMINDERS, titleFromBody } from "../src/board/reminders.js";
 import crypto from "node:crypto";
 import { describeRuns, describeSetups, readWall } from "../src/board/readWall.js";
 import { GAP, ROW_WIDTH, organizePoses } from "../src/board/organize.js";
+import { sceneLineCount } from "../src/board/paginate.js";
 import {
   addBoard,
   addStructure,
@@ -434,14 +435,16 @@ async function accountReadProject() {
   const { data, error } = await accountDoor.client.from("projects").select("id, record, reminders, rev").eq("id", accountDoor.projectId).maybeSingle();
   if (error || !data || !isProjectRecord(data.record)) throw new Error(error?.message ?? "the project is gone from the account");
   const project = normalizeProject(data.record);
-  const rows = await accountDoor.client.from("boards").select("id, state, rev").eq("project_id", project.id);
+  const rows = await accountDoor.client.from("boards").select("id, state, rev, updated_at").eq("project_id", project.id);
   const boards = {};
   const revs = {};
+  const changedAt = {};
   for (const row of rows.data ?? []) {
     if (isBoardState(row.state)) boards[row.id] = normalizeState(row.state);
     revs[row.id] = row.rev;
+    if (row.updated_at) changedAt[row.id] = row.updated_at;
   }
-  return { project, boards, revs, reminders: Array.isArray(data.reminders) ? data.reminders : null, rev: data.rev, base: ACCOUNT, live: ACCOUNT };
+  return { project, boards, revs, changedAt, reminders: Array.isArray(data.reminders) ? data.reminders : null, rev: data.rev, base: ACCOUNT, live: ACCOUNT };
 }
 
 async function accountWriteProject(project, boards, rev, reminders) {
@@ -786,7 +789,7 @@ const CHECK_WORDS = {
   unwritten: "no card without a headline or change line",
   unlinked: "no card without an arrow",
   duplicate: "no two headlines alike",
-  sequence: "no group too long for one sequence",
+  sequence: "no group too long for one sequence (act groups are not asked)",
   uncast: "nobody in the cast on no card",
   absent: "nobody gone for a third of the story",
   backwards: "no payoff before its setup",
@@ -803,7 +806,7 @@ function summarize(state) {
     .map((note) => {
       const cast = note.characterIds.map((id) => nameOf.get(id) ?? id);
       const who = cast.length ? `, cast: ${cast.join(", ")}` : "";
-      const plant = note.plants ? ", plants" : "";
+      const plant = note.plants ? (note.payoffBoardId ? ", plants → pays off later" : ", plants") : "";
       const place = note.location ? `, at: ${note.location}` : "";
       const count = formatPages(noteEighths(note));
       const pages = `${count} ${count === "1" ? "page" : "pages"}${isMeasured(note) ? ", written" : note.lengthEighths === null ? ", unsized" : ""}`;
@@ -841,7 +844,9 @@ function summarize(state) {
         `  - ${group.id} — "${group.title}" holds ${group.noteIds.length}: ${group.noteIds.join(", ")}`,
     )
     .join("\n");
-  const arrows = state.arrows
+  const storyIndex = new Map(readingOrder(state.notes).map((note, index) => [note.id, index]));
+  const arrows = [...state.arrows]
+    .sort((a, b) => (storyIndex.get(a.from) ?? Infinity) - (storyIndex.get(b.from) ?? Infinity) || (a.kind === "setup") - (b.kind === "setup"))
     .map(
       (arrow) =>
         `  - ${arrow.id} [${arrow.kind ?? "follows"}] — ${arrow.from} → ${arrow.to}  ("${headline(arrow.from)}" ${arrow.kind === "setup" ? "sets up" : "→"} "${headline(arrow.to)}")`,
@@ -931,7 +936,7 @@ server.registerTool(
       : "board";
     return ok(
       `PlotCoder ${which} (${door(live, base)})\n${summarize(state)}`,
-      state,
+      { ...state, notes: state.notes.map((note) => ({ ...note, eighths: noteEighths(note), measured: isMeasured(note) })) },
     );
   },
 );
@@ -976,7 +981,7 @@ server.registerTool(
     });
     const { beats, scenes } = countRanks(state);
     return ok(
-      `${result?.length ?? 0} card(s) are now ${args.rank}${where(live)}. The board holds ${beats} beats and ${scenes} scenes.`,
+      `${result?.length ?? 0} card(s) are now ${args.rank}${where(live)}. The board holds ${beats} beats and ${scenes} scenes. The rows are as they were; organize lays a row per beat.`,
       result,
     );
   },
@@ -1000,7 +1005,7 @@ server.registerTool(
       lengthEighths: toEighths(args.pages),
     });
     return ok(
-      `${result?.length ?? 0} card(s) now run about ${args.pages} page(s)${where(live)}. The board runs about ${formatPages(boardEighths(state))} pages against a ${formatPages(state.targetEighths)}-page target.`,
+      `${result?.length ?? 0} card(s) now run ${args.pages} page(s), the writer's estimate${where(live)}. The board runs about ${formatPages(boardEighths(state))} pages against a ${formatPages(state.targetEighths)}-page target.`,
       result,
     );
   },
@@ -1185,6 +1190,7 @@ server.registerTool(
   },
   async () => {
     const { state, live, base } = await readBoard();
+    const { project: projectForRead } = await readProject();
     const reading = readWall(state);
     const runs = describeRuns(reading, state).map((line, index) => {
       const ids = reading.runs[index]?.ids ?? [];
@@ -1222,6 +1228,7 @@ server.registerTool(
       ...(reading.setups.length
         ? describeSetups(reading, state).map((line) => `  - ${line}`)
         : ["  (no arrow is marked as a setup)"]),
+      ...reading.later.map((item) => `  - "${state.notes.find((note) => note.id === item.id)?.headline ?? item.id}" is folded and pays off later, on "${boardById(projectForRead, item.boardId)?.name ?? item.boardId}"`),
       "questions the wall raises:",
       ...(reading.findings.length
         ? reading.findings.map((finding) => `  - [${finding.kind}] ${finding.text}${finding.ids.length ? ` (ids: ${finding.ids.join(", ")})` : ""}`)
@@ -1301,8 +1308,10 @@ server.registerTool(
     trail.push({ before: state, after: canon(final), what: `move_scene "${card.headline}"` });
     undone.length = 0;
     const order = readingOrder(final.notes);
+    const group = final.groups.find((item) => item.noteIds.includes(card.id));
+    const groupLine = group ? ` It is still in "${group.title || "an untitled group"}"; a frame does not follow a move, so say if the act or sequence should change.` : "";
     return ok(
-      `Moved "${card.headline}" to ${args.after ? "after" : "before"} "${target.headline}": ${removed} arrow(s) removed, ${drawn} drawn, the wall tidied along them${where(live)}. Story order now: ${order.map((note, index) => `${index + 1}. ${note.headline}`).join(", ")}. One undo takes the whole move back.`,
+      `Moved "${card.headline}" to ${args.after ? "after" : "before"} "${target.headline}": ${removed} arrow(s) removed, ${drawn} drawn, the wall tidied along them${where(live)}. Story order now: ${order.map((note, index) => `${index + 1}. ${note.headline}`).join(", ")}.${groupLine} One undo takes the whole move back.`,
       { order: order.map((note) => note.id) },
     );
   },
@@ -1467,7 +1476,7 @@ server.registerTool(
   {
     title: "Write a scene",
     description:
-      "Write a card's scene text in Fountain — action, character cues in capitals, dialogue under them — onto the card by id. The card is then measured (its lines against a page) instead of estimated. An empty string clears it. Read read_pages first so the scene fits what is around it, and do not write scenes the writer has not asked for.",
+      "Write a card's scene text in Fountain — action, character cues in capitals, dialogue under them — onto the card by id; the scene heading comes from the card's place, so start with the action. The card is then measured (its lines as they print against a 55-line page) instead of estimated. An empty string clears it. Read read_pages first so the scene fits what is around it, and do not write scenes the writer has not asked for.",
     inputSchema: { id: z.string(), text: z.string() },
   },
   async (args) => {
@@ -1476,10 +1485,10 @@ server.registerTool(
       if (!result) return ok(`No card with id ${args.id}. Call list_board.`);
       return ok(`Nothing changed: "${result.headline}" already reads that way.`);
     }
-    const lines = args.text.split("\n").filter((line) => line.trim()).length;
+    const printed = sceneLineCount(args.text);
     return ok(
-      `Wrote "${result.headline}": ${lines} line(s), measured at ${formatPages(noteEighths(result))} of a page (a page is 55 lines of Courier 12; a fraction is rounded up to an eighth)${where(live)}. While the text stands the card is measured, not estimated; its estimate is untouched underneath.`,
-      result,
+      `Wrote "${result.headline}": ${printed} line(s) as they print (headings, blank lines and wrapped dialogue counted), measured at ${formatPages(noteEighths(result))} of a 55-line page, rounded to the nearest eighth and never below one${where(live)}. The heading comes from the card's place, so the text starts with the action. While the text stands the card is measured, not estimated; its estimate is untouched underneath.`,
+      { ...result, eighths: noteEighths(result), measured: true, printedLines: printed },
     );
   },
 );
@@ -1505,7 +1514,8 @@ server.registerTool(
       if (/^\.(?!\.)/.test(line) && index < ids.length) {
         const note = state.notes.find((item) => item.id === ids[index]);
         index += 1;
-        lines.push(`${line}    [[id: ${note?.id ?? "?"} · ${note && isMeasured(note) ? "measured" : "estimated"} ${formatPages(note ? noteEighths(note) : 0)}pp]]`);
+        const standIn = note && !(note.location ?? "").trim() ? " · no place: the headline stands in for the heading" : "";
+        lines.push(`${line}    [[id: ${note?.id ?? "?"} · ${note && isMeasured(note) ? "measured" : "estimated"} ${formatPages(note ? noteEighths(note) : 0)}pp${standIn}]]`);
       } else {
         lines.push(line);
       }
@@ -1889,10 +1899,9 @@ server.registerTool(
     undone.push(last);
     const { boardId } = await readBoard();
     const live = await writeBoard(last.before, rev, base, boardId);
-    return ok(
-      `Undid ${last.what}${where(live)}. ${trail.length} more of mine can be undone.`,
-      last.before,
-    );
+    const orderLine = /^(move_scene|organize)/.test(last.what) ? ` Story order now: ${readingOrder(last.before.notes).map((note, index) => `${index + 1}. ${note.headline}`).join(", ")}.` : "";
+    const more = trail.length >= TRAIL_CAP ? `${trail.length} more of mine can be undone — the most I keep, so the oldest have gone` : `${trail.length} more of mine can be undone`;
+    return ok(`Undid ${last.what}${where(live)}.${orderLine} ${more}.`, last.before);
   },
 );
 
@@ -1924,23 +1933,52 @@ server.registerTool(
   {
     title: "Fold the corner",
     description:
-      `Fold the corner of cards — mark them as planting something — or unfold them. ${wordSentence("corner")} The setup arrow is create_arrow with kind 'setup'. Folding never moves a card.`,
+      `Fold the corner of cards — mark them as planting something — or unfold them. ${wordSentence("corner")} The setup arrow is create_arrow with kind 'setup'. A fold that pays off in a later episode: pass later, another board of the project by name, id or number, and the wall stops asking where it comes back; later '' forgets it. Folding never moves a card.`,
     inputSchema: {
       ids: z.array(z.string()).min(1),
       plants: z.boolean(),
+      later: z.string().optional(),
     },
   },
   async (args) => {
-    const { result, live } = await commit({
+    let { result, live, changed } = await commit({
       type: "set_plant",
       ids: args.ids,
       plants: args.plants,
     });
+    let laterLine = "";
+    if (args.plants && args.later !== undefined) {
+      // A series plant (R50): the fold pays off on another board of the project.
+      // The kernel cannot check the board exists; this door can.
+      const { project } = await readProject();
+      const { state: now, boardId: current } = await readBoard();
+      const here = now.notes.filter((note) => args.ids.includes(note.id));
+      if (args.later.trim() === "") {
+        const cleared = await commit({ type: "set_payoff_board", ids: args.ids, boardId: null });
+        if (cleared.changed) {
+          result = cleared.result;
+          live = cleared.live;
+          changed = true;
+          laterLine = " The board it paid off on is forgotten; read_wall asks again until a setup arrow or a board pays it off.";
+        }
+      } else {
+        const target = findBoard(project, args.later);
+        if (!target) return ok(`No board matches "${args.later}". Call list_boards for the project's boards; a fold pays off later on one of them.`);
+        if (target.id === (current ?? project.activeBoardId)) return ok(`"${target.name}" is this board. A payoff on the same board is a setup arrow: create_arrow from the fold to the scene, kind 'setup'.`);
+        const named = await commit({ type: "set_payoff_board", ids: args.ids, boardId: target.id });
+        if (named.changed) {
+          result = named.result;
+          live = named.live;
+          changed = true;
+        }
+        laterLine = ` ${here.length} card(s) pay off later, on "${target.name}": read_wall stops asking where they come back, and the card says so.`;
+      }
+    }
     const count = result?.length ?? 0;
-    if (count === 0) return ok("No change: those cards were already that way, or the ids are not on the board.");
+    if (!changed || count === 0) return ok("No change: those cards were already that way, or the ids are not on the board.");
     return ok(
       args.plants
-        ? `${count} card(s) now plant something${where(live)}. read_wall will ask about each until a setup arrow pays it off.`
+        ? `${count} card(s) now plant something${where(live)}.${laterLine || " read_wall will ask about each until a setup arrow pays it off, or later names the board it pays off on."}`
         : `${count} card(s) no longer marked as planting${where(live)}.`,
       result,
     );
@@ -1977,6 +2015,7 @@ server.registerTool(
     inputSchema: { id: z.string(), name: z.string().min(1) },
   },
   async (args) => {
+    const { state: before } = await readBoard();
     const { state, changed, result, live } = await commit({
       type: "rename_character",
       id: args.id,
@@ -1989,7 +2028,10 @@ server.registerTool(
         : ok(`No character with id ${args.id}. Call list_board for the cast.`);
     }
     const followed = state.notes.filter((note) => note.characterIds.includes(result.id)).length;
-    return ok(`Renamed to "${result.name}" (${result.id})${where(live)}; the name changed on ${followed} card${followed === 1 ? "" : "s"}.`, result);
+    const oldName = (before.characters.find((item) => item.id === result.id)?.name ?? "").trim();
+    const stale = oldName ? CHARACTER_FIELDS.filter((field) => (result[field] ?? "").toLowerCase().includes(oldName.toLowerCase())) : [];
+    const staleLine = stale.length ? ` The page's ${stale.join(", ")} still mention${stale.length === 1 ? "s" : ""} "${oldName}"; the page is untouched.` : "";
+    return ok(`Renamed to "${result.name}" (${result.id})${where(live)}; the name changed on ${followed} card${followed === 1 ? "" : "s"}.${staleLine}`, result);
   },
 );
 
@@ -2297,7 +2339,7 @@ server.registerTool(
 
 // --- The project ------------------------------------------------------
 
-function describeBoards(project, boards) {
+function describeBoards(project, boards, changedAt = null) {
   return project.boards
     .map((board, index) => {
       const state = boards[board.id];
@@ -2306,7 +2348,8 @@ function describeBoards(project, boards) {
         state && isBoardState(state)
           ? `${state.notes.length} cards, about ${formatPages(boardEighths(normalizeState(state)))} of ${formatPages(normalizeState(state).targetEighths)} pages`
           : "no cards";
-      return `  ${index + 1}. ${board.id} — "${board.name}"${open}: ${shape}`;
+      const changed = changedAt?.[board.id] ? `, last changed ${changedAt[board.id]}` : "";
+      return `  ${index + 1}. ${board.id} — "${board.name}"${open}: ${shape}${changed}`;
     })
     .join("\n");
 }
@@ -2320,13 +2363,13 @@ server.registerTool(
     inputSchema: {},
   },
   async () => {
-    const { project, boards, live, base } = await readProject();
+    const { project, boards, live, base, changedAt } = await readProject();
     return ok(
       [
         `Project "${project.name}" (${door(live, base)})`,
         `premise: ${project.premise ? `"${project.premise}"` : "(not set)"}`,
         `boards: ${project.boards.length}`,
-        describeBoards(project, boards),
+        describeBoards(project, boards, changedAt),
       ].join("\n"),
       project,
     );
@@ -2665,7 +2708,7 @@ server.registerTool(
     const { project, boards, reminders } = await readProject();
     const file = toProjectFile({ project, boards, reminders: reminders ?? null });
     const cards = countCards(boards);
-    const what = `"${project.name}": ${project.boards.length} board(s), ${cards} card(s)${reminders?.length ? `, ${reminders.length} reminder(s)` : ""}${project.structures?.length ? `, ${project.structures.length} structure(s)` : ""}. Pictures and takes on the account are not in the file`;
+    const what = `"${project.name}": ${project.boards.length} board(s), ${cards} card(s)${reminders?.length ? `, ${reminders.length} reminder(s)` : ", no reminders of the writer's own (none to write)"}${project.structures?.length ? `, ${project.structures.length} structure(s)` : ", no structures of the writer's own (none to write)"}. Pictures and takes on the account are not in the file`;
     if (args.path) {
       fs.mkdirSync(path.dirname(path.resolve(args.path)), { recursive: true });
       fs.writeFileSync(args.path, JSON.stringify(file, null, 2));

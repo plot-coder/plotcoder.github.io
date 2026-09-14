@@ -79,6 +79,8 @@ export type BoardNote = {
   characterIds: string[];
   /** The corner is folded: this card plants something that must pay off (R31). */
   plants: boolean;
+  /** When folded: the id of another board of the project where it pays off (R50), or null. */
+  payoffBoardId: string | null;
   /** Where the scene happens (R37): a phrase in the writer's words; empty until set. */
   location: string;
   /** The scene's text in Fountain (R23 b): action, cues, dialogue; empty until written. */
@@ -161,6 +163,7 @@ export type Command =
   | ({ type: "update_character"; id: string } & Partial<Record<CharacterField, string>>)
   | { type: "set_cast"; ids: string[]; characterIds: string[] }
   | { type: "set_plant"; ids: string[]; plants: boolean }
+  | { type: "set_payoff_board"; ids: string[]; boardId: string | null }
   | { type: "set_location"; ids: string[]; location: string }
   | { type: "apply_template"; template: string; beats?: Array<{ name: string; prompt: string; at: number }> }
   | { type: "set_text"; id: string; text: string }

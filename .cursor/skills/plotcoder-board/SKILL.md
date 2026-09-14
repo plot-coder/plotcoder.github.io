@@ -117,7 +117,10 @@ order as text, the nearest thing to a look at it.
   card sized at one page is a claim the writer made.
 - `set_plant` — fold or unfold the corner of cards (`plants` true/false). Fold a
   card when the writer says it sets something up; `read_wall` will ask where it
-  pays off until a `setup` arrow leaves it.
+  pays off until a `setup` arrow leaves it — or until `later` names another
+  board of the project where it pays off (a series plant: `later: "Episode
+  two"`, by name, id or number from `list_boards`; `later: ""` forgets it).
+  The card then says "pays off in Episode two", and the reading lists it.
 - `set_location` — where one or more cards happen, as the writer would say it
   ("the piano shop", not "INT. PIANO SHOP"). `create_note` and `update_note`
   take `location` too; `list_board` shows it as `at: …`. No roster of places:

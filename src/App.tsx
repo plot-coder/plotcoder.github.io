@@ -229,7 +229,13 @@ export function App() {
     for (const [from, tos] of Object.entries(reading.payoffs)) {
       // Each payoff's printed number: the lock's when locked, else its place in reading order.
       const labels = tos.map((to) => numberOf.get(to) ?? (reading.order.includes(to) ? String(reading.order.indexOf(to) + 1) : null) ?? notes.find((note) => note.id === to)?.headline ?? to);
-      map.set(from, labels.length ? labels.join(", ") : null);
+      map.set(from, labels.length ? `paid off in ${labels.join(", ")}` : null);
+    }
+    // A fold that pays off on another board (R50): the card says which.
+    const boards = boardStore.getProject().boards;
+    for (const item of reading.later) {
+      const board = boards.find((candidate) => candidate.id === item.boardId);
+      map.set(item.id, `pays off in ${board?.name ?? "a later board"}`);
     }
     return map;
   }, [reading, numberOf, notes]);

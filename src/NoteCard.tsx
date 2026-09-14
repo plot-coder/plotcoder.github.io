@@ -30,7 +30,7 @@ type NoteCardProps = {
   revised: string | null;
   /** A take is filed on this scene (item 9). */
   hasTake: boolean;
-  /** When folded: the scene that pays it off, as printed ("14"), or null while unpaid. */
+  /** When folded: where it pays off ("paid off in 14", "pays off in Episode two"), or null while unpaid. */
   payoff: string | null;
   /** Open Pages at this scene: the number is the script's address for it. */
   onOpenPages: (id: string) => void;
@@ -144,7 +144,7 @@ export function NoteCard({
               {sceneNumber ? <span aria-hidden="true">· </span> : null}
               {payoff ? (
                 <>
-                  Plants · <b>paid off in {payoff}</b>
+                  Plants · <b>{payoff}</b>
                 </>
               ) : (
                 "Plants · unpaid"

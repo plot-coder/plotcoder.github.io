@@ -1,6 +1,10 @@
 # Publish the MCP server to npm on a version tag (R47), so an agent's wiring
-# is `npx plotcoder-board` and never a clone. Needs NPM_TOKEN in the repo's
-# secrets — an automation token from npmjs.com, Robert's, never in git.
+# is `npx plotcoder-board` and never a clone.
+#
+# Trusted publishing: npm trusts this workflow by its identity (OIDC), set up
+# once on the package's settings page at npmjs.com — organisation plot-coder,
+# repository plotcoder.github.io, workflow publish.yml. No token in the
+# repo's secrets. (If NPM_TOKEN is set anyway, npm uses it instead.)
 name: Publish to npm
 on:
   push:
@@ -17,6 +21,8 @@ jobs:
         with:
           node-version: 20
           registry-url: https://registry.npmjs.org
+      # Trusted publishing needs a recent npm.
+      - run: npm install -g npm@latest
       - run: npm ci
       - run: npm test
       - run: npm publish --access public --provenance

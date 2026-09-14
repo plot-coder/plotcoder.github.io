@@ -19,8 +19,9 @@ Before you paste:
    to watch the wall move. An empty account adopts whatever project that
    browser holds, so the agent will see one project already there; the prompt
    has it start its own regardless.
-4. When it has read the wall back, direct it the way you would a person. Say
-   "log so far" any time. Say "stop" for the report.
+4. When it has read the wall back, direct it the way you would a person. It
+   brings you the new friction entries at each step without being asked; "log
+   so far" gets the whole log, "stop" gets the report.
 
 ---
 
@@ -80,9 +81,12 @@ nothing you do touches my other work.
 5. **Then wait for me.** I will answer your questions and give you directions,
    one at a time. Do what I ask and nothing more. When a direction could mean
    two things on this wall, ask before you act. After each direction, tell me
-   in a line what you did and what the app said back, and quote the reply
-   whenever it surprised you.
+   in a line what you did and what the app said back, quote the reply whenever
+   it surprised you, and give me the friction entries that direction produced.
 6. Keep going until I say **stop**. Then hand me the report.
+
+I will not ask you for the log. You bring it to me, as it grows, at the
+places the next section names.
 
 Ask me about anything the treatment does not say. I would rather answer four
 questions than read four inventions.
@@ -111,8 +115,20 @@ Include the small ones: a word that read two ways, a reply that did not say what
 it had done, a direction of mine you could not map onto any tool. Number them in
 the order they happened and say which part of the session each one came from:
 the way in, the build, the reading, or my directions. Do not rank them and do
-not fix them; that is my job. If I say **log so far**, show me the log as it
-stands and carry on.
+not fix them; that is my job.
+
+**Show me the new entries without being asked**, at four points:
+
+- when you are wired in and have made the first calls, before you build;
+- when the wall is built, before you read it back;
+- with the reading, when you hand me the wall and its questions;
+- after every direction of mine, with the line that says what you did.
+
+Each time, the entries since the last time, numbered on from where the log
+left off, and "nothing new" when there is nothing new. Never wait for me to
+ask, and never hold an entry back for the report: if a reply made you guess,
+I want to hear it in the same message as the guess. If I say **log so far**,
+show me the whole log as it stands and carry on.
 
 ## The report I want at the end
 

@@ -129,7 +129,7 @@ describe("findings", () => {
 
   it("returns nothing at all for an empty board", () => {
     const reading = readWall(emptyState());
-    expect(reading).toEqual({ order: [], beats: [], runs: [], setups: [], payoffs: {}, findings: [] });
+    expect(reading).toEqual({ order: [], beats: [], runs: [], setups: [], payoffs: {}, later: [], findings: [] });
   });
 
   it("notes that runs cannot be read until a beat is marked, and passes no judgement on the count", () => {
@@ -410,6 +410,20 @@ describe("payoffs: which scene pays each plant off", () => {
     expect(readWall(state).payoffs).toEqual({ [first.id]: [later.id, latest.id] });
     expect(readWall(state).findings.filter((f) => f.kind === "unpaid")).toEqual([]);
     void plant;
+  });
+});
+
+describe("a fold that pays off on another board (R50)", () => {
+  it("is not unpaid, and is listed under later with its board", () => {
+    let state = emptyState();
+    state = applyCommand(state, { type: "create_note", headline: "The key", change: "She keeps it.", x: 0, y: 0, plants: true }).state;
+    const key = state.notes[0];
+    expect(readWall(state).findings.filter((f) => f.kind === "unpaid")).toHaveLength(1);
+    state = applyCommand(state, { type: "set_payoff_board", ids: [key.id], boardId: "ep2" }).state;
+    const reading = readWall(state);
+    expect(reading.findings.filter((f) => f.kind === "unpaid")).toHaveLength(0);
+    expect(reading.later).toEqual([{ id: key.id, boardId: "ep2" }]);
+    expect(reading.payoffs[key.id]).toEqual([]);
   });
 });
 

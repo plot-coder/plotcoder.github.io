@@ -307,8 +307,11 @@ export function readWall(state) {
     // pays off at the cash and again at the initials), and both count.
     payoffs[note.id] = heads;
   }
+  // A fold that pays off on another board (R50) is not unpaid: it is listed
+  // under `later`, and the door that knows the project names the board.
+  const later = order.filter((note) => note.plants && note.payoffBoardId).map((note) => ({ id: note.id, boardId: note.payoffBoardId }));
   for (const note of order) {
-    if (note.plants && !paysOff.has(note.id)) {
+    if (note.plants && !paysOff.has(note.id) && !note.payoffBoardId) {
       findings.push({
         kind: "unpaid",
         ids: [note.id],
@@ -372,6 +375,7 @@ export function readWall(state) {
     runs,
     setups,
     payoffs,
+    later,
     findings,
   };
 }

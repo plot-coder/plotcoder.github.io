@@ -272,7 +272,7 @@ describe("plotcoder MCP server", () => {
       const before = notes[0];
 
       const text = await client.callTool("set_length", { ids: [target], pages: 3 });
-      expect(text).toContain("run about 3 page(s)");
+      expect(text).toContain("run 3 page(s), the writer's estimate");
       // Three seed cards: one at three pages, two still at the default page each.
       expect(text).toContain("about 5 pages");
 
@@ -1432,11 +1432,11 @@ describe("the premise and reminders (roadmap item 6)", () => {
 
   it("writes a scene onto a card, measures it, reads the pages with ids, and imports a script", async () => {
     const wrote = await door.callTool("write_scene", { id: "maya-letter", text: "Rain on the window.\n\nMAYA\nTom?" });
-    expect(wrote).toContain('Wrote "Maya finds the letter": 3 line(s), measured at 1/8 of a page');
+    expect(wrote).toMatch(/Wrote "Maya finds the letter": \d+ line\(s\) as they print .*measured at 1\/8 of a 55-line page/);
     expect(await door.callTool("list_board")).toContain("[scene, 1/8 pages, written");
     const pages = await door.callTool("read_pages");
-    expect(pages).toContain(".MAYA FINDS THE LETTER    [[id: maya-letter · measured 1/8pp]]");
-    expect(pages).toContain(".TOM LIES ABOUT THE JOB    [[id: tom-lies · estimated 1pp]]");
+    expect(pages).toContain(".MAYA FINDS THE LETTER    [[id: maya-letter · measured 1/8pp · no place: the headline stands in for the heading]]");
+    expect(pages).toContain(".TOM LIES ABOUT THE JOB    [[id: tom-lies · estimated 1pp · no place: the headline stands in for the heading]]");
     const imported = await door.callTool("import_fountain", {
       text: ".TOM LIES ABOUT THE JOB\n\nHe says the job is fine.\n\n.THE BANK\n\nThere is no loan.\n",
     });
@@ -1814,7 +1814,7 @@ describe("round ten's replies", () => {
     expect(tidy).toMatch(/an opening row of \d+ card\(s\) before the first beat, then 1 row\(s\), one per beat/);
     expect(await ten.callTool("rename_character", { id: board.characters[0].id, name: "Nessa" })).toMatch(/the name changed on \d+ cards?/);
     const wrote = await ten.callTool("write_scene", { id: ids[0], text: "INT. OFFICE - NIGHT\n\nNessa opens the ledger.\n\nNESSA\nEvery month." });
-    expect(wrote).toMatch(/\d+ line\(s\), measured at [0-9/ ]+ of a page \(a page is 55 lines/);
+    expect(wrote).toMatch(/\d+ line\(s\) as they print .*measured at [0-9/ ]+ of a 55-line page/);
     expect(await ten.callTool("page_count")).toContain("this is the script so far, not the runtime");
   });
 
@@ -1910,4 +1910,72 @@ describe("one lane for tool calls", () => {
       fs.rmSync(laneRoot, { recursive: true, force: true });
     }
   }, 30000);
+});
+
+// Round eleven's directions: a fold that pays off on a later board (R50), and
+// the replies that say more — the rank, the length, the rename, the move's
+// group, the undo's order, the export's empty sections, the arrows in story
+// order, the measure in the record.
+describe("round eleven's directions", () => {
+  let elevenRoot;
+  let eleven;
+
+  beforeAll(async () => {
+    elevenRoot = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-eleven-"));
+    eleven = new McpClient(elevenRoot);
+    await eleven.start();
+  }, 30000);
+
+  afterAll(() => {
+    eleven?.stop();
+    if (elevenRoot) fs.rmSync(elevenRoot, { recursive: true, force: true });
+  });
+
+  it("lets a fold pay off on a later board, and the wall stops asking", async () => {
+    const key = await eleven.callToolData("create_note", { headline: "The key that fits nothing", change: "She keeps it.", plants: true });
+    expect(await eleven.callTool("read_wall")).toContain("[unpaid]");
+    expect(await eleven.callTool("set_plant", { ids: [key.id], plants: true, later: "1" })).toContain("is this board. A payoff on the same board is a setup arrow");
+    await eleven.callTool("new_board", { name: "Episode two" });
+    await eleven.callTool("open_board", { board: "1" });
+    const later = await eleven.callTool("set_plant", { ids: [key.id], plants: true, later: "Episode two" });
+    expect(later).toContain('pay off later, on "Episode two"');
+    const read = await eleven.callTool("read_wall");
+    expect(read).not.toContain("[unpaid]");
+    expect(read).toContain('"The key that fits nothing" is folded and pays off later, on "Episode two"');
+    expect(await eleven.callTool("list_board")).toContain("plants → pays off later");
+    expect(await eleven.callTool("set_plant", { ids: [key.id], plants: true, later: "" })).toContain("forgotten");
+    expect(await eleven.callTool("read_wall")).toContain("[unpaid]");
+    expect(await eleven.callTool("set_plant", { ids: [key.id], plants: true, later: "Episode nine" })).toContain('No board matches "Episode nine"');
+  });
+
+  it("says the rows are as they were, that a length is the writer's, and where a rename left the page", async () => {
+    const board = await eleven.callToolData("list_board");
+    const ids = board.notes.map((note) => note.id);
+    expect(await eleven.callTool("set_rank", { ids: [ids[0]], rank: "beat" })).toContain("The rows are as they were; organize lays a row per beat");
+    expect(await eleven.callTool("set_length", { ids: [ids[0]], pages: 3 })).toContain("3 page(s), the writer's estimate");
+    await eleven.callTool("update_character", { name: "Maya", notes: "Maya has no surname in the treatment." });
+    const renamed = await eleven.callTool("rename_character", { id: "maya", name: "Maya Boyd" });
+    expect(renamed).toContain('The page\'s notes still mentions "Maya"');
+    const saved = await eleven.callTool("export_project");
+    expect(saved).toContain("no reminders of the writer's own (none to write)");
+    const listed = await eleven.callToolData("list_board");
+    expect(listed.notes[0]).toHaveProperty("eighths");
+    expect(listed.notes[0]).toHaveProperty("measured", false);
+  });
+
+  it("names the group a moved card is still in, and gives the order back on undo", async () => {
+    const board = await eleven.callToolData("list_board");
+    const [a, b, c] = board.notes.map((note) => note.id);
+    await eleven.callTool("create_arrow", { from: a, to: b });
+    await eleven.callTool("create_arrow", { from: b, to: c });
+    await eleven.callTool("create_group", { noteIds: [a, b], title: "Act one" });
+    const moved = await eleven.callTool("move_scene", { id: b, after: c });
+    expect(moved).toContain('It is still in "Act one"; a frame does not follow a move');
+    const undone = await eleven.callTool("undo");
+    expect(undone).toMatch(/Undid move_scene .*Story order now: 1\. /);
+    const listed = await eleven.callTool("list_board");
+    const arrowLines = listed.split("\n").filter((line) => /^  - [0-9a-z-]+ \[(follows|setup)\]/.test(line));
+    expect(arrowLines.length).toBeGreaterThanOrEqual(2);
+    expect(arrowLines[0]).toContain(`${a} → ${b}`);
+  });
 });

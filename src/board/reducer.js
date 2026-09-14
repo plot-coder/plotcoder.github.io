@@ -233,6 +233,9 @@ export function seedState(now = nowIso()) {
     location: "",
     text: "",
     plants: false,
+    // A fold that pays off on another board — a later episode — names it here;
+    // null claims nothing (R50).
+    payoffBoardId: null,
     createdAt: now,
     updatedAt: now,
   });
@@ -325,6 +328,8 @@ export function normalizeState(value) {
     const characterIds = knownCast(note?.characterIds, characters);
     // Cards written before R31 have no fold; a plant is a claim you make.
     const plants = note?.plants === true;
+    // Cards written before R50 pay off on their own board or not at all.
+    const payoffBoardId = plants && typeof note?.payoffBoardId === "string" && note.payoffBoardId ? note.payoffBoardId : null;
     // Cards written before R37 have no place; a scene is nowhere until it is.
     const location = typeof note?.location === "string" ? note.location : "";
     // Cards written before pages (R23 b) have no text; a scene is unwritten until it is.
@@ -336,13 +341,14 @@ export function normalizeState(value) {
       Array.isArray(note.characterIds) &&
       sameIds(note.characterIds, characterIds) &&
       note.plants === plants &&
+      note.payoffBoardId === payoffBoardId &&
       note.location === location &&
       note.text === text
     ) {
       return note;
     }
     patched = true;
-    return { ...note, rank, lengthEighths, characterIds, plants, location, text };
+    return { ...note, rank, lengthEighths, characterIds, plants, payoffBoardId, location, text };
   });
 
   // Boards written before the production half (Roadmap 2, item 8) have no
@@ -416,6 +422,7 @@ export function applyCommand(state, command, now = nowIso()) {
             : clampEighths(command.lengthEighths, DEFAULT_NOTE_EIGHTHS, MAX_NOTE_EIGHTHS),
         characterIds: knownCast(command.characterIds, state.characters ?? []),
         plants: command.plants === true,
+        payoffBoardId: null,
         location: cleanPlace(command.location),
         text: typeof command.text === "string" ? command.text : "",
         z: maxZ(state.notes) + 1,
@@ -811,6 +818,7 @@ export function applyCommand(state, command, now = nowIso()) {
         lengthEighths: null,
         characterIds: [],
         plants: false,
+        payoffBoardId: null,
         location: "",
         text: "",
         createdAt: now,
@@ -895,8 +903,30 @@ export function applyCommand(state, command, now = nowIso()) {
       const plants = command.plants === true;
       const touched = [];
       const notes = state.notes.map((note) => {
-        if (!ids.has(note.id) || note.plants === plants) return note;
-        const next = bump(note, { plants }, now);
+        if (!ids.has(note.id)) return note;
+        // Unfolding forgets where it paid off; a claim that no longer stands.
+        const payoffBoardId = plants ? note.payoffBoardId : null;
+        if (note.plants === plants && note.payoffBoardId === payoffBoardId) return note;
+        const next = bump(note, { plants, payoffBoardId }, now);
+        touched.push(next);
+        return next;
+      });
+      if (touched.length === 0) return { state, changed: false };
+      return { state: { ...state, notes }, changed: true, result: touched };
+    }
+
+    // A fold that pays off on another board of the project (R50): the wall
+    // stops asking where it comes back, and the reading says where. The
+    // kernel cannot check the board exists; the door that knows the project
+    // does. Null takes the claim back.
+    case "set_payoff_board": {
+      const ids = new Set(command.ids);
+      if (ids.size === 0) return { state, changed: false };
+      const payoffBoardId = typeof command.boardId === "string" && command.boardId ? command.boardId : null;
+      const touched = [];
+      const notes = state.notes.map((note) => {
+        if (!ids.has(note.id) || !note.plants || note.payoffBoardId === payoffBoardId) return note;
+        const next = bump(note, { payoffBoardId }, now);
         touched.push(next);
         return next;
       });

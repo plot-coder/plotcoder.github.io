@@ -61,6 +61,8 @@ export type WallReading = {
   /** Every planted card: the scene that pays it off (first setup arrow, by wall order), or null while unpaid. */
   /** For each folded card, the cards its setup arrows land on, in wall order; empty when unpaid. */
   payoffs: Record<string, string[]>;
+  /** Folded cards that pay off on another board of the project (R50): the card and the board. */
+  later: { id: string; boardId: string }[];
   findings: Finding[];
 };
 

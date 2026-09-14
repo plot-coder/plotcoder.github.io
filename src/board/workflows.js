@@ -30,7 +30,7 @@ export const WORKFLOWS = [
       { question: "Where does each scene happen?", hint: "In your own words. A scene that moves through one location is still one place.", tool: "set_location" },
       { question: "When does a scene happen, where that matters?", hint: "That night; the fourth of October. It goes in the headline for now.", tool: "the headline" },
       { question: "Who is in each scene, and what do we call them?", hint: "A full name, or a role for someone unnamed — the man in 42. And who is only spoken of, never in a scene? They go in someone's notes, not the cast.", tool: "add_character, cast, update_character" },
-      { question: "What is planted, and where does it pay off?", hint: "Say \"later in the series\" when it pays off outside this episode, so the fold is deliberate.", tool: "set_plant, create_arrow" },
+      { question: "What is planted, and where does it pay off?", hint: "Name the episode when it pays off outside this one, so the fold is deliberate and the wall knows where to look.", tool: "set_plant with later, create_arrow" },
       { question: "Which scenes do you already know run long or short?", hint: "A day in the story is not a page count; leave the rest unsized.", tool: "set_length" },
       { question: "What are the project and the board called?", hint: "The series, and this episode.", tool: "rename_project, rename_board" },
       { question: "What must not be invented?", hint: "Looks and voices are yours until you say; so is anything the treatment does not state.", tool: "update_character, later" },

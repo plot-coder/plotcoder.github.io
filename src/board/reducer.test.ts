@@ -495,6 +495,29 @@ describe("countRanks", () => {
   });
 });
 
+describe("set_payoff_board (R50)", () => {
+  it("names another board as where a fold pays off, only on folded cards, and forgets it when unfolded", () => {
+    let state = emptyState();
+    state = applyCommand(state, { type: "create_note", headline: "The key", change: "She keeps it.", x: 0, y: 0, plants: true }).state;
+    state = applyCommand(state, { type: "create_note", headline: "The gate", change: "She stays.", x: 300, y: 0 }).state;
+    const [key, gate] = state.notes;
+    expect(key.payoffBoardId).toBeNull();
+    const unfolded = applyCommand(state, { type: "set_payoff_board", ids: [gate.id], boardId: "ep2" });
+    expect(unfolded.changed).toBe(false);
+    const named = applyCommand(state, { type: "set_payoff_board", ids: [key.id], boardId: "ep2" });
+    expect(named.changed).toBe(true);
+    expect(named.state.notes[0].payoffBoardId).toBe("ep2");
+    expect(applyCommand(named.state, { type: "set_payoff_board", ids: [key.id], boardId: "ep2" }).changed).toBe(false);
+    const cleared = applyCommand(named.state, { type: "set_payoff_board", ids: [key.id], boardId: null }).state;
+    expect(cleared.notes[0].payoffBoardId).toBeNull();
+    const unfoldedKey = applyCommand(named.state, { type: "set_plant", ids: [key.id], plants: false }).state;
+    expect(unfoldedKey.notes[0].payoffBoardId).toBeNull();
+    // A card written before R50 has no field; it claims nothing.
+    const old = { ...named.state, notes: named.state.notes.map(({ payoffBoardId: _drop, ...note }) => note) };
+    expect(normalizeState(old).notes[0].payoffBoardId).toBeNull();
+  });
+});
+
 describe("set_length", () => {
   const board = () => boardOf({ id: "a", x: 0, y: 0 }, { id: "b", x: 400, y: 0 });
 

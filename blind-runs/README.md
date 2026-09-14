@@ -30,23 +30,28 @@ three `friction, fixed` entries in the changelog.
 | One | Repo checkout, dev bridge | "The Long Way Round" | The wall | 22 logged, 20 real, all fixed |
 | Two | Repo checkout, dev bridge | same | The wall | 30 logged, a third stale, the rest fixed |
 | Three | Repo checkout, current server | same | The wall | 31, most new, all fixed |
-| Four | **The account door**, no dev server | "Low Season" | The wall | not yet run |
+| Four | **The account door**, no dev server | "Low Season" | The wall | 23 before the directions phase, all fixed |
+| Five | The account door, the writer in the room | "Low Season" | Past the wall | not yet run |
 
-## Round four
+## Round four, and the next round
 
-- `round-four-prompt.md` — paste into a fresh session; fill in the credentials
-  yourself.
-- `round-four-treatment.md` — "Low Season", a pilot. Paste it where the prompt
-  says to.
+Round four ran on 2026-09-13 and stopped at the wall with twenty-three
+findings, all fixed the same day (`REQUIREMENTS.md`, "The blind run", round
+four). The largest: the account did not exist yet, the sign-in failed, and the
+server fell silently to the folder's wall. It was also not quite blind — the
+session was started inside a worktree of the repo, and the harness put
+`CLAUDE.md` in the agent's context before it read a word. Start a round in an
+empty folder.
+
+- `prompt.md` — the next round: the same door and treatment, but the writer
+  stays in the room after the wall is read and directs. The test account is
+  filled in (`test@test.com`, password `test`; Robert's decision, so the prompt
+  pastes without editing). Paste everything below its divider.
+- `round-four-treatment.md` — "Low Season", a pilot, also embedded in the
+  prompt.
 
 The treatment is a TV pilot rather than a feature so the round exercises a
 series premise above an episode logline, which a feature never does.
-
-**Known before it starts:** the MCP server exists only inside this repo
-(`private: true`, no `bin`, no npx path, no hosted endpoint), so an agent with
-only the on-ramp cannot reach the app at all — it must clone. The on-ramp also
-says to read the guide and points at a path inside the repo. Round four asks the
-agent to report on that gap rather than assuming its size.
 
 ## Clearing up after a round (R44)
 
@@ -54,8 +59,8 @@ A round leaves a project, its boards and any files behind on a real account.
 Mark the test account once, then empty it between rounds:
 
 ```bash
-node scripts/wipe-test-account.mjs you+round4@example.com --mark
-node scripts/wipe-test-account.mjs you+round4@example.com --empty --yes
+node scripts/wipe-test-account.mjs test@test.com --mark
+node scripts/wipe-test-account.mjs test@test.com --empty --yes
 ```
 
 **Prefer `--empty` between rounds.** `--delete` takes the account itself, which

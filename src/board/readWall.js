@@ -86,6 +86,11 @@ function median(values) {
   return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 }
 
+/** Small counts as words, the way the sheet reads them. */
+function countWord(n) {
+  return ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"][n] ?? String(n);
+}
+
 function pages(eighths) {
   return formatPages(Math.round(eighths));
 }
@@ -170,16 +175,46 @@ export function readWall(state) {
     }
   }
 
-  // Two beats back to back: no scene between two turns. A question, not a
-  // verdict — they may be one beat, or a scene may be missing.
+  // Beats back to back: no scene between two turns. A question, not a
+  // verdict — they may be one beat, or a scene may be missing. Consecutive
+  // empty runs are one question naming the chain, not one per pair: a pilot
+  // whose turns come thick at the end would otherwise ask the same sentence
+  // six times (round four, finding 19).
+  let chain = [];
+  const askChain = () => {
+    if (chain.length === 0) return;
+    const ids = [chain[0].from, ...chain.map((run) => run.to)];
+    const names = ids.map((id) => `"${headline(id)}"`);
+    findings.push({
+      kind: "empty",
+      ids,
+      text:
+        ids.length === 2
+          ? `Nothing runs between ${names[0]} and ${names[1]}: two turns back to back. Are they one beat, or is a scene missing?`
+          : `Nothing runs between ${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}: ${countWord(ids.length)} turns back to back. Are some of them one beat, or are scenes missing between them?`,
+    });
+    chain = [];
+  };
   for (const run of between) {
-    if (run.cards === 0) {
-      findings.push({
-        kind: "empty",
-        ids: [run.from, run.to],
-        text: `Nothing runs between "${headline(run.from)}" and "${headline(run.to)}": two turns back to back. Are they one beat, or is a scene missing?`,
-      });
-    }
+    const continues = chain.length > 0 && chain[chain.length - 1].to === run.from;
+    if (run.cards !== 0 || !continues) askChain();
+    if (run.cards === 0) chain.push(run);
+  }
+  askChain();
+
+  // A card that says no place, once the writer has started placing cards.
+  // One question however many there are; a wall with no places at all is a
+  // wall the writer has not placed yet, and is not asked.
+  const unplaced = order.filter((note) => !(note.location ?? "").trim());
+  if (unplaced.length > 0 && unplaced.length < order.length) {
+    findings.push({
+      kind: "unplaced",
+      ids: unplaced.map((note) => note.id),
+      text:
+        unplaced.length === 1
+          ? `${quote(unplaced[0])} says no place. Where does it happen?`
+          : `${unplaced.length} cards say no place: ${unplaced.map(quote).join(", ")}. Where do they happen?`,
+    });
   }
 
   // A card that has not earned its place yet.

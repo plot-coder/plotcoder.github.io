@@ -14,7 +14,7 @@ The full statement of purpose, every decision, and every requirement lives in [R
 4. **Read the wall**: find the act that sags, the setup with no payoff, the character who disappears.
 5. Only then **write pages**.
 
-Steps 1 to 4 are built. Step 4 reads the runs between beats and the setups and their payoffs, and asks nine kinds of question, including a sagging act, a setup with no payoff, a character who disappears, and two scenes doing the same job, in the Reminders modal and as a `read_wall` tool. The Story Map, a strip under the wall, draws the same reading along a page axis and jumps the wall to any card you click. A board has a cast: type "with Maya, Tom" on a card, and see the wall by person from the Cast lens. Step 5 is not started. See "What is built and what is left" in the requirements.
+Steps 1 to 4 are built. Step 4 reads the runs between beats and the setups and their payoffs, and asks ten kinds of question, including a sagging act, a setup with no payoff, a character who disappears, and two scenes doing the same job, in the Reminders modal and as a `read_wall` tool. The Story Map, a strip under the wall, draws the same reading along a page axis and jumps the wall to any card you click. A board has a cast: type "with Maya, Tom" on a card, and see the wall by person from the Cast lens. Step 5 is not started. See "What is built and what is left" in the requirements.
 
 ## Run it
 
@@ -41,7 +41,7 @@ Every board verb goes through one command kernel, `src/board/reducer.js`, and th
 
 - **The wall.** Tap the words to type, drag the paper to move. Lasso to select, then Group. Drag a card's handle onto another card for an arrow. ⌘Z takes back any change, whichever door made it.
 - **`window.plotcoder`** on the page, for a console or a CDP session.
-- **The MCP server**, `scripts/plotcoder-mcp.mjs`, wired for Cursor in `.cursor/mcp.json` and for Claude Code in `.mcp.json` (run `npm ci` once first; `node scripts/plotcoder-call.mjs <tool> '{json}'` makes one call from a shell where there is no MCP). Sixty-four tools: reading (`list_board`, `read_wall`, `read_pages`, `page_count`, `list_words`, `list_workflows`, `segment_brief`); the card, cast, place, group and arrow verbs, `set_logline`, `set_target`, `set_rank`, `set_plant`, `write_scene`, `organize`, `apply_template` with `list_structures`, `save_structure`, `remove_structure`; `undo` and `redo`; the project's `list_boards`, `open_board`, `new_board`, `rename_board`, `delete_board`, `set_premise`, `rename_project` and the reminders; Fountain and Final Draft both ways; the production half (`lock_numbers`, `unlock_numbers`, `start_revision`, `end_revision`); and, through the account door, `list_projects`, `open_project`, `new_project`, `add_picture`, `add_take`, `list_takes`, `list_files`, `remove_file`, `build_segment`. If the dev app is open, a tool call lands on the wall within a second; if not, it edits the board file and the wall catches up on the next load.
+- **The MCP server**, `scripts/plotcoder-mcp.mjs`, wired for Cursor in `.cursor/mcp.json` and for Claude Code in `.mcp.json` (run `npm ci` once first; `node scripts/plotcoder-call.mjs <tool> '{json}'` makes one call from a shell where there is no MCP). Sixty-six tools: reading (`list_board`, `read_wall`, `read_pages`, `read_character`, `page_count`, `list_words`, `list_workflows`, `segment_brief`); the card, cast, place, group and arrow verbs, `set_logline`, `set_target`, `set_rank`, `set_plant`, `write_scene`, `organize`, `apply_template` with `list_structures`, `save_structure`, `remove_structure`; `undo` and `redo`; the project's `list_boards`, `open_board`, `new_board`, `rename_board`, `delete_board`, `set_premise`, `rename_project` and the reminders; Fountain and Final Draft both ways; the production half (`lock_numbers`, `unlock_numbers`, `start_revision`, `end_revision`); and, through the account door, `list_projects`, `open_project`, `new_project`, `add_picture`, `add_take`, `list_takes`, `list_files`, `remove_file`, `build_segment`. If the dev app is open, a tool call lands on the wall within a second; if not, it edits the board file and the wall catches up on the next load.
 - **The account door.** With `PLOTCODER_EMAIL` and `PLOTCODER_PASSWORD` in the agent's environment — the writer's own — and no dev app answering, the same server works the writer's project on the account directly, and every change lands live on every open wall. `PLOTCODER_PROJECT` picks a project by name or id. No account yet? `claim_account` makes one with the writer's email and a password they chose. The on-ramp — the doors, what to call first, the rules — is in the app behind *Are you an agent? Start here* and served at [plotcoder.com/llms.txt](https://plotcoder.com/llms.txt), both from `src/board/agents.js`.
 
 An agent should call the tools, never fake mouse drags. The skill in `.cursor/skills/plotcoder-board/SKILL.md` says how; `.claude/skills/plotcoder-board` is a symlink to the same file.
@@ -52,20 +52,20 @@ A **blind run** is a fresh agent given the on-ramp and a treatment and nothing
 else, asked to build a wall and to keep a log of everything that made the job
 harder than it should have been. The friction log is the product; the wall is
 just what produces it. Three rounds have been run and all 73 of their
-findings are fixed; the fourth is prepared. [`blind-runs/`](blind-runs/) holds the
-rules that keep a round honest, the table of rounds, and each round's prompt and
-treatment.
+findings are fixed; the fourth ran through the account door and its twenty-three
+are fixed too. [`blind-runs/`](blind-runs/) holds the rules that keep a round honest,
+the table of rounds, and the next round's prompt with the test account filled in.
 
 A round works a **test account** — a throwaway marked on its writer row, and the
 only kind of account the wipe script will touch (R44). Mark it once, then empty
 it between rounds:
 
 ```bash
-node scripts/wipe-test-account.mjs you+round4@example.com --mark        # once, to make it wipeable
-node scripts/wipe-test-account.mjs you+round4@example.com               # the plan; changes nothing
-node scripts/wipe-test-account.mjs you+round4@example.com --empty --yes # projects go, account stays
-node scripts/wipe-test-account.mjs you+round4@example.com --delete --yes # the account goes too
-node scripts/wipe-test-account.mjs you+round4@example.com --unmark      # back to a writer's account
+node scripts/wipe-test-account.mjs test@test.com --mark        # once, to make it wipeable
+node scripts/wipe-test-account.mjs test@test.com               # the plan; changes nothing
+node scripts/wipe-test-account.mjs test@test.com --empty --yes # projects go, account stays
+node scripts/wipe-test-account.mjs test@test.com --delete --yes # the account goes too
+node scripts/wipe-test-account.mjs test@test.com --unmark      # back to a writer's account
 ```
 
 Needs `SUPABASE_SERVICE_ROLE_KEY` in the shell; it is not in the repo and must

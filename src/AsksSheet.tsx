@@ -19,7 +19,7 @@ type AsksSheetProps = {
 export const KIND_NAMES: Record<FindingKind, string> = {
   unmarked: "No beats yet",
   sag: "A sagging run",
-  empty: "Two beats back to back",
+  empty: "Beats back to back",
   unwritten: "Unwritten",
   unlinked: "No arrows",
   duplicate: "Two scenes, one job",
@@ -28,6 +28,7 @@ export const KIND_NAMES: Record<FindingKind, string> = {
   absent: "Someone disappears",
   backwards: "Payoff before setup",
   unpaid: "A setup with no payoff",
+  unplaced: "No place",
 };
 
 /** The kinds a debt is: shown warm. */

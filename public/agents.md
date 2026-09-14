@@ -2,10 +2,10 @@
 
 A storyline wall. Cards are scenes, beats are the big turns, arrows say what follows or pays off what. An agent driven by a person has every tool a person here has; the person directs, the agent operates. Call the tools; never fake a mouse.
 
-The guide, read once before anything: .cursor/skills/plotcoder-board/SKILL.md in the repo.
+The guide, read once before anything: https://plotcoder.com/guide.md — the same file as .cursor/skills/plotcoder-board/SKILL.md in the repo.
 
 ## Doors
-- MCP: For Cursor or Claude Code: the server in the repo, github.com/plot-coder/plotcoder.github.io. Clone it, run npm ci once, then wire it by this. The wiring is project-scoped: it loads when a session opens with the repo as its folder. For any session anywhere, once: claude mcp add plotcoder-board -s user -- node /path/to/plotcoder.github.io/scripts/plotcoder-mcp.mjs. No MCP at all? node scripts/plotcoder-call.mjs <tool> '{json}' makes one call from a shell. PLOTCODER_ROOT points the server at the folder whose wall you mean; without it, the server uses the folder it runs from.
+- MCP: For Cursor or Claude Code: the server in the repo, github.com/plot-coder/plotcoder.github.io. Read the guide first, at the address above; then clone the repo, run npm ci once, and wire the server by this. The wiring is project-scoped: it loads when a session opens with the repo as its folder. For any session anywhere, once: claude mcp add plotcoder-board -s user -- node /path/to/plotcoder.github.io/scripts/plotcoder-mcp.mjs. No MCP at all? node scripts/plotcoder-call.mjs <tool> '{json}' makes one call from a shell — one server per call, so undo and the project you opened do not carry to the next call; PLOTCODER_PROJECT names the project for each. PLOTCODER_ROOT points the server at the folder whose wall you mean; without it, the server uses the folder it runs from.
 
 ```
 {
@@ -18,12 +18,27 @@ The guide, read once before anything: .cursor/skills/plotcoder-board/SKILL.md in
 }
 ```
 
-- The account: With the writer's own sign-in in the environment, the same server works their project from anywhere, live on every open wall. No account yet? claim_account makes one with the writer's email and a password they chose.
+- The account: With the writer's own sign-in in the server's environment, the same server works their project from anywhere, live on every open wall. The two variables go where the server is started: in the MCP config's env, as -e flags on claude mcp add, or exported in the shell before plotcoder-call. A wrong password is refused by every tool, never worked around. No account yet? claim_account makes one with the writer's email and a password they chose, and starts it empty.
 
 ```
-PLOTCODER_EMAIL=you@example.com
-PLOTCODER_PASSWORD=…
-PLOTCODER_PROJECT=The Letter   # optional
+{
+  "mcpServers": {
+    "plotcoder-board": {
+      "command": "node",
+      "args": ["scripts/plotcoder-mcp.mjs"],
+      "env": {
+        "PLOTCODER_EMAIL": "you@example.com",
+        "PLOTCODER_PASSWORD": "…",
+        "PLOTCODER_PROJECT": "The Letter"
+      }
+    }
+  }
+}
+
+claude mcp add plotcoder-board -s user \
+  -e PLOTCODER_EMAIL=you@example.com \
+  -e PLOTCODER_PASSWORD=… \
+  -- node /path/to/plotcoder.github.io/scripts/plotcoder-mcp.mjs
 ```
 
 - The page: window.plotcoder on an open wall, for a browser session.
@@ -45,4 +60,4 @@ PLOTCODER_PROJECT=The Letter   # optional
 Give your agent the account door only on a machine you trust; it signs in as you and shows under People as “an agent, as you” while it runs. Your agent can also make your account: give it your email and a password of your choosing.
 
 ## The guide
-.cursor/skills/plotcoder-board/SKILL.md in the repo
+https://plotcoder.com/guide.md — the same file as .cursor/skills/plotcoder-board/SKILL.md in the repo

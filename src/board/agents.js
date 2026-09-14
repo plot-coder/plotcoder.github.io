@@ -12,14 +12,14 @@ export const AGENTS = {
     {
       id: "mcp",
       name: "MCP",
-      text: "For Cursor or Claude Code: the server in the repo, github.com/plot-coder/plotcoder.github.io. Clone it, run npm ci once, then wire it by this. The wiring is project-scoped: it loads when a session opens with the repo as its folder. For any session anywhere, once: claude mcp add plotcoder-board -s user -- node /path/to/plotcoder.github.io/scripts/plotcoder-mcp.mjs. No MCP at all? node scripts/plotcoder-call.mjs <tool> '{json}' makes one call from a shell. PLOTCODER_ROOT points the server at the folder whose wall you mean; without it, the server uses the folder it runs from.",
+      text: "For Cursor or Claude Code: the server in the repo, github.com/plot-coder/plotcoder.github.io. Read the guide first, at the address above; then clone the repo, run npm ci once, and wire the server by this. The wiring is project-scoped: it loads when a session opens with the repo as its folder. For any session anywhere, once: claude mcp add plotcoder-board -s user -- node /path/to/plotcoder.github.io/scripts/plotcoder-mcp.mjs. No MCP at all? node scripts/plotcoder-call.mjs <tool> '{json}' makes one call from a shell — one server per call, so undo and the project you opened do not carry to the next call; PLOTCODER_PROJECT names the project for each. PLOTCODER_ROOT points the server at the folder whose wall you mean; without it, the server uses the folder it runs from.",
       code: '{\n  "mcpServers": {\n    "plotcoder-board": {\n      "command": "node",\n      "args": ["scripts/plotcoder-mcp.mjs"]\n    }\n  }\n}',
     },
     {
       id: "account",
       name: "The account",
-      text: "With the writer's own sign-in in the environment, the same server works their project from anywhere, live on every open wall. No account yet? claim_account makes one with the writer's email and a password they chose.",
-      code: "PLOTCODER_EMAIL=you@example.com\nPLOTCODER_PASSWORD=…\nPLOTCODER_PROJECT=The Letter   # optional",
+      text: "With the writer's own sign-in in the server's environment, the same server works their project from anywhere, live on every open wall. The two variables go where the server is started: in the MCP config's env, as -e flags on claude mcp add, or exported in the shell before plotcoder-call. A wrong password is refused by every tool, never worked around. No account yet? claim_account makes one with the writer's email and a password they chose, and starts it empty.",
+      code: '{\n  "mcpServers": {\n    "plotcoder-board": {\n      "command": "node",\n      "args": ["scripts/plotcoder-mcp.mjs"],\n      "env": {\n        "PLOTCODER_EMAIL": "you@example.com",\n        "PLOTCODER_PASSWORD": "…",\n        "PLOTCODER_PROJECT": "The Letter"\n      }\n    }\n  }\n}\n\nclaude mcp add plotcoder-board -s user \\\n  -e PLOTCODER_EMAIL=you@example.com \\\n  -e PLOTCODER_PASSWORD=… \\\n  -- node /path/to/plotcoder.github.io/scripts/plotcoder-mcp.mjs',
     },
     {
       id: "page",
@@ -47,7 +47,7 @@ export const AGENTS = {
   ],
   person:
     "Give your agent the account door only on a machine you trust; it signs in as you and shows under People as “an agent, as you” while it runs. Your agent can also make your account: give it your email and a password of your choosing.",
-  guide: ".cursor/skills/plotcoder-board/SKILL.md in the repo",
+  guide: "https://plotcoder.com/guide.md — the same file as .cursor/skills/plotcoder-board/SKILL.md in the repo",
   url: "https://plotcoder.com/llms.txt",
 };
 

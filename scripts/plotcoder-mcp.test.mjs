@@ -1488,7 +1488,7 @@ describe("the premise and reminders (roadmap item 6)", () => {
 
   it("lists the built-in reminders, adds one of the writer's, and removes it", async () => {
     const listed = await door.callTool("list_reminders");
-    expect(listed).toContain("reminders: 6");
+    expect(listed).toMatch(/^reminders on "The Letter" .*: 6 — 6 the house principles/);
     expect(listed).toContain("story-is-change (built in) — Story is change");
     const added = await door.callToolData("add_reminder", { body: "Every scene ends on a question. Even the quiet ones." });
     expect(added.title).toBe("Every scene ends on a question");
@@ -1552,6 +1552,29 @@ describe("the shell caller, one server per call", () => {
     expect(help.status).toBe(0);
     expect(help.stderr).toContain("One call, one server");
     expect(help.stderr).toContain("PLOTCODER_PASSWORD");
+  });
+
+  it("runs a batch of calls on one server, with the JSON tail off, so undo carries within it", () => {
+    const { spawnSync } = require("node:child_process");
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-call-batch-"));
+    const calls = [
+      { tool: "create_note", arguments: { headline: "Nessa comes back", change: "She decides to sell." } },
+      { tool: "undo", arguments: {} },
+      { tool: "list_board", arguments: {} },
+    ].map((call) => JSON.stringify(call)).join("\n");
+    const run = spawnSync("node", [fileURLToPath(new URL("./plotcoder-call.mjs", import.meta.url)), "--batch"], {
+      encoding: "utf8",
+      input: calls,
+      env: { ...process.env, PLOTCODER_ROOT: root, PLOTCODER_NO_BRIDGE: "1" },
+    });
+    fs.rmSync(root, { recursive: true, force: true });
+    expect(run.status).toBe(0);
+    expect(run.stdout).toContain("--- create_note");
+    expect(run.stdout).toContain("--- undo");
+    expect(run.stdout).toMatch(/Undid create_note/);
+    // After the undo, the board listed on the same server no longer has the card.
+    expect(run.stdout.split("--- list_board")[1]).not.toContain("Nessa comes back");
+    expect(run.stdout).not.toMatch(/\n\n\{/);
   });
 
   it("tells a one-call server that undo cannot carry between calls", async () => {
@@ -1709,6 +1732,10 @@ describe("round seven's replies", () => {
     await seven.callTool("create_note", { headline: "Fiona at the launderette", change: "Sell it and go." });
     const read = await seven.callTool("read_wall");
     expect(read).toContain('logline: "What was her father being paid for?"');
+    expect(read).toMatch(/\[empty\] .*\(ids: [A-Za-z0-9_-]+, [A-Za-z0-9_-]+\)/);
+    expect(await seven.callTool("list_reminders")).toMatch(/^reminders on "Untitled project" \(the file at .*\): 6 — 6 the house principles the app starts with \(built in\), 0 the writer's own; add_reminder adds one/);
+    expect(await seven.callTool("list_words")).toMatch(/^PlotCoder's words — the app's own/);
+    expect(await seven.callTool("list_workflows")).toMatch(/^The workflows — the app's own/);
     expect(read).toContain('Before "The ledger": about 2 pages, 2 cards — "Maya finds the letter", "Fiona at the launderette"');
     expect(read).toContain('"The ledger" → "The cash arrives": about 0 pages, 0 cards');
   });

@@ -168,7 +168,11 @@ let accountDoor = null;
 let accountTried = false;
 /** Why the door is shut when the writer's sign-in is set but failed. Every tool says this; none reads the file instead (round four, findings 5–7). */
 let accountRefusal = null;
-const NO_PROJECT_YET = "The account holds no project yet: new_project starts the writer's first. Nothing from this folder was uploaded.";
+const NO_PROJECT_YET = "The account holds no project yet: new_project starts the writer's first.";
+/** The same, with the folder named only when the door skipped a sample wall there (round eight, finding 9). */
+function noProjectYet() {
+  return accountDoor?.skippedFolder ? `${NO_PROJECT_YET} The sample wall in this folder was not uploaded.` : NO_PROJECT_YET;
+}
 
 /** A door's answer — shut, or no project yet — thrown from a read and turned into a plain reply by every tool. Not an error. */
 class DoorReply extends Error {}
@@ -240,6 +244,7 @@ async function workWhatIsLeft(deletedIds) {
     accountDoor.projectId = null;
     accountDoor.projectName = null;
     accountDoor.projectCount = 0;
+    accountDoor.skippedFolder = false;
     return ` ${NO_PROJECT_YET}`;
   }
   workingProject(projects[0].id, projects[0].record.name, projects.length);
@@ -254,6 +259,33 @@ function countCards(boards) {
 /** The reply when a tool needs the account and there is none: the refusal when the door is shut, the plain text otherwise. */
 function shut(text) {
   return ok(accountRefusal ?? text);
+}
+
+const SESSION_KEY = "sb-plotcoder-auth-token";
+const SESSION_FILE = path.join(REPO_ROOT, ".plotcoder", "account-session.json");
+
+/** supabase-js session storage as a file, for the one-call door: a map of keys in .plotcoder/account-session.json, mode 0600. */
+function sessionFileStorage() {
+  const read = () => {
+    try {
+      return JSON.parse(fs.readFileSync(SESSION_FILE, "utf8"));
+    } catch {
+      return {};
+    }
+  };
+  const write = (map) => {
+    fs.mkdirSync(path.dirname(SESSION_FILE), { recursive: true });
+    fs.writeFileSync(SESSION_FILE, JSON.stringify(map), { mode: 0o600 });
+  };
+  return {
+    getItem: (key) => read()[key] ?? null,
+    setItem: (key, value) => write({ ...read(), [key]: value }),
+    removeItem: (key) => {
+      const map = read();
+      delete map[key];
+      write(map);
+    },
+  };
 }
 
 function hashPassword(email, password) {
@@ -276,17 +308,34 @@ async function findAccount() {
     } catch {
       transport = undefined;
     }
+    // Through the shell door every call is a fresh server, so the sign-in is
+    // kept in the repo's ignored .plotcoder folder between calls and only the
+    // first call signs in (round eight, finding 2). PLOTCODER_SESSION=0 keeps
+    // nothing. An MCP session signs in once anyway and keeps nothing on disk.
+    const keep = oneCall() && process.env.PLOTCODER_SESSION !== "0";
     const client = createClient(SUPABASE_URL, SUPABASE_KEY, {
-      auth: { persistSession: false, autoRefreshToken: true },
+      auth: keep
+        ? { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, storage: sessionFileStorage() }
+        : { persistSession: false, autoRefreshToken: true },
       ...(transport ? { realtime: { transport } } : {}),
     });
-    const signedIn = await client.auth.signInWithPassword({ email: email.trim().toLowerCase(), password: hashPassword(email, password) });
-    if (signedIn.error || !signedIn.data.user) {
-      accountRefusal = refusal(email, signedIn.error?.message ?? "no user came back");
-      log("account door:", accountRefusal);
-      return null;
+    const wanted = email.trim().toLowerCase();
+    let user = null;
+    if (keep) {
+      const kept = await client.auth.getSession();
+      if (kept.data.session && (kept.data.session.user?.email ?? "").toLowerCase() === wanted) user = kept.data.session.user;
     }
-    accountDoor = { client, user: signedIn.data.user, email: email.trim().toLowerCase(), projectId: null, channel: null };
+    if (!user) {
+      const signedIn = await client.auth.signInWithPassword({ email: wanted, password: hashPassword(email, password) });
+      if (signedIn.error || !signedIn.data.user) {
+        accountRefusal = refusal(email, signedIn.error?.message ?? "no user came back");
+        log("account door:", accountRefusal);
+        if (keep) sessionFileStorage().removeItem(SESSION_KEY);
+        return null;
+      }
+      user = signedIn.data.user;
+    }
+    accountDoor = { client, user, email: wanted, projectId: null, channel: null };
     await chooseProject(process.env.PLOTCODER_PROJECT ?? "");
     return accountDoor;
   } catch (error) {
@@ -330,6 +379,7 @@ async function chooseProject(key) {
     });
     if (!work) {
       accountDoor.projectId = null;
+      accountDoor.skippedFolder = true;
       return null;
     }
     record = { ...record, name: record.name || "From the agent" };
@@ -361,7 +411,7 @@ function joinPresence(projectId) {
 }
 
 async function accountReadProject() {
-  if (!accountDoor.projectId) throw new DoorReply(NO_PROJECT_YET);
+  if (!accountDoor.projectId) throw new DoorReply(noProjectYet());
   const { data, error } = await accountDoor.client.from("projects").select("id, record, reminders, rev").eq("id", accountDoor.projectId).maybeSingle();
   if (error || !data || !isProjectRecord(data.record)) throw new Error(error?.message ?? "the project is gone from the account");
   const project = normalizeProject(data.record);
@@ -1086,7 +1136,7 @@ server.registerTool(
         : ["  (no arrow is marked as a setup)"]),
       "questions the wall raises:",
       ...(reading.findings.length
-        ? reading.findings.map((finding) => `  - [${finding.kind}] ${finding.text}`)
+        ? reading.findings.map((finding) => `  - [${finding.kind}] ${finding.text}${finding.ids.length ? ` (ids: ${finding.ids.join(", ")})` : ""}`)
         : ["  (none that this reading can see)"]),
       `checks: ${CHECKS.length} run — asking about ${[...new Set(reading.findings.map((finding) => finding.kind))].filter((kind) => CHECKS.includes(kind)).join(", ") || "nothing"}; checked and clean: ${CHECKS.filter((kind) => !reading.findings.some((finding) => finding.kind === kind)).map((kind) => CHECK_WORDS[kind]).join("; ") || "(nothing — every check found something)"}`,
     ];
@@ -1331,7 +1381,7 @@ server.registerTool(
       "PlotCoder's words — beat, logline, change line, the folded corner, eighths, structure, brief — one sentence each, the app's own meaning, in the order a new person meets them. Use these sentences when the writer asks what a word means, so the app and you say the same thing.",
     inputSchema: {},
   },
-  async () => ok(wordsAsText()),
+  async () => ok(`PlotCoder's words — the app's own, the same on every project; no project was read.\n\n${wordsAsText()}`),
 );
 
 server.registerTool(
@@ -1344,6 +1394,7 @@ server.registerTool(
   },
   async () =>
     ok(
+      "The workflows — the app's own, the same on every project; no project was read.\n" +
       WORKFLOWS.map(
         (workflow) =>
           `- ${workflow.id} — ${workflow.name}\n  ask: "${workflow.ask}"\n  tools: ${workflow.tools.join(", ")}\n  keep: ${workflow.then}`,
@@ -1531,7 +1582,7 @@ server.registerTool(
   async () => {
     const account = await findAccount();
     if (!account) return shut("No account door: takes are files on the project, and need PLOTCODER_EMAIL and PLOTCODER_PASSWORD to read.");
-    if (!account.projectId) return ok(NO_PROJECT_YET);
+    if (!account.projectId) return ok(noProjectYet());
     const { data, error } = await account.client.from("assets").select("id, subject, name, note, created_at").eq("project_id", account.projectId).eq("kind", "take").order("created_at");
     if (error) return ok(`Could not read the takes: ${error.message}`);
     const rows = data ?? [];
@@ -1577,7 +1628,7 @@ server.registerTool(
   async (args) => {
     const account = await findAccount();
     if (!account) return shut("No account door: set PLOTCODER_EMAIL and PLOTCODER_PASSWORD to file takes on the project.");
-    if (!account.projectId) return ok(NO_PROJECT_YET);
+    if (!account.projectId) return ok(noProjectYet());
     const filed = await fileAsset(account, "take", args.subject, args.path, args.chosen ? "chosen" : "");
     if (filed.error) return ok(filed.error);
     return ok(`Filed "${filed.name}" as a take on ${args.subject}${args.chosen ? ", chosen" : ""} (saved to the account; the writer's Takes panel has it).`, { id: filed.id, subject: args.subject });
@@ -1595,7 +1646,7 @@ server.registerTool(
   async (args) => {
     const account = await findAccount();
     if (!account) return shut("No account door: pictures are files on the project, and need PLOTCODER_EMAIL and PLOTCODER_PASSWORD to add.");
-    if (!account.projectId) return ok(NO_PROJECT_YET);
+    if (!account.projectId) return ok(noProjectYet());
     const { state } = await readBoard();
     const wanted = args.character.trim().toLowerCase();
     const person = state.characters.find((item) => item.id === args.character) ?? state.characters.find((item) => item.name.trim().toLowerCase() === wanted);
@@ -1617,7 +1668,7 @@ server.registerTool(
   async () => {
     const account = await findAccount();
     if (!account) return shut("No account door: files live on the project, and need PLOTCODER_EMAIL and PLOTCODER_PASSWORD to read.");
-    if (!account.projectId) return ok(NO_PROJECT_YET);
+    if (!account.projectId) return ok(noProjectYet());
     const { data, error } = await account.client.from("assets").select("id, kind, subject, name, size, note, created_at").eq("project_id", account.projectId).order("created_at");
     if (error) return ok(`Could not read the files: ${error.message}`);
     const rows = data ?? [];
@@ -1638,7 +1689,7 @@ server.registerTool(
   async (args) => {
     const account = await findAccount();
     if (!account) return shut("No account door: files live on the project, and need PLOTCODER_EMAIL and PLOTCODER_PASSWORD to remove.");
-    if (!account.projectId) return ok(NO_PROJECT_YET);
+    if (!account.projectId) return ok(noProjectYet());
     const found = await account.client.from("assets").select("id, path, name").eq("project_id", account.projectId).eq("id", args.id).maybeSingle();
     if (found.error) return ok(`Could not find the file: ${found.error.message}`);
     if (!found.data) return ok(`No file with id ${args.id} on this project. Call list_files.`);
@@ -2152,11 +2203,12 @@ server.registerTool(
     inputSchema: {},
   },
   async () => {
-    const { reminders, live } = await readProject();
+    const { reminders, live, project, base } = await readProject();
     const list = currentReminders(reminders);
+    const own = list.filter((item) => !item.builtIn).length;
     return ok(
       [
-        `reminders: ${list.length}`,
+        `reminders on "${project.name}" (${door(live, base)}): ${list.length} — ${list.length - own} the house principles the app starts with (built in), ${own} the writer's own${own === 0 ? "; add_reminder adds one the writer asks to keep" : ""}`,
         ...list.map((item) => `  - ${item.id}${item.builtIn ? " (built in)" : ""} — ${item.title}: ${item.body}`),
       ].join("\n"),
       list,
@@ -2217,7 +2269,7 @@ server.registerTool(
     const projects = await accountProjects();
     return ok(
       [
-        `projects: ${projects.length} (as ${account.email})${projects.length === 0 ? ` — ${NO_PROJECT_YET}` : ""}`,
+        `projects: ${projects.length} (as ${account.email})${projects.length === 0 ? ` — ${noProjectYet()}` : ""}`,
         ...projects.map((row) => `  - ${row.id} — "${row.record.name}"${row.id === account.projectId ? " (working)" : ""}: ${row.record.boards.length} board(s) · ${(row.people ?? []).join(", ")}`),
       ].join("\n"),
       projects.map((row) => ({ id: row.id, name: row.record.name, boards: row.record.boards.length, people: row.people })),

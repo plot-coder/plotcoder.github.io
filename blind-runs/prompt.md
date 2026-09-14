@@ -68,10 +68,12 @@ the run: do not log it. If the account is already empty, say so and carry on.
 
 1. Make the calls the on-ramp tells you to make first, before you change
    anything.
-2. Read the treatment at the end of this message.
+2. Read the treatment at the end of this message. It answers, up front, the
+   questions the app says a treatment should answer. Use those answers; ask
+   me only about what they leave open.
 3. Build it as a wall: the scenes as cards, the major turns marked, the cast,
-   the places, the arrows, the acts if the treatment has them, the episode's
-   central question, and the series premise above it.
+   the places, the arrows, the acts, the episode's central question, and the
+   series premise above it.
 4. Read the wall back to me: what is there, and what it asks.
 5. **Then wait for me.** I will answer your questions and give you directions,
    one at a time. Do what I ask and nothing more. When a direction could mean
@@ -148,6 +150,30 @@ anything you smooth over is something I will not fix.
 ## The treatment
 
 # Low Season — pilot treatment
+
+**What this treatment answers, up front.**
+
+- Length: an hour, sixty pages.
+- The project is "Low Season"; this board is "Pilot".
+- The central question and the series premise are stated below, verbatim.
+- The turns, five: the ledger; the light in caravan 42; the cash arriving;
+  the initials; the sign coming off the gate. Everything else is a scene.
+- Acts, four, the way an hour breaks: one is the arrival through the light
+  in 42; two is Fiona at the launderette through putting the park to sleep;
+  three is the envelope through the initials; four is the counter and the
+  gate.
+- Places are named in each paragraph. Her father's things are gone through
+  in his caravan, the static behind the office. The gate is part of the
+  caravan park.
+- Names: Nessa Boyd, Fiona Boyd, Dessie Kane, Mrs. Lynch. The man in
+  caravan 42 and the young guard are unnamed; call them by those roles. Her
+  father and her mother are in no scene; they belong in notes, not the cast.
+- Planted: the ledger pays off at the cash and again at the initials;
+  caravan 42 pays off at the envelope on the step; Fiona's refusal pays off
+  at the counter. The key pays off in episode two, not in this one.
+- Lengths: putting the park to sleep runs three pages. Leave the rest
+  unsized.
+- Invent nothing: no looks, no voices, no facts beyond these lines.
 
 **Series premise.** A seaside town earns its living in three months and keeps its
 secrets in the other nine. The people who stay behind are the ones with reasons.

@@ -81,8 +81,9 @@ order as text, the nearest thing to a look at it.
   a folded card no setup arrow pays off, beats back to back with nothing
   between them (a chain of them is one question naming every turn), and cards
   that say no place once any card has one. It also lists every setup with the
-  distance to its payoff. Put the questions to the writer. Do not act on them
-  unasked, and do not add an opinion about the number of beats.
+  distance to its payoff. The tool's own description carries the same list,
+  and a reply names each question's kind. Put the questions to the writer. Do
+  not act on them unasked, and do not add an opinion about the number of beats.
 
 ### Cards
 

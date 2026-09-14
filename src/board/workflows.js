@@ -15,8 +15,8 @@ export const WORKFLOWS = [
     id: "break-a-treatment",
     name: "Break a treatment into a wall",
     ask: "Here is a treatment. Break it into a wall: one card per scene with a headline and what changes, the cast on each card, the places, and the major turns marked as beats.",
-    tools: ["list_words", "read_wall", "list_reminders", "new_board", "rename_project", "set_target", "create_note", "list_board", "add_character", "cast", "update_character", "set_location", "set_rank", "set_length", "set_plant", "create_arrow", "create_group", "organize"],
-    then: "Read the wall (read_wall) and say what it asks. A treatment is cards, one create_note each, with characters, location, rank and plants on the call; import_fountain is the door for pages, not a treatment — a scene's text measures its card.",
+    tools: ["list_words", "read_wall", "list_reminders", "new_project", "new_board", "rename_project", "set_target", "create_note", "list_board", "add_character", "cast", "update_character", "set_location", "set_rank", "set_length", "set_plant", "create_arrow", "create_group", "organize"],
+    then: "Start where the wall will live: on the account, new_project names it; in a folder, new_board for the writer's wall, then rename_project. Read the wall (read_wall) and say what it asks. A treatment is cards, one create_note each, with characters, location, rank and plants on the call; import_fountain is the door for pages, not a treatment — a scene's text measures its card.",
   },
   {
     id: "read-and-raise",

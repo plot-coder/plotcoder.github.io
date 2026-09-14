@@ -44,9 +44,9 @@ Now read this, and whatever it tells you to read, and nothing else:
 
 ## Your way in
 
-The PlotCoder server is already wired into this session and signed in as me,
-so its tools are in front of you from your first message: no clone, no
-install, no shell. If there is no `plotcoder-board` server, or it offers one
+The PlotCoder server is already wired into this session and signed in as me
+— as my test account, test@test.com — so its tools are in front of you from
+your first message: no clone, no install, no shell. If there is no `plotcoder-board` server, or it offers one
 tool called `plotcoder_not_installed`, say so and stop.
 
 You are working **my account**, not a wall on your own machine. There is no dev

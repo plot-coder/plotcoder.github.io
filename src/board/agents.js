@@ -42,7 +42,7 @@ export const AGENTS = {
       text: "Skip this when the account is the wall. Without an account, a wall is a folder: any folder, empty is fine — choose one that will outlive your session, never a scratch one. The app run from that folder shows the wall, and the server writes it there (PLOTCODER_ROOT, or the folder it is run from). A fresh folder holds the sample; new_board for the writer's wall, then rename_project. No app running? export_fountain is the wall in order, as text.",
     },
   ],
-  firstNote: "On the wall you will work, so after open_project or open_board, read_wall again. No server in front of you, and no shell to take the shell door? Nothing gets you in from inside the session: say so, and ask the person to wire the server and start a new session.",
+  firstNote: "These four are about the wall you will work, so after open_project or open_board, read_wall again. On an account with no project yet, read_wall has nothing to read and says so, and list_reminders gives the house principles every project starts with; new_project, then the four again. No server in front of you, and no shell to take the shell door? Nothing gets you in from inside the session: say so, and ask the person to wire the server and start a new session.",
   first: [
     { tool: "list_words", why: "the room's words, the app's meaning." },
     { tool: "read_wall", why: "what is here, and what it asks. A fresh folder holds a sample wall (Maya, Tom, the letter) and says so; it is not the writer's." },
@@ -69,8 +69,9 @@ export function agentsAsText() {
     lines.push(`- ${door.name}: ${door.text}`);
     if (door.code) lines.push("", "```", door.code, "```", "");
   }
-  lines.push("## Call these first", AGENTS.firstNote);
+  lines.push("## Call these first");
   AGENTS.first.forEach((item, index) => lines.push(`${index + 1}. ${item.tool} — ${item.why}`));
+  lines.push("", AGENTS.firstNote);
   lines.push("", "## Rules");
   for (const rule of AGENTS.rules) lines.push(`- ${rule}`);
   lines.push("", "## For the person", AGENTS.person, "", "## The guide", AGENTS.guide, "");

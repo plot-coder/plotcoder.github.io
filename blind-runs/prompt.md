@@ -1,26 +1,34 @@
-# The blind-run prompt — the account door, with the writer in the room
+# The blind-run prompt — the account door, the server wired first, the writer in the room
 
 Paste everything below the line into a fresh agent session. The credentials are
-already filled in: the test account is `test@test.com`, password `test`. It is a
-throwaway and holds nothing of anyone's; the agent empties it itself at the
-start of the round.
+already in the server's wiring: the test account is `test@test.com`, password
+`test`, a throwaway that holds nothing of anyone's; the agent empties it itself
+at the start of the round.
 
 Before you paste:
 
-1. Start the session in an empty folder, not in the repo, so the agent has to
-   find its own way in. Round four was started inside a worktree of the repo,
-   and the harness put `CLAUDE.md` in the agent's context before it read a
-   word: the run was not blind.
-2. Nothing to clear by hand: the prompt has the agent save a copy of what it
-   finds on the account and empty it, signed in as the test writer, with the
-   tools every writer's agent has. No key of yours is involved.
-3. Sign in as the test account at plotcoder.com in your own browser if you want
-   to watch the wall move. An empty account adopts whatever project that
-   browser holds, so the agent will see one project already there; the prompt
-   has it start its own regardless.
-4. When it has read the wall back, direct it the way you would a person. It
-   brings you the new friction entries at each step without being asked; "log
-   so far" gets the whole log, "stop" gets the report.
+1. Wire the server into every session on this machine, once, from a checkout
+   of main that has had `npm ci`, with the sign-in beside it:
+
+   ```bash
+   claude mcp add plotcoder-board -s user -e PLOTCODER_EMAIL=test@test.com -e PLOTCODER_PASSWORD=test -- node /Users/stephen/Documents/GitHub/plotcoder.github.io/scripts/plotcoder-mcp.mjs
+   ```
+
+   A server wired from inside a session connects only on the next one, which
+   is why the person does this and not the agent (rounds one to eight measured
+   the way in; from nine the round measures the app). Take it out again when
+   the practice is done with the address:
+   `claude mcp remove plotcoder-board -s user`.
+2. Wait for the Pages deploy after a merge, so the agent reads the current
+   on-ramp.
+3. Start the session with no folder (the app's "No folder" scratch workspace
+   is right). Inside a repo worktree the harness puts `CLAUDE.md` in the
+   agent's context, and the run is not blind.
+4. The agent stops after its first calls with the first friction entries and
+   waits for you to say "go on". When it has read the wall back, stay: answer
+   its questions and direct it the way you would a person. It brings you the
+   new entries at each step; "log so far" gets the whole log, "stop" gets the
+   report.
 
 ---
 
@@ -36,22 +44,13 @@ Now read this, and whatever it tells you to read, and nothing else:
 
 ## Your way in
 
+The PlotCoder server is already wired into this session and signed in as me,
+so its tools are in front of you from your first message: no clone, no
+install, no shell. If there is no `plotcoder-board` server, or it offers one
+tool called `plotcoder_not_installed`, say so and stop.
+
 You are working **my account**, not a wall on your own machine. There is no dev
 server running and there will not be one. Nothing you build lives in a folder.
-
-The server you need is in the repo, so clone it; you need it only to run the
-server:
-
-    git clone https://github.com/plot-coder/plotcoder.github.io
-    cd plotcoder.github.io
-    npm ci
-
-Wire the server the way the on-ramp tells you, with these two in its
-environment:
-
-    PLOTCODER_EMAIL=test@test.com
-    PLOTCODER_PASSWORD=test
-
 Do not run `npm run dev`. Do not open the app in a browser. Work the account.
 
 Before you build anything, start a project of your own with `new_project`, so
@@ -133,8 +132,8 @@ When I say stop, hand me one report and make it the only thing you hand back.
 
 1. **What you built and what I then had you change.** A few sentences.
 2. **The friction log**, complete, as described above.
-3. **Could you have got here without cloning the repo?** Say plainly what you
-   had to work out that the on-ramp did not tell you.
+3. **What the on-ramp told you that you did not need, and what it did not
+   tell you that you did.** Say plainly what you had to work out yourself.
 4. **What I asked for that you never found a way to do**, or did some other way
    than the one you first reached for.
 5. **What you were never sure had landed.** Anything you did that you could not

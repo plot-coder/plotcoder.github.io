@@ -195,6 +195,11 @@ order as text, the nearest thing to a look at it.
 - `set_arrow_kind` — change an arrow's kind by id. One arrow per direction, so
   change the kind rather than drawing it again.
 - `delete_arrow` — by arrow id. Removes that direction only.
+- `move_scene` — move a card to another place in the story: `after` one
+  card's id, or `before` one. It rewires the follows arrows (what pointed at
+  the card points at what it pointed at; the card lands between the target
+  and what followed it) and tidies the wall, as one step `undo` takes back
+  whole. A person does this by dragging in the outline.
 - `organize` — tidy the wall along the arrows: story order from the `follows`
   arrows, a row per beat with the scenes that follow it, groups kept together.
   Pass `noteIds` to tidy only those. Prefer it to moving cards one by one, and
@@ -210,9 +215,9 @@ order as text, the nearest thing to a look at it.
 - `delete_board` — remove a board and everything on it. **Cannot be undone**,
   not even from the wall: ask the writer first, say how many cards it holds,
   suggest Save project. The last board of a project cannot be deleted.
-- `undo` — take back **your own** last change, newest first. It refuses if the
-  board has changed since (the writer moved on), so it never tramples their
-  work; they can undo anything from the wall with ⌘Z. Use it when a
+- `undo` — take back **your own** last change, newest first, as many steps as
+  you made. It refuses if the board has changed since (the writer moved on),
+  so it never tramples their work; they can undo anything from the wall with ⌘Z. Use it when a
   rearrangement did not help: try, `read_wall`, and undo if the reading got
   worse.
 - `redo` — put back what you undid, newest first, under the same rule; any

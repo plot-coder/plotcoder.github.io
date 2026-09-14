@@ -7,11 +7,12 @@ at the start of the round.
 
 Before you paste:
 
-1. Wire the server into every session on this machine, once, from a checkout
-   of main that has had `npm ci`, with the sign-in beside it:
+1. Wire the server into every session on this machine, once, from any
+   folder — the published package, no clone and no path — with the sign-in
+   beside it:
 
    ```bash
-   claude mcp add plotcoder-board -s user -e PLOTCODER_EMAIL=test@test.com -e PLOTCODER_PASSWORD=test -- node /Users/stephen/Documents/GitHub/plotcoder.github.io/scripts/plotcoder-mcp.mjs
+   claude mcp add plotcoder-board -s user -e PLOTCODER_EMAIL=test@test.com -e PLOTCODER_PASSWORD=test -- npx -y plotcoder-board@latest
    ```
 
    A server wired from inside a session connects only on the next one, which

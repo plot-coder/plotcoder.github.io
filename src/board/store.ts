@@ -619,7 +619,12 @@ class BoardStore {
     }
     if (!isBoardState(payload.state)) return;
     if (this.adopted && payload.rev <= this.rev) return;
-    const incoming = withRoster(normalizeState(payload.state), this.project);
+    // A board frame from another door is a kernel command's result, so its
+    // roster is the exact roster (R51) — a person it added or removed comes with
+    // the card and the cast in one undo step (R33). Only a frame with no roster
+    // at all (a file from before the cast was the project's) takes the project's.
+    const raw = normalizeState(payload.state);
+    const incoming = Array.isArray(payload.state.characters) ? raw : withRoster(raw, this.project);
     const incomingJson = JSON.stringify(incoming);
     const boardId = typeof payload.boardId === "string" ? payload.boardId : this.project.activeBoardId;
 

@@ -698,7 +698,18 @@ async function writeBoard(next, rev, base, boardId = null, roster = "merge") {
       const boards = {};
       for (const [id, state] of Object.entries(held.boards)) boards[id] = withRoster(state, project);
       boards[boardId ?? project.activeBoardId] = withRoster(toWrite, project);
+      // The order matters on the bridge: the board frame carries the exact roster
+      // and lands first, so the wall records one undo step holding the card, the
+      // cast and the person together (R33, R51); the project frame that follows
+      // then changes nothing. The account door keeps the project first, because
+      // its live path composes a board's cast against the project row it holds.
+      if (base === ACCOUNT) {
+        await writeProject(project, boards, held.rev, held.base);
+        return writeBoardRaw(toWrite, rev, base, boardId);
+      }
+      const live = await writeBoardRaw(toWrite, rev, base, boardId);
       await writeProject(project, boards, held.rev, held.base);
+      return live;
     }
   }
   return writeBoardRaw(toWrite, rev, base, boardId);
@@ -790,6 +801,35 @@ async function commit(command) {
   if (trail.length > TRAIL_CAP) trail.shift();
   undone.length = 0;
   return { state: next, changed, result, live };
+}
+
+/**
+ * Several kernel commands as one change. Read once; `build(step, current)` applies
+ * each command through the kernel against the running state; write once. One tool
+ * call is then one frame on the bridge — one ⌘Z on the wall — and one entry on this
+ * server's own trail, however many commands it took: create_note with its cast,
+ * set_plant with later, move_scene, an import. Before this, ⌘Z on the wall took the
+ * cast off an agent's new card and left the card (R33).
+ */
+async function commitAll(what, build) {
+  const { state, rev, base, boardId } = await readBoard();
+  let current = state;
+  let changed = false;
+  const step = (command) => {
+    const out = applyCommand(current, command);
+    if (out.changed) {
+      current = out.state;
+      changed = true;
+    }
+    return out;
+  };
+  const value = await build(step, () => current);
+  if (!changed) return { state: current, changed: false, value, live: base !== null };
+  const live = await writeBoard(current, rev, base, boardId, "exact");
+  trail.push({ before: state, after: canon(current), what });
+  if (trail.length > TRAIL_CAP) trail.shift();
+  undone.length = 0;
+  return { state: current, changed: true, value, live };
 }
 
 /** Said once per session: that cards stack until organize (round seven, finding 11). */
@@ -1106,45 +1146,47 @@ server.registerTool(
   },
   async (args) => {
     const landing = args.x === undefined && args.y === undefined ? nextPlace((await readBoard()).state) : { x: args.x, y: args.y };
-    let { result, live } = await commit({
-      type: "create_note",
-      headline: args.headline,
-      change: args.change,
-      // One colour unless the agent chooses: a wall an agent builds in one go
-      // would otherwise stripe through the cycle, and a writer reads a pattern
-      // into it (round four, finding 17). The wall's own new-card button keeps
-      // cycling for a person adding cards by hand.
-      color: args.color ?? "yellow",
-      rank: args.rank,
-      lengthEighths: args.pages === undefined ? undefined : toEighths(args.pages),
-      plants: args.plants,
-      location: args.location,
-      x: landing.x,
-      y: landing.y,
-    });
-    let castLine = "";
-    if (args.characters && args.characters.length && result?.id) {
-      const added = [];
-      const ids = [];
-      for (const name of args.characters) {
-        const { state } = await readBoard();
-        const wanted = name.trim().toLowerCase();
-        let person = state.characters.find((item) => item.id === name) ?? state.characters.find((item) => item.name.trim().toLowerCase() === wanted);
-        if (!person) {
-          const made = await commit({ type: "add_character", name: name.trim() });
-          person = made.result;
-          if (person) added.push(`${person.name} (${person.id})`);
+    const names = (args.characters ?? []).map((name) => name.trim()).filter(Boolean);
+    const added = [];
+    // The card, anyone new in its cast, and the casting land as one change, so
+    // one ⌘Z on the wall takes back the whole call and not just the cast.
+    const { value: result, live } = await commitAll(`create_note "${args.headline}"`, (step, current) => {
+      let made = step({
+        type: "create_note",
+        headline: args.headline,
+        change: args.change,
+        // One colour unless the agent chooses: a wall an agent builds in one go
+        // would otherwise stripe through the cycle, and a writer reads a pattern
+        // into it (round four, finding 17). The wall's own new-card button keeps
+        // cycling for a person adding cards by hand.
+        color: args.color ?? "yellow",
+        rank: args.rank,
+        lengthEighths: args.pages === undefined ? undefined : toEighths(args.pages),
+        plants: args.plants,
+        location: args.location,
+        x: landing.x,
+        y: landing.y,
+      }).result;
+      if (names.length && made?.id) {
+        const ids = [];
+        for (const name of names) {
+          const wanted = name.toLowerCase();
+          let person = current().characters.find((item) => item.id === name) ?? current().characters.find((item) => item.name.trim().toLowerCase() === wanted);
+          if (!person) {
+            person = step({ type: "add_character", name }).result;
+            if (person) added.push(`${person.name} (${person.id})`);
+          }
+          if (person && !ids.includes(person.id)) ids.push(person.id);
         }
-        if (person) ids.push(person.id);
+        if (ids.length) {
+          const cast = step({ type: "set_cast", ids: [made.id], characterIds: ids });
+          // The card as it is now, cast and all, so the reply's JSON agrees with its prose.
+          made = cast.state.notes.find((note) => note.id === made.id) ?? made;
+        }
       }
-      if (ids.length) {
-        const cast = await commit({ type: "set_cast", ids: [result.id], characterIds: ids });
-        // The card as it is now, cast and all, so the reply's JSON agrees with its prose.
-        const after = cast.state.notes.find((note) => note.id === result.id);
-        if (after) result = after;
-      }
-      castLine = ` Cast: ${args.characters.map((name) => name.trim()).join(", ")}${added.length ? ` (added to the roster: ${added.join(", ")})` : ""}.`;
-    }
+      return made;
+    });
+    const castLine = names.length && result?.id ? ` Cast: ${names.join(", ")}${added.length ? ` (added to the roster: ${added.join(", ")})` : ""}.` : "";
     const landed = [
       result?.rank === "beat" ? "a beat" : "a scene",
       result?.lengthEighths === null ? "about a page (unsized: the writer's guess until set_length)" : `${formatPages(noteEighths(result))} ${formatPages(noteEighths(result)) === "1" ? "page" : "pages"}`,
@@ -1392,46 +1434,41 @@ server.registerTool(
     if (!state.arrows.some(isFollows)) {
       return ok("The wall has no follows arrows, so there is no story order to move within: create_arrow the sequence first, or move_note the card by position.");
     }
-    const trailBefore = trail.length;
     let removed = 0;
     let drawn = 0;
-    let live = false;
-    const step = async (command) => {
-      const done = await commit(command);
-      if (done.changed) {
-        live = done.live;
-        if (command.type === "delete_arrow") removed += 1;
-        if (command.type === "create_arrow") drawn += 1;
+    // The whole move — its dozen arrows and the tidy — as one change: one frame on
+    // the bridge, one ⌘Z on the wall, one step for undo here.
+    const { state: final, live } = await commitAll(`move_scene "${card.headline}"`, (step, current) => {
+      const run = (command) => {
+        const done = step(command);
+        if (done.changed) {
+          if (command.type === "delete_arrow") removed += 1;
+          if (command.type === "create_arrow") drawn += 1;
+        }
+        return done;
+      };
+      // Leave: what pointed at the card points at what the card pointed at.
+      const ins = state.arrows.filter((arrow) => isFollows(arrow) && arrow.to === card.id);
+      const outs = state.arrows.filter((arrow) => isFollows(arrow) && arrow.from === card.id);
+      for (const arrow of [...ins, ...outs]) run({ type: "delete_arrow", id: arrow.id });
+      for (const before of ins) for (const after of outs) if (before.from !== after.to) run({ type: "create_arrow", from: before.from, to: after.to, kind: "follows" });
+      // Land: between the target and what followed it (or what led to it).
+      const mid = current();
+      if (args.after) {
+        for (const arrow of mid.arrows.filter((item) => isFollows(item) && item.from === target.id && item.to !== card.id)) {
+          run({ type: "delete_arrow", id: arrow.id });
+          run({ type: "create_arrow", from: card.id, to: arrow.to, kind: "follows" });
+        }
+        run({ type: "create_arrow", from: target.id, to: card.id, kind: "follows" });
+      } else {
+        for (const arrow of mid.arrows.filter((item) => isFollows(item) && item.to === target.id && item.from !== card.id)) {
+          run({ type: "delete_arrow", id: arrow.id });
+          run({ type: "create_arrow", from: arrow.from, to: card.id, kind: "follows" });
+        }
+        run({ type: "create_arrow", from: card.id, to: target.id, kind: "follows" });
       }
-      return done;
-    };
-    // Leave: what pointed at the card points at what the card pointed at.
-    const ins = state.arrows.filter((arrow) => isFollows(arrow) && arrow.to === card.id);
-    const outs = state.arrows.filter((arrow) => isFollows(arrow) && arrow.from === card.id);
-    for (const arrow of [...ins, ...outs]) await step({ type: "delete_arrow", id: arrow.id });
-    for (const before of ins) for (const after of outs) if (before.from !== after.to) await step({ type: "create_arrow", from: before.from, to: after.to, kind: "follows" });
-    // Land: between the target and what followed it (or what led to it).
-    const { state: mid } = await readBoard();
-    if (args.after) {
-      for (const arrow of mid.arrows.filter((item) => isFollows(item) && item.from === target.id && item.to !== card.id)) {
-        await step({ type: "delete_arrow", id: arrow.id });
-        await step({ type: "create_arrow", from: card.id, to: arrow.to, kind: "follows" });
-      }
-      await step({ type: "create_arrow", from: target.id, to: card.id, kind: "follows" });
-    } else {
-      for (const arrow of mid.arrows.filter((item) => isFollows(item) && item.to === target.id && item.from !== card.id)) {
-        await step({ type: "delete_arrow", id: arrow.id });
-        await step({ type: "create_arrow", from: arrow.from, to: card.id, kind: "follows" });
-      }
-      await step({ type: "create_arrow", from: card.id, to: target.id, kind: "follows" });
-    }
-    const { state: linked } = await readBoard();
-    const tidied = await step({ type: "apply_poses", poses: organizePoses(linked, {}) });
-    const final = tidied.state;
-    // One step for undo: the whole move, not its dozen arrows.
-    trail.splice(trailBefore);
-    trail.push({ before: state, after: canon(final), what: `move_scene "${card.headline}"` });
-    undone.length = 0;
+      run({ type: "apply_poses", poses: organizePoses(current(), {}) });
+    });
     const order = readingOrder(final.notes);
     const group = final.groups.find((item) => item.noteIds.includes(card.id));
     const groupLine = group ? ` It is still in "${group.title || "an untitled group"}"; a frame does not follow a move, so say if the act or sequence should change.` : "";
@@ -1696,8 +1733,10 @@ server.registerTool(
     const { state } = await readBoard();
     const parsed = fromFountain(source);
     const { commands, matched } = mergeFountain(state, parsed);
-    let live = false;
-    for (const command of commands) ({ live } = await commit(command));
+    // The whole import as one change, so one undo takes every scene back.
+    const { live } = await commitAll(`import_fountain (${parsed.scenes.length} scene(s))`, (step) => {
+      for (const command of commands) step(command);
+    });
     const written = commands.filter((command) => command.type === "set_text").length;
     const created = matched.filter((item) => item.created).length;
     return ok(
@@ -1793,8 +1832,10 @@ server.registerTool(
     const { state } = await readBoard();
     const parsed = fromFdx(source);
     const { commands, matched } = mergeFountain(state, parsed);
-    let live = false;
-    for (const command of commands) ({ live } = await commit(command));
+    // The whole import as one change, so one undo takes every scene back.
+    const { live } = await commitAll(`import_fdx (${parsed.scenes.length} scene(s))`, (step) => {
+      for (const command of commands) step(command);
+    });
     const written = commands.filter((command) => command.type === "set_text").length;
     const created = matched.filter((item) => item.created).length;
     const receipt = describeSetAside(parsed.setAside);
@@ -2107,39 +2148,40 @@ server.registerTool(
     },
   },
   async (args) => {
-    let { result, live, changed } = await commit({
-      type: "set_plant",
-      ids: args.ids,
-      plants: args.plants,
-    });
-    let laterLine = "";
+    // A series plant (R50): the fold pays off on another board of the project.
+    // The kernel cannot check the board exists; this door can, before anything lands.
+    let target = null;
+    let forgetting = false;
     if (args.plants && args.later !== undefined) {
-      // A series plant (R50): the fold pays off on another board of the project.
-      // The kernel cannot check the board exists; this door can.
       const { project } = await readProject();
-      const { state: now, boardId: current } = await readBoard();
-      const here = now.notes.filter((note) => args.ids.includes(note.id));
+      const { boardId: current } = await readBoard();
       if (args.later.trim() === "") {
-        const cleared = await commit({ type: "set_payoff_board", ids: args.ids, boardId: null });
-        if (cleared.changed) {
-          result = cleared.result;
-          live = cleared.live;
-          changed = true;
-          laterLine = " The board it paid off on is forgotten; read_wall asks again until a setup arrow or a board pays it off.";
-        }
+        forgetting = true;
       } else {
-        const target = findBoard(project, args.later);
+        target = findBoard(project, args.later);
         if (!target) return ok(`No board called "${args.later}" yet. A fold pays off later on a board of the project: new_board "${args.later}" makes it (empty), open_board back to this one, then set_plant again with later.`);
         if (target.id === (current ?? project.activeBoardId)) return ok(`"${target.name}" is this board. A payoff on the same board is a setup arrow: create_arrow from the fold to the scene, kind 'setup'.`);
-        const named = await commit({ type: "set_payoff_board", ids: args.ids, boardId: target.id });
-        if (named.changed) {
-          result = named.result;
-          live = named.live;
-          changed = true;
-        }
-        laterLine = ` ${here.length} card(s) pay off later, on "${target.name}": read_wall stops asking where they come back, and the card says so.`;
       }
     }
+    // The fold and the board it pays off on land as one change: one ⌘Z on the wall.
+    const { value, live, changed } = await commitAll("set_plant", (step, current) => {
+      let { result } = step({ type: "set_plant", ids: args.ids, plants: args.plants });
+      let laterLine = "";
+      if (forgetting) {
+        const cleared = step({ type: "set_payoff_board", ids: args.ids, boardId: null });
+        if (cleared.changed) {
+          result = cleared.result;
+          laterLine = " The board it paid off on is forgotten; read_wall asks again until a setup arrow or a board pays it off.";
+        }
+      } else if (target) {
+        const named = step({ type: "set_payoff_board", ids: args.ids, boardId: target.id });
+        if (named.changed) result = named.result;
+        const here = current().notes.filter((note) => args.ids.includes(note.id));
+        laterLine = ` ${here.length} card(s) pay off later, on "${target.name}": read_wall stops asking where they come back, and the card says so.`;
+      }
+      return { result, laterLine };
+    });
+    const { result, laterLine } = value;
     const count = result?.length ?? 0;
     if (!changed || count === 0) return ok("No change: those cards were already that way, or the ids are not on the board.");
     return ok(

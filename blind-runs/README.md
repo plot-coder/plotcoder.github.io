@@ -5,9 +5,9 @@ else, asked to build a wall and to keep a log of everything that made the job
 harder than it should have been. The friction log is the product; the wall is
 just what produces it.
 
-The practice is Robert's, from 2026-09-13. Three rounds have been run and all
-73 of their findings are fixed — see `REQUIREMENTS.md`, "The blind run", and the
-three `friction, fixed` entries in the changelog.
+The practice is Robert's, from 2026-09-13. Twelve rounds have been run and
+every finding they logged is fixed — see `REQUIREMENTS.md`, "The blind run",
+and the `friction, fixed` entries in the changelog.
 
 ## The rules that make a round worth running
 
@@ -31,20 +31,29 @@ three `friction, fixed` entries in the changelog.
 | Two | Repo checkout, dev bridge | same | The wall | 30 logged, a third stale, the rest fixed |
 | Three | Repo checkout, current server | same | The wall | 31, most new, all fixed |
 | Four | **The account door**, no dev server | "Low Season" | The wall | 23 before the directions phase, all fixed |
-| Five | The account door, the writer in the room | "Low Season" | Past the wall | not yet run |
+| Five | The account door, the writer in the room | "Low Season" | The wall | 17, all fixed |
+| Six | The account door | "Low Season" | The wall | needed the account cleared; not itemised in the requirements file |
+| Seven | The account door, from an empty folder at last | "Low Season" | The wall's questions | 12, all fixed |
+| Eight | The account door, first checkpoint only | "Low Season" | The way in | 9, all fixed |
+| Nine | The account door, wired before the session | "Low Season" | Never got in | 4, all fixed; opened question 29 |
+| Ten | The published package, wired before the session | "Low Season" | The directions | 9 + 12 + 14, all fixed; found undo one step deep on the account |
+| Eleven | The published package | "Low Season" | The directions | 11 + 16 + 20, all fixed; asked for R50 and R51 |
+| Twelve | The published package, the treatment complete | "Low Season" | The directions | 33, all fixed; asked for R52 and R53 |
 
-## Round four, and the next round
+## The rounds so far, and the next round
 
-Round four ran on 2026-09-13 and stopped at the wall with twenty-three
-findings, all fixed the same day (`REQUIREMENTS.md`, "The blind run", round
-four). The largest: the account did not exist yet, the sign-in failed, and the
-server fell silently to the folder's wall. It was also not quite blind — the
-session was started inside a worktree of the repo, and the harness put
-`CLAUDE.md` in the agent's context before it read a word. Start a round in an
-empty folder.
+Round four (2026-09-13) was the first through the account door and stopped at
+the wall with twenty-three findings: the account did not exist yet, the sign-in
+failed, and the server fell silently to the folder's wall. It was also not
+quite blind — the session was started inside a worktree of the repo, and the
+harness put `CLAUDE.md` in the agent's context before it read a word. Rounds
+seven onward started in an empty folder; rounds ten to twelve ran through the
+published package, wired before the session, and were the first to reach the
+directions phase. Each round's findings are itemised in `REQUIREMENTS.md`,
+"The blind run".
 
-- `prompt.md` — the next round: the same door and treatment, but the writer
-  stays in the room after the wall is read and directs. The test account is
+- `prompt.md` — the next round: the same door and treatment, the writer in
+  the room after the wall is read, directing. The test account is
   filled in (`test@test.com`, password `test`; Robert's decision, so the prompt
   pastes without editing). Paste everything below its divider.
 - `round-four-treatment.md` — "Low Season", a pilot, also embedded in the

@@ -12,7 +12,7 @@ export type Workflow = {
   /** The rule the agent keeps while doing it. */
   then: string;
   /** What the writer's material should say for the workflow to need no questions back, and the tool each answer lands in (R49). */
-  needs?: { ask: string; tool: string }[];
+  needs?: { question: string; hint: string; tool: string }[];
 };
 
 export declare const WORKFLOWS: readonly Workflow[];

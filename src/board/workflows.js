@@ -23,17 +23,17 @@ export const WORKFLOWS = [
     // who answers them in the treatment gets a wall with no questions back;
     // an agent asks the ones the treatment leaves open, and invents none.
     needs: [
-      { ask: "How long is it: an hour, a half-hour, a feature, or a page count?", tool: "set_target" },
-      { ask: "The central question in one sentence, and the series premise above it if there is one.", tool: "set_logline, set_premise" },
-      { ask: "Which scenes are the turns — the beats — or 'propose them and I will strike'.", tool: "set_rank" },
-      { ask: "The acts, if it has them, and where each break falls.", tool: "create_group" },
-      { ask: "Where each scene happens, in the writer's words; a scene that moves through one location is one place.", tool: "set_location" },
-      { ask: "When a scene happens, where it matters — that night, the fourth of October.", tool: "the headline, for now" },
-      { ask: "Who is in each scene, with the name to use — a full name, or the role name for someone unnamed — and who is only spoken of, which goes in notes.", tool: "add_character, cast, update_character" },
-      { ask: "What is planted, and where it pays off — including 'later in the series', so the fold is deliberate.", tool: "set_plant, create_arrow" },
-      { ask: "Any scene already known to run long or short; a duration in the story is not a length.", tool: "set_length" },
-      { ask: "What the project and the board are called.", tool: "rename_project, rename_board" },
-      { ask: "What not to invent: looks and voices are the writer's until they say.", tool: "update_character, later" },
+      { question: "How long is it?", hint: "An hour, a half-hour, a feature — or a page count, if you have one.", tool: "set_target" },
+      { question: "What is the central question, in one sentence?", hint: "And if this is one episode of something, what is the series about?", tool: "set_logline, set_premise" },
+      { question: "Which scenes are the turns?", hint: "Name them, or say \"propose them and I will strike\".", tool: "set_rank" },
+      { question: "Does it have acts?", hint: "If so, where does each break fall?", tool: "create_group" },
+      { question: "Where does each scene happen?", hint: "In your own words. A scene that moves through one location is still one place.", tool: "set_location" },
+      { question: "When does a scene happen, where that matters?", hint: "That night; the fourth of October. It goes in the headline for now.", tool: "the headline" },
+      { question: "Who is in each scene, and what do we call them?", hint: "A full name, or a role for someone unnamed — the man in 42. And who is only spoken of, never in a scene? They go in someone's notes, not the cast.", tool: "add_character, cast, update_character" },
+      { question: "What is planted, and where does it pay off?", hint: "Say \"later in the series\" when it pays off outside this episode, so the fold is deliberate.", tool: "set_plant, create_arrow" },
+      { question: "Which scenes do you already know run long or short?", hint: "A day in the story is not a page count; leave the rest unsized.", tool: "set_length" },
+      { question: "What are the project and the board called?", hint: "The series, and this episode.", tool: "rename_project, rename_board" },
+      { question: "What must not be invented?", hint: "Looks and voices are yours until you say; so is anything the treatment does not state.", tool: "update_character, later" },
     ],
   },
   {

@@ -29,7 +29,7 @@ export function RemindersModal({ open, board, onOpen, onClose }: RemindersModalP
   const [reminders, setReminders] = useState<Reminder[]>(readReminders);
   const [draft, setDraft] = useState("");
   // Three tabs (R27): the principles, what you can ask an agent for, the reading of the wall.
-  const [tab, setTab] = useState<"principles" | "ask" | "read">("principles");
+  const [tab, setTab] = useState<"principles" | "ask" | "treatment" | "read">("principles");
   const [copied, setCopied] = useState<string | null>(null);
 
   async function copyAsk(id: string, text: string) {
@@ -114,6 +114,7 @@ export function RemindersModal({ open, board, onOpen, onClose }: RemindersModalP
                 [
                   ["principles", "Principles"],
                   ["ask", "What you can ask for"],
+                  ["treatment", "Before a treatment"],
                   ["read", "Read the wall"],
                 ] as const
               ).map(([key, label]) => (
@@ -151,6 +152,24 @@ export function RemindersModal({ open, board, onOpen, onClose }: RemindersModalP
                       </div>
                       <p className="reminder__body">“{workflow.ask}”</p>
                       <p className="reminder__keep">{workflow.then}</p>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            ) : null}
+
+            {tab === "treatment" ? (
+              <section className="ask-list" aria-label="Before a treatment">
+                <p className="reminder-form__note">
+                  What a treatment should answer before it becomes a wall (R49). Every one your treatment
+                  leaves open is a question your agent will have to ask you, and none it may answer for
+                  you.
+                </p>
+                <ol className="reminder-list">
+                  {(WORKFLOWS.find((workflow) => workflow.id === "break-a-treatment")?.needs ?? []).map((need) => (
+                    <li key={need.question} className="reminder">
+                      <p className="reminder__body">{need.question}</p>
+                      <p className="reminder__keep">{need.hint}</p>
                     </li>
                   ))}
                 </ol>

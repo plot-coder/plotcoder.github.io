@@ -56,7 +56,9 @@ series premise above an episode logline, which a feature never does.
 ## Clearing up after a round (R44)
 
 A round leaves a project, its boards and any files behind on a real account.
-Mark the test account once, then empty it between rounds:
+Mark the test account once, then empty it between rounds. Since round five the
+prompt has the agent do this itself as a chore before the round, with the
+service key exported in the shell the session runs in; by hand it is:
 
 ```bash
 node scripts/wipe-test-account.mjs test@test.com --mark

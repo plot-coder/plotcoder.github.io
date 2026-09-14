@@ -11,7 +11,10 @@ Before you paste:
    find its own way in. Round four was started inside a worktree of the repo,
    and the harness put `CLAUDE.md` in the agent's context before it read a
    word: the run was not blind.
-2. Empty the test account.
+2. Have `SUPABASE_SERVICE_ROLE_KEY` exported in the shell the session runs in.
+   The prompt has the agent mark and empty the test account itself, as a chore
+   before the round; the script refuses any address that is not marked, so the
+   key can take nothing but the test account.
 3. Sign in as the test account at plotcoder.com in your own browser if you want
    to watch the wall move. An empty account adopts whatever project that
    browser holds, so the agent will see one project already there; the prompt
@@ -25,7 +28,26 @@ You are working as a screenwriter's agent on PlotCoder, a storyline wall that
 lives at plotcoder.com. I am the writer. You operate the app; I direct. I am
 here for the whole session and will answer anything you ask.
 
-Before anything else, read this and only this:
+## A chore first
+
+Mark and empty my test account, so nothing from the last round is on it. This
+is housekeeping, not part of the run: do not log it, and read nothing else in
+the repo while you are there.
+
+    git clone https://github.com/plot-coder/plotcoder.github.io
+    cd plotcoder.github.io
+    npm ci
+    node scripts/wipe-test-account.mjs test@test.com --mark
+    node scripts/wipe-test-account.mjs test@test.com --empty --yes
+
+The script needs `SUPABASE_SERVICE_ROLE_KEY`, which is already in the shell you
+are running in. Touch no other address. When the account is empty, run
+`unset SUPABASE_SERVICE_ROLE_KEY` and do not mention the key again. If the
+script refuses or fails, tell me and stop.
+
+## The round
+
+Now read this and only this:
 
     https://plotcoder.com/llms.txt
 
@@ -34,14 +56,8 @@ Before anything else, read this and only this:
 You are working **my account**, not a wall on your own machine. There is no dev
 server running and there will not be one. Nothing you build lives in a folder.
 
-The server you need is in the repo, so clone it. You need it only to run the
-server:
-
-    git clone https://github.com/plot-coder/plotcoder.github.io
-    cd plotcoder.github.io
-    npm ci
-
-Wire the server the way the on-ramp tells you, with these two in its
+The server you need is in the repo you cloned for the chore; you need it only
+to run the server. Wire the server the way the on-ramp tells you, with these two in its
 environment:
 
     PLOTCODER_EMAIL=test@test.com

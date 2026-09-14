@@ -29,6 +29,8 @@ import {
   formatPages,
   isBoardState,
   isMeasured,
+  NOTE_HEIGHT,
+  NOTE_WIDTH,
   DEFAULT_TARGET_EIGHTHS,
   normalizeState,
   noteEighths,
@@ -49,7 +51,7 @@ import { segmentBrief, WORKFLOWS } from "../src/board/workflows.js";
 import { DEFAULT_REMINDERS, titleFromBody } from "../src/board/reminders.js";
 import crypto from "node:crypto";
 import { describeRuns, describeSetups, readWall } from "../src/board/readWall.js";
-import { organizePoses } from "../src/board/organize.js";
+import { GAP, ROW_WIDTH, organizePoses } from "../src/board/organize.js";
 import {
   addBoard,
   addStructure,
@@ -737,7 +739,16 @@ async function commit(command) {
 }
 
 /** Said once per session: that cards stack until organize (round seven, finding 11). */
-let saidStack = false;
+/** Where a new card lands when the agent gives no position: after the last card in reading order, wrapping five wide, so cards never stack (round eleven, finding 14). */
+function nextPlace(state) {
+  const order = readingOrder(state.notes);
+  const last = order[order.length - 1];
+  if (!last) return { x: 140, y: 140 };
+  const originX = Math.min(...state.notes.map((note) => note.x));
+  const x = last.x + NOTE_WIDTH + GAP;
+  if (x + NOTE_WIDTH > originX + ROW_WIDTH) return { x: originX, y: last.y + NOTE_HEIGHT + GAP };
+  return { x, y: last.y };
+}
 
 /** Which door a read came through, for the head of a reply: the account as whom, the open app, or the file at which path. */
 function door(live, base = null) {
@@ -857,7 +868,7 @@ function summarize(state) {
     `notes: ${state.notes.length}, groups: ${state.groups.length}, arrows: ${state.arrows.length}, cast: ${state.characters.length}`,
     "cast:",
     cast || "  (no one yet — add_character to start the roster)",
-    "places (each distinct phrase is one place; near-matches sit side by side):",
+    "places (each phrase is its own place, and the app relates none of them — if two are one place, set_location them the same):",
     places || "  (no card says where it happens yet)",
     "cards:",
     notes || "  (no cards)",
@@ -884,15 +895,23 @@ const server = new McpServer({ name: "plotcoder-board", version: "0.1.0" });
 
 // A door's answer is a reply, not an error: a shut account door, or an
 // account with no project yet, says so in words from every tool alike.
+// Tool calls run one at a time. Every tool reads the board, decides, and
+// writes it back; two calls interleaving at those awaits would each read the
+// same board and the second would write over the first — thirteen parallel
+// create_note calls naming Nessa made thirteen Nessas in prospect (round
+// eleven, finding 22). One lane, in the order the calls arrive.
 const registerTool = server.registerTool.bind(server);
+let lane = Promise.resolve();
 server.registerTool = (name, config, handler) =>
-  registerTool(name, config, async (...args) => {
-    try {
-      return await handler(...args);
-    } catch (error) {
-      if (error instanceof DoorReply) return ok(error.message);
-      throw error;
-    }
+  registerTool(name, config, (...args) => {
+    const turn = lane.then(() =>
+      handler(...args).catch((error) => {
+        if (error instanceof DoorReply) return ok(error.message);
+        throw error;
+      }),
+    );
+    lane = turn.catch(() => undefined);
+    return turn;
   });
 
 server.registerTool(
@@ -1028,6 +1047,7 @@ server.registerTool(
     },
   },
   async (args) => {
+    const landing = args.x === undefined && args.y === undefined ? nextPlace((await readBoard()).state) : { x: args.x, y: args.y };
     let { result, live } = await commit({
       type: "create_note",
       headline: args.headline,
@@ -1041,8 +1061,8 @@ server.registerTool(
       lengthEighths: args.pages === undefined ? undefined : toEighths(args.pages),
       plants: args.plants,
       location: args.location,
-      x: args.x,
-      y: args.y,
+      x: landing.x,
+      y: landing.y,
     });
     let castLine = "";
     if (args.characters && args.characters.length && result?.id) {
@@ -1074,8 +1094,7 @@ server.registerTool(
       result?.plants ? "corner folded" : null,
       result?.location ? `at ${result.location}` : "no place yet (location here, or set_location)",
     ].filter(Boolean).join(", ");
-    const placed = args.x === undefined && args.y === undefined && !saidStack ? " Cards stack until organize lays them out along the arrows." : "";
-    if (placed) saidStack = true;
+    const placed = args.x === undefined && args.y === undefined ? ` Placed after the last card in reading order (${Math.round(landing.x)},${Math.round(landing.y)}); organize lays the wall out along the arrows.` : "";
     return ok(`Created card ${result?.id ?? ""}: ${landed}${where(live)}.${castLine}${placed}`, result);
   },
 );
@@ -1176,6 +1195,7 @@ server.registerTool(
     const lines = [
       `PlotCoder wall (${door(live, base)})`,
       `logline: ${state.logline ? `"${state.logline}"` : "(none yet)"}`,
+      "the cast and the places are list_board's, not the reading's",
       state.targetEighths === DEFAULT_TARGET_EIGHTHS
         ? `runtime: about ${formatPages(boardEighths(state))} pages; no target set (set_target)`
         : `runtime: about ${formatPages(boardEighths(state))} pages of a ${formatPages(state.targetEighths)}-page target — ${boardEighths(state) > state.targetEighths ? `${formatPages(boardEighths(state) - state.targetEighths)} over` : boardEighths(state) < state.targetEighths ? `${formatPages(state.targetEighths - boardEighths(state))} under` : "on it"}`,
@@ -1206,7 +1226,13 @@ server.registerTool(
       ...(reading.findings.length
         ? reading.findings.map((finding) => `  - [${finding.kind}] ${finding.text}${finding.ids.length ? ` (ids: ${finding.ids.join(", ")})` : ""}`)
         : ["  (none that this reading can see)"]),
-      `checks: ${CHECKS.length} run — asking about ${[...new Set(reading.findings.map((finding) => finding.kind))].filter((kind) => CHECKS.includes(kind)).join(", ") || "nothing"}; checked and clean: ${CHECKS.filter((kind) => !reading.findings.some((finding) => finding.kind === kind)).map((kind) => CHECK_WORDS[kind]).join("; ") || "(nothing — every check found something)"}`,
+      `checks: ${CHECKS.length} run — ${(() => {
+        const asked = reading.findings.filter((finding) => CHECKS.includes(finding.kind));
+        if (asked.length === 0) return "asking nothing";
+        const counts = new Map();
+        for (const finding of asked) counts.set(finding.kind, (counts.get(finding.kind) ?? 0) + 1);
+        return `asking ${asked.length} question${asked.length === 1 ? "" : "s"} of ${counts.size} kind${counts.size === 1 ? "" : "s"}: ${[...counts.entries()].map(([kind, n]) => (n > 1 ? `${kind} ×${n}` : kind)).join(", ")}`;
+      })()}; checked and clean: ${CHECKS.filter((kind) => !reading.findings.some((finding) => finding.kind === kind)).map((kind) => CHECK_WORDS[kind]).join("; ") || "(nothing — every check found something)"}`,
     ];
     if (isSampleWall(state)) lines.unshift(SAMPLE_NOTE);
     return ok(lines.join("\n"), { ...reading, sample: isSampleWall(state) });
@@ -1315,7 +1341,7 @@ server.registerTool(
       else if (note && !wrappedUnder.some((item) => item.beat === currentBeat)) wrappedUnder.push({ beat: currentBeat, first: note });
     }
     const shape = beats
-      ? `${opening ? `an opening row of ${opening} card(s) before the first beat, then ` : ""}${beats} row(s), one per beat${wrappedUnder.length ? `; ${wrappedUnder.map((item) => `the row of "${item.beat.headline}" wraps under from "${item.first.headline}"`).join(", ")}` : ""}`
+      ? `${opening ? `an opening row of ${opening} card(s) before the first beat, then ` : ""}${beats} row(s), one per beat${wrappedUnder.length ? `; ${wrappedUnder.map((item) => `the row of "${item.beat.headline}" wraps under from "${item.first.headline}", indented under the row's first scene, never under the beat`).join(", ")}` : ""}`
       : `${rows} row(s) five cards wide — no beats yet, so nothing sets the rows; set_rank the turns and organize again for a row per beat`;
     return ok(`Organized ${poses.length} card(s) along the arrows into ${shape}${where(live)}.`, poses);
   },
@@ -2021,7 +2047,7 @@ server.registerTool(
       if (!result) return ok(`No character with id ${person.id}. Call list_board for the cast.`);
       return ok(`Nothing changed on ${result.name}'s page: those lines already read that way.`, result);
     }
-    const trim = (text) => (text.length > 140 ? `${text.slice(0, 137)}…` : text);
+    const trim = (text) => (text.length > 400 ? `${text.slice(0, 140)}… (${text.length} characters in all, every one landed)` : text);
     const lines = Object.keys(patch).map((field) => {
       const had = (person[field] ?? "").trim();
       const now = (result[field] ?? "").trim();
@@ -2528,7 +2554,8 @@ server.registerTool(
     workingProject(record.id, record.name, (account.projectCount ?? 0) + 1);
     joinPresence(record.id);
     const targetLine = target === undefined ? ` Its target is ${formatPages(state.targetEighths)} pages, the default for a feature; set_target for a pilot or a half-hour, or pass pages or minutes here.` : ` Its target is ${formatPages(state.targetEighths)} pages.`;
-    return ok(`Started "${record.name}" (${record.id}) and working it now, as ${account.email}.${targetLine}${oneCallHint(record)}`, { id: record.id, name: record.name, targetEighths: state.targetEighths });
+    const first = record.boards[0];
+    return ok(`Started "${record.name}" (${record.id}) with its first board "${first.name}" (${first.id}), and working it now, as ${account.email}.${targetLine}${oneCallHint(record)}`, { id: record.id, name: record.name, boardId: first.id, boardName: first.name, targetEighths: state.targetEighths });
   },
 );
 

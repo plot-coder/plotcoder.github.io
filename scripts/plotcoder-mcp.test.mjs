@@ -1303,7 +1303,7 @@ describe("after the blind run", () => {
     expect(read).not.toMatch(/checked and clean:.*unwritten/);
     expect(read).toContain("pages: all estimates — no scene is written yet");
     expect(read).toContain("(distances in estimated pages)");
-    expect(read).toMatch(/checks: 11 run — asking about [a-z, ]+; checked and clean:/);
+    expect(read).toMatch(/checks: 11 run — asking (nothing|\d+ questions? of \d+ kinds?: [a-z ×0-9, ]+); checked and clean:/);
   });
 
   it("names the card's id and casts it in one call, adding a role-named person to the roster", async () => {
@@ -1372,7 +1372,7 @@ describe("after the blind run", () => {
       expect(made).toContain("The sample stays as Board 1; delete_board drops it.");
       const card = await third.callTool("create_note", { headline: "The gate", change: "Miguel checks the glovebox.", rank: "beat", pages: 4, plants: true, location: "the prison gate", characters: ["Dana"] });
       expect(card).toMatch(/^Created card \S+: a beat, 4 pages, yellow paper \(pass color to choose\), corner folded, at the prison gate/);
-      expect(card).toContain("Cards stack until organize");
+      expect(card).toContain("Placed after the last card in reading order");
       expect(await third.callTool("update_character", { name: "dana", notes: "38, a bad knee and a good ear." })).toContain('Set notes: "38, a bad knee and a good ear." on Dana\'s page');
       expect(await third.callTool("update_character", { name: "nobody", notes: "x" })).toContain('Nobody called "nobody" in the cast');
       const pages = await third.callTool("page_count");
@@ -1733,9 +1733,13 @@ describe("round seven's replies", () => {
   it("says a new card is unsized, once that cards stack, and where a fold is paid off", async () => {
     const first = await seven.callTool("create_note", { headline: "The ledger", change: "A question nobody answers.", plants: true, rank: "beat" });
     expect(first).toContain("about a page (unsized: the writer's guess until set_length)");
-    expect(first).toContain("Cards stack until organize");
+    expect(first).toContain("Placed after the last card in reading order");
     const second = await seven.callTool("create_note", { headline: "The cash arrives", change: "An envelope, no name.", rank: "beat" });
-    expect(second).not.toContain("Cards stack until organize");
+    expect(second).toContain("Placed after the last card in reading order");
+    const placed = await seven.callToolData("list_board");
+    const [one, two] = placed.notes.slice(-2);
+    expect(two.y).toBe(one.y);
+    expect(two.x).toBeGreaterThan(one.x);
     const board = await seven.callToolData("list_board");
     const ledger = board.notes.find((note) => note.headline === "The ledger");
     const cash = board.notes.find((note) => note.headline === "The cash arrives");
@@ -1753,8 +1757,9 @@ describe("round seven's replies", () => {
     expect(await seven.callTool("list_reminders")).toMatch(/^reminders on "Untitled project" \(the file at .*\): 6 — 6 the house principles the app starts with \(built in\), 0 the writer's own; add_reminder adds one/);
     expect(await seven.callTool("list_words")).toMatch(/^PlotCoder's words — the app's own/);
     expect(await seven.callTool("list_workflows")).toMatch(/^The workflows — the app's own/);
-    expect(read).toContain('Before "The ledger": about 2 pages, 2 cards — "Maya finds the letter", "Fiona at the launderette"');
+    // A new card lands after the last in reading order, so Fiona follows the cash.
     expect(read).toContain('"The ledger" → "The cash arrives": about 0 pages, 0 cards');
+    expect(read).toMatch(/After "The cash arrives": about \d+ pages, \d+ cards? — .*"Fiona at the launderette"/);
   });
 });
 
@@ -1819,7 +1824,7 @@ describe("round ten's replies", () => {
     const clean = await ten.callTool("set_location", { ids: [c], location: "the chip shop" });
     expect(clean).not.toContain("The wall also has");
     const listed = await ten.callTool("list_board");
-    expect(listed).toContain("places (each distinct phrase is one place");
+    expect(listed).toContain("places (each phrase is its own place");
     expect(listed).toContain('  - "the caravan park" on 1 card');
     expect(listed).toContain('  - "the caravan park, the rows" on 1 card');
   });
@@ -1879,4 +1884,27 @@ describe("undo through a store that reorders keys, and move_scene", () => {
     expect(pairsBack).toEqual(["A>B", "B>C", "C>D"]);
     expect(await client2.callTool("delete_arrow", { id: back.arrows[0].id })).toMatch(/^Deleted the follows arrow "[A-D]" → "[A-D]"/);
   });
+});
+
+// Tool calls run one at a time: thirteen parallel create_note calls naming
+// the same person make one person (round eleven, finding 22).
+describe("one lane for tool calls", () => {
+  it("makes one Nessa from many parallel calls", async () => {
+    const laneRoot = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-lane-"));
+    const one = new McpClient(laneRoot);
+    await one.start();
+    try {
+      await Promise.all(
+        Array.from({ length: 8 }, (_, i) => one.callTool("create_note", { headline: `Scene ${i}`, change: "Something turns.", characters: ["Nessa Boyd"] })),
+      );
+      const board = await one.callToolData("list_board");
+      expect(board.characters.filter((person) => person.name === "Nessa Boyd")).toHaveLength(1);
+      expect(board.notes.filter((note) => note.headline.startsWith("Scene "))).toHaveLength(8);
+      const ys = new Set(board.notes.map((note) => `${note.x},${note.y}`));
+      expect(ys.size).toBe(board.notes.length);
+    } finally {
+      one.stop();
+      fs.rmSync(laneRoot, { recursive: true, force: true });
+    }
+  }, 30000);
 });

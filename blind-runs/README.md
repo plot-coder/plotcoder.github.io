@@ -56,9 +56,10 @@ series premise above an episode logline, which a feature never does.
 ## Clearing up after a round (R44)
 
 A round leaves a project, its boards and any files behind on a real account.
-Mark the test account once, then empty it between rounds. Since round five the
-prompt has the agent do this itself as a chore before the round, with the
-service key exported in the shell the session runs in; by hand it is:
+Since R45 the agent clears up itself, signed in as the test writer, with the
+tools every writer's agent has: `export_project` to keep a copy, then
+`empty_account`. No service key is involved; the prompt says so. The wipe
+script remains for a total reset by hand, and the mark it needs:
 
 ```bash
 node scripts/wipe-test-account.mjs test@test.com --mark

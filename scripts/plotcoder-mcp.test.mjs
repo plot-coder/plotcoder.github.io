@@ -147,12 +147,17 @@ describe("plotcoder MCP server", () => {
       "create_note",
       "delete_arrow",
       "delete_board",
+      "delete_account",
       "delete_note",
+      "delete_project",
+      "empty_account",
       "end_revision",
       "export_fdx",
       "export_fountain",
+      "export_project",
       "import_fdx",
       "import_fountain",
+      "import_project",
       "list_board",
       "list_boards",
       "list_files",
@@ -1250,6 +1255,9 @@ describe("structures of the writer's own", () => {
 
   it("answers plainly when the account door is shut", async () => {
     expect(await own.callTool("new_project", { name: "Another" })).toContain("No account door");
+    expect(await own.callTool("delete_project", { project: "Another" })).toContain("No account door");
+    expect(await own.callTool("empty_account")).toContain("No account door");
+    expect(await own.callTool("delete_account")).toContain("No account door");
     expect(await own.callTool("add_picture", { character: "maya", path: "nowhere.png" })).toContain("No account door");
     expect(await own.callTool("list_files")).toContain("No account door");
     expect(await own.callTool("remove_file", { id: "x" })).toContain("No account door");
@@ -1526,6 +1534,10 @@ describe("the account door, when the sign-in fails", () => {
     expect(await shut.callTool("list_projects")).toContain("The account door refused");
     expect(await shut.callTool("new_project", { name: "Low Season" })).toContain("The account door refused");
     expect(await shut.callTool("list_files")).toContain("The account door refused");
+    expect(await shut.callTool("empty_account", { confirm: true })).toContain("The account door refused");
+    expect(await shut.callTool("delete_account", { confirm: true })).toContain("The account door refused");
+    const file = JSON.stringify({ app: "plotcoder", version: 2, exportedAt: "2026-09-13T00:00:00.000Z", storage: { "plotcoder.notes": "[]", "plotcoder.groups": "[]", "plotcoder.arrows": "[]" } });
+    expect(await shut.callTool("import_project", { text: file })).toContain("The account door refused");
     expect(fs.existsSync(path.join(shutRoot, ".plotcoder", "board.json"))).toBe(false);
   });
 });
@@ -1602,4 +1614,55 @@ describe("the launcher, when dependencies are missing", () => {
       fs.rmSync(root, { recursive: true, force: true });
     }
   }, 30000);
+});
+
+// The project as a file (R46): export_project writes what Save project
+// writes, import_project opens what Open project opens, and through the
+// file door an import replaces only when told to.
+describe("the project as a file", () => {
+  let fileRoot;
+  let files;
+
+  beforeAll(async () => {
+    fileRoot = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-file-"));
+    files = new McpClient(fileRoot);
+    await files.start();
+  }, 30000);
+
+  afterAll(() => {
+    files?.stop();
+    if (fileRoot) fs.rmSync(fileRoot, { recursive: true, force: true });
+  });
+
+  it("saves the project as the file Open project takes, and says what is in it", async () => {
+    await files.callTool("rename_project", { name: "Low Season" });
+    await files.callTool("create_note", { headline: "Nessa comes back", change: "She decides to sell.", rank: "beat" });
+    const out = path.join(fileRoot, "out", "low-season.json");
+    const text = await files.callTool("export_project", { path: out });
+    expect(text).toContain('Saved "Low Season": 1 board(s), 4 card(s)');
+    expect(text).toContain("Pictures and takes on the account are not in the file");
+    const file = JSON.parse(fs.readFileSync(out, "utf8"));
+    expect(file.app).toBe("plotcoder");
+    expect(file.version).toBe(2);
+    expect(Object.keys(file.storage)).toContain("plotcoder.project");
+    const inline = await files.callToolData("export_project");
+    expect(inline.storage["plotcoder.project"]).toContain("Low Season");
+  });
+
+  it("refuses what is not a project file, asks before replacing, and replaces when told", async () => {
+    expect(await files.callTool("import_project", { text: "not json" })).toContain("not JSON");
+    expect(await files.callTool("import_project", { text: JSON.stringify({ hello: "world" }) })).toContain("not a PlotCoder project file");
+    const saved = await files.callToolData("export_project");
+    await files.callTool("rename_project", { name: "Something else" });
+    await files.callTool("create_note", { headline: "One more", change: "A fifth card." });
+    const asked = await files.callTool("import_project", { text: JSON.stringify(saved) });
+    expect(asked).toContain('would replace "Something else" (1 board(s), 5 card(s))');
+    expect(await files.callTool("list_boards")).toContain('"Something else"');
+    const done = await files.callTool("import_project", { text: JSON.stringify(saved), confirm: true });
+    expect(done).toContain('Imported "Low Season" (1 board(s), 4 card(s)), replacing "Something else"');
+    expect(await files.callTool("list_boards")).toContain('"Low Season"');
+    const board = await files.callToolData("list_board");
+    expect(board.notes).toHaveLength(4);
+    expect(await files.callTool("undo")).toContain("Nothing of mine to undo");
+  });
 });

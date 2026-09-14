@@ -308,7 +308,15 @@ one account per writer, so a taken address is refused, not varied. The
 on-ramp in the app and at plotcoder.com/llms.txt says the same. Files on the project go
 through this door too: `add_picture` puts an image on a person's page,
 `add_take` files a take on a card or a run, `list_files` shows everything,
-`remove_file` takes one away (ask first; it cannot be undone). The
+`remove_file` takes one away (ask first; it cannot be undone). **The
+account is the writer's from your side too:** `delete_project` (by name or
+id; the owner's own only), `empty_account` (every project they own; shared
+ones stay) and `delete_account` (the sign-in itself; the door shuts) — each
+says what would go until it is called with `confirm: true`, and none can be
+undone, so ask the writer first and `export_project` first. **A project as a
+file:** `export_project` writes the file Save project writes (a path, or the
+reply's JSON), through any door; `import_project` opens one — onto the
+account as a new project, or replacing the folder's project after asking. The
 sign-in set is you saying which wall you mean, so it wins over an open app.
 
 ## The production half

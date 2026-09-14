@@ -78,5 +78,28 @@ Deno.serve(async (req) => {
     return json({ ok: true, email });
   }
 
+  if (body.action === "delete_account") {
+    // The writer takes their own account away (R45): only the caller, only
+    // the address they name, and the files of the projects they own go first,
+    // since storage cascades nothing. The rows cascade off auth.users.
+    const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
+    const who = await admin.auth.getUser(token);
+    if (who.error || !who.data.user) return json({ error: "sign in first" }, 401);
+    if ((who.data.user.email ?? "").toLowerCase() !== email) return json({ error: "that is not your address" }, 403);
+    const owned = await admin.from("projects").select("id").eq("owner", who.data.user.id);
+    const ids = (owned.data ?? []).map((row) => row.id);
+    if (ids.length) {
+      const files = await admin.from("assets").select("path").in("project_id", ids);
+      const paths = (files.data ?? []).map((row) => row.path);
+      if (paths.length) {
+        const removed = await admin.storage.from("projects").remove(paths);
+        if (removed.error) return json({ error: `could not remove the files: ${removed.error.message}` }, 500);
+      }
+    }
+    const gone = await admin.auth.admin.deleteUser(who.data.user.id);
+    if (gone.error) return json({ error: gone.error.message }, 400);
+    return json({ ok: true, email });
+  }
+
   return json({ error: "unknown action" }, 400);
 });

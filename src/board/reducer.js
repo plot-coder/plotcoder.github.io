@@ -227,7 +227,8 @@ export function seedState(now = nowIso()) {
     rotate,
     z,
     rank: "scene",
-    lengthEighths: DEFAULT_NOTE_EIGHTHS,
+    // Unsized until someone sizes it: null claims nothing, and reads as about a page (noteEighths).
+    lengthEighths: null,
     characterIds,
     location: "",
     text: "",
@@ -315,11 +316,12 @@ export function normalizeState(value) {
   let patched = false;
   const notes = value.notes.map((note) => {
     const rank = note && NOTE_RANKS.includes(note.rank) ? note.rank : "scene";
-    const lengthEighths = clampEighths(
-      note?.lengthEighths,
-      DEFAULT_NOTE_EIGHTHS,
-      MAX_NOTE_EIGHTHS,
-    );
+    // Unsized stays unsized: null (or no field, before R25) claims nothing and
+    // reads as about a page. A number is the writer's estimate, kept in range.
+    const lengthEighths =
+      note?.lengthEighths === null || note?.lengthEighths === undefined
+        ? null
+        : clampEighths(note.lengthEighths, DEFAULT_NOTE_EIGHTHS, MAX_NOTE_EIGHTHS);
     const characterIds = knownCast(note?.characterIds, characters);
     // Cards written before R31 have no fold; a plant is a claim you make.
     const plants = note?.plants === true;
@@ -408,11 +410,10 @@ export function applyCommand(state, command, now = nowIso()) {
         y: command.y ?? 140 + (n % 4) * 24,
         rotate: command.rotate ?? ((n % 5) - 2) * 1.1,
         rank: NOTE_RANKS.includes(command.rank) ? command.rank : "scene",
-        lengthEighths: clampEighths(
-          command.lengthEighths,
-          DEFAULT_NOTE_EIGHTHS,
-          MAX_NOTE_EIGHTHS,
-        ),
+        lengthEighths:
+          command.lengthEighths === undefined || command.lengthEighths === null
+            ? null
+            : clampEighths(command.lengthEighths, DEFAULT_NOTE_EIGHTHS, MAX_NOTE_EIGHTHS),
         characterIds: knownCast(command.characterIds, state.characters ?? []),
         plants: command.plants === true,
         location: cleanPlace(command.location),
@@ -807,7 +808,7 @@ export function applyCommand(state, command, now = nowIso()) {
         rotate: ((index % 5) - 2) * 0.8,
         z: (z += 1),
         rank: "beat",
-        lengthEighths: DEFAULT_NOTE_EIGHTHS,
+        lengthEighths: null,
         characterIds: [],
         plants: false,
         location: "",

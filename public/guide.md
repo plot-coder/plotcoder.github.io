@@ -69,7 +69,8 @@ order as text, the nearest thing to a look at it.
   out of proportion with the others, a card with no change line, a card no arrow
   touches, two headlines that read like the same scene, a group too long to be
   one sequence, a person in the cast who is on no card, a person gone for more
-  than a third of the story, a payoff that comes before its setup on the wall,
+  than a third of the story (and ten pages at least, so a short wall's gaps are
+  not disappearances), a payoff that comes before its setup on the wall,
   a folded card no setup arrow pays off, beats back to back with nothing
   between them (a chain of them is one question naming every turn), and cards
   that say no place once any card has one. It also lists every setup with the
@@ -91,7 +92,9 @@ order as text, the nearest thing to a look at it.
 - `recolor_note` — change a card's paper `color` by `id`.
 - `set_rank` — mark cards `beat` or `scene`. Takes a list of ids.
 - `set_length` — how long cards run, in `pages`. Takes a list of ids. Fractions
-  are fine (`0.5`); they are stored in eighths of a page.
+  are fine (`0.5`); they are stored in eighths of a page. A card nobody has
+  sized is **unsized** — `list_board` says so — and reads as about a page; a
+  card sized at one page is a claim the writer made.
 - `set_plant` — fold or unfold the corner of cards (`plants` true/false). Fold a
   card when the writer says it sets something up; `read_wall` will ask where it
   pays off until a `setup` arrow leaves it.
@@ -199,7 +202,8 @@ order as text, the nearest thing to a look at it.
   draw the arrows first — it is the arrows that make the layout right.
 - `list_boards` — the project: its name, premise, and every board in order with
   id, name and shape, marking the open one. Ids come from here.
-- `open_board` — open another board by id, name, or number. Every card tool
+- `open_board` — open another board by id, name, or number (a number is fine
+  as a number). Every card tool
   then works on that board; the writer's wall switches too.
 - `new_board` — add an empty board to the project and open it, keeping the
   target. The other boards are untouched. Give it a name.

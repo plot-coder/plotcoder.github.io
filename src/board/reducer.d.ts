@@ -73,7 +73,8 @@ export type BoardNote = {
   /** A beat is one of the 8-to-15 major turns; everything else is a scene (R20). */
   rank: NoteRank;
   /** Estimated screen time, in eighths of a page (R25). */
-  lengthEighths: number;
+  /** The writer's estimate in eighths of a page; null until someone sizes the card, which reads as about a page. */
+  lengthEighths: number | null;
   /** Who is in the scene: ids from the roster, in the order they were cast (R29). */
   characterIds: string[];
   /** The corner is folded: this card plants something that must pay off (R31). */

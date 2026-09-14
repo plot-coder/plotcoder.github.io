@@ -336,7 +336,7 @@ test("a person's page opens from the cast lens, takes a line, and shows their sc
   try {
     expect(await mcp.callTool("list_board")).toContain('"Maya" on 3 cards · page: looks');
     expect(await mcp.callTool("update_character", { id: "maya", voice: "Low, and quicker when she lies." })).toContain(
-      "Wrote voice on Maya's page",
+      'Set voice: "Low, and quicker when she lies." on Maya\'s page',
     );
   } finally {
     mcp.stop();

@@ -8,6 +8,7 @@ import {
   boardEighths,
   countRanks,
   DEFAULT_NOTE_EIGHTHS,
+  noteEighths,
   DEFAULT_TARGET_EIGHTHS,
   EIGHTHS_PER_PAGE,
   emptyState,
@@ -392,8 +393,8 @@ describe("no-op commands return the identical state object", () => {
     ["set_length with no ids", { type: "set_length", ids: [], lengthEighths: 16 }],
     ["set_length on missing cards", { type: "set_length", ids: ["ghost"], lengthEighths: 16 }],
     [
-      "set_length to the length a card already has",
-      { type: "set_length", ids: ["a"], lengthEighths: DEFAULT_NOTE_EIGHTHS },
+      "set_length with no cards named",
+      { type: "set_length", ids: [], lengthEighths: DEFAULT_NOTE_EIGHTHS },
     ],
     ["set_target to the target it already has", { type: "set_target", targetEighths: DEFAULT_TARGET_EIGHTHS }],
     ["an unknown command", { type: "not_a_command" } as unknown as Command],
@@ -497,8 +498,15 @@ describe("countRanks", () => {
 describe("set_length", () => {
   const board = () => boardOf({ id: "a", x: 0, y: 0 }, { id: "b", x: 400, y: 0 });
 
-  it("gives a new card an ordinary page", () => {
-    expect(board().notes[0].lengthEighths).toBe(DEFAULT_NOTE_EIGHTHS);
+  it("leaves a new card unsized, which reads as an ordinary page", () => {
+    expect(board().notes[0].lengthEighths).toBeNull();
+    expect(noteEighths(board().notes[0])).toBe(DEFAULT_NOTE_EIGHTHS);
+  });
+
+  it("returns the identical state when a card already has that length", () => {
+    const sized = run(board(), { type: "set_length", ids: ["a"], lengthEighths: DEFAULT_NOTE_EIGHTHS });
+    expect(sized.notes[0].lengthEighths).toBe(DEFAULT_NOTE_EIGHTHS);
+    expect(applyCommand(sized, { type: "set_length", ids: ["a"], lengthEighths: DEFAULT_NOTE_EIGHTHS }).state).toBe(sized);
   });
 
   it("sizes a card in eighths", () => {
@@ -713,7 +721,8 @@ describe("normalizeState", () => {
       arrows: [],
     };
     const normalized = normalizeState(old);
-    expect(normalized.notes.every((note) => note.lengthEighths === DEFAULT_NOTE_EIGHTHS)).toBe(
+    // Unsized stays unsized — null claims nothing — and reads as a page.
+    expect(normalized.notes.every((note) => note.lengthEighths === null && noteEighths(note) === DEFAULT_NOTE_EIGHTHS)).toBe(
       true,
     );
   });
@@ -751,7 +760,7 @@ describe("normalizeState", () => {
     expect(normalized.logline).toBe("");
     expect(normalized.targetEighths).toBe(DEFAULT_TARGET_EIGHTHS);
     expect(normalized.notes.every((note) => note.rank === "scene")).toBe(true);
-    expect(normalized.notes.every((note) => note.lengthEighths === DEFAULT_NOTE_EIGHTHS)).toBe(
+    expect(normalized.notes.every((note) => note.lengthEighths === null && noteEighths(note) === DEFAULT_NOTE_EIGHTHS)).toBe(
       true,
     );
     // and the words survive the trip, which is the only part that matters

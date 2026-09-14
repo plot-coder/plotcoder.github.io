@@ -79,7 +79,7 @@ export function NoteCard({
   // The ordinary card is about a page. Only the exceptions wear their length on
   // the wall, so what you see while zoomed out is the outliers — which is the
   // only part of the estimate worth reading at a glance (R25).
-  const sized = note.lengthEighths !== DEFAULT_NOTE_EIGHTHS;
+  const sized = note.lengthEighths !== null && note.lengthEighths !== DEFAULT_NOTE_EIGHTHS;
   const [picking, setPicking] = useState(false);
   const [sizing, setSizing] = useState(false);
 

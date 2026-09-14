@@ -4274,3 +4274,11 @@ body {
 .project-panel__foot .project-panel__action--danger {
   margin-left: auto;
 }
+
+/* Delete account (R45): the one action on the sheet that cannot be undone wears the warm ink. */
+.account__danger {
+  color: var(--warm, #c0563f);
+}
+.project-action.account__danger:not(.project-action--ghost) {
+  border-color: currentColor;
+}

@@ -20,7 +20,7 @@ type AccountSheetProps = {
   onAgents: () => void;
 };
 
-type Mode = "none" | "name" | "password" | "share";
+type Mode = "none" | "name" | "password" | "share" | "delete";
 
 export function AccountSheet({ open, onClose, currentProjectId, onAgents }: AccountSheetProps) {
   const titleId = useId();
@@ -55,6 +55,18 @@ export function AccountSheet({ open, onClose, currentProjectId, onAgents }: Acco
   const me = account.user?.name ?? "";
   const project = account.projects.find((item) => item.id === currentProjectId) ?? null;
   const isOwner = project?.mine ?? false;
+
+  async function submitDelete(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!current) return;
+    if (!window.confirm(`Delete ${me} and every project you own? This cannot be undone.`)) return;
+    const done = await accountStore.deleteAccount(current);
+    if (done) {
+      setMode("none");
+      setCurrent("");
+      onClose();
+    }
+  }
 
   async function submitChange(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -200,8 +212,35 @@ export function AccountSheet({ open, onClose, currentProjectId, onAgents }: Acco
                   <button type="button" className="project-action project-action--ghost" onClick={() => void accountStore.signOut()}>
                     Sign out
                   </button>
+                  <button type="button" className="project-action project-action--ghost account__danger" onClick={() => setMode("delete")}>
+                    Delete account
+                  </button>
                 </div>
               )}
+              {mode === "delete" ? (
+                <form className="account__form" onSubmit={submitDelete}>
+                  <p className="project-copy">
+                    Takes the account and every project you own, on every device, and cannot be undone. The wall on this
+                    device stays. Save project first if you might want any of it back.
+                  </p>
+                  <input
+                    className="door__input"
+                    type="password"
+                    autoComplete="current-password"
+                    placeholder="your current password"
+                    value={current}
+                    onChange={(event) => setCurrent(event.target.value)}
+                  />
+                  <div className="project-actions">
+                    <button type="submit" className="project-action account__danger" disabled={account.busy || !current}>
+                      Delete account
+                    </button>
+                    <button type="button" className="project-action project-action--ghost" onClick={() => setMode("none")}>
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              ) : null}
               <p className="agents__line">
                 Your agent can work this account too.{" "}
                 <button

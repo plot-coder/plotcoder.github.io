@@ -494,6 +494,40 @@ class AccountStore {
     }
   };
 
+  /** Delete the account (R45): the current password is asked once; every project the writer owns goes with it. The wall on this device stays. */
+  deleteAccount = async (current: string): Promise<boolean> => {
+    if (!this.client || !this.account.user) return false;
+    this.set({ busy: true, error: null });
+    try {
+      const me = this.account.user.name;
+      const check = await this.client.auth.signInWithPassword({ email: emailFor(me), password: await hashPassword(me, current) });
+      if (check.error || !check.data.session) {
+        this.set({ error: "That is not your current password." });
+        return false;
+      }
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/account`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${check.data.session.access_token}`,
+        },
+        body: JSON.stringify({ action: "delete_account", email: me }),
+      });
+      const payload = (await response.json().catch(() => ({}))) as { error?: string };
+      if (!response.ok) {
+        this.set({ error: payload.error ?? "Could not delete the account." });
+        return false;
+      }
+      if (this.pushTimer) clearTimeout(this.pushTimer);
+      await this.client.auth.signOut().catch(() => undefined);
+      this.set({ user: null, projects: [], people: [], notice: `${me} is gone. The wall on this device stays.` });
+      return true;
+    } finally {
+      this.set({ busy: false });
+    }
+  };
+
   // --- projects (R40) -------------------------------------------------------
 
   refreshProjects = async (): Promise<void> => {

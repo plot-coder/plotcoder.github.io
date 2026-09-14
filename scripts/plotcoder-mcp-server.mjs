@@ -38,6 +38,7 @@ import {
 import { TEMPLATES } from "../src/board/templates.js";
 import { wordSentence, wordsAsText } from "../src/board/words.js";
 import { fromFountain, mergeFountain, toFountain } from "../src/board/fountain.js";
+import { fromProjectFile, toProjectFile } from "../src/board/projectFile.js";
 import { describeSetAside, fromFdx, toFdx } from "../src/board/fdx.js";
 import { paginate } from "../src/board/paginate.js";
 import { readingOrder } from "../src/board/readWall.js";
@@ -62,6 +63,7 @@ import {
   setActiveBoard,
   setPremise,
   structureBeats,
+  reidentifyProject,
   renameProject,
 } from "../src/board/project.js";
 
@@ -185,6 +187,67 @@ function oneCall() {
 
 function oneCallHint(record) {
   return oneCall() ? ` Through plotcoder-call every call is a fresh server, so set PLOTCODER_PROJECT=${record.id} in the environment for the next calls (the name, "${record.name}", works too, while it is the only one).` : "";
+}
+
+
+// --- The account is the writer's, from the agent's side (R45) ---------------
+//
+// Signed in as the writer, the agent may delete what the writer owns: a
+// project, every project, the account itself. The database already allows
+// the owner of a project to delete it; the files go first, while the
+// membership the storage rules read still exists. No service key anywhere.
+
+/** The writer's projects on the account: the ones they own, and the ones merely shared with them. */
+async function ownedAndShared() {
+  const all = await accountProjects();
+  const me = accountDoor.user.id;
+  return { all, owned: all.filter((row) => row.owner === me), shared: all.filter((row) => row.owner !== me) };
+}
+
+/** What deleting a project takes with it. */
+async function deletionPlan(row) {
+  const boards = await accountDoor.client.from("boards").select("id, state").eq("project_id", row.id);
+  const cards = (boards.data ?? []).reduce((sum, board) => sum + (isBoardState(board.state) ? board.state.notes.length : 0), 0);
+  const files = await accountDoor.client.from("assets").select("id, path").eq("project_id", row.id);
+  return { id: row.id, name: row.record.name, boards: (boards.data ?? []).length, cards, files: (files.data ?? []).map((file) => file.path) };
+}
+
+function describePlan(plan) {
+  return `"${plan.name}" (${plan.id}): ${plan.boards} board(s), ${plan.cards} card(s), ${plan.files.length} file(s)`;
+}
+
+/** Delete one project the writer owns: its files first, then the row; boards and file records cascade. */
+async function deleteProjectRows(plan) {
+  if (plan.files.length) {
+    const removed = await accountDoor.client.storage.from("projects").remove(plan.files);
+    if (removed.error) throw new Error(`could not remove the files of "${plan.name}": ${removed.error.message}`);
+  }
+  const gone = await accountDoor.client.from("projects").delete().eq("id", plan.id).select("id");
+  if (gone.error) throw new Error(gone.error.message);
+  if (!gone.data || gone.data.length === 0) throw new Error(`"${plan.name}" was not deleted: the account did not allow it.`);
+}
+
+/** After a deletion took the working project: work the most recent one left, or nothing. */
+async function workWhatIsLeft(deletedIds) {
+  if (!deletedIds.includes(accountDoor.projectId)) return "";
+  if (accountDoor.channel) {
+    void accountDoor.client.removeChannel(accountDoor.channel);
+    accountDoor.channel = null;
+  }
+  const projects = await accountProjects();
+  if (projects.length === 0) {
+    accountDoor.projectId = null;
+    accountDoor.projectName = null;
+    accountDoor.projectCount = 0;
+    return ` ${NO_PROJECT_YET}`;
+  }
+  workingProject(projects[0].id, projects[0].record.name, projects.length);
+  joinPresence(projects[0].id);
+  return ` Working "${projects[0].record.name}" now.`;
+}
+
+function countCards(boards) {
+  return Object.values(boards).reduce((sum, state) => sum + (isBoardState(state) ? state.notes.length : 0), 0);
 }
 
 /** The reply when a tool needs the account and there is none: the refusal when the door is shut, the plain text otherwise. */
@@ -2231,6 +2294,173 @@ server.registerTool(
     joinPresence(record.id);
     const targetLine = target === undefined ? ` Its target is ${formatPages(state.targetEighths)} pages, the default for a feature; set_target for a pilot or a half-hour, or pass pages or minutes here.` : ` Its target is ${formatPages(state.targetEighths)} pages.`;
     return ok(`Started "${record.name}" (${record.id}) and working it now, as ${account.email}.${targetLine}${oneCallHint(record)}`, { id: record.id, name: record.name, targetEighths: state.targetEighths });
+  },
+);
+
+
+server.registerTool(
+  "delete_project",
+  {
+    title: "Delete a project",
+    description:
+      "Through the account door: delete one of the writer's own projects, by name or id from list_projects — its boards, its cards and its files. Cannot be undone, not from the wall either: ask the writer first, and export_project first if they might want it back. Without confirm it only says what would go; pass confirm: true to delete. A project merely shared with the writer is not theirs to delete.",
+    inputSchema: { project: z.string().min(1), confirm: z.boolean().optional() },
+  },
+  async (args) => {
+    const account = await findAccount();
+    if (!account) return shut("No account door: there is one project here, the open one; delete_board removes its boards. Set PLOTCODER_EMAIL and PLOTCODER_PASSWORD to work the writer's account.");
+    const { all } = await ownedAndShared();
+    const wanted = args.project.trim().toLowerCase();
+    const found = all.find((row) => row.id === args.project) ?? all.find((row) => row.record.name.trim().toLowerCase() === wanted);
+    if (!found) return ok(`No project called "${args.project}". Call list_projects.`);
+    if (found.owner !== account.user.id) return ok(`"${found.record.name}" is not the writer's to delete: it is shared with them by ${(found.people ?? [])[0] ?? "its owner"}. Only its owner can delete it.`);
+    const plan = await deletionPlan(found);
+    if (!args.confirm) return ok(`Deleting ${describePlan(plan)} cannot be undone, not from the wall either. Ask the writer; export_project first if they might want it back; then pass confirm: true.`, plan);
+    await deleteProjectRows(plan);
+    const next = await workWhatIsLeft([plan.id]);
+    return ok(`Deleted ${describePlan(plan)}, as ${account.email}. Gone from every device the writer signs in on.${next}`, plan);
+  },
+);
+
+server.registerTool(
+  "empty_account",
+  {
+    title: "Empty the account",
+    description:
+      "Through the account door: delete every project the writer owns — boards, cards and files — and leave the account itself, signed in and empty. Projects merely shared with the writer by others stay. Cannot be undone: ask the writer first, and export_project each project first if they might want it back. Without confirm it only says what would go; pass confirm: true to empty.",
+    inputSchema: { confirm: z.boolean().optional() },
+  },
+  async (args) => {
+    const account = await findAccount();
+    if (!account) return shut("No account door: there is one project here, the open one. Set PLOTCODER_EMAIL and PLOTCODER_PASSWORD to work the writer's account.");
+    const { owned, shared } = await ownedAndShared();
+    const plans = [];
+    for (const row of owned) plans.push(await deletionPlan(row));
+    const survive = shared.length ? ` ${shared.length} project(s) shared with the writer by others stay: ${shared.map((row) => `"${row.record.name}"`).join(", ")}.` : "";
+    if (plans.length === 0) return ok(`The account holds nothing of the writer's own to delete.${survive}`);
+    if (!args.confirm) return ok(`Emptying the account deletes ${plans.length} project(s) of the writer's own: ${plans.map(describePlan).join("; ")}. Cannot be undone. Ask the writer; export_project each first if they might want them back; then pass confirm: true.${survive}`, plans);
+    for (const plan of plans) await deleteProjectRows(plan);
+    const next = await workWhatIsLeft(plans.map((plan) => plan.id));
+    return ok(`Emptied the account as ${account.email}: deleted ${plans.map(describePlan).join("; ")}.${survive}${next}`, plans);
+  },
+);
+
+server.registerTool(
+  "delete_account",
+  {
+    title: "Delete the account",
+    description:
+      "Through the account door: delete the writer's account itself — every project they own, its files, and the sign-in. Cannot be undone; the address can be claimed again afterwards, empty. Ask the writer first, and export_project first if they might want anything back. Without confirm it only says what would go; pass confirm: true to delete. The door is shut afterwards.",
+    inputSchema: { confirm: z.boolean().optional() },
+  },
+  async (args) => {
+    const account = await findAccount();
+    if (!account) return shut("No account door: nothing here is an account. Set PLOTCODER_EMAIL and PLOTCODER_PASSWORD to work the writer's account.");
+    const { owned, shared } = await ownedAndShared();
+    const plans = [];
+    for (const row of owned) plans.push(await deletionPlan(row));
+    const what = plans.length ? ` and ${plans.length} project(s) of the writer's own: ${plans.map(describePlan).join("; ")}` : "";
+    const survive = shared.length ? ` ${shared.length} project(s) shared with the writer by others stay with their owners.` : "";
+    if (!args.confirm) return ok(`Deleting the account ${account.email} takes the sign-in${what}. Cannot be undone; the address can be claimed again, empty. Ask the writer; export_project first; then pass confirm: true.${survive}`, plans);
+    const session = await account.client.auth.getSession();
+    const token = session.data.session?.access_token;
+    if (!token) return ok("Could not delete the account: no session token came back. Nothing was deleted; sign in again and retry.");
+    let response;
+    try {
+      response = await fetch(`${SUPABASE_URL}/functions/v1/account`, {
+        method: "POST",
+        headers: { "content-type": "application/json", apikey: SUPABASE_KEY, Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ action: "delete_account", email: account.email }),
+        signal: AbortSignal.timeout(15000),
+      });
+    } catch (error) {
+      return ok(`Could not reach the account service: ${error instanceof Error ? error.message : String(error)}. Nothing was deleted.`);
+    }
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) return ok(`The account service refused to delete the account: ${payload.error ?? response.status}. Nothing was deleted.`);
+    if (account.channel) void account.client.removeChannel(account.channel);
+    await account.client.auth.signOut().catch(() => {});
+    const email = account.email;
+    accountDoor = null;
+    accountTried = true;
+    accountRefusal = `The account ${email} was deleted at the writer's ask, so the door is shut. claim_account makes a new one with that address or another.`;
+    return ok(`Deleted the account ${email}${what}. The writer cannot sign in with it any more; claim_account makes a new one. This server's door is shut now.${survive}`, plans);
+  },
+);
+
+server.registerTool(
+  "export_project",
+  {
+    title: "Save the project as a file",
+    description:
+      "The project the server is working, as the file Save project writes and Open project takes: the record, every board with its cards, the reminders and the writer's structures. Pass path to write it (a .json); without a path, the reply's JSON is the file. Pictures and takes on the account are not in the file. Works through every door.",
+    inputSchema: { path: z.string().optional() },
+  },
+  async (args) => {
+    const { project, boards, reminders } = await readProject();
+    const file = toProjectFile({ project, boards, reminders: reminders ?? null });
+    const cards = countCards(boards);
+    const what = `"${project.name}": ${project.boards.length} board(s), ${cards} card(s)${reminders?.length ? `, ${reminders.length} reminder(s)` : ""}${project.structures?.length ? `, ${project.structures.length} structure(s)` : ""}. Pictures and takes on the account are not in the file`;
+    if (args.path) {
+      fs.mkdirSync(path.dirname(path.resolve(args.path)), { recursive: true });
+      fs.writeFileSync(args.path, JSON.stringify(file, null, 2));
+      return ok(`Saved ${what}. Written to ${args.path}: Open project in the app takes it, import_project brings it onto an account.`, { path: args.path, boards: project.boards.length, cards });
+    }
+    return ok(`The project as a file — ${what}. The JSON below is the file; write it to a .json for Open project or import_project.`, file);
+  },
+);
+
+server.registerTool(
+  "import_project",
+  {
+    title: "Open a project file",
+    description:
+      "Bring a project file — the one Save project writes, or export_project — in. Through the account door it becomes a NEW project on the writer's account, worked from then on; nothing already there is touched. Through the open app or the file it replaces the project there, as Open project does: without confirm it says what it would replace; pass confirm: true to do it. Pass path or text.",
+    inputSchema: { path: z.string().optional(), text: z.string().optional(), confirm: z.boolean().optional() },
+  },
+  async (args) => {
+    const source = args.text ?? (args.path ? fs.readFileSync(args.path, "utf8") : null);
+    if (source === null) return ok("Nothing to import: pass a path or text.");
+    let parsed;
+    try {
+      parsed = JSON.parse(source);
+    } catch {
+      return ok("That is not JSON, so not a PlotCoder project file.");
+    }
+    const opened = fromProjectFile(parsed);
+    if (!opened) return ok("That is not a PlotCoder project file: it holds no project record and no board.");
+    const cards = countCards(opened.boards);
+    if (accountEnv()) {
+      const account = await findAccount();
+      if (!account) return ok(accountRefusal ?? "The account door is shut.");
+      const { renamed, ...fresh } = reidentifyProject(opened.project);
+      const record = normalizeProject(fresh);
+      const inserted = await account.client.from("projects").insert({ id: record.id, record, reminders: opened.reminders, rev: 1 });
+      if (inserted.error) return ok(`Could not import the project: ${inserted.error.message}`);
+      for (const meta of record.boards) {
+        const oldId = Object.keys(renamed).find((key) => renamed[key] === meta.id);
+        const state = oldId && isBoardState(opened.boards[oldId]) ? normalizeState(opened.boards[oldId]) : emptyState();
+        const board = await account.client.from("boards").insert({ id: meta.id, project_id: record.id, state, rev: 1, updated_by: null });
+        if (board.error) return ok(`Imported "${record.name}" but could not make its board "${meta.name}": ${board.error.message}`);
+      }
+      workingProject(record.id, record.name, (account.projectCount ?? 0) + 1);
+      joinPresence(record.id);
+      return ok(
+        `Imported "${record.name}" onto the account as a new project (${record.id}): ${record.boards.length} board(s), ${cards} card(s). Working it now, as ${account.email}; the writer sees it under Projects on every device.${oneCallHint(record)}`,
+        { id: record.id, name: record.name, boards: record.boards.length, cards },
+      );
+    }
+    const { project: current, boards: currentBoards, rev, base, live } = await readProject();
+    const incoming = `"${opened.project.name}" (${opened.project.boards.length} board(s), ${cards} card(s))`;
+    const here = `"${current.name}" (${current.boards.length} board(s), ${countCards(currentBoards)} card(s)) on ${live ? "the open app" : "the file"}`;
+    if (!args.confirm) return ok(`Importing ${incoming} here would replace ${here}, as Open project does. Ask the writer; export_project first if they might want it back; then pass confirm: true.`);
+    const written = await writeProject(opened.project, opened.boards, rev, base, opened.reminders);
+    const active = opened.boards[opened.project.activeBoardId] ?? emptyState();
+    const { rev: boardRev } = await readBoard();
+    await writeBoard(active, boardRev, base, opened.project.activeBoardId);
+    trail.length = 0;
+    undone.length = 0;
+    return ok(`Imported ${incoming}, replacing ${here}${where(written)}. Nothing of mine is left to undo.`, { id: opened.project.id, name: opened.project.name, boards: opened.project.boards.length, cards });
   },
 );
 

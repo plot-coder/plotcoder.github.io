@@ -1,16 +1,12 @@
-export const PROJECT_PREFIX = "plotcoder.";
-export const PROJECT_APP = "plotcoder";
-// Version 2 (R35): the keys now carry a project record and one board per key.
-// Version 1 files still open; their keys land as they were and the store's
-// migration turns them into a one-board project on the next load.
-export const PROJECT_VERSION = 2;
+// The file's shape and check live in src/board/projectFile.js, shared with the
+// MCP server's export_project and import_project (R46), so a file saved by
+// one opens in the other. Version 2 (R35): the keys carry a project record
+// and one board per key. Version 1 files still open; their keys land as they
+// were and the store's migration turns them into a one-board project.
+import { PROJECT_APP, PROJECT_PREFIX, PROJECT_VERSION, isProjectFile, type ProjectFile } from "./board/projectFile";
 
-export type PlotCoderProject = {
-  app: typeof PROJECT_APP;
-  version: number;
-  exportedAt: string;
-  storage: Record<string, string>;
-};
+export { PROJECT_APP, PROJECT_PREFIX, PROJECT_VERSION };
+export type PlotCoderProject = ProjectFile;
 
 export function listProjectKeys() {
   return Object.keys(localStorage).filter((key) => key.startsWith(PROJECT_PREFIX));
@@ -31,17 +27,7 @@ export function exportProject(): PlotCoderProject {
 }
 
 export function isPlotCoderProject(value: unknown): value is PlotCoderProject {
-  if (!value || typeof value !== "object") return false;
-  const project = value as PlotCoderProject;
-  return (
-    project.app === PROJECT_APP &&
-    typeof project.version === "number" &&
-    typeof project.exportedAt === "string" &&
-    !!project.storage &&
-    typeof project.storage === "object" &&
-    !Array.isArray(project.storage) &&
-    Object.values(project.storage).every((item) => typeof item === "string")
-  );
+  return isProjectFile(value);
 }
 
 export function importProject(value: unknown) {

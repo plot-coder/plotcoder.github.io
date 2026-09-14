@@ -16,9 +16,26 @@ import { fileURLToPath } from "node:url";
 const SERVER = fileURLToPath(new URL("./plotcoder-mcp.mjs", import.meta.url));
 const [tool, rawArgs] = process.argv.slice(2);
 
-if (!tool) {
-  console.error("usage: node scripts/plotcoder-call.mjs <tool> ['{json arguments}']   (or: tools)");
-  process.exit(2);
+const USAGE = `usage: node scripts/plotcoder-call.mjs <tool> ['{json arguments}']
+       node scripts/plotcoder-call.mjs tools        every tool, with its description
+       node scripts/plotcoder-call.mjs --help
+
+One call, one server: each run starts scripts/plotcoder-mcp.mjs, makes the call,
+and stops it. So undo, and the project new_project or open_project chose, do not
+carry from one call to the next — set PLOTCODER_PROJECT for the calls that need
+it. An MCP session keeps one server for the whole conversation and has both.
+
+The environment is the server's:
+  PLOTCODER_ROOT       the folder whose wall you mean (default: this one)
+  PLOTCODER_EMAIL      the writer's sign-in: the account door, no app needed
+  PLOTCODER_PASSWORD   a wrong password is refused by every tool, never worked around
+  PLOTCODER_PROJECT    which of the writer's projects, by name or id
+  PLOTCODER_JSON=0     drop the JSON tail from replies
+  PLOTCODER_VERBOSE=1  show the server's own log lines`;
+
+if (!tool || tool === "--help" || tool === "-h" || tool === "help") {
+  console.error(USAGE);
+  process.exit(tool ? 0 : 2);
 }
 
 let args = {};
@@ -33,7 +50,9 @@ if (rawArgs) {
 
 // The server's own log lines ("ready", "account door") stay off the reply
 // unless PLOTCODER_VERBOSE=1 asks for them.
-const child = spawn("node", [SERVER], { stdio: ["pipe", "pipe", process.env.PLOTCODER_VERBOSE ? "inherit" : "ignore"], env: process.env });
+// PLOTCODER_ONE_CALL tells the server it will not live past this call, so its
+// replies can say what does not carry to the next one.
+const child = spawn("node", [SERVER], { stdio: ["pipe", "pipe", process.env.PLOTCODER_VERBOSE ? "inherit" : "ignore"], env: { ...process.env, PLOTCODER_ONE_CALL: "1" } });
 let buffer = "";
 const pending = new Map();
 let nextId = 1;

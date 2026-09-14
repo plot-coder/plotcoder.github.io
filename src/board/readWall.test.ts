@@ -418,6 +418,52 @@ describe("two beats back to back", () => {
   });
 });
 
+describe("beats back to back, in a chain", () => {
+  it("asks once for consecutive empty runs, naming every turn in the chain", () => {
+    let state = emptyState();
+    for (const [i, headline] of ["The envelope", "The initials", "The counter", "The gate"].entries()) {
+      state = applyCommand(state, { type: "create_note", headline, change: "Something turns.", x: i * 300, y: 0, rank: "beat" }).state;
+    }
+    const empty = readWall(state).findings.filter((finding) => finding.kind === "empty");
+    expect(empty).toHaveLength(1);
+    expect(empty[0].ids).toEqual(state.notes.map((note) => note.id));
+    expect(empty[0].text).toContain('between "The envelope", "The initials", "The counter" and "The gate": four turns back to back');
+  });
+
+  it("keeps two chains apart when a scene runs between them", () => {
+    let state = emptyState();
+    const cards: Array<[string, "beat" | "scene"]> = [["A", "beat"], ["B", "beat"], ["C", "beat"], ["The diner", "scene"], ["D", "beat"], ["E", "beat"]];
+    for (const [i, [headline, rank]] of cards.entries()) {
+      state = applyCommand(state, { type: "create_note", headline, change: "Something turns.", x: i * 300, y: 0, rank }).state;
+    }
+    const empty = readWall(state).findings.filter((finding) => finding.kind === "empty");
+    expect(empty).toHaveLength(2);
+    expect(empty[0].text).toContain('between "A", "B" and "C": three turns');
+    expect(empty[1].text).toContain('between "D" and "E": two turns back to back');
+  });
+});
+
+describe("a card with no place", () => {
+  it("asks once the writer has started placing cards, as one question however many", () => {
+    let state = emptyState();
+    state = applyCommand(state, { type: "create_note", headline: "The gate", change: "Miguel checks the glovebox.", x: 0, y: 0 }).state;
+    state = applyCommand(state, { type: "create_note", headline: "The diner", change: "Miguel pockets the tips.", x: 300, y: 0 }).state;
+    state = applyCommand(state, { type: "create_note", headline: "The key", change: "She keeps it.", x: 600, y: 0 }).state;
+    // No card placed yet: the writer has not started, so the wall does not ask.
+    expect(readWall(state).findings.filter((finding) => finding.kind === "unplaced")).toHaveLength(0);
+    state = applyCommand(state, { type: "set_location", ids: [state.notes[0].id], location: "the prison gate" }).state;
+    let asked = readWall(state).findings.filter((finding) => finding.kind === "unplaced");
+    expect(asked).toHaveLength(1);
+    expect(asked[0].ids).toEqual([state.notes[1].id, state.notes[2].id]);
+    expect(asked[0].text).toBe('2 cards say no place: "The diner", "The key". Where do they happen?');
+    state = applyCommand(state, { type: "set_location", ids: [state.notes[1].id], location: "the diner" }).state;
+    asked = readWall(state).findings.filter((finding) => finding.kind === "unplaced");
+    expect(asked[0].text).toBe('"The key" says no place. Where does it happen?');
+    state = applyCommand(state, { type: "set_location", ids: [state.notes[2].id], location: "the office" }).state;
+    expect(readWall(state).findings.filter((finding) => finding.kind === "unplaced")).toHaveLength(0);
+  });
+});
+
 describe("act groups", () => {
   it("does not ask whether an act is one sequence or two", () => {
     let state = emptyState();

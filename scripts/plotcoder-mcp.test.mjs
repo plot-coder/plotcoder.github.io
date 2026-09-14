@@ -11,7 +11,10 @@ import http from "node:http";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+
+const require = createRequire(import.meta.url);
 
 const SERVER = fileURLToPath(new URL("./plotcoder-mcp.mjs", import.meta.url));
 
@@ -167,6 +170,7 @@ describe("plotcoder MCP server", () => {
       "open_project",
       "organize",
       "page_count",
+      "read_character",
       "read_pages",
       "read_wall",
       "recolor_note",
@@ -391,8 +395,8 @@ describe("plotcoder MCP server", () => {
   // was open, because the live flag never made it out of readBoard().
   it("says where the board came from", async () => {
     const text = await client.callTool("list_board");
-    expect(text).toContain("from file: app not running");
-    expect(text).not.toContain("live: app is open");
+    expect(text).toContain("the file at");
+    expect(text).not.toContain("the open app");
   });
 
   it("creates a card and writes it straight to the board file", async () => {
@@ -599,7 +603,7 @@ describe("plotcoder MCP server with the app open", () => {
 
   it("reads the open board instead of the file, and says so", async () => {
     const text = await liveClient.callTool("list_board");
-    expect(text).toContain("live: app is open");
+    expect(text).toContain("the open app");
     expect(text).not.toContain("app not running");
     expect(text).toContain("Tom lies about the job");
   });
@@ -693,7 +697,7 @@ describe("read_wall", () => {
 
   it("reports the beats in wall order and the runs between them", async () => {
     const text = await reader.callTool("read_wall");
-    expect(text).toContain("from file: app not running");
+    expect(text).toContain("the file at");
     expect(text).toContain(
       'beats in wall order: "Inciting", "Lock in", "Midpoint", "All is lost"',
     );
@@ -811,6 +815,12 @@ describe("characters", () => {
     expect(again).toContain("Nothing changed on Maya's page");
     const nobody = await cast.callTool("update_character", { id: "nobody", looks: "x" });
     expect(nobody).toContain('Nobody called "nobody" in the cast');
+    // The page reads back, by name or id, with every line and the cards.
+    const page = await cast.callTool("read_character", { name: "maya" });
+    expect(page).toContain("Maya (maya) — on 3 cards:");
+    expect(page).toContain("  looks: Thirty-four, tall, a coat too good for the flat.");
+    expect(page).toContain("  voice: (empty)");
+    expect(await cast.callTool("read_character", { id: "nobody" })).toContain('Nobody called "nobody" in the cast');
     const after = await cast.callToolData("list_board");
     expect(after.characters.find((character) => character.id === "maya")).toMatchObject({
       looks: "Thirty-four, tall, a coat too good for the flat.",
@@ -1273,6 +1283,11 @@ describe("after the blind run", () => {
     expect(read).toContain("sample: this is the wall PlotCoder starts with");
     expect(await blind.callTool("list_board")).toContain("sample: this is the wall");
     expect(read).toContain("checked and clean:");
+    // The clean line says what was checked, in words, not the checks' names;
+    // and every page is an estimate until a scene is written.
+    expect(read).toContain("no card without a headline or change line");
+    expect(read).not.toMatch(/checked and clean:.*unwritten/);
+    expect(read).toContain("pages: all estimates — no scene is written yet");
   });
 
   it("names the card's id and casts it in one call, adding a role-named person to the roster", async () => {
@@ -1338,7 +1353,7 @@ describe("after the blind run", () => {
       expect(made).toContain('The project is still "Untitled project": rename_project names it.');
       expect(made).toContain("The sample stays as Board 1; delete_board drops it.");
       const card = await third.callTool("create_note", { headline: "The gate", change: "Miguel checks the glovebox.", rank: "beat", pages: 4, plants: true, location: "the prison gate", characters: ["Dana"] });
-      expect(card).toMatch(/^Created card \S+: a beat, 4 pages, \w+ paper \(the next in the cycle; pass color to choose\), corner folded, at the prison gate/);
+      expect(card).toMatch(/^Created card \S+: a beat, 4 pages, yellow paper \(pass color to choose\), corner folded, at the prison gate/);
       expect(card).toContain("Cards stack until organize");
       expect(await third.callTool("update_character", { name: "dana", notes: "38, a bad knee and a good ear." })).toContain("Wrote notes on Dana's page");
       expect(await third.callTool("update_character", { name: "nobody", notes: "x" })).toContain('Nobody called "nobody" in the cast');
@@ -1471,4 +1486,66 @@ describe("the premise and reminders (roadmap item 6)", () => {
     expect(await door.callToolData("list_reminders")).toHaveLength(6);
     expect(await door.callTool("remove_reminder", { id: "nope" })).toContain("No reminder with id nope");
   });
+});
+
+// The account door, shut: the writer's sign-in is in the environment but the
+// account service refuses it (here: nothing listens on the address). Every
+// tool says so in words, and none reads the folder's wall instead — an agent
+// that trusted the replies would otherwise build the whole wall in the wrong
+// place and report success (round four, findings 5–7).
+describe("the account door, when the sign-in fails", () => {
+  let shut;
+  let shutRoot;
+
+  beforeAll(async () => {
+    shutRoot = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-shut-"));
+    shut = new McpClient(shutRoot, {
+      PLOTCODER_EMAIL: "test@test.com",
+      PLOTCODER_PASSWORD: "wrong",
+      VITE_SUPABASE_URL: "http://127.0.0.1:1",
+    });
+    await shut.start();
+  }, 30000);
+
+  afterAll(() => {
+    shut?.stop();
+    if (shutRoot) fs.rmSync(shutRoot, { recursive: true, force: true });
+  });
+
+  it("refuses every tool in words, names the address, and never falls back to the file", async () => {
+    const read = await shut.callTool("list_board");
+    expect(read).toContain("The account door refused test@test.com");
+    expect(read).toContain("claim_account");
+    expect(read).not.toContain("the file at");
+    expect(await shut.callTool("read_wall")).toContain("The account door refused");
+    expect(await shut.callTool("create_note", { headline: "Nessa comes back", change: "She decides to sell." })).toContain("The account door refused");
+    expect(await shut.callTool("list_projects")).toContain("The account door refused");
+    expect(await shut.callTool("new_project", { name: "Low Season" })).toContain("The account door refused");
+    expect(await shut.callTool("list_files")).toContain("The account door refused");
+    expect(fs.existsSync(path.join(shutRoot, ".plotcoder", "board.json"))).toBe(false);
+  });
+});
+
+// The shell caller starts a fresh server for every call, and says so where it
+// matters: undo, and the project a call chose (round four, findings 8 and 13).
+describe("the shell caller, one server per call", () => {
+  it("prints its help, with the environment it passes on, and exits clean", () => {
+    const { spawnSync } = require("node:child_process");
+    const help = spawnSync("node", [fileURLToPath(new URL("./plotcoder-call.mjs", import.meta.url)), "--help"], { encoding: "utf8" });
+    expect(help.status).toBe(0);
+    expect(help.stderr).toContain("One call, one server");
+    expect(help.stderr).toContain("PLOTCODER_PASSWORD");
+  });
+
+  it("tells a one-call server that undo cannot carry between calls", async () => {
+    const oneRoot = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-one-"));
+    const one = new McpClient(oneRoot, { PLOTCODER_ONE_CALL: "1" });
+    await one.start();
+    try {
+      expect(await one.callTool("undo")).toContain("every call is a fresh server");
+    } finally {
+      one.stop();
+      fs.rmSync(oneRoot, { recursive: true, force: true });
+    }
+  }, 30000);
 });

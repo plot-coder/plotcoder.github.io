@@ -37,7 +37,7 @@ test("an MCP tool call lands on the open wall", async ({ page, request }) => {
   await mcp.start();
   try {
     const listed = await mcp.callTool("list_board");
-    expect(listed).toContain("live: app is open");
+    expect(listed).toContain("the open app");
 
     const created = await mcp.callToolData("create_note", {
       headline: "Sam steals the van",

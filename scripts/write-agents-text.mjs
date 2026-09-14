@@ -12,4 +12,8 @@ const text = agentsAsText();
 for (const name of ["llms.txt", "agents.md"]) {
   fs.writeFileSync(path.join(root, "public", name), text);
 }
-console.log(`wrote public/llms.txt and public/agents.md (${text.length} chars)`);
+// The guide too, so an agent can read it before it has cloned anything
+// (round four, finding 3): public/guide.md is the skill, verbatim.
+const guide = fs.readFileSync(path.join(root, ".cursor", "skills", "plotcoder-board", "SKILL.md"), "utf8");
+fs.writeFileSync(path.join(root, "public", "guide.md"), guide);
+console.log(`wrote public/llms.txt, public/agents.md (${text.length} chars) and public/guide.md (${guide.length} chars)`);

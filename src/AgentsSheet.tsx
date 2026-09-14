@@ -104,7 +104,7 @@ export function AgentsSheet({ open, onClose }: AgentsSheetProps) {
             </button>
           </p>
         </section>
-        <p className="project-copy project-door__hint">The full guide is the skill in the repo; this is the first page of it.</p>
+        <p className="project-copy project-door__hint">The full guide is at plotcoder.com/guide.md, the same file as the skill in the repo; this is the first page of it.</p>
       </div>
     </div>
   );

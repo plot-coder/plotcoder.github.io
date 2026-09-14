@@ -19,6 +19,13 @@ describe("workflows (R27)", () => {
       expect(workflow.ask.length).toBeGreaterThan(40);
       expect(workflow.tools.length).toBeGreaterThan(0);
       expect(workflow.then).toBeTruthy();
+      if (workflow.id === "break-a-treatment") {
+        expect(workflow.needs?.length).toBe(11);
+        for (const need of workflow.needs ?? []) {
+          expect(need.ask.endsWith(".") || need.ask.endsWith("?") || need.ask.endsWith("'")).toBe(true);
+          expect(need.tool).toBeTruthy();
+        }
+      }
     }
     expect(workflowById("restick")?.name).toBe("Restick the remaining cards after the pages moved");
     expect(workflowById("nope")).toBeNull();

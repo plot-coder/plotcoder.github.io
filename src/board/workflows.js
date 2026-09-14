@@ -17,6 +17,24 @@ export const WORKFLOWS = [
     ask: "Here is a treatment. Break it into a wall: one card per scene with a headline and what changes, the cast on each card, the places, and the major turns marked as beats.",
     tools: ["list_words", "read_wall", "list_reminders", "new_project", "new_board", "rename_project", "set_target", "create_note", "list_board", "add_character", "cast", "update_character", "set_location", "set_rank", "set_length", "set_plant", "create_arrow", "create_group", "organize"],
     then: "Start where the wall will live: on the account, new_project names it; in a folder, new_board for the writer's wall, then rename_project. Read the wall (read_wall) and say what it asks. A treatment is cards, one create_note each, with characters, location, rank and plants on the call; import_fountain is the door for pages, not a treatment — a scene's text measures its card.",
+    // What a treatment should say (R49): eleven blind runs asked the writer
+    // the same questions at the end of every build. Each is a fact the wall
+    // needs and the treatment could carry, and the tool it lands in. A writer
+    // who answers them in the treatment gets a wall with no questions back;
+    // an agent asks the ones the treatment leaves open, and invents none.
+    needs: [
+      { ask: "How long is it: an hour, a half-hour, a feature, or a page count?", tool: "set_target" },
+      { ask: "The central question in one sentence, and the series premise above it if there is one.", tool: "set_logline, set_premise" },
+      { ask: "Which scenes are the turns — the beats — or 'propose them and I will strike'.", tool: "set_rank" },
+      { ask: "The acts, if it has them, and where each break falls.", tool: "create_group" },
+      { ask: "Where each scene happens, in the writer's words; a scene that moves through one location is one place.", tool: "set_location" },
+      { ask: "When a scene happens, where it matters — that night, the fourth of October.", tool: "the headline, for now" },
+      { ask: "Who is in each scene, with the name to use — a full name, or the role name for someone unnamed — and who is only spoken of, which goes in notes.", tool: "add_character, cast, update_character" },
+      { ask: "What is planted, and where it pays off — including 'later in the series', so the fold is deliberate.", tool: "set_plant, create_arrow" },
+      { ask: "Any scene already known to run long or short; a duration in the story is not a length.", tool: "set_length" },
+      { ask: "What the project and the board are called.", tool: "rename_project, rename_board" },
+      { ask: "What not to invent: looks and voices are the writer's until they say.", tool: "update_character, later" },
+    ],
   },
   {
     id: "read-and-raise",

@@ -155,6 +155,16 @@ order as text, the nearest thing to a look at it.
   or sounds.
 - **Under target** is reported as plainly as over — a number and "an
   estimate" — never as a verdict either way.
+- **What a treatment should say.** Eleven blind runs ended every build with
+  the same questions to the writer. Before you build, check the treatment
+  for these, and ask for the ones it leaves open — invent none: how long it
+  is; the central question and the series premise; which scenes are the
+  turns; the acts and their breaks, if any; where each scene happens; when,
+  where it matters; who is in each scene and the name to use, and who is
+  only spoken of; what is planted and where it pays off, including "later
+  in the series"; any scene known to run long or short; what the project
+  and board are called; and what not to invent. `list_workflows` carries
+  the same list with the tool each answer lands in.
 - **A treatment is cards, one call each.** `import_fountain` is the door for
   pages, not a treatment: a new card takes its headline from the `= synopsis`
   line (else the heading), its place from a forced heading (`.the piano shop`)

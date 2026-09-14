@@ -1563,7 +1563,9 @@ server.registerTool(
       "The workflows — the app's own, the same on every project; no project was read.\n" +
       WORKFLOWS.map(
         (workflow) =>
-          `- ${workflow.id} — ${workflow.name}\n  ask: "${workflow.ask}"\n  tools: ${workflow.tools.join(", ")}\n  keep: ${workflow.then}`,
+          `- ${workflow.id} — ${workflow.name}\n  ask: "${workflow.ask}"\n  tools: ${workflow.tools.join(", ")}\n  keep: ${workflow.then}${
+            workflow.needs ? `\n  the treatment should say (ask the writer for what it leaves open; invent none of it):\n${workflow.needs.map((need) => `    - ${need.ask} → ${need.tool}`).join("\n")}` : ""
+          }`,
       ).join("\n"),
       WORKFLOWS,
     ),

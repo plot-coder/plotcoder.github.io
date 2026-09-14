@@ -41,6 +41,7 @@ import {
 import { TEMPLATES } from "../src/board/templates.js";
 import { wordSentence, wordsAsText } from "../src/board/words.js";
 import { fromFountain, mergeFountain, toFountain } from "../src/board/fountain.js";
+import { toMarkdown, toPlainText } from "../src/board/markdown.js";
 import { fromProjectFile, toProjectFile } from "../src/board/projectFile.js";
 import { describeSetAside, fromFdx, toFdx } from "../src/board/fdx.js";
 import { paginate } from "../src/board/paginate.js";
@@ -1659,6 +1660,57 @@ server.registerTool(
       fs.mkdirSync(path.dirname(path.resolve(args.path)), { recursive: true });
       fs.writeFileSync(args.path, text);
       return ok(`Wrote ${text.split("\n").length} lines of Fountain to ${args.path}.`);
+    }
+    return ok(text);
+  },
+);
+
+server.registerTool(
+  "export_markdown",
+  {
+    title: "Export the wall as Markdown",
+    description:
+      "The open board as Markdown, for a collaborator who lives in Google Docs or the like: the board as the title (the project's name before it when the project has several boards), the premise and the logline under it, beats as second-level headings, a third-level heading per scene from its place with its scene number, the headline as a synopsis line, then the scene's text — a speech as its cue in bold with the lines under it — or, unwritten, its change line. Pass a path to write a .md file; otherwise the text comes back.",
+    inputSchema: { path: z.string().optional() },
+  },
+  async (args) => {
+    const { state } = await readBoard();
+    const { project } = await readProject();
+    const board = project.boards.find((item) => item.id === project.activeBoardId);
+    const text = toMarkdown(state, {
+      title: board?.name,
+      project: project.boards.length > 1 && project.name !== "Untitled project" ? project.name : undefined,
+      premise: project.premise || undefined,
+    });
+    if (args.path) {
+      fs.mkdirSync(path.dirname(path.resolve(args.path)), { recursive: true });
+      fs.writeFileSync(args.path, text);
+      return ok(`Wrote ${text.split("\n").length} lines of Markdown to ${path.resolve(args.path)}.`);
+    }
+    return ok(text);
+  },
+);
+
+server.registerTool(
+  "export_text",
+  {
+    title: "Export the script as plain text",
+    description:
+      "The open board's script as plain text, set as it prints: the paginator's lines at Courier's columns kept with spaces, scene numbers in both margins (the wall's order, or as locked), no page numbers. Pastes into anything and reads as a script wherever the font is monospaced. Pass a path to write a .txt file; otherwise the text comes back.",
+    inputSchema: { path: z.string().optional() },
+  },
+  async (args) => {
+    const { state } = await readBoard();
+    const { project } = await readProject();
+    const board = project.boards.find((item) => item.id === project.activeBoardId);
+    const text = toPlainText(state, {
+      title: board?.name,
+      project: project.boards.length > 1 && project.name !== "Untitled project" ? project.name : undefined,
+    });
+    if (args.path) {
+      fs.mkdirSync(path.dirname(path.resolve(args.path)), { recursive: true });
+      fs.writeFileSync(args.path, text);
+      return ok(`Wrote ${text.split("\n").length} lines of plain text to ${path.resolve(args.path)}.`);
     }
     return ok(text);
   },

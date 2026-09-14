@@ -39,6 +39,7 @@ and the `friction, fixed` entries in the changelog.
 | Ten | The published package, wired before the session | "Low Season" | The directions | 9 + 12 + 14, all fixed; found undo one step deep on the account |
 | Eleven | The published package | "Low Season" | The directions | 11 + 16 + 20, all fixed; asked for R50 and R51 |
 | Twelve | The published package, the treatment complete | "Low Season" | The directions | 33, all fixed; asked for R52 and R53 |
+| Thirteen | The published package, a feature, past the wall | "Ninety-Nine" | Pages | not yet run |
 
 ## The rounds so far, and the next round
 
@@ -52,15 +53,22 @@ published package, wired before the session, and were the first to reach the
 directions phase. Each round's findings are itemised in `REQUIREMENTS.md`,
 "The blind run".
 
-- `prompt.md` — the next round: the same door and treatment, the writer in
-  the room after the wall is read, directing. The test account is
+- `prompt.md` — round thirteen: the same door, a **feature** treatment for
+  the first time, the writer in the room after the wall is read and directing
+  past the wall into pages — a scene written, the pages read, the script out
+  as Markdown. The test account is
   filled in (`test@test.com`, password `test`; Robert's decision, so the prompt
   pastes without editing). Paste everything below its divider.
-- `round-four-treatment.md` — "Low Season", a pilot, also embedded in the
-  prompt.
+- `round-thirteen-treatment.md` — "Ninety-Nine", a feature, embedded in the
+  prompt. It answers the eleven questions up front and includes one thing
+  the writer says is not a plant, so the round measures what the wall does
+  with an answered question.
+- `round-four-treatment.md` — "Low Season", the pilot rounds four to twelve
+  used.
 
-The treatment is a TV pilot rather than a feature so the round exercises a
-series premise above an episode logline, which a feature never does.
+Rounds four to twelve used a TV pilot so they exercised a series premise
+above an episode logline. Round thirteen uses a feature so the app is measured
+on the primary user's form, with no premise and one board.
 
 ## Clearing up after a round (R44)
 

@@ -156,6 +156,8 @@ describe("plotcoder MCP server", () => {
       "end_revision",
       "export_fdx",
       "export_fountain",
+      "export_markdown",
+      "export_text",
       "export_project",
       "import_fdx",
       "import_fountain",
@@ -1436,6 +1438,23 @@ describe("the premise and reminders (roadmap item 6)", () => {
     expect(await door.callTool("rename_project", { name: "The Letter" })).toContain('Project renamed to "The Letter"');
     expect(await door.callTool("list_boards")).toContain('Project "The Letter"');
     expect(await door.callTool("set_premise", { premise: "" })).toContain("Premise cleared");
+  });
+
+  it("exports the wall as Markdown and the script as plain text, to the caller or to a file", async () => {
+    const markdown = await door.callTool("export_markdown");
+    expect(markdown).toContain("# Board 1");
+    expect(markdown).toContain("### 1 · MAYA FINDS THE LETTER");
+    expect(markdown).toContain("She decides not to tell Tom.");
+    const text = await door.callTool("export_text");
+    expect(text.split("\n")[0].trim()).toBe("BOARD 1");
+    expect(text).toContain(`1    ${"MAYA FINDS THE LETTER".padEnd(60)} 1`);
+    expect(text).toContain("     She decides not to tell Tom.");
+    const target = path.join(doorRoot, "out", "board.md");
+    expect(await door.callTool("export_markdown", { path: target })).toContain("lines of Markdown");
+    expect(fs.readFileSync(target, "utf8")).toContain("# Board 1");
+    const plain = path.join(doorRoot, "out", "board.txt");
+    expect(await door.callTool("export_text", { path: plain })).toContain("lines of plain text");
+    expect(fs.readFileSync(plain, "utf8")).toContain("MAYA FINDS THE LETTER");
   });
 
   it("exports the wall as Fountain, to the caller or to a file", async () => {

@@ -14,6 +14,7 @@
 
 import { isReminderList, readReminders, writeReminders } from "../reminderStore";
 import { toFountain } from "./fountain";
+import { toMarkdown, toPlainText } from "./markdown";
 import { History } from "./history";
 import {
   addBoard as addBoardTo,
@@ -823,6 +824,9 @@ export type PlotCoderWindowApi = {
   setPremise: (premise: string) => void;
   /** The open board as Fountain text (R23, slice a). */
   fountain: () => string;
+  /** The open board as Markdown, and the script as plain text (R54). */
+  markdown: () => string;
+  plainText: () => string;
   /** A scene's text onto its card (R23, slice b). */
   writeScene: (id: string, text: string) => unknown;
   /** True once the dev bridge's first frames have landed (dev only). */
@@ -870,6 +874,23 @@ export function installWindowApi(): void {
         project: project.boards.length > 1 ? project.name : undefined,
         premise: project.premise || undefined,
         draftDate: new Date().toISOString(),
+      });
+    },
+    markdown: () => {
+      const project = boardStore.getProject();
+      const board = project.boards.find((item) => item.id === project.activeBoardId);
+      return toMarkdown(boardStore.getState(), {
+        title: board?.name,
+        project: project.boards.length > 1 ? project.name : undefined,
+        premise: project.premise || undefined,
+      });
+    },
+    plainText: () => {
+      const project = boardStore.getProject();
+      const board = project.boards.find((item) => item.id === project.activeBoardId);
+      return toPlainText(boardStore.getState(), {
+        title: board?.name,
+        project: project.boards.length > 1 ? project.name : undefined,
       });
     },
   };

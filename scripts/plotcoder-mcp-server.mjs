@@ -68,6 +68,14 @@ import {
   renameProject,
 } from "../src/board/project.js";
 
+/**
+ * One PlotCoder server, with its own doors and its own trail: the stdio door
+ * makes one for the process (serveStdio), the hosted door makes one per
+ * request with the writer's sign-in from the request (plotcoder-http.mjs).
+ * Nothing lives at module level, so two writers never share a door.
+ */
+export function createPlotcoderServer(env = process.env) {
+
 const colorSchema = z.enum(NOTE_COLORS);
 const rankSchema = z.enum(NOTE_RANKS);
 const arrowKindSchema = z.enum(ARROW_KINDS);
@@ -83,7 +91,7 @@ function log(...args) {
 // --- Where does the board live? -------------------------------------------
 
 function findRepoRoot() {
-  if (process.env.PLOTCODER_ROOT) return path.resolve(process.env.PLOTCODER_ROOT);
+  if (env.PLOTCODER_ROOT) return path.resolve(env.PLOTCODER_ROOT);
   let dir = process.cwd();
   for (let i = 0; i < 8; i += 1) {
     if (
@@ -96,8 +104,10 @@ function findRepoRoot() {
     if (parent === dir) break;
     dir = parent;
   }
+  // Not inside a checkout: the folder the server was started in is the wall's
+  // folder — never this package's own folder, which under npx is a cache.
   try {
-    return path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+    return process.cwd();
   } catch {
     return process.cwd();
   }
@@ -111,7 +121,7 @@ const PROJECT_FILE = path.join(REPO_ROOT, ".plotcoder", "project.json");
 
 function bridgeCandidates() {
   const bases = [];
-  if (process.env.PLOTCODER_BRIDGE_URL) bases.push(process.env.PLOTCODER_BRIDGE_URL);
+  if (env.PLOTCODER_BRIDGE_URL) bases.push(env.PLOTCODER_BRIDGE_URL);
   const hosts = ["127.0.0.1", "localhost"];
   const ports = [5173, 5174, 5175, 5176, 5177, 4173];
   for (const port of ports) {
@@ -136,7 +146,7 @@ async function probe(base) {
 }
 
 async function findBridge() {
-  if (process.env.PLOTCODER_NO_BRIDGE === "1") return null;
+  if (env.PLOTCODER_NO_BRIDGE === "1") return null;
   if (cachedBase && (await probe(cachedBase))) return cachedBase;
   for (const base of bridgeCandidates()) {
     if (await probe(base)) {
@@ -162,8 +172,8 @@ async function findBridge() {
 // password is hashed here exactly as the browser does.
 
 const ACCOUNT = "account";
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? "https://kmpahjsggbleygsnuwug.supabase.co";
-const SUPABASE_KEY = process.env.VITE_SUPABASE_KEY ?? "sb_publishable_nTTiV21Fva9zp8kvcbf6Kg_ZPOgB6Th";
+const SUPABASE_URL = env.VITE_SUPABASE_URL ?? "https://kmpahjsggbleygsnuwug.supabase.co";
+const SUPABASE_KEY = env.VITE_SUPABASE_KEY ?? "sb_publishable_nTTiV21Fva9zp8kvcbf6Kg_ZPOgB6Th";
 let accountDoor = null;
 let accountTried = false;
 /** Why the door is shut when the writer's sign-in is set but failed. Every tool says this; none reads the file instead (round four, findings 5–7). */
@@ -177,8 +187,13 @@ function noProjectYet() {
 /** A door's answer — shut, or no project yet — thrown from a read and turned into a plain reply by every tool. Not an error. */
 class DoorReply extends Error {}
 
+/** The hosted door (R48): one server per request, the writer's sign-in from the request, no disk. */
+function hosted() {
+  return env.PLOTCODER_HOSTED === "1";
+}
+
 function accountEnv() {
-  return Boolean(process.env.PLOTCODER_EMAIL && process.env.PLOTCODER_PASSWORD);
+  return Boolean(env.PLOTCODER_EMAIL && env.PLOTCODER_PASSWORD);
 }
 
 function refusal(email, reason) {
@@ -187,7 +202,7 @@ function refusal(email, reason) {
 
 /** Through plotcoder-call every call is a fresh server: what this server chose does not reach the next call unless the environment carries it. */
 function oneCall() {
-  return process.env.PLOTCODER_ONE_CALL === "1";
+  return env.PLOTCODER_ONE_CALL === "1";
 }
 
 function oneCallHint(record) {
@@ -293,8 +308,8 @@ function hashPassword(email, password) {
 }
 
 async function findAccount() {
-  const email = process.env.PLOTCODER_EMAIL;
-  const password = process.env.PLOTCODER_PASSWORD;
+  const email = env.PLOTCODER_EMAIL;
+  const password = env.PLOTCODER_PASSWORD;
   if (!email || !password) return null;
   if (accountDoor) return accountDoor;
   if (accountTried) return null;
@@ -312,7 +327,7 @@ async function findAccount() {
     // kept in the repo's ignored .plotcoder folder between calls and only the
     // first call signs in (round eight, finding 2). PLOTCODER_SESSION=0 keeps
     // nothing. An MCP session signs in once anyway and keeps nothing on disk.
-    const keep = oneCall() && process.env.PLOTCODER_SESSION !== "0";
+    const keep = oneCall() && env.PLOTCODER_SESSION !== "0";
     const client = createClient(SUPABASE_URL, SUPABASE_KEY, {
       auth: keep
         ? { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, storage: sessionFileStorage() }
@@ -336,7 +351,7 @@ async function findAccount() {
       user = signedIn.data.user;
     }
     accountDoor = { client, user, email: wanted, projectId: null, channel: null };
-    await chooseProject(process.env.PLOTCODER_PROJECT ?? "");
+    await chooseProject(env.PLOTCODER_PROJECT ?? "");
     return accountDoor;
   } catch (error) {
     accountRefusal = refusal(email, `could not reach the account service (${error instanceof Error ? error.message : String(error)})`);
@@ -823,7 +838,7 @@ function summarize(state) {
 // contain a blank line of its own or the payload becomes unparseable.
 // PLOTCODER_JSON=0 drops the JSON tail from every reply, for an agent that
 // reads the sentence and wants nothing more (a blind run found 400-line replies).
-const TEXT_ONLY = process.env.PLOTCODER_JSON === "0";
+const TEXT_ONLY = env.PLOTCODER_JSON === "0";
 function ok(text, data) {
   const body = data === undefined || TEXT_ONLY ? text : `${text}\n\n${JSON.stringify(data, null, 2)}`;
   return { content: [{ type: "text", text: body }] };
@@ -1564,7 +1579,7 @@ server.registerTool(
     const board = project.boards.find((item) => item.id === project.activeBoardId);
     const brief = segmentBrief(state, args.ids, { title: board?.name });
     if (!brief) return ok(`No cards with ids ${args.ids.join(", ")}. Call list_board.`);
-    const provider = process.env.PLOTCODER_VIDEO_PROVIDER;
+    const provider = env.PLOTCODER_VIDEO_PROVIDER;
     if (!provider) {
       return ok(`No video tool is configured (PLOTCODER_VIDEO_PROVIDER is unset). Hand this brief to one, then file what it makes with add_take.\n\n${brief}`);
     }
@@ -2308,7 +2323,7 @@ server.registerTool(
   async (args) => {
     const email = args.email.trim().toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return ok("That does not look like an email address.");
-    if (process.env.PLOTCODER_EMAIL && accountDoor) return ok(`Already signed in as ${accountDoor.email}. Sign out of the environment first to make another account.`);
+    if (env.PLOTCODER_EMAIL && accountDoor) return ok(`Already signed in as ${accountDoor.email}. Sign out of the environment first to make another account.`);
     let response;
     try {
       response = await fetch(`${SUPABASE_URL}/functions/v1/account`, {
@@ -2326,8 +2341,8 @@ server.registerTool(
       return ok(`Could not make the account: ${payload.error ?? response.status}`);
     }
     // Work it from here on: the door reads the environment, so set it for this process.
-    process.env.PLOTCODER_EMAIL = email;
-    process.env.PLOTCODER_PASSWORD = args.password;
+    env.PLOTCODER_EMAIL = email;
+    env.PLOTCODER_PASSWORD = args.password;
     accountDoor = null;
     accountTried = false;
     accountRefusal = null;
@@ -2467,6 +2482,7 @@ server.registerTool(
     inputSchema: { path: z.string().optional() },
   },
   async (args) => {
+    if (args.path && hosted()) return ok("The hosted door has no disk to write to: call export_project without a path and the reply's JSON is the file.");
     const { project, boards, reminders } = await readProject();
     const file = toProjectFile({ project, boards, reminders: reminders ?? null });
     const cards = countCards(boards);
@@ -2489,6 +2505,7 @@ server.registerTool(
     inputSchema: { path: z.string().optional(), text: z.string().optional(), confirm: z.boolean().optional() },
   },
   async (args) => {
+    if (args.path && hosted()) return ok("The hosted door has no disk to read from: pass the file's contents as text.");
     const source = args.text ?? (args.path ? fs.readFileSync(args.path, "utf8") : null);
     if (source === null) return ok("Nothing to import: pass a path or text.");
     let parsed;
@@ -2633,13 +2650,14 @@ server.registerTool(
   },
 );
 
-async function main() {
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
-  log(accountEnv() ? `ready. account door: ${process.env.PLOTCODER_EMAIL} (signs in on the first call)` : `ready. board file: ${BOARD_FILE}`);
+
+  return { server, log, accountEnv, boardFile: BOARD_FILE };
 }
 
-main().catch((error) => {
-  log("fatal:", error);
-  process.exit(1);
-});
+/** The stdio door: the server for this process, on stdin and stdout. */
+export async function serveStdio(env = process.env) {
+  const { server, log, accountEnv, boardFile } = createPlotcoderServer(env);
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+  log(accountEnv() ? `ready. account door: ${env.PLOTCODER_EMAIL} (signs in on the first call)` : `ready. board file: ${boardFile}`);
+}

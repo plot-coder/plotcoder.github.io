@@ -586,12 +586,12 @@ Add new items at the bottom of this list. Do not renumber. If a requirement dies
 
 ### R47 — The server as a package
 
-- **Status:** **built** 2026-09-14 (Robert: "do 1 and 2"; plumbing, no mockup); **not yet published** — the first `npm publish` needs Robert's npm account, then a version tag publishes every later one
+- **Status:** **built and published** 2026-09-14 (Robert: "do 1 and 2"; plumbing, no mockup): `plotcoder-board@0.1.0` is on npm, published by hand once with the account's two-factor auth on, and the package trusts the repo's `publish.yml` workflow as an OIDC publisher, so every later release is a version tag with no token anywhere
 - **Date:** 2026-09-14
 - **Statement:** The MCP server is an npm package, `plotcoder-board`. An agent's wiring is `npx -y plotcoder-board@latest`, from any folder, with nothing cloned and nothing installed by hand; `npx -y plotcoder-board@latest call <tool> '{json}'` is the shell door and `… serve` the hosted one. The on-ramp's blocks say that line and never a path.
 - **Why:** Nine rounds found the same friction in different clothes: the server existed only inside a clone, so every way in began with `git clone`, `npm ci` and a config with an absolute path, and a person on the desktop app without the `claude` command had no supported way to wire it at all (round nine; question 29).
 - **As built:** `package.json` is publishable (`plotcoder-board`, a `bin`, `files` that ship the three scripts and `src/board`, the server's dependencies as dependencies); `scripts/plotcoder-mcp.mjs` is the command — no argument is the server on stdio, `call` the shell door, `serve` the hosted door — and checks its dependencies by resolving them, so it survives npx's layout; the server's default root, when not inside a checkout, is the folder it was started in and never the package's own; `.github/workflows/publish.yml` publishes on a `v*` tag with `NPM_TOKEN`. Verified by packing, installing the tarball into a scratch project, and running the server and a call from an empty folder. Tested: the `call` command.
-- **Left:** the first publish. Until then the on-ramp names a package that is not on npm; publish before the next round, or the round tests a 404.
+- **Releasing:** `npm version patch && git push && git push --tags` from a current main; the tag runs the workflow, which publishes with provenance under the trusted publisher. npm refuses account changes and publishing without two-factor auth on the account, which is why the first publish needed it turned on.
 
 ### R48 — The hosted door
 

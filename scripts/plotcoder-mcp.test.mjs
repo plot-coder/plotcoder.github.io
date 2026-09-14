@@ -1758,8 +1758,8 @@ describe("round seven's replies", () => {
     expect(await seven.callTool("list_words")).toMatch(/^PlotCoder's words — the app's own/);
     const workflows = await seven.callTool("list_workflows");
     expect(workflows).toMatch(/^The workflows — the app's own/);
-    expect(workflows).toContain("the treatment should say (ask the writer for what it leaves open; invent none of it):");
-    expect(workflows).toContain("How long is it: an hour, a half-hour, a feature, or a page count? → set_target");
+    expect(workflows).toContain("the treatment should answer (ask the writer for what it leaves open; invent none of it):");
+    expect(workflows).toContain("How long is it? An hour, a half-hour, a feature — or a page count, if you have one. → set_target");
     // A new card lands after the last in reading order, so Fiona follows the cash.
     expect(read).toContain('"The ledger" → "The cash arrives": about 0 pages, 0 cards');
     expect(read).toMatch(/After "The cash arrives": about \d+ pages, \d+ cards? — .*"Fiona at the launderette"/);

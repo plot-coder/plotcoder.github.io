@@ -304,7 +304,10 @@ export function readWall(state) {
       .map((arrow) => arrow.to)
       .sort((a, b) => (wallIndex.get(a) ?? Infinity) - (wallIndex.get(b) ?? Infinity));
     // Every payoff, in wall order: a card can plant two things (the ledger
-    // pays off at the cash and again at the initials), and both count.
+    // pays off at the cash and again at the initials), and both count. A
+    // fold that pays off only on another board is not here at all — it is
+    // under `later` — so the two never disagree about one card.
+    if (!heads.length && note.payoffBoardId) continue;
     payoffs[note.id] = heads;
   }
   // A fold that pays off on another board (R50) is not unpaid: it is listed

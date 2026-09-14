@@ -58,7 +58,7 @@ on a port, and an MCP client connects with `--transport http` and the
 writer's sign-in in a Basic header. `PLOTCODER_ROOT` points the server at the
 folder whose wall you mean.
 
-**Call these first, in this order:** `list_words` (the room's words), `read_wall`
+**Call these first, in any order:** `list_words` (the room's words), `read_wall`
 (what is here and what it asks — a fresh folder holds a sample wall, Maya and
 Tom and the letter, and says so; it is not the writer's), `list_workflows`
 (what a writer can ask for), `list_reminders` (the writer's principles) — then
@@ -117,8 +117,9 @@ order as text, the nearest thing to a look at it.
   take `location` too; `list_board` shows it as `at: …`. No roster of places:
   the same phrase on several cards is one place in the Cast panel, and the
   app relates no two phrases. A scene that moves through spots of one
-  location — the office, the rows, the gate of one caravan park — is one
-  place: name the location.
+  location — the kitchen, the yard, the barn of one farm — is one place:
+  name the location. A treatment that names a spot per paragraph is naming
+  where the camera is, which may still be one place.
 - `delete_note` — remove a card (also drops its arrows and group membership).
 
 ### Cast

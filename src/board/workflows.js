@@ -91,6 +91,7 @@ function personLine(character) {
   if (character.voice) lines.push(`voice: ${character.voice}`);
   if (character.wants) lines.push(`wants: ${character.wants}`);
   if (character.needs) lines.push(`needs: ${character.needs}`);
+  if (character.notes) lines.push(`notes: ${character.notes}`);
   return `${character.name}${lines.length ? ` — ${lines.join("; ")}` : " — (no page yet)"}`;
 }
 
@@ -120,7 +121,12 @@ export function segmentBrief(state, ids, options = {}) {
     lines.push("");
     lines.push(`SCENE: ${note.headline}${note.location ? ` — at ${note.location}` : ""}`);
     lines.push(`WHAT CHANGES: ${note.change}`);
-    if (note.plants) lines.push("PLANTS: something here pays off later; keep it visible.");
+    if (note.plants) {
+      const heads = state.arrows.filter((arrow) => arrow.kind === "setup" && arrow.from === note.id).map((arrow) => byId.get(arrow.to)?.headline).filter(Boolean);
+      const later = note.payoffBoardId ? (options.boards ?? []).find((board) => board.id === note.payoffBoardId)?.name ?? "a later board" : null;
+      const where = heads.length ? `pays off at ${heads.map((headline) => `"${headline}"`).join(" and ")}` : later ? `pays off later, on "${later}"` : "pays off later, nowhere yet";
+      lines.push(`PLANTS: something here ${where}; keep it visible.`);
+    }
     if (note.text && note.text.trim()) {
       lines.push("SCRIPT:");
       lines.push(note.text.trim());
@@ -129,6 +135,6 @@ export function segmentBrief(state, ids, options = {}) {
     }
   }
   lines.push("");
-  lines.push(`AFTER: ${notes.at(-1).change}`);
+  lines.push(`AFTER: ${notes.at(-1).change}${notes.length === 1 ? " (the change line, until the scene is written)" : ""}`);
   return lines.join("\n");
 }

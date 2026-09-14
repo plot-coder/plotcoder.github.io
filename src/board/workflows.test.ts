@@ -52,11 +52,11 @@ describe("the brief (R28)", () => {
         "",
         "SCENE: Maya finds the letter — at the piano shop",
         "WHAT CHANGES: She decides not to tell Tom.",
-        "PLANTS: something here pays off later; keep it visible.",
+        "PLANTS: something here pays off later, nowhere yet; keep it visible.",
         "SCRIPT:",
         "Rain on the window.\n\nMAYA\nTom?",
         "",
-        "AFTER: She decides not to tell Tom.",
+        "AFTER: She decides not to tell Tom. (the change line, until the scene is written)",
       ].join("\n"),
     );
   });

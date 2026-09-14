@@ -423,7 +423,7 @@ describe("a fold that pays off on another board (R50)", () => {
     const reading = readWall(state);
     expect(reading.findings.filter((f) => f.kind === "unpaid")).toHaveLength(0);
     expect(reading.later).toEqual([{ id: key.id, boardId: "ep2" }]);
-    expect(reading.payoffs[key.id]).toEqual([]);
+    expect(reading.payoffs[key.id]).toBeUndefined();
   });
 });
 

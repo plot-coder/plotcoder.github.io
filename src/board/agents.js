@@ -42,12 +42,12 @@ export const AGENTS = {
       text: "Skip this when the account is the wall. Without an account, a wall is a folder: any folder, empty is fine — choose one that will outlive your session, never a scratch one. The app run from that folder shows the wall, and the server writes it there (PLOTCODER_ROOT, or the folder it is run from). A fresh folder holds the sample; new_board for the writer's wall, then rename_project. No app running? export_fountain is the wall in order, as text.",
     },
   ],
-  firstNote: "These four are about the wall you will work, so after open_project, open_board, new_project or empty_account, read_wall again. On an account with no project yet, read_wall has nothing to read and says so, and list_reminders gives the house principles every project starts with; new_project, then the four again. No server in front of you, and no shell to take the shell door? Nothing gets you in from inside the session: say so, and ask the person to wire the server and start a new session.",
+  firstNote: "Make these four before anything else; none depends on another, so any order is fine. They are about the wall you will work, so after open_project, open_board, new_project or empty_account, read_wall again. On an account with no project yet, read_wall has nothing to read and says so, and list_reminders gives the house principles every project starts with; new_project, then the four again. No server in front of you, and no shell to take the shell door? Nothing gets you in from inside the session: say so, and ask the person to wire the server and start a new session.",
   first: [
     { tool: "list_words", why: "the room's words, the app's meaning." },
-    { tool: "read_wall", why: "what is here, and what it asks. A fresh folder holds a sample wall (Maya, Tom, the letter) and says so; it is not the writer's." },
+    { tool: "read_wall", why: "the reading: the beats, the runs, the setups, and what the wall asks. The records — every card, the cast, the places — are list_board's. A fresh folder holds a sample wall (Maya, Tom, the letter) and says so; it is not the writer's." },
     { tool: "list_workflows", why: "what a writer can ask you for." },
-    { tool: "list_reminders", why: "the house principles the app starts with, and the writer's own; read them before you change anything." },
+    { tool: "list_reminders", why: "the house principles the app starts with, and the writer's own; read them before you change anything. Reminders live on the project and go with it." },
   ],
   rules: [
     "Questions, not fixes, until the writer says.",
@@ -64,7 +64,7 @@ export const AGENTS = {
 
 /** The on-ramp as one text: the file at /llms.txt, and what an agent reads. */
 export function agentsAsText() {
-  const lines = ["# PlotCoder — for agents", "", AGENTS.lead, "", `The guide, read once before anything: ${AGENTS.guide}. The guide is the whole and this page is its first page; where the two differ, the guide wins.`, "", "## Doors"];
+  const lines = ["# PlotCoder — for agents", "", AGENTS.lead, "", `The guide: ${AGENTS.guide}. Read it once, before your first call if you can; it is the whole and this page is its first page, and where the two differ, the guide wins. Then Call these first, below. The doors between are for wiring a server in; skip them when the tools are already in front of you.`, "", "## Doors"];
   for (const door of AGENTS.doors) {
     lines.push(`- ${door.name}: ${door.text}`);
     if (door.code) lines.push("", "```", door.code, "```", "");

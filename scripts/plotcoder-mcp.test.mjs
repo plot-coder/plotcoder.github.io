@@ -169,6 +169,7 @@ describe("plotcoder MCP server", () => {
       "list_words",
       "list_workflows",
       "move_note",
+      "move_scene",
       "new_board",
       "new_project",
       "open_board",
@@ -527,7 +528,11 @@ function startFakeBridge(seed = { notes: [], groups: [], arrows: [] }) {
     };
 
     if (req.method === "GET") {
-      json({ state, rev });
+      // Like the account's JSON store, keys come back in an order of the
+      // store's choosing, not the one the server wrote.
+      const sorted = (value) =>
+        Array.isArray(value) ? value.map(sorted) : value && typeof value === "object" ? Object.fromEntries(Object.keys(value).sort().reverse().map((key) => [key, sorted(value[key])])) : value;
+      json({ state: sorted(state), rev });
       return;
     }
 
@@ -1132,7 +1137,7 @@ describe("organize", () => {
     const ids = notes.filter((note) => note.headline !== "Lock in").map((note) => note.id);
     const text = await tidy.callTool("organize", { noteIds: ids });
     expect(text).toContain("Organized 3 card(s)");
-    expect(await tidy.callTool("undo")).toContain("Undid apply_poses");
+    expect(await tidy.callTool("undo")).toContain("Undid organize");
   });
 });
 
@@ -1427,7 +1432,7 @@ describe("the premise and reminders (roadmap item 6)", () => {
 
   it("writes a scene onto a card, measures it, reads the pages with ids, and imports a script", async () => {
     const wrote = await door.callTool("write_scene", { id: "maya-letter", text: "Rain on the window.\n\nMAYA\nTom?" });
-    expect(wrote).toContain('Wrote "Maya finds the letter": 1/8 page(s) measured');
+    expect(wrote).toContain('Wrote "Maya finds the letter": 3 line(s), measured at 1/8 of a page');
     expect(await door.callTool("list_board")).toContain("[scene, 1/8 pages, written");
     const pages = await door.callTool("read_pages");
     expect(pages).toContain(".MAYA FINDS THE LETTER    [[id: maya-letter · measured 1/8pp]]");
@@ -1789,6 +1794,22 @@ describe("round ten's replies", () => {
     expect(await ten.callTool("list_board")).toContain("of a 60-page target");
   });
 
+  it("reads the wall with its runtime and its groups, and counts the opening row", async () => {
+    const board = await ten.callToolData("list_board");
+    const ids = board.notes.map((note) => note.id);
+    await ten.callTool("set_rank", { ids: [ids[1]], rank: "beat" });
+    await ten.callTool("create_group", { noteIds: [ids[0], ids[1]], title: "Act one" });
+    const read = await ten.callTool("read_wall");
+    expect(read).toContain("runtime: about");
+    expect(read).toContain('groups: "Act one" — 2 card(s), about 2 pages, read as an act');
+    const tidy = await ten.callTool("organize");
+    expect(tidy).toMatch(/an opening row of \d+ card\(s\) before the first beat, then 1 row\(s\), one per beat/);
+    expect(await ten.callTool("rename_character", { id: board.characters[0].id, name: "Nessa" })).toMatch(/the name changed on \d+ cards?/);
+    const wrote = await ten.callTool("write_scene", { id: ids[0], text: "INT. OFFICE - NIGHT\n\nNessa opens the ledger.\n\nNESSA\nEvery month." });
+    expect(wrote).toMatch(/\d+ line\(s\), measured at [0-9/ ]+ of a page \(a page is 55 lines/);
+    expect(await ten.callTool("page_count")).toContain("this is the script so far, not the runtime");
+  });
+
   it("lists the places side by side, and names a near match when a place is set", async () => {
     const board = await ten.callToolData("list_board");
     const [a, b, c] = board.notes.map((note) => note.id);
@@ -1801,5 +1822,61 @@ describe("round ten's replies", () => {
     expect(listed).toContain("places (each distinct phrase is one place");
     expect(listed).toContain('  - "the caravan park" on 1 card');
     expect(listed).toContain('  - "the caravan park, the rows" on 1 card');
+  });
+});
+
+// Undo walks the whole trail back even when the store hands the board back
+// with its keys in another order (round ten, finding 29), and move_scene is
+// one step of it.
+describe("undo through a store that reorders keys, and move_scene", () => {
+  let bridge;
+  let root;
+  let client2;
+
+  beforeAll(async () => {
+    bridge = startFakeBridge({ notes: [], groups: [], arrows: [] });
+    const url = await bridge.listen();
+    root = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-undo-"));
+    client2 = new McpClient(root, { PLOTCODER_NO_BRIDGE: "0", PLOTCODER_BRIDGE_URL: url });
+    await client2.start();
+  }, 30000);
+
+  afterAll(async () => {
+    client2?.stop();
+    await bridge?.close();
+    if (root) fs.rmSync(root, { recursive: true, force: true });
+  });
+
+  it("undoes three of its own steps in a row, and names organize by its name", async () => {
+    const a = await client2.callToolData("create_note", { headline: "A", change: "a.", rank: "beat" });
+    const b = await client2.callToolData("create_note", { headline: "B", change: "b." });
+    const c = await client2.callToolData("create_note", { headline: "C", change: "c." });
+    const d = await client2.callToolData("create_note", { headline: "D", change: "d." });
+    await client2.callTool("create_arrow", { from: a.id, to: b.id });
+    await client2.callTool("create_arrow", { from: b.id, to: c.id });
+    await client2.callTool("create_arrow", { from: c.id, to: d.id });
+    expect(await client2.callTool("organize")).toContain("Organized");
+    expect(await client2.callTool("undo")).toContain("Undid organize");
+    expect(await client2.callTool("undo")).toContain("Undid create_arrow");
+    expect(await client2.callTool("undo")).toContain("Undid create_arrow");
+    expect(await client2.callTool("redo")).toContain("Redid create_arrow");
+    expect(await client2.callTool("redo")).toContain("Redid create_arrow");
+  });
+
+  it("moves a scene along the arrows as one undoable step", async () => {
+    const board = await client2.callToolData("list_board");
+    const id = (headline) => board.notes.find((note) => note.headline === headline).id;
+    const moved = await client2.callTool("move_scene", { id: id("D"), after: id("A") });
+    expect(moved).toContain('Moved "D" to after "A"');
+    expect(moved).toContain("Story order now: 1. A, 2. D, 3. B, 4. C");
+    expect(moved).toContain("One undo takes the whole move back");
+    const after = await client2.callToolData("list_board");
+    const pairs = after.arrows.map((arrow) => `${after.notes.find((n) => n.id === arrow.from).headline}>${after.notes.find((n) => n.id === arrow.to).headline}`).sort();
+    expect(pairs).toEqual(["A>D", "B>C", "D>B"]);
+    expect(await client2.callTool("undo")).toContain('Undid move_scene "D"');
+    const back = await client2.callToolData("list_board");
+    const pairsBack = back.arrows.map((arrow) => `${back.notes.find((n) => n.id === arrow.from).headline}>${back.notes.find((n) => n.id === arrow.to).headline}`).sort();
+    expect(pairsBack).toEqual(["A>B", "B>C", "C>D"]);
+    expect(await client2.callTool("delete_arrow", { id: back.arrows[0].id })).toMatch(/^Deleted the follows arrow "[A-D]" → "[A-D]"/);
   });
 });

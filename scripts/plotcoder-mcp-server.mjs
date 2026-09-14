@@ -697,9 +697,28 @@ function describeCommand(command) {
       return `create_note "${command.headline ?? ""}"`;
     case "recolor_notes":
       return "recolor_note";
+    case "apply_poses":
+      return "organize";
     default:
       return command.type;
   }
+}
+
+/**
+ * A board as one canonical string, so "has the board changed since my call?"
+ * compares boards and not the JSON a store happened to write: the account
+ * stores JSON in its own key order, and a byte comparison refused every undo
+ * but the first (round ten, finding 29).
+ */
+function canon(state) {
+  const sorted = (value) => {
+    if (Array.isArray(value)) return value.map(sorted);
+    if (value && typeof value === "object") {
+      return Object.fromEntries(Object.keys(value).sort().map((key) => [key, sorted(value[key])]));
+    }
+    return value;
+  };
+  return JSON.stringify(sorted(normalizeState(state)));
 }
 
 async function commit(command) {
@@ -711,7 +730,7 @@ async function commit(command) {
   if (!changed) return { state: next, changed, result, live: base !== null };
 
   const live = await writeBoard(next, rev, base, boardId);
-  trail.push({ before: state, after: JSON.stringify(next), what: describeCommand(command) });
+  trail.push({ before: state, after: canon(next), what: describeCommand(command) });
   if (trail.length > TRAIL_CAP) trail.shift();
   undone.length = 0;
   return { state: next, changed, result, live };
@@ -1157,6 +1176,20 @@ server.registerTool(
     const lines = [
       `PlotCoder wall (${door(live, base)})`,
       `logline: ${state.logline ? `"${state.logline}"` : "(none yet)"}`,
+      state.targetEighths === DEFAULT_TARGET_EIGHTHS
+        ? `runtime: about ${formatPages(boardEighths(state))} pages; no target set (set_target)`
+        : `runtime: about ${formatPages(boardEighths(state))} pages of a ${formatPages(state.targetEighths)}-page target — ${boardEighths(state) > state.targetEighths ? `${formatPages(boardEighths(state) - state.targetEighths)} over` : boardEighths(state) < state.targetEighths ? `${formatPages(state.targetEighths - boardEighths(state))} under` : "on it"}`,
+      `groups: ${
+        state.groups.length
+          ? state.groups
+              .map((group) => {
+                const members = state.notes.filter((note) => group.noteIds.includes(note.id));
+                const act = /^act\b/i.test((group.title ?? "").trim());
+                return `"${group.title || "(untitled)"}" — ${members.length} card(s), about ${formatPages(members.reduce((sum, note) => sum + noteEighths(note), 0))} pages${act ? ", read as an act (never asked whether it is one sequence)" : ", read as a sequence"}`;
+              })
+              .join("; ")
+          : "(none)"
+      }`,
       `pages: ${written === 0 ? "all estimates — no scene is written yet, so every card is the writer's guess" : written === state.notes.length ? "measured — every scene is written" : `estimates — ${written} of ${state.notes.length} cards are written, the rest are guesses`}`,
       `beats in wall order: ${
         reading.beats.length
@@ -1181,11 +1214,80 @@ server.registerTool(
 );
 
 server.registerTool(
+  "move_scene",
+  {
+    title: "Move a scene in the story",
+    description:
+      "Move a card to another place in the story order — after one card, or before one — by rewiring its follows arrows and tidying the wall along them, as one step that undo takes back whole. The story order is the follows arrows: the card leaves its place (what pointed at it now points at what it pointed at) and lands between the target and what followed it. A person does this by dragging in the outline. Needs a wall with follows arrows; on a wall without any, create_arrow the sequence first, or move_note by position.",
+    inputSchema: { id: z.string(), after: z.string().optional(), before: z.string().optional() },
+  },
+  async (args) => {
+    if (!args.after === !args.before) return ok("Say where: after one card's id, or before one, not both.");
+    const { state } = await readBoard();
+    const find = (id) => state.notes.find((note) => note.id === id);
+    const card = find(args.id);
+    const target = find(args.after ?? args.before);
+    if (!card) return ok(`No card with id ${args.id}. Call list_board.`);
+    if (!target) return ok(`No card with id ${args.after ?? args.before}. Call list_board.`);
+    if (card.id === target.id) return ok("A card cannot be moved next to itself.");
+    const isFollows = (arrow) => arrow.kind !== "setup";
+    if (!state.arrows.some(isFollows)) {
+      return ok("The wall has no follows arrows, so there is no story order to move within: create_arrow the sequence first, or move_note the card by position.");
+    }
+    const trailBefore = trail.length;
+    let removed = 0;
+    let drawn = 0;
+    let live = false;
+    const step = async (command) => {
+      const done = await commit(command);
+      if (done.changed) {
+        live = done.live;
+        if (command.type === "delete_arrow") removed += 1;
+        if (command.type === "create_arrow") drawn += 1;
+      }
+      return done;
+    };
+    // Leave: what pointed at the card points at what the card pointed at.
+    const ins = state.arrows.filter((arrow) => isFollows(arrow) && arrow.to === card.id);
+    const outs = state.arrows.filter((arrow) => isFollows(arrow) && arrow.from === card.id);
+    for (const arrow of [...ins, ...outs]) await step({ type: "delete_arrow", id: arrow.id });
+    for (const before of ins) for (const after of outs) if (before.from !== after.to) await step({ type: "create_arrow", from: before.from, to: after.to, kind: "follows" });
+    // Land: between the target and what followed it (or what led to it).
+    const { state: mid } = await readBoard();
+    if (args.after) {
+      for (const arrow of mid.arrows.filter((item) => isFollows(item) && item.from === target.id && item.to !== card.id)) {
+        await step({ type: "delete_arrow", id: arrow.id });
+        await step({ type: "create_arrow", from: card.id, to: arrow.to, kind: "follows" });
+      }
+      await step({ type: "create_arrow", from: target.id, to: card.id, kind: "follows" });
+    } else {
+      for (const arrow of mid.arrows.filter((item) => isFollows(item) && item.to === target.id && item.from !== card.id)) {
+        await step({ type: "delete_arrow", id: arrow.id });
+        await step({ type: "create_arrow", from: arrow.from, to: card.id, kind: "follows" });
+      }
+      await step({ type: "create_arrow", from: card.id, to: target.id, kind: "follows" });
+    }
+    const { state: linked } = await readBoard();
+    const tidied = await step({ type: "apply_poses", poses: organizePoses(linked, {}) });
+    const final = tidied.state;
+    // One step for undo: the whole move, not its dozen arrows.
+    trail.splice(trailBefore);
+    trail.push({ before: state, after: canon(final), what: `move_scene "${card.headline}"` });
+    undone.length = 0;
+    const order = readingOrder(final.notes);
+    return ok(
+      `Moved "${card.headline}" to ${args.after ? "after" : "before"} "${target.headline}": ${removed} arrow(s) removed, ${drawn} drawn, the wall tidied along them${where(live)}. Story order now: ${order.map((note, index) => `${index + 1}. ${note.headline}`).join(", ")}. One undo takes the whole move back.`,
+      { order: order.map((note) => note.id) },
+    );
+  },
+);
+
+server.registerTool(
   "organize",
   {
     title: "Organize the wall",
     description:
-      "Tidy the wall along the arrows. Cards are ordered by their 'follows' arrows (a card comes after everything that points at it), then by reading order. With beats on the wall, each beat starts a row and the scenes that follow it fill the row to its right, wrapping under themselves when a run is long; with no beats yet, rows wrap five cards wide. Groups stay together. Pass noteIds to tidy only those cards, from their own top-left. Undoable from the wall.",
+      "Tidy the wall along the arrows. Cards are ordered by their 'follows' arrows (a card comes after everything that points at it), then by reading order. With beats on the wall, each beat starts a row and the scenes that follow it fill the row to its right, wrapping under themselves when a run is long; with no beats yet, rows wrap five cards wide. A group's cards keep their rows, so a group that spans beats spans rows. Pass noteIds to tidy only those cards, from their own top-left. Undoable from the wall.",
     inputSchema: { noteIds: z.array(z.string()).min(2).optional() },
   },
   async (args) => {
@@ -1204,14 +1306,16 @@ server.registerTool(
     for (const pose of poses) byRow.set(pose.y, [...(byRow.get(pose.y) ?? []), pose]);
     const wrappedUnder = [];
     let currentBeat = null;
+    let opening = 0;
     for (const y of [...byRow.keys()].sort((a, b) => a - b)) {
-      const first = byRow.get(y).sort((a, b) => a.x - b.x)[0];
-      const note = state.notes.find((item) => item.id === first.id);
+      const row = byRow.get(y).sort((a, b) => a.x - b.x);
+      const note = state.notes.find((item) => item.id === row[0].id);
       if (note?.rank === "beat") currentBeat = note;
-      else if (currentBeat && note && !wrappedUnder.some((item) => item.beat === currentBeat)) wrappedUnder.push({ beat: currentBeat, first: note });
+      else if (!currentBeat) opening += row.length;
+      else if (note && !wrappedUnder.some((item) => item.beat === currentBeat)) wrappedUnder.push({ beat: currentBeat, first: note });
     }
     const shape = beats
-      ? `${beats} row(s), one per beat${wrappedUnder.length ? `; ${wrappedUnder.map((item) => `the row of "${item.beat.headline}" wraps under from "${item.first.headline}"`).join(", ")}` : ""}`
+      ? `${opening ? `an opening row of ${opening} card(s) before the first beat, then ` : ""}${beats} row(s), one per beat${wrappedUnder.length ? `; ${wrappedUnder.map((item) => `the row of "${item.beat.headline}" wraps under from "${item.first.headline}"`).join(", ")}` : ""}`
       : `${rows} row(s) five cards wide — no beats yet, so nothing sets the rows; set_rank the turns and organize again for a row per beat`;
     return ok(`Organized ${poses.length} card(s) along the arrows into ${shape}${where(live)}.`, poses);
   },
@@ -1346,8 +1450,9 @@ server.registerTool(
       if (!result) return ok(`No card with id ${args.id}. Call list_board.`);
       return ok(`Nothing changed: "${result.headline}" already reads that way.`);
     }
+    const lines = args.text.split("\n").filter((line) => line.trim()).length;
     return ok(
-      `Wrote "${result.headline}": ${formatPages(noteEighths(result))} page(s) measured${where(live)}.`,
+      `Wrote "${result.headline}": ${lines} line(s), measured at ${formatPages(noteEighths(result))} of a page (a page is 55 lines of Courier 12; a fraction is rounded up to an eighth)${where(live)}. While the text stands the card is measured, not estimated; its estimate is untouched underneath.`,
       result,
     );
   },
@@ -1527,7 +1632,7 @@ server.registerTool(
       );
     }
     const note = unwritten
-      ? [`${unwritten} of ${order.length} scenes are unwritten and count as one line each here; for the estimate from the cards' lengths, see list_board's runtime line.`]
+      ? [`${unwritten} of ${order.length} scenes are unwritten and count as one line each here, so this is the script so far, not the runtime: the estimate from the cards is about ${formatPages(boardEighths(state))} pages, the number to use until the scenes are written.`]
       : [];
     return ok([`pages: ${result.pageCount} of ${Math.round(state.targetEighths / 8)}`, ...note, ...lines].join("\n"), result.scenes);
   },
@@ -1747,7 +1852,7 @@ server.registerTool(
     const last = trail[trail.length - 1];
     if (!last) return ok(oneCall() ? "Nothing to undo here: through plotcoder-call every call is a fresh server, so undo works only from an MCP session. The writer can take any change back from the wall with ⌘Z." : "Nothing of mine to undo in this session.");
     const { state, rev, base } = await readBoard();
-    if (JSON.stringify(state) !== last.after) {
+    if (canon(state) !== last.after) {
       return ok(
         `Not undone: the board has changed since my ${last.what}. Undoing now would trample that. Ask the person to undo from the wall if they want it back.`,
       );
@@ -1775,11 +1880,11 @@ server.registerTool(
     const last = undone[undone.length - 1];
     if (!last) return ok("Nothing of mine to redo.");
     const { state, rev, base, boardId } = await readBoard();
-    if (JSON.stringify(state) !== JSON.stringify(last.before)) {
+    if (canon(state) !== canon(last.before)) {
       return ok(`Not redone: the board has changed since I undid my ${last.what}. Redoing now would trample that.`);
     }
     undone.pop();
-    const after = JSON.parse(last.after);
+    const after = normalizeState(JSON.parse(last.after));
     const live = await writeBoard(after, rev, base, boardId);
     trail.push(last);
     return ok(`Redid ${last.what}${where(live)}. ${undone.length} more can be redone.`, after);
@@ -1855,7 +1960,8 @@ server.registerTool(
         ? ok("Not renamed: that is already the name.")
         : ok(`No character with id ${args.id}. Call list_board for the cast.`);
     }
-    return ok(`Renamed to "${result.name}"${where(live)}.`, result);
+    const followed = state.notes.filter((note) => note.characterIds.includes(result.id)).length;
+    return ok(`Renamed to "${result.name}" (${result.id})${where(live)}; the name changed on ${followed} card${followed === 1 ? "" : "s"}.`, result);
   },
 );
 
@@ -2688,9 +2794,12 @@ server.registerTool(
     inputSchema: { id: z.string() },
   },
   async (args) => {
+    const { state: before } = await readBoard();
+    const arrow = before.arrows.find((item) => item.id === args.id);
     const { changed, live } = await commit({ type: "delete_arrow", id: args.id });
     if (!changed) return ok(`No arrow with id ${args.id}. Call list_board for the real ids.`);
-    return ok(`Deleted that arrow${where(live)}. Any arrow the other way is untouched.`);
+    const name = (id) => `"${before.notes.find((note) => note.id === id)?.headline ?? id}"`;
+    return ok(`Deleted the ${arrow?.kind ?? "follows"} arrow ${name(arrow?.from)} → ${name(arrow?.to)}${where(live)}. Any arrow the other way is untouched.`);
   },
 );
 

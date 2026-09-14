@@ -176,7 +176,7 @@ export function readWall(state) {
       findings.push({
         kind: "sag",
         ids: [longest.from, longest.to],
-        text: `About ${pages(longest.eighths)} pages run between "${headline(longest.from)}" and "${headline(longest.to)}"; the middle run here is about ${pages(typical)} (a beat's own pages are in no run). Is something sagging there, or is it one long set piece?`,
+        text: `About ${pages(longest.eighths)} pages run between "${headline(longest.from)}" and "${headline(longest.to)}"; the median run here is about ${pages(typical)} (a beat's own pages are in no run). Is something sagging there, or is it one long set piece?`,
       });
     }
   }

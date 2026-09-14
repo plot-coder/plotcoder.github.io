@@ -46,6 +46,37 @@ Every board verb goes through one command kernel, `src/board/reducer.js`, and th
 
 An agent should call the tools, never fake mouse drags. The skill in `.cursor/skills/plotcoder-board/SKILL.md` says how; `.claude/skills/plotcoder-board` is a symlink to the same file.
 
+## Blind runs, and the test account
+
+A **blind run** is a fresh agent given the on-ramp and a treatment and nothing
+else, asked to build a wall and to keep a log of everything that made the job
+harder than it should have been. The friction log is the product; the wall is
+just what produces it. Three rounds have been run and all 73 of their
+findings are fixed; the fourth is prepared. [`blind-runs/`](blind-runs/) holds the
+rules that keep a round honest, the table of rounds, and each round's prompt and
+treatment.
+
+A round works a **test account** — a throwaway marked on its writer row, and the
+only kind of account the wipe script will touch (R44). Mark it once, then empty
+it between rounds:
+
+```bash
+node scripts/wipe-test-account.mjs you+round4@example.com --mark        # once, to make it wipeable
+node scripts/wipe-test-account.mjs you+round4@example.com               # the plan; changes nothing
+node scripts/wipe-test-account.mjs you+round4@example.com --empty --yes # projects go, account stays
+node scripts/wipe-test-account.mjs you+round4@example.com --delete --yes # the account goes too
+node scripts/wipe-test-account.mjs you+round4@example.com --unmark      # back to a writer's account
+```
+
+Needs `SUPABASE_SERVICE_ROLE_KEY` in the shell; it is not in the repo and must
+not be. Nothing changes without `--yes`, and the script refuses any address that
+is not marked, so a mistyped address cannot take a writer's work. A project
+merely *shared with* the test account belongs to whoever made it and survives.
+
+**Prefer `--empty` between rounds.** `--delete` means claiming the address
+again, which changes the credentials in the round's prompt and quietly turns the
+next round into a test of `claim_account` instead of the door it meant to test.
+
 ## Layout of the repo
 
 | Path | What it is |
@@ -59,6 +90,8 @@ An agent should call the tools, never fake mouse drags. The skill in `.cursor/sk
 | `scripts/plotcoder-mcp.mjs` | The MCP server. |
 | `vite.config.ts` | The dev bridge that mirrors the board to a file on localhost. Never ships. |
 | `.github/workflows/deploy.yml` | Test, build, deploy to Pages. |
+| `blind-runs/` | The blind-run practice: the rules, the rounds, and each round's prompt and treatment. |
+| `scripts/wipe-test-account.mjs` | Empty or remove a marked test account (R44). `wipe-plan.mjs` is the pure rail it decides by. |
 
 ## Status
 

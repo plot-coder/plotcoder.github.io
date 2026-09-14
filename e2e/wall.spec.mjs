@@ -242,6 +242,28 @@ test("a change an agent made can be undone from the wall, and redone", async ({ 
     await page.keyboard.press("ControlOrMeta+z");
     const back = (await boardOnPage(page)).notes.find((note) => note.id === "maya-letter");
     expect([back.x, back.y]).toEqual([before.x, before.y]);
+
+    // Let the wall's push of the undone drag land before an agent reads the
+    // bridge, which checks no revisions: the two would race otherwise.
+    await expect
+      .poll(async () => (await boardOnBridge(request)).notes.find((note) => note.id === "maya-letter")?.x)
+      .toBe(before.x);
+
+    // One agent call is one step, even when it adds a person to the cast on
+    // the way: ⌘Z takes back the card, its cast and the person together, on
+    // the wall and on both channels of the bridge. Sam's card is still here.
+    await mcp.callTool("create_note", { headline: "Dessie walks her round", change: "He will not be walked away from.", characters: ["Dessie Kane"] });
+    await expect(page.locator("article.note")).toHaveCount(5);
+    await expect.poll(async () => (await boardOnBridge(request)).characters.map((person) => person.name)).toContain("Dessie Kane");
+    await page.locator(".note-board").click({ position: { x: 20, y: 20 } });
+    await page.keyboard.press("ControlOrMeta+z");
+    await expect(page.locator("article.note")).toHaveCount(4);
+    await expect(page.locator(".note__headline", { hasText: "Dessie walks her round" })).toHaveCount(0);
+    await expect.poll(async () => (await boardOnBridge(request)).characters.map((person) => person.name)).not.toContain("Dessie Kane");
+    await expect
+      .poll(async () => (await (await request.get("/__plotcoder/project")).json()).project.characters.map((person) => person.name))
+      .not.toContain("Dessie Kane");
+    expect((await boardOnPage(page)).characters.map((person) => person.name)).not.toContain("Dessie Kane");
   } finally {
     mcp.stop();
   }

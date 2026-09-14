@@ -9,7 +9,7 @@ import {
 import { accountStore, savedAgo, type SyncStatus } from "./board/account";
 import { boardStore } from "./board/store";
 import { downloadProject, importProject } from "./projectStore";
-import { downloadFdx, downloadFountain, openFdxText, openFountainText } from "./fountainFile";
+import { openFdxText, openFountainText } from "./fountainFile";
 
 type ProjectModalProps = {
   open: boolean;
@@ -17,15 +17,13 @@ type ProjectModalProps = {
   onClose: () => void;
   /** Sign in lives on the wordmark's sheet (R39); this opens it. */
   onSignIn: () => void;
-  /** Save as PDF opens the pages view and the browser's print (R23 c). */
-  onPrint: () => void;
 };
 
 // The transfer sheet (D10, R12, R4): the three ways to carry a project
 // somewhere — a file out, a file in, and an account that carries it for you.
 // Sign in lives here because that is what it is; the state of the mirror lives
 // on the button as a dot, so it is on screen without opening anything.
-export function ProjectModal({ open, onOpen, onClose, onSignIn, onPrint }: ProjectModalProps) {
+export function ProjectModal({ open, onOpen, onClose, onSignIn }: ProjectModalProps) {
   const titleId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -150,8 +148,9 @@ export function ProjectModal({ open, onOpen, onClose, onSignIn, onPrint }: Proje
               </p>
             ) : (
               <p className="project-copy">
-                Download this project as a file, a script the industry opens, or the pages; or upload a
-                project, a .fountain or a .fdx onto this board.
+                Download this project as a file, or upload a project, a .fountain or a .fdx onto this
+                board. The script itself — Markdown, plain text, Fountain, Final Draft or PDF — is Save
+                as… in the Pages panel.
               </p>
             )}
 
@@ -167,33 +166,6 @@ export function ProjectModal({ open, onOpen, onClose, onSignIn, onPrint }: Proje
                 onClick={() => fileRef.current?.click()}
               >
                 Open project
-              </button>
-              <button
-                type="button"
-                className="project-action project-action--ghost"
-                onClick={() => downloadFountain()}
-                title="The open board as a Fountain screenplay, in wall order"
-              >
-                Save as Fountain
-              </button>
-              <button
-                type="button"
-                className="project-action project-action--ghost"
-                onClick={() => downloadFdx()}
-                title="The open board as a Final Draft .fdx, scene numbers by wall order"
-              >
-                Save as Final Draft
-              </button>
-              <button
-                type="button"
-                className="project-action project-action--ghost"
-                onClick={() => {
-                  onClose();
-                  onPrint();
-                }}
-                title="The pages, through the browser's print — choose Save as PDF there"
-              >
-                Save as PDF
               </button>
               {signedIn ? (
                 <button

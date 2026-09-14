@@ -4,6 +4,7 @@
 
 import { describeSetAside, fromFdx, toFdx } from "./board/fdx";
 import { fromFountain, mergeFountain, toFountain } from "./board/fountain";
+import { toMarkdown, toPlainText } from "./board/markdown";
 import { boardById } from "./board/project";
 import { boardStore } from "./board/store";
 
@@ -26,16 +27,49 @@ export function fountainFileName(name: string): string {
   return `${slug || "plotcoder"}.fountain`;
 }
 
-export function downloadFountain(): void {
+/** A text file out through the browser, named for the open board with the extension asked for. */
+function downloadText(text: string, extension: string, type = "text/plain;charset=utf-8"): void {
   const project = boardStore.getProject();
   const board = boardById(project, project.activeBoardId);
-  const blob = new Blob([fountainText()], { type: "text/plain;charset=utf-8" });
+  const blob = new Blob([text], { type });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = fountainFileName(board?.name ?? "plotcoder");
+  link.download = fountainFileName(board?.name ?? "plotcoder").replace(/\.fountain$/, extension);
   link.click();
   URL.revokeObjectURL(url);
+}
+
+export function downloadFountain(): void {
+  downloadText(fountainText(), ".fountain");
+}
+
+/** Take the pages with you (R54): the wall as Markdown, and the script as plain text. */
+export function markdownText(): string {
+  const project = boardStore.getProject();
+  const board = boardById(project, project.activeBoardId);
+  return toMarkdown(boardStore.getState(), {
+    title: board?.name ?? "Untitled",
+    project: project.boards.length > 1 ? project.name : undefined,
+    premise: project.premise || undefined,
+  });
+}
+
+export function plainText(): string {
+  const project = boardStore.getProject();
+  const board = boardById(project, project.activeBoardId);
+  return toPlainText(boardStore.getState(), {
+    title: board?.name ?? "Untitled",
+    project: project.boards.length > 1 ? project.name : undefined,
+  });
+}
+
+export function downloadMarkdown(): void {
+  downloadText(markdownText(), ".md", "text/markdown;charset=utf-8");
+}
+
+export function downloadPlainText(): void {
+  downloadText(plainText(), ".txt");
 }
 
 /** Fountain in: a document's scenes onto the open board's cards, never deleting. */
@@ -62,15 +96,7 @@ export function fdxText(): string {
 
 /** Save as Final Draft: the open board as a .fdx file named for the board. */
 export function downloadFdx(): void {
-  const project = boardStore.getProject();
-  const board = boardById(project, project.activeBoardId);
-  const blob = new Blob([fdxText()], { type: "application/xml;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = fountainFileName(board?.name ?? "plotcoder").replace(/\.fountain$/, ".fdx");
-  link.click();
-  URL.revokeObjectURL(url);
+  downloadText(fdxText(), ".fdx", "application/xml;charset=utf-8");
 }
 
 /** Final Draft in: a document's scenes onto the open board's cards, never deleting. */

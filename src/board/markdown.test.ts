@@ -1,0 +1,94 @@
+import { describe, expect, it } from "vitest";
+import { COLUMN, GUTTER, setLine, toMarkdown, toPlainText } from "./markdown";
+import { applyCommand, seedState } from "./reducer";
+
+const NOW = "2026-01-01T00:00:00.000Z";
+
+const SCENE = ["Her father kept the site's books by hand.", "", "NESSA", "Who paid this?", "", "DESSIE", "(not looking up)", "Your father did his own books.", ""].join("\n");
+
+function wall() {
+  let state = seedState();
+  state = applyCommand(state, { type: "set_logline", logline: "Can Maya forgive a useful lie?" }, NOW).state;
+  state = applyCommand(state, { type: "set_rank", ids: ["maya-letter"], rank: "beat" }, NOW).state;
+  state = applyCommand(state, { type: "set_location", ids: ["maya-letter"], location: "the piano shop" }, NOW).state;
+  state = applyCommand(state, { type: "set_text", id: "maya-letter", text: SCENE }, NOW).state;
+  return state;
+}
+
+describe("Markdown out (R54)", () => {
+  it("reads the wall out: title, premise, logline, beats as headings, a heading per scene, the text or the change line", () => {
+    const text = toMarkdown(wall(), { title: "Pilot", project: "Low Season", premise: "A season about a lie." });
+    expect(text).toBe(
+      [
+        "# Low Season · Pilot",
+        "",
+        "*A season about a lie.*",
+        "",
+        "**Can Maya forgive a useful lie?**",
+        "",
+        "## 1. Maya finds the letter",
+        "",
+        "### 1 · THE PIANO SHOP",
+        "",
+        "*Maya finds the letter*",
+        "",
+        "Her father kept the site's books by hand.",
+        "",
+        "**NESSA**  \nWho paid this?",
+        "",
+        "**DESSIE**  \n*(not looking up)*  \nYour father did his own books.",
+        "",
+        "### 2 · TOM LIES ABOUT THE JOB",
+        "",
+        "Maya starts to doubt him.",
+        "",
+        "### 3 · THE LETTER IS READ ALOUD",
+        "",
+        "The plan dies in the room.",
+        "",
+      ].join("\n"),
+    );
+  });
+
+  it("uses the board's name alone for a one-board project, and no premise line when there is none", () => {
+    const text = toMarkdown(seedState(), { title: "Board 1" });
+    expect(text.startsWith("# Board 1\n\n### 1 · MAYA FINDS THE LETTER\n")).toBe(true);
+    expect(text).not.toContain("**");
+  });
+
+  it("carries locked scene numbers", () => {
+    let state = wall();
+    state = applyCommand(state, { type: "lock_numbers", order: ["maya-letter", "tom-lies", "letter-aloud"] }, NOW).state;
+    state = applyCommand(state, { type: "create_note", id: "new", headline: "A new scene", change: "Something turns.", x: 320, y: 340 }, NOW).state;
+    const text = toMarkdown(state, { title: "Pilot" });
+    expect(text).toMatch(/### \d+A · A NEW SCENE/);
+  });
+});
+
+describe("plain text out (R54)", () => {
+  it("sets each kind of line at its column, with the scene number in both margins", () => {
+    expect(setLine({ kind: "heading", text: "THE PIANO SHOP", sceneNumber: 12 })).toBe(`12   ${"THE PIANO SHOP".padEnd(60)} 12`);
+    expect(setLine({ kind: "action", text: "She waits." })).toBe(`${" ".repeat(GUTTER)}She waits.`);
+    expect(setLine({ kind: "character", text: "NESSA" })).toBe(`${" ".repeat(GUTTER + COLUMN.character)}NESSA`);
+    expect(setLine({ kind: "dialogue", text: "Who paid this?" })).toBe(`${" ".repeat(GUTTER + COLUMN.dialogue)}Who paid this?`);
+    expect(setLine({ kind: "parenthetical", text: "(quietly)" })).toBe(`${" ".repeat(GUTTER + COLUMN.parenthetical)}(quietly)`);
+    expect(setLine({ kind: "transition", text: "CUT TO:" })).toBe(`${" ".repeat(GUTTER + 60 - 7)}CUT TO:`);
+    expect(setLine({ kind: "blank" })).toBe("");
+    expect(setLine({ kind: "dual", left: { kind: "character", text: "A" }, right: { kind: "character", text: "B" } })).toBe(`${" ".repeat(GUTTER + 8)}A${" ".repeat(32 - 9)}${" ".repeat(8)}B`);
+  });
+
+  it("writes the script as it prints, titled, with the cue and the lines under it", () => {
+    const text = toPlainText(wall(), { title: "Pilot", project: "Low Season" });
+    const lines = text.split("\n");
+    expect(lines[0].trim()).toBe("LOW SEASON");
+    expect(lines[2].trim()).toBe("Pilot");
+    expect(text).toContain(`1    ${"THE PIANO SHOP".padEnd(60)} 1`);
+    expect(text).toContain(`${" ".repeat(GUTTER)}Her father kept the site's books by hand.`);
+    expect(text).toContain(`${" ".repeat(GUTTER + COLUMN.character)}NESSA\n${" ".repeat(GUTTER + COLUMN.dialogue)}Who paid this?`);
+    expect(text).toContain(`${" ".repeat(GUTTER + COLUMN.parenthetical)}(not looking up)`);
+    // An unwritten scene sets its change line as action.
+    expect(text).toContain(`${" ".repeat(GUTTER)}Maya starts to doubt him.`);
+    expect(text).not.toMatch(/\n\n\n\n/);
+    expect(text.endsWith("\n")).toBe(true);
+  });
+});

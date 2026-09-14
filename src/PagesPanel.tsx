@@ -44,6 +44,8 @@ type PagesPanelProps = {
   onSetText: (id: string, text: string) => void;
   /** The caret is in this scene: light its card and bring it into view. */
   onFocusScene: (id: string | null) => void;
+  /** Take the pages with you (R54): the sheet of formats. */
+  onSaveAs: () => void;
 };
 
 export function PagesPanel({
@@ -58,6 +60,7 @@ export function PagesPanel({
   onToggleWide,
   onSetText,
   onFocusScene,
+  onSaveAs,
   onMoveAfter,
   castNames,
 }: PagesPanelProps) {
@@ -122,6 +125,9 @@ export function PagesPanel({
                 Print
               </button>
             ) : null}
+            <button type="button" className="cast-lens__action" onClick={onSaveAs} title="Markdown, plain text, Fountain, Final Draft or PDF">
+              Save as…
+            </button>
             <button type="button" className="cast-lens__action" onClick={onToggleWide}>
               {wide ? "Beside the wall" : "Widen"}
             </button>

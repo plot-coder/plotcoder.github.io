@@ -214,6 +214,11 @@ card of another board is not asked about as uncast here.
   lines, the industry's break rules) with the page each scene starts on.
 - `export_fdx` / `import_fdx` — Final Draft's file, out (scene numbers by
   wall order, not locked) and in (the same merge as Fountain in).
+- `export_markdown` / `export_text` — the wall as Markdown (headings, a
+  heading per scene, the text or the change line) for a collaborator in
+  Google Docs or the like, and the script as plain text set as it prints.
+  Pass `path` to write a file; otherwise the text comes back. The writer has
+  the same five formats under Save as… in the Pages panel.
 
 ### The project
 

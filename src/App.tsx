@@ -34,6 +34,7 @@ import { TEMPLATES } from "./board/templates";
 import { PagesPanel } from "./PagesPanel";
 import { paginateBoard } from "./pagesLayout";
 import { BriefSheet } from "./BriefSheet";
+import { TakeSheet } from "./TakeSheet";
 import { TakesPanel } from "./TakesPanel";
 import { AccountSheet } from "./AccountSheet";
 import { WordsSheet } from "./WordsSheet";
@@ -121,6 +122,7 @@ export function App() {
   const [agentsOpen, setAgentsOpen] = useState(false);
   // The brief (R28, first step): for the selected card or cards.
   const [briefOpen, setBriefOpen] = useState(false);
+  const [takeOpen, setTakeOpen] = useState(false);
   // Takes (R28, item 9): for the selected card or run.
   const [takesOpen, setTakesOpen] = useState(false);
   const [takesIds, setTakesIds] = useState<string[]>([]);
@@ -799,17 +801,6 @@ export function App() {
           onOpen={() => setProjectOpen(true)}
           onClose={() => setProjectOpen(false)}
           onSignIn={() => setAccountOpen(true)}
-          onPrint={() => {
-            setPagesOpen(true);
-            writeFlag(PAGES_KEY, true);
-            setPagesView("pages");
-            try {
-              localStorage.setItem(PAGES_VIEW_KEY, "pages");
-            } catch {
-              /* per-viewer convenience only */
-            }
-            window.setTimeout(() => window.print(), 400);
-          }}
         />
         <AccountSheet open={accountOpen} onClose={() => setAccountOpen(false)} currentProjectId={project.id} onAgents={() => setAgentsOpen(true)} />
         <WordsSheet open={wordsOpen} onClose={() => setWordsOpen(false)} onShow={showWord} onAgents={() => setAgentsOpen(true)} />
@@ -836,6 +827,22 @@ export function App() {
           onStrip={setStripStructureId}
         />
       </div>
+      <TakeSheet
+        open={takeOpen}
+        onClose={() => setTakeOpen(false)}
+        onPrint={() => {
+          // Save as PDF: the pages view, then the browser's print (R23 c).
+          setPagesOpen(true);
+          writeFlag(PAGES_KEY, true);
+          setPagesView("pages");
+          try {
+            localStorage.setItem(PAGES_VIEW_KEY, "pages");
+          } catch {
+            /* per-viewer convenience only */
+          }
+          window.setTimeout(() => window.print(), 400);
+        }}
+      />
       <BriefSheet
         open={briefOpen}
         board={board}
@@ -870,6 +877,7 @@ export function App() {
           }
         }}
         onMoveAfter={moveAfter}
+        onSaveAs={() => setTakeOpen(true)}
         castNames={(note) => castText(note.characterIds, characters)}
         board={board}
         reading={reading}

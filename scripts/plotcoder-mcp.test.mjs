@@ -156,6 +156,8 @@ describe("plotcoder MCP server", () => {
       "end_revision",
       "export_fdx",
       "export_fountain",
+      "export_markdown",
+      "export_text",
       "export_project",
       "import_fdx",
       "import_fountain",
@@ -815,6 +817,21 @@ describe("characters", () => {
     ]);
   });
 
+  it("lands a card with a stranger in its cast as one change, so one undo takes back the card and the person", async () => {
+    const before = await cast.callToolData("list_board");
+    const revBefore = JSON.parse(fs.readFileSync(path.join(castRoot, ".plotcoder", "board.json"), "utf8")).rev;
+    const made = await cast.callToolData("create_note", { headline: "Nessa comes home", change: "She decides to sell.", characters: ["Nessa"] });
+    expect(made.characterIds).toHaveLength(1);
+    const between = await cast.callToolData("list_board");
+    expect(between.characters.map((person) => person.name)).toContain("Nessa");
+    expect(JSON.parse(fs.readFileSync(path.join(castRoot, ".plotcoder", "board.json"), "utf8")).rev).toBe(revBefore + 1);
+    expect(await cast.callTool("undo")).toContain('Undid create_note "Nessa comes home"');
+    const after = await cast.callToolData("list_board");
+    expect(after.notes).toHaveLength(before.notes.length);
+    expect(after.notes.map((note) => note.id)).not.toContain(made.id);
+    expect(after.characters.map((person) => person.name)).not.toContain("Nessa");
+  });
+
   it("writes a person's page a line at a time, and list_board says which lines are written", async () => {
     const before = await cast.callTool("list_board");
     expect(before).toContain('maya — "Maya" on 3 cards · page: empty');
@@ -1423,6 +1440,23 @@ describe("the premise and reminders (roadmap item 6)", () => {
     expect(await door.callTool("set_premise", { premise: "" })).toContain("Premise cleared");
   });
 
+  it("exports the wall as Markdown and the script as plain text, to the caller or to a file", async () => {
+    const markdown = await door.callTool("export_markdown");
+    expect(markdown).toContain("# Board 1");
+    expect(markdown).toContain("### 1 · MAYA FINDS THE LETTER");
+    expect(markdown).toContain("She decides not to tell Tom.");
+    const text = await door.callTool("export_text");
+    expect(text.split("\n")[0].trim()).toBe("BOARD 1");
+    expect(text).toContain(`1    ${"MAYA FINDS THE LETTER".padEnd(60)} 1`);
+    expect(text).toContain("     She decides not to tell Tom.");
+    const target = path.join(doorRoot, "out", "board.md");
+    expect(await door.callTool("export_markdown", { path: target })).toContain("lines of Markdown");
+    expect(fs.readFileSync(target, "utf8")).toContain("# Board 1");
+    const plain = path.join(doorRoot, "out", "board.txt");
+    expect(await door.callTool("export_text", { path: plain })).toContain("lines of plain text");
+    expect(fs.readFileSync(plain, "utf8")).toContain("MAYA FINDS THE LETTER");
+  });
+
   it("exports the wall as Fountain, to the caller or to a file", async () => {
     const text = await door.callTool("export_fountain");
     expect(text).toContain("Title: Board 1");
@@ -1875,10 +1909,24 @@ describe("undo through a store that reorders keys, and move_scene", () => {
     expect(await client2.callTool("redo")).toContain("Redid create_arrow");
   });
 
+  it("writes one frame to the open wall for a create_note with a cast, so ⌘Z there takes back the whole call", async () => {
+    const before = bridge.puts.length;
+    const made = await client2.callToolData("create_note", { headline: "E", change: "e.", characters: ["Nessa", "Dessie"] });
+    expect(made.characterIds).toHaveLength(2);
+    expect(bridge.puts.length).toBe(before + 1);
+    expect(bridge.getState().characters.map((person) => person.name).sort()).toEqual(["Dessie", "Nessa"]);
+    expect(await client2.callTool("undo")).toContain('Undid create_note "E"');
+    expect(bridge.getState().notes.map((note) => note.headline)).not.toContain("E");
+    expect(bridge.getState().characters).toHaveLength(0);
+  });
+
   it("moves a scene along the arrows as one undoable step", async () => {
     const board = await client2.callToolData("list_board");
     const id = (headline) => board.notes.find((note) => note.headline === headline).id;
+    const putsBefore = bridge.puts.length;
     const moved = await client2.callTool("move_scene", { id: id("D"), after: id("A") });
+    // One frame on the wall for the whole move, not one per arrow.
+    expect(bridge.puts.length).toBe(putsBefore + 1);
     expect(moved).toContain('Moved "D" to after "A"');
     expect(moved).toContain("Story order now: 1. A, 2. D, 3. B, 4. C");
     expect(moved).toContain("One undo takes the whole move back");

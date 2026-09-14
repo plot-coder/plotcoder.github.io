@@ -1161,7 +1161,7 @@ server.registerTool(
   {
     title: "Read the wall",
     description:
-      "Read the board back: the beats in wall order (rows top to bottom, cards left to right), the pages of scenes between consecutive beats with the cards in each, every setup with the distance to its payoff, and the questions the wall raises — no beat marked yet; a run out of proportion with the others; beats back to back with nothing between them (a chain of them is one question); a card with a placeholder headline or no change line; a card no arrow touches; two headlines that read like the same scene; a group too long to be one sequence; a person in the cast on no card; a person gone for more than a third of the story and ten pages; a payoff before its setup on the wall; a folded card no setup arrow pays off; cards that say no place once any card has one. These are questions, not fixes: put them to the writer and do not act on them unasked. It says nothing about how many beats there should be, and neither should you.",
+      "Read the board back: the beats in wall order (rows top to bottom, cards left to right), the pages of scenes between consecutive beats with the cards in each, every setup with the distance to its payoff, and the questions the wall raises — no beat marked yet; a run out of proportion with the others; beats back to back with nothing between them (a chain of them is one question); a card with a placeholder headline or no change line; a card no arrow touches; two headlines that read like the same scene; a group too long to be one sequence; a person in the cast on no card; a person gone for more than a third of the story and ten pages; a payoff before its setup on the wall; a folded card no setup arrow pays off; cards that say no place once any card has one. These are questions, not fixes: put them to the writer and do not act on them unasked. It says nothing about how many beats there should be, and neither should you. The prose carries every id; the JSON after it is the same reading for a program, and PLOTCODER_JSON=0 in the server's environment drops it.",
     inputSchema: {},
   },
   async () => {
@@ -1185,12 +1185,12 @@ server.registerTool(
               .map((group) => {
                 const members = state.notes.filter((note) => group.noteIds.includes(note.id));
                 const act = /^act\b/i.test((group.title ?? "").trim());
-                return `"${group.title || "(untitled)"}" — ${members.length} card(s), about ${formatPages(members.reduce((sum, note) => sum + noteEighths(note), 0))} pages${act ? ", read as an act (never asked whether it is one sequence)" : ", read as a sequence"}`;
+                return `"${group.title || "(untitled)"}" — ${members.length} card(s), about ${formatPages(members.reduce((sum, note) => sum + noteEighths(note), 0))} pages${act ? ", read as an act, so its length is not questioned" : ", read as a sequence"}`;
               })
               .join("; ")
           : "(none)"
       }`,
-      `pages: ${written === 0 ? "all estimates — no scene is written yet, so every card is the writer's guess" : written === state.notes.length ? "measured — every scene is written" : `estimates — ${written} of ${state.notes.length} cards are written, the rest are guesses`}`,
+      `pages: ${written === 0 ? "all estimates — no scene is written yet, so every card is the writer's guess" : written === state.notes.length ? "measured — every scene is written" : `estimates — ${written} of ${state.notes.length} cards are written${written <= 5 ? ` (${state.notes.filter((note) => isMeasured(note)).map((note) => `"${note.headline}"`).join(", ")})` : ""}, the rest are guesses`}`,
       `beats in wall order: ${
         reading.beats.length
           ? reading.beats.map((beat) => `"${beat.headline}"`).join(", ")
@@ -2628,7 +2628,7 @@ server.registerTool(
   {
     title: "Save the project as a file",
     description:
-      "The project the server is working, as the file Save project writes and Open project takes: the record, every board with its cards, the reminders and the writer's structures. Pass path to write it (a .json); without a path, the reply's JSON is the file. Pictures and takes on the account are not in the file. Works through every door.",
+      "The project the server is working, as the file Save project writes and Open project takes: the record, every board with its cards, the reminders and the writer's structures. Pass path to write it (a .json) — an absolute path, since a relative one resolves from the server's own folder, not yours; without a path, the reply's JSON is the file. Pictures and takes on the account are not in the file. Works through every door.",
     inputSchema: { path: z.string().optional() },
   },
   async (args) => {
@@ -2640,7 +2640,7 @@ server.registerTool(
     if (args.path) {
       fs.mkdirSync(path.dirname(path.resolve(args.path)), { recursive: true });
       fs.writeFileSync(args.path, JSON.stringify(file, null, 2));
-      return ok(`Saved ${what}. Written to ${args.path}: Open project in the app takes it, import_project brings it onto an account.`, { path: args.path, boards: project.boards.length, cards });
+      return ok(`Saved ${what}. Written to ${path.resolve(args.path)}: Open project in the app takes it, import_project brings it onto an account.`, { path: path.resolve(args.path), boards: project.boards.length, cards });
     }
     return ok(`The project as a file — ${what}. The JSON below is the file; write it to a .json for Open project or import_project.`, file);
   },

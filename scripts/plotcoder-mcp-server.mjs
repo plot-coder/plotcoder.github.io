@@ -179,9 +179,10 @@ let accountTried = false;
 /** Why the door is shut when the writer's sign-in is set but failed. Every tool says this; none reads the file instead (round four, findings 5–7). */
 let accountRefusal = null;
 const NO_PROJECT_YET = "The account holds no project yet: new_project starts the writer's first.";
-/** The same, with the folder named only when the door skipped a sample wall there (round eight, finding 9). */
+/** The same, naming the account, with the folder named only when a wall in the folder was left alone (rounds eight and ten). */
 function noProjectYet() {
-  return accountDoor?.skippedFolder ? `${NO_PROJECT_YET} The sample wall in this folder was not uploaded.` : NO_PROJECT_YET;
+  const who = accountDoor?.email ? `The account, as ${accountDoor.email}, holds no project yet: new_project starts the writer's first.` : NO_PROJECT_YET;
+  return accountDoor?.skippedFolder ? `${who} The sample wall in this folder was not uploaded.` : who;
 }
 
 /** A door's answer — shut, or no project yet — thrown from a read and turned into a plain reply by every tool. Not an error. */
@@ -394,7 +395,8 @@ async function chooseProject(key) {
     });
     if (!work) {
       accountDoor.projectId = null;
-      accountDoor.skippedFolder = true;
+      // Only a folder that actually held a wall is worth a word.
+      accountDoor.skippedFolder = Boolean(file) || fs.existsSync(BOARD_FILE);
       return null;
     }
     record = { ...record, name: record.name || "From the agent" };
@@ -1122,7 +1124,7 @@ server.registerTool(
   {
     title: "Read the wall",
     description:
-      "Read the board back: the beats in wall order (rows top to bottom, cards left to right), the pages of scenes between consecutive beats, and the questions the wall raises — a run out of proportion with the others, a card with no change line, a card no arrow touches, two headlines that read like the same scene, a group too long to be one sequence, beats back to back with nothing between them (a chain of them is one question), cards that say no place once any card has one. These are questions, not fixes: put them to the writer and do not act on them unasked. It says nothing about how many beats there should be, and neither should you.",
+      "Read the board back: the beats in wall order (rows top to bottom, cards left to right), the pages of scenes between consecutive beats with the cards in each, every setup with the distance to its payoff, and the questions the wall raises — no beat marked yet; a run out of proportion with the others; beats back to back with nothing between them (a chain of them is one question); a card with a placeholder headline or no change line; a card no arrow touches; two headlines that read like the same scene; a group too long to be one sequence; a person in the cast on no card; a person gone for more than a third of the story and ten pages; a payoff before its setup on the wall; a folded card no setup arrow pays off; cards that say no place once any card has one. These are questions, not fixes: put them to the writer and do not act on them unasked. It says nothing about how many beats there should be, and neither should you.",
     inputSchema: {},
   },
   async () => {
@@ -1771,7 +1773,7 @@ server.registerTool(
   {
     title: "Fold the corner",
     description:
-      `Fold the corner of cards — mark them as planting something — or unfold them. ${wordSentence("corner")} One thing, three words: the card's corner is folded, plants is the flag, and read_wall calls a fold with no payoff yet 'unpaid'. The setup arrow is create_arrow with kind 'setup'. Folding never moves a card.`,
+      `Fold the corner of cards — mark them as planting something — or unfold them. ${wordSentence("corner")} The setup arrow is create_arrow with kind 'setup'. Folding never moves a card.`,
     inputSchema: {
       ids: z.array(z.string()).min(1),
       plants: z.boolean(),
@@ -2218,7 +2220,23 @@ server.registerTool(
     inputSchema: {},
   },
   async () => {
-    const { reminders, live, project, base } = await readProject();
+    let read;
+    try {
+      read = await readProject();
+    } catch (error) {
+      if (!(error instanceof DoorReply)) throw error;
+      // No project on the account yet: the house principles still exist, and
+      // an agent is told to read them before it changes anything (round ten).
+      const house = currentReminders(null);
+      return ok(
+        [
+          `reminders (${error.message.replace(/\.$/, "")}): ${house.length} — the house principles the app starts every project with; the writer's own will live on the project`,
+          ...house.map((item) => `  - ${item.id} (built in) — ${item.title}: ${item.body}`),
+        ].join("\n"),
+        house,
+      );
+    }
+    const { reminders, live, project, base } = read;
     const list = currentReminders(reminders);
     const own = list.filter((item) => !item.builtIn).length;
     return ok(

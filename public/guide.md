@@ -1,12 +1,3 @@
----
-name: plotcoder-board
-description: >-
-  Build and rearrange the PlotCoder storyboard from an agent: cards, groups,
-  arrows, beat rank, scene length, and the logline. Use when asked to build or
-  rearrange the PlotCoder wall, add beats, size scenes, or change the board —
-  instead of simulating mouse drags in a browser.
----
-
 # PlotCoder board
 
 PlotCoder is a storylining wall of cards (post-its). Each card is one **scene**:
@@ -81,8 +72,9 @@ order as text, the nearest thing to a look at it.
   a folded card no setup arrow pays off, beats back to back with nothing
   between them (a chain of them is one question naming every turn), and cards
   that say no place once any card has one. It also lists every setup with the
-  distance to its payoff. Put the questions to the writer. Do not act on them
-  unasked, and do not add an opinion about the number of beats.
+  distance to its payoff. The tool's own description carries the same list,
+  and a reply names each question's kind. Put the questions to the writer. Do
+  not act on them unasked, and do not add an opinion about the number of beats.
 
 ### Cards
 

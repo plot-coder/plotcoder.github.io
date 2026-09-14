@@ -7,7 +7,7 @@
 
 export const AGENTS = {
   lead:
-    "A storyline wall. Cards are scenes, beats are the big turns, arrows say what follows or pays off what. An agent driven by a person has every tool a person here has; the person directs, the agent operates. Call the tools; never fake a mouse.",
+    "A storyline wall. Cards are scenes, beats are the big turns, arrows say what follows or pays off what. An agent driven by a person has every tool a person here has; the person directs, the agent operates. Call the tools; never fake a mouse. Already have the plotcoder-board tools in front of you? Skip the doors and go to Call these first.",
   doors: [
     {
       id: "mcp",
@@ -42,7 +42,7 @@ export const AGENTS = {
       text: "Skip this when the account is the wall. Without an account, a wall is a folder: any folder, empty is fine — choose one that will outlive your session, never a scratch one. The app run from that folder shows the wall, and the server writes it there (PLOTCODER_ROOT, or the folder it is run from). A fresh folder holds the sample; new_board for the writer's wall, then rename_project. No app running? export_fountain is the wall in order, as text.",
     },
   ],
-  firstNote: "These four are about the wall you will work, so after open_project or open_board, read_wall again. On an account with no project yet, read_wall has nothing to read and says so, and list_reminders gives the house principles every project starts with; new_project, then the four again. No server in front of you, and no shell to take the shell door? Nothing gets you in from inside the session: say so, and ask the person to wire the server and start a new session.",
+  firstNote: "These four are about the wall you will work, so after open_project, open_board, new_project or empty_account, read_wall again. On an account with no project yet, read_wall has nothing to read and says so, and list_reminders gives the house principles every project starts with; new_project, then the four again. No server in front of you, and no shell to take the shell door? Nothing gets you in from inside the session: say so, and ask the person to wire the server and start a new session.",
   first: [
     { tool: "list_words", why: "the room's words, the app's meaning." },
     { tool: "read_wall", why: "what is here, and what it asks. A fresh folder holds a sample wall (Maya, Tom, the letter) and says so; it is not the writer's." },
@@ -64,7 +64,7 @@ export const AGENTS = {
 
 /** The on-ramp as one text: the file at /llms.txt, and what an agent reads. */
 export function agentsAsText() {
-  const lines = ["# PlotCoder — for agents", "", AGENTS.lead, "", `The guide, read once before anything: ${AGENTS.guide}.`, "", "## Doors"];
+  const lines = ["# PlotCoder — for agents", "", AGENTS.lead, "", `The guide, read once before anything: ${AGENTS.guide}. The guide is the whole and this page is its first page; where the two differ, the guide wins.`, "", "## Doors"];
   for (const door of AGENTS.doors) {
     lines.push(`- ${door.name}: ${door.text}`);
     if (door.code) lines.push("", "```", door.code, "```", "");

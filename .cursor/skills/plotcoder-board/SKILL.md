@@ -9,6 +9,18 @@ description: >-
 
 # PlotCoder board
 
+This is the whole guide; the on-ramp at plotcoder.com/llms.txt is its first
+page, and where the two differ, this wins.
+
+PlotCoder serves one method, and its tools follow it:
+
+1. State the **logline**: the central question, what the story is arguing.
+2. Mark the **beats**: the 8 to 15 major turns.
+3. Fill the space between them with **scene cards**. One card is one scene.
+4. **Read the wall**: the run that sags, the setup with no payoff, the person
+   who disappears.
+5. Only then **write pages**.
+
 PlotCoder is a storylining wall of cards (post-its). Each card is one **scene**:
 a `headline` plus the `change` it causes. Cards also have a `color`, a position
 (`x`,`y`), a rotation, a `rank`, and a `length`.

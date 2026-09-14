@@ -277,7 +277,7 @@ describe("plotcoder MCP server", () => {
 
       const listed = await client.callTool("list_board");
       expect(listed).toContain("[scene, 3 pages");
-      expect(listed).toContain("120-page target");
+      expect(listed).toContain("no target set — set_target");
 
       // Length is a property of the card, not of where it sits.
       const after = readBoardFile().state.notes.find((note) => note.id === target);
@@ -1178,7 +1178,7 @@ describe("boards of a project", () => {
   });
 
   it("renames a board and refuses a blank rename", async () => {
-    expect(await season.callTool("rename_board", { board: "1", name: "Episode 1" })).toContain('Renamed to "Episode 1"');
+    expect(await season.callTool("rename_board", { board: "1", name: "Episode 1" })).toContain('to "Episode 1"');
     expect(await season.callTool("list_boards")).toContain('"Episode 1" (open)');
   });
 
@@ -1735,7 +1735,7 @@ describe("round seven's replies", () => {
     const ledger = board.notes.find((note) => note.headline === "The ledger");
     const cash = board.notes.find((note) => note.headline === "The cash arrives");
     expect(await seven.callTool("list_board")).toContain("unsized");
-    expect(await seven.callTool("list_board")).toContain("the target is the feature default");
+    expect(await seven.callTool("list_board")).toContain("no target set");
     const arrow = await seven.callTool("create_arrow", { from: ledger.id, to: cash.id, kind: "setup" });
     expect(arrow).toContain('The fold on "The ledger" is paid off now');
   });
@@ -1750,5 +1750,56 @@ describe("round seven's replies", () => {
     expect(await seven.callTool("list_workflows")).toMatch(/^The workflows — the app's own/);
     expect(read).toContain('Before "The ledger": about 2 pages, 2 cards — "Maya finds the letter", "Fiona at the launderette"');
     expect(read).toContain('"The ledger" → "The cash arrives": about 0 pages, 0 cards');
+  });
+});
+
+// Round ten's build replies: the card comes back cast, boards are named
+// when renamed, organize says why it wrapped, places sit side by side, a
+// near match is named, and the runtime stops judging against a target
+// nobody set.
+describe("round ten's replies", () => {
+  let tenRoot;
+  let ten;
+
+  beforeAll(async () => {
+    tenRoot = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-ten-"));
+    ten = new McpClient(tenRoot);
+    await ten.start();
+  }, 30000);
+
+  afterAll(() => {
+    ten?.stop();
+    if (tenRoot) fs.rmSync(tenRoot, { recursive: true, force: true });
+  });
+
+  it("returns the card with its cast landed, and names the board it renamed", async () => {
+    const card = await ten.callToolData("create_note", { headline: "Nessa comes back", change: "She decides to sell.", characters: ["Nessa Boyd", "Dessie Kane"] });
+    expect(card.characterIds).toHaveLength(2);
+    const renamed = await ten.callTool("rename_board", { board: 1, name: "Pilot" });
+    expect(renamed).toMatch(/^Renamed board "Board 1" \([0-9a-f-]+\) to "Pilot"/);
+  });
+
+  it("says why organize wrapped five wide, and that no target is set", async () => {
+    const tidy = await ten.callTool("organize");
+    expect(tidy).toContain("five cards wide — no beats yet");
+    const board = await ten.callTool("list_board");
+    expect(board).toMatch(/runtime: about \d+ pages \(an estimate[^)]*\); no target set — set_target/);
+    expect(board).not.toContain("-page target");
+    await ten.callTool("set_target", { pages: 60 });
+    expect(await ten.callTool("list_board")).toContain("of a 60-page target");
+  });
+
+  it("lists the places side by side, and names a near match when a place is set", async () => {
+    const board = await ten.callToolData("list_board");
+    const [a, b, c] = board.notes.map((note) => note.id);
+    await ten.callTool("set_location", { ids: [a], location: "the caravan park" });
+    const near = await ten.callTool("set_location", { ids: [b], location: "the caravan park, the rows" });
+    expect(near).toContain('The wall also has "the caravan park"');
+    const clean = await ten.callTool("set_location", { ids: [c], location: "the chip shop" });
+    expect(clean).not.toContain("The wall also has");
+    const listed = await ten.callTool("list_board");
+    expect(listed).toContain("places (each distinct phrase is one place");
+    expect(listed).toContain('  - "the caravan park" on 1 card');
+    expect(listed).toContain('  - "the caravan park, the rows" on 1 card');
   });
 });

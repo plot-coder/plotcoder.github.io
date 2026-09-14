@@ -226,10 +226,10 @@ export function App() {
   // The scene that pays each plant off, as printed on the card (R31).
   const payoffOf = useMemo(() => {
     const map = new Map<string, string | null>();
-    for (const [from, to] of Object.entries(reading.payoffs)) {
-      // The scene's printed number: the lock's when locked, else its place in reading order.
-      const number = to ? (numberOf.get(to) ?? (reading.order.includes(to) ? String(reading.order.indexOf(to) + 1) : null)) : null;
-      map.set(from, to ? (number ?? notes.find((note) => note.id === to)?.headline ?? null) : null);
+    for (const [from, tos] of Object.entries(reading.payoffs)) {
+      // Each payoff's printed number: the lock's when locked, else its place in reading order.
+      const labels = tos.map((to) => numberOf.get(to) ?? (reading.order.includes(to) ? String(reading.order.indexOf(to) + 1) : null) ?? notes.find((note) => note.id === to)?.headline ?? to);
+      map.set(from, labels.length ? labels.join(", ") : null);
     }
     return map;
   }, [reading, numberOf, notes]);

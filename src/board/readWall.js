@@ -303,7 +303,9 @@ export function readWall(state) {
       .filter((arrow) => arrow.kind === "setup" && arrow.from === note.id)
       .map((arrow) => arrow.to)
       .sort((a, b) => (wallIndex.get(a) ?? Infinity) - (wallIndex.get(b) ?? Infinity));
-    payoffs[note.id] = heads[0] ?? null;
+    // Every payoff, in wall order: a card can plant two things (the ledger
+    // pays off at the cash and again at the initials), and both count.
+    payoffs[note.id] = heads;
   }
   for (const note of order) {
     if (note.plants && !paysOff.has(note.id)) {

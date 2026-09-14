@@ -790,6 +790,15 @@ function summarize(state) {
       return `  - ${character.id} — "${character.name}" on ${on} card${on === 1 ? "" : "s"}${brief}`;
     })
     .join("\n");
+  const placeCounts = new Map();
+  for (const note of state.notes) {
+    const phrase = (note.location ?? "").trim();
+    if (phrase) placeCounts.set(phrase, (placeCounts.get(phrase) ?? 0) + 1);
+  }
+  const places = [...placeCounts.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([phrase, count]) => `  - "${phrase}" on ${count} card${count === 1 ? "" : "s"}`)
+    .join("\n");
   const { beats, scenes } = countRanks(state);
   const headline = (id) =>
     state.notes.find((note) => note.id === id)?.headline ?? "(missing card)";
@@ -823,10 +832,14 @@ function summarize(state) {
     `logline: ${state.logline ? `"${state.logline}"` : "(not set)"}`,
     ...production,
     `beats: ${beats}, scenes: ${scenes}`,
-    `runtime: about ${formatPages(runtime)} pages of a ${formatPages(state.targetEighths)}-page target — ${over > 0 ? `${formatPages(over)} over` : over < 0 ? `${formatPages(-over)} under` : "on it"} (an estimate from the cards; a page runs about a minute)${state.targetEighths === DEFAULT_TARGET_EIGHTHS ? " — the target is the feature default, nobody's choice yet; set_target for a pilot or a half-hour" : ""}`,
+    state.targetEighths === DEFAULT_TARGET_EIGHTHS
+      ? `runtime: about ${formatPages(runtime)} pages (an estimate from the cards; a page runs about a minute); no target set — set_target for a pilot (60) or a half-hour (30); against the feature default of 120 it would be ${formatPages(-over)} under`
+      : `runtime: about ${formatPages(runtime)} pages of a ${formatPages(state.targetEighths)}-page target — ${over > 0 ? `${formatPages(over)} over` : over < 0 ? `${formatPages(-over)} under` : "on it"} (an estimate from the cards; a page runs about a minute)`,
     `notes: ${state.notes.length}, groups: ${state.groups.length}, arrows: ${state.arrows.length}, cast: ${state.characters.length}`,
     "cast:",
     cast || "  (no one yet — add_character to start the roster)",
+    "places (each distinct phrase is one place; near-matches sit side by side):",
+    places || "  (no card says where it happens yet)",
     "cards:",
     notes || "  (no cards)",
     "groups:",
@@ -996,7 +1009,7 @@ server.registerTool(
     },
   },
   async (args) => {
-    const { result, live } = await commit({
+    let { result, live } = await commit({
       type: "create_note",
       headline: args.headline,
       change: args.change,
@@ -1027,7 +1040,12 @@ server.registerTool(
         }
         if (person) ids.push(person.id);
       }
-      if (ids.length) await commit({ type: "set_cast", ids: [result.id], characterIds: ids });
+      if (ids.length) {
+        const cast = await commit({ type: "set_cast", ids: [result.id], characterIds: ids });
+        // The card as it is now, cast and all, so the reply's JSON agrees with its prose.
+        const after = cast.state.notes.find((note) => note.id === result.id);
+        if (after) result = after;
+      }
       castLine = ` Cast: ${args.characters.map((name) => name.trim()).join(", ")}${added.length ? ` (added to the roster: ${added.join(", ")})` : ""}.`;
     }
     const landed = [
@@ -1194,7 +1212,7 @@ server.registerTool(
     }
     const shape = beats
       ? `${beats} row(s), one per beat${wrappedUnder.length ? `; ${wrappedUnder.map((item) => `the row of "${item.beat.headline}" wraps under from "${item.first.headline}"`).join(", ")}` : ""}`
-      : `${rows} row(s)`;
+      : `${rows} row(s) five cards wide — no beats yet, so nothing sets the rows; set_rank the turns and organize again for a row per beat`;
     return ok(`Organized ${poses.length} card(s) along the arrows into ${shape}${where(live)}.`, poses);
   },
 );
@@ -1927,8 +1945,16 @@ server.registerTool(
       return ok("No place changed: those cards already read that way.");
     }
     const place = result[0].location;
+    // A near match on the wall is probably the same place spelled twice.
+    const wanted = (place ?? "").trim().toLowerCase();
+    const near = wanted
+      ? [...new Set(state.notes.map((note) => (note.location ?? "").trim()).filter(Boolean))].filter(
+          (other) => other.toLowerCase() !== wanted && (other.toLowerCase().includes(wanted) || wanted.includes(other.toLowerCase())),
+        )
+      : [];
+    const warn = near.length ? ` The wall also has ${near.map((other) => `"${other}"`).join(", ")} — the same place spelled twice, or two places? Each distinct phrase counts as one place.` : "";
     return ok(
-      `${result.length} card(s) now ${place ? `at ${place}` : "nowhere"}${where(live)}.`,
+      `${result.length} card(s) now ${place ? `at ${place}` : "nowhere"}${where(live)}.${warn}`,
       result,
     );
   },
@@ -2074,7 +2100,7 @@ server.registerTool(
   {
     title: "Create arrow",
     description:
-      "Draw a directed arrow from one card to another. kind 'follows' (the default) says what comes after what; kind 'setup' says the first card plants something the second pays off. Arrows are one-way: A→B does not create B→A. If you want both, call this twice — that is two arrows, not one two-headed line. A card cannot point at itself, and the same direction cannot be drawn twice, whatever its kind; use set_arrow_kind to change one.",
+      "Draw a directed arrow from one card to another. kind 'follows' (the default) says what comes after what — a straight sequence needs them too: organize lays the wall out along them, and the wall asks about a card no arrow touches; kind 'setup' says the first card plants something the second pays off. Arrows are one-way: A→B does not create B→A. If you want both, call this twice — that is two arrows, not one two-headed line. A card cannot point at itself, and the same direction cannot be drawn twice, whatever its kind; use set_arrow_kind to change one.",
     inputSchema: { from: z.string(), to: z.string(), kind: arrowKindSchema.optional() },
   },
   async (args) => {
@@ -2624,7 +2650,7 @@ server.registerTool(
     const next = renameBoard(project, target.id, args.name);
     if (next === project) return ok(`"${target.name}" already has that name.`);
     const live = await writeProject(next, boards, rev, base);
-    return ok(`Renamed to "${args.name.trim()}"${where(live)}.`);
+    return ok(`Renamed board "${target.name}" (${target.id}) to "${args.name.trim()}"${where(live)}.`, { id: target.id, name: args.name.trim() });
   },
 );
 

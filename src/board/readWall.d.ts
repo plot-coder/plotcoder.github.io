@@ -59,7 +59,8 @@ export type WallReading = {
   runs: Run[];
   setups: Setup[];
   /** Every planted card: the scene that pays it off (first setup arrow, by wall order), or null while unpaid. */
-  payoffs: Record<string, string | null>;
+  /** For each folded card, the cards its setup arrows land on, in wall order; empty when unpaid. */
+  payoffs: Record<string, string[]>;
   findings: Finding[];
 };
 

@@ -1577,6 +1577,18 @@ describe("the shell caller, one server per call", () => {
     expect(run.stdout).not.toMatch(/\n\n\{/);
   });
 
+  it("is the package's own command too: plotcoder-board call <tool>", () => {
+    const { spawnSync } = require("node:child_process");
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-board-call-"));
+    const run = spawnSync("node", [fileURLToPath(new URL("./plotcoder-mcp.mjs", import.meta.url)), "call", "list_words"], {
+      encoding: "utf8",
+      env: { ...process.env, PLOTCODER_ROOT: root, PLOTCODER_NO_BRIDGE: "1" },
+    });
+    fs.rmSync(root, { recursive: true, force: true });
+    expect(run.status).toBe(0);
+    expect(run.stdout).toContain("PlotCoder's words");
+  });
+
   it("tells a one-call server that undo cannot carry between calls", async () => {
     const oneRoot = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-one-"));
     const one = new McpClient(oneRoot, { PLOTCODER_ONE_CALL: "1" });

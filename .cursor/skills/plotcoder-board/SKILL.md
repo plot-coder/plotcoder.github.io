@@ -35,22 +35,25 @@ season's episodes, or a writer's stories) under one name and one premise.
 
 ## Use the MCP tools, not the mouse
 
-The repo ships an MCP server (`plotcoder-board`, wired in `.cursor/mcp.json`
-and `.mcp.json`; run `npm ci` once first). That wiring is project-scoped: it
-loads when the session opens with the repo as its folder. To have it in any
-session, once: `claude mcp add plotcoder-board -s user -- node
-/path/to/plotcoder.github.io/scripts/plotcoder-mcp.mjs`. Drive the board through its tools.
-**Do not** open a browser and fake pointer drags — the tools and the human UI
-share one command kernel, so a tool call lands on the exact same board a person
-sees. No MCP where you are? `node scripts/plotcoder-call.mjs <tool> '{json}'`
-makes one call from a shell — one server per call, so `undo` and the project
-`new_project` or `open_project` chose do not carry to the next call; set
-`PLOTCODER_PROJECT` for the calls that need it, or run them as a batch
-(`--batch < calls.jsonl`, one `{"tool", "arguments"}` per line) on one server.
-The sign-in is kept between calls in the repo's `.plotcoder` folder. An agent
-already inside a session uses this door: a server wired mid-session connects
-only on the next session. `PLOTCODER_ROOT` points the server at the folder
-whose wall you mean.
+The server is an npm package, `plotcoder-board`: wire it once, from any
+folder, with `claude mcp add plotcoder-board -s user -- npx -y
+plotcoder-board@latest` (or the same as a config block), then start the
+session again — a server wired from inside a session connects only on the
+next one. Inside the repo, `.mcp.json` and `.cursor/mcp.json` wire the
+checkout's own server instead (run `npm ci` in it first). Drive the board
+through its tools. **Do not** open a browser and fake pointer drags — the
+tools and the human UI share one command kernel, so a tool call lands on the
+exact same board a person sees. No MCP where you are, or already inside a
+session? `npx -y plotcoder-board@latest call <tool> '{json}'` makes one call
+from a shell — one server per call, so `undo` and the project `new_project`
+or `open_project` chose do not carry to the next call; set `PLOTCODER_PROJECT`
+for the calls that need it, or run them as a batch (`call --batch <
+calls.jsonl`, one `{"tool", "arguments"}` per line) on one server. The
+sign-in is kept between calls in the folder's `.plotcoder`. Hosted, with
+nothing installed: `npx -y plotcoder-board@latest serve` puts the same server
+on a port, and an MCP client connects with `--transport http` and the
+writer's sign-in in a Basic header. `PLOTCODER_ROOT` points the server at the
+folder whose wall you mean.
 
 **Call these first, in this order:** `list_words` (the room's words), `read_wall`
 (what is here and what it asks — a fresh folder holds a sample wall, Maya and

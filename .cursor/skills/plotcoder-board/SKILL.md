@@ -234,7 +234,9 @@ order as text, the nearest thing to a look at it.
    and use the real `id`s it returns. Never guess ids.
 2. Give every card a real `headline` and `change` — not placeholders. A card
    whose change line is empty is a card that has not earned its place.
-3. To lay cards out, draw the arrows and call `organize`. Use `move_note` only
+3. To lay cards out, draw the arrows and call `organize`. A straight
+   sequence needs its `follows` arrows too: they are what `organize` lays
+   the wall out along, and the wall asks about a card no arrow touches. Use `move_note` only
    for a card that belongs somewhere the arrows do not say. Cards are 192px;
    leave ~30px gaps for a readable row.
 4. Mark the major turns with `set_rank`. Marking a beat never moves it.

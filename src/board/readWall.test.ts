@@ -395,7 +395,7 @@ describe("findings", () => {
 });
 
 describe("payoffs: which scene pays each plant off", () => {
-  it("names the first setup arrow's head by wall order, and null while unpaid", () => {
+  it("names every setup arrow's head in wall order, and none while unpaid", () => {
     let state = emptyState();
     const plant = applyCommand(state, { type: "create_note", headline: "The gun on the wall", change: "Nobody mentions it.", x: 0, y: 0, plants: true }).result as { id: string };
     state = applyCommand(state, { type: "create_note", headline: "The gun on the wall", change: "Nobody mentions it.", x: 0, y: 0, plants: true }).state;
@@ -403,10 +403,11 @@ describe("payoffs: which scene pays each plant off", () => {
     state = applyCommand(state, { type: "create_note", headline: "Later", change: "It goes off.", x: 600, y: 0 }).state;
     state = applyCommand(state, { type: "create_note", headline: "Latest", change: "It goes off again.", x: 1200, y: 0 }).state;
     const [, later, latest] = state.notes;
-    expect(readWall(state).payoffs).toEqual({ [first.id]: null });
+    expect(readWall(state).payoffs).toEqual({ [first.id]: [] });
     state = applyCommand(state, { type: "create_arrow", from: first.id, to: latest.id, kind: "setup" }).state;
     state = applyCommand(state, { type: "create_arrow", from: first.id, to: later.id, kind: "setup" }).state;
-    expect(readWall(state).payoffs).toEqual({ [first.id]: later.id });
+    // Two payoffs: the ledger pays off at the cash and again at the initials, and both count.
+    expect(readWall(state).payoffs).toEqual({ [first.id]: [later.id, latest.id] });
     expect(readWall(state).findings.filter((f) => f.kind === "unpaid")).toEqual([]);
     void plant;
   });

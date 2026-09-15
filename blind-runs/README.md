@@ -39,7 +39,7 @@ and the `friction, fixed` entries in the changelog.
 | Ten | The published package, wired before the session | "Low Season" | The directions | 9 + 12 + 14, all fixed; found undo one step deep on the account |
 | Eleven | The published package | "Low Season" | The directions | 11 + 16 + 20, all fixed; asked for R50 and R51 |
 | Twelve | The published package, the treatment complete | "Low Season" | The directions | 33, all fixed; asked for R52 and R53 |
-| Thirteen | The published package, a feature, past the wall | "Ninety-Nine" | Pages | not yet run |
+| Thirteen | The published package, a feature, past the wall | "Ninety-Nine" | Pages: a scene written, Markdown out, the page count | 32 (`round-thirteen-report.md`), none fixed yet |
 
 ## The rounds so far, and the next round
 
@@ -59,6 +59,9 @@ directions phase. Each round's findings are itemised in `REQUIREMENTS.md`,
   as Markdown. The test account is
   filled in (`test@test.com`, password `test`; Robert's decision, so the prompt
   pastes without editing). Paste everything below its divider.
+- `round-thirteen-report.md` — the agent's report from round thirteen,
+  verbatim, under a head naming the six fixes Robert chose first and where
+  each lives in the code. The next session starts here.
 - `round-thirteen-treatment.md` — "Ninety-Nine", a feature, embedded in the
   prompt. It answers the eleven questions up front and includes one thing
   the writer says is not a plant, so the round measures what the wall does

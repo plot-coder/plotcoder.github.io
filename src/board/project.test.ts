@@ -22,6 +22,7 @@ import {
   reidentifyProject,
   addStructure,
   removeStructure,
+  scriptTitles,
 } from "./project";
 
 const NOW = "2026-01-01T00:00:00.000Z";
@@ -262,5 +263,19 @@ describe("one cast for the project (R51)", () => {
     const bare = normalizeProject({ id: "p", boards: [{ id: "b", name: "B" }] } as unknown as Parameters<typeof normalizeProject>[0], NOW);
     expect("characters" in bare).toBe(false);
     expect(normalizeProject({ ...bare, characters: [person("n1", "Nessa"), { id: 3 }] } as unknown as Parameters<typeof normalizeProject>[0], NOW).characters).toEqual([person("n1", "Nessa")]);
+  });
+});
+
+describe("scriptTitles (round thirteen, entry 26)", () => {
+  const board = (name: string) => ({ id: name.toLowerCase(), name, createdAt: NOW, updatedAt: NOW });
+
+  it("titles a one-board film for its project, an episode for its board with the project beside it, and an untitled project's board for itself", () => {
+    const film = { ...emptyProject(NOW), name: "Ninety-Nine", boards: [board("Feature")], activeBoardId: "feature" };
+    expect(scriptTitles(film, film.boards[0])).toEqual({ title: "Ninety-Nine" });
+    const season = { ...film, name: "Low Season", boards: [board("Pilot"), board("Episode two")] };
+    expect(scriptTitles(season, season.boards[0])).toEqual({ title: "Pilot", project: "Low Season" });
+    const untitled = { ...film, name: "Untitled project" };
+    expect(scriptTitles(untitled, untitled.boards[0])).toEqual({ title: "Feature" });
+    expect(scriptTitles(untitled, null)).toEqual({ title: "Untitled" });
   });
 });

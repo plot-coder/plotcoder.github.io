@@ -18,7 +18,7 @@
 // monospaced.
 
 import { readingOrder } from "./readWall.js";
-import { sceneHeading } from "./fountain.js";
+import { sceneHeading, standInFor } from "./fountain.js";
 import { paginate, parseScene, WIDTH } from "./paginate.js";
 import { sceneNumbers } from "./numbering.js";
 
@@ -79,7 +79,9 @@ export function toMarkdown(state, options = {}) {
     out.push(`### ${numbers.get(note.id) ?? ""} · ${heading}`.replace(/^###  · /, "### "), "");
     if (note.headline && upper(note.headline) !== heading) out.push(`*${note.headline.trim()}*`, "");
     if (note.text && note.text.trim()) out.push(...sceneMarkdown(note.text));
-    else if (note.change && note.change.trim()) out.push(note.change.trim(), "");
+    // Unwritten: the change line stands in, marked and in italics, so a reader
+    // in Docs can tell the one written scene from sixteen placeholders.
+    else out.push(`*${standInFor(note)}*`, "");
   }
   return `${out.join("\n").trimEnd()}\n`;
 }
@@ -156,7 +158,7 @@ export function toPlainText(state, options = {}) {
       id: note.id,
       heading: sceneHeading(note).slice(1),
       text: note.text,
-      change: note.change,
+      change: standInFor(note),
       written: Boolean(note.text && note.text.trim()),
       number: numbers.get(note.id) ?? undefined,
     })),

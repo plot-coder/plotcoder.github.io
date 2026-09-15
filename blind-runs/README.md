@@ -5,9 +5,11 @@ else, asked to build a wall and to keep a log of everything that made the job
 harder than it should have been. The friction log is the product; the wall is
 just what produces it.
 
-The practice is Robert's, from 2026-09-13. Twelve rounds have been run and
-every finding they logged is fixed — see `REQUIREMENTS.md`, "The blind run",
-and the `friction, fixed` entries in the changelog.
+The practice is Robert's, from 2026-09-13. Thirteen rounds have been run;
+every finding from the first twelve is fixed, and round thirteen's six chosen
+first are too — see `REQUIREMENTS.md`, "The blind run", and the `friction,
+fixed` entries in the changelog. What remains of round thirteen is listed at
+the head of its report.
 
 ## The rules that make a round worth running
 
@@ -39,7 +41,8 @@ and the `friction, fixed` entries in the changelog.
 | Ten | The published package, wired before the session | "Low Season" | The directions | 9 + 12 + 14, all fixed; found undo one step deep on the account |
 | Eleven | The published package | "Low Season" | The directions | 11 + 16 + 20, all fixed; asked for R50 and R51 |
 | Twelve | The published package, the treatment complete | "Low Season" | The directions | 33, all fixed; asked for R52 and R53 |
-| Thirteen | The published package, a feature, past the wall | "Ninety-Nine" | Pages: a scene written, Markdown out, the page count | 32 (`round-thirteen-report.md`), none fixed yet |
+| Thirteen | The published package, a feature, past the wall | "Ninety-Nine" | Pages: a scene written, Markdown out, the page count | 32 (`round-thirteen-report.md`); the six chosen first fixed, the rest open |
+| Fourteen | The published package, the same feature, the fixes in hand | "Ninety-Nine" | Past the wall again: a card unsized, an act rebuilt, a card deleted, a leave after edits, the script out three ways | not yet run |
 
 ## The rounds so far, and the next round
 
@@ -53,15 +56,17 @@ published package, wired before the session, and were the first to reach the
 directions phase. Each round's findings are itemised in `REQUIREMENTS.md`,
 "The blind run".
 
-- `prompt.md` — round thirteen: the same door, a **feature** treatment for
-  the first time, the writer in the room after the wall is read and directing
-  past the wall into pages — a scene written, the pages read, the script out
-  as Markdown. The test account is
-  filled in (`test@test.com`, password `test`; Robert's decision, so the prompt
-  pastes without editing). Paste everything below its divider.
+- `prompt.md` — round fourteen: the same door and the same feature, run
+  against the package that carries round thirteen's six fixes, with the
+  writer directing past the wall again and further — the directions that
+  round thirteen found no tool for, and the script out three ways. The test
+  account is filled in (`test@test.com`, password `test`; Robert's decision,
+  so the prompt pastes without editing). Paste everything below its divider.
+- `round-thirteen-prompt.md` — round thirteen's prompt as it ran, kept.
 - `round-thirteen-report.md` — the agent's report from round thirteen,
-  verbatim, under a head naming the six fixes Robert chose first and where
-  each lives in the code. The next session starts here.
+  verbatim, under a head naming the six fixes Robert chose first (fixed
+  2026-09-15) and what remains. The next session on the agent surface starts
+  here.
 - `round-thirteen-treatment.md` — "Ninety-Nine", a feature, embedded in the
   prompt. It answers the eleven questions up front and includes one thing
   the writer says is not a plant, so the round measures what the wall does

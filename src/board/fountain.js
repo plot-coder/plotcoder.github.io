@@ -26,6 +26,28 @@ export function sceneHeading(note) {
   return `.${upper(words)}`;
 }
 
+/**
+ * The mark every export sets before an unwritten scene's change line, so a
+ * reader can tell a placeholder from a page (round thirteen, entry 27). One
+ * mark, the same words in Markdown, plain text, Fountain and Final Draft;
+ * coming back in, a body that is the mark and the card's change line is
+ * still unwritten.
+ */
+export const UNWRITTEN_MARK = "[Unwritten]";
+
+/** What stands in for an unwritten scene's body: the mark, then the change line. */
+export function standInFor(note) {
+  const change = (note.change ?? "").trim();
+  return change ? `${UNWRITTEN_MARK} ${change}` : UNWRITTEN_MARK;
+}
+
+/** A body without its mark, and whether it carried one. */
+export function unmark(text) {
+  const trimmed = (text ?? "").trim();
+  if (!trimmed.startsWith(UNWRITTEN_MARK)) return { text: trimmed, marked: false };
+  return { text: trimmed.slice(UNWRITTEN_MARK.length).trim(), marked: true };
+}
+
 /** The title page block. `titles` is what the writer would put above the script. */
 export function titlePage({ title, credit, author, draftDate, notes }) {
   const lines = [];
@@ -89,8 +111,9 @@ export function toFountain(state, options = {}) {
       body.push(`[[${marks.join(" · ")}]]`);
       body.push("");
     }
-    // The scene's text when it is written; the change line stands in until then.
-    body.push(note.text && note.text.trim() ? note.text.trim() : note.change || "");
+    // The scene's text when it is written; the change line stands in until
+    // then, marked so a printed page never passes a placeholder off as a scene.
+    body.push(note.text && note.text.trim() ? note.text.trim() : standInFor(note));
     body.push("");
   }
 
@@ -206,9 +229,10 @@ export function mergeFountain(state, parsed) {
     if (found) {
       used.add(found.id);
       cursor = order.indexOf(found) + 1;
-      // A scene whose body is the card's own change line is the export of an
-      // unwritten card coming back: still unwritten, not a page.
-      const standIn = !(found.text ?? "").trim() && sameWords(scene.text, found.change ?? "");
+      // A scene whose body is the mark, or the card's own change line, is the
+      // export of an unwritten card coming back: still unwritten, not a page.
+      const body = unmark(scene.text);
+      const standIn = !(found.text ?? "").trim() && (body.marked || sameWords(body.text, found.change ?? ""));
       if ((found.text ?? "") !== scene.text && !standIn) {
         commands.push({ type: "set_text", id: found.id, text: scene.text });
       }
@@ -220,13 +244,15 @@ export function mergeFountain(state, parsed) {
     const headline = scene.synopsis || titleCase(scene.heading);
     const isPlace = scene.forced && Boolean(scene.synopsis);
     const id = `scene-${Math.random().toString(36).slice(2, 8)}`;
+    // A marked body is an unwritten scene: its words are the change line, not a page.
+    const body = unmark(scene.text);
     commands.push({
       type: "create_note",
       id,
       headline,
-      change: scene.text ? firstSentence(scene.text) : "What changes?",
+      change: body.marked ? body.text || "What changes?" : scene.text ? firstSentence(scene.text) : "What changes?",
       location: isPlace ? titleCase(scene.heading) : "",
-      text: scene.text,
+      text: body.marked ? "" : scene.text,
       x: anchor ? anchor.x + 40 : 140,
       y: anchor ? anchor.y + 40 : 140,
     });

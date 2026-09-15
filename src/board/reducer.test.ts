@@ -179,6 +179,34 @@ describe("delete_note", () => {
     expect(after.arrows).toHaveLength(0);
   });
 
+  it("says what went with the card: its arrows by both headlines, and the group it left (round thirteen, entry 17)", () => {
+    let state = boardOf({ id: "a", x: 0, y: 0 }, { id: "b", x: 220, y: 0 }, { id: "c", x: 440, y: 0 }, { id: "d", x: 660, y: 0 });
+    state = run(
+      state,
+      { type: "update_note", id: "a", headline: "The yard" },
+      { type: "update_note", id: "b", headline: "The lay-by" },
+      { type: "update_note", id: "c", headline: "The pier" },
+      { type: "create_arrow", from: "a", to: "b" },
+      { type: "create_arrow", from: "b", to: "c", kind: "setup" },
+      { type: "create_group", noteIds: ["a", "b", "c"], title: "Act three" },
+    );
+    const outcome = applyCommand(state, { type: "delete_note", id: "b" }, NOW);
+    expect(outcome.result).toMatchObject({
+      id: "b",
+      headline: "The lay-by",
+      arrows: [
+        { from: "a", to: "b", kind: "follows", fromHeadline: "The yard", toHeadline: "The lay-by" },
+        { from: "b", to: "c", kind: "setup", fromHeadline: "The lay-by", toHeadline: "The pier" },
+      ],
+      groups: [{ title: "Act three", remaining: 2, dissolved: false }],
+    });
+    // A card in no group and with no arrow says so with empty lists.
+    expect(applyCommand(state, { type: "delete_note", id: "d" }, NOW).result).toMatchObject({ arrows: [], groups: [] });
+    // A group left with one card reports that it dissolved.
+    const two = applyCommand(state, { type: "delete_note", id: "c" }, NOW).state;
+    expect(applyCommand(two, { type: "delete_note", id: "b" }, NOW).result).toMatchObject({ groups: [{ title: "Act three", remaining: 1, dissolved: true }] });
+  });
+
   it("drops the card from its group, and dissolves a group left with one card", () => {
     let state = boardOf({ id: "a", x: 0, y: 0 }, { id: "b", x: 220, y: 0 }, { id: "c", x: 440, y: 0 });
     state = run(state, { type: "create_group", noteIds: ["a", "b", "c"] });
@@ -278,6 +306,37 @@ describe("groups", () => {
 
     expect(state.groups).toHaveLength(1);
     expect(state.groups[0].noteIds).toEqual(["b", "c"]);
+  });
+
+  it("adds cards to a group where they are, taking them out of any other frame (round thirteen, entry 18)", () => {
+    let state = boardOf(
+      { id: "a", x: 0, y: 0 },
+      { id: "b", x: 220, y: 0 },
+      { id: "c", x: 440, y: 0 },
+      { id: "d", x: 660, y: 0 },
+      { id: "e", x: 880, y: 0 },
+    );
+    state = run(state, { type: "create_group", noteIds: ["a", "b"], title: "Act three" }, { type: "create_group", noteIds: ["c", "d"], title: "Sequence" });
+    const actThree = state.groups[0].id;
+    const before = state.notes.map((note) => [note.x, note.y]);
+
+    // A loose card joins; nothing moves.
+    const joined = applyCommand(state, { type: "add_to_group", id: actThree, noteIds: ["e"] }, NOW);
+    expect(joined.changed).toBe(true);
+    expect(joined.state.groups[0].noteIds).toEqual(["a", "b", "e"]);
+    expect(joined.result).toMatchObject({ added: ["e"], left: [] });
+    expect(joined.state.notes.map((note) => [note.x, note.y])).toEqual(before);
+
+    // A card from another frame leaves it on the way, and a frame left with one card dissolves.
+    const pulled = applyCommand(joined.state, { type: "add_to_group", id: actThree, noteIds: ["c", "c"] }, NOW);
+    expect(pulled.state.groups).toHaveLength(1);
+    expect(pulled.state.groups[0].noteIds).toEqual(["a", "b", "e", "c"]);
+    expect(pulled.result).toMatchObject({ added: ["c"], left: [{ title: "Sequence", remaining: 1, dissolved: true }] });
+
+    // No such group, nothing real to add, or already in: no change, the same state object.
+    expect(applyCommand(state, { type: "add_to_group", id: "ghost", noteIds: ["e"] }, NOW).state).toBe(state);
+    expect(applyCommand(state, { type: "add_to_group", id: actThree, noteIds: ["ghost"] }, NOW).state).toBe(state);
+    expect(applyCommand(state, { type: "add_to_group", id: actThree, noteIds: ["a", "b"] }, NOW).state).toBe(state);
   });
 
   it("renames and ungroups", () => {
@@ -554,6 +613,19 @@ describe("set_length", () => {
       expect(note.x).toBe(start.notes[i].x);
       expect(note.y).toBe(start.notes[i].y);
     });
+  });
+
+  it("unsizes a card with null, so it claims nothing again (round thirteen, entry 16)", () => {
+    const sized = run(board(), { type: "set_length", ids: ["a", "b"], lengthEighths: 20 });
+    const outcome = applyCommand(sized, { type: "set_length", ids: ["a"], lengthEighths: null }, NOW);
+    expect(outcome.changed).toBe(true);
+    expect(outcome.result).toHaveLength(1);
+    const a = outcome.state.notes.find((note) => note.id === "a")!;
+    expect(a.lengthEighths).toBeNull();
+    expect(noteEighths(a)).toBe(DEFAULT_NOTE_EIGHTHS);
+    expect(outcome.state.notes.find((note) => note.id === "b")?.lengthEighths).toBe(20);
+    // Unsizing an unsized card is no change at all.
+    expect(applyCommand(outcome.state, { type: "set_length", ids: ["a"], lengthEighths: null }, NOW).state).toBe(outcome.state);
   });
 
   it("refuses nonsense lengths rather than storing them", () => {

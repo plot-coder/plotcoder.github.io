@@ -27,7 +27,7 @@ const ROWS: Row[] = [
   {
     id: "markdown",
     name: "Markdown",
-    what: "The wall read out: headings, scenes and the text. Paste into Google Docs and the headings hold.",
+    what: "The wall read out: headings, scenes and the text; an unwritten scene shows its change line, marked. Paste into Google Docs and the headings hold.",
     copy: markdownText,
     download: downloadMarkdown,
   },

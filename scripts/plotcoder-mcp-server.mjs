@@ -75,6 +75,7 @@ import {
   liftCast,
   mergeRoster,
   sameRoster,
+  scriptTitles,
   withRoster,
 } from "../src/board/project.js";
 
@@ -758,6 +759,9 @@ const TRAIL_CAP = 50;
 const trail = [];
 /** What undo took back, newest last; a new change of this server's clears it. */
 const undone = [];
+/** The last read_wall's questions, and what changed since: a leave answers the reading in front of the agent (round thirteen, entry 19). */
+let lastReading = null;
+const sinceRead = [];
 
 function describeCommand(command) {
   switch (command.type) {
@@ -799,6 +803,7 @@ async function commit(command) {
 
   const live = await writeBoard(next, rev, base, boardId, "exact");
   trail.push({ before: state, after: canon(next), what: describeCommand(command) });
+  sinceRead.push(describeCommand(command));
   if (trail.length > TRAIL_CAP) trail.shift();
   undone.length = 0;
   return { state: next, changed, result, live };
@@ -828,6 +833,7 @@ async function commitAll(what, build) {
   if (!changed) return { state: current, changed: false, value, live: base !== null };
   const live = await writeBoard(current, rev, base, boardId, "exact");
   trail.push({ before: state, after: canon(current), what });
+  sinceRead.push(what);
   if (trail.length > TRAIL_CAP) trail.shift();
   undone.length = 0;
   return { state: current, changed: true, value, live };
@@ -1086,22 +1092,37 @@ server.registerTool(
   {
     title: "Set card length",
     description:
-      "Set how long cards run, in pages. An ordinary scene is about 1; a quick beat might be 0.25; a set piece might be 3 or 4. This is an estimate the writer owns — set it when you are told a length or when the card plainly describes one, and do not silently re-estimate a card someone has already sized.",
+      "Set how long cards run, in pages. An ordinary scene is about 1; a quick beat might be 0.25; a set piece might be 3 or 4. This is an estimate the writer owns — set it when you are told a length or when the card plainly describes one, and do not silently re-estimate a card someone has already sized. Pass pages \"unsized\" (or 0) to take a length away: the card claims nothing again and reads as about a page, the way a new card does.",
     inputSchema: {
       ids: z.array(z.string()).min(1),
-      pages: pagesSchema,
+      pages: z
+        .union([pagesSchema, z.literal(0), z.literal("unsized"), z.null()])
+        .describe('Pages; a fraction is fine. "unsized" (or 0) takes the length away.'),
     },
   },
   async (args) => {
-    const { state, result, live } = await commit({
+    const unsizing = args.pages === "unsized" || args.pages === 0 || args.pages === null;
+    const { state, changed, result, live } = await commit({
       type: "set_length",
       ids: args.ids,
-      lengthEighths: toEighths(args.pages),
+      lengthEighths: unsizing ? null : toEighths(args.pages),
     });
-    return ok(
-      `${result?.length ?? 0} card(s) now run ${args.pages} page(s), the writer's estimate${where(live)}. The board runs about ${formatPages(boardEighths(state))} pages against a ${formatPages(state.targetEighths)}-page target.`,
-      result,
-    );
+    if (!changed) {
+      const these = args.ids.length === 1 ? "the card is" : "those cards are";
+      return ok(
+        unsizing
+          ? `Nothing to unsize: ${these} unsized already, or not on the board (list_board for the ids).`
+          : `Nothing changed: ${these} at ${args.pages} page(s) already, or not on the board (list_board for the ids).`,
+      );
+    }
+    const runtime = `The board runs about ${formatPages(boardEighths(state))} pages against a ${formatPages(state.targetEighths)}-page target.`;
+    if (unsizing) {
+      return ok(
+        `${result.length} card(s) unsized${where(live)}: no length claimed, so each reads as about a page until someone sizes it, and list_board says "unsized". ${runtime}`,
+        result,
+      );
+    }
+    return ok(`${result.length} card(s) now run ${args.pages} page(s), the writer's estimate${where(live)}. ${runtime}`, result);
   },
 );
 
@@ -1265,13 +1286,20 @@ server.registerTool(
   {
     title: "Delete note",
     description:
-      "Remove a card from the board. Also removes any arrows touching it and drops it from groups.",
+      "Remove a card from the board. Its arrows go with it and it leaves its group; the reply names each arrow by its cards and says what the group kept, and undo brings all of it back.",
     inputSchema: { id: z.string() },
   },
   async (args) => {
-    const { result } = await commit({ type: "delete_note", id: args.id });
+    const { result, live } = await commit({ type: "delete_note", id: args.id });
     if (result === undefined) return ok(`No card with id ${args.id}.`);
-    return ok("Deleted card.", result);
+    // Say what went with the card (round thirteen, entry 17).
+    const arrows = result.arrows.length
+      ? ` Took ${result.arrows.length === 1 ? "its arrow" : `its ${result.arrows.length} arrows`} with it: ${result.arrows.map((arrow) => `"${arrow.fromHeadline}" → "${arrow.toHeadline}" (${arrow.kind})`).join(", ")}.`
+      : " No arrow touched it.";
+    const groups = result.groups
+      .map((group) => (group.dissolved ? ` Its group "${group.title}" dissolved: a frame needs two cards.` : ` Left its group "${group.title}", which keeps ${group.remaining} card${group.remaining === 1 ? "" : "s"}.`))
+      .join("");
+    return ok(`Deleted "${result.headline}"${where(live)}.${arrows}${groups}`, result);
   },
 );
 
@@ -1292,6 +1320,8 @@ server.registerTool(
     const { boards: boardsForRead } = await readProject();
     const elsewhereForRead = castElsewhere(projectForRead, boardsForRead, readBoardId ?? projectForRead.activeBoardId);
     const reading = readWall(state, { elsewhere: Object.keys(elsewhereForRead) });
+    lastReading = { findings: reading.findings };
+    sinceRead.length = 0;
     const runs = describeRuns(reading, state).map((line, index) => {
       const ids = reading.runs[index]?.ids ?? [];
       return ids.length ? `${line} — ${ids.map((id) => `"${state.notes.find((note) => note.id === id)?.headline ?? id}"`).join(", ")}` : line;
@@ -1369,7 +1399,7 @@ server.registerTool(
   {
     title: "Leave a question, for now",
     description:
-      "Write the writer's word on a question the wall asks — \"leave it\" — so the reading stops asking it. Pass the question's kind as read_wall names it (sag, empty, unpaid, …) and, when that kind is asked more than once, its ids as read_wall lists them. The wall keeps the question and asks it again on its own the moment it would read differently — a card in it changes, a page moves, the median shifts — so a left question is never a dismissal; ask_again brings one back now. Only on the writer's word: never leave a question unasked.",
+      "Write the writer's word on a question the wall asks — \"leave it\" — so the reading stops asking it. Pass the question's kind as read_wall names it (sag, empty, unpaid, …) and, when that kind is asked more than once, its ids as read_wall lists them. A leave answers the reading in front of you: edits change the questions, so make the writer's changes first, read_wall, then leave what they still want left — a question that changed or went since the last reading is refused, with what it was. The wall keeps a left question and asks it again on its own the moment it would read differently — a card in it changes, a page moves, the median shifts — so a left question is never a dismissal; ask_again brings one back now. Only on the writer's word: never leave a question unasked.",
     inputSchema: { kind: z.string().min(1), ids: z.array(z.string()).optional() },
   },
   async (args) => {
@@ -1379,7 +1409,21 @@ server.registerTool(
     const matches = reading.findings.filter((finding) => finding.kind === args.kind && (!args.ids || sameList(finding.ids, args.ids)));
     if (matches.length === 0) {
       if (already.length) return ok(`Already left: [${args.kind}] ${already[0].text} It stays left until the question would read differently; ask_again brings it back.`);
-      return ok(`The wall is not asking a question of kind "${args.kind}"${args.ids ? ` about ids ${args.ids.join(", ")}` : ""}. read_wall lists the questions it asks now, each with its kind and ids.`);
+      // The reading the agent was answering, when the last read_wall had this question (round thirteen, entry 19).
+      const earlier = lastReading?.findings.find((finding) => finding.kind === args.kind && (!args.ids || sameList(finding.ids, args.ids)));
+      const now = reading.findings.filter((finding) => finding.kind === args.kind);
+      if (earlier) {
+        const since = sinceRead.length
+          ? `${sinceRead.length} change${sinceRead.length === 1 ? "" : "s"} landed since (${[...new Set(sinceRead)].join(", ")})`
+          : "the wall changed elsewhere since";
+        const state_ = now.length
+          ? `the wall now asks ${now.length === 1 ? "it differently" : `${now.length} questions of that kind`}: ${now.map((finding) => `${finding.text} (ids: ${finding.ids.join(", ")})`).join("; ")}`
+          : "the wall no longer asks it — the cards answered it";
+        return ok(
+          `Not left. When you last read the wall it asked [${earlier.kind}] ${earlier.text}${earlier.ids.length ? ` (ids: ${earlier.ids.join(", ")})` : ""}; ${since}, and ${state_}. A leave answers the reading in front of you: make the writer's edits first, read_wall, then leave what they still want left.`,
+        );
+      }
+      return ok(`The wall is not asking a question of kind "${args.kind}"${args.ids ? ` about ids ${args.ids.join(", ")}` : ""}. read_wall lists the questions it asks now, each with its kind and ids.${sinceRead.length ? ` ${sinceRead.length} change(s) landed since the last read_wall, so read it again first.` : ""}`);
     }
     if (matches.length > 1) {
       return ok(`The wall asks ${matches.length} questions of kind "${args.kind}"; pass ids to say which:\n${matches.map((finding) => `  - ${finding.text} (ids: ${finding.ids.join(", ")})`).join("\n")}`);
@@ -1643,23 +1687,19 @@ server.registerTool(
   {
     title: "Export the wall as Fountain",
     description:
-      "The open board as a Fountain screenplay: a title page (with the premise and logline in its notes), beats as sections, one scene per card in wall order — a forced heading from the card's place (or its headline), the headline as a synopsis, the cast and the fold as notes, the change line as action. Plain text a writer can open in any Fountain editor. Pass a path to write a .fountain file; otherwise the text comes back.",
+      "The open board as a Fountain screenplay: a title page (with the premise and logline in its notes), beats as sections, one scene per card in wall order — a forced heading from the card's place (or its headline), the headline as a synopsis, the cast and the fold as notes, the change line as action after the mark [Unwritten] until the scene is written. Titled for the project, a one-board film being its project. Plain text a writer can open in any Fountain editor. Pass a path to write a .fountain file; otherwise the text comes back.",
     inputSchema: { path: z.string().optional() },
   },
   async (args) => {
     const { state } = await readBoard();
     const { project } = await readProject();
     const board = project.boards.find((item) => item.id === project.activeBoardId);
-    const text = toFountain(state, {
-      title: board?.name,
-      project: project.boards.length > 1 && project.name !== "Untitled project" ? project.name : undefined,
-      premise: project.premise || undefined,
-      draftDate: new Date().toISOString(),
-    });
+    const titles = scriptTitles(project, board);
+    const text = toFountain(state, { ...titles, premise: project.premise || undefined, draftDate: new Date().toISOString() });
     if (args.path) {
       fs.mkdirSync(path.dirname(path.resolve(args.path)), { recursive: true });
       fs.writeFileSync(args.path, text);
-      return ok(`Wrote ${text.split("\n").length} lines of Fountain to ${args.path}.`);
+      return ok(`Wrote ${text.split("\n").length} lines of Fountain, titled "${titles.title}", to ${args.path}.`);
     }
     return ok(text);
   },
@@ -1670,22 +1710,19 @@ server.registerTool(
   {
     title: "Export the wall as Markdown",
     description:
-      "The open board as Markdown, for a collaborator who lives in Google Docs or the like: the board as the title (the project's name before it when the project has several boards), the premise and the logline under it, beats as second-level headings, a third-level heading per scene from its place with its scene number, the headline as a synopsis line, then the scene's text — a speech as its cue in bold with the lines under it — or, unwritten, its change line. Pass a path to write a .md file; otherwise the text comes back.",
+      "The open board as Markdown, for a collaborator who lives in Google Docs or the like: titled for the project — a one-board film is its project, and the board's name follows only when the project has several boards — the premise and the logline under it, beats as second-level headings, a third-level heading per scene from its place with its scene number, the headline as a synopsis line, then the scene's text — a speech as its cue in bold with the lines under it — or, unwritten, its change line in italics after the mark [Unwritten], so a reader can tell a placeholder from a page. Pass a path to write a .md file; otherwise the text comes back.",
     inputSchema: { path: z.string().optional() },
   },
   async (args) => {
     const { state } = await readBoard();
     const { project } = await readProject();
     const board = project.boards.find((item) => item.id === project.activeBoardId);
-    const text = toMarkdown(state, {
-      title: board?.name,
-      project: project.boards.length > 1 && project.name !== "Untitled project" ? project.name : undefined,
-      premise: project.premise || undefined,
-    });
+    const titles = scriptTitles(project, board);
+    const text = toMarkdown(state, { ...titles, premise: project.premise || undefined });
     if (args.path) {
       fs.mkdirSync(path.dirname(path.resolve(args.path)), { recursive: true });
       fs.writeFileSync(args.path, text);
-      return ok(`Wrote ${text.split("\n").length} lines of Markdown to ${path.resolve(args.path)}.`);
+      return ok(`Wrote ${text.split("\n").length} lines of Markdown, titled "${titles.title}", to ${path.resolve(args.path)}.`);
     }
     return ok(text);
   },
@@ -1696,21 +1733,19 @@ server.registerTool(
   {
     title: "Export the script as plain text",
     description:
-      "The open board's script as plain text, set as it prints: the paginator's lines at Courier's columns kept with spaces, scene numbers in both margins (the wall's order, or as locked), no page numbers. Pastes into anything and reads as a script wherever the font is monospaced. Pass a path to write a .txt file; otherwise the text comes back.",
+      "The open board's script as plain text, set as it prints: the paginator's lines at Courier's columns kept with spaces, scene numbers in both margins (the wall's order, or as locked), no page numbers, an unwritten scene's change line as action after the mark [Unwritten]. Titled for the project, a one-board film being its project. Pastes into anything and reads as a script wherever the font is monospaced. Pass a path to write a .txt file; otherwise the text comes back.",
     inputSchema: { path: z.string().optional() },
   },
   async (args) => {
     const { state } = await readBoard();
     const { project } = await readProject();
     const board = project.boards.find((item) => item.id === project.activeBoardId);
-    const text = toPlainText(state, {
-      title: board?.name,
-      project: project.boards.length > 1 && project.name !== "Untitled project" ? project.name : undefined,
-    });
+    const titles = scriptTitles(project, board);
+    const text = toPlainText(state, titles);
     if (args.path) {
       fs.mkdirSync(path.dirname(path.resolve(args.path)), { recursive: true });
       fs.writeFileSync(args.path, text);
-      return ok(`Wrote ${text.split("\n").length} lines of plain text to ${path.resolve(args.path)}.`);
+      return ok(`Wrote ${text.split("\n").length} lines of plain text, titled "${titles.title}", to ${path.resolve(args.path)}.`);
     }
     return ok(text);
   },
@@ -1853,18 +1888,19 @@ server.registerTool(
   {
     title: "Export as Final Draft",
     description:
-      "The open board as a Final Draft .fdx: a heading per card with its scene number by wall order, the scene's text as script paragraphs (action, character, parenthetical, dialogue, dual dialogue, transition) or the change line as action when unwritten, and a title page. Pass a path to write the file; otherwise the XML comes back.",
+      "The open board as a Final Draft .fdx: a heading per card with its scene number by wall order, the scene's text as script paragraphs (action, character, parenthetical, dialogue, dual dialogue, transition) or the change line as action after the mark [Unwritten] when unwritten, and a title page for the project (a one-board film is its project). Pass a path to write the file; otherwise the XML comes back.",
     inputSchema: { path: z.string().optional() },
   },
   async (args) => {
     const { state } = await readBoard();
     const { project } = await readProject();
     const board = project.boards.find((item) => item.id === project.activeBoardId);
-    const xml = toFdx(state, { title: board?.name, project: project.boards.length > 1 ? project.name : undefined, draftDate: new Date().toISOString() });
+    const titles = scriptTitles(project, board);
+    const xml = toFdx(state, { ...titles, draftDate: new Date().toISOString() });
     if (args.path) {
       fs.mkdirSync(path.dirname(path.resolve(args.path)), { recursive: true });
       fs.writeFileSync(args.path, xml);
-      return ok(`Wrote a Final Draft file with ${state.notes.length} scene(s) to ${args.path}.`);
+      return ok(`Wrote a Final Draft file with ${state.notes.length} scene(s), titled "${titles.title}", to ${args.path}.`);
     }
     return ok(xml);
   },
@@ -2502,6 +2538,29 @@ server.registerTool(
       );
     }
     return ok(`Grouped ${result.noteIds.length} cards as "${result.title}"${where(live)}.`, result);
+  },
+);
+
+server.registerTool(
+  "add_to_group",
+  {
+    title: "Add cards to a group",
+    description:
+      "Put one or more cards into a group that already exists — the agent's side of dragging a card into a frame. The frame reaches the cards where they are; nothing moves. A card is in one group at a time, so it leaves any other frame on the way, and a frame left with one card dissolves. Needs the group's id and the cards' ids from list_board; organize keeps a group together as a block.",
+    inputSchema: { id: z.string(), noteIds: z.array(z.string()).min(1) },
+  },
+  async (args) => {
+    const { state, changed, result, live } = await commit({ type: "add_to_group", id: args.id, noteIds: args.noteIds });
+    if (!changed) {
+      if (!state.groups.some((group) => group.id === args.id)) return ok(`No group with id ${args.id}. Call list_board for the real ids; create_group makes a new frame.`);
+      const missing = args.noteIds.filter((id) => !state.notes.some((note) => note.id === id));
+      return ok(missing.length ? `Nothing added: not on the board — ${missing.join(", ")}. Call list_board to check the ids.` : "Nothing added: those cards are in that group already.");
+    }
+    const names = result.added.map((id) => `"${state.notes.find((note) => note.id === id)?.headline ?? id}"`).join(", ");
+    const left = result.left
+      .map((group) => (group.dissolved ? ` "${group.title}" dissolved on the way: a frame needs two cards.` : ` Left "${group.title}", which keeps ${group.remaining} card${group.remaining === 1 ? "" : "s"}.`))
+      .join("");
+    return ok(`Added ${names} to "${result.group.title}", which now holds ${result.group.noteIds.length} cards${where(live)}. The frame reaches them where they are; organize lays the group out as a block.${left}`, result);
   },
 );
 

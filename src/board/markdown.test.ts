@@ -40,14 +40,20 @@ describe("Markdown out (R54)", () => {
         "",
         "### 2 · TOM LIES ABOUT THE JOB",
         "",
-        "Maya starts to doubt him.",
+        "*[Unwritten] Maya starts to doubt him.*",
         "",
         "### 3 · THE LETTER IS READ ALOUD",
         "",
-        "The plan dies in the room.",
+        "*[Unwritten] The plan dies in the room.*",
         "",
       ].join("\n"),
     );
+  });
+
+  it("marks an unwritten scene's change line, in italics, so a reader can tell it from a page", () => {
+    const text = toMarkdown(seedState(), { title: "Board 1" });
+    expect(text).toContain("*[Unwritten] She decides not to tell Tom.*");
+    expect(text).not.toContain("\nShe decides not to tell Tom.");
   });
 
   it("uses the board's name alone for a one-board project, and no premise line when there is none", () => {
@@ -86,8 +92,9 @@ describe("plain text out (R54)", () => {
     expect(text).toContain(`${" ".repeat(GUTTER)}Her father kept the site's books by hand.`);
     expect(text).toContain(`${" ".repeat(GUTTER + COLUMN.character)}NESSA\n${" ".repeat(GUTTER + COLUMN.dialogue)}Who paid this?`);
     expect(text).toContain(`${" ".repeat(GUTTER + COLUMN.parenthetical)}(not looking up)`);
-    // An unwritten scene sets its change line as action.
-    expect(text).toContain(`${" ".repeat(GUTTER)}Maya starts to doubt him.`);
+    // An unwritten scene sets its change line as action, after the mark (round thirteen, entry 27).
+    expect(text).toContain(`${" ".repeat(GUTTER)}[Unwritten] Maya starts to doubt him.`);
+    expect(text).not.toContain(`${" ".repeat(GUTTER)}Maya starts to doubt him.`);
     expect(text).not.toMatch(/\n\n\n\n/);
     expect(text.endsWith("\n")).toBe(true);
   });

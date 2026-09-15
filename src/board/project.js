@@ -289,6 +289,21 @@ export function setPremise(project, premise, now = nowIso()) {
   return touch(project, { premise: next }, now);
 }
 
+/**
+ * What a script going out is called (round thirteen, entry 26): a named
+ * project is the title — a one-board film is its project — with the board's
+ * name beside it only when the project has several boards; an untitled
+ * project's board is the title. One rule for Markdown, plain text, Fountain
+ * and Final Draft, through every door.
+ */
+export function scriptTitles(project, board) {
+  const boardName = (board?.name ?? "").trim() || "Untitled";
+  const named = typeof project?.name === "string" && project.name.trim() && project.name !== DEFAULT_PROJECT_NAME;
+  if (!named) return { title: boardName };
+  if ((project.boards ?? []).length > 1) return { title: boardName, project: project.name };
+  return { title: project.name };
+}
+
 export function boardById(project, id) {
   return project.boards.find((board) => board.id === id) ?? null;
 }

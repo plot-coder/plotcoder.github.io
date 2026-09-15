@@ -3,6 +3,10 @@
 import type { BoardNote, BoardState } from "./reducer";
 
 export declare function sceneHeading(note: BoardNote): string;
+/** The mark every export sets before an unwritten scene's change line. */
+export declare const UNWRITTEN_MARK: string;
+export declare function standInFor(note: Pick<BoardNote, "change">): string;
+export declare function unmark(text: string | null | undefined): { text: string; marked: boolean };
 
 export declare function titlePage(titles: {
   title?: string;

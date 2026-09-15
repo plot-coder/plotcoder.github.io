@@ -136,6 +136,7 @@ describe("plotcoder MCP server", () => {
   const SORTED_TOOLS = [
       "add_character",
       "add_reminder",
+      "add_to_group",
       "add_picture",
       "add_take",
       "apply_template",
@@ -293,6 +294,22 @@ describe("plotcoder MCP server", () => {
       await client.callTool("set_length", { ids: [target], pages: 1 });
     });
 
+    it("takes a length away with \"unsized\" or 0, so the card claims nothing again (round thirteen, entry 16)", async () => {
+      const { notes } = await client.callToolData("list_board");
+      const id = notes[0].id;
+      await client.callTool("set_length", { ids: [id], pages: 3 });
+      const reply = await client.callTool("set_length", { ids: [id], pages: "unsized" });
+      expect(reply).toContain("1 card(s) unsized");
+      expect(reply).toContain('list_board says "unsized"');
+      expect(readBoardFile().state.notes.find((note) => note.id === id).lengthEighths).toBeNull();
+      expect(await client.callTool("list_board")).toContain("about a page, unsized");
+      expect(await client.callTool("set_length", { ids: [id], pages: 0 })).toContain("Nothing to unsize");
+      await client.callTool("set_length", { ids: [id], pages: 2 });
+      expect(await client.callTool("set_length", { ids: [id], pages: 0 })).toContain("1 card(s) unsized");
+      // Still refuses a negative length, as before.
+      expect(await client.callTool("set_length", { ids: [id], pages: -1 })).toMatch(/validation error/i);
+    });
+
     it("takes a fraction of a page and writes it in eighths", async () => {
       const { notes } = await client.callToolData("list_board");
       const id = notes[0].id;
@@ -339,6 +356,32 @@ describe("plotcoder MCP server", () => {
       expect(after.notes.filter((note) => ids.includes(note.id)).map((n) => [n.x, n.y])).toEqual(
         before,
       );
+    });
+
+    it("adds a card to a group that exists, where it is (round thirteen, entry 18)", async () => {
+      const { notes } = await client.callToolData("list_board");
+      const [first, second, third] = notes;
+      const made = await client.callToolData("create_group", { noteIds: [first.id, second.id], title: "Act three" });
+      const reply = await client.callTool("add_to_group", { id: made.id, noteIds: [third.id] });
+      expect(reply).toContain(`Added "${third.headline}" to "Act three", which now holds 3 cards`);
+      expect(reply).toContain("The frame reaches them where they are");
+      const state = readBoardFile().state;
+      expect(state.groups[0].noteIds).toEqual([first.id, second.id, third.id]);
+      expect(state.notes.find((note) => note.id === third.id)).toMatchObject({ x: third.x, y: third.y });
+      expect(await client.callTool("add_to_group", { id: made.id, noteIds: [third.id] })).toContain("in that group already");
+      expect(await client.callTool("add_to_group", { id: "ghost", noteIds: [third.id] })).toContain("No group with id ghost");
+      expect(await client.callTool("add_to_group", { id: made.id, noteIds: ["ghost"] })).toContain("not on the board — ghost");
+      // A card pulled from another frame leaves it; a frame left with one card dissolves.
+      const p = await client.callToolData("create_note", { headline: "P", change: "Turns.", x: 3000, y: 3000 });
+      const q = await client.callToolData("create_note", { headline: "Q", change: "Turns.", x: 3240, y: 3000 });
+      await client.callTool("create_group", { noteIds: [p.id, q.id], title: "Sequence" });
+      const pulled = await client.callTool("add_to_group", { id: made.id, noteIds: [p.id] });
+      expect(pulled).toContain('Added "P" to "Act three", which now holds 4 cards');
+      expect(pulled).toContain('"Sequence" dissolved on the way: a frame needs two cards.');
+      expect(readBoardFile().state.groups).toHaveLength(1);
+      await client.callTool("ungroup", { id: made.id });
+      await client.callTool("delete_note", { id: p.id });
+      await client.callTool("delete_note", { id: q.id });
     });
 
     it("says why rather than claiming success it did not have", async () => {
@@ -480,11 +523,29 @@ describe("plotcoder MCP server", () => {
     const before = await client.callToolData("list_board");
     const id = before.notes.at(-1).id;
 
-    expect(await client.callTool("delete_note", { id })).toContain("Deleted card.");
+    const gone = before.notes.at(-1).headline;
+    expect(await client.callTool("delete_note", { id })).toContain(`Deleted "${gone}"`);
 
     const after = readBoardFile().state;
     expect(after.notes).toHaveLength(before.notes.length - 1);
     expect(after.notes.some((note) => note.id === id)).toBe(false);
+  });
+
+  it("says what a deletion took with it: each arrow by its cards, and what the group kept (round thirteen, entry 17)", async () => {
+    const a = await client.callToolData("create_note", { headline: "The yard", change: "The letter comes.", x: 2000, y: 2000 });
+    const b = await client.callToolData("create_note", { headline: "The lay-by", change: "He coughs.", x: 2240, y: 2000 });
+    const c = await client.callToolData("create_note", { headline: "The pier", change: "She reads it.", x: 2480, y: 2000 });
+    await client.callTool("create_arrow", { from: a.id, to: b.id });
+    await client.callTool("create_arrow", { from: b.id, to: c.id, kind: "setup" });
+    await client.callTool("create_group", { noteIds: [a.id, b.id, c.id], title: "Act three" });
+    const reply = await client.callTool("delete_note", { id: b.id });
+    expect(reply).toContain('Deleted "The lay-by"');
+    expect(reply).toContain('Took its 2 arrows with it: "The yard" → "The lay-by" (follows), "The lay-by" → "The pier" (setup).');
+    expect(reply).toContain('Left its group "Act three", which keeps 2 cards.');
+    const second = await client.callTool("delete_note", { id: c.id });
+    expect(second).toContain("No arrow touched it.");
+    expect(second).toContain('Its group "Act three" dissolved: a frame needs two cards.');
+    await client.callTool("delete_note", { id: a.id });
   });
 
   it("bumps the file revision as commands land", async () => {
@@ -1441,17 +1502,19 @@ describe("the premise and reminders (roadmap item 6)", () => {
   });
 
   it("exports the wall as Markdown and the script as plain text, to the caller or to a file", async () => {
+    // The project was named "The Letter" above and holds one board, so the film goes out under its own name (round thirteen, entry 26).
     const markdown = await door.callTool("export_markdown");
-    expect(markdown).toContain("# Board 1");
+    expect(markdown).toContain("# The Letter");
+    expect(markdown).not.toContain("Board 1");
     expect(markdown).toContain("### 1 · MAYA FINDS THE LETTER");
     expect(markdown).toContain("She decides not to tell Tom.");
     const text = await door.callTool("export_text");
-    expect(text.split("\n")[0].trim()).toBe("BOARD 1");
+    expect(text.split("\n")[0].trim()).toBe("THE LETTER");
     expect(text).toContain(`1    ${"MAYA FINDS THE LETTER".padEnd(60)} 1`);
-    expect(text).toContain("     She decides not to tell Tom.");
+    expect(text).toContain("     [Unwritten] She decides not to tell Tom.");
     const target = path.join(doorRoot, "out", "board.md");
-    expect(await door.callTool("export_markdown", { path: target })).toContain("lines of Markdown");
-    expect(fs.readFileSync(target, "utf8")).toContain("# Board 1");
+    expect(await door.callTool("export_markdown", { path: target })).toContain('lines of Markdown, titled "The Letter"');
+    expect(fs.readFileSync(target, "utf8")).toContain("# The Letter");
     const plain = path.join(doorRoot, "out", "board.txt");
     expect(await door.callTool("export_text", { path: plain })).toContain("lines of plain text");
     expect(fs.readFileSync(plain, "utf8")).toContain("MAYA FINDS THE LETTER");
@@ -1459,10 +1522,11 @@ describe("the premise and reminders (roadmap item 6)", () => {
 
   it("exports the wall as Fountain, to the caller or to a file", async () => {
     const text = await door.callTool("export_fountain");
-    expect(text).toContain("Title: Board 1");
+    expect(text).toContain("Title: The Letter");
+    expect(text).not.toContain("An episode of");
     expect(text).toContain(".MAYA FINDS THE LETTER");
     expect(text).toContain("[[with Maya]]");
-    expect(text).toContain("She decides not to tell Tom.");
+    expect(text).toContain("[Unwritten] She decides not to tell Tom.");
     const target = path.join(doorRoot, "out", "board.fountain");
     expect(await door.callTool("export_fountain", { path: target })).toContain("lines of Fountain");
     expect(fs.readFileSync(target, "utf8")).toContain(".TOM LIES ABOUT THE JOB");
@@ -2085,6 +2149,22 @@ describe("round twelve's decisions: leaving a question, a structure beside the w
     expect(back).toContain("Asked again");
     expect(back).toContain("the wall asks it now");
     expect(await twelve.callTool("read_wall")).toContain("  - [sag]");
+  });
+
+  it("refuses a leave the edits have overtaken, naming the reading it was answering (round thirteen, entry 19)", async () => {
+    const { notes } = await twelve.callToolData("list_board");
+    const s2 = notes.find((note) => note.headline === "S2");
+    const s3 = notes.find((note) => note.headline === "S3");
+    expect(await twelve.callTool("read_wall")).toContain("[sag] About 8 pages");
+    // The writer's edits land after the reading: the run no longer sags.
+    await twelve.callTool("set_length", { ids: [s2.id, s3.id], pages: 1 });
+    const refused = await twelve.callTool("leave_question", { kind: "sag" });
+    expect(refused).toContain("Not left. When you last read the wall it asked [sag] About 8 pages run");
+    expect(refused).toContain("1 change landed since (set_length)");
+    expect(refused).toContain("the wall no longer asks it");
+    expect(refused).toContain("make the writer's edits first, read_wall, then leave");
+    expect(await twelve.callTool("read_wall")).not.toContain("[sag]");
+    await twelve.callTool("set_length", { ids: [s2.id, s3.id], pages: 4 });
   });
 
   it("sets a structure beside the wall's beats and lays nothing", async () => {

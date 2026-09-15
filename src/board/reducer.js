@@ -497,11 +497,12 @@ export function applyCommand(state, command, now = nowIso()) {
     case "set_length": {
       const ids = new Set(command.ids);
       if (ids.size === 0) return { state, changed: false };
-      const lengthEighths = clampEighths(
-        command.lengthEighths,
-        DEFAULT_NOTE_EIGHTHS,
-        MAX_NOTE_EIGHTHS,
-      );
+      // null unsizes: the card claims nothing again and reads as about a page
+      // (round thirteen, entry 16: there was no way back from a length).
+      const lengthEighths =
+        command.lengthEighths === null
+          ? null
+          : clampEighths(command.lengthEighths, DEFAULT_NOTE_EIGHTHS, MAX_NOTE_EIGHTHS);
       const touched = [];
       const notes = state.notes.map((note) => {
         if (!ids.has(note.id) || note.lengthEighths === lengthEighths) return note;
@@ -575,23 +576,32 @@ export function applyCommand(state, command, now = nowIso()) {
     }
 
     case "delete_note": {
-      if (!state.notes.some((note) => note.id === command.id)) {
-        return { state, changed: false };
-      }
+      const gone = state.notes.find((note) => note.id === command.id);
+      if (!gone) return { state, changed: false };
+      const headlineOf = (id) => state.notes.find((note) => note.id === id)?.headline ?? id;
       const notes = state.notes.filter((note) => note.id !== command.id);
-      const arrows = state.arrows.filter(
-        (arrow) => arrow.from !== command.id && arrow.to !== command.id,
-      );
+      const taken = state.arrows.filter((arrow) => arrow.from === command.id || arrow.to === command.id);
+      const arrows = state.arrows.filter((arrow) => !taken.includes(arrow));
+      const left = [];
       const groups = pruneGroups(
-        state.groups.map((group) => ({
-          ...group,
-          noteIds: group.noteIds.filter((id) => id !== command.id),
-        })),
+        state.groups.map((group) => {
+          if (!group.noteIds.includes(command.id)) return group;
+          const noteIds = group.noteIds.filter((id) => id !== command.id);
+          left.push({ id: group.id, title: group.title, remaining: noteIds.length, dissolved: noteIds.length < 2 });
+          return { ...group, noteIds };
+        }),
       );
+      // The result says what went with the card, so a door can say it too
+      // (round thirteen, entry 17: "Deleted card." and nothing of the arrows).
       return {
         state: { ...state, notes, arrows, groups },
         changed: true,
-        result: { id: command.id },
+        result: {
+          id: command.id,
+          headline: gone.headline,
+          arrows: taken.map((arrow) => ({ ...arrow, fromHeadline: headlineOf(arrow.from), toHeadline: headlineOf(arrow.to) })),
+          groups: left,
+        },
       };
     }
 
@@ -670,6 +680,34 @@ export function applyCommand(state, command, now = nowIso()) {
         state: { ...state, groups: state.groups.filter((group) => group.id !== command.id) },
         changed: true,
       };
+    }
+
+    case "add_to_group": {
+      // The agent's twin of dragging a card into a frame (round thirteen,
+      // entry 18). Membership only: the frame reaches the card where it is,
+      // and a card leaves any other group on the way, as create_group does.
+      const group = state.groups.find((item) => item.id === command.id);
+      if (!group) return { state, changed: false };
+      const joining = command.noteIds.filter(
+        (id, index) =>
+          command.noteIds.indexOf(id) === index &&
+          !group.noteIds.includes(id) &&
+          state.notes.some((note) => note.id === id),
+      );
+      if (joining.length === 0) return { state, changed: false };
+      const idSet = new Set(joining);
+      const left = [];
+      const groups = pruneGroups(
+        state.groups.map((existing) => {
+          if (existing.id === group.id) return { ...existing, noteIds: [...existing.noteIds, ...joining] };
+          if (!existing.noteIds.some((id) => idSet.has(id))) return existing;
+          const noteIds = existing.noteIds.filter((id) => !idSet.has(id));
+          left.push({ id: existing.id, title: existing.title, remaining: noteIds.length, dissolved: noteIds.length < 2 });
+          return { ...existing, noteIds };
+        }),
+      );
+      const joined = groups.find((item) => item.id === group.id);
+      return { state: { ...state, groups }, changed: true, result: { group: joined, added: joining, left } };
     }
 
     case "rename_group": {

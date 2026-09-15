@@ -102,7 +102,11 @@ order as text, the nearest thing to a look at it.
   now"; it asks again on its own the moment the question would read
   differently (a card in it changes, a page moves), and `ask_again` brings it
   back now. Only on the writer's word, never unasked; a left question is not
-  a dismissed one.
+  a dismissed one. **Edits first, then read, then leave:** a leave answers the
+  reading in front of you, and an edit changes the questions — so make the
+  writer's changes, `read_wall` again, then leave what they still want left.
+  A leave the edits have overtaken is refused, with the question as it was
+  and what the wall asks now.
 
 ### Cards
 
@@ -121,7 +125,9 @@ order as text, the nearest thing to a look at it.
 - `set_length` — how long cards run, in `pages`. Takes a list of ids. Fractions
   are fine (`0.5`); they are stored in eighths of a page. A card nobody has
   sized is **unsized** — `list_board` says so — and reads as about a page; a
-  card sized at one page is a claim the writer made.
+  card sized at one page is a claim the writer made. `pages: "unsized"` (or
+  `0`) takes a length away, so "leave it unsized" never means deleting and
+  remaking the card.
 - `set_plant` — fold or unfold the corner of cards (`plants` true/false). Fold a
   card when the writer says it sets something up; `read_wall` will ask where it
   pays off until a `setup` arrow leaves it — or until `later` names another
@@ -136,7 +142,9 @@ order as text, the nearest thing to a look at it.
   location — the kitchen, the yard, the barn of one farm — is one place:
   name the location. A treatment that names a spot per paragraph is naming
   where the camera is, which may still be one place.
-- `delete_note` — remove a card (also drops its arrows and group membership).
+- `delete_note` — remove a card. Its arrows go with it and it leaves its
+  group; the reply names each arrow by its cards and says what the group
+  kept, and `undo` brings all of it back.
 
 ### Cast
 
@@ -210,8 +218,9 @@ card of another board is not asked about as uncast here.
 ### Pages
 
 - `export_fountain` — the open board as a Fountain screenplay in wall order
-  (beats as sections, one scene per card, the scene's text or its change line
-  as the body). Pass `path` to write a `.fountain` file.
+  (beats as sections, one scene per card, the scene's text or — marked
+  `[Unwritten]` — its change line as the body). Pass `path` to write a
+  `.fountain` file.
 - `read_pages` — the same script with each card's id beside its heading and
   whether it is measured (written) or estimated. Read it before writing.
 - `write_scene` — a card's scene text in Fountain, by id; the card is then
@@ -227,7 +236,13 @@ card of another board is not asked about as uncast here.
   heading per scene, the text or the change line) for a collaborator in
   Google Docs or the like, and the script as plain text set as it prints.
   Pass `path` to write a file; otherwise the text comes back. The writer has
-  the same five formats under Save as… in the Pages panel.
+  the same five formats under Save as… in the Pages panel. **Every script
+  out is titled the same way:** a named project is the title — a one-board
+  film goes out under its own name — and the board's name follows only when
+  the project has several boards. **An unwritten scene** prints its change
+  line after the mark `[Unwritten]` in every format (italics in Markdown),
+  so a reader can tell a placeholder from a page; the mark comes back in as
+  unwritten. In Google Docs the headings hold through Paste from Markdown.
 
 ### The project
 
@@ -258,6 +273,11 @@ card of another board is not asked about as uncast here.
 - `set_logline` — set the board's central question. Empty string clears it.
 - `set_target` — target script length in `pages`: 120 feature, 60 hour, 30 half.
 - `create_group` — frame two or more cards, with an optional `title`.
+- `add_to_group` — cards into a frame that already exists, by the group's id:
+  the twin of dragging a card into a frame. The frame reaches the cards where
+  they are and nothing moves; `organize` keeps a group together as a block. A
+  card is in one frame at a time, so it leaves any other on the way. Rebuild
+  an act around a new card with this, not by ungrouping and regrouping.
 - `rename_group` / `ungroup` — by group id. Ungrouping leaves the cards alone.
 - `create_arrow` — a directed arrow, `from` → `to`, with an optional `kind`
   (`follows` or `setup`).

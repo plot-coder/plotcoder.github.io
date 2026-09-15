@@ -5,15 +5,14 @@
 import { describeSetAside, fromFdx, toFdx } from "./board/fdx";
 import { fromFountain, mergeFountain, toFountain } from "./board/fountain";
 import { toMarkdown, toPlainText } from "./board/markdown";
-import { boardById } from "./board/project";
+import { boardById, scriptTitles } from "./board/project";
 import { boardStore } from "./board/store";
 
 export function fountainText(): string {
   const project = boardStore.getProject();
   const board = boardById(project, project.activeBoardId);
   return toFountain(boardStore.getState(), {
-    title: board?.name ?? "Untitled",
-    project: project.boards.length > 1 ? project.name : undefined,
+    ...scriptTitles(project, board),
     premise: project.premise || undefined,
     draftDate: new Date().toISOString(),
   });
@@ -35,7 +34,8 @@ function downloadText(text: string, extension: string, type = "text/plain;charse
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = fountainFileName(board?.name ?? "plotcoder").replace(/\.fountain$/, extension);
+  // The file is named as the script is titled: the project for a one-board film.
+  link.download = fountainFileName(scriptTitles(project, board).title).replace(/\.fountain$/, extension);
   link.click();
   URL.revokeObjectURL(url);
 }
@@ -49,8 +49,7 @@ export function markdownText(): string {
   const project = boardStore.getProject();
   const board = boardById(project, project.activeBoardId);
   return toMarkdown(boardStore.getState(), {
-    title: board?.name ?? "Untitled",
-    project: project.boards.length > 1 ? project.name : undefined,
+    ...scriptTitles(project, board),
     premise: project.premise || undefined,
   });
 }
@@ -58,10 +57,7 @@ export function markdownText(): string {
 export function plainText(): string {
   const project = boardStore.getProject();
   const board = boardById(project, project.activeBoardId);
-  return toPlainText(boardStore.getState(), {
-    title: board?.name ?? "Untitled",
-    project: project.boards.length > 1 ? project.name : undefined,
-  });
+  return toPlainText(boardStore.getState(), scriptTitles(project, board));
 }
 
 export function downloadMarkdown(): void {
@@ -88,8 +84,7 @@ export function fdxText(): string {
   const project = boardStore.getProject();
   const board = boardById(project, project.activeBoardId);
   return toFdx(boardStore.getState(), {
-    title: board?.name ?? "Untitled",
-    project: project.boards.length > 1 ? project.name : undefined,
+    ...scriptTitles(project, board),
     draftDate: new Date().toISOString(),
   });
 }

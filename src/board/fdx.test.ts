@@ -77,8 +77,9 @@ describe("Final Draft out (c3)", () => {
     expect(xml).toContain('<Paragraph Type="Parenthetical">\n      <Text>(reading)</Text>');
     expect(xml).toContain("<DualDialogue>");
     expect(xml).toContain('<Paragraph Type="Transition">\n      <Text>CUT TO:</Text>');
-    // The unwritten cards print their change line as action.
-    expect(xml).toContain("<Text>Maya starts to doubt him.</Text>");
+    // The unwritten cards print their change line as action, after the mark (round thirteen, entry 27).
+    expect(xml).toContain("<Text>[Unwritten] Maya starts to doubt him.</Text>");
+    expect(xml).not.toContain("<Text>Maya starts to doubt him.</Text>");
     expect(xml).toContain('Number="3"');
     expect(xml).toContain("<Text>Episode 2</Text>");
     expect(xml).toContain("<Text>An episode of The Letter</Text>");

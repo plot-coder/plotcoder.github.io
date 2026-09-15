@@ -12,7 +12,7 @@
 
 import { parseScene, TRANSITION } from "./paginate.js";
 import { readingOrder } from "./readWall.js";
-import { sceneHeading } from "./fountain.js";
+import { sceneHeading, standInFor } from "./fountain.js";
 import { sceneNumbers } from "./numbering.js";
 
 function escapeXml(text) {
@@ -60,7 +60,8 @@ export function toFdx(state, options = {}) {
       "<Text>",
       `<SceneProperties Length="" Page="" Title="${escapeXml(note.headline)}" />\n      <Text>`,
     );
-    const elements = parseScene(note.text && note.text.trim() ? note.text : note.change || "");
+    // Unwritten: the change line stands in as action, marked as every export marks it.
+    const elements = parseScene(note.text && note.text.trim() ? note.text : standInFor(note));
     for (let i = 0; i < elements.length; i += 1) {
       const element = elements[i];
       if (element.kind === "action") content += paragraph("Action", element.text);

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fromFountain, mergeFountain, sceneHeading, titlePage, toFountain } from "./fountain";
+import { fromFountain, mergeFountain, sceneHeading, titlePage, toFountain, unmark } from "./fountain";
 import { applyCommand, emptyState, isMeasured, measuredEighths, noteEighths, seedState } from "./reducer";
 
 const NOW = "2026-01-01T00:00:00.000Z";
@@ -43,13 +43,13 @@ describe("Fountain out (R23, slice a)", () => {
         "",
         "[[with Maya · plants something to pay off later]]",
         "",
-        "She decides not to tell Tom.",
+        "[Unwritten] She decides not to tell Tom.",
         "",
         ".TOM LIES ABOUT THE JOB",
         "",
         "[[with Tom, Maya]]",
         "",
-        "Maya starts to doubt him.",
+        "[Unwritten] Maya starts to doubt him.",
         "",
         ".THE PIANO SHOP",
         "",
@@ -57,7 +57,7 @@ describe("Fountain out (R23, slice a)", () => {
         "",
         "[[with Maya, Tom]]",
         "",
-        "The plan dies in the room.",
+        "[Unwritten] The plan dies in the room.",
         "",
       ].join("\n"),
     );
@@ -165,9 +165,24 @@ describe("Fountain in (R23, slice b)", () => {
     // Unwritten and unsized: the estimate is the default page, and the card claims nothing.
     expect(other.lengthEighths).toBeNull();
     expect(noteEighths(other)).toBe(8);
-    // Fountain out prints the text as the scene body, the change line otherwise.
+    // Fountain out prints the text as the scene body, the change line — marked — otherwise.
     const text = toFountain(state, { title: "B" });
     expect(text).toContain("A line.\nA line.");
-    expect(text).toContain("Maya starts to doubt him.");
+    expect(text).toContain("[Unwritten] Maya starts to doubt him.");
+  });
+
+  it("brings a marked stand-in back as an unwritten card, and makes an unwritten card from a marked scene the wall lacks (round thirteen, entry 27)", () => {
+    const out = toFountain(seedState(), { title: "B" });
+    const back = fromFountain(out);
+    expect(back.scenes[1].text).toBe("[Unwritten] Maya starts to doubt him.");
+    // Out then in: the wall's own stand-ins change nothing.
+    expect(mergeFountain(seedState(), back).commands).toEqual([]);
+    // A marked scene the wall lacks becomes a card that is still unwritten: the words are its change line.
+    const extra = fromFountain(`${out}\n.THE PIER\n\n[Unwritten] Ciara reads the letter and says nothing.\n`);
+    const { commands } = mergeFountain(seedState(), extra);
+    expect(commands).toHaveLength(1);
+    expect(commands[0]).toMatchObject({ type: "create_note", change: "Ciara reads the letter and says nothing.", text: "" });
+    expect(unmark("[Unwritten] Words.")).toEqual({ text: "Words.", marked: true });
+    expect(unmark("Words.")).toEqual({ text: "Words.", marked: false });
   });
 });

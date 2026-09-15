@@ -5,12 +5,20 @@ through the published package at 0.1.15, wired before the session, started in
 an empty folder. The writer's directions were relayed from the app-review
 session, which the agent noticed, as in rounds eleven and twelve. Thirty-two
 entries; the reading, the wall, and every direction are itemised in
-`REQUIREMENTS.md` under "The blind run". Nothing below is fixed yet.
+`REQUIREMENTS.md` under "The blind run".
+
+**The six below were fixed on 2026-09-15** (see the round's paragraph in
+`REQUIREMENTS.md` for what each became). Of the other twenty-six, five are
+Robert's calls — a `when` field beside place (7, 8, 20), INT./EXT. and a time
+of day on a heading (22), sizing part of a card (9), a person in no scene
+living in two people's notes (12), the one-place rule splitting a paragraph
+(13) — and the rest are wordings and replies, listed in the same paragraph.
+That is the open queue.
 
 ## The six to fix first, and where they live
 
 Robert's choice after the round. Each is a finding an agent had to work around,
-not a wording.
+not a wording. All six fixed 2026-09-15.
 
 1. **No way to unsize a card** (entries 9, 16). `set_length` refuses zero and
    nothing clears a length; the agent deleted the card, remade it, redrew its
@@ -45,10 +53,12 @@ not a wording.
    come before leaves, and the reply to a leave that no longer matches should
    say which reading it was answering.
 
-Each of the six needs a unit test (kernel or module) and, for the tools, a
-case in `scripts/plotcoder-mcp.test.mjs`. None needs a mockup except the
-length picker if it changes; fix 3 may want a word with Robert about the
-gesture's twin.
+Each of the six has its unit test (kernel or module) and, for the tools, a
+case in `scripts/plotcoder-mcp.test.mjs`. The wall's own length picker was
+left as it was: an unsize there is a thing a person sees, so it waits for a
+mockup. Fix 3 is membership only — the frame reaches the card where it is —
+which is the gesture's twin as built; whether the tool should also move the
+card into the frame is Robert's call if a round asks for it.
 
 ---
 

@@ -139,7 +139,7 @@ export declare function sameName(a: string, b: string): boolean;
 export type Command =
   | { type: "set_logline"; logline: string }
   | { type: "set_rank"; ids: string[]; rank: NoteRank }
-  | { type: "set_length"; ids: string[]; lengthEighths: number }
+  | { type: "set_length"; ids: string[]; lengthEighths: number | null }
   | { type: "set_target"; targetEighths: number }
   | {
       type: "create_note";
@@ -167,6 +167,7 @@ export type Command =
   | { type: "settle_note"; id: string }
   | { type: "create_group"; title?: string; noteIds: string[] }
   | { type: "ungroup"; id: string }
+  | { type: "add_to_group"; id: string; noteIds: string[] }
   | { type: "rename_group"; id: string; title: string }
   | { type: "create_arrow"; from: string; to: string; kind?: ArrowKind }
   | { type: "delete_arrow"; id: string }

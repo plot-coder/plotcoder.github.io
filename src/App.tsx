@@ -480,7 +480,7 @@ export function App() {
     boardStore.dispatch({ type: "set_rank", ids, rank });
   }
 
-  function setLength(id: string, lengthEighths: number) {
+  function setLength(id: string, lengthEighths: number | null) {
     const ids =
       selectedIds.includes(id) && selectedIds.length >= 2 ? selectedIds : [id];
     boardStore.dispatch({ type: "set_length", ids, lengthEighths });

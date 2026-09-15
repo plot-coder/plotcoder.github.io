@@ -1,61 +1,45 @@
-# The blind-run prompt — round fourteen: the same feature, the fixes in hand
+# The blind-run prompt — round thirteen: a feature, the published package, past the wall
 
 Paste everything below the line into a fresh agent session. The credentials are
 already in the server's wiring: the test account is `test@test.com`, password
-`test`, a throwaway that holds nothing of anyone's. The agent checks and
-empties it itself at the start of the round, in case round thirteen left
-something.
+`test`, a throwaway that holds nothing of anyone's. It was emptied on
+2026-09-14 before this prompt was written; the agent checks and empties it
+again itself at the start of the round, in case a round left something.
 
-Round fourteen runs "Ninety-Nine" again through the published package, so the
-wall is comparable with round thirteen's, and takes the directions further
-past the wall. Round thirteen's six chosen findings were fixed on 2026-09-15
-(`round-thirteen-report.md`); this round measures whether the fixes hold in a
-stranger's hands, and what the directions round thirteen never gave will find.
-Nothing here tells the agent what those were.
+Round thirteen changes two things from round twelve. The treatment is a
+**feature**, "Ninety-Nine", so the round exercises a film with no series
+premise above it and a thing the writer says is not a plant; every round
+since four was an hour of television. And the directions run **past the
+wall into pages**: a scene written, the pages read, the script taken out as
+Markdown for a collaborator. R50 to R54 have never been measured by a round.
 
 Before you paste:
 
-1. **Land the fixes where the round will find them.** The round reads the
-   on-ramp at plotcoder.com and runs `npx -y plotcoder-board@latest`, so
-   both have to carry the fixes before the session starts: merge the pull
-   request to `main`, wait for the Pages deploy (the on-ramp and the guide),
-   then release the package — from a current `main`:
-
-   ```bash
-   npm version patch && git push && git push --tags
-   ```
-
-   The tag runs the publish workflow. Check `npm view plotcoder-board version`
-   shows the new number before you start, or the agent runs last week's server.
-2. The server is wired from round thirteen; `@latest` fetches the released
-   version each session, so nothing to change. If it was taken out:
+1. Wire the server into every session on this machine, once, from any
+   folder — the published package, no clone and no path — with the sign-in
+   beside it:
 
    ```bash
    claude mcp add plotcoder-board -s user -e PLOTCODER_EMAIL=test@test.com -e PLOTCODER_PASSWORD=test -- npx -y plotcoder-board@latest
    ```
 
    A server wired from inside a session connects only on the next one, which
-   is why the person does this and not the agent.
+   is why the person does this and not the agent (rounds one to eight measured
+   the way in; from nine the round measures the app). Take it out again when
+   the practice is done with the address:
+   `claude mcp remove plotcoder-board -s user`.
+2. Wait for the Pages deploy after a merge, so the agent reads the current
+   on-ramp.
 3. Start the session with no folder (the app's "No folder" scratch workspace
    is right). Inside a repo worktree the harness puts `CLAUDE.md` in the
    agent's context, and the run is not blind.
 4. The agent stops after its first calls with the first friction entries and
    waits for you to say "go on". When it has read the wall back, stay: answer
-   its questions and direct it the way you would a person. Directions worth
-   giving this round, in your own words and one at a time — they are the
-   ones round thirteen had no tool for, and the ground past them:
-   - the lay-by: take the quarter page off it and leave it unsized;
-   - delete the ferry card, then bring it back;
-   - the bus station at dawn belongs in Act three: put it there;
-   - after an edit or two, leave whichever questions you would leave;
-   - write the pier at Fenit; then the script out as Markdown for a producer
-     in Google Docs, as plain text for an email, and as Final Draft for an
-     agency — and ask what each one is called and how the unwritten scenes
-     read in it;
-   - how long is it, as a script and as a wall;
-   - anything else a writer would ask on day two.
-   It brings you the new entries at each step; "log so far" gets the whole
-   log, "stop" gets the report.
+   its questions and direct it the way you would a person, and take the
+   directions past the wall — a scene written, the pages read back, the
+   script out as Markdown, a question left. It brings you the new entries at
+   each step; "log so far" gets the whole log, "stop" gets the
+   report.
 
 ---
 
@@ -105,8 +89,8 @@ the run: do not log it. If the account is already empty, say so and carry on.
 4. Read the wall back to me: what is there, and what it asks.
 5. **Then wait for me.** I will answer your questions and give you directions,
    one at a time, and they will go past the wall: a scene to write, the pages
-   to read back, the script to take out, in more than one form, for people who do not use
-   a screenwriting app. Do what I ask and nothing more. When a direction could mean
+   to read back, the script to take out for someone who does not use a
+   screenwriting app. Do what I ask and nothing more. When a direction could mean
    two things on this wall, ask before you act. After each direction, tell me
    in a line what you did and what the app said back, quote the reply whenever
    it surprised you, and give me the friction entries that direction produced.

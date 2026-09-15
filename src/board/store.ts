@@ -34,6 +34,7 @@ import {
   structureBeats,
   liftCast,
   sameRoster,
+  scriptTitles,
   withRoster,
   type BoardMeta,
   type ProjectRecord,
@@ -809,13 +810,16 @@ export type PlotCoderWindowApi = {
   createArrow: (from: string, to: string) => unknown;
   deleteArrow: (id: string) => unknown;
   createGroup: (noteIds: string[], title?: string) => unknown;
+  /** Cards into an existing frame, where they are. */
+  addToGroup: (groupId: string, noteIds: string[]) => unknown;
   dispatch: (command: Command) => unknown;
   undo: () => boolean;
   redo: () => boolean;
   openBoard: (id: string) => boolean;
   newBoard: (name: string) => BoardMeta;
   setRank: (id: string, rank: "beat" | "scene") => unknown;
-  setLength: (id: string, lengthEighths: number) => unknown;
+  /** null unsizes: the card reads as about a page again. */
+  setLength: (id: string, lengthEighths: number | null) => unknown;
   setLogline: (logline: string) => unknown;
   setTarget: (targetEighths: number) => unknown;
   setLocation: (ids: string[], location: string) => unknown;
@@ -851,6 +855,7 @@ export function installWindowApi(): void {
     deleteArrow: (id) => boardStore.dispatch({ type: "delete_arrow", id }),
     createGroup: (noteIds, title) =>
       boardStore.dispatch({ type: "create_group", noteIds, title }),
+    addToGroup: (groupId, noteIds) => boardStore.dispatch({ type: "add_to_group", id: groupId, noteIds }),
     dispatch: (command) => boardStore.dispatch(command),
     undo: () => boardStore.undo(),
     redo: () => boardStore.redo(),
@@ -870,8 +875,7 @@ export function installWindowApi(): void {
       const project = boardStore.getProject();
       const board = project.boards.find((item) => item.id === project.activeBoardId);
       return toFountain(boardStore.getState(), {
-        title: board?.name,
-        project: project.boards.length > 1 ? project.name : undefined,
+        ...scriptTitles(project, board),
         premise: project.premise || undefined,
         draftDate: new Date().toISOString(),
       });
@@ -880,8 +884,7 @@ export function installWindowApi(): void {
       const project = boardStore.getProject();
       const board = project.boards.find((item) => item.id === project.activeBoardId);
       return toMarkdown(boardStore.getState(), {
-        title: board?.name,
-        project: project.boards.length > 1 ? project.name : undefined,
+        ...scriptTitles(project, board),
         premise: project.premise || undefined,
       });
     },
@@ -889,8 +892,7 @@ export function installWindowApi(): void {
       const project = boardStore.getProject();
       const board = project.boards.find((item) => item.id === project.activeBoardId);
       return toPlainText(boardStore.getState(), {
-        title: board?.name,
-        project: project.boards.length > 1 ? project.name : undefined,
+        ...scriptTitles(project, board),
       });
     },
   };

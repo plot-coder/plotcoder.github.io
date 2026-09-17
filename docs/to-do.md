@@ -13,22 +13,27 @@ source of truth; this file is only the queue.
   2026-09-17 (pull request #43, merged) and **0.1.18 is released**: the
   package on npm and plotcoder.com carry every fix.
 - **The last open piece from it is built:** the scene's when on the card
-  (R55, option A of `docs/mockups/when-on-the-card.html`), on the branch
-  `claude/app-familiarization-c1520c`. The place line reads "at the pier at
-  Fenit · night" and is typed as one line. Not yet released.
+  (R55, option A of `docs/mockups/when-on-the-card.html`), merged to `main`
+  in pull request #44. The place line reads "at the pier at Fenit · night"
+  and is typed as one line. On the site; **not yet released** as a package.
 - **Robert's five calls are decided**, all on the recommendations, and
   recorded in `REQUIREMENTS.md` (R55's "On the card" note and Roadmap 2
   item 0): no length inside a card, no cues tied to the cast, a person in no
-  scene stays in notes, `list_reminders` prints in full, and **the blind runs
-  stop at fourteen**.
-- **The suites pass on that branch:** `npm test` 28 files / 527 tests,
+  scene stays in notes, `list_reminders` prints in full. **The blind runs
+  continue** — Robert reversed the "stop at fourteen" recommendation the
+  same day, because the rounds measure what the app is for: an agent
+  helping a person make a story from an idea.
+- **Round fifteen is cued:** `blind-runs/prompt.md`, "The Weighbridge", two
+  half-hour episodes in one project — the two-board case no round has
+  measured. Not yet run.
+- **The suites pass on `main`:** `npm test` 28 files / 527 tests,
   `npm run build` clean. Eighty tools.
 
 ---
 
-## 1. Land the branch, then release
+## 1. Release
 
-Merge `claude/app-familiarization-c1520c`, then:
+`main` carries everything; the package does not. From a current `main`:
 
 ```bash
 npm version patch && git push && git push --tags
@@ -41,17 +46,19 @@ the Pages deploy.
 
 ---
 
-## 2. The next measurement: a real script
+## 2. Run round fifteen
 
-Roadmap 2, item 0, decided 2026-09-17. Nothing to build. Robert puts a
-real story through — a treatment broken into a wall, read, structured,
-drafted, printed — and what hurts becomes requirements in `REQUIREMENTS.md`,
-with dates. Done when one board has a logline, beats, cards with places,
-whens and cast, written scenes, and a printed page count.
+`blind-runs/prompt.md` is ready to paste. Its "Before you paste" says the
+order: release first (item 1), because the round runs the published
+package and the workflow's words about the when changed in this branch;
+then wire, then a session with no folder. The directions to give are
+listed there. Afterwards: the report to `blind-runs/round-fifteen-report.md`
+verbatim with a head, the round's paragraph in `REQUIREMENTS.md` under "The
+blind run", and the recurrence table in `blind-runs/README.md` if anything
+came back.
 
-If a fifteenth round ever runs instead, the unmeasured case is a **second
-board**: a plant paying off across boards (R50) and one cast across two
-boards (R51). `blind-runs/prompt.md` is still round fourteen's.
+After that, the real script (Roadmap 2, item 0) is still the measurement
+Robert leaned toward once the rounds are into diminishing returns.
 
 ---
 
@@ -87,6 +94,6 @@ somewhere (R48), and a reset mail sender for a forgotten password (R39).
 
 1. Read the recurrence table in `blind-runs/README.md`, then
    `blind-runs/round-fourteen-report.md`'s head and sections 3 to 5.
-2. Land and release (item 1) so the site and the package carry the when
-   on the card.
-3. Then the real script (item 2). Everything else waits for it.
+2. Release (item 1) so the package carries the when on the card and the
+   checklist's words about it.
+3. Then round fifteen (item 2), and the real script after it.

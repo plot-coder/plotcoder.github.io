@@ -21,6 +21,12 @@ story order is the arrows), or was decided against — a length inside a card
 in `REQUIREMENTS.md` under "The blind run", round fourteen. The card's own
 line for a scene's when waits for its mockup.
 
+**This is a snapshot of version 0.1.17.** The numbered log below describes the
+app as it was on the day, not as it is: most of what it names has since been
+changed. Read it for what the app did to a stranger, and for sections 3 to 5,
+which are about the shape of the surface and outlast any one fix. Do not read
+it as current behaviour.
+
 ---
 
 What follows is the agent's report, verbatim.

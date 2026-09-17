@@ -94,7 +94,35 @@ visible:
 
 ---
 
-## 5. Smaller things noticed and not done
+## 5. What a round leaves behind (settled 2026-09-17)
+
+Robert asked whether keeping whole reports is signal or noise. Measured, the
+reports were the cheap part: two of them were 28 KB of unique content, while
+the round paragraphs inside `REQUIREMENTS.md` were 34 KB restating them and
+two prompts were 31 KB carrying a third copy of the treatment. So:
+
+- **Keep every report, whole and unedited.** It is the only record not written
+  by whoever did the fixing, and its last three sections — what the on-ramp
+  left the agent to work out, what they never found a way to do, what they
+  were never sure had landed — outlast any one fix. Each head now says which
+  version it is a snapshot of, so nobody reads a stale log as current.
+- **The round's paragraph in `REQUIREMENTS.md` says what was decided and why,**
+  and points at the report for the rest. Rounds thirteen and fourteen were cut
+  back on that rule.
+- **One treatment, one file.** A prompt that must paste without editing keeps
+  its copy; an archived one does not.
+- **`blind-runs/README.md` now carries the recurrence table** — the ten
+  requirements that exist because a finding came back, and the two things that
+  came back and were deliberately not built. That table is the page someone
+  else should read first, ahead of any single report.
+
+The rule if the reports ever become a burden: rounds one to twelve have none
+and have not been missed, so the last two or three are the ones that earn
+their place.
+
+---
+
+## 6. Smaller things noticed and not done
 
 - **`README.md`'s status line** still said 0.1.14 two releases ago; it now says
   0.1.15 and will be wrong again after the next release. Worth a line in the
@@ -114,10 +142,12 @@ visible:
 
 ---
 
-## 6. How to pick this up
+## 7. How to pick this up
 
-1. Read `blind-runs/round-fourteen-report.md`'s head, then its log. It is the
-   most recent picture of what the app does to a stranger.
+1. Read the recurrence table in `blind-runs/README.md`, then
+   `blind-runs/round-fourteen-report.md`'s head and its log. The table is what
+   more than one round has said; the report is the most recent picture of what
+   the app does to a stranger.
 2. Read round fourteen's paragraph in `REQUIREMENTS.md` under "The blind run":
    it says what each of the forty-nine entries became.
 3. Merge and release #43 before anything else, so the site and the package

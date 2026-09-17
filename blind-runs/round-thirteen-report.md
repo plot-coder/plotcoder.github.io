@@ -13,7 +13,13 @@ Robert's calls — a `when` field beside place (7, 8, 20), INT./EXT. and a time
 of day on a heading (22), sizing part of a card (9), a person in no scene
 living in two people's notes (12), the one-place rule splitting a paragraph
 (13) — and the rest are wordings and replies, listed in the same paragraph.
-That is the open queue.
+Those were taken up with round fourteen's on 2026-09-17; nothing from this
+round is open.
+
+**This is a snapshot of version 0.1.15.** The numbered log below describes the
+app as it was on the day, not as it is. Read it for what the app did to a
+stranger, and for sections 3 to 5, which are about the shape of the surface
+and outlast any one fix. Do not read it as current behaviour.
 
 ## The six to fix first, and where they live
 

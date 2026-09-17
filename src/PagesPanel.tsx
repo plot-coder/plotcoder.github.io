@@ -192,6 +192,7 @@ export function PagesPanel({
                     {note.headline || "Untitled"}
                     <span className="outline__meta">
                       {note.location ? ` · ${note.location}` : ""}
+                      {note.when ? `${note.location ? ", " : " · "}${note.when}` : ""}
                       {castNames(note) ? ` · ${castNames(note)}` : ""}
                     </span>
                   </span>

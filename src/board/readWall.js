@@ -9,10 +9,13 @@
 // Pure and DOM-free like the reducer, so the Reminders modal, the MCP server and
 // the tests all read the same wall the same way.
 //
-// Order: the wall gives the order, and the wall is free (D20), so order here is
-// reading order — rows top to bottom, cards left to right within a row. Arrows
-// do not yet change the order; that is the first refinement to make once this
-// slice has been used.
+// Order: the wall gives the order, and the wall is free (D20). Reading order is
+// rows top to bottom, cards left to right within a row; story order is reading
+// order with each follows arrow pulling its source in front of its target, the
+// order organize lays the wall out in. Since round fourteen (entry 41) every
+// reading uses story order, so a card wired between two others reads there
+// before any tidy — the arrows are the writer's claim about the order, and
+// where they say nothing the positions decide.
 
 import { boardEighths, EIGHTHS_PER_PAGE, formatPages, NOTE_HEIGHT, noteEighths } from "./reducer.js";
 
@@ -46,6 +49,46 @@ const FILLER = new Set([
  * Cards in reading order: banded into rows by y, then left to right. A free
  * wall has no rows, so this is the order a person's eye takes across it.
  */
+/**
+ * Story order: reading order, with each follows arrow pulling its source in
+ * front of its target; a pair pointing both ways is a tie and reading order
+ * keeps it. The order organize lays the wall out in, and the order every
+ * reading, numbering and page uses (R56). Returns the notes.
+ */
+export function storyOrder(state, ids) {
+  const scope = ids ? new Set(ids) : null;
+  const notes = state.notes.filter((note) => !scope || scope.has(note.id));
+  const reading = readingOrder(notes);
+  const byId = new Map(reading.map((note) => [note.id, note]));
+  const rank = new Map(reading.map((note, index) => [note.id, index]));
+  const preds = new Map(reading.map((note) => [note.id, []]));
+  for (const arrow of state.arrows ?? []) {
+    if (arrow.kind === "setup") continue;
+    if (!rank.has(arrow.from) || !rank.has(arrow.to)) continue;
+    preds.get(arrow.to).push(arrow.from);
+  }
+  for (const list of preds.values()) list.sort((a, b) => rank.get(a) - rank.get(b));
+  const placed = new Set();
+  const visiting = new Set();
+  const order = [];
+  function visit(id) {
+    if (placed.has(id) || visiting.has(id)) return;
+    visiting.add(id);
+    for (const from of preds.get(id)) {
+      if (preds.get(from).includes(id)) continue;
+      visit(from);
+    }
+    visiting.delete(id);
+    placed.add(id);
+    order.push(byId.get(id));
+  }
+  for (const note of reading) visit(note.id);
+  return order;
+}
+
+/** The leading "Day three, night." of a headline, the convention the guide asks for until a card has a when: not a scene's words. */
+const DAY_PREFIX = /^\s*day\s+[\w-]+(?:\s*,\s*[\w\s-]+?)?\s*[.:]\s*/i;
+
 export function readingOrder(notes) {
   const byTop = [...notes].sort((a, b) => a.y - b.y || a.x - b.x);
   const rows = [];
@@ -98,6 +141,14 @@ function pages(eighths) {
   return formatPages(Math.round(eighths));
 }
 
+/** "1 page", "3 pages", "4/8 of a page" — never "1 pages" (round thirteen, entry 15). */
+function pagesWord(eighths) {
+  const n = pages(eighths);
+  if (n === "1") return "1 page";
+  if (/^\d+\/8$/.test(n)) return `${n} of a page`;
+  return `${n} pages`;
+}
+
 function quote(note) {
   return `"${note.headline}"`;
 }
@@ -114,7 +165,7 @@ export function readWall(state, options = {}) {
   // People on a card of another board of the project (R51) are cast, and
   // are not asked about here.
   const elsewhere = new Set(Array.isArray(options.elsewhere) ? options.elsewhere : []);
-  const order = readingOrder(state.notes);
+  const order = storyOrder(state);
   const beats = order.filter((note) => note.rank === "beat");
 
   // Runs: the scene pages strictly between consecutive beats, plus the opening
@@ -172,14 +223,21 @@ export function readWall(state, options = {}) {
 
   // The sag detector (R25): one run out of proportion with the others.
   const between = runs.filter((run) => run.from !== null && run.to !== null);
-  if (between.length >= 2) {
+  // A run of unsized, unwritten cards is the default page each, so a wall
+  // where every run is defaults measures nothing but card counts; the sag
+  // waits until some card in some run is sized or written (round fourteen, 12).
+  const claimed = between.some((run) => run.ids.some((id) => {
+    const note = byId.get(id);
+    return note && (note.lengthEighths !== null || (note.text ?? "").trim());
+  }));
+  if (between.length >= 2 && claimed) {
     const typical = median(between.map((run) => run.eighths));
     const longest = between.reduce((top, run) => (run.eighths > top.eighths ? run : top));
     if (typical > 0 && longest.eighths > SAG_RATIO * typical) {
       findings.push({
         kind: "sag",
         ids: [longest.from, longest.to],
-        text: `About ${pages(longest.eighths)} pages run between "${headline(longest.from)}" and "${headline(longest.to)}"; the median run here is about ${pages(typical)} (a beat's own pages are in no run). Is something sagging there, or is it one long set piece?`,
+        text: `About ${pagesWord(longest.eighths)} run between "${headline(longest.from)}" and "${headline(longest.to)}"; the median run here is about ${pagesWord(typical)} (a beat's own pages are in no run). Is something sagging there, or is it one long set piece?`,
       });
     }
   }
@@ -267,7 +325,9 @@ export function readWall(state, options = {}) {
     for (let j = i + 1; j < order.length; j += 1) {
       const a = order[i];
       const b = order[j];
-      if (sameScene(a.headline, b.headline)) {
+      // A leading "Day three." is the guide's convention for when a scene
+      // happens, not the scene's words (round fourteen, entry 13).
+      if (sameScene(a.headline.replace(DAY_PREFIX, ""), b.headline.replace(DAY_PREFIX, ""))) {
         findings.push({
           kind: "duplicate",
           ids: [a.id, b.id],
@@ -387,7 +447,7 @@ export function readWall(state, options = {}) {
       (item) => item.kind === finding.kind && sameList(item.ids, finding.ids) && item.text === finding.text,
     );
     if (!entry) return true;
-    left.push({ ...finding, since: entry.since });
+    left.push({ ...finding, since: entry.since, ...(entry.why ? { why: entry.why } : {}) });
     return false;
   });
 

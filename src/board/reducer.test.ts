@@ -174,9 +174,31 @@ describe("delete_note", () => {
     );
     expect(state.arrows).toHaveLength(2);
 
-    const after = applyCommand(state, { type: "delete_note", id: "b" }, NOW).state;
+    const outcome = applyCommand(state, { type: "delete_note", id: "b" }, NOW);
+    const after = outcome.state;
     expect(after.notes.map((n) => n.id)).toEqual(["a", "c"]);
-    expect(after.arrows).toHaveLength(0);
+    // The chain is joined behind the card: one follows in, one out, so a → c (round fourteen, entry 20).
+    expect(after.arrows).toHaveLength(1);
+    expect(after.arrows[0]).toMatchObject({ from: "a", to: "c", kind: "follows" });
+    expect(outcome.result).toMatchObject({ joined: { from: "a", to: "c" } });
+    // No join when the card had two ways in, when the arrow was a setup, or when a → c already exists.
+    const forked = run(state, { type: "create_arrow", from: "c", to: "b" });
+    expect(applyCommand(forked, { type: "delete_note", id: "b" }, NOW).state.arrows).toHaveLength(0);
+    const setup = run(boardOf({ id: "a", x: 0, y: 0 }, { id: "b", x: 400, y: 0 }, { id: "c", x: 800, y: 0 }), { type: "create_arrow", from: "a", to: "b", kind: "setup" }, { type: "create_arrow", from: "b", to: "c" });
+    expect(applyCommand(setup, { type: "delete_note", id: "b" }, NOW).state.arrows).toHaveLength(0);
+    const already = run(state, { type: "create_arrow", from: "a", to: "c" });
+    expect(applyCommand(already, { type: "delete_note", id: "b" }, NOW).state.arrows).toHaveLength(1);
+  });
+
+  it("tidies only the cards that move, so a pose that changes nothing stamps nothing (round fourteen, entry 43)", () => {
+    const state = boardOf({ id: "a", x: 0, y: 0 }, { id: "b", x: 400, y: 0 });
+    const same = applyCommand(state, { type: "apply_poses", poses: [{ id: "a", x: 0, y: 0, rotate: state.notes[0].rotate }] }, NOW);
+    expect(same.changed).toBe(false);
+    expect(same.state).toBe(state);
+    const moved = applyCommand(state, { type: "apply_poses", poses: [{ id: "a", x: 0, y: 0, rotate: state.notes[0].rotate }, { id: "b", x: 500, y: 0, rotate: 0 }] }, NOW);
+    expect(moved.changed).toBe(true);
+    expect(moved.result).toEqual({ moved: 1 });
+    expect(moved.state.notes[0]).toBe(state.notes[0]);
   });
 
   it("says what went with the card: its arrows by both headlines, and the group it left (round thirteen, entry 17)", () => {
@@ -1297,5 +1319,41 @@ describe("leaving a question (R53)", () => {
     expect(filled.left).toEqual([]);
     const messy = { ...seedState(NOW), left: [{ kind: "sag", ids: ["a"], text: "x", since: NOW }, { kind: 3 }, "no"] };
     expect(normalizeState(messy as unknown as BoardState).left).toEqual([{ kind: "sag", ids: ["a"], text: "x", since: NOW }]);
+  });
+});
+
+describe("when a scene happens (R55)", () => {
+  const board = () => boardOf({ id: "a", x: 0, y: 0 }, { id: "b", x: 400, y: 0 });
+
+  it("is empty on a new card and on a card written before it, and claims nothing", () => {
+    expect(board().notes[0].when).toBe("");
+    const old = { ...board(), notes: board().notes.map((note) => { const { when: _w, ...rest } = note; return rest; }) } as unknown as BoardState;
+    expect(normalizeState(old).notes[0].when).toBe("");
+  });
+
+  it("is set on cards, cleaned, cleared with an empty string, and carried by create_note and update_note", () => {
+    const set = applyCommand(board(), { type: "set_when", ids: ["a", "b"], when: "  day four,   night " }, NOW);
+    expect(set.changed).toBe(true);
+    expect(set.result).toHaveLength(2);
+    expect(set.state.notes.map((note) => note.when)).toEqual(["day four, night", "day four, night"]);
+    expect(applyCommand(set.state, { type: "set_when", ids: ["a"], when: "day four, night" }, NOW).state).toBe(set.state);
+    const cleared = run(set.state, { type: "set_when", ids: ["a"], when: "" });
+    expect(cleared.notes[0].when).toBe("");
+    const made = run(cleared, { type: "create_note", id: "c", x: 800, y: 0, when: "dawn" });
+    expect(made.notes.find((note) => note.id === "c")?.when).toBe("dawn");
+    const updated = run(made, { type: "update_note", id: "c", when: "dusk" });
+    expect(updated.notes.find((note) => note.id === "c")?.when).toBe("dusk");
+    expect(applyCommand(board(), { type: "set_when", ids: ["ghost"], when: "night" }, NOW).changed).toBe(false);
+  });
+});
+
+describe("a left question carries the writer's reason (round fourteen, entry 23)", () => {
+  it("keeps why when given and leaves it out when not", () => {
+    const state = boardOf({ id: "a", x: 0, y: 0 });
+    const withWhy = applyCommand(state, { type: "leave_question", kind: "sag", ids: ["a"], text: "Q?", why: " the third act is the third act " }, NOW);
+    expect(withWhy.state.left[0]).toEqual({ kind: "sag", ids: ["a"], text: "Q?", since: NOW, why: "the third act is the third act" });
+    expect(normalizeState(withWhy.state).left[0].why).toBe("the third act is the third act");
+    const without = applyCommand(state, { type: "leave_question", kind: "sag", ids: ["a"], text: "Q?" }, NOW);
+    expect("why" in without.state.left[0]).toBe(false);
   });
 });

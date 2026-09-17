@@ -17,10 +17,10 @@
 // It pastes into anything and reads as a script wherever the font is
 // monospaced.
 
-import { readingOrder } from "./readWall.js";
-import { sceneHeading, standInFor } from "./fountain.js";
+import { storyOrder } from "./readWall.js";
+import { sceneHeading, standInFor, UNWRITTEN_MARK } from "./fountain.js";
 import { paginate, parseScene, WIDTH } from "./paginate.js";
-import { sceneNumbers } from "./numbering.js";
+import { revisionLine, revisionMarks, sceneNumbers } from "./numbering.js";
 
 function upper(text) {
   return text.trim().replace(/\s+/g, " ").toUpperCase();
@@ -64,11 +64,13 @@ function sceneMarkdown(text) {
  *   when the project has several boards; options.premise
  */
 export function toMarkdown(state, options = {}) {
-  const order = readingOrder(state.notes);
+  const order = storyOrder(state);
   const numbers = sceneNumbers(order, state.lock);
+  const marks = revisionMarks(state);
   const out = [`# ${documentTitle(options)}`, ""];
   if (options.premise) out.push(`*${options.premise}*`, "");
   if (state.logline) out.push(`**${state.logline}**`, "");
+  if (state.revision) out.push(`*${revisionLine(state)} · a scene changed since it began has \\* after its heading*`, "");
   let beat = 0;
   for (const note of order) {
     if (note.rank === "beat") {
@@ -76,12 +78,14 @@ export function toMarkdown(state, options = {}) {
       out.push(`## ${beat}. ${note.headline || "Untitled beat"}`, "");
     }
     const heading = sceneHeading(note).slice(1);
-    out.push(`### ${numbers.get(note.id) ?? ""} · ${heading}`.replace(/^###  · /, "### "), "");
-    if (note.headline && upper(note.headline) !== heading) out.push(`*${note.headline.trim()}*`, "");
+    const star = marks.get(note.id)?.revised ? " \\*" : "";
+    out.push(`### ${numbers.get(note.id) ?? ""} · ${heading}${star}`.replace(/^###  · /, "### "), "");
+    // The headline as a synopsis line — not under a beat, whose heading is the headline already.
+    if (note.rank !== "beat" && note.headline && upper(note.headline) !== heading) out.push(`*${note.headline.trim()}*`, "");
     if (note.text && note.text.trim()) out.push(...sceneMarkdown(note.text));
-    // Unwritten: the change line stands in, marked and in italics, so a reader
-    // in Docs can tell the one written scene from sixteen placeholders.
-    else out.push(`*${standInFor(note)}*`, "");
+    // Unwritten: the change line stands in after the mark in bold, a plain
+    // paragraph so it never reads as a second synopsis line (round fourteen, 30).
+    else out.push(`**${UNWRITTEN_MARK}**${standInFor(note).slice(UNWRITTEN_MARK.length)}`, "");
   }
   return `${out.join("\n").trimEnd()}\n`;
 }
@@ -112,8 +116,15 @@ function columnLine(line) {
   return text;
 }
 
-/** A printed line set with spaces. Exported for the test; the file is `toPlainText`. */
-export function setLine(line) {
+/** A printed line set with spaces, a revision's star in the right margin when `star`. Exported for the test; the file is `toPlainText`. */
+export function setLine(line, star = false) {
+  const set = setLineBare(line);
+  if (!star) return set;
+  if (line.kind === "heading" && line.sceneNumber !== null && line.sceneNumber !== undefined) return `${set} *`;
+  return `${set.padEnd(GUTTER + WIDTH.action + 1)} *`;
+}
+
+function setLineBare(line) {
   const text = line.text ?? "";
   switch (line.kind) {
     case "blank":
@@ -151,8 +162,9 @@ export function setLine(line) {
  *   when the project has several boards
  */
 export function toPlainText(state, options = {}) {
-  const order = readingOrder(state.notes);
+  const order = storyOrder(state);
   const numbers = sceneNumbers(order, state.lock);
+  const marks = revisionMarks(state);
   const result = paginate(
     order.map((note) => ({
       id: note.id,
@@ -170,10 +182,16 @@ export function toPlainText(state, options = {}) {
   } else {
     out.push(centred(upper(title)));
   }
+  if (state.revision) out.push("", centred(revisionLine(state).toUpperCase()));
   out.push("", "");
+  // Pages run on with no gap: a page turn inside a paragraph is not a blank
+  // line in a text file (round fourteen, entry 33).
   for (const page of result.pages) {
-    if (page.number > 1) out.push("");
-    for (const line of page.lines) out.push(setLine(line));
+    for (const line of page.lines) {
+      const mark = marks.get(line.noteId);
+      const star = Boolean(mark) && (line.kind === "heading" ? mark.revised && mark.lines.size === 0 : typeof line.src === "number" && mark.lines.has(line.src));
+      out.push(setLine(line, star));
+    }
   }
   return `${out.join("\n").replace(/\n{4,}/g, "\n\n\n").trimEnd()}\n`;
 }

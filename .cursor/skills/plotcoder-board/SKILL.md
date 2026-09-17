@@ -76,9 +76,16 @@ change anything.
 ### Reading
 
 Three reads, three things: `list_boards` is the **project** (its boards);
-`list_board` is **one board's records**; `read_wall` is the **reading** of that
-board — what it asks. With no app running, `export_fountain` is the wall in
-order as text, the nearest thing to a look at it.
+`list_board` is **one board's records**, in story order, with the wall's rows
+under them; `read_wall` is the **reading** of that board — what it asks. Every
+reading, numbering and page uses **story order**: the rows top to bottom and
+left to right, with each `follows` arrow pulling its source in front of its
+target — the order `organize` lays the wall out in. A card wired between two
+others reads there before any tidy. `list_board`'s rows are the nearest thing
+to a look at the wall; with no app running, `export_fountain` is the wall in
+order as text. Every reply's first line names the project it read and how
+many the account holds. Replies are prose; the same reading as JSON follows
+only when the server is started with `PLOTCODER_JSON=1`.
 
 - `list_board` — the logline, the beat/scene counts, the runtime estimate against
   the target, then every **card**, **group**, and **arrow** with its **id**. Ids
@@ -106,7 +113,11 @@ order as text, the nearest thing to a look at it.
   reading in front of you, and an edit changes the questions — so make the
   writer's changes, `read_wall` again, then leave what they still want left.
   A leave the edits have overtaken is refused, with the question as it was
-  and what the wall asks now.
+  and what the wall asks now. Give `why` — the writer's reason, in their
+  words — so the next reader sees it on the wall; leave several at once with
+  `questions`, one step. The reply says what the wall still asks, so no read
+  after is needed. Every write's reply says when the wall's questions changed
+  because of it, and the runtime when that moved.
 
 ### Cards
 
@@ -118,7 +129,8 @@ order as text, the nearest thing to a look at it.
   which is how a treatment's paragraph splits. A **beat is a whole card** — the
   scene where the turn happens — not a moment inside one; when a treatment's
   "midpoint" spans two scenes, mark the card where the turn lands.
-- `update_note` — change a card's `headline` and/or `change` by `id`.
+- `update_note` — change a card's `headline`, `change`, `location` and/or
+  `when` by `id`; the reply says which field changed, from what to what.
 - `move_note` — set a card's absolute `x`,`y` (top-left, pixels).
 - `recolor_note` — change a card's paper `color` by `id`.
 - `set_rank` — mark cards `beat` or `scene`. Takes a list of ids.
@@ -142,9 +154,19 @@ order as text, the nearest thing to a look at it.
   location — the kitchen, the yard, the barn of one farm — is one place:
   name the location. A treatment that names a spot per paragraph is naming
   where the camera is, which may still be one place.
+- `set_when` — **when** a scene happens, as the writer says it: "night",
+  "day four, dawn", "the next morning". Free text on the card beside its
+  place, printed after the place on every scene heading — THE PIER AT FENIT
+  - NIGHT. This is where a scene's day and time live, not the headline, so
+  two scenes on one day never read as one scene; `create_note` and
+  `update_note` take `when` too, and `list_board` shows it. A card with no
+  when says nothing about time, which is not the same as "unknown" — say so
+  in the headline if it matters.
 - `delete_note` — remove a card. Its arrows go with it and it leaves its
-  group; the reply names each arrow by its cards and says what the group
-  kept, and `undo` brings all of it back.
+  group; a card wired into a chain — one `follows` in, one out — leaves the
+  chain joined behind it. The reply names each arrow by its cards, the join,
+  and what the group kept; `undo` brings all of it back and says what came
+  back with the card.
 
 ### Cast
 
@@ -217,19 +239,26 @@ card of another board is not asked about as uncast here.
 
 ### Pages
 
-- `export_fountain` — the open board as a Fountain screenplay in wall order
+- `export_fountain` — the open board as a Fountain screenplay in story order
   (beats as sections, one scene per card, the scene's text or — marked
-  `[Unwritten]` — its change line as the body). Pass `path` to write a
+  `[Unwritten]` — its change line as the body, the cast and the fold as
+  notes, a changed scene noted under a revision). Pass `path` to write a
   `.fountain` file.
 - `read_pages` — the same script with each card's id beside its heading and
   whether it is measured (written) or estimated. Read it before writing.
 - `write_scene` — a card's scene text in Fountain, by id; the card is then
-  measured from its lines. Write only scenes the writer asked for.
+  measured from its lines. Write only scenes the writer asked for. Under a
+  revision the reply says the card is marked.
+- `edit_scene` — one line of a scene, by `find` and `replace`: the text must
+  occur once. For "change her last line", not a rewrite.
 - `import_fountain` — a `.fountain` file or text onto the open board: scenes
   land on the cards with the same heading in order; unknown scenes become new
   cards; nothing is deleted.
 - `page_count` — the board paginated as a script (Letter, Courier 12, 55
-  lines, the industry's break rules) with the page each scene starts on.
+  lines, the industry's break rules) with the page each scene starts on, by
+  the locked numbers when there is a lock. Unwritten scenes set their change
+  line as action, a few lines each, so it is the script so far, not the
+  runtime; the caveat comes first.
 - `export_fdx` / `import_fdx` — Final Draft's file, out (scene numbers by
   wall order, not locked) and in (the same merge as Fountain in).
 - `export_markdown` / `export_text` — the wall as Markdown (headings, a
@@ -240,9 +269,18 @@ card of another board is not asked about as uncast here.
   out is titled the same way:** a named project is the title — a one-board
   film goes out under its own name — and the board's name follows only when
   the project has several boards. **An unwritten scene** prints its change
-  line after the mark `[Unwritten]` in every format (italics in Markdown),
-  so a reader can tell a placeholder from a page; the mark comes back in as
-  unwritten. In Google Docs the headings hold through Paste from Markdown.
+  line after the mark `[Unwritten]` in every format (the mark in bold in
+  Markdown), so a reader can tell a placeholder from a page; the mark comes
+  back in as unwritten. **What each form carries:** Markdown has the beats
+  and every headline, no cast and no fold; plain text is the script alone —
+  the heading is the place and the when, no headlines, no beats; Fountain
+  has the cast and the fold as notes; Final Draft has the numbers. A revision
+  reaches all of them: a star in plain text's right margin on changed lines,
+  a marked heading in Markdown, a note in Fountain, a revision set in Final
+  Draft. In Google Docs the headings hold through Paste from Markdown.
+  Coming back in, a scene whose text is already on its card is matched and
+  left alone; matching is by heading and then by order, so a reordered file
+  lands text on the next card with that heading and never reorders the wall.
 
 ### The project
 
@@ -288,7 +326,9 @@ card of another board is not asked about as uncast here.
   card's id, or `before` one. It rewires the follows arrows (what pointed at
   the card points at what it pointed at; the card lands between the target
   and what followed it) and tidies the wall, as one step `undo` takes back
-  whole. A person does this by dragging in the outline.
+  whole. A scene that lands beside a card of an act joins that act, so the
+  tidy keeps it with the act and the reading and the numbers agree with the
+  arrows. A person does this by dragging in the outline.
 - `organize` — tidy the wall along the arrows: story order from the `follows`
   arrows, a row per beat with the scenes that follow it, groups kept together.
   Pass `noteIds` to tidy only those. Prefer it to moving cards one by one, and
@@ -405,7 +445,8 @@ writer's own — and no dev server running, every tool works the writer's
 project on the account directly, and each change lands on every open wall.
 `list_projects` shows what you can work; `open_project` (`project`: a name
 or id from the list) switches; `new_project` (`name`, and `pages` or
-`minutes` for its target) starts an empty one and works it. With the sign-in
+`minutes` for its target, and `board` for the first board's name) starts an
+empty one and works it. With the sign-in
 set, the account is the wall even when a dev app is open on the machine;
 without `PLOTCODER_PROJECT` the server works the project touched most
 recently, and every reply's first line names it. **No account yet?**
@@ -430,8 +471,13 @@ sign-in set is you saying which wall you mean, so it wins over an open app.
 ## The production half
 
 - `lock_numbers` / `unlock_numbers` — once a draft has gone out, every scene
-  keeps its number; new scenes take A-numbers (14A, 14B); Final Draft out
-  carries them. Ask the writer first: it is a decision about the document.
-- `start_revision` / `end_revision` — a named revision in one of the
-  industry's colours; changed lines print in the colour with a star, changed
-  cards wear it on the wall. `list_board` says the lock and the revision.
+  keeps its number and moving it never renumbers it; a scene added after the
+  lock has a letter, 14A then 14B, which is its place between locked scenes
+  and follows the scene if it moves. `create_note` says the letter a new
+  scene got; Final Draft out carries the numbers. Ask the writer first: it is
+  a decision about the document.
+- `start_revision` / `end_revision` — a revision in one of the industry's
+  colours, named or named for the colour; changed lines are starred on the
+  page and in every export, changed cards wear the colour on the wall, and
+  `write_scene` and `edit_scene` say when they mark a card. `list_board` says
+  the lock and the revision.

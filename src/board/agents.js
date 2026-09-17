@@ -7,7 +7,7 @@
 
 export const AGENTS = {
   lead:
-    "A storyline wall. Cards are scenes, beats are the big turns, arrows say what follows or pays off what. An agent driven by a person has every tool a person here has; the person directs, the agent operates. Call the tools; never fake a mouse. Already have the plotcoder-board tools in front of you? Skip the doors and go to Call these first.",
+    "A storyline wall. Cards are scenes, beats are the big turns, arrows say what follows or pays off what. An agent driven by a person has every tool a person here has; the person directs, the agent operates. Call the tools; never fake a mouse. Already have the plotcoder-board tools in front of you? Then your way in is: read the guide, make the four calls under Call these first, and skip the doors between — they are for wiring a server in.",
   doors: [
     {
       id: "mcp",
@@ -18,7 +18,7 @@ export const AGENTS = {
     {
       id: "shell",
       name: "The shell, for this session",
-      text: "npx -y plotcoder-board@latest call <tool> '{json}' makes one call, with no MCP and no restart. One server per call, so undo and the project you opened do not carry between calls; npx -y plotcoder-board@latest call --batch < calls.jsonl runs a file of calls — one per line, {\"tool\": \"…\", \"arguments\": {…}} — on one server, so they do. With the account door the sign-in is kept in the folder's .plotcoder between calls (PLOTCODER_SESSION=0 to sign in every time). PLOTCODER_PROJECT names the project for each call. The JSON tail is off on this door; PLOTCODER_JSON=1 keeps it. PLOTCODER_ROOT points the server at the folder whose wall you mean; without it, the folder you run it from.",
+      text: "npx -y plotcoder-board@latest call <tool> '{json}' makes one call, with no MCP and no restart. One server per call, so undo and the project you opened do not carry between calls; npx -y plotcoder-board@latest call --batch < calls.jsonl runs a file of calls — one per line, {\"tool\": \"…\", \"arguments\": {…}} — on one server, so they do. With the account door the sign-in is kept in the folder's .plotcoder between calls (PLOTCODER_SESSION=0 to sign in every time). PLOTCODER_PROJECT names the project for each call. The JSON tail is off on every door; PLOTCODER_JSON=1 in the server's environment adds it. PLOTCODER_ROOT points the server at the folder whose wall you mean; without it, the folder you run it from.",
     },
     {
       id: "hosted",
@@ -42,10 +42,10 @@ export const AGENTS = {
       text: "Skip this when the account is the wall. Without an account, a wall is a folder: any folder, empty is fine — choose one that will outlive your session, never a scratch one. The app run from that folder shows the wall, and the server writes it there (PLOTCODER_ROOT, or the folder it is run from). A fresh folder holds the sample; new_board for the writer's wall, then rename_project. No app running? export_fountain is the wall in order, as text.",
     },
   ],
-  firstNote: "Make these four before anything else; none depends on another, so any order is fine. They are about the wall you will work, so after open_project, open_board, new_project or empty_account, read_wall again. On an account with no project yet, read_wall has nothing to read and says so, and list_reminders gives the house principles every project starts with; new_project, then the four again. No server in front of you, and no shell to take the shell door? Nothing gets you in from inside the session: say so, and ask the person to wire the server and start a new session.",
+  firstNote: "Make these four before anything else; none depends on another, so any order is fine. list_words and list_workflows are the app's and read no project; read_wall and list_reminders are about the wall you will work, so after open_project, open_board, new_project or empty_account, make those two again. Every reply's first line names the project it read and how many the account holds; list_projects lists them. On an account with no project yet, read_wall has nothing to read and says so, and list_reminders gives the house principles every project starts with; new_project (name, pages, and board for the first board's name), then read_wall and list_reminders again. No server in front of you, and no shell to take the shell door? Nothing gets you in from inside the session: say so, and ask the person to wire the server and start a new session.",
   first: [
     { tool: "list_words", why: "the room's words, the app's meaning." },
-    { tool: "read_wall", why: "the reading: the beats, the runs, the setups, and what the wall asks. The records — every card, the cast, the places — are list_board's. A fresh folder holds a sample wall (Maya, Tom, the letter) and says so; it is not the writer's." },
+    { tool: "read_wall", why: "the reading: the beats, the runs, the setups, and what the wall asks. The records — every card, the cast, the places, the rows — are list_board's. A fresh folder holds a sample wall (Maya, Tom, the letter) and the reading says so only when it is the sample; it is not the writer's." },
     { tool: "list_workflows", why: "what a writer can ask you for." },
     { tool: "list_reminders", why: "the house principles the app starts with, and the writer's own; read them before you change anything. Reminders live on the project and go with it." },
   ],

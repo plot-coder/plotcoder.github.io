@@ -13,8 +13,8 @@ import type { Finding, FindingKind } from "./board/readWall";
 type AsksSheetProps = {
   open: boolean;
   findings: Finding[];
-  /** Questions the writer has left, for now (R53). */
-  left: Array<Finding & { since: string }>;
+  /** Questions the writer has left, for now (R53), with the reason when they gave one. */
+  left: Array<Finding & { since: string; why?: string }>;
   onClose: () => void;
   /** Light these cards on the wall; the sheet closes first. */
   onShow: (ids: string[]) => void;
@@ -126,6 +126,7 @@ export function AsksSheet({ open, findings, left, onClose, onShow, onLeave, onAs
                       ask again
                     </button>
                   </p>
+                  {finding.why ? <p className="asks__text asks__why">“{finding.why}”</p> : null}
                 </li>
               ))}
             </ol>

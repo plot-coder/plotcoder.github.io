@@ -45,9 +45,9 @@ import { toMarkdown, toPlainText } from "../src/board/markdown.js";
 import { fromProjectFile, toProjectFile } from "../src/board/projectFile.js";
 import { describeSetAside, fromFdx, toFdx } from "../src/board/fdx.js";
 import { paginate } from "../src/board/paginate.js";
-import { readingOrder } from "../src/board/readWall.js";
-import { REVISION_COLORS, sceneNumbers } from "../src/board/numbering.js";
-import { sceneHeading } from "../src/board/fountain.js";
+import { readingOrder, storyOrder } from "../src/board/readWall.js";
+import { REVISION_COLORS, revisionMarks, sceneNumbers } from "../src/board/numbering.js";
+import { sceneHeading, standInFor } from "../src/board/fountain.js";
 import { segmentBrief, WORKFLOWS } from "../src/board/workflows.js";
 import { DEFAULT_REMINDERS, titleFromBody } from "../src/board/reminders.js";
 import crypto from "node:crypto";
@@ -762,6 +762,46 @@ const undone = [];
 /** The last read_wall's questions, and what changed since: a leave answers the reading in front of the agent (round thirteen, entry 19). */
 let lastReading = null;
 const sinceRead = [];
+/** What the last write did to the wall's questions and runtime, said once on that write's tail (round fourteen, entries 18, 19, 42). */
+let lastChange = null;
+const findingKey = (finding) => `${finding.kind}|${finding.ids.join(",")}|${finding.text}`;
+function noteChange(before, after) {
+  const was = readWall(before);
+  const now = readWall(after);
+  const wasKeys = new Set(was.findings.map(findingKey));
+  const nowKeys = new Set(now.findings.map(findingKey));
+  lastChange = {
+    gone: was.findings.filter((finding) => !nowKeys.has(findingKey(finding))),
+    came: now.findings.filter((finding) => !wasKeys.has(findingKey(finding))),
+    asks: now.findings.length,
+    leftBefore: was.left.length,
+    leftAfter: now.left.length,
+    eighthsBefore: boardEighths(before),
+    eighthsAfter: boardEighths(after),
+    target: after.targetEighths,
+  };
+}
+function changeNote() {
+  const change = lastChange;
+  lastChange = null;
+  if (!change) return "";
+  const parts = [];
+  if (change.gone.length || change.came.length) {
+    parts.push(
+      `the wall now asks ${change.asks} question${change.asks === 1 ? "" : "s"}${change.gone.length ? ` (gone: ${change.gone.map((finding) => `[${finding.kind}]`).join(" ")})` : ""}${change.came.length ? ` (new: ${change.came.map((finding) => `[${finding.kind}] ${finding.text}`).join(" ")})` : ""}`,
+    );
+  }
+  if (change.leftAfter !== change.leftBefore) parts.push(`left, for now: ${change.leftAfter} (was ${change.leftBefore})`);
+  if (change.eighthsAfter !== change.eighthsBefore) parts.push(`runtime now about ${formatPages(change.eighthsAfter)} of ${formatPages(change.target)} pages`);
+  return parts.length ? ` ${parts.join("; ")}.` : "";
+}
+/** Said once per session, so a reply does not repeat its advice eighteen times (round thirteen, entry 10). */
+const saidOnce = new Set();
+function once(key, text) {
+  if (saidOnce.has(key)) return "";
+  saidOnce.add(key);
+  return text;
+}
 
 function describeCommand(command) {
   switch (command.type) {
@@ -794,6 +834,7 @@ function canon(state) {
 }
 
 async function commit(command) {
+  lastChange = null;
   const { state, rev, base, boardId } = await readBoard();
   const { state: next, changed, result } = applyCommand(state, command);
   // `changed` is passed back so a tool can tell the agent that nothing
@@ -804,6 +845,7 @@ async function commit(command) {
   const live = await writeBoard(next, rev, base, boardId, "exact");
   trail.push({ before: state, after: canon(next), what: describeCommand(command) });
   sinceRead.push(describeCommand(command));
+  noteChange(state, next);
   if (trail.length > TRAIL_CAP) trail.shift();
   undone.length = 0;
   return { state: next, changed, result, live };
@@ -818,6 +860,7 @@ async function commit(command) {
  * cast off an agent's new card and left the card (R33).
  */
 async function commitAll(what, build) {
+  lastChange = null;
   const { state, rev, base, boardId } = await readBoard();
   let current = state;
   let changed = false;
@@ -834,6 +877,7 @@ async function commitAll(what, build) {
   const live = await writeBoard(current, rev, base, boardId, "exact");
   trail.push({ before: state, after: canon(current), what });
   sinceRead.push(what);
+  noteChange(state, current);
   if (trail.length > TRAIL_CAP) trail.shift();
   undone.length = 0;
   return { state: current, changed: true, value, live };
@@ -842,7 +886,7 @@ async function commitAll(what, build) {
 /** Said once per session: that cards stack until organize (round seven, finding 11). */
 /** Where a new card lands when the agent gives no position: after the last card in reading order, wrapping five wide, so cards never stack (round eleven, finding 14). */
 function nextPlace(state) {
-  const order = readingOrder(state.notes);
+  const order = storyOrder(state);
   const last = order[order.length - 1];
   if (!last) return { x: 140, y: 140 };
   const originX = Math.min(...state.notes.map((note) => note.x));
@@ -854,7 +898,7 @@ function nextPlace(state) {
 /** Which door a read came through, for the head of a reply: the account as whom, the open app, or the file at which path. */
 function door(live, base = null) {
   if (live === ACCOUNT) {
-    const others = accountDoor.projectCount > 1 ? `, ${accountDoor.projectCount} projects on the account — list_projects for the others` : "";
+    const others = accountDoor.projectCount > 1 ? `, ${accountDoor.projectCount} projects on the account — list_projects for the others` : ", the only project on the account";
     return `the account, as ${accountDoor.email}, working "${accountDoor.projectName}"${others}`;
   }
   return live ? `the open app at ${base ?? "localhost"}` : `the file at ${BOARD_FILE}; no app running`;
@@ -869,8 +913,8 @@ function workingProject(id, name, count) {
 
 /** Where a change landed, for the tail of a tool's reply. */
 function where(live) {
-  if (live === ACCOUNT) return " (saved to the account; live on every open wall)";
-  return live ? " (visible on the open board)" : " (written to file; the wall shows it the next time the app runs from this folder)";
+  const tail = live === ACCOUNT ? " (saved to the account; live on every open wall)" : live ? " (visible on the open board)" : " (written to file; the wall shows it the next time the app runs from this folder)";
+  return `${tail}${changeNote()}`;
 }
 
 /** The wall PlotCoder starts with — Maya, Tom, the letter — and nothing of the writer's yet. */
@@ -900,7 +944,7 @@ const SAMPLE_NOTE = "sample: this is the wall PlotCoder starts with (Maya, Tom, 
 
 function summarize(state) {
   const nameOf = new Map(state.characters.map((character) => [character.id, character.name]));
-  const notes = state.notes
+  const notes = storyOrder(state)
     .map((note) => {
       const cast = note.characterIds.map((id) => nameOf.get(id) ?? id);
       const who = cast.length ? `, cast: ${cast.join(", ")}` : "";
@@ -908,9 +952,10 @@ function summarize(state) {
       const snap = state.revision?.snapshot?.[note.id];
       const revised = snap && (snap.headline !== note.headline || snap.change !== note.change || (snap.text ?? "") !== (note.text ?? "") || (snap.location ?? "") !== (note.location ?? "")) ? `, changed in ${state.revision.color}` : "";
       const place = note.location ? `, at: ${note.location}` : "";
+      const when = note.when ? `, when: ${note.when}` : "";
       const count = formatPages(noteEighths(note));
       const pages = isMeasured(note) ? `${count} ${count === "1" ? "page" : "pages"}, written` : note.lengthEighths === null ? "about a page, unsized" : `${count} ${count === "1" ? "page" : "pages"}`;
-      return `  - ${note.id} [${note.rank ?? "scene"}, ${pages}${who}${place}${plant}${revised}] — "${note.headline}" (${note.color}) at ${Math.round(note.x)},${Math.round(note.y)}`;
+      return `  - ${note.id} [${note.rank ?? "scene"}, ${pages}${who}${place}${when}${plant}${revised}] — "${note.headline}" (${note.color}) at ${Math.round(note.x)},${Math.round(note.y)}`;
     })
     .join("\n");
   const cast = state.characters
@@ -938,13 +983,13 @@ function summarize(state) {
 
   // Groups and arrows are listed with their own ids, not just counted. An agent
   // cannot ungroup, rename, or delete an arrow it has never been told the id of.
+  const storyIndex = new Map(storyOrder(state).map((note, index) => [note.id, index]));
   const groups = state.groups
     .map(
       (group) =>
-        `  - ${group.id} — "${group.title}" holds ${group.noteIds.length}: ${group.noteIds.join(", ")}`,
+        `  - ${group.id} — "${group.title}" holds ${group.noteIds.length}, in story order: ${[...group.noteIds].sort((a, b) => (storyIndex.get(a) ?? Infinity) - (storyIndex.get(b) ?? Infinity)).join(", ")}`,
     )
     .join("\n");
-  const storyIndex = new Map(readingOrder(state.notes).map((note, index) => [note.id, index]));
   const arrows = [...state.arrows]
     .sort((a, b) => (storyIndex.get(a.from) ?? Infinity) - (storyIndex.get(b.from) ?? Infinity) || (a.kind === "setup") - (b.kind === "setup"))
     .map(
@@ -955,28 +1000,40 @@ function summarize(state) {
 
   // No blank lines: ok() uses the first blank line to separate prose from the
   // JSON payload, so one in here would swallow the payload.
-  const numbers = state.lock ? sceneNumbers(readingOrder(state.notes), state.lock) : null;
+  const numbers = state.lock ? sceneNumbers(storyOrder(state), state.lock) : null;
   const production = [
     `numbers: ${state.lock ? `locked ${String(state.lock.at).slice(0, 10)} — ${[...numbers.entries()].map(([id, n]) => `${n}:${id}`).join(" ")}` : "follow the wall's order"}`,
     `revision: ${state.revision ? `"${state.revision.name}" in ${state.revision.color} since ${String(state.revision.since).slice(0, 10)}` : "none"}`,
   ];
   const runtime = boardEighths(state);
   const over = runtime - state.targetEighths;
+  // The wall as rows, the nearest thing to a look at it without the app (round fourteen, entry 15).
+  const rows = [];
+  for (const note of readingOrder(state.notes)) {
+    const row = rows[rows.length - 1];
+    if (row && note.y - row.top <= NOTE_HEIGHT / 2) row.notes.push(note);
+    else rows.push({ top: note.y, notes: [note] });
+  }
+  const rowLines = rows.map((row, index) => `  ${index + 1}: ${row.notes.map((note) => `${note.rank === "beat" ? "★ " : ""}"${note.headline}"`).join(" · ")}`);
+  const leftCount = (state.left ?? []).length;
   return [
     ...(isSampleWall(state) ? [SAMPLE_NOTE] : []),
     `logline: ${state.logline ? `"${state.logline}"` : "(not set)"}`,
     ...production,
+    `left, for now: ${leftCount ? `${leftCount} question(s) the writer left; read_wall lists them` : "none"}`,
     `beats: ${beats}, scenes: ${scenes}`,
     state.targetEighths === DEFAULT_TARGET_EIGHTHS
       ? `runtime: about ${formatPages(runtime)} pages (an estimate from the cards; a page runs about a minute); no target set — set_target for a pilot (60) or a half-hour (30); against the feature default of 120 it would be ${formatPages(-over)} under`
       : `runtime: about ${formatPages(runtime)} pages of a ${formatPages(state.targetEighths)}-page target — ${over > 0 ? `${formatPages(over)} over` : over < 0 ? `${formatPages(-over)} under` : "on it"} (an estimate from the cards; a page runs about a minute)`,
     `notes: ${state.notes.length}, groups: ${state.groups.length}, arrows: ${state.arrows.length}, cast: ${state.characters.length}`,
+    "cards (in story order — the follows arrows over the rows; each with its id):",
+    notes || "  (no cards)",
+    "rows on the wall (top to bottom, left to right; ★ a beat):",
+    ...(rowLines.length ? rowLines : ["  (no cards)"]),
     "cast (the project's; every board of it casts from here):",
     cast || "  (no one yet — add_character to start the roster)",
     "places (each phrase is its own place, and the app relates none of them — if two are one place, set_location them the same):",
     places || "  (no card says where it happens yet)",
-    "cards:",
-    notes || "  (no cards)",
     "groups:",
     groups || "  (no groups)",
     "arrows:",
@@ -988,7 +1045,7 @@ function summarize(state) {
 // contain a blank line of its own or the payload becomes unparseable.
 // PLOTCODER_JSON=0 drops the JSON tail from every reply, for an agent that
 // reads the sentence and wants nothing more (a blind run found 400-line replies).
-const TEXT_ONLY = env.PLOTCODER_JSON === "0";
+const TEXT_ONLY = env.PLOTCODER_JSON !== "1";
 function ok(text, data) {
   const body = data === undefined || TEXT_ONLY ? text : `${text}\n\n${JSON.stringify(data, null, 2)}`;
   return { content: [{ type: "text", text: body }] };
@@ -1115,14 +1172,14 @@ server.registerTool(
           : `Nothing changed: ${these} at ${args.pages} page(s) already, or not on the board (list_board for the ids).`,
       );
     }
-    const runtime = `The board runs about ${formatPages(boardEighths(state))} pages against a ${formatPages(state.targetEighths)}-page target.`;
+    // The runtime rides on the write's own tail (changeNote), so it is not said twice here.
     if (unsizing) {
       return ok(
-        `${result.length} card(s) unsized${where(live)}: no length claimed, so each reads as about a page until someone sizes it, and list_board says "unsized". ${runtime}`,
+        `${result.length} card(s) unsized${where(live)}: no length claimed, so each reads as about a page until someone sizes it, and list_board says "unsized".`,
         result,
       );
     }
-    return ok(`${result.length} card(s) now run ${args.pages} page(s), the writer's estimate${where(live)}. ${runtime}`, result);
+    return ok(`${result.length} card(s) now run ${args.pages} page(s), the writer's estimate${where(live)}.`, result);
   },
 );
 
@@ -1161,6 +1218,7 @@ server.registerTool(
       pages: pagesSchema.optional(),
       plants: z.boolean().optional(),
       location: z.string().optional(),
+      when: z.string().optional().describe('When the scene happens, as the writer says it — "night", "day four, dawn" — printed after the place on the scene heading.'),
       characters: z.array(z.string().min(1)).optional(),
       x: z.number().optional(),
       y: z.number().optional(),
@@ -1172,7 +1230,7 @@ server.registerTool(
     const added = [];
     // The card, anyone new in its cast, and the casting land as one change, so
     // one ⌘Z on the wall takes back the whole call and not just the cast.
-    const { value: result, live } = await commitAll(`create_note "${args.headline}"`, (step, current) => {
+    const { value: result, live, state: after } = await commitAll(`create_note "${args.headline}"`, (step, current) => {
       let made = step({
         type: "create_note",
         headline: args.headline,
@@ -1186,6 +1244,7 @@ server.registerTool(
         lengthEighths: args.pages === undefined ? undefined : toEighths(args.pages),
         plants: args.plants,
         location: args.location,
+        when: args.when,
         x: landing.x,
         y: landing.y,
       }).result;
@@ -1212,12 +1271,16 @@ server.registerTool(
     const landed = [
       result?.rank === "beat" ? "a beat" : "a scene",
       result?.lengthEighths === null ? "about a page (unsized: the writer's guess until set_length)" : `${formatPages(noteEighths(result))} ${formatPages(noteEighths(result)) === "1" ? "page" : "pages"}`,
-      result?.color ? `${result.color} paper${args.color ? "" : " (pass color to choose)"}` : null,
+      result?.color ? `${result.color} paper${args.color ? "" : once("paper", " (pass color to choose)")}` : null,
       result?.plants ? "corner folded" : null,
-      result?.location ? `at ${result.location}` : "no place yet (location here, or set_location)",
+      result?.location ? `at ${result.location}` : `no place yet${once("place", " (location here, or set_location)")}`,
+      result?.when ? `when: ${result.when}` : null,
     ].filter(Boolean).join(", ");
-    const placed = args.x === undefined && args.y === undefined ? ` Placed after the last card in reading order (${Math.round(landing.x)},${Math.round(landing.y)}); organize lays the wall out along the arrows.` : "";
-    return ok(`Created card ${result?.id ?? ""}: ${landed}${where(live)}.${castLine}${placed}`, result);
+    // Where it landed matters only until the tidy, so the reply says the rule once and never the coordinates (round fourteen, entry 11).
+    const placed = args.x === undefined && args.y === undefined ? once("placed", " Placed after the last card in story order; organize lays the wall out along the arrows.") : "";
+    // Under a lock a new scene has a letter, not a number: say it, since the board is the only other place to learn it (round fourteen, entry 44).
+    const numbered = after?.lock && result?.id ? ` Numbered ${sceneNumbers(storyOrder(after), after.lock).get(result.id)} (the numbers are locked; a new scene's letter is its place between locked ones, and follows the scene if it moves).` : "";
+    return ok(`Created card ${result?.id ?? ""}: ${landed}${where(live)}.${castLine}${placed}${numbered}`, result);
   },
 );
 
@@ -1225,25 +1288,32 @@ server.registerTool(
   "update_note",
   {
     title: "Update note",
-    description: "Change the headline, change text and/or location of an existing card by id.",
+    description: "Change the headline, change line, location and/or when of an existing card by id. The reply says which field changed, from what to what.",
     inputSchema: {
       id: z.string(),
       headline: z.string().optional(),
       change: z.string().optional(),
       location: z.string().optional(),
+      when: z.string().optional(),
     },
   },
   async (args) => {
-    const { state, result, live } = await commit({
+    const prior = (await readBoard()).state.notes.find((note) => note.id === args.id);
+    const { state, result, live, changed } = await commit({
       type: "update_note",
       id: args.id,
       headline: args.headline,
       change: args.change,
       location: args.location,
+      when: args.when,
     });
     if (result === undefined) return ok(`No card with id ${args.id}.`);
+    const fields = [["headline", "headline"], ["change", "change line"], ["location", "place"], ["when", "when"]]
+      .filter(([field]) => args[field] !== undefined && (prior?.[field] ?? "") !== (result[field] ?? ""))
+      .map(([field, word]) => `${word}: "${prior?.[field] ?? ""}" → "${result[field] ?? ""}"`);
+    if (!changed || fields.length === 0) return ok(`Nothing changed on "${result.headline}": the card already read that way.`);
     const mark = state.revision && state.revision.snapshot?.[result.id] && (state.revision.snapshot[result.id].headline !== result.headline || state.revision.snapshot[result.id].change !== result.change) ? ` Marked changed in the ${state.revision.color} revision "${state.revision.name}".` : "";
-    return ok(`Updated "${result.headline}"${args.change !== undefined ? `: change line "${result.change}"` : ""}${where(live)}.${mark}`, result);
+    return ok(`Updated "${result.headline}" — ${fields.join("; ")}${where(live)}.${mark}`, result);
   },
 );
 
@@ -1286,7 +1356,7 @@ server.registerTool(
   {
     title: "Delete note",
     description:
-      "Remove a card from the board. Its arrows go with it and it leaves its group; the reply names each arrow by its cards and says what the group kept, and undo brings all of it back.",
+      "Remove a card from the board. Its arrows go with it and it leaves its group; a card wired into a chain — one follows in, one out — leaves the chain joined behind it. The reply names each arrow by its cards, the join, and what the group kept; undo brings all of it back.",
     inputSchema: { id: z.string() },
   },
   async (args) => {
@@ -1299,7 +1369,8 @@ server.registerTool(
     const groups = result.groups
       .map((group) => (group.dissolved ? ` Its group "${group.title}" dissolved: a frame needs two cards.` : ` Left its group "${group.title}", which keeps ${group.remaining} card${group.remaining === 1 ? "" : "s"}.`))
       .join("");
-    return ok(`Deleted "${result.headline}"${where(live)}.${arrows}${groups}`, result);
+    const joined = result.joined ? ` The chain is joined behind it: "${result.joined.fromHeadline}" → "${result.joined.toHeadline}" (follows).` : "";
+    return ok(`Deleted "${result.headline}"${where(live)}.${arrows}${joined}${groups}`, result);
   },
 );
 
@@ -1310,7 +1381,7 @@ server.registerTool(
   {
     title: "Read the wall",
     description:
-      "Read the board back: the beats in wall order (rows top to bottom, cards left to right), the pages of scenes between consecutive beats with the cards in each, every setup with the distance to its payoff, and the questions the wall raises — no beat marked yet; a run out of proportion with the others; beats back to back with nothing between them (a chain of them is one question); a card with a placeholder headline or no change line; a card no arrow touches; two headlines that read like the same scene; a group too long to be one sequence; a person in the cast on no card; a person gone for more than a third of the story and ten pages; a payoff before its setup on the wall; a folded card no setup arrow pays off; cards that say no place once any card has one. These are questions, not fixes: put them to the writer and do not act on them unasked. A question the writer answers with \"leave it\" is left with leave_question and listed under \"left, for now\" instead, until it would read differently. It says nothing about how many beats there should be, and neither should you. The prose carries every id; the JSON after it is the same reading for a program, and PLOTCODER_JSON=0 in the server's environment drops it.",
+      "Read the board back: the beats in wall order (rows top to bottom, cards left to right), the pages of scenes between consecutive beats with the cards in each, every setup with the distance to its payoff, and the questions the wall raises — no beat marked yet; a run out of proportion with the others; beats back to back with nothing between them (a chain of them is one question); a card with a placeholder headline or no change line; a card no arrow touches; two headlines that read like the same scene; a group too long to be one sequence; a person in the cast on no card; a person gone for more than a third of the story and ten pages; a payoff before its setup on the wall; a folded card no setup arrow pays off; cards that say no place once any card has one. These are questions, not fixes: put them to the writer and do not act on them unasked. A question the writer answers with \"leave it\" is left with leave_question and listed under \"left, for now\" instead, until it would read differently. It says nothing about how many beats there should be, and neither should you. The prose carries every id; PLOTCODER_JSON=1 in the server's environment adds the same reading as JSON after it, for a program.",
     inputSchema: {},
   },
   async () => {
@@ -1368,7 +1439,7 @@ server.registerTool(
       ...(reading.left.length
         ? [
             "left, for now (the writer's word; kept until the question would read differently, and ask_again brings one back):",
-            ...reading.left.map((finding) => `  - [${finding.kind}] ${finding.text} (left ${String(finding.since).slice(0, 10)}${finding.ids.length ? `; ids: ${finding.ids.join(", ")}` : ""})`),
+            ...reading.left.map((finding) => `  - [${finding.kind}] ${finding.text} (left ${String(finding.since).slice(0, 10)}${finding.why ? `, "${finding.why}"` : ""}${finding.ids.length ? `; ids: ${finding.ids.join(", ")}` : ""})`),
           ]
         : []),
       `checks: ${CHECKS.length} run — ${(() => {
@@ -1378,7 +1449,7 @@ server.registerTool(
         const counts = new Map();
         for (const finding of asked) counts.set(finding.kind, (counts.get(finding.kind) ?? 0) + 1);
         return `asking ${asked.length} question${asked.length === 1 ? "" : "s"} of ${counts.size} kind${counts.size === 1 ? "" : "s"}: ${[...counts.entries()].map(([kind, n]) => (n > 1 ? `${kind} ×${n}` : kind)).join(", ")}${held}`;
-      })()}; checked and clean: ${CHECKS.filter((kind) => !reading.findings.some((finding) => finding.kind === kind)).map((kind) => {
+      })()}${reading.left.length ? `; left by the writer, not clean: ${[...new Set(reading.left.map((finding) => finding.kind))].join(", ")}` : ""}; checked and clean: ${CHECKS.filter((kind) => !reading.findings.some((finding) => finding.kind === kind) && !reading.left.some((finding) => finding.kind === kind)).map((kind) => {
         if (kind === "unlinked" && state.arrows.length === 0) return "no card without an arrow (not asked: no arrows yet)";
         if (kind === "unplaced" && !state.notes.some((note) => (note.location ?? "").trim())) return "no card without a place (not asked: no card placed yet)";
         if (kind === "sequence" && state.groups.length === 0) return "no group too long for one sequence (not asked: no groups)";
@@ -1399,41 +1470,63 @@ server.registerTool(
   {
     title: "Leave a question, for now",
     description:
-      "Write the writer's word on a question the wall asks — \"leave it\" — so the reading stops asking it. Pass the question's kind as read_wall names it (sag, empty, unpaid, …) and, when that kind is asked more than once, its ids as read_wall lists them. A leave answers the reading in front of you: edits change the questions, so make the writer's changes first, read_wall, then leave what they still want left — a question that changed or went since the last reading is refused, with what it was. The wall keeps a left question and asks it again on its own the moment it would read differently — a card in it changes, a page moves, the median shifts — so a left question is never a dismissal; ask_again brings one back now. Only on the writer's word: never leave a question unasked.",
-    inputSchema: { kind: z.string().min(1), ids: z.array(z.string()).optional() },
+      "Write the writer's word on a question the wall asks — \"leave it\" — so the reading stops asking it. Pass the question's kind as read_wall names it (sag, empty, unpaid, …) and, when that kind is asked more than once, its ids as read_wall lists them; `why` keeps the writer's reason with it, so the next reader sees why. Several at once: `questions`, a list of {kind, ids, why}, one step. A leave answers the reading in front of you: edits change the questions, so make the writer's changes first, read_wall, then leave what they still want left — a question that changed or went since the last reading is refused, with what it was. The reply says what the wall still asks, so no read after is needed. The wall keeps a left question and asks it again on its own the moment it would read differently — a card in it changes, a page moves, the median shifts — so a left question is never a dismissal; ask_again brings one back now. Only on the writer's word: never leave a question unasked.",
+    inputSchema: {
+      kind: z.string().optional(),
+      ids: z.array(z.string()).optional(),
+      why: z.string().optional(),
+      questions: z.array(z.object({ kind: z.string().min(1), ids: z.array(z.string()).optional(), why: z.string().optional() })).optional(),
+    },
   },
   async (args) => {
+    const wanted = args.questions?.length ? args.questions : args.kind ? [{ kind: args.kind, ids: args.ids, why: args.why }] : [];
+    if (!wanted.length) return ok("Say which question: its kind as read_wall names it (and ids when that kind is asked more than once), or a list under questions.");
     const { state } = await readBoard();
     const reading = readWall(state);
-    const already = reading.left.filter((finding) => finding.kind === args.kind && (!args.ids || sameList(finding.ids, args.ids)));
-    const matches = reading.findings.filter((finding) => finding.kind === args.kind && (!args.ids || sameList(finding.ids, args.ids)));
-    if (matches.length === 0) {
-      if (already.length) return ok(`Already left: [${args.kind}] ${already[0].text} It stays left until the question would read differently; ask_again brings it back.`);
-      // The reading the agent was answering, when the last read_wall had this question (round thirteen, entry 19).
-      const earlier = lastReading?.findings.find((finding) => finding.kind === args.kind && (!args.ids || sameList(finding.ids, args.ids)));
-      const now = reading.findings.filter((finding) => finding.kind === args.kind);
-      if (earlier) {
-        const since = sinceRead.length
-          ? `${sinceRead.length} change${sinceRead.length === 1 ? "" : "s"} landed since (${[...new Set(sinceRead)].join(", ")})`
-          : "the wall changed elsewhere since";
-        const state_ = now.length
-          ? `the wall now asks ${now.length === 1 ? "it differently" : `${now.length} questions of that kind`}: ${now.map((finding) => `${finding.text} (ids: ${finding.ids.join(", ")})`).join("; ")}`
-          : "the wall no longer asks it — the cards answered it";
-        return ok(
-          `Not left. When you last read the wall it asked [${earlier.kind}] ${earlier.text}${earlier.ids.length ? ` (ids: ${earlier.ids.join(", ")})` : ""}; ${since}, and ${state_}. A leave answers the reading in front of you: make the writer's edits first, read_wall, then leave what they still want left.`,
-        );
+    const replies = [];
+    const toLeave = [];
+    for (const want of wanted) {
+      const already = reading.left.filter((finding) => finding.kind === want.kind && (!want.ids || sameList(finding.ids, want.ids)));
+      const matches = reading.findings.filter((finding) => finding.kind === want.kind && (!want.ids || sameList(finding.ids, want.ids)));
+      if (matches.length === 0) {
+        if (already.length) { replies.push(`Already left: [${want.kind}] ${already[0].text} It stays left until the question would read differently; ask_again brings it back.`); continue; }
+        // The reading the agent was answering, when the last read_wall had this question (round thirteen, entry 19).
+        const earlier = lastReading?.findings.find((finding) => finding.kind === want.kind && (!want.ids || sameList(finding.ids, want.ids)));
+        const now = reading.findings.filter((finding) => finding.kind === want.kind);
+        if (earlier) {
+          const since = sinceRead.length
+            ? `${sinceRead.length} change${sinceRead.length === 1 ? "" : "s"} landed since (${[...new Set(sinceRead)].join(", ")})`
+            : "the wall changed elsewhere since";
+          const state_ = now.length
+            ? `the wall now asks ${now.length === 1 ? "it differently" : `${now.length} questions of that kind`}: ${now.map((finding) => `${finding.text} (ids: ${finding.ids.join(", ")})`).join("; ")}`
+            : "the wall no longer asks it — the cards answered it";
+          replies.push(`Not left. When you last read the wall it asked [${earlier.kind}] ${earlier.text}${earlier.ids.length ? ` (ids: ${earlier.ids.join(", ")})` : ""}; ${since}, and ${state_}. A leave answers the reading in front of you: make the writer's edits first, read_wall, then leave what they still want left.`);
+          continue;
+        }
+        replies.push(`The wall is not asking a question of kind "${want.kind}"${want.ids ? ` about ids ${want.ids.join(", ")}` : ""}. read_wall lists the questions it asks now, each with its kind and ids.${sinceRead.length ? ` ${sinceRead.length} change(s) landed since the last read_wall, so read it again first.` : ""}`);
+        continue;
       }
-      return ok(`The wall is not asking a question of kind "${args.kind}"${args.ids ? ` about ids ${args.ids.join(", ")}` : ""}. read_wall lists the questions it asks now, each with its kind and ids.${sinceRead.length ? ` ${sinceRead.length} change(s) landed since the last read_wall, so read it again first.` : ""}`);
+      if (matches.length > 1) {
+        replies.push(`The wall asks ${matches.length} questions of kind "${want.kind}"; pass ids to say which:\n${matches.map((finding) => `  - ${finding.text} (ids: ${finding.ids.join(", ")})`).join("\n")}`);
+        continue;
+      }
+      toLeave.push({ finding: matches[0], why: (want.why ?? "").trim() });
     }
-    if (matches.length > 1) {
-      return ok(`The wall asks ${matches.length} questions of kind "${args.kind}"; pass ids to say which:\n${matches.map((finding) => `  - ${finding.text} (ids: ${finding.ids.join(", ")})`).join("\n")}`);
+    let live = null;
+    let after = state;
+    if (toLeave.length) {
+      const out = await commitAll(`leave_question ×${toLeave.length}`, (step) => {
+        for (const item of toLeave) step({ type: "leave_question", kind: item.finding.kind, ids: item.finding.ids, text: item.finding.text, why: item.why });
+      });
+      live = out.live;
+      after = out.state;
+      for (const item of toLeave) replies.push(`Left, for now: [${item.finding.kind}] ${item.finding.text}${item.why ? ` — "${item.why}"` : ""}`);
     }
-    const finding = matches[0];
-    const { result, live } = await commit({ type: "leave_question", kind: finding.kind, ids: finding.ids, text: finding.text });
-    return ok(
-      `Left, for now: [${finding.kind}] ${finding.text}${where(live)} The wall stops asking it and keeps the writer's word; it asks again on its own when the question would read differently, and ask_again brings it back now. read_wall lists it under "left, for now".`,
-      result,
-    );
+    const still = readWall(after).findings;
+    const tail = toLeave.length
+      ? `${where(live)} ${once("leave-rule", "The wall keeps the writer's word and asks a left question again on its own when it would read differently; ask_again brings one back now. ")}The wall still asks ${still.length === 0 ? "nothing" : `${still.length}: ${still.map((finding) => `[${finding.kind}] ${finding.text}`).join(" ")}`}.`
+      : "";
+    return ok(`${replies.join("\n")}${tail}`, toLeave.map((item) => ({ kind: item.finding.kind, ids: item.finding.ids, why: item.why })));
   },
 );
 
@@ -1481,6 +1574,7 @@ server.registerTool(
     }
     let removed = 0;
     let drawn = 0;
+    let joinedGroup = null;
     // The whole move — its dozen arrows and the tidy — as one change: one frame on
     // the bridge, one ⌘Z on the wall, one step for undo here.
     const { state: final, live } = await commitAll(`move_scene "${card.headline}"`, (step, current) => {
@@ -1512,11 +1606,20 @@ server.registerTool(
         }
         run({ type: "create_arrow", from: card.id, to: target.id, kind: "follows" });
       }
+      // Landing beside a card of an act puts the scene in that act, or the tidy
+      // keeps the act as a block and lays the scene past it (round fourteen, entry 38).
+      const targetGroup = current().groups.find((group) => group.noteIds.includes(target.id));
+      if (targetGroup && !targetGroup.noteIds.includes(card.id)) {
+        run({ type: "add_to_group", id: targetGroup.id, noteIds: [card.id] });
+        joinedGroup = targetGroup.title || "an untitled group";
+      }
       run({ type: "apply_poses", poses: organizePoses(current(), {}) });
     });
-    const order = readingOrder(final.notes);
+    const order = storyOrder(final);
     const group = final.groups.find((item) => item.noteIds.includes(card.id));
-    const groupLine = group ? ` It is still in "${group.title || "an untitled group"}"; a frame does not follow a move, so say if the act or sequence should change.` : "";
+    const groupLine = joinedGroup
+      ? ` It joined "${joinedGroup}", the group it landed in, so the tidy keeps it with the act.`
+      : group ? ` It is still in "${group.title || "an untitled group"}"; a frame does not follow a move, so say if the act or sequence should change.` : "";
     return ok(
       `Moved "${card.headline}" to ${args.after ? "after" : "before"} "${target.headline}": ${removed} follows arrow(s) removed, ${drawn} drawn, setup arrows untouched, the wall tidied along them${where(live)}. Story order now: ${order.map((note, index) => `${index + 1}. ${note.headline}`).join(", ")}.${groupLine} One undo takes the whole move back.`,
       { order: order.map((note) => note.id) },
@@ -1656,7 +1759,7 @@ server.registerTool(
   },
   async (args) => {
     const { state } = await readBoard();
-    const order = readingOrder(state.notes).map((note) => note.id);
+    const order = storyOrder(state).map((note) => note.id);
     const beats = structureBeats(state.notes, order);
     if (beats.length === 0) return ok("Nothing to save: no card on this board is marked as a beat. Mark the turns with set_rank first.");
     const { project, boards, rev, base, live } = await readProject();
@@ -1710,7 +1813,7 @@ server.registerTool(
   {
     title: "Export the wall as Markdown",
     description:
-      "The open board as Markdown, for a collaborator who lives in Google Docs or the like: titled for the project — a one-board film is its project, and the board's name follows only when the project has several boards — the premise and the logline under it, beats as second-level headings, a third-level heading per scene from its place with its scene number, the headline as a synopsis line, then the scene's text — a speech as its cue in bold with the lines under it — or, unwritten, its change line in italics after the mark [Unwritten], so a reader can tell a placeholder from a page. Pass a path to write a .md file; otherwise the text comes back.",
+      "The open board as Markdown, for a collaborator who lives in Google Docs or the like: titled for the project — a one-board film is its project, and the board's name follows only when the project has several boards — the premise and the logline under it, beats as second-level headings, a third-level heading per scene from its place with its scene number, the headline as a synopsis line, then the scene's text — a speech as its cue in bold with the lines under it — or, unwritten, its change line after the mark [Unwritten] in bold, so a reader can tell a placeholder from a page. Carries the beats and every headline; does not carry the cast or the fold (Fountain's notes do). In Google Docs, Paste from Markdown keeps the headings. Pass a path to write a .md file; otherwise the text comes back.",
     inputSchema: { path: z.string().optional() },
   },
   async (args) => {
@@ -1733,7 +1836,7 @@ server.registerTool(
   {
     title: "Export the script as plain text",
     description:
-      "The open board's script as plain text, set as it prints: the paginator's lines at Courier's columns kept with spaces, scene numbers in both margins (the wall's order, or as locked), no page numbers, an unwritten scene's change line as action after the mark [Unwritten]. Titled for the project, a one-board film being its project. Pastes into anything and reads as a script wherever the font is monospaced. Pass a path to write a .txt file; otherwise the text comes back.",
+      "The open board's script as plain text, set as it prints: the paginator's lines at Courier's columns kept with spaces, scene numbers in both margins (the wall's order, or as locked), no page numbers, an unwritten scene's change line as action after the mark [Unwritten], a revision's stars in the right margin. The script and nothing else: no headlines, no beats, no cast — the heading is the place and the when. Titled for the project, a one-board film being its project. Pastes into anything and reads as a script wherever the font is monospaced. Pass a path to write a .txt file; otherwise the text comes back.",
     inputSchema: { path: z.string().optional() },
   },
   async (args) => {
@@ -1760,15 +1863,47 @@ server.registerTool(
     inputSchema: { id: z.string(), text: z.string() },
   },
   async (args) => {
-    const { changed, result, live } = await commit({ type: "set_text", id: args.id, text: args.text });
+    const { state, changed, result, live } = await commit({ type: "set_text", id: args.id, text: args.text });
     if (!changed) {
       if (!result) return ok(`No card with id ${args.id}. Call list_board.`);
       return ok(`Nothing changed: "${result.headline}" already reads that way.`);
     }
     const printed = sceneLineCount(args.text);
     return ok(
-      `Wrote "${result.headline}": ${printed} line(s) as they print (headings, blank lines and wrapped dialogue counted), measured at ${formatPages(noteEighths(result))} of a 55-line page, rounded to the nearest eighth and never below one${where(live)}. The heading comes from the card's place, so the text starts with the action. While the text stands the card is measured, not estimated; every reading uses the measure (eighths here), and the estimate underneath (lengthEighths) is untouched.`,
+      `Wrote "${result.headline}": ${printed} line(s) as they print (headings, blank lines and wrapped dialogue counted), measured at ${formatPages(noteEighths(result))} of a 55-line page, rounded to the nearest eighth and never below one${where(live)}.${revisionMark(state, result.id)}${once("heading-from-place", " The heading comes from the card's place and when, so the text starts with the action.")} While the text stands the card is measured, not estimated; the estimate underneath is untouched.`,
       { ...result, eighths: noteEighths(result), measured: true, printedLines: printed },
+    );
+  },
+);
+
+/** " Marked changed in the blue revision: 3 line(s)." when a revision is on and the card differs from its snapshot. */
+function revisionMark(state, id) {
+  const mark = revisionMarks(state).get(id);
+  if (!state.revision || !mark?.revised) return "";
+  return ` Marked changed in the ${state.revision.color} revision${mark.lines.size ? `: ${mark.lines.size} line(s), starred on the page and in every export` : ""}.`;
+}
+
+server.registerTool(
+  "edit_scene",
+  {
+    title: "Change a line of a scene",
+    description:
+      "Change one line of a card's scene text without resending the scene: the exact text to find, and what replaces it. The text must occur once in the scene. The card is measured again and, under a revision, the changed line is marked. For a new scene or a rewrite, write_scene.",
+    inputSchema: { id: z.string(), find: z.string().min(1), replace: z.string() },
+  },
+  async (args) => {
+    const { state: before } = await readBoard();
+    const note = before.notes.find((item) => item.id === args.id);
+    if (!note) return ok(`No card with id ${args.id}. Call list_board.`);
+    const text = note.text ?? "";
+    if (!text.trim()) return ok(`"${note.headline}" is unwritten; write_scene it first.`);
+    const count = text.split(args.find).length - 1;
+    if (count === 0) return ok(`"${args.find}" is not in "${note.headline}"'s text. read_pages shows the scene as it stands.`);
+    if (count > 1) return ok(`"${args.find}" occurs ${count} times in "${note.headline}"; give more of the line so it occurs once.`);
+    const { state, result, live } = await commit({ type: "set_text", id: note.id, text: text.replace(args.find, args.replace) });
+    return ok(
+      `Changed one line of "${result.headline}": "${args.find}" → "${args.replace}"${where(live)}. Now ${sceneLineCount(result.text)} line(s) as they print, measured at ${formatPages(noteEighths(result))} of a page.${revisionMark(state, result.id)}`,
+      { ...result, eighths: noteEighths(result), measured: true },
     );
   },
 );
@@ -1785,10 +1920,11 @@ server.registerTool(
     const { state } = await readBoard();
     const { project } = await readProject();
     const board = project.boards.find((item) => item.id === project.activeBoardId);
-    const text = toFountain(state, { title: board?.name, premise: project.premise || undefined });
+    const text = toFountain(state, { ...scriptTitles(project, board), premise: project.premise || undefined });
     const parsed = fromFountain(text);
+    const marks = revisionMarks(state);
     const ids = mergeFountain(state, parsed).matched.map((item) => item.id);
-    const pageNumbers = state.lock ? sceneNumbers(readingOrder(state.notes), state.lock) : null;
+    const pageNumbers = state.lock ? sceneNumbers(storyOrder(state), state.lock) : null;
     const lines = [];
     let index = 0;
     for (const line of text.split("\n")) {
@@ -1797,7 +1933,8 @@ server.registerTool(
         index += 1;
         const standIn = note && !(note.location ?? "").trim() ? " · no place: the headline stands in for the heading" : "";
         const numbered = note && pageNumbers?.get(note.id) ? ` · locked no. ${pageNumbers.get(note.id)}` : "";
-        lines.push(`${line}    [[id: ${note?.id ?? "?"} · ${note && isMeasured(note) ? "measured" : "estimated"} ${formatPages(note ? noteEighths(note) : 0)}pp${standIn}${numbered}]]`);
+        const revised = note && marks.get(note.id)?.revised ? ` · changed in the ${state.revision.color} revision` : "";
+        lines.push(`${line}    [[id: ${note?.id ?? "?"} · ${note && isMeasured(note) ? "measured" : "estimated"} ${formatPages(note ? noteEighths(note) : 0)}pp${standIn}${numbered}${revised}]]`);
       } else {
         lines.push(line);
       }
@@ -1826,8 +1963,9 @@ server.registerTool(
     });
     const written = commands.filter((command) => command.type === "set_text").length;
     const created = matched.filter((item) => item.created).length;
+    const same = matched.length - created - written;
     return ok(
-      `Imported ${parsed.scenes.length} scene(s): ${written} written onto cards, ${created} new card(s)${where(live)}.`,
+      `Imported ${parsed.scenes.length} scene(s): ${written} written onto cards, ${same} matched with the same text (unchanged), ${created} new card(s)${where(live)}.`,
       matched,
     );
   },
@@ -1911,7 +2049,7 @@ server.registerTool(
   {
     title: "Import a Final Draft script",
     description:
-      "Read a Final Draft .fdx (by path) or its XML onto the open board: each scene's paragraphs become Fountain on the card with the same heading in order, a scene the wall does not have becomes a new card after the last matched one, and nothing is deleted.",
+      "Read a Final Draft .fdx (by path) or its XML onto the open board: each scene's paragraphs become Fountain on the card with the same heading in order, a scene the wall does not have becomes a new card after the last matched one, and nothing is deleted. A scene whose text is already on its card is matched and left alone. Matching is by heading and then by order, so a file whose scenes were reordered lands each scene's text on the next card with that heading — the wall's own order does not change; a scene of the same heading in a new place is a move_scene here, not an import.",
     inputSchema: { path: z.string().optional(), xml: z.string().optional() },
   },
   async (args) => {
@@ -1926,8 +2064,9 @@ server.registerTool(
     });
     const written = commands.filter((command) => command.type === "set_text").length;
     const created = matched.filter((item) => item.created).length;
+    const same = matched.length - created - written;
     const receipt = describeSetAside(parsed.setAside);
-    return ok(`Imported ${parsed.scenes.length} scene(s) from Final Draft: ${written} written onto cards, ${created} new card(s)${where(live)}.${receipt ? ` ${receipt}` : ""}`, matched);
+    return ok(`Imported ${parsed.scenes.length} scene(s) from Final Draft: ${written} written onto cards, ${same} matched with the same text (unchanged), ${created} new card(s)${where(live)}.${receipt ? ` ${receipt}` : ""}`, matched);
   },
 );
 
@@ -1941,9 +2080,10 @@ server.registerTool(
   },
   async () => {
     const { state } = await readBoard();
-    const order = readingOrder(state.notes);
+    const order = storyOrder(state);
+    const numbers = sceneNumbers(order, state.lock);
     const result = paginate(
-      order.map((note) => ({ id: note.id, heading: sceneHeading(note).slice(1), text: note.text, change: note.change, written: Boolean(note.text && note.text.trim()) })),
+      order.map((note) => ({ id: note.id, heading: sceneHeading(note).slice(1), text: note.text, change: standInFor(note), written: Boolean(note.text && note.text.trim()), number: numbers.get(note.id) ?? undefined })),
     );
     const lines = result.scenes.map((scene) => {
       const note = order.find((item) => item.id === scene.id);
@@ -1957,9 +2097,9 @@ server.registerTool(
       );
     }
     const note = unwritten
-      ? [`${unwritten} of ${order.length} scenes are unwritten and count as one line each here, so this is the script so far, not the runtime: the estimate from the cards is about ${formatPages(boardEighths(state))} pages, the number to use until the scenes are written.`]
+      ? [`${unwritten} of ${order.length} scenes are unwritten and set their change line as action, marked [Unwritten], a few lines each — so this is the script so far, not the runtime: the estimate from the cards is about ${formatPages(boardEighths(state))} pages, the number to use until the scenes are written.`]
       : [];
-    return ok([`pages: ${result.pageCount} of ${Math.round(state.targetEighths / 8)}`, `scene numbers here are ${state.lock ? "the locked numbers" : "wall order (not locked)"}`, ...note, ...lines].join("\n"), result.scenes);
+    return ok([...note, `pages: ${result.pageCount} of ${Math.round(state.targetEighths / 8)}`, `scene numbers here are ${state.lock ? "the locked numbers" : "story order (not locked)"}`, ...lines].join("\n"), result.scenes);
   },
 );
 
@@ -1968,12 +2108,12 @@ server.registerTool(
   {
     title: "Lock the scene numbers",
     description:
-      "Once a draft has gone out: every scene keeps the number it has by the wall's order; a scene added between 14 and 15 becomes 14A, then 14B; moving cards never renumbers. Final Draft out carries the locked numbers. Ask the writer; it is a decision about the document going out.",
+      "Once a draft has gone out: every scene keeps the number it has by the story's order, and moving a locked scene never renumbers it. A scene added after the lock has a letter, not a number of its own — between 14 and 15 it is 14A, then 14B — and the letter is its place between locked scenes, so it follows the scene if the scene moves. Final Draft out carries the locked numbers. Ask the writer; it is a decision about the document going out.",
     inputSchema: {},
   },
   async () => {
     const { state } = await readBoard();
-    const order = readingOrder(state.notes).map((note) => note.id);
+    const order = storyOrder(state).map((note) => note.id);
     const { changed, result, live } = await commit({ type: "lock_numbers", order });
     if (!changed) return ok("Nothing to lock.");
     return ok(`Locked ${Object.keys(result.numbers).length} scene number(s)${where(live)}.`, result);
@@ -1996,7 +2136,7 @@ server.registerTool(
   {
     title: "Start a revision",
     description:
-      `Name a revision and give it one of the industry's colours (${REVISION_COLORS.join(", ")}). Every card is snapshotted; from then on a changed line prints in the colour with a star in the margin, and a changed card wears the colour on the wall.`,
+      `Start a revision in one of the industry's colours (${REVISION_COLORS.join(", ")}), with a name or, left out, named for the colour. Every card is snapshotted; from then on a changed line is starred — on the page, in plain text's right margin, as a revision in Final Draft — a changed scene's heading is marked in Markdown and noted in Fountain, and a changed card wears the colour on the wall. write_scene and edit_scene say when they mark a card.`,
     inputSchema: { name: z.string().optional(), color: z.string().optional() },
   },
   async (args) => {
@@ -2192,9 +2332,14 @@ server.registerTool(
     undone.push(last);
     const { boardId } = await readBoard();
     const live = await writeBoard(last.before, rev, base, boardId, "exact");
-    const orderLine = /^(move_scene|organize)/.test(last.what) ? ` Story order now: ${readingOrder(last.before.notes).map((note, index) => `${index + 1}. ${note.headline}`).join(", ")}.` : "";
+    const orderLine = /^(move_scene|organize)/.test(last.what) ? ` Story order now: ${storyOrder(last.before).map((note, index) => `${index + 1}. ${note.headline}`).join(", ")}.` : "";
     const cardsDiff = last.before.notes.length - state.notes.length;
-    const countLine = cardsDiff > 0 ? ` ${cardsDiff} card(s) back.` : cardsDiff < 0 ? ` ${-cardsDiff} card(s) gone.` : "";
+    const arrowsDiff = last.before.arrows.length - state.arrows.length;
+    const groupsChanged = last.before.groups
+      .filter((group) => { const now = state.groups.find((item) => item.id === group.id); return !now || now.noteIds.length !== group.noteIds.length; })
+      .map((group) => `"${group.title}" (${group.noteIds.length} cards)`);
+    const withIt = [arrowsDiff > 0 ? `${arrowsDiff} arrow(s) back` : arrowsDiff < 0 ? `${-arrowsDiff} arrow(s) gone` : null, groupsChanged.length ? `groups as they were: ${groupsChanged.join(", ")}` : null].filter(Boolean);
+    const countLine = `${cardsDiff > 0 ? ` ${cardsDiff} card(s) back` : cardsDiff < 0 ? ` ${-cardsDiff} card(s) gone` : ""}${withIt.length ? `${cardsDiff ? ", with " : " "}${withIt.join("; ")}` : ""}${cardsDiff || withIt.length ? "." : ""}`;
     const more = trail.length >= TRAIL_CAP ? `${trail.length} more of mine can be undone — the most I keep, so the oldest have gone` : `${trail.length} more of mine can be undone`;
     return ok(`Undid ${last.what}${where(live)}.${orderLine}${countLine} ${more}. list_board has the board.`, { undid: last.what, notes: last.before.notes.length, arrows: last.before.arrows.length, groups: last.before.groups.length });
   },
@@ -2220,6 +2365,30 @@ server.registerTool(
     const live = await writeBoard(after, rev, base, boardId, "exact");
     trail.push(last);
     return ok(`Redid ${last.what}${where(live)}. ${undone.length} more can be redone. list_board has the board.`, { redid: last.what, notes: after.notes.length, arrows: after.arrows.length, groups: after.groups.length });
+  },
+);
+
+server.registerTool(
+  "set_when",
+  {
+    title: "Set when scenes happen",
+    description:
+      "When one or more scenes happen, as the writer would say it — \"night\", \"day four, dawn\", \"the next morning\" — on the card beside its place, and printed after the place on every scene heading: THE PIER AT FENIT - NIGHT. Free text, the writer's phrase; an empty string clears it. This is where a scene's day and time live, not the headline, so the duplicate check never reads a day as a scene's words. create_note and update_note take when too; list_board shows it as when: …",
+    inputSchema: { ids: z.array(z.string()).min(1), when: z.string() },
+  },
+  async (args) => {
+    const { state, changed, result, live } = await commit({ type: "set_when", ids: args.ids, when: args.when });
+    if (!changed) {
+      const missing = args.ids.filter((id) => !state.notes.some((note) => note.id === id));
+      return ok(missing.length ? `No card with id ${missing.join(", ")}. Call list_board for the real ids.` : `Nothing changed: ${args.ids.length === 1 ? "the card already says" : "those cards already say"} "${args.when.trim()}".`);
+    }
+    const when = result[0]?.when ?? "";
+    return ok(
+      when
+        ? `${result.length} card(s) now happen ${/^(at|on|in|by|the)\b/i.test(when) ? "" : "at "}"${when}"${where(live)}. The heading prints as ${sceneHeading(result[0]).slice(1)}.`
+        : `${result.length} card(s) no longer say when they happen${where(live)}.`,
+      result,
+    );
   },
 );
 
@@ -2346,9 +2515,9 @@ server.registerTool(
     const wanted = key.toLowerCase();
     const person = state.characters.find((item) => item.id === key) ?? state.characters.find((item) => item.name.trim().toLowerCase() === wanted);
     if (!person) return ok(`Nobody called "${key}" in the cast. Call list_board for the cast, or add_character.`);
-    const on = state.notes.filter((note) => note.characterIds.includes(person.id));
+    const on = storyOrder(state).filter((note) => note.characterIds.includes(person.id));
     const lines = [
-      `${person.name} (${person.id}) — on ${on.length} card${on.length === 1 ? "" : "s"}${on.length ? `: ${on.map((note) => `"${note.headline}"`).join(", ")}` : ""}`,
+      `${person.name} (${person.id}) — on ${on.length} card${on.length === 1 ? "" : "s"}${on.length ? `, in story order: ${on.map((note) => `"${note.headline}"`).join(", ")}` : ""}`,
       ...CHARACTER_FIELDS.map((field) => `  ${field}: ${(person[field] ?? "").trim() || "(empty)"}`),
     ];
     return ok(lines.join("\n"), { ...person, cards: on.map((note) => note.id) });
@@ -2560,7 +2729,8 @@ server.registerTool(
     const left = result.left
       .map((group) => (group.dissolved ? ` "${group.title}" dissolved on the way: a frame needs two cards.` : ` Left "${group.title}", which keeps ${group.remaining} card${group.remaining === 1 ? "" : "s"}.`))
       .join("");
-    return ok(`Added ${names} to "${result.group.title}", which now holds ${result.group.noteIds.length} cards${where(live)}. The frame reaches them where they are; organize lays the group out as a block.${left}`, result);
+    const inOrder = storyOrder(state).filter((note) => result.group.noteIds.includes(note.id)).map((note) => `"${note.headline}"`).join(", ");
+    return ok(`Added ${names} to "${result.group.title}", which now holds ${result.group.noteIds.length} cards, in story order: ${inOrder}${where(live)}. The frame reaches them where they are; organize lays the group out as a block.${left}`, result);
   },
 );
 

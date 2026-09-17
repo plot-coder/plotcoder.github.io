@@ -29,6 +29,8 @@ export type MapCard = {
   castNames: string[];
   /** Where the scene happens (R37), or empty. */
   location: string;
+  /** When it happens (R55), or empty. */
+  when: string;
   /** True when the length is measured from the scene's text (R23 b). */
   measured: boolean;
   /** Where the card starts, in eighths from the top of the story. */
@@ -98,6 +100,7 @@ export function storyMapLayout(state: BoardState, reading: WallReading): StoryMa
         .map((characterId) => nameOf.get(characterId))
         .filter((name): name is string => Boolean(name)),
       location: note.location ?? "",
+      when: note.when ?? "",
       start: cursor,
       length: noteEighths(note),
       measured: isMeasured(note),

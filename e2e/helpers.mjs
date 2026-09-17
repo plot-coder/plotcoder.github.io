@@ -75,6 +75,8 @@ export class McpClient {
       env: {
         ...process.env,
         PLOTCODER_ROOT: E2E_ROOT,
+        // The JSON tail is off by default since round fourteen; the harness reads it.
+        PLOTCODER_JSON: "1",
         PLOTCODER_BRIDGE_URL: E2E_URL,
       },
     });

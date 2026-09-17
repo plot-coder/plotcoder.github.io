@@ -6,7 +6,7 @@ import {
   type BoardState,
   type Command,
 } from "./reducer";
-import { describeRuns, describeSetups, readingOrder, readWall } from "./readWall";
+import { describeRuns, describeSetups, readingOrder, readWall, storyOrder } from "./readWall";
 
 const NOW = "2026-01-01T00:00:00.000Z";
 
@@ -544,5 +544,51 @@ describe("the cast is the project's (R51)", () => {
     expect(alone).toEqual(["nessa", "fiona"]);
     const withOthers = readWall(state, { elsewhere: ["nessa"] }).findings.filter((finding) => finding.kind === "uncast").map((finding) => finding.ids[0]);
     expect(withOthers).toEqual(["fiona"]);
+  });
+});
+
+describe("story order: the arrows over the rows (R56)", () => {
+  it("is reading order with no arrows, and pulls a wired card into its place before any tidy", () => {
+    // a, b, c in a row; d sits far below, wired between a and b.
+    let state = wall({ id: "a" }, { id: "b" }, { id: "c" }, { id: "d", x: 100, y: 900 });
+    expect(storyOrder(state).map((note) => note.id)).toEqual(["a", "b", "c", "d"]);
+    state = run(state, { type: "create_arrow", from: "a", to: "d" }, { type: "create_arrow", from: "d", to: "b" }, { type: "create_arrow", from: "b", to: "c" });
+    expect(storyOrder(state).map((note) => note.id)).toEqual(["a", "d", "b", "c"]);
+    // The reading uses it: the runs and the numbering follow the arrows, not the rows.
+    const marked = run(state, { type: "set_rank", ids: ["a", "c"], rank: "beat" });
+    expect(readWall(marked).order).toEqual(["a", "d", "b", "c"]);
+    expect(readWall(marked).runs.find((r) => r.from === "a" && r.to === "c")?.ids).toEqual(["d", "b"]);
+    // A setup pulls nothing; a pair pointing both ways is a tie.
+    const setup = run(wall({ id: "a" }, { id: "b" }), { type: "create_arrow", from: "b", to: "a", kind: "setup" });
+    expect(storyOrder(setup).map((note) => note.id)).toEqual(["a", "b"]);
+    const tie = run(wall({ id: "a" }, { id: "b" }), { type: "create_arrow", from: "a", to: "b" }, { type: "create_arrow", from: "b", to: "a" });
+    expect(storyOrder(tie).map((note) => note.id)).toEqual(["a", "b"]);
+  });
+});
+
+describe("the sag waits for a claim (round fourteen, entry 12)", () => {
+  it("asks nothing while every run is the default page per card, and asks once a card in a run is sized or written", () => {
+    // Beats A, B, C, D; one card between A and B, three between B and C, one between C and D — all unsized.
+    const cards = [{ id: "A", rank: "beat" as const }, { id: "s1" }, { id: "B", rank: "beat" as const }, { id: "s2" }, { id: "s3" }, { id: "s4" }, { id: "C", rank: "beat" as const }, { id: "s5" }, { id: "D", rank: "beat" as const }];
+    const defaults = cards.reduce(
+      (state, card, index) => applyCommand(state, { type: "create_note", id: card.id, x: 100 + index * 230, y: 100, headline: card.id, change: "Turns.", rank: card.rank ?? "scene" }, NOW).state,
+      emptyState(),
+    );
+    expect(defaults.notes.every((note) => note.lengthEighths === null)).toBe(true);
+    expect(readWall(defaults).findings.some((f) => f.kind === "sag")).toBe(false);
+    const sized = run(defaults, { type: "set_length", ids: ["s2"], lengthEighths: 8 });
+    expect(readWall(sized).findings.some((f) => f.kind === "sag")).toBe(true);
+    expect(readWall(sized).findings.find((f) => f.kind === "sag")?.text).toContain("About 3 pages run between");
+    // The median run of one page reads "1 page", never "1 pages" (round thirteen, entry 15).
+    expect(readWall(sized).findings.find((f) => f.kind === "sag")?.text).toContain("about 1 page (");
+  });
+});
+
+describe("the duplicate check ignores a leading day (round fourteen, entry 13)", () => {
+  it("does not read two scenes on the same day at the same place as one scene, but still catches the same words", () => {
+    const days = wall({ id: "a", headline: "Day three. The fair at Kilmallock: they sell all day" }, { id: "b", headline: "Day three. The road out of Kilmallock: the letter in the glove box" });
+    expect(readWall(days).findings.some((f) => f.kind === "duplicate")).toBe(false);
+    const same = wall({ id: "a", headline: "Day one. Tom lies about the job" }, { id: "b", headline: "Day two, night. Tom lies about his job" });
+    expect(readWall(same).findings.some((f) => f.kind === "duplicate")).toBe(true);
   });
 });

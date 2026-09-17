@@ -12,4 +12,5 @@ export declare function toPlainText(state: BoardState, options?: TakeOptions): s
 
 export declare const GUTTER: number;
 export declare const COLUMN: Record<"character" | "more" | "parenthetical" | "dialogue", number>;
-export declare function setLine(line: Line): string;
+/** A printed line set with spaces; `star` adds a revision's star in the right margin. */
+export declare function setLine(line: Line, star?: boolean): string;

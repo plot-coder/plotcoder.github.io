@@ -16,7 +16,7 @@
 // Pure and DOM-free like the kernel: the app and the MCP server both call it,
 // and it returns poses for apply_poses rather than touching anything.
 
-import { readingOrder } from "./readWall.js";
+import { readingOrder, storyOrder } from "./readWall.js";
 import { NOTE_HEIGHT, NOTE_WIDTH } from "./reducer.js";
 
 export const ROW_CARDS = 5;
@@ -36,35 +36,8 @@ const STEP_Y = NOTE_HEIGHT + GAP;
  * given (or every card) take part; arrows to cards outside are ignored.
  */
 export function arrowOrder(state, ids) {
-  const scope = ids ? new Set(ids) : null;
-  const notes = state.notes.filter((note) => !scope || scope.has(note.id));
-  const reading = readingOrder(notes).map((note) => note.id);
-  const rank = new Map(reading.map((id, index) => [id, index]));
-  const preds = new Map(reading.map((id) => [id, []]));
-  for (const arrow of state.arrows) {
-    if (arrow.kind === "setup") continue;
-    if (!rank.has(arrow.from) || !rank.has(arrow.to)) continue;
-    preds.get(arrow.to).push(arrow.from);
-  }
-  for (const list of preds.values()) list.sort((a, b) => rank.get(a) - rank.get(b));
-
-  const placed = new Set();
-  const visiting = new Set();
-  const order = [];
-  function visit(id) {
-    if (placed.has(id) || visiting.has(id)) return;
-    visiting.add(id);
-    for (const from of preds.get(id)) {
-      // A pair pointing both ways is a tie: reading order keeps it.
-      if (preds.get(from).includes(id)) continue;
-      visit(from);
-    }
-    visiting.delete(id);
-    placed.add(id);
-    order.push(id);
-  }
-  for (const id of reading) visit(id);
-  return order;
+  // One story order for the whole app: the reading's (R56).
+  return storyOrder(state, ids).map((note) => note.id);
 }
 
 /** Pull each group's members up to its first member, keeping their order. */

@@ -11,9 +11,9 @@
 // tags used, so the MCP server reads the same file the browser does.
 
 import { parseScene, TRANSITION } from "./paginate.js";
-import { readingOrder } from "./readWall.js";
+import { storyOrder } from "./readWall.js";
 import { sceneHeading, standInFor } from "./fountain.js";
-import { sceneNumbers } from "./numbering.js";
+import { REVISION_HEX, revisionLine, revisionMarks, sceneNumbers } from "./numbering.js";
 
 function escapeXml(text) {
   return String(text)
@@ -33,14 +33,16 @@ function unescapeXml(text) {
     .replace(/&amp;/g, "&");
 }
 
-function paragraph(type, text, extra = "") {
-  return `    <Paragraph Type="${type}"${extra}>\n      <Text>${escapeXml(text)}</Text>\n    </Paragraph>\n`;
+function paragraph(type, text, extra = "", revised = false) {
+  // A revised paragraph's text carries the revision's id, as Final Draft marks one.
+  const textAttr = revised ? ' RevisionID="1"' : "";
+  return `    <Paragraph Type="${type}"${extra}>\n      <Text${textAttr}>${escapeXml(text)}</Text>\n    </Paragraph>\n`;
 }
 
-function speechParagraphs(speech) {
-  let out = paragraph("Character", speech.name.toUpperCase());
+function speechParagraphs(speech, revisedAt = () => false) {
+  let out = paragraph("Character", speech.name.toUpperCase(), "", revisedAt(speech.at));
   for (const part of speech.parts) {
-    out += paragraph(part.kind === "parenthetical" ? "Parenthetical" : "Dialogue", part.text);
+    out += paragraph(part.kind === "parenthetical" ? "Parenthetical" : "Dialogue", part.text, "", revisedAt(part.at ?? speech.at));
   }
   return out;
 }
@@ -51,29 +53,34 @@ function speechParagraphs(speech) {
  * when written and the change line as action when not, and a title page.
  */
 export function toFdx(state, options = {}) {
-  const order = readingOrder(state.notes);
+  const order = storyOrder(state);
   const numbers = sceneNumbers(order, state.lock);
+  const marks = revisionMarks(state);
   let content = "";
   order.forEach((note, index) => {
     const number = numbers.get(note.id) ?? index + 1;
-    content += paragraph("Scene Heading", sceneHeading(note).slice(1), ` Number="${number}"`).replace(
-      "<Text>",
-      `<SceneProperties Length="" Page="" Title="${escapeXml(note.headline)}" />\n      <Text>`,
+    const mark = marks.get(note.id);
+    // A changed card with no changed text line (its headline, change or place moved) marks its heading.
+    const headingRevised = Boolean(mark?.revised && mark.lines.size === 0);
+    const revisedAt = (at) => Boolean(mark && typeof at === "number" && mark.lines.has(at));
+    content += paragraph("Scene Heading", sceneHeading(note).slice(1), ` Number="${number}"`, headingRevised).replace(
+      /<Text( RevisionID="1")?>/,
+      (_m, attr) => `<SceneProperties Length="" Page="" Title="${escapeXml(note.headline)}" />\n      <Text${attr ?? ""}>`,
     );
     // Unwritten: the change line stands in as action, marked as every export marks it.
     const elements = parseScene(note.text && note.text.trim() ? note.text : standInFor(note));
     for (let i = 0; i < elements.length; i += 1) {
       const element = elements[i];
-      if (element.kind === "action") content += paragraph("Action", element.text);
-      else if (element.kind === "transition") content += paragraph("Transition", element.text);
-      else if (element.kind === "centered") content += paragraph("General", element.text, ' Alignment="Center"');
+      if (element.kind === "action") content += paragraph("Action", element.text, "", revisedAt(element.at));
+      else if (element.kind === "transition") content += paragraph("Transition", element.text, "", revisedAt(element.at));
+      else if (element.kind === "centered") content += paragraph("General", element.text, ' Alignment="Center"', revisedAt(element.at));
       else if (element.kind === "speech") {
         const next = elements[i + 1];
         if (next && next.kind === "speech" && next.dual) {
-          content += `    <Paragraph>\n      <DualDialogue>\n${speechParagraphs(element)}${speechParagraphs(next)}      </DualDialogue>\n    </Paragraph>\n`;
+          content += `    <Paragraph>\n      <DualDialogue>\n${speechParagraphs(element, revisedAt)}${speechParagraphs(next, revisedAt)}      </DualDialogue>\n    </Paragraph>\n`;
           i += 1;
         } else {
-          content += speechParagraphs(element);
+          content += speechParagraphs(element, revisedAt);
         }
       }
     }
@@ -85,12 +92,18 @@ export function toFdx(state, options = {}) {
   if (options.author) title.push(paragraph("General", `Written by ${options.author}`, ' Alignment="Center"'));
   if (options.draftDate) title.push(paragraph("General", options.draftDate.slice(0, 10)));
   title.push(paragraph("General", state.lock ? `Scene numbers locked ${String(state.lock.at).slice(0, 10)}.` : "Scene numbers follow the wall's order and are not locked."));
+  if (state.revision) title.push(paragraph("General", `${revisionLine(state)}; changed paragraphs are marked.`));
+  // The revision set Final Draft shows its marks from (round fourteen, entry 45).
+  const revisions = state.revision
+    ? `  <Revisions ActiveSet="1" Location="7.50" RevisionMode="No" RevisionsShown="Active" ShowAllMarks="No" ShowAllSets="No">\n    <Revision Color="${REVISION_HEX[state.revision.color] ?? "#000000"}" FullRevision="No" ID="1" Mark="*" Name="${escapeXml(state.revision.name)}" Style="" />\n  </Revisions>\n`
+    : "";
 
   return (
     `<?xml version="1.0" encoding="UTF-8" standalone="no" ?>\n` +
     `<FinalDraft DocumentType="Script" Template="No" Version="5">\n` +
     `  <Content>\n${content}  </Content>\n` +
     `  <TitlePage>\n    <Content>\n${title.join("")}    </Content>\n  </TitlePage>\n` +
+    revisions +
     `</FinalDraft>\n`
   );
 }

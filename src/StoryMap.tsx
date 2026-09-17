@@ -132,6 +132,7 @@ export function StoryMap({
                 {formatPages(readCard.length)} {readCard.length === EIGHTHS_PER_PAGE ? "page" : "pages"}
                 {readCard.castNames.length ? ` · with ${readCard.castNames.join(", ")}` : ""}
                 {readCard.location ? ` · at ${readCard.location}` : ""}
+                {readCard.when ? `${readCard.location ? ", " : " · "}${readCard.when}` : ""}
               </span>
             </>
           ) : (

@@ -1,24 +1,55 @@
-// The card's fourth line: where the scene happens (R37).
+// The card's fourth line: where the scene happens (R37), and when (R55).
 //
-// Reads "at the piano shop". Tap it and type, the same gesture as the cast
-// line (D11). Places already on the wall complete as you type — spelling, not
-// a roster: a new place is just typed, and it is offered on the next card.
-// Empty, the line is an invitation on hover only, so a wall with no places
-// looks exactly as it did.
+// Reads "at the piano shop · night". Tap it and type, the same gesture as the
+// cast line (D11); the when is the part after the dot, as the heading will
+// print it (THE PIANO SHOP - NIGHT), and a line with no dot is a place alone.
+// Places already on the wall complete as you type — spelling, not a roster: a
+// new place is just typed, and it is offered on the next card. Empty, the line
+// is an invitation on hover only, so a wall with no places looks exactly as it
+// did.
 
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 
 type PlaceLineProps = {
   headline: string;
   location: string;
+  when: string;
   /** Every place on the wall, in order of first appearance. */
   places: string[];
   onBegin: () => void;
-  onCommit: (location: string) => void;
+  onCommit: (location: string, when: string) => void;
 };
+
+/** The dot between the place and the when on the card. */
+export const WHEN_SEPARATOR = "·";
 
 function stop(event: PointerEvent<HTMLElement>) {
   event.stopPropagation();
+}
+
+function clean(text: string): string {
+  return text.trim().replace(/\s+/g, " ");
+}
+
+/**
+ * One line back into its two parts. The dot is the card's own mark; a spaced
+ * hyphen is accepted too, because that is how the heading prints it and how a
+ * hand used to Final Draft will type it. The last mark wins, so a place that
+ * carries a hyphen of its own ("the lay-by") is left whole.
+ */
+export function splitPlaceLine(text: string): { location: string; when: string } {
+  const line = clean(text);
+  const dot = line.lastIndexOf(WHEN_SEPARATOR);
+  if (dot >= 0) return { location: clean(line.slice(0, dot)), when: clean(line.slice(dot + 1)) };
+  const dash = /^(.*\S)\s+-\s+(\S.*)$/.exec(line);
+  if (dash) return { location: clean(dash[1]), when: clean(dash[2]) };
+  return { location: line, when: "" };
+}
+
+/** The two parts as one line for typing: "the pier at Fenit · night", or the place alone. */
+export function joinPlaceLine(location: string, when: string): string {
+  if (!when) return location;
+  return `${location} ${WHEN_SEPARATOR} ${when}`;
 }
 
 /** Places that start with the fragment, then places that contain it; never the exact one. */
@@ -32,7 +63,7 @@ export function placeCompletions(fragment: string, places: string[]): string[] {
   return [...starts, ...contains].filter((place) => place.toLowerCase() !== needle).slice(0, 6);
 }
 
-export function PlaceLine({ headline, location, places, onBegin, onCommit }: PlaceLineProps) {
+export function PlaceLine({ headline, location, when, places, onBegin, onCommit }: PlaceLineProps) {
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState("");
   const [highlight, setHighlight] = useState(0);
@@ -42,20 +73,27 @@ export function PlaceLine({ headline, location, places, onBegin, onCommit }: Pla
     if (editing) inputRef.current?.focus();
   }, [editing]);
 
-  const options = editing ? placeCompletions(text, places) : [];
+  // Completion reads the place part only; the when after the dot is the writer's.
+  const typed = editing ? splitPlaceLine(text) : null;
+  const options = typed ? placeCompletions(typed.location, places) : [];
   const current = Math.min(highlight, Math.max(options.length - 1, 0));
 
   function begin() {
     onBegin();
-    setText(location);
+    setText(joinPlaceLine(location, when));
     setHighlight(0);
     setEditing(true);
   }
 
   function commit(finalText: string) {
     setEditing(false);
-    const next = finalText.trim().replace(/\s+/g, " ");
-    if (next !== location) onCommit(next);
+    const next = splitPlaceLine(finalText);
+    if (next.location !== location || next.when !== when) onCommit(next.location, next.when);
+  }
+
+  /** A completion taken keeps whatever when the line already carried. */
+  function take(place: string) {
+    commit(joinPlaceLine(place, typed?.when ?? ""));
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
@@ -76,27 +114,39 @@ export function PlaceLine({ headline, location, places, onBegin, onCommit }: Pla
     }
     if (event.key === "Tab" && options[current]) {
       event.preventDefault();
-      commit(options[current]);
+      take(options[current]);
       return;
     }
     if (event.key === "Enter") {
       event.preventDefault();
       // Enter on a lit completion takes it; Enter on your own words keeps them.
       const option = options[current];
-      commit(option && text.trim() && option.toLowerCase().startsWith(text.trim().toLowerCase()) && highlight > 0 ? option : text);
+      const fragment = typed?.location.trim().toLowerCase() ?? "";
+      if (option && fragment && option.toLowerCase().startsWith(fragment) && highlight > 0) take(option);
+      else commit(text);
     }
   }
 
   if (!editing) {
+    const empty = !location && !when;
+    const said = [location ? `at ${location}` : "", when ? `when: ${when}` : ""].filter(Boolean).join(", ");
     return (
       <button
         type="button"
-        className={`note__with note__at ${location ? "" : "note__with--empty"}`}
-        aria-label={location ? `Place of ${headline}: ${location}` : `Place ${headline}`}
+        className={`note__with note__at ${empty ? "note__with--empty" : ""}`}
+        aria-label={empty ? `Place ${headline}` : `Place of ${headline}: ${said}`}
         onPointerDown={stop}
         onClick={begin}
       >
-        <span className="note__with-prefix">at</span> {location || "…"}
+        <span className="note__with-prefix">at</span> {location || (when ? "" : "…")}
+        {when ? (
+          <>
+            <span className="note__when-sep" aria-hidden="true">
+              {WHEN_SEPARATOR}
+            </span>
+            <span className="note__when">{when}</span>
+          </>
+        ) : null}
       </button>
     );
   }
@@ -109,7 +159,7 @@ export function PlaceLine({ headline, location, places, onBegin, onCommit }: Pla
         className="note__with-input"
         value={text}
         aria-label={`Place of ${headline}`}
-        placeholder="where?"
+        placeholder="where? · when?"
         spellCheck={false}
         autoComplete="off"
         onChange={(event) => {
@@ -130,7 +180,7 @@ export function PlaceLine({ headline, location, places, onBegin, onCommit }: Pla
               onPointerDown={(event) => {
                 event.preventDefault();
                 event.stopPropagation();
-                commit(place);
+                take(place);
               }}
             >
               {place}

@@ -159,9 +159,10 @@ only when the server is started with `PLOTCODER_JSON=1`.
   place, printed after the place on every scene heading — THE PIER AT FENIT
   - NIGHT. This is where a scene's day and time live, not the headline, so
   two scenes on one day never read as one scene; `create_note` and
-  `update_note` take `when` too, and `list_board` shows it. A card with no
-  when says nothing about time, which is not the same as "unknown" — say so
-  in the headline if it matters.
+  `update_note` take `when` too, and `list_board` shows it. On the wall it is
+  the place line after a dot — at the pier at Fenit · night — and the writer
+  types it there. A card with no when says nothing about time; if the writer
+  says the day is unknown, that is a when too: `when: "day unknown"`.
 - `delete_note` — remove a card. Its arrows go with it and it leaves its
   group; a card wired into a chain — one `follows` in, one out — leaves the
   chain joined behind it. The reply names each arrow by its cards, the join,
@@ -248,7 +249,11 @@ card of another board is not asked about as uncast here.
   whether it is measured (written) or estimated. Read it before writing.
 - `write_scene` — a card's scene text in Fountain, by id; the card is then
   measured from its lines. Write only scenes the writer asked for. Under a
-  revision the reply says the card is marked.
+  revision the reply says the card is marked. The cues in the text (JOE,
+  CIARA) are not tied to the card's cast: the cast is the card's claim about
+  who is in the scene, the cues are the page's, and the app relates the two
+  only by name. Keep them agreeing yourself — `cast` when a cue names someone
+  the card does not.
 - `edit_scene` — one line of a scene, by `find` and `replace`: the text must
   occur once. For "change her last line", not a rewrite.
 - `import_fountain` — a `.fountain` file or text onto the open board: scenes

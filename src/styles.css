@@ -3603,6 +3603,13 @@ body {
   margin-top: 0.1rem;
 }
 
+/* When the scene happens (R55), after a dot on the same line: at the pier at
+   Fenit · night. The dot is quiet; the when reads as the place does. */
+.note__when-sep {
+  opacity: 0.55;
+  margin: 0 0.3rem;
+}
+
 .cast-lens__section {
   margin: 0.4rem 0 0;
   padding: 0.45rem 0.5rem 0.2rem;

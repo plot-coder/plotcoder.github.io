@@ -506,12 +506,14 @@ export function App() {
     });
   }
 
-  // Where a scene happens (R37), typed on the card. Applies to the whole
-  // selection, like the cast line.
-  function setLocation(id: string, location: string) {
+  // Where a scene happens (R37) and when (R55), typed as one line on the
+  // card. Applies to the whole selection, like the cast line. Two commands,
+  // each quiet when its part did not change, so ⌘Z takes back what was typed.
+  function setLocation(id: string, location: string, when: string) {
     const ids =
       selectedIds.includes(id) && selectedIds.length >= 2 ? selectedIds : [id];
     boardStore.dispatch({ type: "set_location", ids, location });
+    boardStore.dispatch({ type: "set_when", ids, when });
   }
 
   // Every picture of a person as one package (Roadmap 2, item 5).

@@ -111,6 +111,10 @@ function coalesceKey(command: Command): string | null {
       return `update_character:${command.id}:${CHARACTER_FIELDS.filter((field) => field in command).join(",")}`;
     case "set_target":
       return "set_target";
+    // One line on the card carries both (R37, R55): typed together, one step back.
+    case "set_location":
+    case "set_when":
+      return `place_line:${[...command.ids].sort().join(",")}`;
     default:
       return null;
   }
@@ -823,6 +827,7 @@ export type PlotCoderWindowApi = {
   setLogline: (logline: string) => unknown;
   setTarget: (targetEighths: number) => unknown;
   setLocation: (ids: string[], location: string) => unknown;
+  setWhen: (ids: string[], when: string) => unknown;
   updateCharacter: (id: string, patch: Partial<Record<CharacterField, string>>) => unknown;
   applyTemplate: (template: string) => unknown;
   setPremise: (premise: string) => void;
@@ -866,6 +871,7 @@ export function installWindowApi(): void {
     setLogline: (logline) => boardStore.dispatch({ type: "set_logline", logline }),
     setTarget: (targetEighths) => boardStore.dispatch({ type: "set_target", targetEighths }),
     setLocation: (ids, location) => boardStore.dispatch({ type: "set_location", ids, location }),
+    setWhen: (ids, when) => boardStore.dispatch({ type: "set_when", ids, when }),
     updateCharacter: (id, patch) => boardStore.dispatch({ type: "update_character", id, ...patch }),
     applyTemplate: (template) => boardStore.dispatch({ type: "apply_template", template }),
     setPremise: (premise) => boardStore.setPremise(premise),

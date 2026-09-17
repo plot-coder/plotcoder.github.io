@@ -93,6 +93,8 @@ next round into a test of `claim_account` instead of the door it meant to test.
 | `vite.config.ts` | The dev bridge that mirrors the board to a file on localhost. Never ships. |
 | `.github/workflows/deploy.yml` | Test, build, deploy to Pages. |
 | `blind-runs/` | The blind-run practice: the rules, the rounds, and each round's prompt and treatment. |
+| `docs/to-do.md` | The handover queue: what is done, what is waiting, what is next. |
+| `docs/mockups/` | Interfaces drawn on the app's own paper before they are built (rule 5). |
 | `scripts/wipe-test-account.mjs` | Empty or remove a marked test account (R44). `wipe-plan.mjs` is the pure rail it decides by. |
 
 ## Status

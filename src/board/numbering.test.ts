@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { isRevised, lockFrom, revisedLines, sceneNumbers } from "./numbering";
+import { isRevised, lockFrom, revisedLines, revisionLine, revisionMarks, sceneNumbers } from "./numbering";
+import { applyCommand, seedState } from "./reducer";
 
 const ids = (...list: string[]) => list.map((id) => ({ id }));
 
@@ -49,5 +50,24 @@ describe("revision marks", () => {
     expect(isRevised(note, same)).toBe(false);
     expect(isRevised(note, { ...same, text: "T2" })).toBe(true);
     expect(isRevised(note, undefined)).toBe(true);
+  });
+});
+
+describe("revision marks for every export (round fourteen, entry 45)", () => {
+  const NOW = "2026-09-17T10:00:00.000Z";
+  it("says which cards changed and which lines, and nothing without a revision", () => {
+    const start = applyCommand(seedState(), { type: "set_text", id: "maya-letter", text: "Rain.\n\nMAYA\nTom?" }, NOW).state;
+    expect(revisionMarks(start).size).toBe(0);
+    expect(revisionLine(start)).toBe("");
+    const revising = applyCommand(start, { type: "start_revision", name: "Blue", color: "blue" }, NOW).state;
+    expect(revisionLine(revising)).toBe("Blue revision · 2026-09-17");
+    expect([...revisionMarks(revising).values()].every((mark) => !mark.revised)).toBe(true);
+    const changed = applyCommand(revising, { type: "set_text", id: "maya-letter", text: "Rain.\n\nMAYA\nTom? On the bus." }, NOW).state;
+    const marks = revisionMarks(changed);
+    expect(marks.get("maya-letter")).toEqual({ revised: true, lines: new Set([3]) });
+    expect(marks.get("tom-lies")?.revised).toBe(false);
+    const retitled = applyCommand(changed, { type: "update_note", id: "tom-lies", headline: "Tom lies about the job, badly" }, NOW).state;
+    expect(revisionMarks(retitled).get("tom-lies")).toEqual({ revised: true, lines: new Set() });
+    expect(revisionLine({ ...changed, revision: { ...changed.revision!, name: "Second pass" } })).toBe('Blue revision "Second pass" · 2026-09-17');
   });
 });

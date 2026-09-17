@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fromFountain, mergeFountain, sceneHeading, titlePage, toFountain, unmark } from "./fountain";
+import { fromFountain, mergeFountain, sceneHeading, splitHeading, titlePage, toFountain, unmark } from "./fountain";
 import { applyCommand, emptyState, isMeasured, measuredEighths, noteEighths, seedState } from "./reducer";
 
 const NOW = "2026-01-01T00:00:00.000Z";
@@ -184,5 +184,33 @@ describe("Fountain in (R23, slice b)", () => {
     expect(commands[0]).toMatchObject({ type: "create_note", change: "Ciara reads the letter and says nothing.", text: "" });
     expect(unmark("[Unwritten] Words.")).toEqual({ text: "Words.", marked: true });
     expect(unmark("Words.")).toEqual({ text: "Words.", marked: false });
+  });
+});
+
+describe("the when on a heading, out and back (R55)", () => {
+  const NOW2 = "2026-09-17T10:00:00.000Z";
+  it("prints after the place with a dash, splits back into place and when, and comes in as a new card's when", () => {
+    const state = applyCommand(seedState(), { type: "set_location", ids: ["maya-letter"], location: "the piano shop" }, NOW2).state;
+    const timed = applyCommand(state, { type: "set_when", ids: ["maya-letter"], when: "night" }, NOW2).state;
+    expect(sceneHeading(timed.notes[0])).toBe(".THE PIANO SHOP - NIGHT");
+    expect(splitHeading("THE PIANO SHOP - NIGHT")).toEqual({ place: "THE PIANO SHOP", when: "NIGHT" });
+    expect(splitHeading("THE PIER")).toEqual({ place: "THE PIER", when: "" });
+    const out = toFountain(timed, { title: "B" });
+    expect(out).toContain(".THE PIANO SHOP - NIGHT");
+    // Out then in: the same card, nothing to write.
+    expect(mergeFountain(timed, fromFountain(out)).commands).toEqual([]);
+    // A new scene with a when on its heading lands with place and when apart.
+    const extra = fromFountain(`${out}\n.THE PIER - DAWN\n\n= She waits.\n\nShe waits.\n`);
+    const made = mergeFountain(timed, extra).commands.find((command) => command.type === "create_note");
+    expect(made).toMatchObject({ location: "The Pier", when: "dawn" });
+  });
+
+  it("notes a changed scene under a revision", () => {
+    const revising = applyCommand(seedState(), { type: "start_revision", name: "Blue", color: "blue" }, NOW2).state;
+    const changed = applyCommand(revising, { type: "update_note", id: "tom-lies", change: "Maya starts to doubt him, hard." }, NOW2).state;
+    const out = toFountain(changed, { title: "B" });
+    expect(out).toContain("Revision: Blue revision · 2026-09-17");
+    expect(out).toContain("[[with Tom, Maya · changed in the blue revision]]");
+    expect(out.split("[[with Maya]]").length).toBe(2);
   });
 });

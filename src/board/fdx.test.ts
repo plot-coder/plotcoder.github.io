@@ -148,3 +148,21 @@ describe("the receipt (Roadmap 2, item 3)", () => {
     expect(describeSetAside(fromFdx(toFdx(wall(), { title: "x" })).setAside)).toBe("");
   });
 });
+
+describe("revisions in Final Draft out (round fourteen, entry 45)", () => {
+  const NOW2 = "2026-09-17T10:00:00.000Z";
+  it("writes the revision set and marks the changed paragraphs, which the reader counts as revision marks", () => {
+    let state = applyCommand(seedState(), { type: "set_text", id: "maya-letter", text: "Rain.\n\nMAYA\nTom?" }, NOW2).state;
+    state = applyCommand(state, { type: "start_revision", name: "Blue", color: "blue" }, NOW2).state;
+    state = applyCommand(state, { type: "set_text", id: "maya-letter", text: "Rain.\n\nMAYA\nTom? On the bus." }, NOW2).state;
+    state = applyCommand(state, { type: "update_note", id: "tom-lies", change: "Maya starts to doubt him, hard." }, NOW2).state;
+    const xml = toFdx(state, { title: "B" });
+    expect(xml).toContain('<Revisions ActiveSet="1"');
+    expect(xml).toContain('<Revision Color="#5B8DEF" FullRevision="No" ID="1" Mark="*" Name="Blue" Style="" />');
+    expect(xml).toContain('<Text RevisionID="1">Tom? On the bus.</Text>');
+    expect(xml).not.toContain('<Text RevisionID="1">Rain.</Text>');
+    expect(xml).toContain('<Text RevisionID="1">TOM LIES ABOUT THE JOB</Text>');
+    expect(xml).toContain("Blue revision · 2026-09-17; changed paragraphs are marked.");
+    expect(fromFdx(xml).setAside.revisedParagraphs).toBe(2);
+  });
+});

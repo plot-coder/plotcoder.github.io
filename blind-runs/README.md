@@ -5,11 +5,10 @@ else, asked to build a wall and to keep a log of everything that made the job
 harder than it should have been. The friction log is the product; the wall is
 just what produces it.
 
-The practice is Robert's, from 2026-09-13. Thirteen rounds have been run;
-every finding from the first twelve is fixed, and round thirteen's six chosen
-first are too — see `REQUIREMENTS.md`, "The blind run", and the `friction,
-fixed` entries in the changelog. What remains of round thirteen is listed at
-the head of its report.
+The practice is Robert's, from 2026-09-13. Fourteen rounds have been run;
+every finding is fixed or decided — see `REQUIREMENTS.md`, "The blind run",
+and the `friction, fixed` entries in the changelog. Round fourteen's report
+says at its head what was built from it and what was left on purpose.
 
 ## The rules that make a round worth running
 
@@ -42,7 +41,7 @@ the head of its report.
 | Eleven | The published package | "Low Season" | The directions | 11 + 16 + 20, all fixed; asked for R50 and R51 |
 | Twelve | The published package, the treatment complete | "Low Season" | The directions | 33, all fixed; asked for R52 and R53 |
 | Thirteen | The published package, a feature, past the wall | "Ninety-Nine" | Pages: a scene written, Markdown out, the page count | 32 (`round-thirteen-report.md`); the six chosen first fixed, the rest open |
-| Fourteen | The published package, the same feature, the fixes in hand | "Ninety-Nine" | Past the wall again: a card unsized, an act rebuilt, a card deleted, a leave after edits, the script out three ways | not yet run |
+| Fourteen | The published package, the same feature, the fixes in hand | "Ninety-Nine" | Past the wall and into production: exports three ways and back, the lock, a revision, a person's page | 49 (`round-fourteen-report.md`); fixed or decided the next day |
 
 ## The rounds so far, and the next round
 
@@ -63,10 +62,10 @@ directions phase. Each round's findings are itemised in `REQUIREMENTS.md`,
   account is filled in (`test@test.com`, password `test`; Robert's decision,
   so the prompt pastes without editing). Paste everything below its divider.
 - `round-thirteen-prompt.md` — round thirteen's prompt as it ran, kept.
-- `round-thirteen-report.md` — the agent's report from round thirteen,
-  verbatim, under a head naming the six fixes Robert chose first (fixed
-  2026-09-15) and what remains. The next session on the agent surface starts
-  here.
+- `round-fourteen-report.md` — the agent's report from round fourteen,
+  verbatim, under a head saying what was fixed from it. The next session on
+  the agent surface starts here.
+- `round-thirteen-report.md` — round thirteen's, the same way.
 - `round-thirteen-treatment.md` — "Ninety-Nine", a feature, embedded in the
   prompt. It answers the eleven questions up front and includes one thing
   the writer says is not a plant, so the round measures what the wall does

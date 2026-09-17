@@ -245,6 +245,7 @@ export function seedState(now = nowIso()) {
     lengthEighths: null,
     characterIds,
     location: "",
+    when: "",
     text: "",
     plants: false,
     // A fold that pays off on another board — a later episode — names it here;
@@ -347,6 +348,8 @@ export function normalizeState(value) {
     const payoffBoardId = plants && typeof note?.payoffBoardId === "string" && note.payoffBoardId ? note.payoffBoardId : null;
     // Cards written before R37 have no place; a scene is nowhere until it is.
     const location = typeof note?.location === "string" ? note.location : "";
+    // Cards written before R55 have no when; a scene is at no time until it is.
+    const when = typeof note?.when === "string" ? note.when : "";
     // Cards written before pages (R23 b) have no text; a scene is unwritten until it is.
     const text = typeof note?.text === "string" ? note.text : "";
     if (
@@ -358,12 +361,13 @@ export function normalizeState(value) {
       note.plants === plants &&
       note.payoffBoardId === payoffBoardId &&
       note.location === location &&
+      note.when === when &&
       note.text === text
     ) {
       return note;
     }
     patched = true;
-    return { ...note, rank, lengthEighths, characterIds, plants, payoffBoardId, location, text };
+    return { ...note, rank, lengthEighths, characterIds, plants, payoffBoardId, location, when, text };
   });
 
   // Boards written before the production half (Roadmap 2, item 8) have no
@@ -414,6 +418,11 @@ function bump(note, patch, now) {
   return { ...note, ...patch, updatedAt: now };
 }
 
+/** A when as the writer typed it, one line, spaces collapsed. */
+function cleanWhen(value) {
+  return typeof value === "string" ? value.trim().replace(/\s+/g, " ") : "";
+}
+
 function pruneGroups(groups) {
   return groups.filter((group) => group.noteIds.length >= 2);
 }
@@ -445,6 +454,7 @@ export function applyCommand(state, command, now = nowIso()) {
         plants: command.plants === true,
         payoffBoardId: null,
         location: cleanPlace(command.location),
+        when: cleanWhen(command.when),
         text: typeof command.text === "string" ? command.text : "",
         z: maxZ(state.notes) + 1,
         createdAt: now,
@@ -465,6 +475,7 @@ export function applyCommand(state, command, now = nowIso()) {
         if (command.headline !== undefined) patch.headline = command.headline;
         if (command.change !== undefined) patch.change = command.change;
         if (command.location !== undefined) patch.location = cleanPlace(command.location);
+        if (command.when !== undefined) patch.when = cleanWhen(command.when);
         updated = bump(note, patch, now);
         return updated;
       });
@@ -581,7 +592,17 @@ export function applyCommand(state, command, now = nowIso()) {
       const headlineOf = (id) => state.notes.find((note) => note.id === id)?.headline ?? id;
       const notes = state.notes.filter((note) => note.id !== command.id);
       const taken = state.arrows.filter((arrow) => arrow.from === command.id || arrow.to === command.id);
-      const arrows = state.arrows.filter((arrow) => !taken.includes(arrow));
+      let arrows = state.arrows.filter((arrow) => !taken.includes(arrow));
+      // A card wired into a chain — one follows in, one follows out — leaves
+      // the chain joined behind it, as move_scene does; undo takes the join
+      // back with the card (round fourteen, entry 20).
+      const ins = taken.filter((arrow) => arrow.kind !== "setup" && arrow.to === command.id);
+      const outs = taken.filter((arrow) => arrow.kind !== "setup" && arrow.from === command.id);
+      let joined = null;
+      if (ins.length === 1 && outs.length === 1 && ins[0].from !== outs[0].to && !arrows.some((arrow) => arrow.from === ins[0].from && arrow.to === outs[0].to)) {
+        joined = { id: newId(), from: ins[0].from, to: outs[0].to, kind: "follows" };
+        arrows = [...arrows, joined];
+      }
       const left = [];
       const groups = pruneGroups(
         state.groups.map((group) => {
@@ -600,6 +621,7 @@ export function applyCommand(state, command, now = nowIso()) {
           id: command.id,
           headline: gone.headline,
           arrows: taken.map((arrow) => ({ ...arrow, fromHeadline: headlineOf(arrow.from), toHeadline: headlineOf(arrow.to) })),
+          joined: joined ? { ...joined, fromHeadline: headlineOf(joined.from), toHeadline: headlineOf(joined.to) } : null,
           groups: left,
         },
       };
@@ -608,13 +630,17 @@ export function applyCommand(state, command, now = nowIso()) {
     case "apply_poses": {
       const byId = new Map(command.poses.map((pose) => [pose.id, pose]));
       if (byId.size === 0) return { state, changed: false };
+      // Only a card that actually moves is touched, so a tidy that leaves a
+      // card where it was does not stamp it (round fourteen, entry 43).
+      let moved = 0;
       const notes = state.notes.map((note) => {
         const pose = byId.get(note.id);
-        return pose
-          ? bump(note, { x: pose.x, y: pose.y, rotate: pose.rotate }, now)
-          : note;
+        if (!pose || (note.x === pose.x && note.y === pose.y && note.rotate === pose.rotate)) return note;
+        moved += 1;
+        return bump(note, { x: pose.x, y: pose.y, rotate: pose.rotate }, now);
       });
-      return { state: { ...state, notes }, changed: true };
+      if (moved === 0) return { state, changed: false };
+      return { state: { ...state, notes }, changed: true, result: { moved } };
     }
 
     case "settle_note": {
@@ -880,6 +906,7 @@ export function applyCommand(state, command, now = nowIso()) {
         plants: false,
         payoffBoardId: null,
         location: "",
+        when: "",
         text: "",
         createdAt: now,
         updatedAt: now,
@@ -949,7 +976,8 @@ export function applyCommand(state, command, now = nowIso()) {
       const ids = Array.isArray(command.ids) ? command.ids.filter((id) => typeof id === "string") : [];
       const text = typeof command.text === "string" ? command.text : "";
       if (!kind || !text) return { state, changed: false };
-      const entry = { kind, ids, text, since: now };
+      const why = typeof command.why === "string" ? command.why.trim() : "";
+      const entry = why ? { kind, ids, text, since: now, why } : { kind, ids, text, since: now };
       const rest = (state.left ?? []).filter((item) => !(item.kind === kind && sameIds(item.ids, ids)));
       return { state: { ...state, left: [...rest, entry] }, changed: true, result: entry };
     }
@@ -973,6 +1001,23 @@ export function applyCommand(state, command, now = nowIso()) {
       const notes = state.notes.map((note) => {
         if (!ids.has(note.id) || note.location === location) return note;
         const next = bump(note, { location }, now);
+        touched.push(next);
+        return next;
+      });
+      if (touched.length === 0) return { state, changed: false };
+      return { state: { ...state, notes }, changed: true, result: touched };
+    }
+
+    // When a scene happens (R55): "night", "day four, dawn" — the writer's
+    // phrase, printed after the place on the scene heading; empty clears it.
+    case "set_when": {
+      const ids = new Set(command.ids);
+      if (ids.size === 0) return { state, changed: false };
+      const when = cleanWhen(command.when);
+      const touched = [];
+      const notes = state.notes.map((note) => {
+        if (!ids.has(note.id) || note.when === when) return note;
+        const next = bump(note, { when }, now);
         touched.push(next);
         return next;
       });

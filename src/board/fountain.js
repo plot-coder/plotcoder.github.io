@@ -13,17 +13,29 @@
 // except the heading and the action.
 
 import { formatPages, boardEighths } from "./reducer.js";
-import { readingOrder } from "./readWall.js";
+import { storyOrder } from "./readWall.js";
+import { revisionLine, revisionMarks } from "./numbering.js";
 
 function upper(text) {
   return text.trim().replace(/\s+/g, " ").toUpperCase();
 }
 
-/** A forced scene heading: the place, or the headline when the card has none. */
+/**
+ * A forced scene heading: the place, or the headline when the card has none,
+ * and the card's when after a dash — THE PIER AT FENIT - NIGHT (R55).
+ */
 export function sceneHeading(note) {
   const place = typeof note.location === "string" ? note.location.trim() : "";
+  const when = typeof note.when === "string" ? note.when.trim() : "";
   const words = place || note.headline || "UNTITLED";
-  return `.${upper(words)}`;
+  return `.${upper(words)}${when ? ` - ${upper(when)}` : ""}`;
+}
+
+/** A heading split back into its place and its when: "THE PIER AT FENIT - NIGHT" → both. */
+export function splitHeading(heading) {
+  const match = /^(.*?)\s+-\s+([^-]+)$/.exec(heading ?? "");
+  if (!match) return { place: (heading ?? "").trim(), when: "" };
+  return { place: match[1].trim(), when: match[2].trim() };
 }
 
 /**
@@ -71,12 +83,14 @@ export function titlePage({ title, credit, author, draftDate, notes }) {
  */
 export function toFountain(state, options = {}) {
   const nameOf = new Map((state.characters ?? []).map((character) => [character.id, character.name]));
-  const order = readingOrder(state.notes);
+  const order = storyOrder(state);
   const beats = order.filter((note) => note.rank === "beat").length;
+  const revisionOf = revisionMarks(state);
 
   const notes = [];
   if (options.premise) notes.push(`Premise: ${options.premise}`);
   if (state.logline) notes.push(`Logline: ${state.logline}`);
+  if (state.revision) notes.push(`Revision: ${revisionLine(state)}; a changed scene carries a [[changed in the revision]] note.`);
   notes.push(
     `From the wall: ${order.length} card${order.length === 1 ? "" : "s"}, ${beats} beat${beats === 1 ? "" : "s"}, about ${formatPages(boardEighths(state))} of ${formatPages(state.targetEighths)} pages.`,
   );
@@ -104,9 +118,11 @@ export function toFountain(state, options = {}) {
       body.push("");
     }
     const marks = [];
+    const revisionMarksFor = (_list, card) => Boolean(revisionOf.get(card.id)?.revised);
     const cast = (note.characterIds ?? []).map((id) => nameOf.get(id)).filter(Boolean);
     if (cast.length) marks.push(`with ${cast.join(", ")}`);
     if (note.plants) marks.push("plants something to pay off later");
+    if (revisionMarksFor(marks, note)) marks.push(`changed in the ${state.revision.color} revision`);
     if (marks.length) {
       body.push(`[[${marks.join(" · ")}]]`);
       body.push("");
@@ -212,7 +228,7 @@ function sameWords(a, b) {
  * its text. Returns commands for the kernel, so every door applies the same.
  */
 export function mergeFountain(state, parsed) {
-  const order = readingOrder(state.notes);
+  const order = storyOrder(state);
   const used = new Set();
   const commands = [];
   let cursor = 0; // where in the wall's order the last match was
@@ -243,6 +259,7 @@ export function mergeFountain(state, parsed) {
     const anchor = order[cursor - 1] ?? order.at(-1);
     const headline = scene.synopsis || titleCase(scene.heading);
     const isPlace = scene.forced && Boolean(scene.synopsis);
+    const parts = splitHeading(scene.heading);
     const id = `scene-${Math.random().toString(36).slice(2, 8)}`;
     // A marked body is an unwritten scene: its words are the change line, not a page.
     const body = unmark(scene.text);
@@ -251,7 +268,8 @@ export function mergeFountain(state, parsed) {
       id,
       headline,
       change: body.marked ? body.text || "What changes?" : scene.text ? firstSentence(scene.text) : "What changes?",
-      location: isPlace ? titleCase(scene.heading) : "",
+      location: isPlace ? titleCase(parts.place) : "",
+      when: isPlace ? parts.when.toLowerCase() : "",
       text: body.marked ? "" : scene.text,
       x: anchor ? anchor.x + 40 : 140,
       y: anchor ? anchor.y + 40 : 140,

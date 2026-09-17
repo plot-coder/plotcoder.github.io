@@ -83,6 +83,8 @@ export type BoardNote = {
   payoffBoardId: string | null;
   /** Where the scene happens (R37): a phrase in the writer's words; empty until set. */
   location: string;
+  /** When the scene happens, as the writer says it — "night", "day four, dawn" — printed after the place on the heading (R55). Empty when unsaid. */
+  when: string;
   /** The scene's text in Fountain (R23 b): action, cues, dialogue; empty until written. */
   text: string;
   createdAt: string;
@@ -128,6 +130,8 @@ export type LeftQuestion = {
   /** The question's words when it was left; it comes back when they would differ. */
   text: string;
   since: string;
+  /** The writer's reason, when they gave one. */
+  why?: string;
 };
 
 export type Pose = { id: string; x: number; y: number; rotate: number };
@@ -155,9 +159,10 @@ export type Command =
       characterIds?: string[];
       plants?: boolean;
       location?: string;
+      when?: string;
       text?: string;
     }
-  | { type: "update_note"; id: string; headline?: string; change?: string; location?: string }
+  | { type: "update_note"; id: string; headline?: string; change?: string; location?: string; when?: string }
   | { type: "move_note"; id: string; x: number; y: number }
   | { type: "nudge_notes"; ids: string[]; dx: number; dy: number }
   | { type: "recolor_notes"; ids: string[]; color: NoteColor }
@@ -181,13 +186,14 @@ export type Command =
   | { type: "set_plant"; ids: string[]; plants: boolean }
   | { type: "set_payoff_board"; ids: string[]; boardId: string | null }
   | { type: "set_location"; ids: string[]; location: string }
+  | { type: "set_when"; ids: string[]; when: string }
   | { type: "apply_template"; template: string; beats?: Array<{ name: string; prompt: string; at: number }> }
   | { type: "set_text"; id: string; text: string }
   | { type: "lock_numbers"; order?: string[] }
   | { type: "unlock_numbers" }
   | { type: "start_revision"; name: string; color?: string }
   | { type: "end_revision" }
-  | { type: "leave_question"; kind: string; ids: string[]; text: string }
+  | { type: "leave_question"; kind: string; ids: string[]; text: string; why?: string }
   | { type: "ask_again"; kind: string; ids?: string[] };
 
 export type CommandResult = {

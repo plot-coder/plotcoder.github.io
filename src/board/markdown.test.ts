@@ -30,8 +30,6 @@ describe("Markdown out (R54)", () => {
         "",
         "### 1 · THE PIANO SHOP",
         "",
-        "*Maya finds the letter*",
-        "",
         "Her father kept the site's books by hand.",
         "",
         "**NESSA**  \nWho paid this?",
@@ -40,26 +38,26 @@ describe("Markdown out (R54)", () => {
         "",
         "### 2 · TOM LIES ABOUT THE JOB",
         "",
-        "*[Unwritten] Maya starts to doubt him.*",
+        "**[Unwritten]** Maya starts to doubt him.",
         "",
         "### 3 · THE LETTER IS READ ALOUD",
         "",
-        "*[Unwritten] The plan dies in the room.*",
+        "**[Unwritten]** The plan dies in the room.",
         "",
       ].join("\n"),
     );
   });
 
-  it("marks an unwritten scene's change line, in italics, so a reader can tell it from a page", () => {
+  it("marks an unwritten scene's change line with the mark in bold, so a reader can tell it from a page and from the synopsis line", () => {
     const text = toMarkdown(seedState(), { title: "Board 1" });
-    expect(text).toContain("*[Unwritten] She decides not to tell Tom.*");
+    expect(text).toContain("**[Unwritten]** She decides not to tell Tom.");
     expect(text).not.toContain("\nShe decides not to tell Tom.");
   });
 
   it("uses the board's name alone for a one-board project, and no premise line when there is none", () => {
     const text = toMarkdown(seedState(), { title: "Board 1" });
     expect(text.startsWith("# Board 1\n\n### 1 · MAYA FINDS THE LETTER\n")).toBe(true);
-    expect(text).not.toContain("**");
+    expect(text).not.toContain("**Can");
   });
 
   it("carries locked scene numbers", () => {
@@ -97,5 +95,45 @@ describe("plain text out (R54)", () => {
     expect(text).not.toContain(`${" ".repeat(GUTTER)}Maya starts to doubt him.`);
     expect(text).not.toMatch(/\n\n\n\n/);
     expect(text.endsWith("\n")).toBe(true);
+  });
+});
+
+describe("revisions and the when reach the text forms (round fourteen, entries 27, 33, 45)", () => {
+  const NOW2 = "2026-09-17T10:00:00.000Z";
+  function revised() {
+    let state = wall();
+    state = applyCommand(state, { type: "set_when", ids: ["maya-letter"], when: "night" }, NOW2).state;
+    state = applyCommand(state, { type: "start_revision", name: "Blue", color: "blue" }, NOW2).state;
+    state = applyCommand(state, { type: "set_text", id: "maya-letter", text: SCENE.replace("Who paid this?", "Who paid this? And when?") }, NOW2).state;
+    state = applyCommand(state, { type: "update_note", id: "tom-lies", change: "Maya starts to doubt him, hard." }, NOW2).state;
+    return state;
+  }
+
+  it("marks a changed scene's heading in Markdown and says the revision at the top", () => {
+    const text = toMarkdown(revised(), { title: "Pilot" });
+    expect(text).toContain("*Blue revision · 2026-09-17 · a scene changed since it began has \\* after its heading*");
+    expect(text).toContain("### 1 · THE PIANO SHOP - NIGHT \\*");
+    expect(text).toContain("### 2 · TOM LIES ABOUT THE JOB \\*");
+    expect(text).toContain("### 3 · THE LETTER IS READ ALOUD\n");
+  });
+
+  it("stars the changed lines in plain text's right margin, names the revision, and runs pages on with no gap", () => {
+    const text = toPlainText(revised(), { title: "Pilot" });
+    expect(text).toContain("BLUE REVISION · 2026-09-17");
+    expect(text).toContain(`1    ${"THE PIANO SHOP - NIGHT".padEnd(60)} 1`);
+    // The changed dialogue line is starred; the unchanged action line is not.
+    expect(text).toMatch(/Who paid this\? And when\? +\*\n/);
+    expect(text).not.toMatch(/Her father kept the site's books by hand\. +\*/);
+    // A card whose change line moved, still unwritten: its heading carries the star.
+    expect(text).toMatch(/2    TOM LIES ABOUT THE JOB +2 \*\n/);
+    expect(setLine({ kind: "action", text: "She waits." }, true)).toBe(`${" ".repeat(GUTTER)}She waits.`.padEnd(GUTTER + 60 + 1) + " *");
+  });
+
+  it("does not put a blank line between pages", () => {
+    let state = seedState();
+    const long = Array(70).fill("A line of action that runs on.").join("\n");
+    state = applyCommand(state, { type: "set_text", id: "maya-letter", text: long }, NOW2).state;
+    const text = toPlainText(state, { title: "Long" });
+    expect(text).not.toMatch(/runs on\.\n\n {5}A line of action/);
   });
 });

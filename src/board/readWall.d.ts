@@ -66,11 +66,13 @@ export type WallReading = {
   /** The questions the wall asks now. A left one (R53) is not here while its words hold. */
   findings: Finding[];
   /** Questions the writer has left, for now: the same question, with when it was left. */
-  left: Array<Finding & { since: string }>;
+  left: Array<Finding & { since: string; why?: string }>;
 };
 
 /** Rows top to bottom, cards left to right within a row. */
 export declare function readingOrder(notes: BoardNote[]): BoardNote[];
+/** Story order: reading order with each follows arrow pulling its source in front of its target (R56). */
+export declare function storyOrder(state: Pick<BoardState, "notes" | "arrows">, ids?: string[]): BoardNote[];
 export declare function readWall(
   state: BoardState,
   options?: {

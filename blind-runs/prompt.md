@@ -1,25 +1,25 @@
-# The blind-run prompt — round fourteen: the same feature, the fixes in hand
+# The blind-run prompt — round fifteen: a series, two boards
 
 Paste everything below the line into a fresh agent session. The credentials are
 already in the server's wiring: the test account is `test@test.com`, password
 `test`, a throwaway that holds nothing of anyone's. The agent checks and
-empties it itself at the start of the round, in case round thirteen left
+empties it itself at the start of the round, in case round fourteen left
 something.
 
-Round fourteen runs "Ninety-Nine" again through the published package, so the
-wall is comparable with round thirteen's, and takes the directions further
-past the wall. Round thirteen's six chosen findings were fixed on 2026-09-15
-(`round-thirteen-report.md`); this round measures whether the fixes hold in a
-stranger's hands, and what the directions round thirteen never gave will find.
-Nothing here tells the agent what those were.
+Round fifteen is the first round on a **project of two boards**. Every round
+since four has built one board; a series with two episodes is the case no
+round has measured. The treatment is new, "The Weighbridge", two half-hour
+episodes with a premise above them, one cast, and things planted in the
+first that pay off in the second. Nothing here tells the agent what we expect
+to go wrong.
 
 Before you paste:
 
 1. **Land the fixes where the round will find them.** The round reads the
    on-ramp at plotcoder.com and runs `npx -y plotcoder-board@latest`, so
-   both have to carry the fixes before the session starts: merge the pull
-   request to `main`, wait for the Pages deploy (the on-ramp and the guide),
-   then release the package — from a current `main`:
+   both have to carry the current code before the session starts. The site
+   is deployed from `main` on every merge; the package is not. From a
+   current `main`:
 
    ```bash
    npm version patch && git push && git push --tags
@@ -34,25 +34,29 @@ Before you paste:
    claude mcp add plotcoder-board -s user -e PLOTCODER_EMAIL=test@test.com -e PLOTCODER_PASSWORD=test -- npx -y plotcoder-board@latest
    ```
 
-   A server wired from inside a session connects only on the next one, which
-   is why the person does this and not the agent.
+   The `claude` command is not on this machine, so the wiring is by hand in
+   `~/.claude.json`, user scope, with the two variables in `env`. A server
+   wired from inside a session connects only on the next one, which is why
+   the person does this and not the agent.
 3. Start the session with no folder (the app's "No folder" scratch workspace
    is right). Inside a repo worktree the harness puts `CLAUDE.md` in the
    agent's context, and the run is not blind.
 4. The agent stops after its first calls with the first friction entries and
-   waits for you to say "go on". When it has read the wall back, stay: answer
-   its questions and direct it the way you would a person. Directions worth
-   giving this round, in your own words and one at a time — they are the
-   ones round thirteen had no tool for, and the ground past them:
-   - the lay-by: take the quarter page off it and leave it unsized;
-   - delete the ferry card, then bring it back;
-   - the bus station at dawn belongs in Act three: put it there;
-   - after an edit or two, leave whichever questions you would leave;
-   - write the pier at Fenit; then the script out as Markdown for a producer
-     in Google Docs, as plain text for an email, and as Final Draft for an
-     agency — and ask what each one is called and how the unwritten scenes
-     read in it;
-   - how long is it, as a script and as a wall;
+   waits for you to say "go on". When it has read the walls back, stay:
+   answer its questions and direct it the way you would a person. Directions
+   worth giving this round, in your own words and one at a time — the ground
+   a second board opens, and the ground past it:
+   - the shim under the plate should open episode two, not close episode
+     one: put it there;
+   - Rooney's driver is at the plate in the last scene of episode two: put
+     him in it;
+   - Dana's page, across both episodes;
+   - the half-hour structure beside episode one, without laying cards;
+   - write the re-test in episode two; then the script out as Final Draft
+     for an agency — and ask what goes out, one file or two, what each is
+     called, and how the unwritten scenes read;
+   - how long is it, the series and each episode, as a wall;
+   - rename the series;
    - anything else a writer would ask on day two.
    It brings you the new entries at each step; "log so far" gets the whole
    log, "stop" gets the report.
@@ -98,18 +102,20 @@ the run: do not log it. If the account is already empty, say so and carry on.
 2. Read the treatment at the end of this message. It answers, up front, the
    questions the app says a treatment should answer. Use those answers; ask
    me only about what they leave open.
-3. Build it as a wall: the scenes as cards, the major turns marked, the cast,
-   the places, the arrows, the acts, the plants and their payoffs, the film's
-   central question. It is a feature: there is no series premise, and the
-   project holds this one board.
-4. Read the wall back to me: what is there, and what it asks.
+3. Build it: two episodes of a series, in one project, as the treatment
+   lays them out — the scenes as cards, the major turns marked, the cast,
+   the places, when each scene happens, the arrows, the acts, the plants
+   and where each pays off, the series' premise and each episode's central
+   question.
+4. Read it back to me: what is there, episode by episode, and what it asks.
 5. **Then wait for me.** I will answer your questions and give you directions,
-   one at a time, and they will go past the wall: a scene to write, the pages
-   to read back, the script to take out, in more than one form, for people who do not use
-   a screenwriting app. Do what I ask and nothing more. When a direction could mean
-   two things on this wall, ask before you act. After each direction, tell me
-   in a line what you did and what the app said back, quote the reply whenever
-   it surprised you, and give me the friction entries that direction produced.
+   one at a time, and they will go past the wall: a scene to move, a person
+   to follow, a scene to write, the script to take out for people who do not
+   use a screenwriting app. Do what I ask and nothing more. When a direction
+   could mean two things on these walls, ask before you act. After each
+   direction, tell me in a line what you did and what the app said back,
+   quote the reply whenever it surprised you, and give me the friction
+   entries that direction produced.
 6. Keep going until I say **stop**. Then hand me the report.
 
 I will not ask you for the log. You bring it to me, as it grows, at the
@@ -149,8 +155,8 @@ not fix them; that is my job.
 - when you are wired in and have made the first calls, before you build —
   and **stop there and wait** for me to say go on, so I see the way in
   before the wall;
-- when the wall is built, before you read it back;
-- with the reading, when you hand me the wall and its questions;
+- when both episodes are built, before you read them back;
+- with the reading, when you hand me the walls and their questions;
 - after every direction of mine, with the line that says what you did.
 
 Each time, the entries since the last time, numbered on from where the log
@@ -179,133 +185,171 @@ anything you smooth over is something I will not fix.
 
 ## The treatment
 
-# Ninety-Nine — feature treatment
+# The Weighbridge — two episodes of a series
 
 **What this treatment answers, up front.**
 
-- Length: a feature, ninety pages.
-- The project is "Ninety-Nine"; this board is "Feature". There is no series
-  premise: this is a film, not an episode of anything.
-- The central question is stated below, verbatim.
-- The turns, nine: the repossession letter; Ciara agrees to drive; the van
-  dies at Mallow; the fair at Kilmallock; the letter in the glove box; the
-  fight on the pier at Fenit; Ciara at the bus station; Joe refuses Noreen's
-  price; the chime plays. Everything else is a scene.
-- Acts, three: one runs from the yard to Ciara agreeing to drive; two from
-  the road out of Cork to Ciara at the bus station; three from Joe alone in
-  the van to the end.
-- Places are named in each paragraph. The van is a place when a scene
-  happens inside it; the road it is on is not. The yard, the kitchen and the
-  bedroom are one place: Joe's house.
-- When it matters: the film runs over five days in August. Day one is the
-  yard through Ciara agreeing. Day two is Mallow. Day three is Kilmallock
-  and the glove box. Day four is Fenit and the bus station. Day five is the
-  rest.
-- Names: Joe Deasy, Ciara Deasy, Noreen Blaney. The mechanic at Mallow and
-  the boy at the fair are unnamed; call them by those roles. Maeve, Ciara's
-  mother, is in no scene; she belongs in notes, not the cast. The bank is not
-  a person.
-- Planted: the chime that will not play is planted in the yard and pays off
-  in the last scene; Maeve's letter is planted in the glove box and pays off
-  on the pier at Fenit; the boy's ten-euro note is planted at the fair and
-  pays off at the bus station. Joe's cough is not a plant. It pays off
-  nowhere, in this film or any other; if the wall asks about it, the answer
-  is that it is not planted, so do not fold it.
-- Lengths: the fair at Kilmallock runs four pages; the phone call from the
-  bank runs a quarter of a page; the ferry across the Shannon runs half a
-  page. Leave the rest unsized.
+- Length: a half-hour series. Each episode is thirty pages. There are two
+  episodes here; the series would run to six.
+- The project is "The Weighbridge". It holds two boards, one per episode:
+  "Gross Weight" and "Certified", in that order.
+- The series premise is stated below, verbatim, and each episode has its own
+  central question, stated at its head, verbatim.
+- The turns, five in each episode, are named at each episode's head.
+  Everything else is a scene.
+- Acts: each episode has a cold open and two acts. Where each break falls
+  is marked in the text.
+- Places are named in each paragraph. The weighbridge is one place: the
+  plate, the office beside it, the yard around it, and underneath it. The
+  café is one place. The house behind the café is one place. The church at
+  Ballinlough is one place.
+- When it matters: episode one runs over two days. Episode two runs over
+  one day twelve days later, and the dawn after it. The days are named in
+  each paragraph, and the time of day where it matters.
+- Names: Dana Kerr, Oisín Kerr, Bríd Nolan, Fintan Rooney. The inspector and
+  Rooney's driver are unnamed; call them by those roles. They are one cast for
+  the series, not one per episode. Tom Kerr, Dana's father, is dead before
+  the first scene and is in no scene; he belongs in notes, not the cast. The
+  bank, the county and the quarry are not people.
+- Planted, and where each pays off:
+  - the second column in the ledger is planted in episode one's cold open and
+    pays off in episode one, when Bríd says what it is;
+  - Oisín's photograph of the ledger is planted in episode one and pays off
+    in **episode two**, when the ledger is gone;
+  - the inspector's letter is planted in episode one and pays off in
+    **episode two**, when the inspector arrives;
+  - the shim under the plate is planted at the end of episode one and pays
+    off in **episode two**, when Dana takes it out.
+  - Dana's job in Manchester is not a plant. It pays off nowhere, in these
+    episodes or any other; if the wall asks about it, the answer is that it
+    is not planted, so do not fold it.
+- Lengths: in episode one, the funeral runs two pages and the inspector's
+  letter a quarter of a page. In episode two, the re-test runs three pages
+  and the evening in the house half a page. Leave the rest unsized.
 - Invent nothing: no looks, no voices, no facts beyond these lines. Where a
   scene is here, its place and its people are here; if a scene seems to need
   someone the treatment does not put in it, ask.
 
-**The film asks:** can Joe let the van go without losing the last of what it
-carried?
+**The series asks:** can a place everyone passes through become the place
+someone stays?
 
 ---
 
-Joe Deasy, sixty-one, sells ice cream from a 1994 van in the estates of
-Cork's north side, as he has for thirty years. In the yard beside his house
-he is under the bonnet when the post comes: a letter from the bank. The van is
-to be repossessed in fourteen days unless the arrears are paid. He reads it
-twice, folds it into his shirt pocket, and goes back under the bonnet. The
-chime on the roof has not played in three years. He tries it. It does not.
+## Episode one — Gross Weight
 
-In the kitchen that evening Joe rings Ciara, his daughter, thirty-four, a
-stenographer in Dublin. He does not mention the bank. He asks whether she
-would come down for a few days. She says she will think about it, which they
-both know means no.
+**The episode asks:** will Dana sell the weighbridge before she learns what
+it was for?
 
-Ciara comes anyway. In the yard the next morning she finds the letter in his
-shirt on the line. She tells him the van is a write-off and the bank can have
-it. He tells her a man in Donegal will pay four thousand for it, cash, if it
-is driven up to him by Friday. She says he cannot drive four hundred miles in
-that. He says no, but she can. She agrees to drive.
+**The turns, five:** Fintan makes his offer; Bríd says what the second column
+is; Dana weighs the truck true; Bríd says the plate reads light; the shim.
 
-On the road out of Cork, inside the van, they do not talk. Ciara drives; Joe
-works the till drawer open and shut.
+**Cold open.** The weighbridge at Ballinlough, dawn, day one. A quarry truck
+rolls onto the plate. In the office beside it Bríd Nolan, fifty-eight, who
+cooks in the café and has read the scale every morning for twelve years,
+writes the weight in a ledger, then writes a second number beside it, and
+hands the driver a docket with the first.
 
-The van dies on the main street of Mallow. The mechanic, a man Joe's age, looks
-at it and says the fuel pump is gone and he can have one by tomorrow. Joe
-counts what he has. It is not enough for the pump and the fuel to Donegal
-both.
+**Act one.** The café, morning, day one. Dana Kerr, forty-four, arrives from
+Manchester with her son Oisín, fifteen. Bríd gives her the keys to
+everything and says the funeral is at eleven. Dana says she is selling the
+place. Bríd says people generally do.
 
-In the mechanic's yard that night, inside the van, Joe tells Ciara they will
-sell ice cream at the fair in Kilmallock tomorrow and make the difference. She
-says she has not scooped since she was eleven. He says it comes back.
+The church at Ballinlough, midday, day one. Tom Kerr's funeral; two pages.
+Fintan Rooney, sixty, who runs the haulage out of the quarry, shakes Dana's
+hand at the door and says her father was a fair man to deal with, and that
+he will make her an offer on the place before she goes back.
 
-At the fair at Kilmallock, the van open, they sell all day. Ciara is bad at it
-and then good at it. A boy of about ten pays for a cone with a ten-euro note,
-takes his change, and comes back an hour later to say she gave him too much.
-She tells him to keep it. He will not. He puts the note on the counter and
-runs. By evening they have the money for the pump and the fuel and forty euro
-over. It is the first time in the film either of them laughs.
+The office at the weighbridge, afternoon, day one. Dana goes through her
+father's drawers and finds the ledger. Two columns of weights, side by side,
+every day for years, the second always heavier. She does not know what the
+second is. Oisín photographs the open pages on his phone for something to do.
 
-Inside the van, parked on the road out of Kilmallock, Ciara looks in the glove
-box for the map and finds a letter in her mother's hand, addressed to her,
-dated the year she was fourteen, never posted. She does not open it. She puts
-it back.
+The café, evening, day one. Dana asks Bríd about the second column. Bríd says
+the first is what goes on the docket and the second is what the truck
+weighed. Tom under-weighed Rooney's loads by a tonne for twelve years, and
+Rooney's trucks crossed the county bridge at Ballinlough overloaded on legal
+paper every day of it. The second column was Tom's own conscience. Nobody
+else has ever seen it.
 
-They cross the Shannon on the ferry at Tarbert. Half a page: the two of them
-at the rail, the van behind them, nothing said.
+The house behind the café, night, day one. Oisín asks Dana whether they are
+staying. She says no. He says he liked the café. She says he liked the chips.
 
-On the pier at Fenit, where the van is parked for the night, Ciara asks Joe
-what the letter is. He says he does not know what she means. She takes it out
-and shows him. He says Maeve wrote it the week before she left and asked him
-to give it to Ciara when she was old enough, and he never decided when that
-was. Ciara says he had twenty years to decide. She opens it on the pier and
-reads it and does not tell him what it says. She says she is going home in
-the morning.
+**Act two.** The weighbridge, dawn, day two. Rooney's truck comes onto the
+plate. Rooney's driver waits at the office window for his docket. Dana
+weighs it, writes the number the scale shows, once, and hands it to him.
+He reads it, looks at her, and rings Rooney from the cab.
 
-In the van at dawn Joe drives, badly, to Tralee, and Ciara gets out at the
-bus station. She stands with her bag. Joe says the van will not make Donegal
-without her. She says he should have thought of that. In her coat pocket she
-finds the boy's ten-euro note, which she had put there at the fair. She looks
-at it. She gets on the bus.
+The café, morning, day two. Fintan comes in and sits down. He offers to buy
+the weighbridge and the café for a good price, today, and says this
+morning's docket was a mistake she will want to correct. Dana asks what
+happens if she does not. He says the bridge at Ballinlough is rated for
+forty tonnes and the county has never had cause to wonder what crosses it.
 
-Joe alone in the van, on the road north of Tralee. He pulls in. He coughs for a
-long time. He rings the bank from the lay-by: a quarter of a page. He asks for
-one more week. They say no.
+The office, afternoon, day two. In the post, a letter from the county's
+weights and measures inspector: the weighbridge's annual certification is
+due, and the inspector will attend on the fourteenth with test weights. A
+quarter of a page.
 
-At the bus station in Tralee, Ciara has not gone. The bus has, and she is
-sitting where it was. Joe finds her there when he drives back. Neither of them
-says anything about it. She gets in.
+The café, evening, day two. Dana tells Bríd she is not selling yet. Bríd
+says in that case there is a thing she will want to know: the plate reads a
+tonne light and always has, since before Bríd's time, and Tom's second
+column was the correction, not the crime.
 
-Inside the van, on the road through Clare, Ciara tells Joe what the letter
-said. It said her mother was leaving and was not coming back, and that it was
-not because of Ciara, and that she was to look after her father because he
-would not look after himself. Joe says that last part was true.
+The weighbridge, night, day two. Dana and Oisín underneath the plate with a
+torch. Oisín finds a steel wedge, the size of a fist, jammed under one of the
+load cells. Dana looks at it for a long time and leaves it where it is. She
+does not tell him why. End of episode.
 
-At Noreen Blaney's yard in Donegal, on the fifth day, Noreen walks round the
-van and offers two thousand. The bank will take three. Joe says four was the
-price. Noreen says four was the price on Monday for a van that ran. Joe
-refuses. Ciara watches him refuse and does not stop him.
+---
 
-In the van outside Noreen's gate, Ciara asks him what he is going to do. He
-says he is going to drive it home and let them come and take it, and at least
-it will be in the yard when they do. She says that is the stupidest thing she
-has ever heard. Then she says she will drive.
+## Episode two — Certified
 
-In Noreen's yard, the next morning, Joe hands Noreen the keys for three
-thousand and a promise that she will not scrap it. Ciara stands beside him.
-Noreen starts the van to move it in, and the chime plays: the whole tune,
-first time in three years. Nobody knows why. Joe laughs. That is the end.
+**The episode asks:** can Dana keep the weighbridge honest and keep it at
+all?
+
+**The turns, five:** the plate fails; the shim comes out; Dana refuses
+Fintan; the photograph shown; one column.
+
+**Cold open.** The weighbridge, morning, day fourteen. The inspector, a woman
+with a van of test weights and a clipboard, arrives at nine and says she
+will need the plate clear for an hour.
+
+The office, morning, day fourteen. Dana goes to the drawer for the ledger.
+It is not there. Bríd says Fintan was in the café yesterday afternoon and
+went through to the office for the toilet. Dana says nothing. Oisín says he
+has it, and holds up his phone.
+
+**Act one.** The café, morning, day fourteen. Fintan arrives, sits, and
+orders tea. He says the inspection is a formality and Tom always managed it
+without fuss. Dana understands that the wedge has been under the plate for
+every certification for twelve years and that her father passed each one.
+
+The weighbridge, midday, day fourteen. The inspector sets the test weights
+on the plate. It reads a tonne light. She says it fails, and that it can be
+adjusted and re-tested this afternoon or she can fail it today and come back
+in a month; she can be back at four.
+
+Underneath the plate, early afternoon, day fourteen. Dana and Oisín with the
+torch. Dana takes the wedge out and puts it in her coat pocket. Oisín asks
+whether that is the fix or the crime. She says both.
+
+**Act two.** The café, afternoon, day fourteen. Fintan has heard. He says a
+true plate costs him a tonne a load and he runs forty loads a week, the
+quarry contract is on the tonnage, and there is a bridge at Kilbeg that will
+weigh him the way he likes, and when his trucks go to Kilbeg the café's trade
+goes with them. Dana says then go to Kilbeg.
+
+The weighbridge, four o'clock, day fourteen. The inspector re-tests; three
+pages. The plate reads true. She signs the certificate. Then she asks, as
+she always does, to see the ledger for the last year. Dana looks at Oisín.
+Oisín gives her his phone. Two columns. The inspector reads for a long time
+and asks whose hand the second column is in. Dana says her father's. The
+inspector says she will be back in a month, and not alone.
+
+The house behind the café, evening, day fourteen. Half a page. Oisín asks
+why she showed it. Dana says because it was true, and because Fintan Rooney
+would have found the ledger useful for the rest of her life.
+
+The weighbridge, dawn, day fifteen. A truck comes onto the plate. It is not
+one of Rooney's. In the office, Bríd reads the weight and writes it down
+once. Dana watches from the window. End of episode.

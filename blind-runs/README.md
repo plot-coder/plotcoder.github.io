@@ -8,7 +8,10 @@ just what produces it.
 The practice is Robert's, from 2026-09-13. Fourteen rounds have been run;
 every finding is fixed or decided — see `REQUIREMENTS.md`, "The blind run",
 and the `friction, fixed` entries in the changelog. Round fourteen's report
-says at its head what was built from it and what was left on purpose.
+says at its head what was built from it and what was left on purpose. Round
+fifteen is cued in `prompt.md`: the first round on a project of two boards.
+The practice continues because it measures the thing the app is for — an
+agent helping a person turn an idea into a story (Robert, 2026-09-17).
 
 ## The rules that make a round worth running
 
@@ -42,6 +45,7 @@ says at its head what was built from it and what was left on purpose.
 | Twelve | The published package, the treatment complete | "Low Season" | The directions | 33, all fixed; asked for R52 and R53 |
 | Thirteen | The published package, a feature, past the wall | "Ninety-Nine" | Pages: a scene written, Markdown out, the page count | 32 (`round-thirteen-report.md`); the six chosen first fixed, the rest open |
 | Fourteen | The published package, the same feature, the fixes in hand | "Ninety-Nine" | Past the wall and into production: exports three ways and back, the lock, a revision, a person's page | 49 (`round-fourteen-report.md`); fixed or decided the next day |
+| Fifteen | The published package, a series of two episodes | "The Weighbridge" | Not yet run: two boards, one cast, plants across the gap, a scene moved between episodes, the script out for both | — |
 
 ## What the rounds keep finding
 
@@ -89,12 +93,17 @@ published package, wired before the session, and were the first to reach the
 directions phase. Each round's findings are itemised in `REQUIREMENTS.md`,
 "The blind run".
 
-- `prompt.md` — round fourteen: the same door and the same feature, run
-  against the package that carries round thirteen's six fixes, with the
-  writer directing past the wall again and further — the directions that
-  round thirteen found no tool for, and the script out three ways. The test
-  account is filled in (`test@test.com`, password `test`; Robert's decision,
-  so the prompt pastes without editing). Paste everything below its divider.
+- `prompt.md` — round fifteen: the same door, a series of two episodes for
+  the first time, with the writer directing across the two boards — a scene
+  moved from one episode to the other, a person followed across both, the
+  script out for both. The test account is filled in (`test@test.com`,
+  password `test`; Robert's decision, so the prompt pastes without editing).
+  Paste everything below its divider.
+- `round-fifteen-treatment.md` — "The Weighbridge", two half-hour episodes
+  with a premise, one cast, three plants that pay off in the second episode
+  and one thing that is not a plant. Embedded in the current prompt.
+- `round-fourteen-prompt.md` — round fourteen's own instructions, as they
+  ran, without their copy of the treatment.
 - `round-thirteen-prompt.md` — round thirteen's own instructions, as they
   ran. Its copy of the treatment is not kept: one treatment, one file.
 - `round-fourteen-report.md` — the agent's report from round fourteen,
@@ -110,8 +119,11 @@ directions phase. Each round's findings are itemised in `REQUIREMENTS.md`,
   used.
 
 Rounds four to twelve used a TV pilot so they exercised a series premise
-above an episode logline. Rounds thirteen and fourteen use a feature so the
+above an episode logline. Rounds thirteen and fourteen used a feature so the
 app is measured on the primary user's form, with no premise and one board.
+Round fifteen uses two episodes so the project model is measured at last:
+one cast across two boards (R51), a fold paying off on another board (R50),
+and what a writer asks of a wall that is two walls.
 
 **What a round leaves behind, and what it does not.** Keep the report, whole
 and unedited: it is cheap, and it is the only record not written by whoever

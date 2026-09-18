@@ -1284,6 +1284,9 @@ describe("round sixteen", () => {
     expect(await six.callTool("set_open", { ids: [id], open: "the buyer" })).toContain('1 card(s) open: "the buyer"');
     // A write on an open card does not close it, and says so (round eighteen, entry 31).
     expect(await six.callTool("set_location", { ids: [id], location: "the kitchen" })).toContain('is still open (the buyer): the words stay until set_open "" clears them');
+    // Round eighteen, entry 46: an open card without a place is named as such on the pages, not read as a slugline.
+    await six.callTool("set_location", { ids: [id], location: "" });
+    expect(await six.callTool("read_pages")).toContain("· open card · no place: the headline stands in for the heading, not a place");
     expect(await six.callTool("set_open", { ids: ["ghost"], open: "x" })).toContain("No card with id ghost");
   });
 
@@ -2196,13 +2199,20 @@ describe("round ten's replies", () => {
     await ten.callTool("create_group", { noteIds: [ids[0], ids[1]], title: "Act one" });
     const read = await ten.callTool("read_wall");
     expect(read).toContain("runtime: about");
+    expect(read).toMatch(/\(of its \d+ cards, 0 measured from written text \(0 pages\), \d+ sized by the writer \([0-9/ ]+\), \d+ unsized and read as a page each \([0-9/ ]+\); page_count is the script so far\)/);
+    expect(read).toMatch(/a beat's own pages are in no run — the 1 beat holds? about [0-9/ ]+ pages between them/);
     expect(read).toContain('groups: "Act one" — 2 card(s), about 2 pages, read as an act');
     const tidy = await ten.callTool("organize");
     expect(tidy).toMatch(/an opening row of \d+ card\(s\) before the first beat, then 1 row\(s\), one per beat/);
     expect(await ten.callTool("rename_character", { id: board.characters[0].id, name: "Nessa" })).toMatch(/the name changed on \d+ cards?/);
     const wrote = await ten.callTool("write_scene", { id: ids[0], text: "INT. OFFICE - NIGHT\n\nNessa opens the ledger.\n\nNESSA\nEvery month." });
     expect(wrote).toMatch(/\d+ line\(s\) as they print .*measured at [0-9/ ]+ of a 55-line page/);
-    expect(await ten.callTool("page_count")).toContain("this is the script so far, not the runtime");
+    // Round eighteen, entries 43 and 45: the write says how far the runtime moved, and the reading says whose number the runtime is.
+    expect(wrote).toMatch(/the page an unsized card is read as, so the runtime moved [0-9/ ]+ down\)/);
+    expect(await ten.callTool("read_wall")).toMatch(/\(of its \d+ cards, 1 measured from written text \([0-9/ ]+ pages\), .*; page_count is the script so far\)/);
+    const count = await ten.callTool("page_count");
+    expect(count).toContain("this is the script so far, not the runtime");
+    expect(count).toMatch(/1 of \d+ measured and the rest estimated/);
   });
 
   it("lists the places side by side, and names a near match when a place is set", async () => {

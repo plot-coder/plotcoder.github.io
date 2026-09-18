@@ -963,13 +963,23 @@ const SAMPLE_NOTE = "sample: this is the wall PlotCoder starts with (Maya, Tom, 
 
 // --- Reporting -------------------------------------------------------------
 
+/** What kinds of number a runtime folds together: measured from text, set by the writer, or the default page (round fifteen, entry 39). */
+function runtimeKinds(state) {
+  const measured = state.notes.filter((note) => isMeasured(note)).length;
+  const sized = state.notes.filter((note) => !isMeasured(note) && note.lengthEighths !== null).length;
+  const unsized = state.notes.length - measured - sized;
+  if (!state.notes.length) return "";
+  return `; of its ${state.notes.length} cards, ${measured} measured from written text, ${sized} sized by the writer, ${unsized} unsized and read as a page each`;
+}
+
 function summarize(state) {
   const nameOf = new Map(state.characters.map((character) => [character.id, character.name]));
   const notes = storyOrder(state)
     .map((note) => {
       const cast = note.characterIds.map((id) => nameOf.get(id) ?? id);
       const who = cast.length ? `, cast: ${cast.join(", ")}` : "";
-      const plant = note.plants ? (note.payoffBoardId ? ", plants → pays off later" : ", plants") : "";
+      // The board it pays off on, named here as read_wall names it (round fifteen, entry 44).
+      const plant = note.plants ? (note.payoffBoardId ? `, plants → pays off later on "${lastHeld?.project?.boards?.find((meta) => meta.id === note.payoffBoardId)?.name ?? note.payoffBoardId}"` : ", plants") : "";
       const snap = state.revision?.snapshot?.[note.id];
       const revised = snap && (snap.headline !== note.headline || snap.change !== note.change || (snap.text ?? "") !== (note.text ?? "") || (snap.location ?? "") !== (note.location ?? "")) ? `, changed in ${state.revision.color}` : "";
       const place = note.location ? `, at: ${note.location}` : "";
@@ -1044,8 +1054,8 @@ function summarize(state) {
     `left, for now: ${leftCount ? `${leftCount} question(s) the writer left; read_wall lists them` : "none"}`,
     `beats: ${beats}, scenes: ${scenes}`,
     state.targetEighths === DEFAULT_TARGET_EIGHTHS
-      ? `runtime: about ${formatPages(runtime)} pages (an estimate from the cards; a page runs about a minute); no target set — set_target for a pilot (60) or a half-hour (30); against the feature default of 120 it would be ${formatPages(-over)} under`
-      : `runtime: about ${formatPages(runtime)} pages of a ${formatPages(state.targetEighths)}-page target — ${over > 0 ? `${formatPages(over)} over` : over < 0 ? `${formatPages(-over)} under` : "on it"} (an estimate from the cards; a page runs about a minute)`,
+      ? `runtime: about ${formatPages(runtime)} pages (an estimate from the cards; a page runs about a minute); no target set — set_target for a pilot (60) or a half-hour (30); against the feature default of 120 it would be ${formatPages(-over)} under${runtimeKinds(state)}`
+      : `runtime: about ${formatPages(runtime)} pages of a ${formatPages(state.targetEighths)}-page target — ${over > 0 ? `${formatPages(over)} over` : over < 0 ? `${formatPages(-over)} under` : "on it"} (an estimate from the cards; a page runs about a minute)${runtimeKinds(state)}`,
     `notes: ${state.notes.length}, groups: ${state.groups.length}, arrows: ${state.arrows.length}, cast: ${state.characters.length}`,
     "cards (in story order — the follows arrows over the rows; each with its id):",
     notes || "  (no cards)",
@@ -3026,6 +3036,16 @@ server.registerTool(
         `premise: ${project.premise ? `"${project.premise}"` : "(not set)"}`,
         `boards: ${project.boards.length}`,
         describeBoards(project, boards, changedAt),
+        // The project's length as one line, so a series is not arithmetic by hand (round fifteen, entry 38).
+        ...(project.boards.length > 1
+          ? (() => {
+              const states = project.boards.map((meta) => (isBoardState(boards[meta.id]) ? normalizeState(boards[meta.id]) : null)).filter(Boolean);
+              const pages = states.reduce((sum, state) => sum + boardEighths(state), 0);
+              const target = states.reduce((sum, state) => sum + state.targetEighths, 0);
+              const cards = states.reduce((sum, state) => sum + state.notes.length, 0);
+              return [`the whole project: ${cards} cards, about ${formatPages(pages)} of ${formatPages(target)} pages across ${states.length} boards (each board's runtime is an estimate unless every scene is written)`];
+            })()
+          : []),
       ].join("\n"),
       project,
     );

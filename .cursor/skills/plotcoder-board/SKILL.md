@@ -70,8 +70,8 @@ folder whose wall you mean.
 **Call these first, in any order:** `list_words` (the room's words), `read_wall`
 (what is here and what it asks — a fresh folder holds a sample wall, Maya and
 Tom and the letter, and says so; it is not the writer's), `list_workflows`
-(what a writer can ask for), `list_reminders` (the writer's principles) — then
-change anything.
+(what a writer can ask for), `list_reminders` (the writer's principles),
+`list_board` (the records and their ids) — then change anything.
 
 ### Reading
 
@@ -84,7 +84,8 @@ target — the order `organize` lays the wall out in. A card wired between two
 others reads there before any tidy. `list_board`'s rows are the nearest thing
 to a look at the wall; with no app running, `export_fountain` is the wall in
 order as text. Every reply's first line names the project it read and how
-many the account holds. Replies are prose; the same reading as JSON follows
+many the account holds; the app's own lists, `list_words` and
+`list_workflows`, read no project and say so instead. Replies are prose; the same reading as JSON follows
 only when the server is started with `PLOTCODER_JSON=1`.
 
 - `list_board` — the logline, the beat/scene counts, the runtime estimate against
@@ -204,7 +205,7 @@ card of another board is not asked about as uncast here.
   cards, and is refused while another board has them on a card — cast them
   off there first, or leave them.
 - `read_character` — a person's page back, by id or name, across every
-  board of the project (one cast, one page, R51): the five lines as
+  board of the project (one cast, one page): the five lines as
   they stand and the cards they are on. `list_board` says which lines are
   written; this says what they say.
 - `update_character` — write a person's page by `id` or `name`: `looks`, `voice`, `wants`,
@@ -366,7 +367,7 @@ card of another board is not asked about as uncast here.
   the card leaves with its cast, place, when, rank, length, text and fold, its
   arrows stay behind (a setup into it leaves its fold unpaid; draw new arrows
   on the new board), and the new board is then the open one. Undo is per
-  board: one step there, and one on the board it left. Within a board, it It rewires the follows arrows (what pointed at
+  board: one step there, and one on the board it left. Within a board, it rewires the follows arrows (what pointed at
   the card points at what it pointed at; the card lands between the target
   and what followed it) and tidies the wall, as one step `undo` takes back
   whole. A scene that lands beside a card of an act joins that act, so the

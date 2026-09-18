@@ -4,7 +4,7 @@ import { AGENTS, agentsAsText } from "./agents";
 describe("the agent on-ramp (R43)", () => {
   it("names the three doors, the three calls in order, and the rule about accounts", () => {
     expect(AGENTS.doors.map((door) => door.id)).toEqual(["mcp", "shell", "hosted", "account", "page", "where"]);
-    expect(AGENTS.first.map((item) => item.tool)).toEqual(["list_words", "read_wall", "list_workflows", "list_reminders"]);
+    expect(AGENTS.first.map((item) => item.tool)).toEqual(["list_words", "read_wall", "list_workflows", "list_reminders", "list_board"]);
     expect(AGENTS.doors[0].text).toContain("npx -y plotcoder-board@latest");
     expect(AGENTS.doors[2].text).toContain("--transport http");
     expect(AGENTS.doors[1].text).toContain("plotcoder-board@latest call");

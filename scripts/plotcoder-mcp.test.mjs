@@ -2356,7 +2356,7 @@ describe("round twelve's decisions: leaving a question, a structure beside the w
     const read = await twelve.callTool("read_wall");
     expect(read).toContain('(left 2026-');
     expect(read).toContain('"the third act is the third act"');
-    expect(read).toContain("left by the writer, not clean: sag");
+    expect(read).toContain("left by the writer, so not clean: [sag]");
     expect(read).not.toMatch(/checked and clean: [^\n]*no run out of proportion/);
     expect(await twelve.callTool("ask_again", { kind: "sag" })).toContain("Asked again");
   });

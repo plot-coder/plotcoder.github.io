@@ -55,7 +55,7 @@ import crypto from "node:crypto";
 import { describeRuns, describeSetups, readWall } from "../src/board/readWall.js";
 import { compareStructure, describeComparison, MATCH_PAGES } from "../src/board/compareStructure.js";
 import { GAP, ROW_WIDTH, organizePoses } from "../src/board/organize.js";
-import { sceneLineCount } from "../src/board/paginate.js";
+import { parseScene, sceneLineCount } from "../src/board/paginate.js";
 import {
   addBoard,
   addStructure,
@@ -986,13 +986,35 @@ const SAMPLE_NOTE = "sample: this is the wall PlotCoder starts with (Maya, Tom, 
 
 // --- Reporting -------------------------------------------------------------
 
+/**
+ * The cues in a scene's text against the cast (round sixteen, entry 30): a cue
+ * matches a person by the whole name, so DANA is not "Dana Kerr", and the
+ * reply says which cues found nobody and whom they nearly named.
+ */
+function cueReport(state, text) {
+  const names = [...new Set(parseScene(text ?? "").filter((element) => element.kind === "speech" && element.name).map((element) => element.name.replace(/\s*\(.*\)\s*$/, "").trim()).filter(Boolean))];
+  if (!names.length) return "";
+  const cast = state.characters ?? [];
+  const parts = names.map((cue) => {
+    const whole = cast.find((person) => person.name.trim().toLowerCase() === cue.toLowerCase());
+    if (whole) return `${cue} (in the cast)`;
+    const near = cast.filter((person) => person.name.toLowerCase().split(/\s+/).includes(cue.toLowerCase()));
+    return near.length
+      ? `${cue} (nobody by that whole name — cues match by the whole name, and the cast has ${near.map((person) => `"${person.name}"`).join(", ")}: cue ${near.length === 1 ? near[0].name.toUpperCase() : "the whole name"})`
+      : `${cue} (nobody in the cast)`;
+  });
+  return ` Cues: ${parts.join("; ")}.`;
+}
+
 /** What kinds of number a runtime folds together: measured from text, set by the writer, or the default page (round fifteen, entry 39). */
 function runtimeKinds(state) {
-  const measured = state.notes.filter((note) => isMeasured(note)).length;
-  const sized = state.notes.filter((note) => !isMeasured(note) && note.lengthEighths !== null).length;
-  const unsized = state.notes.length - measured - sized;
+  const measured = state.notes.filter((note) => isMeasured(note));
+  const sized = state.notes.filter((note) => !isMeasured(note) && note.lengthEighths !== null);
+  const unsized = state.notes.filter((note) => !isMeasured(note) && note.lengthEighths === null);
   if (!state.notes.length) return "";
-  return `; of its ${state.notes.length} cards, ${measured} measured from written text, ${sized} sized by the writer, ${unsized} unsized and read as a page each`;
+  const sum = (notes) => formatPages(notes.reduce((total, note) => total + noteEighths(note), 0));
+  // Pages per kind, not only cards (round sixteen, entry 43).
+  return `; of its ${state.notes.length} cards, ${measured.length} measured from written text (${sum(measured)} pages), ${sized.length} sized by the writer (${sum(sized)}), ${unsized.length} unsized and read as a page each (${sum(unsized)})`;
 }
 
 function summarize(state) {
@@ -1014,7 +1036,9 @@ function summarize(state) {
       const place = note.location ? `, at: ${note.location}` : "";
       const when = note.when ? `, when: ${note.when}` : "";
       const count = formatPages(noteEighths(note));
-      const pages = isMeasured(note) ? `${count} ${count === "1" ? "page" : "pages"}, written` : note.lengthEighths === null ? "about a page, unsized" : `${count} ${count === "1" ? "page" : "pages"}`;
+      // A written card's estimate is kept underneath for when the text goes; say it, or it is invisible (round sixteen, entry 44).
+      const underneath = isMeasured(note) && note.lengthEighths !== null ? `; the writer's estimate underneath: ${formatPages(note.lengthEighths)}` : "";
+      const pages = isMeasured(note) ? `${count} ${count === "1" ? "page" : "pages"}, written${underneath}` : note.lengthEighths === null ? "about a page, unsized" : `${count} ${count === "1" ? "page" : "pages"}`;
       return `  - ${note.id} [${note.rank ?? "scene"}, ${pages}${who}${place}${when}${plant}${pays}${revised}] — "${note.headline}" (${note.color}) at ${Math.round(note.x)},${Math.round(note.y)}`;
     })
     .join("\n");
@@ -1279,6 +1303,8 @@ server.registerTool(
       rank: rankSchema.optional(),
       pages: pagesSchema.optional(),
       plants: z.boolean().optional(),
+      after: z.string().optional().describe("Wire the new scene into the story after this card (id or headline): one call, one number under a lock. Needs follows arrows on the wall."),
+      before: z.string().optional().describe("Or before this card (id or headline)."),
       location: z.string().optional(),
       when: z.string().optional().describe('When the scene happens, as the writer says it — "night", "day four, dawn" — printed after the place on the scene heading.'),
       characters: z.array(z.string().min(1)).optional(),
@@ -1287,11 +1313,19 @@ server.registerTool(
     },
   },
   async (args) => {
-    const landing = args.x === undefined && args.y === undefined ? nextPlace((await readBoard()).state) : { x: args.x, y: args.y };
+    const { state } = await readBoard();
+    const landing = args.x === undefined && args.y === undefined ? nextPlace(state) : { x: args.x, y: args.y };
     const names = (args.characters ?? []).map((name) => name.trim()).filter(Boolean);
     const added = [];
     // The card, anyone new in its cast, and the casting land as one change, so
     // one ⌘Z on the wall takes back the whole call and not just the cast.
+    if (args.after && args.before) return ok("Say where: after one card, or before one, not both.");
+    // The card beside which the new scene goes (round sixteen, entry 36): by id or headline, on this board.
+    const besideKey = (args.after ?? args.before ?? "").trim();
+    const beside = besideKey ? state.notes.find((note) => note.id === besideKey) ?? state.notes.find((note) => note.headline.trim().toLowerCase() === besideKey.toLowerCase()) ?? null : null;
+    if (besideKey && !beside) return ok(`No card with id or headline "${besideKey}" on this board. Call list_board.`);
+    const wallHasFollows = state.arrows.some((arrow) => arrow.kind !== "setup");
+    let joinedGroup = null;
     const { value: result, live, state: after } = await commitAll(`create_note "${args.headline}"`, (step, current) => {
       let made = step({
         type: "create_note",
@@ -1327,6 +1361,12 @@ server.registerTool(
           made = cast.state.notes.find((note) => note.id === made.id) ?? made;
         }
       }
+      // Wired into the story where the writer said, in the same frame.
+      if (beside && made?.id && wallHasFollows) {
+        joinedGroup = landBeside((command) => step(command), current, made.id, beside, Boolean(args.after));
+        step({ type: "apply_poses", poses: organizePoses(current(), {}) });
+        made = current().notes.find((note) => note.id === made.id) ?? made;
+      }
       return made;
     });
     const castLine = names.length && result?.id ? ` Cast: ${names.join(", ")}${added.length ? ` (added to the roster: ${added.join(", ")})` : ""}.` : "";
@@ -1339,9 +1379,13 @@ server.registerTool(
       result?.when ? `when: ${result.when}` : null,
     ].filter(Boolean).join(", ");
     // Where it landed matters only until the tidy, so the reply says the rule once and never the coordinates (round fourteen, entry 11).
-    const placed = args.x === undefined && args.y === undefined ? ` Placed after the last card in story order.${once("placed", " organize lays the wall out along the arrows.")}` : "";
+    const placed = beside
+      ? wallHasFollows
+        ? ` Wired ${args.after ? "after" : "before"} "${beside.headline}" in the story${joinedGroup ? `, in "${joinedGroup}"` : ""}, and the wall tidied.`
+        : ` The wall has no follows arrows, so "${args.after ? "after" : "before"}" has no story to land in: it sits after the last card; create_arrow the sequence, then move_scene.`
+      : args.x === undefined && args.y === undefined ? ` Placed after the last card in story order.${once("placed", " organize lays the wall out along the arrows.")}` : "";
     // Under a lock a new scene has a letter, not a number: say it, since the board is the only other place to learn it (round fourteen, entry 44).
-    const numbered = after?.lock && result?.id ? ` Numbered ${sceneNumbers(storyOrder(after), after.lock).get(result.id)} (the numbers are locked; a new scene's letter is its place between locked ones, and follows the scene if it moves).` : "";
+    const numbered = after?.lock && result?.id ? ` Numbered ${sceneNumbers(storyOrder(after), after.lock).get(result.id)} (the numbers are locked; a new scene's letter is its place between locked ones now, worked out again from where it sits if it moves; the locked numbers never move).` : "";
     return ok(`Created card ${result?.id ?? ""}: ${landed}${where(live)}.${castLine}${placed}${numbered}`, result);
   },
 );
@@ -1623,6 +1667,36 @@ server.registerTool(
 );
 
 /**
+ * Land a card beside another in the story (R56): between the target and what
+ * followed it (after) or what led to it (before), rewiring the follows arrows,
+ * and into the target's group so the tidy keeps the act as a block. Shared by
+ * move_scene and by create_note with after/before (round sixteen, entry 36).
+ */
+function landBeside(run, current, cardId, target, after) {
+  const isFollows = (arrow) => arrow.kind !== "setup";
+  const mid = current();
+  if (after) {
+    for (const arrow of mid.arrows.filter((item) => isFollows(item) && item.from === target.id && item.to !== cardId)) {
+      run({ type: "delete_arrow", id: arrow.id });
+      run({ type: "create_arrow", from: cardId, to: arrow.to, kind: "follows" });
+    }
+    run({ type: "create_arrow", from: target.id, to: cardId, kind: "follows" });
+  } else {
+    for (const arrow of mid.arrows.filter((item) => isFollows(item) && item.to === target.id && item.from !== cardId)) {
+      run({ type: "delete_arrow", id: arrow.id });
+      run({ type: "create_arrow", from: arrow.from, to: cardId, kind: "follows" });
+    }
+    run({ type: "create_arrow", from: cardId, to: target.id, kind: "follows" });
+  }
+  const targetGroup = current().groups.find((group) => group.noteIds.includes(target.id));
+  if (targetGroup && !targetGroup.noteIds.includes(cardId)) {
+    run({ type: "add_to_group", id: targetGroup.id, noteIds: [cardId] });
+    return targetGroup.title || "an untitled group";
+  }
+  return null;
+}
+
+/**
  * A scene moves to another board of the project (round fifteen, entry 16: a
  * writer's "the shim should open episode two" had no tool, and the way round
  * was a delete and a recreate by hand). Two frames, one per board: the card
@@ -1765,37 +1839,20 @@ server.registerTool(
       const outs = state.arrows.filter((arrow) => isFollows(arrow) && arrow.from === card.id);
       for (const arrow of [...ins, ...outs]) run({ type: "delete_arrow", id: arrow.id });
       for (const before of ins) for (const after of outs) if (before.from !== after.to) run({ type: "create_arrow", from: before.from, to: after.to, kind: "follows" });
-      // Land: between the target and what followed it (or what led to it).
-      const mid = current();
-      if (args.after) {
-        for (const arrow of mid.arrows.filter((item) => isFollows(item) && item.from === target.id && item.to !== card.id)) {
-          run({ type: "delete_arrow", id: arrow.id });
-          run({ type: "create_arrow", from: card.id, to: arrow.to, kind: "follows" });
-        }
-        run({ type: "create_arrow", from: target.id, to: card.id, kind: "follows" });
-      } else {
-        for (const arrow of mid.arrows.filter((item) => isFollows(item) && item.to === target.id && item.from !== card.id)) {
-          run({ type: "delete_arrow", id: arrow.id });
-          run({ type: "create_arrow", from: arrow.from, to: card.id, kind: "follows" });
-        }
-        run({ type: "create_arrow", from: card.id, to: target.id, kind: "follows" });
-      }
-      // Landing beside a card of an act puts the scene in that act, or the tidy
-      // keeps the act as a block and lays the scene past it (round fourteen, entry 38).
-      const targetGroup = current().groups.find((group) => group.noteIds.includes(target.id));
-      if (targetGroup && !targetGroup.noteIds.includes(card.id)) {
-        run({ type: "add_to_group", id: targetGroup.id, noteIds: [card.id] });
-        joinedGroup = targetGroup.title || "an untitled group";
-      }
+      // Land: between the target and what followed it (or what led to it), and
+      // into the act it lands beside (round fourteen, entry 38).
+      joinedGroup = landBeside(run, current, card.id, target, Boolean(args.after));
       run({ type: "apply_poses", poses: organizePoses(current(), {}) });
     });
     const order = storyOrder(final);
+    // Under a lock the letter is worked out again from where the scene landed (round sixteen, entry 35).
+    const lockedNow = final.lock ? ` Under the lock it is now ${sceneNumbers(order, final.lock).get(card.id)}; the locked numbers never move, and an added scene's letter is worked out from where it sits.` : "";
     const group = final.groups.find((item) => item.noteIds.includes(card.id));
     const groupLine = joinedGroup
       ? ` It joined "${joinedGroup}", the group it landed in, so the tidy keeps it with the act.`
       : group ? ` It is still in "${group.title || "an untitled group"}"; a frame does not follow a move, so say if the act or sequence should change.` : "";
     return ok(
-      `Moved "${card.headline}" to ${args.after ? "after" : "before"} "${target.headline}": ${removed} follows arrow(s) removed, ${drawn} drawn, setup arrows untouched, the wall tidied along them${where(live)}. Story order now: ${order.map((note, index) => `${index + 1}. ${note.headline}`).join(", ")}.${groupLine} One undo takes the whole move back.`,
+      `Moved "${card.headline}" to ${args.after ? "after" : "before"} "${target.headline}": ${removed} follows arrow(s) removed, ${drawn} drawn, setup arrows untouched, the wall tidied along them${where(live)}. Story order now: ${order.map((note, index) => `${index + 1}. ${note.headline}`).join(", ")}.${groupLine}${lockedNow} One undo takes the whole move back.`,
       { order: order.map((note) => note.id) },
     );
   },
@@ -1968,7 +2025,7 @@ server.registerTool(
   {
     title: "Export the wall as Fountain",
     description:
-      "The open board as a Fountain screenplay: a title page (with the premise and logline in its notes), beats as sections, one scene per card in wall order — a forced heading from the card's place (or its headline), the headline as a synopsis, the cast and the fold as notes, the change line as action after the mark [Unwritten] until the scene is written. Titled for the project, a one-board film being its project. Plain text a writer can open in any Fountain editor. Pass a path to write a .fountain file; otherwise the text comes back.",
+      "The open board as a Fountain screenplay: a title page (with the premise and logline in its notes), beats as sections, one scene per card in wall order — a forced heading from the card's place (or its headline), the headline as a synopsis, the cast and the fold as notes, the change line as action after the mark [Unwritten] until the scene is written. Titled for the project, a one-board film being its project. Plain text a writer can open in any Fountain editor. Pass a path (relative to the server's folder) to write a .fountain file; otherwise the text comes back.",
     inputSchema: { path: z.string().optional() },
   },
   async (args) => {
@@ -1991,7 +2048,7 @@ server.registerTool(
   {
     title: "Export the wall as Markdown",
     description:
-      "The open board as Markdown, for a collaborator who lives in Google Docs or the like: titled for the project — a one-board film is its project, and the board's name follows only when the project has several boards — the premise and the logline under it, beats as second-level headings, a third-level heading per scene from its place with its scene number, the headline as a synopsis line, then the scene's text — a speech as its cue in bold with the lines under it — or, unwritten, its change line after the mark [Unwritten] in bold, so a reader can tell a placeholder from a page. Carries the beats and every headline; does not carry the cast or the fold (Fountain's notes do). In Google Docs, Paste from Markdown keeps the headings. Pass a path to write a .md file; otherwise the text comes back.",
+      "The open board as Markdown, for a collaborator who lives in Google Docs or the like: titled for the project — a one-board film is its project, and the board's name follows only when the project has several boards — the premise and the logline under it, beats as second-level headings, a third-level heading per scene from its place with its scene number, the headline as a synopsis line, then the scene's text — a speech as its cue in bold with the lines under it — or, unwritten, its change line after the mark [Unwritten] in bold, so a reader can tell a placeholder from a page. Carries the beats and every headline; does not carry the cast or the fold (Fountain's notes do). In Google Docs, Paste from Markdown keeps the headings. Pass a path (relative to the server's folder) to write a .md file; otherwise the text comes back.",
     inputSchema: { path: z.string().optional() },
   },
   async (args) => {
@@ -2014,7 +2071,7 @@ server.registerTool(
   {
     title: "Export the script as plain text",
     description:
-      "The open board's script as plain text, set as it prints: the paginator's lines at Courier's columns kept with spaces, scene numbers in both margins (the wall's order, or as locked), no page numbers, an unwritten scene's change line as action after the mark [Unwritten], a revision's stars in the right margin. The script and nothing else: no headlines, no beats, no cast — the heading is the place and the when. Titled for the project, a one-board film being its project. Pastes into anything and reads as a script wherever the font is monospaced. Pass a path to write a .txt file; otherwise the text comes back.",
+      "The open board's script as plain text, set as it prints: the paginator's lines at Courier's columns kept with spaces, scene numbers in both margins (the wall's order, or as locked), no page numbers, an unwritten scene's change line as action after the mark [Unwritten], a revision's stars in the right margin. The script and nothing else: no headlines, no beats, no cast — the heading is the place and the when. Titled for the project, a one-board film being its project. Pastes into anything and reads as a script wherever the font is monospaced. Pass a path (relative to the server's folder) to write a .txt file; otherwise the text comes back.",
     inputSchema: { path: z.string().optional() },
   },
   async (args) => {
@@ -2048,7 +2105,7 @@ server.registerTool(
     }
     const printed = sceneLineCount(args.text);
     return ok(
-      `Wrote "${result.headline}": ${printed} line(s) as they print (headings, blank lines and wrapped dialogue counted), measured at ${formatPages(noteEighths(result))} of a 55-line page, rounded to the nearest eighth and never below one eighth${where(live)}.${revisionMark(state, result.id)}${once("heading-from-place", " The heading comes from the card's place and when, so the text starts with the action.")} While the text stands the wall reads the measure, not the estimate${result.lengthEighths !== null ? ` (the writer's ${formatPages(result.lengthEighths)} pages)` : ""}; the estimate is kept for when the text goes, and set_length changes it.`,
+      `Wrote "${result.headline}": ${printed} line(s) as they print (headings, blank lines and wrapped dialogue counted), measured at ${formatPages(noteEighths(result))} of a 55-line page, rounded to the nearest eighth and never below one eighth${where(live)}.${revisionMark(state, result.id)}${once("heading-from-place", " The heading comes from the card's place and when, so the text starts with the action.")} While the text stands the wall reads the measure, not the estimate${result.lengthEighths !== null ? ` (the writer's ${formatPages(result.lengthEighths)} pages)` : ""}; the estimate is kept for when the text goes, and set_length changes it.${cueReport(state, result.text)}`,
       { ...result, eighths: noteEighths(result), measured: true, printedLines: printed },
     );
   },
@@ -2078,9 +2135,11 @@ server.registerTool(
     const count = text.split(args.find).length - 1;
     if (count === 0) return ok(`"${args.find}" is not in "${note.headline}"'s text. read_pages shows the scene as it stands.`);
     if (count > 1) return ok(`"${args.find}" occurs ${count} times in "${note.headline}"; give more of the line so it occurs once.`);
+    const linesBefore = sceneLineCount(text);
     const { state, result, live } = await commit({ type: "set_text", id: note.id, text: text.replace(args.find, args.replace) });
+    const linesAfter = sceneLineCount(result.text);
     return ok(
-      `Changed one line of "${result.headline}": "${args.find}" → "${args.replace}"${where(live)}. Now ${sceneLineCount(result.text)} line(s) as they print, measured at ${formatPages(noteEighths(result))} of a page.${revisionMark(state, result.id)}`,
+      `Changed one line of "${result.headline}": "${args.find}" → "${args.replace}"${where(live)}. Now ${linesAfter} line(s) as they print${linesAfter !== linesBefore ? ` (was ${linesBefore}: a line wraps differently now)` : ""}, measured at ${formatPages(noteEighths(result))} of a page.${revisionMark(state, result.id)}${cueReport(state, result.text)}`,
       { ...result, eighths: noteEighths(result), measured: true },
     );
   },
@@ -2105,16 +2164,21 @@ server.registerTool(
     const pageNumbers = state.lock ? sceneNumbers(storyOrder(state), state.lock) : null;
     const lines = [];
     let index = 0;
+    // The changed lines of the scene being printed, starred in the right margin as plain text stars them (round sixteen, entry 32).
+    let changedTexts = new Set();
     for (const line of text.split("\n")) {
       if (/^\.(?!\.)/.test(line) && index < ids.length) {
         const note = state.notes.find((item) => item.id === ids[index]);
         index += 1;
         const standIn = note && !(note.location ?? "").trim() ? " · no place: the headline stands in for the heading" : "";
         const numbered = note && pageNumbers?.get(note.id) ? ` · locked no. ${pageNumbers.get(note.id)}` : "";
-        const revised = note && marks.get(note.id)?.revised ? ` · changed in the ${state.revision.color} revision` : "";
+        const mark = note ? marks.get(note.id) : null;
+        const sourceLines = (note?.text ?? "").split("\n");
+        changedTexts = new Set([...(mark?.lines ?? [])].map((at) => sourceLines[at]).filter((item) => item && item.trim()));
+        const revised = mark?.revised ? ` · changed in the ${state.revision.color} revision${changedTexts.size ? ` (${changedTexts.size} line${changedTexts.size === 1 ? "" : "s"} starred below)` : ""}` : "";
         lines.push(`${line}    [[id: ${note?.id ?? "?"} · ${note && isMeasured(note) ? "measured" : "estimated"} ${formatPages(note ? noteEighths(note) : 0)}pp${standIn}${numbered}${revised}]]`);
       } else {
-        lines.push(line);
+        lines.push(changedTexts.has(line) ? `${line}    *` : line);
       }
     }
     return ok(lines.join("\n"));
@@ -2204,7 +2268,7 @@ server.registerTool(
   {
     title: "Export as Final Draft",
     description:
-      "The open board as a Final Draft .fdx: a heading per card with its scene number by wall order, the scene's text as script paragraphs (action, character, parenthetical, dialogue, dual dialogue, transition) or the change line as action after the mark [Unwritten] when unwritten, and a title page: the project's name, and for a series the episode line (Episode 2 of 6 · its name). One board per file; a series is one file per episode. Pass a path to write the file; otherwise the XML comes back with the file's name in a comment on its second line.",
+      "The open board as a Final Draft .fdx: a heading per card with its scene number (the locked numbers under a lock, else story order), the scene's text as script paragraphs (action, character, parenthetical, dialogue, dual dialogue, transition) or the change line as action after the mark [Unwritten] when unwritten, and a title page: the project's name, and for a series the episode line (Episode 2 of 6 · its name). One board per file; a series is one file per episode. A lock's date and a revision's name print on the title page, and changed paragraphs carry the revision's mark. Pass a path to write the file (a relative path resolves from the server's folder); otherwise the XML comes back with the file's name in a comment on its second line, and the reply with a path repeats that name.",
     inputSchema: { path: z.string().optional() },
   },
   async (args) => {
@@ -2218,7 +2282,7 @@ server.registerTool(
     if (args.path) {
       fs.mkdirSync(path.dirname(path.resolve(args.path)), { recursive: true });
       fs.writeFileSync(args.path, xml);
-      return ok(`Wrote a Final Draft file with ${state.notes.length} scene(s), titled "${titles.title}"${titles.episode ? ` (${titles.episode})` : ""}, to ${args.path}.`);
+      return ok(`Wrote a Final Draft file with ${state.notes.length} scene(s), titled "${titles.title}"${titles.episode ? ` (${titles.episode})` : ""}, to ${args.path}; the app's own name for it is "${filename}".${state.lock ? " The title page says when the numbers were locked." : ""}${state.revision ? ` The ${state.revision.color} revision is declared in the file and its changed paragraphs marked.` : ""}`);
     }
     return ok(xml.replace(/^(<\?xml[^>]*\?>\n)/, `$1<!-- Save as: ${filename.replace(/--/g, "- -")} -->\n`));
   },
@@ -2270,13 +2334,11 @@ server.registerTool(
       return `  - ${scene.number}. ${note?.headline ?? scene.id} (${scene.id}) — p. ${scene.page}${scene.endPage !== scene.page ? `–${scene.endPage}` : ""}`;
     });
     const unwritten = order.filter((note) => !(note.text && note.text.trim())).length;
-    if (order.length > 0 && unwritten === order.length) {
-      return ok(
-        `No pages to count yet: none of the ${order.length} scenes is written. The runtime is list_board's estimate from the cards' lengths — about ${formatPages(boardEighths(state))} of ${formatPages(state.targetEighths)} pages.`,
-        { pageCount: 0, unwritten, scenes: [] },
-      );
-    }
-    const note = unwritten
+    // An unwritten board still paginates, as the guide says it prints: every
+    // change line as action (round sixteen, entry 37).
+    const note = order.length > 0 && unwritten === order.length
+      ? [`None of the ${order.length} scenes is written: every scene sets its change line as action, marked [Unwritten], a few lines each — so this is the wall as pages, not a script; the runtime estimate from the cards is about ${formatPages(boardEighths(state))} of ${formatPages(state.targetEighths)} pages.`]
+      : unwritten
       ? [`${unwritten} of ${order.length} scenes are unwritten and set their change line as action, marked [Unwritten], a few lines each — so this is the script so far, not the runtime: the estimate from the cards is about ${formatPages(boardEighths(state))} pages, the number to use until the scenes are written.`]
       : [];
     return ok([...note, `pages: ${result.pageCount} of ${Math.round(state.targetEighths / 8)}`, `scene numbers here are ${state.lock ? "the locked numbers" : "story order (not locked)"}`, ...lines].join("\n"), result.scenes);
@@ -2296,7 +2358,9 @@ server.registerTool(
     const order = storyOrder(state).map((note) => note.id);
     const { changed, result, live } = await commit({ type: "lock_numbers", order });
     if (!changed) return ok("Nothing to lock.");
-    return ok(`Locked ${Object.keys(result.numbers).length} scene number(s)${where(live)}.`, result);
+    // Which number went on which scene (round sixteen, entry 34).
+    const byNumber = Object.entries(result.numbers).map(([id, number]) => `${number} "${state.notes.find((note) => note.id === id)?.headline ?? id}"`);
+    return ok(`Locked ${Object.keys(result.numbers).length} scene number(s)${where(live)}: ${byNumber.join(", ")}. A scene added now gets a letter for where it sits — 3A between 3 and 4 — worked out again if it moves; the locked numbers never move. Every script out carries these numbers, and its title page says when they were locked.`, result);
   },
 );
 

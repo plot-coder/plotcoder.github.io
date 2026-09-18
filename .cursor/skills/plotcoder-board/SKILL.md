@@ -290,8 +290,14 @@ card of another board is not asked about as uncast here.
   the locked numbers when there is a lock. Unwritten scenes set their change
   line as action, a few lines each, so it is the script so far, not the
   runtime; the caveat comes first.
-- `export_fdx` / `import_fdx` — Final Draft's file, out (scene numbers by
-  wall order, not locked) and in (the same merge as Fountain in).
+- `export_fdx` / `import_fdx` — Final Draft's file, out (scene numbers as
+  locked, or by story order when there is no lock; the lock's date and the
+  revision on the title page; changed paragraphs marked) and in (the same
+  merge as Fountain in). A relative path resolves from the server's folder.
+- `create_note` with `after` or `before` (a card's id or headline) wires the
+  new scene into the story in the same call, so under a lock it gets its
+  letter for where it sits at once — 3A between 3 and 4. The letter is
+  worked out again if the scene moves; the locked numbers never move.
 - `export_markdown` / `export_text` — the wall as Markdown (headings, a
   heading per scene, the text or the change line) for a collaborator in
   Google Docs or the like, and the script as plain text set as it prints.

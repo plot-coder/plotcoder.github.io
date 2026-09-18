@@ -1155,7 +1155,7 @@ describe("move_scene across boards", () => {
     await series.callTool("set_plant", { ids: ["tom-lies"], plants: true, later: "Episode 2" });
     const board = await series.callTool("list_board");
     expect(board).toContain('plants → pays off later on "Episode 2"');
-    expect(board).toMatch(/of its \d+ cards?, \d+ measured from written text, \d+ sized by the writer, \d+ unsized and read as a page each/);
+    expect(board).toMatch(/of its \d+ cards?, \d+ measured from written text \([\d \/]+ pages\), \d+ sized by the writer \([\d \/]+\), \d+ unsized and read as a page each \([\d \/]+\)/);
     const boards = await series.callTool("list_boards");
     expect(boards).toMatch(/the whole project: \d+ cards, about [\d /]+ of [\d /]+ pages across 2 boards/);
     await series.callTool("open_board", { board: "2" });
@@ -1198,6 +1198,63 @@ describe("move_scene across boards", () => {
   it("delete_note says the fold went with the card", async () => {
     const reply = await series.callTool("delete_note", { id: "letter-aloud" });
     expect(reply).toContain("Its folded corner went with it");
+  });
+});
+
+// Round sixteen's replies: a scene added where the writer said, the lock's
+// numbers named, an unwritten board paginated, the cues against the cast, the
+// changed lines starred in the pages reading.
+describe("round sixteen", () => {
+  let six;
+  let sixRoot;
+
+  beforeAll(async () => {
+    sixRoot = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-sixteen-"));
+    six = new McpClient(sixRoot);
+    await six.start();
+  }, 30000);
+
+  afterAll(() => {
+    six?.stop();
+    if (sixRoot) fs.rmSync(sixRoot, { recursive: true, force: true });
+  });
+
+  it("paginates an unwritten board as the guide says it prints (entry 37)", async () => {
+    const text = await six.callTool("page_count");
+    expect(text).toContain("None of the 3 scenes is written");
+    expect(text).toMatch(/pages: \d+ of 120/);
+  });
+
+  it("names the lock's numbers, and a scene created after a card is wired there with its letter (entries 34, 35, 36)", async () => {
+    await six.callTool("create_arrow", { from: "maya-letter", to: "tom-lies" });
+    await six.callTool("create_arrow", { from: "tom-lies", to: "letter-aloud" });
+    const locked = await six.callTool("lock_numbers");
+    expect(locked).toContain('1 "Maya finds the letter", 2 "Tom lies about the job", 3 "The letter is read aloud"');
+    expect(locked).toContain("the locked numbers never move");
+    const made = await six.callTool("create_note", { headline: "The stairs", change: "She counts them.", after: "Maya finds the letter" });
+    expect(made).toContain('Wired after "Maya finds the letter" in the story');
+    expect(made).toContain("Numbered 1A");
+    const order = (await six.callTool("list_board"));
+    expect(order.indexOf("The stairs")).toBeLessThan(order.indexOf("Tom lies about the job"));
+    expect(await six.callTool("create_note", { headline: "Nowhere", change: "x", before: "ghost" })).toContain('No card with id or headline "ghost"');
+    // Moved, the letter is worked out again from where it sits, and the reply says so.
+    const moved = await six.callTool("move_scene", { id: (await six.callToolData("list_board")).notes.find((note) => note.headline === "The stairs").id, after: "tom-lies" });
+    expect(moved).toContain("Under the lock it is now 2A");
+  });
+
+  it("reports the cues against the cast by the whole name (entry 30)", async () => {
+    await six.callTool("add_character", { name: "Dana Kerr" });
+    const wrote = await six.callTool("write_scene", { id: "maya-letter", text: "Rain.\n\nMAYA\nIt's here.\n\nDANA\nLeave it.\n\nTHE BOY\nNo." });
+    expect(wrote).toContain("Cues: MAYA (in the cast); DANA (nobody by that whole name — cues match by the whole name, and the cast has \"Dana Kerr\": cue DANA KERR); THE BOY (nobody in the cast).");
+  });
+
+  it("stars the changed lines in the pages reading under a revision, and says when a count moved (entries 31, 32)", async () => {
+    await six.callTool("start_revision", { color: "blue" });
+    const edited = await six.callTool("edit_scene", { id: "maya-letter", find: "Leave it.", replace: "Leave it where it is, for now, and say nothing to anyone about it." });
+    expect(edited).toMatch(/Now \d+ line\(s\) as they print/);
+    const pages = await six.callTool("read_pages");
+    expect(pages).toContain("changed in the blue revision (1 line starred below)");
+    expect(pages).toContain("Leave it where it is, for now, and say nothing to anyone about it.    *");
   });
 });
 
@@ -1634,7 +1691,7 @@ describe("after the blind run", () => {
       expect(await third.callTool("update_character", { name: "dana", notes: "38, a bad knee and a good ear." })).toContain('Set notes: "38, a bad knee and a good ear." on Dana\'s page');
       expect(await third.callTool("update_character", { name: "nobody", notes: "x" })).toContain('Nobody called "nobody" in the cast');
       const pages = await third.callTool("page_count");
-      expect(pages).toContain("No pages to count yet: none of the 1 scenes is written.");
+      expect(pages).toContain("None of the 1 scenes is written");
       expect(pages).toContain("about 4 of 120 pages");
       await third.callTool("create_note", { headline: "The diner", change: "Miguel pockets the tips.", pages: 6, x: 400, y: 0 });
       const board = await third.callToolData("list_board");

@@ -685,7 +685,7 @@ Add new items at the bottom of this list. Do not renumber. If a requirement dies
 
 ### R58 — The receiving end of a series plant
 
-- **Status:** proposed — mocked before built (rule 5); the card, the reading and the page all show it
+- **Status:** proposed — **mocked 2026-09-17** in `docs/mockups/r58-the-receiving-end.html` (the paying-off card three ways beside what ships, the fold's card after the claim, the reading and the tool); recommended B, the corner folded in with the edge line and one record on the fold's card; waiting on Robert's answer to the honest question
 - **Date:** 2026-09-17
 - **Statement:** When a fold pays off on another board (R50), the board it lands on should know it: the paying-off card says which fold it pays off and from which board, that board's reading lists the payoff beside its own setups, and the fold's check asks until a card there claims it, not merely because a board is named.
 - **Why:** Round fifteen, from both sides (entries 5, 11, 43, 45): with three episode-one folds marked as paying off on "Certified", that board's reading said "no arrow is marked as a setup", nothing on its cards said what landed there, and "which scene pays it off" could be answered only from the treatment. A plant that is remembered at one end is half a plant.

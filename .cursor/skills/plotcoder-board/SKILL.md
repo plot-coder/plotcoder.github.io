@@ -178,9 +178,12 @@ only when the server is started with `PLOTCODER_JSON=1`.
   where the camera is, which may still be one place.
 - `set_open` — leave a card **open**, with the writer's words for what is
   not decided: "whether Tom knows", "who sent the letter". The reading
-  lists open cards under their own head and asks nothing else of them while
-  the words stand — not their place, not their change line, not their
-  arrows; they are still counted, in the order, and a page. `open: ""`
+  lists open cards under their own head and asks nothing of the card itself
+  while the words stand — not its place, its change line, its arrows, its
+  cast, its fold; a question about the run it sits in, beats back to back
+  or a sag, is still asked, because that is about the story around it. The
+  reading says beside each open card what it would be asked if closed. It
+  is still counted, in the order, and a page. `open: ""`
   closes the card and its questions come back. `create_note` takes `open`
   too, so a card born from a maybe is born open. Only on the writer's word:
   where the notes have two versions, ask; where the writer says "I don't

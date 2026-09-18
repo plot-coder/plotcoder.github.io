@@ -2699,7 +2699,7 @@ server.registerTool(
   {
     title: "Leave a card open",
     description:
-      "Mark one or more cards open, with the writer's words for what is not decided — \"whether Tom knows\", \"who sent the letter\". An open card is listed by read_wall under its own head and asked nothing else of while the words stand: not its place, not its change line, not its arrows. It is still counted, in the order, and a page. open \"\" closes the card and its questions come back on their own. Only on the writer's word — a card is open because they said so, never because you could not decide; where the notes have two versions, ask, and if they say leave it, this is how.",
+      "Mark one or more cards open, with the writer's words for what is not decided — \"whether Tom knows\", \"who sent the letter\". An open card is listed by read_wall under its own head, with what it would be asked if closed, and asked nothing of itself while the words stand: not its place, its change line, its arrows, its cast or its fold; a question about the run it sits in — beats back to back, a sag — is still asked, because that is about the story around it. It is still counted, in the order, and a page. open \"\" closes the card and its questions come back on their own. Only on the writer's word — a card is open because they said so, never because you could not decide; where the notes have two versions, ask, and if they say leave it, this is how.",
     inputSchema: { ids: z.array(z.string()).min(1), open: z.string() },
   },
   async (args) => {

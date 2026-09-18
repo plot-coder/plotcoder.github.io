@@ -216,8 +216,9 @@ card of another board is not asked about as uncast here.
   a video agent will be handed later, so ask the writer before inventing them.
 - `cast` — set who is in one or more cards: `noteIds` plus `characters` (names
   or ids). The list **replaces** the card's cast, so pass everyone in the scene;
-  an empty list clears it. A name not in the roster is refused by name — call
-  `add_character` first. Do not invent people; ask the writer who is in a scene.
+  an empty list clears it. A name not in the roster is added to it, as
+  `create_note` does, and the reply says so. Do not invent people; ask the
+  writer who is in a scene — a name the writer gave is not an invention.
   An **unnamed** person in a treatment — "their mother", "the dispatcher" —
   is named by their role: `Dana's mother`, `The dispatcher`. A role is a name
   until the writer gives one; leaving them off the card is the error.

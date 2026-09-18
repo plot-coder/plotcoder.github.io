@@ -934,7 +934,8 @@ describe("characters", () => {
     expect(nobody).toContain('Nobody called "nobody" in the cast');
     // The page reads back, by name or id, with every line and the cards.
     const page = await cast.callTool("read_character", { name: "maya" });
-    expect(page).toContain("Maya (maya) — on 3 cards, in story order:");
+    expect(page).toContain("Maya (maya) — on 3 cards across 1 board of the project");
+    expect(page).toContain('"Board 1", 3 cards in story order: 1. "Maya finds the letter"');
     expect(page).toContain("  looks: Thirty-four, tall, a coat too good for the flat.");
     expect(page).toContain("  voice: (empty)");
     expect(await cast.callTool("read_character", { id: "nobody" })).toContain('Nobody called "nobody" in the cast');
@@ -1126,6 +1127,23 @@ describe("move_scene across boards", () => {
     expect(reply).toContain("Story order on \"Episode 2\" now: 1. The letter is read aloud, 2. The inspector arrives, 3. Maya finds the letter, 4. The plate fails");
     const groups = (await series.callToolData("list_board")).groups;
     expect(groups.find((group) => group.title === "Act one").noteIds).toHaveLength(3);
+  });
+
+  it("read_character reads a person's part across every board, with place, when and rank (round fifteen, entries 22, 23)", async () => {
+    // Maya is on "Maya finds the letter", now on Episode 2, and on "Tom lies about the job" on Board 1.
+    const reply = await series.callTool("read_character", { name: "Maya" });
+    expect(reply).toContain("across 2 boards of the project");
+    expect(reply).toContain('"Board 1", 1 card in story order: 1. "Tom lies about the job"');
+    expect(reply).toContain('"Episode 2", 2 cards in story order: 1. "The letter is read aloud"; 2. "Maya finds the letter"');
+    await series.callTool("set_when", { ids: ["maya-letter"], when: "night" });
+    await series.callTool("set_rank", { ids: ["maya-letter"], rank: "beat" });
+    expect(await series.callTool("read_character", { name: "Maya" })).toContain('"Maya finds the letter" (night · beat)');
+  });
+
+  it("list_structures names every built-in structure's beats in prose (round fifteen, entry 24)", async () => {
+    const text = await series.callTool("list_structures");
+    expect(text).toContain('three-acts — "Three acts" (7 beats: Setup at 1%');
+    expect(text).not.toContain("in the JSON");
   });
 
   it("delete_note says the fold went with the card", async () => {
@@ -1413,8 +1431,8 @@ describe("structures of the writer's own", () => {
 
   it("lists the built-in structures and, at first, none of the writer's", async () => {
     const text = await own.callTool("list_structures");
-    expect(text).toContain("built in: 5 —");
-    expect(text).toContain('turns "Turns"');
+    expect(text).toContain("built in: 5");
+    expect(text).toContain('turns — "Turns"');
     expect(text).toContain("the writer's own: 0");
   });
 

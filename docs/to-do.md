@@ -18,20 +18,20 @@ done and merged, what is left, and the order I would take it in.
   a series plant (mocked, then built on Robert's word).
 - **The suites pass on `main`:** `npm test` 28 files / 540 tests,
   `npm run build` clean. Eighty-one tools.
-- **The last release is 0.1.19**, from before the round. Everything since is
-  on the site (the on-ramp and the guide deploy from `main`) and not in the
-  package.
+- **Round sixteen is cued:** `blind-runs/prompt.md`, the same series against
+  0.1.21 with the fixes in hand — does a stranger find the cross-board move
+  and the claim from either end unprompted; a revision and a lock across
+  two boards; undo per board. Not yet run. Its first step checks the server
+  wiring that vanished before round fifteen.
+- **The last release is 0.1.21**, with everything above in it.
 
 ---
 
-## 1. Release
+## 1. Released
 
-```bash
-npm version patch && git push && git push --tags
-```
-
-From a current `main`. The README's version line follows on its own. Check
-`npm view plotcoder-board version` before any round runs.
+0.1.21 is on npm and matches `main` and the site: round fifteen's fixes,
+R57 and R58. Nothing to release until code changes. The README's version
+line follows `npm version` on its own.
 
 ---
 
@@ -81,4 +81,4 @@ without being told.
 1. Read `blind-runs/README.md`'s recurrence table, then the head of
    `blind-runs/round-fifteen-report.md` and its sections 3 to 5.
 2. Release (item 1).
-3. Put the three calls in section 3 to Robert in one message; then round sixteen or the real script.
+3. Run round sixteen from `blind-runs/prompt.md`; put the three calls in section 3 to Robert in one message.

@@ -45,7 +45,8 @@ into a story (Robert, 2026-09-17).
 | Twelve | The published package, the treatment complete | "Low Season" | The directions | 33, all fixed; asked for R52 and R53 |
 | Thirteen | The published package, a feature, past the wall | "Ninety-Nine" | Pages: a scene written, Markdown out, the page count | 32 (`round-thirteen-report.md`); the six chosen first fixed, the rest open |
 | Fourteen | The published package, the same feature, the fixes in hand | "Ninety-Nine" | Past the wall and into production: exports three ways and back, the lock, a revision, a person's page | 49 (`round-fourteen-report.md`); fixed or decided the next day |
-| Fifteen | The published package, a series of two episodes | "The Weighbridge" | Two boards: a scene moved between episodes, a person's page across both, a structure beside one, the re-test written, Final Draft out for both, the length, a rename, the plants from both sides | 45 (`round-fifteen-report.md`); 34 fixed the same evening, R57 built, R58 proposed |
+| Fifteen | The published package, a series of two episodes | "The Weighbridge" | Two boards: a scene moved between episodes, a person's page across both, a structure beside one, the re-test written, Final Draft out for both, the length, a rename, the plants from both sides | 45 (`round-fifteen-report.md`); 34 fixed the same evening, R57 and R58 built |
+| Sixteen | The published package, the same series, the fixes in hand | "The Weighbridge" | Not yet run: the move and the claims as tools, a revision and a lock across two boards, Final Draft out for both, undo per board | — |
 
 ## What the rounds keep finding
 
@@ -96,12 +97,16 @@ published package, wired before the session, and were the first to reach the
 directions phase. Each round's findings are itemised in `REQUIREMENTS.md`,
 "The blind run".
 
-- `prompt.md` — round fifteen's, as it ran: a series of two episodes, the
-  writer directing across the two boards. The test account is filled in
-  (`test@test.com`, password `test`; Robert's decision, so the prompt pastes
-  without editing). Round sixteen has no prompt yet; before one runs, check
-  `~/.claude.json` still holds the `plotcoder-board` entry — it vanished
-  before round fifteen.
+- `prompt.md` — round sixteen: the same series against the package that
+  carries round fifteen's fixes, R57 and R58, with the writer directing
+  further across the two boards — the move and the claims, a revision, a
+  lock, the script out for both, undo per board. Its first step is to check
+  `~/.claude.json` still holds the `plotcoder-board` entry, which vanished
+  before round fifteen. The test account is filled in (`test@test.com`,
+  password `test`; Robert's decision, so the prompt pastes without editing).
+  Paste everything below its divider.
+- `round-fifteen-prompt.md` — round fifteen's own instructions, as they ran,
+  without their copy of the treatment.
 - `round-fifteen-report.md` — the agent's report from round fifteen,
   verbatim, under a head saying what was fixed from it the same evening and
   what waits. The next session on the agent surface starts here.

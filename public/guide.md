@@ -94,9 +94,10 @@ only when the server is started with `PLOTCODER_JSON=1`.
   a folded card no setup arrow pays off, a setup arrow leaving a card that
   is not folded, a card with nobody in it once the wall has a cast, beats
   back to back with nothing
-  between them (a chain of them is one question naming every turn), and cards
-  that say no place once any card has one. It also lists every setup with the
-  distance to its payoff. The tool's own description carries the same list,
+  between them (a chain of them is one question naming every turn), cards
+  that say no place once any card has one, and a thread with a loose end —
+  where is it first seen, or where does it come out. It also lists every
+  setup with the distance to its payoff, and every thread with its cards. The tool's own description carries the same list,
   and a reply names each question's kind. Put the questions to the writer. Do
   not act on them unasked, and do not add an opinion about the number of beats.
 - `leave_question` / `ask_again` — the writer's word on a question: "leave
@@ -182,6 +183,20 @@ only when the server is started with `PLOTCODER_JSON=1`.
   too, so a card born from a maybe is born open. Only on the writer's word:
   where the notes have two versions, ask; where the writer says "I don't
   know yet, leave it open", this is how, and invent nothing to fill it.
+- `create_thread` / `update_thread` / `delete_thread` — a **thread**: a
+  named string through the cards a thing runs through — "the letter", "the
+  key", a subplot — with either end open until the writer ties it. Name it
+  and string it through cards by id or headline in story order; say
+  `startOpen` when the writer knows where it comes out and not where it is
+  first seen, `endOpen` the other way round. The reading lists every thread
+  and asks about each open end from that end — "where is the bucket first
+  seen?" — until `update_thread` ties it (`add` the card and `startOpen`
+  false in one call). The wall draws it as a dashed string through its
+  cards, a ring where an end is loose. A thread is beside the fold and the
+  setup arrow, not instead of them: when both scenes exist, fold the one
+  that plants and draw the arrow; a thread is the writer's word before
+  they do, and the home for a strand a fold cannot hold. Only on the
+  writer's word.
 - `set_when` — **when** a scene happens, as the writer says it: "night",
   "day four, dawn", "the next morning". Free text on the card beside its
   place, printed after the place on every scene heading — THE PIER AT FENIT

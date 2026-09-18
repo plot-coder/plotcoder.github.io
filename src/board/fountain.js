@@ -124,6 +124,8 @@ export function toFountain(state, options = {}) {
     if (cast.length) marks.push(`with ${cast.join(", ")}`);
     if (note.plants) marks.push("plants something to pay off later");
     if (note.open) marks.push(`open: ${note.open}`);
+    const onThreads = (state.threads ?? []).filter((thread) => thread.noteIds.includes(note.id)).map((thread) => thread.name);
+    if (onThreads.length) marks.push(`thread: ${onThreads.join(", ")}`);
     if (revisionMarksFor(marks, note)) marks.push(`changed in the ${state.revision.color} revision`);
     if (marks.length) {
       body.push(`[[${marks.join(" · ")}]]`);

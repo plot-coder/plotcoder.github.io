@@ -24,20 +24,23 @@ is only the queue.
   is visible to the app (entries 11, 14, 15, 39, 41; seventeen's 8, 12,
   31). Beside it, **only a card can be open**: the logline, a when, the
   premise cannot say "not decided" (9, 22, 23, 32).
-- **The suites pass on `main`:** `npm test` 28 files / 550 tests,
-  `npm run build` clean. Eighty-two tools; fourteen checks.
-- **Released as 0.1.28** with round eighteen's fixes.
+- **R60, the thread, is built** on Robert's choice of B; see item 1.
+- **The suites pass on `main`:** `npm test` 28 files, `npm run build`
+  clean. Eighty-five tools; fifteen checks.
+- **Released as 0.1.28** with round eighteen's fixes; the thread is not yet
+  released.
 
 ---
 
 ## 1. The next design question: a thread that is not a fold
 
-**Mocked, not built:** `docs/mockups/r60-the-payoff-first.html`, recorded
-as **R60, proposed** — the paying-off card three ways beside what ships; A
-recommended (the receiving corner folded in over nothing, the writer's
-words on the edge, one field `paysOff` on the payoff card, no new mark and
-no new question kind). Waiting on Robert's word; build on it kernel first,
-then the tools, then the wall. What the rounds have shown, twice:
+**Built as B, on Robert's word** (2026-09-18): `docs/mockups/r60-the-payoff-first.html`
+showed three ways, A was recommended, Robert chose B — a thread as a
+record of its own. **R60, built:** `threads` on the board, three tools,
+the fifteenth check (loose), the string on the wall, the corner's picker.
+The second-model concern is recorded in the combine log. Not yet run
+blind: round nineteen should measure whether a stranger names a thread
+unprompted for the key and the bucket. What the rounds had shown, twice:
 
 - A **plant** is one record on the fold card, and every question the wall
   asks about it starts there: unpaid, unplanted, backwards. A payoff card
@@ -104,7 +107,8 @@ it; the two share the words "open, by the writer's word".
 
 1. Read `blind-runs/README.md`'s recurrence table, then the head of
    `blind-runs/round-eighteen-report.md` and its sections 3 to 6.
-2. The thread is mocked (item 1, R60); build it on Robert's word, kernel
-   first, then the tools, then the wall.
-3. Cue round nineteen only when there is something new to measure: the
-   thread, or a fresh idea from a different writer.
+2. Release the thread (`npm version patch` from main), then cue round
+   nineteen: the same notes, the thread in hand — does a stranger name one
+   for the key and the bucket unprompted, and does the loose-end question
+   land where the writer wanted it.
+3. The open fields (item 2) are the mockup after that.

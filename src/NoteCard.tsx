@@ -59,6 +59,10 @@ type NoteCardProps = {
   onSetPlant: (id: string, plants: boolean) => void;
   /** Leave the card open with the writer's words, or close it with "" (R59). */
   onSetOpen: (id: string, open: string) => void;
+  /** The board's threads (R60), each saying whether this card is on it and which ends are open. */
+  threads: Array<{ id: string; name: string; on: boolean; startOpen: boolean; endOpen: boolean }>;
+  onStartThread: (id: string, name: string, end: "start" | "end") => void;
+  onTieThread: (id: string, threadId: string, how: "start" | "end" | "through" | "off") => void;
   onEdit: (id: string, patch: { headline?: string; change?: string }) => void;
 };
 
@@ -93,6 +97,9 @@ export function NoteCard({
   onSetLength,
   onSetPlant,
   onSetOpen,
+  threads,
+  onStartThread,
+  onTieThread,
   onEdit,
 }: NoteCardProps) {
   const isBeat = note.rank === "beat";
@@ -109,10 +116,35 @@ export function NoteCard({
   const [editingOpen, setEditingOpen] = useState(false);
   const [openText, setOpenText] = useState("");
   const openInput = useRef<HTMLInputElement>(null);
+  // A thread started at this card (R60): its name typed on the edge, like the open words; which end stays open.
+  const [editingThread, setEditingThread] = useState<"start" | "end" | null>(null);
+  const [threadText, setThreadText] = useState("");
+  const threadInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (editingOpen) openInput.current?.focus();
   }, [editingOpen]);
+
+  useEffect(() => {
+    if (editingThread) threadInput.current?.focus();
+  }, [editingThread]);
+
+  function commitThread(text: string) {
+    const end = editingThread;
+    setEditingThread(null);
+    const name = text.trim().replace(/\s+/g, " ");
+    if (name && end) onStartThread(note.id, name, end);
+  }
+
+  function onThreadKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setEditingThread(null);
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      commitThread(threadText);
+    }
+  }
 
   useEffect(() => {
     if (active) {
@@ -203,6 +235,57 @@ export function NoteCard({
           >
             {isOpen ? "Close it: it is decided" : "Leave it open: not decided yet"}
           </button>
+          {/* Threads (R60): start one here, or tie one of the board's to this card. */}
+          <p className="note__picker-cap">Thread</p>
+          <button
+            type="button"
+            className="note__length-option note__corner-option"
+            onClick={() => {
+              setCornering(false);
+              setThreadText("");
+              setEditingThread("end");
+            }}
+          >
+            Start a thread here: it comes back later
+          </button>
+          <button
+            type="button"
+            className="note__length-option note__corner-option"
+            onClick={() => {
+              setCornering(false);
+              setThreadText("");
+              setEditingThread("start");
+            }}
+          >
+            End a thread here: first seen somewhere not yet decided
+          </button>
+          {threads.map((thread) =>
+            thread.on ? (
+              <button
+                key={thread.id}
+                type="button"
+                className="note__length-option note__corner-option"
+                onClick={() => {
+                  onTieThread(note.id, thread.id, "off");
+                  setCornering(false);
+                }}
+              >
+                Take it off "{thread.name}"
+              </button>
+            ) : (
+              <button
+                key={thread.id}
+                type="button"
+                className="note__length-option note__corner-option"
+                onClick={() => {
+                  onTieThread(note.id, thread.id, thread.startOpen ? "start" : thread.endOpen ? "end" : "through");
+                  setCornering(false);
+                }}
+              >
+                {thread.startOpen ? `"${thread.name}" is first seen here` : thread.endOpen ? `"${thread.name}" comes out here` : `Put it on "${thread.name}"`}
+              </button>
+            ),
+          )}
           {waiting.length ? <p className="note__picker-cap">Pays off a fold from another board</p> : null}
           {waiting.map((fold) => (
             <button
@@ -251,7 +334,23 @@ export function NoteCard({
           />
         </span>
       ) : null}
-      {!editingOpen && (sceneNumber || note.plants || paysOff || isOpen) ? (
+      {editingThread ? (
+        <span className="note__edge note__edge--editing" onPointerDown={(event) => event.stopPropagation()}>
+          <span className="note__plant is-unpaid" aria-hidden="true">Thread ·</span>
+          <input
+            ref={threadInput}
+            className="note__open-input"
+            value={threadText}
+            aria-label={editingThread === "start" ? `Name the thread that comes out at ${note.headline}` : `Name the thread that starts at ${note.headline}`}
+            placeholder={editingThread === "start" ? "what comes out here?" : "what starts here?"}
+            spellCheck={false}
+            onChange={(event) => setThreadText(event.target.value)}
+            onKeyDown={onThreadKeyDown}
+            onBlur={() => commitThread(threadText)}
+          />
+        </span>
+      ) : null}
+      {!editingOpen && !editingThread && (sceneNumber || note.plants || paysOff || isOpen) ? (
         <span className="note__edge">
           {sceneNumber ? (
             <button

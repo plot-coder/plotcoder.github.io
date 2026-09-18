@@ -129,7 +129,7 @@ describe("findings", () => {
 
   it("returns nothing at all for an empty board", () => {
     const reading = readWall(emptyState());
-    expect(reading).toEqual({ order: [], beats: [], runs: [], setups: [], payoffs: {}, later: [], paidBy: [], open: [], findings: [], left: [] });
+    expect(reading).toEqual({ order: [], beats: [], runs: [], setups: [], payoffs: {}, later: [], paidBy: [], open: [], threads: [], findings: [], left: [] });
   });
 
   it("notes that runs cannot be read until a beat is marked, and passes no judgement on the count", () => {
@@ -488,6 +488,40 @@ describe("findings", () => {
     const snapshot = JSON.stringify(state);
     readWall(state);
     expect(JSON.stringify(state)).toBe(snapshot);
+  });
+});
+
+describe("threads (R60): a loose end is asked about from that end", () => {
+  it("lists threads with their cards in story order and asks where a thread is first seen, or where it comes out", () => {
+    const state = run(
+      wall({ id: "a", headline: "The first morning" }, { id: "b", headline: "The break-in" }, { id: "c", headline: "The last harvest" }),
+      { type: "create_thread", id: "bucket", name: "the bucket", noteIds: ["c"], startOpen: true },
+      { type: "create_thread", id: "declan", name: "Declan", noteIds: ["b", "a"], endOpen: true },
+      { type: "create_thread", id: "key", name: "the key", noteIds: [] },
+      { type: "create_thread", id: "tools", name: "the tools", noteIds: ["a", "c"] },
+    );
+    const reading = readWall(state);
+    expect(reading.threads).toEqual([
+      { id: "bucket", name: "the bucket", ids: ["c"], startOpen: true, endOpen: false },
+      { id: "declan", name: "Declan", ids: ["a", "b"], startOpen: false, endOpen: true },
+      { id: "key", name: "the key", ids: [], startOpen: false, endOpen: false },
+      { id: "tools", name: "the tools", ids: ["a", "c"], startOpen: false, endOpen: false },
+    ]);
+    expect(reading.findings.filter((finding) => finding.kind === "loose")).toEqual([
+      { kind: "loose", ids: ["bucket", "c"], text: '"the bucket" starts nowhere yet: it runs to "The last harvest". Where is it first seen?' },
+      { kind: "loose", ids: ["declan", "b"], text: '"Declan" ends nowhere yet: it runs through "The first morning", "The break-in". Where does it come out?' },
+      { kind: "loose", ids: ["key"], text: '"the key" runs through no card yet. Where is it first seen, and where does it come out?' },
+    ]);
+    const tied = run(state, { type: "update_thread", id: "bucket", add: ["a"], startOpen: false });
+    expect(readWall(tied).findings.filter((finding) => finding.ids.includes("bucket"))).toEqual([]);
+    expect(readWall(tied).threads[0].ids).toEqual(["a", "c"]);
+  });
+
+  it("asks once about a thread with neither end tied", () => {
+    const state = run(wall({ id: "a", headline: "The morning after" }), { type: "create_thread", id: "key", name: "the key", noteIds: ["a"], startOpen: true, endOpen: true });
+    expect(readWall(state).findings.filter((finding) => finding.kind === "loose")).toEqual([
+      { kind: "loose", ids: ["key", "a"], text: '"the key" runs through "The morning after" and neither end is tied. Where is it first seen, and where does it come out?' },
+    ]);
   });
 });
 

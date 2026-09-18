@@ -39,6 +39,7 @@ export const KIND_NAMES: Record<FindingKind, string> = {
   unplanted: "A payoff with no fold",
   nobody: "Nobody in the scene",
   unplaced: "No place",
+  loose: "A thread with a loose end",
 };
 
 /** The kinds a debt is: shown warm. */

@@ -12,6 +12,7 @@ export type {
   BoardNote as MockNote,
   BoardGroup as MockGroup,
   BoardArrow as MockArrow,
+  BoardThread as MockThread,
 } from "./board/reducer";
 
 export const SAMPLE_NOTES = seedState().notes;

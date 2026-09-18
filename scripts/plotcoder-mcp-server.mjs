@@ -856,6 +856,10 @@ function describeCommand(command) {
       return "recolor_note";
     case "apply_poses":
       return "organize";
+    case "create_thread":
+      return `create_thread "${command.name ?? ""}"`;
+    case "update_thread":
+      return typeof command.startOpen === "boolean" || typeof command.endOpen === "boolean" ? "update_thread (an end tied or opened)" : "update_thread";
     default:
       return command.type;
   }
@@ -968,7 +972,7 @@ function isSampleWall(state) {
   return state.notes.map((note) => note.headline).sort().join("\n") === sample;
 }
 /** Every check read_wall runs, so silence can be named. */
-const CHECKS = ["unmarked", "sag", "empty", "unwritten", "unlinked", "duplicate", "sequence", "uncast", "nobody", "absent", "backwards", "unpaid", "unplanted", "unplaced"];
+const CHECKS = ["unmarked", "sag", "empty", "unwritten", "unlinked", "duplicate", "sequence", "uncast", "nobody", "absent", "backwards", "unpaid", "unplanted", "unplaced", "loose"];
 /** What each check looks for, in words, so "clean" says what was checked rather than a kind's name. */
 const CHECK_WORDS = {
   unmarked: "a beat is marked",
@@ -985,6 +989,7 @@ const CHECK_WORDS = {
   unpaid: "no fold without a payoff",
   unplanted: "no payoff without its fold",
   unplaced: "no card without a place",
+  loose: "no thread with a loose end",
 };
 const SAMPLE_NOTE = "sample: this is the wall PlotCoder starts with (Maya, Tom, the letter); nothing here is the writer's. Replace it, or new_board.";
 
@@ -1134,6 +1139,8 @@ function summarize(state) {
     places || "  (no card says where it happens yet)",
     "groups:",
     groups || "  (no groups)",
+    "threads (R60; a named string through cards, in story order; an open end is asked about by the reading):",
+    ...((state.threads ?? []).length ? state.threads.map((thread) => `  - ${threadLine(state, thread)}`) : ["  (no threads — create_thread names one)"]),
     "arrows:",
     arrows || "  (no arrows)",
   ].join("\n");
@@ -1581,6 +1588,9 @@ server.registerTool(
       ...reading.paidBy.map((item) => `  - "${state.notes.find((note) => note.id === item.id)?.headline ?? item.id}" pays off "${item.fromHeadline}" from "${item.fromBoardName}" (${episodeLabel(projectForRead, boardsNow, item.fromBoardId, item.fromNoteId)}), one board earlier`),
       ...(reading.open.length
         ? ["open, by the writer's word (listed, not asked about while the words stand; set_open with \"\" closes):", ...reading.open.map((item) => `  - "${state.notes.find((note) => note.id === item.id)?.headline ?? item.id}" — ${item.words}${item.hides.length ? ` (would be asked, closed: ${item.hides.map((kind) => CHECK_WORDS[kind] ?? kind).join("; ")})` : ""}`)]
+        : []),
+      ...(reading.threads.length
+        ? ["threads (the writer's strings through the story; a loose end is asked about below):", ...reading.threads.map((thread) => `  - "${thread.name}": ${thread.ids.length ? thread.ids.map((id) => `"${state.notes.find((note) => note.id === id)?.headline ?? id}"`).join(" → ") : "no card yet"}${thread.startOpen ? " — starts nowhere yet" : ""}${thread.endOpen ? " — ends nowhere yet" : ""}`)]
         : []),
       "questions the wall raises:",
       ...(reading.findings.length
@@ -3103,6 +3113,126 @@ server.registerTool(
       `${result.length} card(s) now cast ${names.length ? names.join(", ") : "nobody"}: ${result.map((note) => `"${note.headline}"`).join(", ")}${added.length ? ` (added to the cast: ${added.join(", ")})` : ""}${where(live)}.${stillOpen(result)}`,
       result,
     );
+  },
+);
+
+// --- Threads (R60) ----------------------------------------------------------
+//
+// A thread is a named string through cards, either end open until the writer
+// ties it: the record for a thing the writer knows the far end of — the
+// bucket in the last scene, the key that changes hands — and not where it is
+// first seen. A fold and a setup arrow are still how a plant and its payoff
+// are drawn; a thread is beside them, in the writer's words, and the reading
+// asks about each loose end from that end.
+
+function threadByRef(state, ref) {
+  const wanted = (ref ?? "").trim();
+  if (!wanted) return null;
+  return (state.threads ?? []).find((thread) => thread.id === wanted) ?? (state.threads ?? []).find((thread) => thread.name.trim().toLowerCase() === wanted.toLowerCase()) ?? null;
+}
+
+function cardsByRef(state, refs) {
+  const found = [];
+  const missing = [];
+  for (const ref of refs ?? []) {
+    const wanted = (ref ?? "").trim();
+    const note = state.notes.find((item) => item.id === wanted) ?? state.notes.find((item) => item.headline.trim().toLowerCase() === wanted.toLowerCase()) ?? null;
+    if (note) found.push(note.id);
+    else missing.push(ref);
+  }
+  return { found, missing };
+}
+
+function threadLine(state, thread) {
+  const order = storyOrder(state).filter((note) => thread.noteIds.includes(note.id));
+  const cards = order.length ? order.map((note) => `"${note.headline}"`).join(" → ") : "no card yet";
+  const ends = [thread.startOpen ? "starts nowhere yet" : null, thread.endOpen ? "ends nowhere yet" : null].filter(Boolean);
+  return `"${thread.name}" (${thread.id}): ${cards}${ends.length ? ` — ${ends.join(", ")}` : order.length ? " — both ends tied" : ""}`;
+}
+
+server.registerTool(
+  "create_thread",
+  {
+    title: "Name a thread",
+    description:
+      "Name a thread — a thing that runs through the story and is first seen somewhere and comes out somewhere: \"the letter\", \"the shop's lease\", a subplot — and string it through the cards it touches, by id or headline, in story order. Say which end is not decided: startOpen when the writer knows where it comes out and not where it is first seen; endOpen when they know where it starts and not where it comes out. The reading asks about each open end from that end — \"where is it first seen?\" — until update_thread ties it, and lists every thread with its cards. A thread is beside the fold and the setup arrow, not instead of them: fold the card that plants and draw the setup arrow when both scenes exist; a thread is for the writer's word before they do, and for a strand a fold cannot hold. Only on the writer's word: a thread is theirs to name.",
+    inputSchema: {
+      name: z.string().min(1),
+      cards: z.array(z.string()).optional(),
+      startOpen: z.boolean().optional(),
+      endOpen: z.boolean().optional(),
+    },
+  },
+  async (args) => {
+    const current = await readBoard();
+    const { found, missing } = cardsByRef(current.state, args.cards);
+    if (missing.length) return ok(`No thread made: not on the board — ${missing.map((ref) => `"${ref}"`).join(", ")}. Call list_board for the ids or the exact headlines.`);
+    const { state, changed, result, live } = await commit({ type: "create_thread", name: args.name, noteIds: found, startOpen: args.startOpen === true, endOpen: args.endOpen === true });
+    if (!changed) return ok("No thread made: a thread needs a name.");
+    const asks = [result.startOpen ? "where it is first seen" : null, result.endOpen ? "where it comes out" : null].filter(Boolean);
+    return ok(
+      `Named the thread ${threadLine(state, result)}${where(live)}.${asks.length ? ` The reading asks ${asks.join(" and ")} until update_thread ties ${asks.length === 1 ? "that end" : "them"}.` : result.noteIds.length ? " Both ends are tied; the reading lists it and asks nothing." : " No card yet: the reading asks where it is first seen and where it comes out."} The wall draws it as a string through its cards, a loose end where one is open.`,
+      result,
+    );
+  },
+);
+
+server.registerTool(
+  "update_thread",
+  {
+    title: "Tie or change a thread",
+    description:
+      "Change a thread by id or name: rename it, add cards (by id or headline) or remove them, or tie an end — startOpen false once the writer says where it is first seen, endOpen false once they say where it comes out; true reopens an end. Adding the card where a thing is first seen and tying the start is one call: add plus startOpen false. The reading stops asking about an end the moment it is tied.",
+    inputSchema: {
+      thread: z.string(),
+      name: z.string().optional(),
+      add: z.array(z.string()).optional(),
+      remove: z.array(z.string()).optional(),
+      startOpen: z.boolean().optional(),
+      endOpen: z.boolean().optional(),
+    },
+  },
+  async (args) => {
+    const current = await readBoard();
+    const thread = threadByRef(current.state, args.thread);
+    if (!thread) return ok(`No thread called "${args.thread}". list_board names the threads on this board; create_thread names a new one.`);
+    const add = cardsByRef(current.state, args.add);
+    const remove = cardsByRef(current.state, args.remove);
+    const missing = [...add.missing, ...remove.missing];
+    if (missing.length) return ok(`Nothing changed: not on the board — ${missing.map((ref) => `"${ref}"`).join(", ")}. Call list_board for the ids or the exact headlines.`);
+    const { state, changed, result, live } = await commit({
+      type: "update_thread",
+      id: thread.id,
+      ...(args.name !== undefined ? { name: args.name } : {}),
+      ...(add.found.length ? { add: add.found } : {}),
+      ...(remove.found.length ? { remove: remove.found } : {}),
+      ...(typeof args.startOpen === "boolean" ? { startOpen: args.startOpen } : {}),
+      ...(typeof args.endOpen === "boolean" ? { endOpen: args.endOpen } : {}),
+    });
+    if (!changed) return ok(`Nothing changed: "${thread.name}" already reads that way.`);
+    const tied = [result.before.startOpen && !result.thread.startOpen ? "its start" : null, result.before.endOpen && !result.thread.endOpen ? "its end" : null].filter(Boolean);
+    const reopened = [!result.before.startOpen && result.thread.startOpen ? "its start" : null, !result.before.endOpen && result.thread.endOpen ? "its end" : null].filter(Boolean);
+    return ok(
+      `Now ${threadLine(state, result.thread)}${where(live)}.${tied.length ? ` Tied ${tied.join(" and ")}; the reading stops asking about ${tied.length === 1 ? "it" : "them"}.` : ""}${reopened.length ? ` Opened ${reopened.join(" and ")}; the reading asks about ${reopened.length === 1 ? "it" : "them"} again.` : ""}`,
+      result.thread,
+    );
+  },
+);
+
+server.registerTool(
+  "delete_thread",
+  {
+    title: "Cut a thread",
+    description: "Remove a thread by id or name. The cards stay; only the string and its name go. Only on the writer's word.",
+    inputSchema: { thread: z.string() },
+  },
+  async (args) => {
+    const current = await readBoard();
+    const thread = threadByRef(current.state, args.thread);
+    if (!thread) return ok(`No thread called "${args.thread}". list_board names the threads on this board.`);
+    const { changed, result, live } = await commit({ type: "delete_thread", id: thread.id });
+    if (!changed) return ok(`No thread called "${args.thread}".`);
+    return ok(`Cut the thread "${result.name}"${where(live)}; its ${result.noteIds.length} card${result.noteIds.length === 1 ? "" : "s"} stay where they are.`, result);
   },
 );
 

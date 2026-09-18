@@ -69,6 +69,11 @@ export const WORD_GROUPS = [
         sentence: "A card the writer has not decided, in their words on its edge: the reading lists it and asks nothing else of it until the words are cleared.",
       },
       {
+        id: "thread",
+        name: "A thread",
+        sentence: "A named string through the cards a thing runs through — the letter, the key, a subplot — with either end open until the writer ties it. Drawn on the wall as a dashed string, a ring where an end is loose; the reading asks where a loose thread is first seen, or where it comes out.",
+      },
+      {
         id: "corner",
         name: "The folded corner",
         sentence:

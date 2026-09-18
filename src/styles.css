@@ -1521,6 +1521,44 @@ body {
   stroke-dasharray: 2 4;
 }
 
+/* A thread (R60): a length of string through the cards it runs through, in
+   the warm colour while an end is loose, drawn under the arrows and the
+   cards; a stub and a ring where the writer has not tied an end. */
+.note-thread {
+  color: var(--ink);
+  opacity: 0.55;
+}
+
+.note-thread.is-loose {
+  color: var(--over);
+  opacity: 0.9;
+}
+
+.note-thread__line {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-dasharray: 3 5;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+
+.note-thread__end {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-dasharray: 2 3;
+}
+
+.note-thread__tag {
+  fill: currentColor;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
 /* The chips at the middle of a selected arrow: what it means, and Remove. */
 .arrow-chips {
   position: absolute;

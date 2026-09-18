@@ -831,12 +831,13 @@ function changeNote() {
   const parts = [];
   if (change.gone.length || change.came.length) {
     parts.push(
-      `the wall now asks ${change.asks} question${change.asks === 1 ? "" : "s"}${change.gone.length ? ` (gone: ${change.gone.map((finding) => `[${finding.kind}]`).join(" ")})` : ""}${change.came.length ? ` (new: ${change.came.map((finding) => `[${finding.kind}] ${finding.text}`).join(" ")})` : ""}`,
+      `the wall now asks ${change.asks} question${change.asks === 1 ? "" : "s"}${change.gone.length ? ` (gone: ${change.gone.map((finding) => `[${finding.kind}] ${finding.text}`).join(" ")})` : ""}${change.came.length ? ` (new: ${change.came.map((finding) => `[${finding.kind}] ${finding.text}`).join(" ")})` : ""}`,
     );
   }
   if (change.leftAfter !== change.leftBefore) parts.push(`left, for now: ${change.leftAfter} (was ${change.leftBefore})`);
   if (change.eighthsAfter !== change.eighthsBefore) parts.push(`runtime now about ${formatPages(change.eighthsAfter)} of ${formatPages(change.target)} pages`);
-  return parts.length ? ` ${parts.join("; ")}.` : "";
+  // No full stop of its own: the reply it rides on ends the sentence (round sixteen, entry 11).
+  return parts.length ? `; ${parts.join("; ")}` : "";
 }
 /** Said once per session, so a reply does not repeat its advice eighteen times (round thirteen, entry 10). */
 const saidOnce = new Set();
@@ -1024,7 +1025,9 @@ function summarize(state) {
       // brief and who is still a name.
       const page = filledCharacterFields(character);
       const brief = page.length ? ` · page: ${page.join(", ")}` : " · page: empty";
-      return `  - ${character.id} — "${character.name}" on ${on} card${on === 1 ? "" : "s"}${brief}`;
+      // On this board, and on the others (R51): a per-board count beside a project-wide check read as a contradiction (round sixteen, entry 18).
+      const away = lastHeld?.project ? (castElsewhere(lastHeld.project, lastHeld.boards, lastHeld.project.activeBoardId)[character.id] ?? []).reduce((sum, item) => sum + item.cards, 0) : 0;
+      return `  - ${character.id} — "${character.name}" on ${on} card${on === 1 ? "" : "s"} of this board${away ? ` and ${away} of other boards` : ""}${brief}`;
     })
     .join("\n");
   const placeCounts = new Map();
@@ -1336,7 +1339,7 @@ server.registerTool(
       result?.when ? `when: ${result.when}` : null,
     ].filter(Boolean).join(", ");
     // Where it landed matters only until the tidy, so the reply says the rule once and never the coordinates (round fourteen, entry 11).
-    const placed = args.x === undefined && args.y === undefined ? once("placed", " Placed after the last card in story order; organize lays the wall out along the arrows.") : "";
+    const placed = args.x === undefined && args.y === undefined ? ` Placed after the last card in story order.${once("placed", " organize lays the wall out along the arrows.")}` : "";
     // Under a lock a new scene has a letter, not a number: say it, since the board is the only other place to learn it (round fourteen, entry 44).
     const numbered = after?.lock && result?.id ? ` Numbered ${sceneNumbers(storyOrder(after), after.lock).get(result.id)} (the numbers are locked; a new scene's letter is its place between locked ones, and follows the scene if it moves).` : "";
     return ok(`Created card ${result?.id ?? ""}: ${landed}${where(live)}.${castLine}${placed}${numbered}`, result);
@@ -1495,7 +1498,7 @@ server.registerTool(
       `setups and payoffs${written < state.notes.length ? " (distances in estimated pages)" : ""}:`,
       ...(reading.setups.length
         ? describeSetups(reading, state).map((line) => `  - ${line}`)
-        : ["  (no arrow is marked as a setup)"]),
+        : [reading.paidBy.length ? "  (no setup arrow on this board; what pays off a fold of another board is listed below)" : "  (no arrow is marked as a setup)"]),
       ...reading.later.map((item) => `  - "${state.notes.find((note) => note.id === item.id)?.headline ?? item.id}" is folded and pays off later, on "${boardById(projectForRead, item.boardId)?.name ?? item.boardId}"${item.noteId ? `, at ${episodeLabel(projectForRead, boardsNow, item.boardId, item.noteId)} "${boardsNow[item.boardId]?.notes?.find((note) => note.id === item.noteId)?.headline ?? item.noteId}"` : " — no scene there claims it yet"}`),
       ...reading.paidBy.map((item) => `  - "${state.notes.find((note) => note.id === item.id)?.headline ?? item.id}" pays off "${item.fromHeadline}" from "${item.fromBoardName}" (${episodeLabel(projectForRead, boardsNow, item.fromBoardId, item.fromNoteId)}), one board earlier`),
       "questions the wall raises:",
@@ -2683,11 +2686,14 @@ server.registerTool(
     });
     const back = await readProject();
     const { live } = await openBoardEverywhere(back.project, back.boards, back.rev, back.base, hereId);
+    // The write landed on the fold's board, so its change note is that board's (round sixteen, entry 16).
+    const noteThere = changeNote();
+    const thereLine = noteThere ? ` On "${source.name}"${noteThere}.` : "";
     if (!changed) return ok(`No change: ${clearing ? "nothing was claimed" : `"${folds[0].headline}" already pays off at "${card.headline}"`}.`);
     return ok(
       clearing
-        ? `"${card.headline}" no longer pays off ${folds.map((fold) => `"${fold.headline}"`).join(", ")} from "${source.name}"; ${folds.length === 1 ? "that fold is" : "those folds are"} a promise on this board again${where(live)}. This board is open again; undo on "${source.name}" takes it back.`
-        : `"${card.headline}" pays off "${folds[0].headline}" from "${source.name}" (${episodeLabel(project, { ...boards, [hereId]: here }, source.id, folds[0].id)})${where(live)}. The fold's card there says "paid off in ${episodeLabel(project, { ...boards, [hereId]: here }, hereId, card.id)}", this card says what it pays off, and both readings list it. This board is open again; undo on "${source.name}" takes the claim back.`,
+        ? `"${card.headline}" no longer pays off ${folds.map((fold) => `"${fold.headline}"`).join(", ")} from "${source.name}"; ${folds.length === 1 ? "that fold is" : "those folds are"} a promise on this board again${where(live)}.${thereLine} This board is open again; undo on "${source.name}" takes it back.`
+        : `"${card.headline}" pays off "${folds[0].headline}" from "${source.name}" (${episodeLabel(project, { ...boards, [hereId]: here }, source.id, folds[0].id)})${where(live)}. The fold's card there says "paid off in ${episodeLabel(project, { ...boards, [hereId]: here }, hereId, card.id)}", this card says what it pays off, and both readings list it.${thereLine} This board is open again; undo on "${source.name}" takes the claim back.`,
       { fold: folds.map((fold) => fold.id), board: source.id, card: card.id },
     );
   },
@@ -2708,7 +2714,7 @@ server.registerTool(
         ? ok(`Already in the cast as "${result.name}" (${result.id}). Use that id.`, result)
         : ok("No character added: the name was empty.");
     }
-    return ok(`Added "${result.name}" (id ${result.id}) to the project's cast${where(live)}; every board of the project casts from it.`, result);
+    return ok(`Added "${result.name}" (id ${result.id}) to the project's cast; every board of the project casts from it${where(live)}.`, result);
   },
 );
 
@@ -2887,7 +2893,7 @@ server.registerTool(
   {
     title: "Cast a scene",
     description:
-      "Set who is in one or more cards. Takes card ids and character names or ids; the list replaces the card's cast, so pass everyone who is in the scene. An empty list clears it. Names must already be in the cast — add_character first — and the tool says which names it did not know.",
+      "Set who is in one or more cards of the open board (open_board first for another board's cards). Takes card ids and character names or ids; the list replaces the card's cast, so pass everyone who is in the scene. An empty list clears it. Names must already be in the cast — add_character first — and the tool says which names it did not know.",
     inputSchema: {
       noteIds: z.array(z.string()).min(1),
       characters: z.array(z.string()),
@@ -2927,7 +2933,7 @@ server.registerTool(
       (id) => state.characters.find((character) => character.id === id)?.name ?? id,
     );
     return ok(
-      `${result.length} card(s) now cast ${names.length ? names.join(", ") : "nobody"}${where(live)}.`,
+      `${result.length} card(s) now cast ${names.length ? names.join(", ") : "nobody"}: ${result.map((note) => `"${note.headline}"`).join(", ")}${where(live)}.`,
       result,
     );
   },
@@ -3587,7 +3593,7 @@ server.registerTool(
     const fresh = { ...emptyState(), ...(target ? { targetEighths: target } : {}) };
     const { live } = await openBoardEverywhere(next, { ...boards, [board.id]: fresh }, rev, base, board.id);
     return ok(
-      `Added "${board.name}" (${board.id}) and opened it${where(live)}: every card call lands there now, and the writer's open wall switched with it; open_board "${project.boards.findIndex((item) => item.id === project.activeBoardId) + 1}" comes back. It is empty, and the project's cast is already there to cast from. The logline is the story's question when the writer has one — leave it empty rather than invent it — and the cards come next.${next.name === "Untitled project" ? " The project is still \"Untitled project\": rename_project names it." : ""}${next.boards.length === 2 && isSampleWall(isBoardState(boards[next.boards[0].id]) ? normalizeState(boards[next.boards[0].id]) : emptyState()) ? " The sample stays as Board 1; delete_board drops it." : ""}`,
+      `Added "${board.name}" (${board.id}) and opened it${where(live)}: every card call lands there now, and the writer's open wall switched with it; open_board ${project.boards.findIndex((item) => item.id === project.activeBoardId) + 1} returns to "${project.boards.find((item) => item.id === project.activeBoardId)?.name ?? "the one before"}". It is empty, and the project's cast is already there to cast from. The logline is the story's question when the writer has one — leave it empty rather than invent it — and the cards come next.${next.name === "Untitled project" ? " The project is still \"Untitled project\": rename_project names it." : ""}${next.boards.length === 2 && isSampleWall(isBoardState(boards[next.boards[0].id]) ? normalizeState(boards[next.boards[0].id]) : emptyState()) ? " The sample stays as Board 1; delete_board drops it." : ""}`,
       board,
     );
   },

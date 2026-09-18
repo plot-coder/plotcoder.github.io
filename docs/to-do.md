@@ -33,15 +33,16 @@ changes; the README's version line follows `npm version` on its own.
 
 ---
 
-## 2. R59 is built
+## 2. Run round eighteen
 
-The open card, chosen as B and built as drawn: the field, the command, the
-two tools, the reading listing open cards and asking nothing else of them,
-the sketch and the corner's picker. What it cannot say is recorded in R59.
-Next design question, behind it: the thread that is not a fold (round
-seventeen, 8, 12, 31) — a payoff waiting for its plant. Round eighteen on
-the same notes would measure both: what an agent does with a card it can
-leave open, and what it does with the key and the bucket.
+Cued in `blind-runs/prompt.md`: the same notes as seventeen, the open card
+in hand. The writer answers "I don't know yet — leave it open" in those
+words, so the round measures whether a stranger finds `set_open` unprompted,
+and what it does with the key and the bucket — the thread that is not a
+fold, the next design question (round seventeen, 8, 12, 31). Afterwards: the
+report to `blind-runs/round-eighteen-report.md` verbatim with a head, the
+round's paragraph in `REQUIREMENTS.md`, the recurrence table if anything
+came back, and a mockup for the thread if the round asks for one.
 
 ---
 
@@ -77,4 +78,4 @@ leave open, and what it does with the key and the bucket.
 1. Read `blind-runs/README.md`'s recurrence table, then the head of
    `blind-runs/round-fifteen-report.md` and its sections 3 to 5.
 2. Release (item 1).
-3. Round eighteen on the same notes with the open card in hand, or the real script; Robert's call.
+3. Run round eighteen from `blind-runs/prompt.md`; then the thread, if it asks for one.

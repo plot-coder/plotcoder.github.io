@@ -1,20 +1,24 @@
-# The blind-run prompt — round eighteen: the same notes, with a card that can be left open
+# Round seventeen — the prompt as it ran (2026-09-18)
+
+The notes it carried, "The Allotments", are `round-seventeen-idea.md`: one
+treatment, one file. `prompt.md` is now round eighteen's.
 
 Paste everything below the line into a fresh agent session. The credentials are
 already in the server's wiring: the test account is `test@test.com`, password
 `test`, a throwaway that holds nothing of anyone's. The agent checks and
-empties it itself at the start of the round, in case round seventeen left
+empties it itself at the start of the round, in case round sixteen left
 something.
 
-Round eighteen runs the same page of notes as seventeen —
-`round-seventeen-idea.md`, "The Allotments" — against the package that
-carries what seventeen produced: the open card (R59), a payoff with no fold
-and a card with nobody in it as questions, the premise as the project's,
-"story order: unset". It measures two things. Whether a stranger, told "I
-don't know yet, leave it open", finds the card that can be left open without
-being told it exists. And what it does with the key and the bucket, the two
-threads whose plants have no card yet, which the wall still cannot hold.
-Nothing here tells the agent what those are.
+Round seventeen changes the material, not the directions. Every round since
+twelve handed the agent a finished treatment that answered the eleven
+questions up front; this one hands it a page of a writer's notes —
+`round-seventeen-idea.md`, "The Allotments": eight scenes the writer knows,
+two versions of the time, an ending not chosen, a break-in with three
+suspects, names for some people and not others — and a writer in the room
+who answers. What the agent asks, what it does with a maybe, and what the
+wall's reading does for a story that does not exist yet, is the measurement.
+The app is for creating stories from ideas; this is the first round that
+starts from one. Nothing here tells the agent what we expect to go wrong.
 
 Before you paste:
 
@@ -29,9 +33,9 @@ Before you paste:
    "plotcoder-board@latest"], "env": { "PLOTCODER_EMAIL": "test@test.com",
    "PLOTCODER_PASSWORD": "test" } }` — and start the session after.
 2. **Land the fixes where the round will find them.** Both plotcoder.com and
-   `npx -y plotcoder-board@latest` carry 0.1.26, which has everything round
-   seventeen produced and the open card; if code has changed since, merge
-   to `main`, wait for the Pages deploy, and release from a current `main`:
+   `npx -y plotcoder-board@latest` carry 0.1.23, which has everything round
+   sixteen produced; if code has changed since, merge to `main`, wait for
+   the Pages deploy, and release from a current `main`:
 
    ```bash
    npm version patch && git push && git push --tags
@@ -40,9 +44,9 @@ Before you paste:
 3. Start the session with no folder (the app's "No folder" scratch workspace
    is right). Inside a repo worktree the harness puts `CLAUDE.md` in the
    agent's context, and the run is not blind.
-4. **The writer's answers.** The same as round seventeen's, so the walls are
-   comparable. Answer only what the agent asks; where it does not ask, do
-   not volunteer:
+4. **The writer's answers.** The notes leave things open on purpose. When
+   the agent asks, answer from here, in your own words, and only what it
+   asks; where it does not ask, do not volunteer:
    - It is a feature, ninety pages. The title is "Plot 14".
    - It is the third year. Con's wife, Bridie, died two years ago; he has
      been on the plot alone since. The crowns were planted the spring before
@@ -63,24 +67,16 @@ Before you paste:
    - The wrong tools pay off when Con gives her his; the key pays off after
      the break-in, when he gives her the only one; the bucket pays off in
      the last scene.
-   - Anything else the notes do not say: **"I don't know yet — leave it
-     open"**, in those words, every time. Do not say how. Whether the agent
-     finds the card that can be left open, and what it does instead when it
-     does not, is the measurement.
+   - Anything else the notes do not say: "I don't know yet — leave it
+     open", and see what the agent does with an open thing.
 5. The agent stops after its first calls with the first friction entries and
-   waits for you to say "go on". Then it asks; answer as above. When it has
-   built and read the wall, stay, and direct, one at a time:
-   - give the order, and have it propose the turns and mark them;
-   - "which cards are still open, and what would close each one" — ask it
-     to answer from the wall, not from memory;
-   - "I have decided about Declan's scene: it is at Con's house, in the
-     kitchen, and Ruth is not there" — and see what closes;
-   - "add the teaching scene between the first morning and the letter: Con
-     shows her the asparagus bed and tells her three years. That is all I
-     know about it";
-   - "the key and the bucket: make the wall hold them, so it asks where each
-     is first seen" — and see what it reaches for and what it says the wall
-     cannot do;
+   waits for you to say "go on". Then it will ask; answer as above. When it
+   has built and read the wall, stay, and direct, one at a time:
+   - propose the turns and mark them; then strike one and add one;
+   - which of my eight scenes have nothing between them, and what would
+     you put there — propose, do not add;
+   - the break-in was Con, not the kids, after all: change the wall;
+   - fold what pays off and say where each lands;
    - write the first morning;
    - how long is it, and what is missing to reach ninety;
    - anything else a writer would ask on day one.
@@ -213,47 +209,3 @@ anything you smooth over is something I will not fix.
 
 ---
 
-
-## The notes
-
-
-Something about the allotments behind the railway in a midlands town. Con
-Brady, seventies, has had plot 14 for forty years. The council is selling
-the land — to whom? A supermarket, or housing. Decide.
-
-A younger woman gets the plot next to his. Ruth. Thirties. She is just out
-of something — prison, or hospital, or a marriage — and does not say which.
-She turns up the first morning with the wrong tools.
-
-He teaches her to grow something. Beans, potatoes — no, something slow.
-Asparagus: three years before you cut it. That is the point: three years,
-and they have one season. Or is it the third year already? If it takes
-three years there is no crop the first season, so maybe it is the third
-year and he has been on his own for two.
-
-Ending: I don't know. Either they lose the plots and she keeps the crowns in
-a bucket on a balcony, or he dies and she plants them somewhere. Not both.
-
-Scenes I know:
-- the first morning, the wrong tools
-- the council letter (pinned to the shed door? or posted to the house?)
-- a meeting in the parish hall where Con says nothing
-- the night the shed is broken into — by whom? kids, or the developer's
-  people, or Con himself for the insurance. Probably kids.
-- the day she tells him where she was
-- the last harvest
-- Declan, the son, wants him to sell the house and move to Naas. That is a
-  subplot, or it is the plot.
-- something with the key to the shed. He has the only one.
-
-Time: one growing season, March to October. Or the third year, see above.
-
-Half-hour? Feature? A feature, I think, but I only have eight scenes.
-
-Names: Con Brady. Ruth — surname? Declan Brady. The council man, no name.
-Ruth's sister rings her; we never see the sister.
-
-Things that should pay off: the wrong tools (she buys the right ones with
-her first wages, or he gives her his). The key. The bucket.
-
-Title: The Allotments, or Plot 14.

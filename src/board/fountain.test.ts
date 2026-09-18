@@ -24,6 +24,7 @@ describe("Fountain out (R23, slice a)", () => {
     state = applyCommand(state, { type: "set_rank", ids: ["maya-letter"], rank: "beat" }, NOW).state;
     state = applyCommand(state, { type: "set_location", ids: ["maya-letter", "letter-aloud"], location: "the piano shop" }, NOW).state;
     state = applyCommand(state, { type: "set_plant", ids: ["maya-letter"], plants: true }, NOW).state;
+    state = applyCommand(state, { type: "set_open", ids: ["maya-letter"], open: "whether Tom knows" }, NOW).state;
     const text = toFountain(state, { title: "The Letter", episode: "Episode 2 of 3 · The pier", premise: "A season about a lie.", draftDate: "2026-09-13T10:00:00.000Z" });
     expect(text).toBe(
       [
@@ -41,7 +42,7 @@ describe("Fountain out (R23, slice a)", () => {
         "",
         "= Maya finds the letter",
         "",
-        "[[with Maya · plants something to pay off later]]",
+        "[[with Maya · plants something to pay off later · open: whether Tom knows]]",
         "",
         "[Unwritten] She decides not to tell Tom.",
         "",

@@ -1537,6 +1537,12 @@ server.registerTool(
     });
     // No blank lines: ok() splits prose from payload on the first one.
     const written = state.notes.filter((note) => isMeasured(note)).length;
+    // Whose number the runtime is (round eighteen, entries 45, 47, 50): once a
+    // scene is written the total is part measure, part guess, part default,
+    // and the reading says which, the same way list_board does.
+    const whose = runtimeKinds(state).replace(/^; /, "");
+    // A beat's own pages are in no run (entry 48); say how many pages that is.
+    const beatEighths = reading.beats.reduce((sum, beat) => sum + noteEighths(state.notes.find((note) => note.id === beat.id) ?? {}), 0);
     const lines = [
       `PlotCoder wall (${door(live, base)})`,
       ...(state.lock ? [`numbers: locked since ${String(state.lock.at).slice(0, 10)}; read_pages shows each scene's number`] : []),
@@ -1544,8 +1550,8 @@ server.registerTool(
       `logline: ${state.logline ? `"${state.logline}"` : "(none yet)"}`,
       "the cast and the places are list_board's, not the reading's",
       state.targetEighths === DEFAULT_TARGET_EIGHTHS
-        ? `runtime: about ${formatPages(boardEighths(state))} pages; no target set (set_target)`
-        : `runtime: about ${formatPages(boardEighths(state))} pages of a ${formatPages(state.targetEighths)}-page target — ${boardEighths(state) > state.targetEighths ? `${formatPages(boardEighths(state) - state.targetEighths)} over` : boardEighths(state) < state.targetEighths ? `${formatPages(state.targetEighths - boardEighths(state))} under` : "on it"} (the number to use until the scenes are written; page_count is the script so far)`,
+        ? `runtime: about ${formatPages(boardEighths(state))} pages (${whose || "no cards"}); no target set (set_target)`
+        : `runtime: about ${formatPages(boardEighths(state))} pages of a ${formatPages(state.targetEighths)}-page target — ${boardEighths(state) > state.targetEighths ? `${formatPages(boardEighths(state) - state.targetEighths)} over` : boardEighths(state) < state.targetEighths ? `${formatPages(state.targetEighths - boardEighths(state))} under` : "on it"}  (${whose || "no cards"}; page_count is the script so far)`,
       `groups: ${
         state.groups.length
           ? state.groups
@@ -1565,7 +1571,7 @@ server.registerTool(
           ? reading.beats.map((beat) => `"${beat.headline}"`).join(", ")
           : "(none marked)"
       }`,
-      `runs between beats (the scenes between two turns; a beat's own pages are in no run${written < state.notes.length ? "; pages are estimates" : ""}):`,
+      `runs between beats (the scenes between two turns; a beat's own pages are in no run${reading.beats.length ? ` — the ${reading.beats.length} beat${reading.beats.length === 1 ? "" : "s"} hold${reading.beats.length === 1 ? "s" : ""} about ${formatPages(beatEighths)} pages between them` : ""}${written < state.notes.length ? "; pages are estimates" : ""}):`,
       ...(runs.length ? runs.map((line) => `  - ${line}`) : ["  (none)"]),
       `setups and payoffs${written < state.notes.length ? " (distances in estimated pages)" : ""}:`,
       ...(reading.setups.length
@@ -2143,7 +2149,13 @@ server.registerTool(
     }
     const printed = sceneLineCount(args.text);
     return ok(
-      `Wrote "${result.headline}": ${printed} line(s) as they print (headings, blank lines and wrapped dialogue counted), measured at ${formatPages(noteEighths(result))} of a 55-line page, rounded to the nearest eighth and never below one eighth${where(live)}.${revisionMark(state, result.id)}${once("heading-from-place", " The heading comes from the card's place and when, so the text starts with the action.")} While the text stands the wall reads the measure, not the estimate${result.lengthEighths !== null ? ` (the writer's ${formatPages(result.lengthEighths)} pages)` : ""}; the estimate is kept for when the text goes, and set_length changes it.${cueReport(state, result.text)}`,
+      `Wrote "${result.headline}": ${printed} line(s) as they print (headings, blank lines and wrapped dialogue counted), measured at ${formatPages(noteEighths(result))} of a 55-line page, rounded to the nearest eighth and never below one eighth${where(live)}.${revisionMark(state, result.id)}${once("heading-from-place", " The heading comes from the card's place and when, so the text starts with the action.")} While the text stands the wall reads the measure, not the estimate${(() => {
+        // How far the measure sits from what the card was read as before (round eighteen, entry 43): the writer's estimate, or the page an unsized card is read as.
+        const before = result.lengthEighths !== null ? result.lengthEighths : 8;
+        const label = result.lengthEighths !== null ? `the writer's ${formatPages(result.lengthEighths)} pages` : "the page an unsized card is read as";
+        const moved = noteEighths(result) - before;
+        return ` (${label}${moved ? `, so the runtime moved ${formatPages(Math.abs(moved))} ${moved < 0 ? "down" : "up"}` : ""})`;
+      })()}; the estimate is kept for when the text goes, and set_length changes it.${cueReport(state, result.text)}`,
       { ...result, eighths: noteEighths(result), measured: true, printedLines: printed },
     );
   },
@@ -2208,7 +2220,7 @@ server.registerTool(
       if (/^\.(?!\.)/.test(line) && index < ids.length) {
         const note = state.notes.find((item) => item.id === ids[index]);
         index += 1;
-        const standIn = note && !(note.location ?? "").trim() ? " · no place: the headline stands in for the heading" : "";
+        const standIn = note && !(note.location ?? "").trim() ? `${note.open ? " · open card" : ""} · no place: the headline stands in for the heading${note.open ? ", not a place" : ""}` : "";
         const numbered = note && pageNumbers?.get(note.id) ? ` · locked no. ${pageNumbers.get(note.id)}` : "";
         const mark = note ? marks.get(note.id) : null;
         const sourceLines = (note?.text ?? "").split("\n");
@@ -2377,7 +2389,7 @@ server.registerTool(
     const note = order.length > 0 && unwritten === order.length
       ? [`None of the ${order.length} scenes is written: every scene sets its change line as action, marked [Unwritten], a few lines each — so this is the wall as pages, not a script; the runtime estimate from the cards is about ${formatPages(boardEighths(state))} of ${formatPages(state.targetEighths)} pages.`]
       : unwritten
-      ? [`${unwritten} of ${order.length} scenes are unwritten and set their change line as action, marked [Unwritten], a few lines each — so this is the script so far, not the runtime: the estimate from the cards is about ${formatPages(boardEighths(state))} pages, the number to use until the scenes are written.`]
+      ? [`${unwritten} of ${order.length} scenes are unwritten and set their change line as action, marked [Unwritten], a few lines each — so this is the script so far, not the runtime: the runtime from the cards is about ${formatPages(boardEighths(state))} pages, ${order.length - unwritten} of ${order.length} measured and the rest estimated.`]
       : [];
     return ok([...note, `pages: ${result.pageCount} of ${Math.round(state.targetEighths / 8)}`, `scene numbers here are ${state.lock ? "the locked numbers" : "story order (not locked)"}`, ...lines].join("\n"), result.scenes);
   },

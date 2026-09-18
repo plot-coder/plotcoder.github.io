@@ -123,6 +123,7 @@ export function toFountain(state, options = {}) {
     const cast = (note.characterIds ?? []).map((id) => nameOf.get(id)).filter(Boolean);
     if (cast.length) marks.push(`with ${cast.join(", ")}`);
     if (note.plants) marks.push("plants something to pay off later");
+    if (note.open) marks.push(`open: ${note.open}`);
     if (revisionMarksFor(marks, note)) marks.push(`changed in the ${state.revision.color} revision`);
     if (marks.length) {
       body.push(`[[${marks.join(" · ")}]]`);

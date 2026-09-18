@@ -13,15 +13,15 @@ done and merged, what is left, and the order I would take it in.
   notes instead of a treatment. Its report is
   `blind-runs/round-seventeen-report.md`, verbatim, with a head saying what
   became of each entry. Thirty-nine entries.
-- **The round's finding: the wall has no way to hold a maybe.** Proposed and
-  mocked as **R59, the open card** (`docs/mockups/r59-the-open-card.html`,
-  B recommended); Robert's call, then build.
+- **The round's finding: the wall has no way to hold a maybe.** Answered by
+  **R59, the open card**, mocked and built the same day on Robert's choice
+  of B.
 - **Built the same night**, on Robert's word on the four proposals, in pull
   requests #69 to #76: two new checks (a payoff with no fold, a card with
   nobody in it), the premise as the project's whatever its board count,
   "story order: unset" on a wall with no arrows, and the wordings.
 - **The suites pass on `main`:** `npm test` 28 files / 547 tests,
-  `npm run build` clean. Eighty-one tools; fourteen checks.
+  `npm run build` clean. Eighty-two tools; fourteen checks.
 - **Released as 0.1.25** with all of it.
 
 ---
@@ -33,21 +33,15 @@ changes; the README's version line follows `npm version` on its own.
 
 ---
 
-## 2. R59 — the open card (mocked, waiting on Robert's word)
+## 2. R59 is built
 
-The mockup is written: `docs/mockups/r59-the-open-card.html`. Three homes
-for a card that says "not decided": the words on the edge (A), a sketch of
-a card with the words on its edge (B), a fifth line (C); the corner's picker
-gaining "leave it open"; the reading listing open cards and asking nothing
-else of them; `set_open` and `create_note` with `open`. **Recommended: B.**
-The honest question: the edge holds about twenty characters, and an open
-card silences every question about itself, on purpose.
-
-Once chosen: the field and `normalizeState`, the kernel command, the two
-tools, the reading and `list_board`, then the corner's picker and the sketch
-in `NoteCard.tsx` and `styles.css`. After it, the thread that is not a fold
-(round seventeen, 8, 12, 31) is the next design question, and round
-eighteen on the same notes would measure both.
+The open card, chosen as B and built as drawn: the field, the command, the
+two tools, the reading listing open cards and asking nothing else of them,
+the sketch and the corner's picker. What it cannot say is recorded in R59.
+Next design question, behind it: the thread that is not a fold (round
+seventeen, 8, 12, 31) — a payoff waiting for its plant. Round eighteen on
+the same notes would measure both: what an agent does with a card it can
+leave open, and what it does with the key and the bucket.
 
 ---
 
@@ -83,4 +77,4 @@ eighteen on the same notes would measure both.
 1. Read `blind-runs/README.md`'s recurrence table, then the head of
    `blind-runs/round-fifteen-report.md` and its sections 3 to 5.
 2. Release (item 1).
-3. Build R59 on Robert's word (item 2); then round eighteen on the same notes, or the real script.
+3. Round eighteen on the same notes with the open card in hand, or the real script; Robert's call.

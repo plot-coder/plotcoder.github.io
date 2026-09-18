@@ -18,6 +18,7 @@ function card(id: string, x: number, y: number, rotate = -2.2): MockNote {
     plants: false,
     payoffBoardId: null,
   payoffNoteId: null,
+  open: "",
     location: "",
     when: "",
     text: "",

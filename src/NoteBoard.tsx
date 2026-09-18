@@ -96,6 +96,8 @@ type NoteBoardProps = {
   onSetRank: (id: string, rank: NoteRank) => void;
   onSetLength: (id: string, lengthEighths: number) => void;
   onSetPlant: (id: string, plants: boolean) => void;
+  /** Leave a card open with the writer's words, or close it with "" (R59). */
+  onSetOpen: (id: string, open: string) => void;
   onEdit: (id: string, patch: { headline?: string; change?: string }) => void;
   onCommit: () => void;
 };
@@ -189,6 +191,7 @@ export function NoteBoard({
   onSetRank,
   onSetLength,
   onSetPlant,
+  onSetOpen,
   onEdit,
   onCommit,
 }: NoteBoardProps) {
@@ -593,6 +596,7 @@ export function NoteBoard({
           onSetRank={onSetRank}
           onSetLength={onSetLength}
           onSetPlant={onSetPlant}
+          onSetOpen={onSetOpen}
           onEdit={onEdit}
         />
       ))}

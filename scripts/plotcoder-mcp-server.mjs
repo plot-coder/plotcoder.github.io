@@ -1039,11 +1039,12 @@ function summarize(state) {
       const revised = snap && (snap.headline !== note.headline || snap.change !== note.change || (snap.text ?? "") !== (note.text ?? "") || (snap.location ?? "") !== (note.location ?? "")) ? `, changed in ${state.revision.color}` : "";
       const place = note.location ? `, at: ${note.location}` : "";
       const when = note.when ? `, when: ${note.when}` : "";
+      const openWord = note.open ? `, open: ${note.open}` : "";
       const count = formatPages(noteEighths(note));
       // A written card's estimate is kept underneath for when the text goes; say it, or it is invisible (round sixteen, entry 44).
       const underneath = isMeasured(note) && note.lengthEighths !== null ? `; the writer's estimate underneath: ${formatPages(note.lengthEighths)}` : "";
       const pages = isMeasured(note) ? `${count} ${count === "1" ? "page" : "pages"}, written${underneath}` : note.lengthEighths === null ? "about a page, unsized" : `${count} ${count === "1" ? "page" : "pages"}`;
-      return `  - ${note.id} [${note.rank ?? "scene"}, ${pages}${who}${place}${when}${plant}${pays}${revised}] — "${note.headline}" (${note.color}) at ${Math.round(note.x)},${Math.round(note.y)}`;
+      return `  - ${note.id} [${note.rank ?? "scene"}, ${pages}${who}${place}${when}${openWord}${plant}${pays}${revised}] — "${note.headline}" (${note.color}) at ${Math.round(note.x)},${Math.round(note.y)}`;
     })
     .join("\n");
   const cast = state.characters
@@ -1311,6 +1312,7 @@ server.registerTool(
       before: z.string().optional().describe("Or before this card (id or headline)."),
       location: z.string().optional(),
       when: z.string().optional().describe('When the scene happens, as the writer says it — "night", "day four, dawn" — printed after the place on the scene heading.'),
+      open: z.string().optional().describe("The writer's words for what is not decided about this card (R59) — \"where, and whether Ruth is there\" — so the card is born open: the reading lists it and asks nothing else of it until the words are cleared."),
       characters: z.array(z.string().min(1)).optional(),
       x: z.number().optional(),
       y: z.number().optional(),
@@ -1345,6 +1347,7 @@ server.registerTool(
         plants: args.plants,
         location: args.location,
         when: args.when,
+        open: args.open,
         x: landing.x,
         y: landing.y,
       }).result;
@@ -1381,6 +1384,7 @@ server.registerTool(
       result?.plants ? "corner folded" : null,
       result?.location ? `at ${result.location}` : `no place yet${once("place", " (location here, or set_location)")}`,
       result?.when ? `when: ${result.when}` : null,
+      result?.open ? `open: "${result.open}" (listed, not asked about)` : null,
     ].filter(Boolean).join(", ");
     // Where it landed matters only until the tidy, so the reply says the rule once and never the coordinates (round fourteen, entry 11).
     const placed = beside
@@ -1551,6 +1555,9 @@ server.registerTool(
         : [reading.paidBy.length ? "  (no setup arrow on this board; what pays off a fold of another board is listed below)" : "  (no arrow is marked as a setup)"]),
       ...reading.later.map((item) => `  - "${state.notes.find((note) => note.id === item.id)?.headline ?? item.id}" is folded and pays off later, on "${boardById(projectForRead, item.boardId)?.name ?? item.boardId}"${item.noteId ? `, at ${episodeLabel(projectForRead, boardsNow, item.boardId, item.noteId)} "${boardsNow[item.boardId]?.notes?.find((note) => note.id === item.noteId)?.headline ?? item.noteId}"` : " — no scene there claims it yet"}`),
       ...reading.paidBy.map((item) => `  - "${state.notes.find((note) => note.id === item.id)?.headline ?? item.id}" pays off "${item.fromHeadline}" from "${item.fromBoardName}" (${episodeLabel(projectForRead, boardsNow, item.fromBoardId, item.fromNoteId)}), one board earlier`),
+      ...(reading.open.length
+        ? ["open, by the writer's word (listed, not asked about while the words stand; set_open with \"\" closes):", ...reading.open.map((item) => `  - "${state.notes.find((note) => note.id === item.id)?.headline ?? item.id}" — ${item.words}`)]
+        : []),
       "questions the wall raises:",
       ...(reading.findings.length
         ? reading.findings.map((finding) => `  - [${finding.kind}] ${finding.text}${finding.ids.length ? ` (ids: ${finding.ids.join(", ")})` : ""}`)
@@ -1568,7 +1575,7 @@ server.registerTool(
         const counts = new Map();
         for (const finding of asked) counts.set(finding.kind, (counts.get(finding.kind) ?? 0) + 1);
         return `asking ${asked.length} question${asked.length === 1 ? "" : "s"} of ${counts.size} kind${counts.size === 1 ? "" : "s"}: ${[...counts.entries()].map(([kind, n]) => (n > 1 ? `${kind} ×${n}` : kind)).join(", ")}${held}`;
-      })()}${reading.left.length ? `; left by the writer, so not clean: ${[...new Set(reading.left.map((finding) => finding.kind))].map((kind) => `[${kind}]`).join(" ")}` : ""}; checked and clean: ${CHECKS.filter((kind) => !reading.findings.some((finding) => finding.kind === kind) && !reading.left.some((finding) => finding.kind === kind)).map((kind) => {
+      })()}${reading.left.length ? `; left by the writer, so not clean: ${[...new Set(reading.left.map((finding) => finding.kind))].map((kind) => `[${kind}]`).join(" ")}` : ""}${reading.open.length ? `; ${reading.open.length} card${reading.open.length === 1 ? "" : "s"} open by the writer's word, not asked` : ""}; checked and clean: ${CHECKS.filter((kind) => !reading.findings.some((finding) => finding.kind === kind) && !reading.left.some((finding) => finding.kind === kind)).map((kind) => {
         if (kind === "unlinked" && state.arrows.length === 0) return "no card without an arrow (not asked until half the cards are wired: no arrows yet)";
         if (kind === "unlinked") {
           const linked = new Set(state.arrows.flatMap((arrow) => [arrow.from, arrow.to]));
@@ -2658,6 +2665,33 @@ server.registerTool(
       when
         ? `${result.length} card(s) now happen ${/^(at|on|in|by|the)\b/i.test(when) ? "" : "at "}"${when}"${where(live)}. The heading prints as ${sceneHeading(result[0]).slice(1)}.`
         : `${result.length} card(s) no longer say when they happen${where(live)}.`,
+      result,
+    );
+  },
+);
+
+// The open card (R59): the writer's word that a card is not decided. The
+// per-card twin of leave_question — that one leaves a question, this one
+// leaves a card.
+server.registerTool(
+  "set_open",
+  {
+    title: "Leave a card open",
+    description:
+      "Mark one or more cards open, with the writer's words for what is not decided — \"where, and whether Ruth is there\", \"the buyer\". An open card is listed by read_wall under its own head and asked nothing else of while the words stand: not its place, not its change line, not its arrows. It is still counted, in the order, and a page. open \"\" closes the card and its questions come back on their own. Only on the writer's word — a card is open because they said so, never because you could not decide; where the notes have two versions, ask, and if they say leave it, this is how.",
+    inputSchema: { ids: z.array(z.string()).min(1), open: z.string() },
+  },
+  async (args) => {
+    const { state, changed, result, live } = await commit({ type: "set_open", ids: args.ids, open: args.open });
+    if (!changed) {
+      const missing = args.ids.filter((id) => !state.notes.some((note) => note.id === id));
+      return ok(missing.length ? `No card with id ${missing.join(", ")}. Call list_board for the real ids.` : `Nothing changed: ${args.ids.length === 1 ? "the card already says that" : "those cards already say that"}.`);
+    }
+    const words = result[0]?.open ?? "";
+    return ok(
+      words
+        ? `${result.length} card(s) open: "${words}"${where(live)}. The reading lists ${result.length === 1 ? "it" : "them"} under "open, by the writer's word" and asks nothing else of ${result.length === 1 ? "it" : "them"} while the words stand; the card wears the words on its edge. set_open with "" closes it.`
+        : `${result.length} card(s) closed${where(live)}: decided, so the wall's questions about ${result.length === 1 ? "it" : "them"} come back on their own.`,
       result,
     );
   },

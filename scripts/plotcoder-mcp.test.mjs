@@ -204,6 +204,7 @@ describe("plotcoder MCP server", () => {
       "set_length",
       "set_location",
       "set_logline",
+      "set_open",
       "set_payoff",
       "set_plant",
       "set_premise",
@@ -1264,6 +1265,21 @@ describe("round sixteen", () => {
     expect(pages).toContain("changed in the blue revision (1 line starred below)");
     expect(pages).toContain("Leave it where it is, for now, and say nothing to anyone about it.    *");
   });
+  it("leaves a card open on the writer's word, lists it, and asks nothing else of it (R59)", async () => {
+    const made = await six.callTool("create_note", { headline: "Declan wants Con to move to Naas", change: "What changes?", open: "where, and whether Ruth is there" });
+    expect(made).toContain('open: "where, and whether Ruth is there" (listed, not asked about)');
+    const id = (await six.callToolData("list_board")).notes.find((note) => note.headline.startsWith("Declan")).id;
+    const read = await six.callTool("read_wall");
+    expect(read).toContain("open, by the writer's word");
+    expect(read).toContain('"Declan wants Con to move to Naas" — where, and whether Ruth is there');
+    expect(read).toContain("1 card open by the writer's word, not asked");
+    expect(await six.callTool("list_board")).toContain("open: where, and whether Ruth is there");
+    const closed = await six.callTool("set_open", { ids: [id], open: "" });
+    expect(closed).toContain("1 card(s) closed");
+    expect(await six.callTool("set_open", { ids: [id], open: "the buyer" })).toContain('1 card(s) open: "the buyer"');
+    expect(await six.callTool("set_open", { ids: ["ghost"], open: "x" })).toContain("No card with id ghost");
+  });
+
 });
 
 // The folded corner (R31): a plant with no payoff yet.

@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties, type PointerEvent } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 import { wordSentence } from "./board/words";
 import { CastLine } from "./CastLine";
 import { PlaceLine } from "./PlaceLine";
@@ -57,6 +57,8 @@ type NoteCardProps = {
   onSetRank: (id: string, rank: NoteRank) => void;
   onSetLength: (id: string, lengthEighths: number) => void;
   onSetPlant: (id: string, plants: boolean) => void;
+  /** Leave the card open with the writer's words, or close it with "" (R59). */
+  onSetOpen: (id: string, open: string) => void;
   onEdit: (id: string, patch: { headline?: string; change?: string }) => void;
 };
 
@@ -90,6 +92,7 @@ export function NoteCard({
   onSetRank,
   onSetLength,
   onSetPlant,
+  onSetOpen,
   onEdit,
 }: NoteCardProps) {
   const isBeat = note.rank === "beat";
@@ -99,8 +102,17 @@ export function NoteCard({
   const sized = note.lengthEighths !== null && note.lengthEighths !== DEFAULT_NOTE_EIGHTHS;
   const [picking, setPicking] = useState(false);
   const [sizing, setSizing] = useState(false);
-  // The corner's picker (R58): fold it, or pay off a fold waiting from another board.
+  // The corner's picker (R58, R59): fold it, leave it open, or pay off a fold waiting from another board.
   const [cornering, setCornering] = useState(false);
+  // The open card's words, typed on its edge (R59).
+  const isOpen = Boolean((note.open ?? "").trim());
+  const [editingOpen, setEditingOpen] = useState(false);
+  const [openText, setOpenText] = useState("");
+  const openInput = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editingOpen) openInput.current?.focus();
+  }, [editingOpen]);
 
   useEffect(() => {
     if (active) {
@@ -110,9 +122,25 @@ export function NoteCard({
     }
   }, [active]);
 
+  function commitOpen(text: string) {
+    setEditingOpen(false);
+    const next = text.trim().replace(/\s+/g, " ");
+    if (next !== (note.open ?? "")) onSetOpen(note.id, next);
+  }
+
+  function onOpenKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setEditingOpen(false);
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      commitOpen(openText);
+    }
+  }
+
   return (
     <article
-      className={`note note--${note.color} ${isBeat ? "is-beat" : ""} ${sized ? "is-sized" : ""} ${active ? "is-active" : ""} ${selected ? "is-selected" : ""} ${linking ? "is-linking" : ""} ${dropTarget ? "is-drop-target" : ""} ${picking || sizing || cornering ? "is-picking" : ""} ${dimmed ? "is-dim" : ""} ${note.plants ? "is-planted" : ""} ${paysOff ? "is-paying" : ""} ${revised ? `is-revised rev--${revised}` : ""}`}
+      className={`note note--${note.color} ${isBeat ? "is-beat" : ""} ${sized ? "is-sized" : ""} ${active ? "is-active" : ""} ${selected ? "is-selected" : ""} ${linking ? "is-linking" : ""} ${dropTarget ? "is-drop-target" : ""} ${picking || sizing || cornering ? "is-picking" : ""} ${dimmed ? "is-dim" : ""} ${note.plants ? "is-planted" : ""} ${paysOff ? "is-paying" : ""} ${isOpen ? "is-open" : ""} ${revised ? `is-revised rev--${revised}` : ""}`}
       style={{
         left: note.x,
         top: note.y,
@@ -140,12 +168,10 @@ export function NoteCard({
         data-tip={wordSentence("corner")}
         onPointerDown={(event) => event.stopPropagation()}
         onClick={() => {
-          // With folds waiting from another board, or a claim here, the corner asks which (R58); otherwise it folds.
-          if (waiting.length || paysOff) {
-            setPicking(false);
-            setSizing(false);
-            setCornering((open) => !open);
-          } else onSetPlant(note.id, !note.plants);
+          // The corner asks (R58, R59): fold it, leave it open, or pay off a fold waiting from another board.
+          setPicking(false);
+          setSizing(false);
+          setCornering((open) => !open);
         }}
       >
         <span className="note__fold-flap" aria-hidden="true" />
@@ -162,6 +188,20 @@ export function NoteCard({
             }}
           >
             {note.plants ? "Unfold: it plants nothing" : "Fold it: this scene plants something"}
+          </button>
+          <button
+            type="button"
+            className="note__length-option note__corner-option"
+            onClick={() => {
+              setCornering(false);
+              if (isOpen) onSetOpen(note.id, "");
+              else {
+                setOpenText("");
+                setEditingOpen(true);
+              }
+            }}
+          >
+            {isOpen ? "Close it: it is decided" : "Leave it open: not decided yet"}
           </button>
           {waiting.length ? <p className="note__picker-cap">Pays off a fold from another board</p> : null}
           {waiting.map((fold) => (
@@ -195,7 +235,23 @@ export function NoteCard({
           button — the number is the script's address, so it opens Pages there),
           then the fold's state, a debt in the warm colour until a setup arrow
           leaves the card. One line, one home, whether or not the corner folds. */}
-      {sceneNumber || note.plants || paysOff ? (
+      {editingOpen ? (
+        <span className="note__edge note__edge--editing" onPointerDown={(event) => event.stopPropagation()}>
+          <span className="note__plant is-unpaid" aria-hidden="true">Open ·</span>
+          <input
+            ref={openInput}
+            className="note__open-input"
+            value={openText}
+            aria-label={`What is open about ${note.headline}`}
+            placeholder="what is not decided?"
+            spellCheck={false}
+            onChange={(event) => setOpenText(event.target.value)}
+            onKeyDown={onOpenKeyDown}
+            onBlur={() => commitOpen(openText)}
+          />
+        </span>
+      ) : null}
+      {!editingOpen && (sceneNumber || note.plants || paysOff || isOpen) ? (
         <span className="note__edge">
           {sceneNumber ? (
             <button
@@ -226,6 +282,21 @@ export function NoteCard({
               {sceneNumber || note.plants ? <span aria-hidden="true">· </span> : null}
               Pays off · <b>{paysOff.label}</b>
             </span>
+          ) : null}
+          {isOpen ? (
+            <button
+              type="button"
+              className="note__plant is-unpaid note__open"
+              aria-label={`Open: ${note.open}. Tap to change the words; clear them to close the card.`}
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={() => {
+                setOpenText(note.open);
+                setEditingOpen(true);
+              }}
+            >
+              {sceneNumber || note.plants || paysOff ? <span aria-hidden="true">· </span> : null}
+              Open · <b>{note.open}</b>
+            </button>
           ) : null}
         </span>
       ) : null}

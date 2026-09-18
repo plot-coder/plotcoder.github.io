@@ -83,6 +83,8 @@ export type BoardNote = {
   payoffBoardId: string | null;
   /** The scene on that board that pays it off (R58), or null while the board is only a promise. */
   payoffNoteId: string | null;
+  /** The writer's words for what is not decided about this card (R59), or empty: the reading lists an open card and asks nothing else of it. */
+  open: string;
   /** Where the scene happens (R37): a phrase in the writer's words; empty until set. */
   location: string;
   /** When the scene happens, as the writer says it — "night", "day four, dawn" — printed after the place on the heading (R55). Empty when unsaid. */
@@ -162,6 +164,7 @@ export type Command =
       plants?: boolean;
       location?: string;
       when?: string;
+      open?: string;
       text?: string;
     }
   | { type: "update_note"; id: string; headline?: string; change?: string; location?: string; when?: string }
@@ -186,6 +189,7 @@ export type Command =
   | ({ type: "update_character"; id: string } & Partial<Record<CharacterField, string>>)
   | { type: "set_cast"; ids: string[]; characterIds: string[] }
   | { type: "set_plant"; ids: string[]; plants: boolean }
+  | { type: "set_open"; ids: string[]; open: string }
   | { type: "set_payoff_board"; ids: string[]; boardId: string | null; noteId?: string | null }
   | { type: "set_location"; ids: string[]; location: string }
   | { type: "set_when"; ids: string[]; when: string }

@@ -197,6 +197,10 @@ export function readWall(state, options = {}) {
   if (from !== null && cards > 0) runs.push({ from, to: null, eighths, cards, ids });
 
   const findings = [];
+  // Open cards (R59): the writer's word that a card is not decided. Listed,
+  // and asked nothing else while the words stand — the card's own "leave it".
+  const openIds = new Set(order.filter((note) => (note.open ?? "").trim()).map((note) => note.id));
+  const askable = (note) => !openIds.has(note.id);
   const byId = new Map(state.notes.map((note) => [note.id, note]));
   const headline = (id) => (id ? byId.get(id)?.headline ?? id : null);
   const position = new Map(order.map((note, index) => [note.id, index]));
@@ -282,7 +286,7 @@ export function readWall(state, options = {}) {
   // A card that says no place, once the writer has started placing cards.
   // One question however many there are; a wall with no places at all is a
   // wall the writer has not placed yet, and is not asked.
-  const unplaced = order.filter((note) => !(note.location ?? "").trim());
+  const unplaced = order.filter((note) => askable(note) && !(note.location ?? "").trim());
   if (unplaced.length > 0 && unplaced.length < order.length) {
     findings.push({
       kind: "unplaced",
@@ -296,6 +300,7 @@ export function readWall(state, options = {}) {
 
   // A card that has not earned its place yet.
   for (const note of order) {
+    if (!askable(note)) continue;
     const change = (note.change ?? "").trim();
     const title = (note.headline ?? "").trim();
     if (title === "" || title === PLACEHOLDER_HEADLINE) {
@@ -320,7 +325,7 @@ export function readWall(state, options = {}) {
     linked.add(arrow.to);
   }
   if (state.notes.length > 0 && linked.size * 2 >= state.notes.length) {
-    const loose = order.filter((note) => !linked.has(note.id));
+    const loose = order.filter((note) => askable(note) && !linked.has(note.id));
     if (loose.length > 0) {
       findings.push({
         kind: "unlinked",
@@ -433,7 +438,7 @@ export function readWall(state, options = {}) {
   // A card with nobody in it, once the wall has a cast (round seventeen,
   // entry 28): a scene nobody is in passed every check.
   if ((state.characters ?? []).length > 0) {
-    const empty = order.filter((note) => !(note.characterIds ?? []).length);
+    const empty = order.filter((note) => askable(note) && !(note.characterIds ?? []).length);
     if (empty.length) {
       findings.push({
         kind: "nobody",
@@ -499,7 +504,10 @@ export function readWall(state, options = {}) {
   // it is a new question and is asked. The kernel never decides this; the
   // reading does, on every read.
   const left = [];
+  // A question whose every card is open is not asked (R59): the writer's word covers it.
+  const openCards = openIds.size ? findings.filter((finding) => finding.ids.some((id) => byId.has(id)) && finding.ids.filter((id) => byId.has(id)).every((id) => openIds.has(id))) : [];
   const asked = findings.filter((finding) => {
+    if (openCards.includes(finding)) return false;
     const entry = (state.left ?? []).find(
       (item) => item.kind === finding.kind && sameList(item.ids, finding.ids) && item.text === finding.text,
     );
@@ -516,6 +524,7 @@ export function readWall(state, options = {}) {
     payoffs,
     later,
     paidBy: paidHere,
+    open: order.filter((note) => openIds.has(note.id)).map((note) => ({ id: note.id, words: note.open.trim() })),
     findings: asked,
     left,
   };

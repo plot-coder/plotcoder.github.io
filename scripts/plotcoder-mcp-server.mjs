@@ -805,7 +805,8 @@ let lastReading = null;
 const sinceRead = [];
 /** What the last write did to the wall's questions and runtime, said once on that write's tail (round fourteen, entries 18, 19, 42). */
 let lastChange = null;
-const findingKey = (finding) => `${finding.kind}|${finding.ids.join(",")}|${finding.text}`;
+// The same question in the same words is the same question, whatever order its names come in (round seventeen, entry 21).
+const findingKey = (finding) => `${finding.kind}|${[...finding.ids].sort().join(",")}`;
 function noteChange(before, after, boardId = null) {
   // The same reading read_wall gives: a person cast on another board is not
   // asked about, so a write's tail never names a question the reading does not.
@@ -1564,7 +1565,11 @@ server.registerTool(
         for (const finding of asked) counts.set(finding.kind, (counts.get(finding.kind) ?? 0) + 1);
         return `asking ${asked.length} question${asked.length === 1 ? "" : "s"} of ${counts.size} kind${counts.size === 1 ? "" : "s"}: ${[...counts.entries()].map(([kind, n]) => (n > 1 ? `${kind} ×${n}` : kind)).join(", ")}${held}`;
       })()}${reading.left.length ? `; left by the writer, so not clean: ${[...new Set(reading.left.map((finding) => finding.kind))].map((kind) => `[${kind}]`).join(" ")}` : ""}; checked and clean: ${CHECKS.filter((kind) => !reading.findings.some((finding) => finding.kind === kind) && !reading.left.some((finding) => finding.kind === kind)).map((kind) => {
-        if (kind === "unlinked" && state.arrows.length === 0) return "no card without an arrow (not asked: no arrows yet)";
+        if (kind === "unlinked" && state.arrows.length === 0) return "no card without an arrow (not asked until half the cards are wired: no arrows yet)";
+        if (kind === "unlinked") {
+          const linked = new Set(state.arrows.flatMap((arrow) => [arrow.from, arrow.to]));
+          if (linked.size * 2 < state.notes.length) return `no card without an arrow (not asked until half the cards are wired: ${linked.size} of ${state.notes.length} are)`;
+        }
         if (kind === "unplaced" && !state.notes.some((note) => (note.location ?? "").trim())) return "no card without a place (not asked: no card placed yet)";
         if (kind === "sequence" && state.groups.length === 0) return "no group too long for one sequence (not asked: no groups)";
         return CHECK_WORDS[kind];

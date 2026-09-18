@@ -1341,6 +1341,8 @@ server.registerTool(
     if (besideKey && !beside) return ok(`No card with id or headline "${besideKey}" on this board. Call list_board.`);
     const wallHasFollows = state.arrows.some((arrow) => arrow.kind !== "setup");
     let joinedGroup = null;
+    let removedArrows = 0;
+    let drawnArrows = 0;
     const { value: result, live, state: after } = await commitAll(`create_note "${args.headline}"`, (step, current) => {
       let made = step({
         type: "create_note",
@@ -1379,7 +1381,14 @@ server.registerTool(
       }
       // Wired into the story where the writer said, in the same frame.
       if (beside && made?.id && wallHasFollows) {
-        joinedGroup = landBeside((command) => step(command), current, made.id, beside, Boolean(args.after));
+        // Count the rewiring, so the reply can say it as move_scene does (round eighteen, entry 36).
+        const run = (command) => {
+          const done = step(command);
+          if (done.changed && command.type === "delete_arrow") removedArrows += 1;
+          if (done.changed && command.type === "create_arrow") drawnArrows += 1;
+          return done;
+        };
+        joinedGroup = landBeside(run, current, made.id, beside, Boolean(args.after));
         step({ type: "apply_poses", poses: organizePoses(current(), {}) });
         made = current().notes.find((note) => note.id === made.id) ?? made;
       }
@@ -1398,7 +1407,7 @@ server.registerTool(
     // Where it landed matters only until the tidy, so the reply says the rule once and never the coordinates (round fourteen, entry 11).
     const placed = beside
       ? wallHasFollows
-        ? ` Wired ${args.after ? "after" : "before"} "${beside.headline}" in the story${joinedGroup ? `, in "${joinedGroup}"` : ""}, and the wall tidied.`
+        ? ` Wired ${args.after ? "after" : "before"} "${beside.headline}" in the story (${removedArrows} follows arrow${removedArrows === 1 ? "" : "s"} removed, ${drawnArrows} drawn)${joinedGroup ? `, in "${joinedGroup}"` : ""}, and the wall tidied.`
         : ` The wall has no follows arrows, so "${args.after ? "after" : "before"}" has no story to land in: it sits after the last card; create_arrow the sequence, then move_scene.`
       : args.x === undefined && args.y === undefined ? ` Placed after the last card in story order.${once("placed", " organize lays the wall out along the arrows.")}` : "";
     // Under a lock a new scene has a letter, not a number: say it, since the board is the only other place to learn it (round fourteen, entry 44).

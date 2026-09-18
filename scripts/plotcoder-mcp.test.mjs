@@ -1134,7 +1134,7 @@ describe("move_scene across boards", () => {
     const reply = await series.callTool("read_character", { name: "Maya" });
     expect(reply).toContain("across 2 boards of the project");
     expect(reply).toContain('"Board 1", 1 card in story order: 1. "Tom lies about the job"');
-    expect(reply).toContain('"Episode 2", 2 cards in story order: 1. "The letter is read aloud"; 2. "Maya finds the letter"');
+    expect(reply).toContain('"Episode 2", 2 cards in story order: 1. "The letter is read aloud" (night); 2. "Maya finds the letter"');
     await series.callTool("set_when", { ids: ["maya-letter"], when: "night" });
     await series.callTool("set_rank", { ids: ["maya-letter"], rank: "beat" });
     expect(await series.callTool("read_character", { name: "Maya" })).toContain('"Maya finds the letter" (night · beat)');

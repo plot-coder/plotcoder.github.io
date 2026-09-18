@@ -176,6 +176,15 @@ only when the server is started with `PLOTCODER_JSON=1`.
   location — the kitchen, the yard, the barn of one farm — is one place:
   name the location. A treatment that names a spot per paragraph is naming
   where the camera is, which may still be one place.
+- `set_open` — leave a card **open**, with the writer's words for what is
+  not decided: "where, and whether Ruth is there", "the buyer". The reading
+  lists open cards under their own head and asks nothing else of them while
+  the words stand — not their place, not their change line, not their
+  arrows; they are still counted, in the order, and a page. `open: ""`
+  closes the card and its questions come back. `create_note` takes `open`
+  too, so a card born from a maybe is born open. Only on the writer's word:
+  where the notes have two versions, ask; where the writer says "I don't
+  know yet, leave it open", this is how, and invent nothing to fill it.
 - `set_when` — **when** a scene happens, as the writer says it: "night",
   "day four, dawn", "the next morning". Free text on the card beside its
   place, printed after the place on every scene heading — THE PIER AT FENIT

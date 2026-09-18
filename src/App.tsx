@@ -608,6 +608,12 @@ export function App() {
 
   // Fold the corner (R31). Folding one card of a selection folds the selection,
   // the same way rank and colour behave.
+  // Leave a card open with the writer's words, or close it (R59). Applies to the selection, like the corner.
+  function setOpen(id: string, open: string) {
+    const ids = selectedIds.includes(id) && selectedIds.length >= 2 ? selectedIds : [id];
+    boardStore.dispatch({ type: "set_open", ids, open });
+  }
+
   function setPlant(id: string, plants: boolean) {
     const ids =
       selectedIds.includes(id) && selectedIds.length >= 2 ? selectedIds : [id];
@@ -986,6 +992,7 @@ export function App() {
         onSetRank={setRank}
         onSetLength={setLength}
         onSetPlant={setPlant}
+        onSetOpen={setOpen}
         onEdit={editNote}
         onCommit={commitBoard}
       />

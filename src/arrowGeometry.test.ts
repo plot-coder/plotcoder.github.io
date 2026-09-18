@@ -18,6 +18,7 @@ function card(id: string, x: number, y: number, z = 1): MockNote {
     plants: false,
     payoffBoardId: null,
   payoffNoteId: null,
+  open: "",
     location: "",
     when: "",
     text: "",

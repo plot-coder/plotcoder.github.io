@@ -583,6 +583,26 @@ describe("countRanks", () => {
   });
 });
 
+describe("set_open (R59)", () => {
+  it("leaves a card open with the writer's words, closes it with nothing, and is born open from create_note", () => {
+    let state = emptyState();
+    state = applyCommand(state, { type: "create_note", headline: "Declan", change: "What changes?", x: 0, y: 0 }).state;
+    state = applyCommand(state, { type: "create_note", headline: "The buyer", change: "Housing, or a supermarket.", x: 300, y: 0, open: "  the buyer  " }).state;
+    const [declan, buyer] = state.notes;
+    expect(declan.open).toBe("");
+    expect(buyer.open).toBe("the buyer");
+    const opened = applyCommand(state, { type: "set_open", ids: [declan.id], open: "where, and  whether Ruth is there" });
+    expect(opened.changed).toBe(true);
+    expect(opened.state.notes[0].open).toBe("where, and whether Ruth is there");
+    expect(applyCommand(opened.state, { type: "set_open", ids: [declan.id], open: "where, and whether Ruth is there" }).changed).toBe(false);
+    const closed = applyCommand(opened.state, { type: "set_open", ids: [declan.id, buyer.id], open: "" });
+    expect(closed.state.notes.map((note) => note.open)).toEqual(["", ""]);
+    // A record from before R59 is repaired as decided.
+    const older = normalizeState({ ...state, notes: state.notes.map(({ open: _drop, ...note }) => note) });
+    expect(older.notes.every((note) => note.open === "")).toBe(true);
+  });
+});
+
 describe("set_payoff_board (R50)", () => {
   it("names another board as where a fold pays off, only on folded cards, and forgets it when unfolded", () => {
     let state = emptyState();

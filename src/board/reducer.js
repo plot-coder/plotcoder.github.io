@@ -253,6 +253,10 @@ export function seedState(now = nowIso()) {
     // does (R58); null while the board is a promise.
     payoffBoardId: null,
     payoffNoteId: null,
+    // Open: the writer's words for what is not decided about this card, or
+    // nothing (R59). While they stand the reading lists the card and asks
+    // nothing else of it.
+    open: "",
     createdAt: now,
     updatedAt: now,
   });
@@ -350,6 +354,8 @@ export function normalizeState(value) {
     const payoffBoardId = plants && typeof note?.payoffBoardId === "string" && note.payoffBoardId ? note.payoffBoardId : null;
     // Cards written before R58 name a board and no scene on it.
     const payoffNoteId = payoffBoardId && typeof note?.payoffNoteId === "string" && note.payoffNoteId ? note.payoffNoteId : null;
+    // Cards written before R59 are not open; a card claims to be decided until the writer says otherwise.
+    const open = typeof note?.open === "string" ? note.open : "";
     // Cards written before R37 have no place; a scene is nowhere until it is.
     const location = typeof note?.location === "string" ? note.location : "";
     // Cards written before R55 have no when; a scene is at no time until it is.
@@ -365,6 +371,7 @@ export function normalizeState(value) {
       note.plants === plants &&
       note.payoffBoardId === payoffBoardId &&
       note.payoffNoteId === payoffNoteId &&
+      note.open === open &&
       note.location === location &&
       note.when === when &&
       note.text === text
@@ -372,7 +379,7 @@ export function normalizeState(value) {
       return note;
     }
     patched = true;
-    return { ...note, rank, lengthEighths, characterIds, plants, payoffBoardId, payoffNoteId, location, when, text };
+    return { ...note, rank, lengthEighths, characterIds, plants, payoffBoardId, payoffNoteId, open, location, when, text };
   });
 
   // Boards written before the production half (Roadmap 2, item 8) have no
@@ -423,6 +430,11 @@ function bump(note, patch, now) {
   return { ...note, ...patch, updatedAt: now };
 }
 
+/** The writer's words for what is open about a card, one line, spaces collapsed; empty closes it (R59). */
+function cleanOpen(value) {
+  return typeof value === "string" ? value.trim().replace(/\s+/g, " ") : "";
+}
+
 /** A when as the writer typed it, one line, spaces collapsed. */
 function cleanWhen(value) {
   return typeof value === "string" ? value.trim().replace(/\s+/g, " ") : "";
@@ -459,6 +471,7 @@ export function applyCommand(state, command, now = nowIso()) {
         plants: command.plants === true,
         payoffBoardId: null,
         payoffNoteId: null,
+        open: cleanOpen(command.open),
         location: cleanPlace(command.location),
         when: cleanWhen(command.when),
         text: typeof command.text === "string" ? command.text : "",
@@ -917,6 +930,7 @@ export function applyCommand(state, command, now = nowIso()) {
         plants: false,
         payoffBoardId: null,
         payoffNoteId: null,
+        open: "",
         location: "",
         when: "",
         text: "",
@@ -1030,6 +1044,23 @@ export function applyCommand(state, command, now = nowIso()) {
       const notes = state.notes.map((note) => {
         if (!ids.has(note.id) || note.when === when) return note;
         const next = bump(note, { when }, now);
+        touched.push(next);
+        return next;
+      });
+      if (touched.length === 0) return { state, changed: false };
+      return { state: { ...state, notes }, changed: true, result: touched };
+    }
+
+    // Leave a card open (R59): the writer's words for what is not decided,
+    // or nothing. A claim about the card, like rank: it never moves it.
+    case "set_open": {
+      const ids = new Set(command.ids);
+      if (ids.size === 0) return { state, changed: false };
+      const open = cleanOpen(command.open);
+      const touched = [];
+      const notes = state.notes.map((note) => {
+        if (!ids.has(note.id) || (note.open ?? "") === open) return note;
+        const next = bump(note, { open }, now);
         touched.push(next);
         return next;
       });

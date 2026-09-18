@@ -64,6 +64,11 @@ export const WORD_GROUPS = [
         target: "change",
       },
       {
+        id: "open",
+        name: "Open",
+        sentence: "A card the writer has not decided, in their words on its edge: the reading lists it and asks nothing else of it until the words are cleared.",
+      },
+      {
         id: "corner",
         name: "The folded corner",
         sentence:

@@ -994,6 +994,57 @@ body {
   opacity: 0.85;
 }
 
+/* The open card (R59): a sketch of a card — dashed edge, paler face — with
+   the writer's words on its edge in the warm colour. Undecided from across
+   the room; the paper's colour untouched (R16). */
+.note.is-open {
+  outline: 2px dashed rgba(31, 24, 16, 0.55);
+  outline-offset: -6px;
+}
+
+.note.is-open .note__headline,
+.note.is-open .note__change {
+  opacity: 0.72;
+}
+
+.note.is-open::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(135deg, transparent 0 14px, rgba(255, 255, 255, 0.28) 14px 16px);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.note__open {
+  pointer-events: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: text;
+}
+
+.note__edge--editing {
+  overflow: visible;
+}
+
+.note__open-input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  border-bottom: 1px solid rgba(42, 38, 24, 0.4);
+  background: transparent;
+  color: var(--paper-ink, #2a2618);
+  font: inherit;
+  font-size: 0.5rem;
+  letter-spacing: 0.06em;
+  text-transform: none;
+  outline: none;
+}
+
 /* The corner's picker (R58): fold it, or pay off a fold waiting from another board. */
 .note__lengths.note__corner-pick {
   left: 0.35rem;

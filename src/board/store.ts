@@ -115,6 +115,9 @@ function coalesceKey(command: Command): string | null {
     case "set_location":
     case "set_when":
       return `place_line:${[...command.ids].sort().join(",")}`;
+    // The words on an open card are typed (R59): one step back.
+    case "set_open":
+      return `set_open:${[...command.ids].sort().join(",")}`;
     default:
       return null;
   }
@@ -854,6 +857,8 @@ export type PlotCoderWindowApi = {
   setTarget: (targetEighths: number) => unknown;
   setLocation: (ids: string[], location: string) => unknown;
   setWhen: (ids: string[], when: string) => unknown;
+  /** Leave cards open with the writer's words (R59); "" closes. */
+  setOpen: (ids: string[], open: string) => unknown;
   /** The receiving end of a series plant (R58): the folds on another board that a card here pays off; null takes the claim back. */
   setPayoff: (fromBoardId: string, foldIds: string[], noteId: string | null) => unknown;
   updateCharacter: (id: string, patch: Partial<Record<CharacterField, string>>) => unknown;
@@ -900,6 +905,7 @@ export function installWindowApi(): void {
     setTarget: (targetEighths) => boardStore.dispatch({ type: "set_target", targetEighths }),
     setLocation: (ids, location) => boardStore.dispatch({ type: "set_location", ids, location }),
     setWhen: (ids, when) => boardStore.dispatch({ type: "set_when", ids, when }),
+    setOpen: (ids, open) => boardStore.dispatch({ type: "set_open", ids, open }),
     setPayoff: (fromBoardId, foldIds, noteId) => boardStore.dispatchOn(fromBoardId, { type: "set_payoff_board", ids: foldIds, boardId: boardStore.getProject().activeBoardId, noteId }),
     updateCharacter: (id, patch) => boardStore.dispatch({ type: "update_character", id, ...patch }),
     applyTemplate: (template) => boardStore.dispatch({ type: "apply_template", template }),

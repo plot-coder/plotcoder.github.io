@@ -129,7 +129,7 @@ describe("findings", () => {
 
   it("returns nothing at all for an empty board", () => {
     const reading = readWall(emptyState());
-    expect(reading).toEqual({ order: [], beats: [], runs: [], setups: [], payoffs: {}, later: [], paidBy: [], findings: [], left: [] });
+    expect(reading).toEqual({ order: [], beats: [], runs: [], setups: [], payoffs: {}, later: [], paidBy: [], open: [], findings: [], left: [] });
   });
 
   it("notes that runs cannot be read until a beat is marked, and passes no judgement on the count", () => {
@@ -457,6 +457,27 @@ describe("findings", () => {
     ]);
     // A wall with no cast yet is not asked: there is nobody to be in anything.
     expect(readWall(wall({ id: "a" }, { id: "b" })).findings.filter((f) => f.kind === "nobody")).toEqual([]);
+  });
+
+  it("lists open cards by the writer's word and asks nothing else of them (R59)", () => {
+    const state = run(
+      wall({ id: "b1", rank: "beat", headline: "The letter" }, { id: "s1", headline: "Declan" }, { id: "b2", rank: "beat", headline: "The bucket" }),
+      { type: "set_location", ids: ["b1"], location: "the allotments" },
+      { type: "set_location", ids: ["b2"], location: "the flat" },
+      { type: "create_arrow", from: "b1", to: "b2" },
+      { type: "add_character", name: "Con" },
+    );
+    // Declan's card has no place, no arrow and nobody in it: three questions.
+    const before = readWall(state).findings.filter((f) => f.ids.includes("s1")).map((f) => f.kind);
+    expect(before).toEqual(expect.arrayContaining(["unplaced", "unlinked", "nobody"]));
+    const opened = run(state, { type: "set_open", ids: ["s1"], open: "where, and whether Ruth is there" });
+    const reading = readWall(opened);
+    expect(reading.open).toEqual([{ id: "s1", words: "where, and whether Ruth is there" }]);
+    expect(reading.findings.filter((f) => f.ids.includes("s1"))).toEqual([]);
+    // Closed, the questions come back on their own.
+    const closed = run(opened, { type: "set_open", ids: ["s1"], open: "" });
+    expect(readWall(closed).open).toEqual([]);
+    expect(readWall(closed).findings.filter((f) => f.ids.includes("s1")).length).toBeGreaterThan(0);
   });
 
   it("never mutates the state it reads", () => {

@@ -220,6 +220,42 @@ export function castElsewhere(project, boards, activeBoardId) {
   return map;
 }
 
+/**
+ * What lands on a board from the folds of the project's other boards (R58):
+ * `paid` — folds that name a scene here, keyed for the paying-off card;
+ * `waiting` — folds that name this board and no scene on it yet (or a scene
+ * that is gone). The receiving board carries no record of its own; this is
+ * composed from the project, the way castElsewhere composes the cast.
+ */
+export function landingsOn(project, boards, boardId) {
+  const here = boards[boardId];
+  const hereIds = new Set((here?.notes ?? []).map((note) => note.id));
+  const paid = [];
+  const waiting = [];
+  for (const meta of project.boards) {
+    if (meta.id === boardId) continue;
+    const state = boards[meta.id];
+    if (!state) continue;
+    for (const note of state.notes) {
+      if (!note.plants || note.payoffBoardId !== boardId) continue;
+      const landing = { fromBoardId: meta.id, fromBoardName: meta.name, fromNoteId: note.id, fromHeadline: note.headline, fromColor: note.color };
+      if (note.payoffNoteId && hereIds.has(note.payoffNoteId)) paid.push({ ...landing, id: note.payoffNoteId });
+      else waiting.push({ ...landing, id: note.payoffNoteId ?? null });
+    }
+  }
+  return { paid, waiting };
+}
+
+/** Every board's name, card count and card ids, for the reading to judge a fold's promise by (R58). */
+export function laterBoards(project, boards) {
+  const map = {};
+  for (const meta of project.boards) {
+    const state = boards[meta.id];
+    map[meta.id] = { name: meta.name, cards: state?.notes?.length ?? 0, noteIds: (state?.notes ?? []).map((note) => note.id) };
+  }
+  return map;
+}
+
 function touch(project, patch, now) {
   return { ...project, ...patch, updatedAt: now };
 }

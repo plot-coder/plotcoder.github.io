@@ -165,6 +165,11 @@ export function readWall(state, options = {}) {
   // People on a card of another board of the project (R51) are cast, and
   // are not asked about here.
   const elsewhere = new Set(Array.isArray(options.elsewhere) ? options.elsewhere : []);
+  // The project's other boards, for a fold that pays off later (R58): a board
+  // that holds cards and no claimed scene is a promise the wall asks about.
+  const boardsHeld = options.laterBoards && typeof options.laterBoards === "object" ? options.laterBoards : null;
+  // Folds of other boards that land on a card here (R58), composed by the door.
+  const paidBy = Array.isArray(options.paidBy) ? options.paidBy : [];
   const order = storyOrder(state);
   const beats = order.filter((note) => note.rank === "beat");
 
@@ -380,7 +385,13 @@ export function readWall(state, options = {}) {
   }
   // A fold that pays off on another board (R50) is not unpaid: it is listed
   // under `later`, and the door that knows the project names the board.
-  const later = order.filter((note) => note.plants && note.payoffBoardId).map((note) => ({ id: note.id, boardId: note.payoffBoardId }));
+  const later = order
+    .filter((note) => note.plants && note.payoffBoardId)
+    .map((note) => {
+      const held = boardsHeld?.[note.payoffBoardId];
+      const claimed = Boolean(note.payoffNoteId && (!held || held.noteIds.includes(note.payoffNoteId)));
+      return { id: note.id, boardId: note.payoffBoardId, noteId: claimed ? note.payoffNoteId : null };
+    });
   for (const note of order) {
     if (note.plants && !paysOff.has(note.id) && !note.payoffBoardId) {
       findings.push({
@@ -390,6 +401,20 @@ export function readWall(state, options = {}) {
       });
     }
   }
+  // A board's name is a promise; a scene is the payoff (R58). Once the board
+  // has cards, the wall asks which one, until a scene there claims the fold.
+  for (const item of later) {
+    const held = boardsHeld?.[item.boardId];
+    if (!held || held.cards === 0 || item.noteId) continue;
+    const note = byId.get(item.id);
+    findings.push({
+      kind: "unpaid",
+      ids: [item.id],
+      text: `${quote(note)} pays off later, on "${held.name}", but no scene there claims it yet. Which one?`,
+    });
+  }
+  const hereIds = new Set(order.map((note) => note.id));
+  const paidHere = paidBy.filter((item) => hereIds.has(item.id));
 
   // The cast (R29): someone who vanishes for a stretch, or never appears.
   const total = boardEighths(state);
@@ -463,6 +488,7 @@ export function readWall(state, options = {}) {
     setups,
     payoffs,
     later,
+    paidBy: paidHere,
     findings: asked,
     left,
   };

@@ -888,6 +888,13 @@ class AccountStore {
         changed = true;
       }
     }
+    // A board changed from another board's side (R58): it goes up too.
+    for (const id of boardStore.drainElsewhere()) {
+      if (this.books && !this.books.dirtyBoards.includes(id)) {
+        this.books.dirtyBoards.push(id);
+        changed = true;
+      }
+    }
     if (changed) {
       this.saveBooks();
       this.schedulePush();

@@ -13,11 +13,11 @@ done and merged, what is left, and the order I would take it in.
   boards, and its report is `blind-runs/round-fifteen-report.md`, verbatim,
   with a head saying what became of each entry. Forty-five entries.
 - **Thirty-four were fixed the same evening**, in pull requests #47 to #52,
-  all merged to `main`. One requirement came out of it and is built:
-  **R57**, a scene moves to another board. One is proposed and waits for a
-  mockup: **R58**, the receiving end of a series plant.
-- **The suites pass on `main`:** `npm test` 28 files / 536 tests,
-  `npm run build` clean. Eighty tools.
+  all merged to `main`. Two requirements came out of it and both are built:
+  **R57**, a scene moves to another board, and **R58**, the receiving end of
+  a series plant (mocked, then built on Robert's word).
+- **The suites pass on `main`:** `npm test` 28 files / 540 tests,
+  `npm run build` clean. Eighty-one tools.
 - **The last release is 0.1.19**, from before the round. Everything since is
   on the site (the on-ramp and the guide deploy from `main`) and not in the
   package.
@@ -35,24 +35,17 @@ From a current `main`. The README's version line follows on its own. Check
 
 ---
 
-## 2. R58 — the receiving end of a series plant (mocked, not built)
+## 2. R58 is built
 
-The round's central finding: a fold that pays off on another board is
-remembered at one end only. **The mockup is written:**
-`docs/mockups/r58-the-receiving-end.html`, open after `npm run build`. It
-draws the paying-off card three ways — the edge line (A), the corner folded
-in with the edge line (B), a setup arrow's stub from off the wall (C) — the
-picker the corner opens, the fold's card after the claim and while it waits,
-the reading's lines and the tool from either end.
-
-**Recommended: B**, with one record on the fold's card (`payoffNoteId`
-beside `payoffBoardId`), the receiving board composing its marks from the
-project as it composes the cast (R51). **The honest question, unanswered:**
-a card paying off two folds gets one corner and an edge line that cannot
-name both; and the page still carries nothing. Robert's call. Once chosen:
-the kernel field and `normalizeState`, `set_plant` with `at` and a
-`set_payoff` from the other end, `read_wall`'s payoffs across boards and the
-fold's check asking for a scene, then the corner's picker in `NoteCard.tsx`.
+The receiving end of a series plant, mocked and built the same evening on
+Robert's "I trust your judgement": the corner folded in, the edge line, the
+picker, one record on the fold's card, `set_plant` with `at` and
+`set_payoff`, the reading asking which scene once the promised board holds
+cards. Merged; released with the round's fixes. What it cannot say is
+recorded in R58: a card paying off two folds says "2 folds", and the page
+carries nothing. Round sixteen, if one runs, should put a two-board
+treatment through again and see whether an agent finds `at` and `set_payoff`
+without being told.
 
 ---
 
@@ -88,4 +81,4 @@ fold's check asking for a scene, then the corner's picker in `NoteCard.tsx`.
 1. Read `blind-runs/README.md`'s recurrence table, then the head of
    `blind-runs/round-fifteen-report.md` and its sections 3 to 5.
 2. Release (item 1).
-3. Mock R58 (item 2), and put the three calls above to Robert in one message.
+3. Put the three calls in section 3 to Robert in one message; then round sixteen or the real script.

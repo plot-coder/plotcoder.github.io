@@ -85,6 +85,11 @@ export declare function liftCast(
 ): { project: ProjectRecord; boards: Record<string, BoardState>; changed: boolean };
 export type CastElsewhere = Record<string, Array<{ board: string; boardId: string; cards: number }>>;
 export declare function castElsewhere(project: ProjectRecord, boards: Record<string, BoardState>, activeBoardId: string): CastElsewhere;
+
+/** A fold on another board that lands here (R58): the fold's board, card and colour, and the paying-off card here (null while waiting). */
+export type Landing = { id: string | null; fromBoardId: string; fromBoardName: string; fromNoteId: string; fromHeadline: string; fromColor: string };
+export declare function landingsOn(project: ProjectRecord, boards: Record<string, BoardState>, boardId: string): { paid: Array<Landing & { id: string }>; waiting: Landing[] };
+export declare function laterBoards(project: ProjectRecord, boards: Record<string, BoardState>): Record<string, { name: string; cards: number; noteIds: string[] }>;
 export declare function mergeRoster(
   project: ProjectRecord,
   state: BoardState,

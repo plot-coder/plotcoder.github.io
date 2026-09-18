@@ -81,6 +81,8 @@ export type BoardNote = {
   plants: boolean;
   /** When folded: the id of another board of the project where it pays off (R50), or null. */
   payoffBoardId: string | null;
+  /** The scene on that board that pays it off (R58), or null while the board is only a promise. */
+  payoffNoteId: string | null;
   /** Where the scene happens (R37): a phrase in the writer's words; empty until set. */
   location: string;
   /** When the scene happens, as the writer says it — "night", "day four, dawn" — printed after the place on the heading (R55). Empty when unsaid. */
@@ -184,7 +186,7 @@ export type Command =
   | ({ type: "update_character"; id: string } & Partial<Record<CharacterField, string>>)
   | { type: "set_cast"; ids: string[]; characterIds: string[] }
   | { type: "set_plant"; ids: string[]; plants: boolean }
-  | { type: "set_payoff_board"; ids: string[]; boardId: string | null }
+  | { type: "set_payoff_board"; ids: string[]; boardId: string | null; noteId?: string | null }
   | { type: "set_location"; ids: string[]; location: string }
   | { type: "set_when"; ids: string[]; when: string }
   | { type: "apply_template"; template: string; beats?: Array<{ name: string; prompt: string; at: number }> }

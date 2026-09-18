@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { emptyState } from "./reducer";
 import {
   castElsewhere,
+  landingsOn,
+  laterBoards,
   liftCast,
   mergeRoster,
   sameRoster,
@@ -208,7 +210,7 @@ describe("one cast for the project (R51)", () => {
   const NOW = "2026-09-14T00:00:00.000Z";
   const person = (id: string, name: string, notes = "") => ({ id, name, looks: "", voice: "", wants: "", needs: "", notes, createdAt: NOW, updatedAt: NOW });
   const card = (id: string, characterIds: string[]) => ({
-    id, headline: id, change: "Turns.", color: "yellow" as const, x: 0, y: 0, rotate: 0, z: 1, rank: "scene" as const, lengthEighths: null, characterIds, plants: false, payoffBoardId: null, location: "", when: "", text: "", createdAt: NOW, updatedAt: NOW,
+    id, headline: id, change: "Turns.", color: "yellow" as const, x: 0, y: 0, rotate: 0, z: 1, rank: "scene" as const, lengthEighths: null, characterIds, plants: false, payoffBoardId: null, payoffNoteId: null, location: "", when: "", text: "", createdAt: NOW, updatedAt: NOW,
   });
 
   it("lifts the boards' rosters onto a record written before it, merging by name and recasting folded ids", () => {
@@ -260,6 +262,20 @@ describe("one cast for the project (R51)", () => {
     const boards = { pilot: { ...emptyState(), notes: [card("a", ["n1", "d1"]), card("b", ["n1"])] }, ep2: { ...emptyState(), notes: [] } };
     expect(castElsewhere(project, boards, "ep2")).toEqual({ n1: [{ board: "Pilot", boardId: "pilot", cards: 2 }], d1: [{ board: "Pilot", boardId: "pilot", cards: 1 }] });
     expect(castElsewhere(project, boards, "pilot")).toEqual({});
+  });
+
+  it("composes what lands on a board from the other boards' folds (R58): paid where a scene here claims it, waiting otherwise", () => {
+    const project = { ...emptyProject(NOW), boards: [{ id: "pilot", name: "Pilot", createdAt: NOW, updatedAt: NOW }, { id: "ep2", name: "Episode two", createdAt: NOW, updatedAt: NOW }], activeBoardId: "ep2" };
+    const fold = (id: string, headline: string, payoffNoteId: string | null) => ({ ...card(id, []), headline, color: "yellow" as const, plants: true, payoffBoardId: "ep2", payoffNoteId });
+    const boards = {
+      pilot: { ...emptyState(), notes: [fold("p1", "The ledger", "e1"), fold("p2", "The letter", null), fold("p3", "The shim", "gone"), { ...card("p4", []), plants: true, payoffBoardId: null, payoffNoteId: null }] },
+      ep2: { ...emptyState(), notes: [card("e1", []), card("e2", [])] },
+    };
+    const landings = landingsOn(project, boards, "ep2");
+    expect(landings.paid).toEqual([{ id: "e1", fromBoardId: "pilot", fromBoardName: "Pilot", fromNoteId: "p1", fromHeadline: "The ledger", fromColor: "yellow" }]);
+    expect(landings.waiting.map((item) => [item.fromNoteId, item.id])).toEqual([["p2", null], ["p3", "gone"]]);
+    expect(landingsOn(project, boards, "pilot")).toEqual({ paid: [], waiting: [] });
+    expect(laterBoards(project, boards)).toEqual({ pilot: { name: "Pilot", cards: 4, noteIds: ["p1", "p2", "p3", "p4"] }, ep2: { name: "Episode two", cards: 2, noteIds: ["e1", "e2"] } });
     const bare = normalizeProject({ id: "p", boards: [{ id: "b", name: "B" }] } as unknown as Parameters<typeof normalizeProject>[0], NOW);
     expect("characters" in bare).toBe(false);
     expect(normalizeProject({ ...bare, characters: [person("n1", "Nessa"), { id: 3 }] } as unknown as Parameters<typeof normalizeProject>[0], NOW).characters).toEqual([person("n1", "Nessa")]);

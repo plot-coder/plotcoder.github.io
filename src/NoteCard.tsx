@@ -1,10 +1,13 @@
-import { useEffect, useState, type PointerEvent } from "react";
+import { useEffect, useState, type CSSProperties, type PointerEvent } from "react";
 import { wordSentence } from "./board/words";
 import { CastLine } from "./CastLine";
 import { PlaceLine } from "./PlaceLine";
 import { EditableText } from "./EditableText";
 import { DEFAULT_NOTE_EIGHTHS, formatPages, isMeasured, noteEighths, type BoardCharacter } from "./board/reducer";
 import { NOTE_COLORS, type MockNote, type NoteColor, type NoteRank } from "./noteMock";
+
+// The paper colours, for the fold's paper showing through a corner folded in (R58).
+const PAPER: Record<NoteColor, string> = { yellow: "#ffe56a", pink: "#ffb6c8", blue: "#9fd4f5", green: "#c4e48a", orange: "#ffc56a" };
 
 // The sizes a writer actually reaches for, in eighths of a page. Not a slider:
 // nobody knows a scene is 1 3/8 pages before it exists, and pretending to that
@@ -32,6 +35,14 @@ type NoteCardProps = {
   hasTake: boolean;
   /** When folded: where it pays off ("paid off in 14", "pays off in Episode two"), or null while unpaid. */
   payoff: string | null;
+  /** The wall still asks about this fold (R58): a promise with no scene yet wears the warm colour. */
+  payoffOpen: boolean;
+  /** The receiving end (R58): what this card pays off from another board, and that fold's paper. */
+  paysOff: { label: string; color: NoteColor } | null;
+  /** Folds of other boards waiting for a scene here (R58). */
+  waiting: Array<{ fromBoardId: string; fromNoteId: string; label: string }>;
+  onClaim: (id: string, fromBoardId: string, fromNoteId: string) => void;
+  onUnclaim: (id: string) => void;
   /** Open Pages at this scene: the number is the script's address for it. */
   onOpenPages: (id: string) => void;
   onCastNames: (id: string, names: string[]) => void;
@@ -63,6 +74,11 @@ export function NoteCard({
   revised,
   hasTake,
   payoff,
+  payoffOpen,
+  paysOff,
+  waiting,
+  onClaim,
+  onUnclaim,
   onOpenPages,
   onCastNames,
   onLocation,
@@ -83,22 +99,26 @@ export function NoteCard({
   const sized = note.lengthEighths !== null && note.lengthEighths !== DEFAULT_NOTE_EIGHTHS;
   const [picking, setPicking] = useState(false);
   const [sizing, setSizing] = useState(false);
+  // The corner's picker (R58): fold it, or pay off a fold waiting from another board.
+  const [cornering, setCornering] = useState(false);
 
   useEffect(() => {
     if (active) {
       setPicking(false);
       setSizing(false);
+      setCornering(false);
     }
   }, [active]);
 
   return (
     <article
-      className={`note note--${note.color} ${isBeat ? "is-beat" : ""} ${sized ? "is-sized" : ""} ${active ? "is-active" : ""} ${selected ? "is-selected" : ""} ${linking ? "is-linking" : ""} ${dropTarget ? "is-drop-target" : ""} ${picking || sizing ? "is-picking" : ""} ${dimmed ? "is-dim" : ""} ${note.plants ? "is-planted" : ""} ${revised ? `is-revised rev--${revised}` : ""}`}
+      className={`note note--${note.color} ${isBeat ? "is-beat" : ""} ${sized ? "is-sized" : ""} ${active ? "is-active" : ""} ${selected ? "is-selected" : ""} ${linking ? "is-linking" : ""} ${dropTarget ? "is-drop-target" : ""} ${picking || sizing || cornering ? "is-picking" : ""} ${dimmed ? "is-dim" : ""} ${note.plants ? "is-planted" : ""} ${paysOff ? "is-paying" : ""} ${revised ? `is-revised rev--${revised}` : ""}`}
       style={{
         left: note.x,
         top: note.y,
         zIndex: note.z + 10,
         transform: `rotate(${note.rotate}deg)`,
+        ...(paysOff ? ({ "--from-paper": PAPER[paysOff.color] } as CSSProperties) : {}),
       }}
       data-note={note.id}
       onPointerDown={(event) => onPointerDown(event, note)}
@@ -116,17 +136,66 @@ export function NoteCard({
             : `Fold the corner of ${note.headline}: it plants something to pay off later`
         }
         aria-pressed={note.plants}
+        aria-expanded={waiting.length || paysOff ? cornering : undefined}
         data-tip={wordSentence("corner")}
         onPointerDown={(event) => event.stopPropagation()}
-        onClick={() => onSetPlant(note.id, !note.plants)}
+        onClick={() => {
+          // With folds waiting from another board, or a claim here, the corner asks which (R58); otherwise it folds.
+          if (waiting.length || paysOff) {
+            setPicking(false);
+            setSizing(false);
+            setCornering((open) => !open);
+          } else onSetPlant(note.id, !note.plants);
+        }}
       >
         <span className="note__fold-flap" aria-hidden="true" />
       </button>
+      {cornering ? (
+        <div className="note__lengths note__corner-pick" onPointerDown={(event) => event.stopPropagation()}>
+          <p className="note__picker-cap">Corner</p>
+          <button
+            type="button"
+            className="note__length-option note__corner-option"
+            onClick={() => {
+              onSetPlant(note.id, !note.plants);
+              setCornering(false);
+            }}
+          >
+            {note.plants ? "Unfold: it plants nothing" : "Fold it: this scene plants something"}
+          </button>
+          {waiting.length ? <p className="note__picker-cap">Pays off a fold from another board</p> : null}
+          {waiting.map((fold) => (
+            <button
+              key={`${fold.fromBoardId}:${fold.fromNoteId}`}
+              type="button"
+              className="note__length-option note__corner-option"
+              onClick={() => {
+                onClaim(note.id, fold.fromBoardId, fold.fromNoteId);
+                setCornering(false);
+              }}
+            >
+              {fold.label}
+            </button>
+          ))}
+          {paysOff ? (
+            <button
+              type="button"
+              className="note__length-option note__corner-option"
+              onClick={() => {
+                onUnclaim(note.id);
+                setCornering(false);
+              }}
+            >
+              Take the claim back: it pays off nothing here
+            </button>
+          ) : null}
+        </div>
+      ) : null}
       {/* The top edge, right of the fold's square: the locked scene number (a
           button — the number is the script's address, so it opens Pages there),
           then the fold's state, a debt in the warm colour until a setup arrow
           leaves the card. One line, one home, whether or not the corner folds. */}
-      {sceneNumber || note.plants ? (
+      {sceneNumber || note.plants || paysOff ? (
         <span className="note__edge">
           {sceneNumber ? (
             <button
@@ -141,7 +210,7 @@ export function NoteCard({
             </button>
           ) : null}
           {note.plants ? (
-            <span className={`note__plant ${payoff ? "" : "is-unpaid"}`} aria-live="polite">
+            <span className={`note__plant ${payoff && !payoffOpen ? "" : "is-unpaid"}`} aria-live="polite">
               {sceneNumber ? <span aria-hidden="true">· </span> : null}
               {payoff ? (
                 <>
@@ -150,6 +219,12 @@ export function NoteCard({
               ) : (
                 "Plants · unpaid"
               )}
+            </span>
+          ) : null}
+          {paysOff ? (
+            <span className="note__plant" aria-label={`Pays off a fold from another board: ${paysOff.label}`}>
+              {sceneNumber || note.plants ? <span aria-hidden="true">· </span> : null}
+              Pays off · <b>{paysOff.label}</b>
             </span>
           ) : null}
         </span>

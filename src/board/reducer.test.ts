@@ -598,6 +598,19 @@ describe("set_payoff_board (R50)", () => {
     expect(applyCommand(named.state, { type: "set_payoff_board", ids: [key.id], boardId: "ep2" }).changed).toBe(false);
     const cleared = applyCommand(named.state, { type: "set_payoff_board", ids: [key.id], boardId: null }).state;
     expect(cleared.notes[0].payoffBoardId).toBeNull();
+    // The receiving end (R58): a scene on that board, kept on the fold; a board alone is a promise.
+    expect(named.state.notes[0].payoffNoteId).toBeNull();
+    const claimed = applyCommand(named.state, { type: "set_payoff_board", ids: [key.id], boardId: "ep2", noteId: "ep2-gate" });
+    expect(claimed.changed).toBe(true);
+    expect(claimed.state.notes[0]).toMatchObject({ payoffBoardId: "ep2", payoffNoteId: "ep2-gate" });
+    expect(applyCommand(claimed.state, { type: "set_payoff_board", ids: [key.id], boardId: "ep2", noteId: "ep2-gate" }).changed).toBe(false);
+    // Naming the board again without a scene takes the claim back to a promise; unfolding forgets both.
+    expect(applyCommand(claimed.state, { type: "set_payoff_board", ids: [key.id], boardId: "ep2" }).state.notes[0].payoffNoteId).toBeNull();
+    expect(applyCommand(claimed.state, { type: "set_plant", ids: [key.id], plants: false }).state.notes[0]).toMatchObject({ plants: false, payoffBoardId: null, payoffNoteId: null });
+    // A record from before R58 is repaired to a promise; a note without its board claims nothing.
+    const older = normalizeState({ ...claimed.state, notes: [{ ...claimed.state.notes[0], payoffNoteId: undefined }, { ...claimed.state.notes[1], payoffNoteId: "x" }] });
+    expect(older.notes[0].payoffNoteId).toBeNull();
+    expect(older.notes[1].payoffNoteId).toBeNull();
     const unfoldedKey = applyCommand(named.state, { type: "set_plant", ids: [key.id], plants: false }).state;
     expect(unfoldedKey.notes[0].payoffBoardId).toBeNull();
     // A card written before R50 has no field; it claims nothing.

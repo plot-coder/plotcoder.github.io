@@ -2986,34 +2986,30 @@ server.registerTool(
   {
     title: "Cast a scene",
     description:
-      "Set who is in one or more cards of the open board (open_board first for another board's cards). Takes card ids and character names or ids; the list replaces the card's cast, so pass everyone who is in the scene. An empty list clears it. Names must already be in the cast — add_character first — and the tool says which names it did not know.",
+      "Set who is in one or more cards of the open board (open_board first for another board's cards). Takes card ids and character names or ids; the list replaces the card's cast, so pass everyone who is in the scene. An empty list clears it. A name not yet in the cast is added to it, as create_note does, and the reply says so — the writer named them, so it is not inventing; a role is a name.",
     inputSchema: {
       noteIds: z.array(z.string()).min(1),
       characters: z.array(z.string()),
     },
   },
   async (args) => {
-    const { state: before } = await readBoard();
-    const unknown = [];
-    const characterIds = [];
-    for (const who of args.characters) {
-      const match = before.characters.find(
-        (character) =>
-          character.id === who || character.name.trim().toLowerCase() === who.trim().toLowerCase(),
-      );
-      if (match) characterIds.push(match.id);
-      else unknown.push(who);
-    }
-    if (unknown.length > 0) {
-      return ok(
-        `No cast set: not in the cast — ${unknown.map((name) => `"${name}"`).join(", ")}. Call add_character for each, then cast again.`,
-      );
-    }
-    const { state, changed, result, live } = await commit({
-      type: "set_cast",
-      ids: args.noteIds,
-      characterIds,
+    // A name the cast does not have is added to it in the same frame, as
+    // create_note does — two tools, one rule (round seventeen, entry 14).
+    const added = [];
+    const { state, changed, value: result, live } = await commitAll(`cast ${args.noteIds.length} card(s)`, (step, current) => {
+      const characterIds = [];
+      for (const who of args.characters) {
+        const wanted = who.trim().toLowerCase();
+        let person = current().characters.find((character) => character.id === who || character.name.trim().toLowerCase() === wanted);
+        if (!person && wanted) {
+          person = step({ type: "add_character", name: who.trim() }).result;
+          if (person) added.push(`${person.name} (${person.id})`);
+        }
+        if (person && !characterIds.includes(person.id)) characterIds.push(person.id);
+      }
+      return step({ type: "set_cast", ids: args.noteIds, characterIds }).result;
     });
+    const characterIds = (result ?? []).length ? result[0].characterIds : [];
     if (!changed) {
       const missing = args.noteIds.filter((id) => !state.notes.some((note) => note.id === id));
       return ok(
@@ -3026,7 +3022,7 @@ server.registerTool(
       (id) => state.characters.find((character) => character.id === id)?.name ?? id,
     );
     return ok(
-      `${result.length} card(s) now cast ${names.length ? names.join(", ") : "nobody"}: ${result.map((note) => `"${note.headline}"`).join(", ")}${where(live)}.`,
+      `${result.length} card(s) now cast ${names.length ? names.join(", ") : "nobody"}: ${result.map((note) => `"${note.headline}"`).join(", ")}${added.length ? ` (added to the cast: ${added.join(", ")})` : ""}${where(live)}.`,
       result,
     );
   },

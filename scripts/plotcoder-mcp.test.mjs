@@ -886,12 +886,13 @@ describe("characters", () => {
     expect(again).toContain(`Already in the cast as "Sam" (${added.id})`);
   });
 
-  it("casts a card by name and refuses a name that is not in the cast", async () => {
-    const refused = await cast.callTool("cast", {
+  it("casts a card by name and adds a name that is not in the cast, saying so (round seventeen, entry 14)", async () => {
+    const added = await cast.callTool("cast", {
       noteIds: ["maya-letter"],
       characters: ["Maya", "Reed"],
     });
-    expect(refused).toContain('not in the cast — "Reed"');
+    expect(added).toContain("1 card(s) now cast Maya, Reed");
+    expect(added).toMatch(/added to the cast: Reed \([a-z0-9-]+\)/);
 
     const text = await cast.callTool("cast", {
       noteIds: ["maya-letter"],

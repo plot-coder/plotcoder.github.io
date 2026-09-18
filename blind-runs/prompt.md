@@ -1,43 +1,47 @@
-# The blind-run prompt — round fifteen: a series, two boards
+# The blind-run prompt — round sixteen: the same series, the fixes in hand
 
 Paste everything below the line into a fresh agent session. The credentials are
 already in the server's wiring: the test account is `test@test.com`, password
 `test`, a throwaway that holds nothing of anyone's. The agent checks and
-empties it itself at the start of the round, in case round fourteen left
+empties it itself at the start of the round, in case round fifteen left
 something.
 
-Round fifteen is the first round on a **project of two boards**. Every round
-since four has built one board; a series with two episodes is the case no
-round has measured. The treatment is new, "The Weighbridge", two half-hour
-episodes with a premise above them, one cast, and things planted in the
-first that pay off in the second. Nothing here tells the agent what we expect
-to go wrong.
+Round sixteen runs "The Weighbridge" again through the published package, so
+the walls are comparable with round fifteen's, and takes the directions
+further across the two boards. Thirty-four of round fifteen's forty-five
+entries were fixed the same evening and two requirements came out of it, R57
+and R58 (`round-fifteen-report.md`); this round measures whether the fixes
+hold in a stranger's hands — whether the tools a second board needs are found
+without being told — and what the production half does across two boards.
+Nothing here tells the agent what those were.
 
 Before you paste:
 
-1. **Land the fixes where the round will find them.** The round reads the
-   on-ramp at plotcoder.com and runs `npx -y plotcoder-board@latest`, so
-   both have to carry the current code before the session starts. The site
-   is deployed from `main` on every merge; the package is not. From a
-   current `main`:
+1. **Check the wiring.** Round fifteen's first session stopped at the door
+   because the `plotcoder-board` entry had vanished from `~/.claude.json`.
+   Look before you start:
+
+   ```bash
+   node -e 'const c=require(process.env.HOME+"/.claude.json");const p=c.mcpServers&&c.mcpServers["plotcoder-board"];console.log(p?"wired as "+p.env.PLOTCODER_EMAIL:"NOT WIRED")'
+   ```
+
+   If it says not wired, put the entry back by hand — top-level `mcpServers`,
+   `"plotcoder-board": { "type": "stdio", "command": "npx", "args": ["-y",
+   "plotcoder-board@latest"], "env": { "PLOTCODER_EMAIL": "test@test.com",
+   "PLOTCODER_PASSWORD": "test" } }` — because the `claude` command is not on
+   this machine. A server wired from inside a session connects only on the
+   next one, which is why the person does this and not the agent.
+2. **Land the fixes where the round will find them.** The round reads the
+   on-ramp at plotcoder.com and runs `npx -y plotcoder-board@latest`. Both
+   carry 0.1.21, which has everything round fifteen produced; if code has
+   changed since, merge to `main`, wait for the Pages deploy, and release
+   from a current `main`:
 
    ```bash
    npm version patch && git push && git push --tags
    ```
 
-   The tag runs the publish workflow. Check `npm view plotcoder-board version`
-   shows the new number before you start, or the agent runs last week's server.
-2. The server is wired from round thirteen; `@latest` fetches the released
-   version each session, so nothing to change. If it was taken out:
-
-   ```bash
-   claude mcp add plotcoder-board -s user -e PLOTCODER_EMAIL=test@test.com -e PLOTCODER_PASSWORD=test -- npx -y plotcoder-board@latest
-   ```
-
-   The `claude` command is not on this machine, so the wiring is by hand in
-   `~/.claude.json`, user scope, with the two variables in `env`. A server
-   wired from inside a session connects only on the next one, which is why
-   the person does this and not the agent.
+   Check `npm view plotcoder-board version` shows the number you expect.
 3. Start the session with no folder (the app's "No folder" scratch workspace
    is right). Inside a repo worktree the harness puts `CLAUDE.md` in the
    agent's context, and the run is not blind.
@@ -45,18 +49,22 @@ Before you paste:
    waits for you to say "go on". When it has read the walls back, stay:
    answer its questions and direct it the way you would a person. Directions
    worth giving this round, in your own words and one at a time — the ground
-   a second board opens, and the ground past it:
-   - the shim under the plate should open episode two, not close episode
-     one: put it there;
-   - Rooney's driver is at the plate in the last scene of episode two: put
-     him in it;
+   round fifteen opened, and the ground past it:
+   - the shim under the plate opens episode two, not episode one: put it
+     there;
+   - the photograph and the inspector's letter both land in episode two:
+     say on the wall which scene pays each one off, and then ask what each
+     board says about them;
    - Dana's page, across both episodes;
-   - the half-hour structure beside episode one, without laying cards;
-   - write the re-test in episode two; then the script out as Final Draft
-     for an agency — and ask what goes out, one file or two, what each is
-     called, and how the unwritten scenes read;
-   - how long is it, the series and each episode, as a wall;
-   - rename the series;
+   - write the re-test in episode two; then a blue revision on that episode
+     and change the inspector's last line;
+   - lock the numbers on episode one, then add a scene between the funeral
+     and the ledger, and ask what number it got;
+   - the script out as Final Draft for an agency, both episodes — what goes
+     out, what each is called, how the unwritten scenes read;
+   - how long is it, the series and each episode, and which numbers are
+     measured;
+   - undo the last thing you did on episode one, and tell me what came back;
    - anything else a writer would ask on day two.
    It brings you the new entries at each step; "log so far" gets the whole
    log, "stop" gets the report.
@@ -110,12 +118,12 @@ the run: do not log it. If the account is already empty, say so and carry on.
 4. Read it back to me: what is there, episode by episode, and what it asks.
 5. **Then wait for me.** I will answer your questions and give you directions,
    one at a time, and they will go past the wall: a scene to move, a person
-   to follow, a scene to write, the script to take out for people who do not
-   use a screenwriting app. Do what I ask and nothing more. When a direction
-   could mean two things on these walls, ask before you act. After each
-   direction, tell me in a line what you did and what the app said back,
-   quote the reply whenever it surprised you, and give me the friction
-   entries that direction produced.
+   to follow, a scene to write and revise, the numbers locked, the script to
+   take out for people who do not use a screenwriting app. Do what I ask and
+   nothing more. When a direction could mean two things on these walls, ask
+   before you act. After each direction, tell me in a line what you did and
+   what the app said back, quote the reply whenever it surprised you, and
+   give me the friction entries that direction produced.
 6. Keep going until I say **stop**. Then hand me the report.
 
 I will not ask you for the log. You bring it to me, as it grows, at the

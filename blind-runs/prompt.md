@@ -1,25 +1,25 @@
-# The blind-run prompt — round sixteen: the same series, the fixes in hand
+# The blind-run prompt — round seventeen: an idea, not a treatment
 
 Paste everything below the line into a fresh agent session. The credentials are
 already in the server's wiring: the test account is `test@test.com`, password
 `test`, a throwaway that holds nothing of anyone's. The agent checks and
-empties it itself at the start of the round, in case round fifteen left
+empties it itself at the start of the round, in case round sixteen left
 something.
 
-Round sixteen runs "The Weighbridge" again through the published package, so
-the walls are comparable with round fifteen's, and takes the directions
-further across the two boards. Thirty-four of round fifteen's forty-five
-entries were fixed the same evening and two requirements came out of it, R57
-and R58 (`round-fifteen-report.md`); this round measures whether the fixes
-hold in a stranger's hands — whether the tools a second board needs are found
-without being told — and what the production half does across two boards.
-Nothing here tells the agent what those were.
+Round seventeen changes the material, not the directions. Every round since
+twelve handed the agent a finished treatment that answered the eleven
+questions up front; this one hands it a page of a writer's notes —
+`round-seventeen-idea.md`, "The Allotments": eight scenes the writer knows,
+two versions of the time, an ending not chosen, a break-in with three
+suspects, names for some people and not others — and a writer in the room
+who answers. What the agent asks, what it does with a maybe, and what the
+wall's reading does for a story that does not exist yet, is the measurement.
+The app is for creating stories from ideas; this is the first round that
+starts from one. Nothing here tells the agent what we expect to go wrong.
 
 Before you paste:
 
-1. **Check the wiring.** Round fifteen's first session stopped at the door
-   because the `plotcoder-board` entry had vanished from `~/.claude.json`.
-   Look before you start:
+1. **Check the wiring.**
 
    ```bash
    node -e 'const c=require(process.env.HOME+"/.claude.json");const p=c.mcpServers&&c.mcpServers["plotcoder-board"];console.log(p?"wired as "+p.env.PLOTCODER_EMAIL:"NOT WIRED")'
@@ -28,44 +28,55 @@ Before you paste:
    If it says not wired, put the entry back by hand — top-level `mcpServers`,
    `"plotcoder-board": { "type": "stdio", "command": "npx", "args": ["-y",
    "plotcoder-board@latest"], "env": { "PLOTCODER_EMAIL": "test@test.com",
-   "PLOTCODER_PASSWORD": "test" } }` — because the `claude` command is not on
-   this machine. A server wired from inside a session connects only on the
-   next one, which is why the person does this and not the agent.
-2. **Land the fixes where the round will find them.** The round reads the
-   on-ramp at plotcoder.com and runs `npx -y plotcoder-board@latest`. Both
-   carry 0.1.21, which has everything round fifteen produced; if code has
-   changed since, merge to `main`, wait for the Pages deploy, and release
-   from a current `main`:
+   "PLOTCODER_PASSWORD": "test" } }` — and start the session after.
+2. **Land the fixes where the round will find them.** Both plotcoder.com and
+   `npx -y plotcoder-board@latest` carry 0.1.23, which has everything round
+   sixteen produced; if code has changed since, merge to `main`, wait for
+   the Pages deploy, and release from a current `main`:
 
    ```bash
    npm version patch && git push && git push --tags
    ```
 
-   Check `npm view plotcoder-board version` shows the number you expect.
 3. Start the session with no folder (the app's "No folder" scratch workspace
    is right). Inside a repo worktree the harness puts `CLAUDE.md` in the
    agent's context, and the run is not blind.
-4. The agent stops after its first calls with the first friction entries and
-   waits for you to say "go on". When it has read the walls back, stay:
-   answer its questions and direct it the way you would a person. Directions
-   worth giving this round, in your own words and one at a time — the ground
-   round fifteen opened, and the ground past it:
-   - the shim under the plate opens episode two, not episode one: put it
-     there;
-   - the photograph and the inspector's letter both land in episode two:
-     say on the wall which scene pays each one off, and then ask what each
-     board says about them;
-   - Dana's page, across both episodes;
-   - write the re-test in episode two; then a blue revision on that episode
-     and change the inspector's last line;
-   - lock the numbers on episode one, then add a scene between the funeral
-     and the ledger, and ask what number it got;
-   - the script out as Final Draft for an agency, both episodes — what goes
-     out, what each is called, how the unwritten scenes read;
-   - how long is it, the series and each episode, and which numbers are
-     measured;
-   - undo the last thing you did on episode one, and tell me what came back;
-   - anything else a writer would ask on day two.
+4. **The writer's answers.** The notes leave things open on purpose. When
+   the agent asks, answer from here, in your own words, and only what it
+   asks; where it does not ask, do not volunteer:
+   - It is a feature, ninety pages. The title is "Plot 14".
+   - It is the third year. Con's wife, Bridie, died two years ago; he has
+     been on the plot alone since. The crowns were planted the spring before
+     she died. This is the first year they can be cut.
+   - The land is going for housing. The council man has no name.
+   - Ruth was in hospital — a breakdown, four months. She says so on the
+     day she tells him. Her surname is Kane. The sister is never seen and
+     never named.
+   - The letter is posted to the house; Con pins it to the shed door
+     himself, which is how Ruth learns of it.
+   - The break-in: kids from the estate, and Con knows which ones. Say
+     "kids" first; if the agent asks whether Con knows them, yes.
+   - Declan's wish to move him to Naas is pressure on the plot, not the
+     plot: a subplot.
+   - The ending: they lose the plots. Ruth keeps the crowns in a bucket on
+     her balcony. Con does not die in this film.
+   - The turns: "propose them and I will strike".
+   - The wrong tools pay off when Con gives her his; the key pays off after
+     the break-in, when he gives her the only one; the bucket pays off in
+     the last scene.
+   - Anything else the notes do not say: "I don't know yet — leave it
+     open", and see what the agent does with an open thing.
+5. The agent stops after its first calls with the first friction entries and
+   waits for you to say "go on". Then it will ask; answer as above. When it
+   has built and read the wall, stay, and direct, one at a time:
+   - propose the turns and mark them; then strike one and add one;
+   - which of my eight scenes have nothing between them, and what would
+     you put there — propose, do not add;
+   - the break-in was Con, not the kids, after all: change the wall;
+   - fold what pays off and say where each lands;
+   - write the first morning;
+   - how long is it, and what is missing to reach ninety;
+   - anything else a writer would ask on day one.
    It brings you the new entries at each step; "log so far" gets the whole
    log, "stop" gets the report.
 
@@ -107,30 +118,29 @@ the run: do not log it. If the account is already empty, say so and carry on.
 
 1. Make the calls the on-ramp tells you to make first, before you change
    anything.
-2. Read the treatment at the end of this message. It answers, up front, the
-   questions the app says a treatment should answer. Use those answers; ask
-   me only about what they leave open.
-3. Build it: two episodes of a series, in one project, as the treatment
-   lays them out — the scenes as cards, the major turns marked, the cast,
-   the places, when each scene happens, the arrows, the acts, the plants
-   and where each pays off, the series' premise and each episode's central
-   question.
-4. Read it back to me: what is there, episode by episode, and what it asks.
-5. **Then wait for me.** I will answer your questions and give you directions,
-   one at a time, and they will go past the wall: a scene to move, a person
-   to follow, a scene to write and revise, the numbers locked, the script to
-   take out for people who do not use a screenwriting app. Do what I ask and
-   nothing more. When a direction could mean two things on these walls, ask
-   before you act. After each direction, tell me in a line what you did and
-   what the app said back, quote the reply whenever it surprised you, and
+2. Read my notes at the end of this message. They are notes, not a
+   treatment: some of it I know, some of it I have two versions of, and some
+   of it I have not decided. **Ask me** what you need to build a wall from
+   them. Ask what the app says a treatment should answer, and anything the
+   notes leave open that you need. Where I say I don't know, leave it open
+   and tell me how the wall holds an open thing.
+3. Build it as one board from what the notes state and what I answer:
+   the scenes as cards, the cast, the places, when each scene happens where
+   that matters, the arrows, the plants and where they pay off, the film's
+   central question if I give you one. Mark no turns until I say.
+4. Read the wall back to me: what is there, and what it asks.
+5. **Then wait for me.** I will give you directions, one at a time. Do what I
+   ask and nothing more. When a direction could mean two things on this wall,
+   ask before you act. After each direction, tell me in a line what you did
+   and what the app said back, quote the reply whenever it surprised you, and
    give me the friction entries that direction produced.
 6. Keep going until I say **stop**. Then hand me the report.
 
 I will not ask you for the log. You bring it to me, as it grows, at the
 places the next section names.
 
-Ask me about anything the treatment does not say. I would rather answer four
-questions than read four inventions.
+Ask me about anything the notes do not say. I would rather answer ten
+questions than read one invention.
 
 ## What I do not want you to do
 
@@ -143,7 +153,9 @@ questions than read four inventions.
   description and its reply do not tell you enough, that is a finding. Write it
   down and ask me.
 - Do not drive the app by faking mouse or keyboard input. Call the tools.
-- Do not invent a person, a logline, or any fact the treatment does not state.
+- Do not invent a person, a logline, a scene, or any fact the notes do not
+  state and I have not given you. Where the notes have two versions, ask
+  which; where they have none, ask, and if I say leave it, leave it.
 - Do not write scene text, paginate, export or print until I ask for it. I will.
 
 ## The log
@@ -153,18 +165,19 @@ memory at the end. An entry is every place the app, the on-ramp, the guide, a
 tool's description or a tool's reply made you slower, made you guess, made you
 backtrack, or left you unsure whether what you intended had actually landed.
 Include the small ones: a word that read two ways, a reply that did not say what
-it had done, a direction of mine you could not map onto any tool. Number them in
-the order they happened and say which part of the session each one came from:
-the way in, the build, the reading, or my directions. Do not rank them and do
+it had done, a direction of mine you could not map onto any tool, and an open
+thing in my notes the wall had no way to hold. Number them in the order they
+happened and say which part of the session each one came from: the way in,
+the asking, the build, the reading, or my directions. Do not rank them and do
 not fix them; that is my job.
 
-**Show me the new entries without being asked**, at four points:
+**Show me the new entries without being asked**, at five points:
 
-- when you are wired in and have made the first calls, before you build —
-  and **stop there and wait** for me to say go on, so I see the way in
-  before the wall;
-- when both episodes are built, before you read them back;
-- with the reading, when you hand me the walls and their questions;
+- when you are wired in and have made the first calls, before you ask me
+  anything — and **stop there and wait** for me to say go on;
+- with your questions, before I answer them;
+- when the wall is built, before you read it back;
+- with the reading, when you hand me the wall and its questions;
 - after every direction of mine, with the line that says what you did.
 
 Each time, the entries since the last time, numbered on from where the log
@@ -185,179 +198,54 @@ When I say stop, hand me one report and make it the only thing you hand back.
    than the one you first reached for.
 5. **What you were never sure had landed.** Anything you did that you could not
    confirm from a reply.
+6. **What the notes left open that the wall could not hold**, and what you
+   did with it.
 
 Be blunt. A polite log is a useless log. I am going to act on this, and
 anything you smooth over is something I will not fix.
 
 ---
 
-## The treatment
+## The notes
 
-# The Weighbridge — two episodes of a series
 
-**What this treatment answers, up front.**
+Something about the allotments behind the railway in a midlands town. Con
+Brady, seventies, has had plot 14 for forty years. The council is selling
+the land — to whom? A supermarket, or housing. Decide.
 
-- Length: a half-hour series. Each episode is thirty pages. There are two
-  episodes here; the series would run to six.
-- The project is "The Weighbridge". It holds two boards, one per episode:
-  "Gross Weight" and "Certified", in that order.
-- The series premise is stated below, verbatim, and each episode has its own
-  central question, stated at its head, verbatim.
-- The turns, five in each episode, are named at each episode's head.
-  Everything else is a scene.
-- Acts: each episode has a cold open and two acts. Where each break falls
-  is marked in the text.
-- Places are named in each paragraph. The weighbridge is one place: the
-  plate, the office beside it, the yard around it, and underneath it. The
-  café is one place. The house behind the café is one place. The church at
-  Ballinlough is one place.
-- When it matters: episode one runs over two days. Episode two runs over
-  one day twelve days later, and the dawn after it. The days are named in
-  each paragraph, and the time of day where it matters.
-- Names: Dana Kerr, Oisín Kerr, Bríd Nolan, Fintan Rooney. The inspector and
-  Rooney's driver are unnamed; call them by those roles. They are one cast for
-  the series, not one per episode. Tom Kerr, Dana's father, is dead before
-  the first scene and is in no scene; he belongs in notes, not the cast. The
-  bank, the county and the quarry are not people.
-- Planted, and where each pays off:
-  - the second column in the ledger is planted in episode one's cold open and
-    pays off in episode one, when Bríd says what it is;
-  - Oisín's photograph of the ledger is planted in episode one and pays off
-    in **episode two**, when the ledger is gone;
-  - the inspector's letter is planted in episode one and pays off in
-    **episode two**, when the inspector arrives;
-  - the shim under the plate is planted at the end of episode one and pays
-    off in **episode two**, when Dana takes it out.
-  - Dana's job in Manchester is not a plant. It pays off nowhere, in these
-    episodes or any other; if the wall asks about it, the answer is that it
-    is not planted, so do not fold it.
-- Lengths: in episode one, the funeral runs two pages and the inspector's
-  letter a quarter of a page. In episode two, the re-test runs three pages
-  and the evening in the house half a page. Leave the rest unsized.
-- Invent nothing: no looks, no voices, no facts beyond these lines. Where a
-  scene is here, its place and its people are here; if a scene seems to need
-  someone the treatment does not put in it, ask.
+A younger woman gets the plot next to his. Ruth. Thirties. She is just out
+of something — prison, or hospital, or a marriage — and does not say which.
+She turns up the first morning with the wrong tools.
 
-**The series asks:** can a place everyone passes through become the place
-someone stays?
+He teaches her to grow something. Beans, potatoes — no, something slow.
+Asparagus: three years before you cut it. That is the point: three years,
+and they have one season. Or is it the third year already? If it takes
+three years there is no crop the first season, so maybe it is the third
+year and he has been on his own for two.
 
----
+Ending: I don't know. Either they lose the plots and she keeps the crowns in
+a bucket on a balcony, or he dies and she plants them somewhere. Not both.
 
-## Episode one — Gross Weight
+Scenes I know:
+- the first morning, the wrong tools
+- the council letter (pinned to the shed door? or posted to the house?)
+- a meeting in the parish hall where Con says nothing
+- the night the shed is broken into — by whom? kids, or the developer's
+  people, or Con himself for the insurance. Probably kids.
+- the day she tells him where she was
+- the last harvest
+- Declan, the son, wants him to sell the house and move to Naas. That is a
+  subplot, or it is the plot.
+- something with the key to the shed. He has the only one.
 
-**The episode asks:** will Dana sell the weighbridge before she learns what
-it was for?
+Time: one growing season, March to October. Or the third year, see above.
 
-**The turns, five:** Fintan makes his offer; Bríd says what the second column
-is; Dana weighs the truck true; Bríd says the plate reads light; the shim.
+Half-hour? Feature? A feature, I think, but I only have eight scenes.
 
-**Cold open.** The weighbridge at Ballinlough, dawn, day one. A quarry truck
-rolls onto the plate. In the office beside it Bríd Nolan, fifty-eight, who
-cooks in the café and has read the scale every morning for twelve years,
-writes the weight in a ledger, then writes a second number beside it, and
-hands the driver a docket with the first.
+Names: Con Brady. Ruth — surname? Declan Brady. The council man, no name.
+Ruth's sister rings her; we never see the sister.
 
-**Act one.** The café, morning, day one. Dana Kerr, forty-four, arrives from
-Manchester with her son Oisín, fifteen. Bríd gives her the keys to
-everything and says the funeral is at eleven. Dana says she is selling the
-place. Bríd says people generally do.
+Things that should pay off: the wrong tools (she buys the right ones with
+her first wages, or he gives her his). The key. The bucket.
 
-The church at Ballinlough, midday, day one. Tom Kerr's funeral; two pages.
-Fintan Rooney, sixty, who runs the haulage out of the quarry, shakes Dana's
-hand at the door and says her father was a fair man to deal with, and that
-he will make her an offer on the place before she goes back.
-
-The office at the weighbridge, afternoon, day one. Dana goes through her
-father's drawers and finds the ledger. Two columns of weights, side by side,
-every day for years, the second always heavier. She does not know what the
-second is. Oisín photographs the open pages on his phone for something to do.
-
-The café, evening, day one. Dana asks Bríd about the second column. Bríd says
-the first is what goes on the docket and the second is what the truck
-weighed. Tom under-weighed Rooney's loads by a tonne for twelve years, and
-Rooney's trucks crossed the county bridge at Ballinlough overloaded on legal
-paper every day of it. The second column was Tom's own conscience. Nobody
-else has ever seen it.
-
-The house behind the café, night, day one. Oisín asks Dana whether they are
-staying. She says no. He says he liked the café. She says he liked the chips.
-
-**Act two.** The weighbridge, dawn, day two. Rooney's truck comes onto the
-plate. Rooney's driver waits at the office window for his docket. Dana
-weighs it, writes the number the scale shows, once, and hands it to him.
-He reads it, looks at her, and rings Rooney from the cab.
-
-The café, morning, day two. Fintan comes in and sits down. He offers to buy
-the weighbridge and the café for a good price, today, and says this
-morning's docket was a mistake she will want to correct. Dana asks what
-happens if she does not. He says the bridge at Ballinlough is rated for
-forty tonnes and the county has never had cause to wonder what crosses it.
-
-The office, afternoon, day two. In the post, a letter from the county's
-weights and measures inspector: the weighbridge's annual certification is
-due, and the inspector will attend on the fourteenth with test weights. A
-quarter of a page.
-
-The café, evening, day two. Dana tells Bríd she is not selling yet. Bríd
-says in that case there is a thing she will want to know: the plate reads a
-tonne light and always has, since before Bríd's time, and Tom's second
-column was the correction, not the crime.
-
-The weighbridge, night, day two. Dana and Oisín underneath the plate with a
-torch. Oisín finds a steel wedge, the size of a fist, jammed under one of the
-load cells. Dana looks at it for a long time and leaves it where it is. She
-does not tell him why. End of episode.
-
----
-
-## Episode two — Certified
-
-**The episode asks:** can Dana keep the weighbridge honest and keep it at
-all?
-
-**The turns, five:** the plate fails; the shim comes out; Dana refuses
-Fintan; the photograph shown; one column.
-
-**Cold open.** The weighbridge, morning, day fourteen. The inspector, a woman
-with a van of test weights and a clipboard, arrives at nine and says she
-will need the plate clear for an hour.
-
-The office, morning, day fourteen. Dana goes to the drawer for the ledger.
-It is not there. Bríd says Fintan was in the café yesterday afternoon and
-went through to the office for the toilet. Dana says nothing. Oisín says he
-has it, and holds up his phone.
-
-**Act one.** The café, morning, day fourteen. Fintan arrives, sits, and
-orders tea. He says the inspection is a formality and Tom always managed it
-without fuss. Dana understands that the wedge has been under the plate for
-every certification for twelve years and that her father passed each one.
-
-The weighbridge, midday, day fourteen. The inspector sets the test weights
-on the plate. It reads a tonne light. She says it fails, and that it can be
-adjusted and re-tested this afternoon or she can fail it today and come back
-in a month; she can be back at four.
-
-Underneath the plate, early afternoon, day fourteen. Dana and Oisín with the
-torch. Dana takes the wedge out and puts it in her coat pocket. Oisín asks
-whether that is the fix or the crime. She says both.
-
-**Act two.** The café, afternoon, day fourteen. Fintan has heard. He says a
-true plate costs him a tonne a load and he runs forty loads a week, the
-quarry contract is on the tonnage, and there is a bridge at Kilbeg that will
-weigh him the way he likes, and when his trucks go to Kilbeg the café's trade
-goes with them. Dana says then go to Kilbeg.
-
-The weighbridge, four o'clock, day fourteen. The inspector re-tests; three
-pages. The plate reads true. She signs the certificate. Then she asks, as
-she always does, to see the ledger for the last year. Dana looks at Oisín.
-Oisín gives her his phone. Two columns. The inspector reads for a long time
-and asks whose hand the second column is in. Dana says her father's. The
-inspector says she will be back in a month, and not alone.
-
-The house behind the café, evening, day fourteen. Half a page. Oisín asks
-why she showed it. Dana says because it was true, and because Fintan Rooney
-would have found the ledger useful for the rest of her life.
-
-The weighbridge, dawn, day fifteen. A truck comes onto the plate. It is not
-one of Rooney's. In the office, Bríd reads the weight and writes it down
-once. Dana watches from the window. End of episode.
+Title: The Allotments, or Plot 14.

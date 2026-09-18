@@ -37,16 +37,19 @@ changes; the README's version line follows `npm version` on its own.
 
 ---
 
-## 2. Round seventeen, or the real script
+## 2. Run round seventeen
 
-Sixteen rounds have run. The last two each drew fewer findings that were
-anything but wording — forty-one of forty-eight in sixteen were replies and
-descriptions — and every tool a two-board series needs was found unprompted
-this time. The cases never measured: a third board; a treatment the writer
-did not write (a stranger's, with its own gaps); the account shared with a
-second writer while an agent works it. Or stop here and put a real script
-through (Roadmap 2, item 0), which the handover before round fifteen already
-leaned toward. Robert's call.
+Cued in `blind-runs/prompt.md`: a page of notes instead of a treatment, the
+writer answering as the agent asks — the first round that starts from an
+idea, which is what the app is for. The writer's private answers sit above
+the divider. Directions listed there. Afterwards: the report to
+`blind-runs/round-seventeen-report.md` verbatim with a head, the round's
+paragraph in `REQUIREMENTS.md`, the recurrence table if anything came back.
+
+**The decision this round makes:** if it comes back mostly wording, the
+rounds are into diminishing returns and the real script (Roadmap 2, item 0)
+is the next measurement. If it comes back with things the app cannot do
+for an idea that is not yet a story, those are the next requirements.
 
 ---
 
@@ -82,4 +85,4 @@ leaned toward. Robert's call.
 1. Read `blind-runs/README.md`'s recurrence table, then the head of
    `blind-runs/round-fifteen-report.md` and its sections 3 to 5.
 2. Release (item 1).
-3. Ask Robert: round seventeen (which case) or the real script; put the three calls in section 3 to him in the same message.
+3. Run round seventeen from `blind-runs/prompt.md`; then the decision it makes.

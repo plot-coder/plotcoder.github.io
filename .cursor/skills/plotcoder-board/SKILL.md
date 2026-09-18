@@ -105,7 +105,8 @@ only when the server is started with `PLOTCODER_JSON=1`.
   not act on them unasked, and do not add an opinion about the number of beats.
 - `leave_question` / `ask_again` — the writer's word on a question: "leave
   it". Pass the kind as `read_wall` names it, and the ids when that kind is
-  asked more than once. The wall stops asking and lists it under "left, for
+  asked more than once. A leave is the open board's: to leave a question on
+  another board, `open_board` there first. The wall stops asking and lists it under "left, for
   now"; it asks again on its own the moment the question would read
   differently (a card in it changes, a page moves), and `ask_again` brings it
   back now. Only on the writer's word, never unasked; a left question is not
@@ -123,8 +124,8 @@ only when the server is started with `PLOTCODER_JSON=1`.
 
 - `create_note` — add a card. Requires `headline` **and** `change`. Optional
   `color` (yellow, pink, blue, green, orange), `rank`, `pages`, `plants`,
-  `location`, `characters` (names; a name not in the cast is added to it), and
-  `x`/`y`. The reply names the card's id and what landed. **A scene is one
+  `location`, `when`, `characters` (names; a name not in the cast is added to
+  it), and `x`/`y`. The reply names the card's id and what landed. **A scene is one
   place and one stretch of time**: a new place or a new time is a new card,
   which is how a treatment's paragraph splits. A **beat is a whole card** — the
   scene where the turn happens — not a moment inside one; when a treatment's
@@ -140,12 +141,17 @@ only when the server is started with `PLOTCODER_JSON=1`.
   card sized at one page is a claim the writer made. `pages: "unsized"` (or
   `0`) takes a length away, so "leave it unsized" never means deleting and
   remaking the card.
-- `set_plant` — fold or unfold the corner of cards (`plants` true/false). Fold a
+- `set_plant` — fold or unfold the corner of cards: `ids` and `plants`
+  true/false (the card tools that take several cards take `ids`; the group and
+  cast tools take `noteIds`, because a group has an `id` of its own). Fold a
   card when the writer says it sets something up; `read_wall` will ask where it
   pays off until a `setup` arrow leaves it — or until `later` names another
   board of the project where it pays off (a series plant: `later: "Episode
   two"`, by name, id or number from `list_boards`; `later: ""` forgets it).
   The card then says "pays off in Episode two", and the reading lists it.
+  Only the planting end is marked: nothing on the other board's card says
+  which fold it pays off, and that board's reading counts no setup for it.
+  Say it in the paying-off card's change line if the writer wants it read.
 - `set_location` — where one or more cards happen, as the writer would say it
   ("the piano shop", not "INT. PIANO SHOP"). `create_note` and `update_note`
   take `location` too; `list_board` shows it as `at: …`. No roster of places:
@@ -166,8 +172,9 @@ only when the server is started with `PLOTCODER_JSON=1`.
 - `delete_note` — remove a card. Its arrows go with it and it leaves its
   group; a card wired into a chain — one `follows` in, one out — leaves the
   chain joined behind it. The reply names each arrow by its cards, the join,
-  and what the group kept; `undo` brings all of it back and says what came
-  back with the card.
+  what the group kept, and whether the card's folded corner and its "pays off
+  later" went with it; `undo` brings all of it back and says what came back
+  with the card.
 
 ### Cast
 
@@ -178,9 +185,9 @@ page. A new board has the whole cast to cast from and nobody on a card yet.
 where a person on no card here is instead ("on Pilot · 13"). Someone on a
 card of another board is not asked about as uncast here.
 
-- `add_character` — add a person to the project's cast by `name`. The same
-  name twice, on any board, is refused and the existing record returned; use
-  its id.
+- `add_character` — add a person to the project's cast by `name`. The reply
+  names the person's id. The same name twice, on any board, is refused and
+  the existing record returned; use its id.
 - `rename_character` / `remove_character` — by id. Renaming carries to every
   card on every board; removing takes them off every card here and leaves the
   cards, and is refused while another board has them on a card — cast them
@@ -315,7 +322,10 @@ card of another board is not asked about as uncast here.
   the built-in five, remove one by name. Save only when the writer asks.
 - `set_logline` — set the board's central question. Empty string clears it.
 - `set_target` — target script length in `pages`: 120 feature, 60 hour, 30 half.
-- `create_group` — frame two or more cards, with an optional `title`.
+- `create_group` — frame two or more cards: `noteIds`, with an optional
+  `title`. The reply names the group's id. A cold open is not an act: leave
+  its card outside any group, and a one-card cold open could not be a frame
+  anyway.
 - `add_to_group` — cards into a frame that already exists, by the group's id:
   the twin of dragging a card into a frame. The frame reaches the cards where
   they are and nothing moves; `organize` keeps a group together as a block. A
@@ -328,7 +338,13 @@ card of another board is not asked about as uncast here.
   change the kind rather than drawing it again.
 - `delete_arrow` — by arrow id. Removes that direction only.
 - `move_scene` — move a card to another place in the story: `after` one
-  card's id, or `before` one. It rewires the follows arrows (what pointed at
+  card's id, or `before` one; or to **another board** of the project with
+  `board` (by name, id or number), landing `after` or `before` a card there,
+  or at the head of that board's story when neither is given. Across boards
+  the card leaves with its cast, place, when, rank, length, text and fold, its
+  arrows stay behind (a setup into it leaves its fold unpaid; draw new arrows
+  on the new board), and the new board is then the open one. Undo is per
+  board: one step there, and one on the board it left. Within a board, it It rewires the follows arrows (what pointed at
   the card points at what it pointed at; the card lands between the target
   and what followed it) and tidies the wall, as one step `undo` takes back
   whole. A scene that lands beside a card of an act joins that act, so the

@@ -2,7 +2,22 @@
 
 A storyline wall. Cards are scenes, beats are the big turns, arrows say what follows or pays off what. An agent driven by a person has every tool a person here has; the person directs, the agent operates. Call the tools; never fake a mouse. Already have the plotcoder-board tools in front of you? Then your way in is: read the guide, make the four calls under Call these first, and skip the doors between — they are for wiring a server in.
 
-The guide: https://plotcoder.com/guide.md. Read it once, before your first call if you can; it is the whole and this page is its first page, and where the two differ, the guide wins. Then Call these first, below. The doors between are for wiring a server in; skip them when the tools are already in front of you.
+The guide: https://plotcoder.com/guide.md. Read it once, before your first call if you can; it is the whole and this page is its first page, and where the two differ, the guide wins. Then Call these first, below. The doors at the end are for wiring a server in; skip them when the tools are already in front of you.
+
+## Call these first
+1. list_words — the room's words, the app's meaning.
+2. read_wall — the reading: the beats, the runs, the setups, and what the wall asks. The records — every card, the cast, the places, the rows — are list_board's. A fresh folder holds a sample wall (Maya, Tom, the letter) and the reading says so only when it is the sample; it is not the writer's.
+3. list_workflows — what a writer can ask you for.
+4. list_reminders — the house principles the app starts with, and the writer's own; read them before you change anything. Reminders live on the project and go with it.
+
+Make these four before anything else; none depends on another, so any order is fine. list_words and list_workflows are the app's and read no project; read_wall and list_reminders are about the wall you will work, so after open_project or open_board make those two again, and after new_project read the wall once it holds cards. An emptied account has nothing to read: go straight to new_project. Every reply's first line names the project it read and how many the account holds; list_projects lists them. On an account with no project yet, read_wall has nothing to read and says so, and list_reminders gives the house principles every project starts with; new_project (name, pages, and board for the first board's name). The reading holds the beats and the runs; the ids of every card, the cast and the places are list_board's, so make that your fifth call before you touch anything. No server in front of you, and no shell to take the shell door? Nothing gets you in from inside the session: say so, and ask the person to wire the server and start a new session.
+
+## Rules
+- Questions, not fixes, until the writer says.
+- No opinions about how many beats there should be. Marking the turns a treatment plainly makes is reading it, not an opinion: mark them, say which, and let the writer strike or add.
+- Page counts are estimates.
+- Ask before delete_board, delete_project, empty_account, delete_account, unlock_numbers, remove_file, an import_project that replaces, or claim_account — the writer gives the email and the password; never invent one. export_project first, when something might be wanted back.
+- Do not invent people or a logline. What the treatment states — an age, a job, a bad knee — is not invented: it goes in the person's notes. An unnamed person is named by their role — Dana's mother, the dispatcher — which is a name until the writer gives one. A scene is one place and one stretch of time; a new place or time is a new card. A beat is a whole card; a setup arrow lands on the scene's card, so a payoff never needs a card of its own. Acts are groups titled Act one, Act two, when the treatment has them; the wall never asks whether an act is a sequence. Paper colour means nothing to the app. Under target is a fact to report plainly, like over; neither is a verdict.
 
 ## Doors
 - MCP, for the next session: For Cursor or Claude Code, once, from any folder — nothing to clone: claude mcp add plotcoder-board -s user -- npx -y plotcoder-board@latest — then start the session again. A server wired from inside a session connects on the next one, never the one you are in; an agent already inside a session takes the shell door below. The block is the same wiring for a config file; npx fetches the current server each time. A server that comes up with one tool, plotcoder_not_installed, is a checkout of the repo whose npm ci was never run: that only happens with the repo as the session's folder.
@@ -45,21 +60,6 @@ claude mcp add plotcoder-board -s user \
 
 - The page: window.plotcoder on an open wall, for a browser session.
 - Where the wall lives, without an account: Skip this when the account is the wall. Without an account, a wall is a folder: any folder, empty is fine — choose one that will outlive your session, never a scratch one. The app run from that folder shows the wall, and the server writes it there (PLOTCODER_ROOT, or the folder it is run from). A fresh folder holds the sample; new_board for the writer's wall, then rename_project. No app running? export_fountain is the wall in order, as text.
-## Call these first
-1. list_words — the room's words, the app's meaning.
-2. read_wall — the reading: the beats, the runs, the setups, and what the wall asks. The records — every card, the cast, the places, the rows — are list_board's. A fresh folder holds a sample wall (Maya, Tom, the letter) and the reading says so only when it is the sample; it is not the writer's.
-3. list_workflows — what a writer can ask you for.
-4. list_reminders — the house principles the app starts with, and the writer's own; read them before you change anything. Reminders live on the project and go with it.
-
-Make these four before anything else; none depends on another, so any order is fine. list_words and list_workflows are the app's and read no project; read_wall and list_reminders are about the wall you will work, so after open_project, open_board, new_project or empty_account, make those two again. Every reply's first line names the project it read and how many the account holds; list_projects lists them. On an account with no project yet, read_wall has nothing to read and says so, and list_reminders gives the house principles every project starts with; new_project (name, pages, and board for the first board's name), then read_wall and list_reminders again. No server in front of you, and no shell to take the shell door? Nothing gets you in from inside the session: say so, and ask the person to wire the server and start a new session.
-
-## Rules
-- Questions, not fixes, until the writer says.
-- No opinions about how many beats there should be. Marking the turns a treatment plainly makes is reading it, not an opinion: mark them, say which, and let the writer strike or add.
-- Page counts are estimates.
-- Ask before delete_board, delete_project, empty_account, delete_account, unlock_numbers, remove_file, an import_project that replaces, or claim_account — the writer gives the email and the password; never invent one. export_project first, when something might be wanted back.
-- Do not invent people or a logline. What the treatment states — an age, a job, a bad knee — is not invented: it goes in the person's notes. An unnamed person is named by their role — Dana's mother, the dispatcher — which is a name until the writer gives one. A scene is one place and one stretch of time; a new place or time is a new card. A beat is a whole card; a setup arrow lands on the scene's card, so a payoff never needs a card of its own. Acts are groups titled Act one, Act two, when the treatment has them; the wall never asks whether an act is a sequence. Paper colour means nothing to the app. Under target is a fact to report plainly, like over; neither is a verdict.
-
 ## For the person
 Give your agent the account door only on a machine you trust; it signs in as you and shows under People as “an agent, as you” while it runs. Wire the server before you start the agent's session, with the two sign-in lines beside it, and the agent has every tool from its first message; wired from inside a session, the server connects only on the next one. Your agent can also make your account: give it your email and a password of your choosing.
 

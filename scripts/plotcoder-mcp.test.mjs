@@ -1052,6 +1052,88 @@ describe("typed arrows and new_board", () => {
   });
 });
 
+// A scene moves to another board (round fifteen, entry 16), and the replies
+// that round found wanting: ids on add_character and create_group, the fold
+// in delete_note's reply.
+describe("move_scene across boards", () => {
+  let series;
+  let seriesRoot;
+
+  beforeAll(async () => {
+    seriesRoot = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-series-"));
+    series = new McpClient(seriesRoot);
+    await series.start();
+  }, 30000);
+
+  afterAll(() => {
+    series?.stop();
+    if (seriesRoot) fs.rmSync(seriesRoot, { recursive: true, force: true });
+  });
+
+  it("add_character and create_group name the id of what they made", async () => {
+    expect(await series.callTool("add_character", { name: "Dana" })).toMatch(/Added "Dana" \(id [a-z0-9-]+\)/);
+    const grouped = await series.callTool("create_group", { noteIds: ["maya-letter", "tom-lies"], title: "Act one" });
+    expect(grouped).toMatch(/group id [a-z0-9-]+/);
+  });
+
+  it("moves a card to another board with its record, wires it at the head there, and says what stayed behind", async () => {
+    await series.callTool("create_arrow", { from: "maya-letter", to: "tom-lies" });
+    await series.callTool("create_arrow", { from: "tom-lies", to: "letter-aloud" });
+    await series.callTool("set_when", { ids: ["letter-aloud"], when: "night" });
+    await series.callTool("set_plant", { ids: ["letter-aloud"], plants: true });
+    await series.callTool("new_board", { name: "Episode 2" });
+    await series.callTool("create_note", { headline: "The inspector arrives", change: "She needs the plate clear." });
+    await series.callTool("create_note", { headline: "The plate fails", change: "A tonne light." });
+    const episode = await series.callToolData("list_board");
+    await series.callTool("create_arrow", { from: episode.notes[0].id, to: episode.notes[1].id });
+    await series.callTool("open_board", { board: "1" });
+
+    const reply = await series.callTool("move_scene", { id: "letter-aloud", board: "Episode 2" });
+    expect(reply).toContain('Moved "The letter is read aloud" from "Board 1" to "Episode 2"');
+    expect(reply).toContain('"Tom lies about the job" → "The letter is read aloud" (follows)');
+    expect(reply).toContain('at the head of the story, before "The inspector arrives"');
+    expect(reply).toContain("Its folded corner came with it");
+    expect(reply).toContain('"Episode 2" is the open board now');
+    expect(reply).toContain("Undo is per board");
+
+    // It is on Episode 2 now, first in story order, with its when, its fold and its cast.
+    const landed = await series.callToolData("list_board");
+    const moved = landed.notes.find((note) => note.headline === "The letter is read aloud");
+    expect(moved).toBeTruthy();
+    expect(moved.when).toBe("night");
+    expect(moved.plants).toBe(true);
+    expect(moved.characterIds).toEqual(["maya", "tom"]);
+    expect(landed.arrows.some((arrow) => arrow.from === moved.id && arrow.to === episode.notes[0].id)).toBe(true);
+    // And gone from Board 1, with its arrow.
+    await series.callTool("open_board", { board: "1" });
+    const left = await series.callToolData("list_board");
+    expect(left.notes.map((note) => note.id)).toEqual(["maya-letter", "tom-lies"]);
+    expect(left.arrows).toHaveLength(1);
+  });
+
+  it("lands after a card on the other board and joins its group; a missing anchor moves nothing", async () => {
+    expect(await series.callTool("move_scene", { id: "maya-letter", board: "Episode 2", after: "ghost" })).toContain('No card with id ghost on "Episode 2"');
+    expect((await series.callToolData("list_board")).notes.map((note) => note.id)).toEqual(["maya-letter", "tom-lies"]);
+    await series.callTool("open_board", { board: "2" });
+    const episode = await series.callToolData("list_board");
+    const fails = episode.notes.find((note) => note.headline === "The plate fails");
+    const arrives = episode.notes.find((note) => note.headline === "The inspector arrives");
+    await series.callTool("create_group", { noteIds: [arrives.id, fails.id], title: "Act one" });
+    await series.callTool("open_board", { board: "1" });
+    const reply = await series.callTool("move_scene", { id: "maya-letter", board: "Episode 2", after: arrives.id });
+    expect(reply).toContain('after "The inspector arrives", in "Act one"');
+    // It sits between the anchor and what followed the anchor, in the anchor's group.
+    expect(reply).toContain("Story order on \"Episode 2\" now: 1. The letter is read aloud, 2. The inspector arrives, 3. Maya finds the letter, 4. The plate fails");
+    const groups = (await series.callToolData("list_board")).groups;
+    expect(groups.find((group) => group.title === "Act one").noteIds).toHaveLength(3);
+  });
+
+  it("delete_note says the fold went with the card", async () => {
+    const reply = await series.callTool("delete_note", { id: "letter-aloud" });
+    expect(reply).toContain("Its folded corner went with it");
+  });
+});
+
 // The folded corner (R31): a plant with no payoff yet.
 describe("set_plant", () => {
   let fold;

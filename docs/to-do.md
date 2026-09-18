@@ -35,15 +35,24 @@ From a current `main`. The README's version line follows on its own. Check
 
 ---
 
-## 2. R58 — the receiving end of a series plant (mock first)
+## 2. R58 — the receiving end of a series plant (mocked, not built)
 
 The round's central finding: a fold that pays off on another board is
-remembered at one end only. Rule 5 applies — the card, the reading and the
-page all show it — so draw it first on the app's own paper beside what
-ships (`docs/mockups/`), ask in writing whether it is the best we could do,
-then build. The proposed mechanism is in R58: a `paysOff` claim on the
-paying-off card, the twin of `later` on the fold, a tool to set it, the
-reading listing it, and the fold's check asking until a card claims it.
+remembered at one end only. **The mockup is written:**
+`docs/mockups/r58-the-receiving-end.html`, open after `npm run build`. It
+draws the paying-off card three ways — the edge line (A), the corner folded
+in with the edge line (B), a setup arrow's stub from off the wall (C) — the
+picker the corner opens, the fold's card after the claim and while it waits,
+the reading's lines and the tool from either end.
+
+**Recommended: B**, with one record on the fold's card (`payoffNoteId`
+beside `payoffBoardId`), the receiving board composing its marks from the
+project as it composes the cast (R51). **The honest question, unanswered:**
+a card paying off two folds gets one corner and an edge line that cannot
+name both; and the page still carries nothing. Robert's call. Once chosen:
+the kernel field and `normalizeState`, `set_plant` with `at` and a
+`set_payoff` from the other end, `read_wall`'s payoffs across boards and the
+fold's check asking for a scene, then the corner's picker in `NoteCard.tsx`.
 
 ---
 

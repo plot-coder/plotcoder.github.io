@@ -27,8 +27,7 @@ is only the queue.
 - **R60, the thread, is built** on Robert's choice of B; see item 1.
 - **The suites pass on `main`:** `npm test` 28 files, `npm run build`
   clean. Eighty-five tools; fifteen checks.
-- **Released as 0.1.28** with round eighteen's fixes; the thread is not yet
-  released.
+- **Released as 0.1.29** with round eighteen's fixes and the thread.
 
 ---
 
@@ -107,8 +106,7 @@ it; the two share the words "open, by the writer's word".
 
 1. Read `blind-runs/README.md`'s recurrence table, then the head of
    `blind-runs/round-eighteen-report.md` and its sections 3 to 6.
-2. Release the thread (`npm version patch` from main), then cue round
-   nineteen: the same notes, the thread in hand — does a stranger name one
-   for the key and the bucket unprompted, and does the loose-end question
-   land where the writer wanted it.
+2. Cue round nineteen: the same notes, the thread in hand — does a
+   stranger name one for the key and the bucket unprompted, and does the
+   loose-end question land where the writer wanted it.
 3. The open fields (item 2) are the mockup after that.

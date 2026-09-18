@@ -159,6 +159,23 @@ describe("findings", () => {
     expect(sag[0].text).toMatch(/\?$/);
   });
 
+  it("measures the typical run over runs that hold a card, so empty runs never make a page read as a sag", () => {
+    // Four beats, three runs: one card of a page, nothing, a quarter page.
+    // With the empties counted the median was an eighth and the page sagged
+    // (round fifteen, entry 10); the empties are their own question.
+    const state = wall(
+      { id: "b1", rank: "beat" },
+      { id: "s1", pages: 1 },
+      { id: "b2", rank: "beat" },
+      { id: "b3", rank: "beat" },
+      { id: "s2", pages: 0.25 },
+      { id: "b4", rank: "beat" },
+    );
+    const findings = readWall(state).findings;
+    expect(findings.filter((f) => f.kind === "sag")).toEqual([]);
+    expect(findings.filter((f) => f.kind === "empty")).toHaveLength(1);
+  });
+
   it("does not call an even wall saggy just because one run is a little longer", () => {
     const state = wall(
       { id: "b1", rank: "beat" },

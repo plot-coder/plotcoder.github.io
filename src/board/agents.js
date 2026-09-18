@@ -42,7 +42,7 @@ export const AGENTS = {
       text: "Skip this when the account is the wall. Without an account, a wall is a folder: any folder, empty is fine — choose one that will outlive your session, never a scratch one. The app run from that folder shows the wall, and the server writes it there (PLOTCODER_ROOT, or the folder it is run from). A fresh folder holds the sample; new_board for the writer's wall, then rename_project. No app running? export_fountain is the wall in order, as text.",
     },
   ],
-  firstNote: "Make these four before anything else; none depends on another, so any order is fine. list_words and list_workflows are the app's and read no project; read_wall and list_reminders are about the wall you will work, so after open_project, open_board, new_project or empty_account, make those two again. Every reply's first line names the project it read and how many the account holds; list_projects lists them. On an account with no project yet, read_wall has nothing to read and says so, and list_reminders gives the house principles every project starts with; new_project (name, pages, and board for the first board's name), then read_wall and list_reminders again. No server in front of you, and no shell to take the shell door? Nothing gets you in from inside the session: say so, and ask the person to wire the server and start a new session.",
+  firstNote: "Make these four before anything else; none depends on another, so any order is fine. list_words and list_workflows are the app's and read no project; read_wall and list_reminders are about the wall you will work, so after open_project or open_board make those two again, and after new_project read the wall once it holds cards. An emptied account has nothing to read: go straight to new_project. Every reply's first line names the project it read and how many the account holds; list_projects lists them. On an account with no project yet, read_wall has nothing to read and says so, and list_reminders gives the house principles every project starts with; new_project (name, pages, and board for the first board's name). The reading holds the beats and the runs; the ids of every card, the cast and the places are list_board's, so make that your fifth call before you touch anything. No server in front of you, and no shell to take the shell door? Nothing gets you in from inside the session: say so, and ask the person to wire the server and start a new session.",
   first: [
     { tool: "list_words", why: "the room's words, the app's meaning." },
     { tool: "read_wall", why: "the reading: the beats, the runs, the setups, and what the wall asks. The records — every card, the cast, the places, the rows — are list_board's. A fresh folder holds a sample wall (Maya, Tom, the letter) and the reading says so only when it is the sample; it is not the writer's." },
@@ -64,16 +64,19 @@ export const AGENTS = {
 
 /** The on-ramp as one text: the file at /llms.txt, and what an agent reads. */
 export function agentsAsText() {
-  const lines = ["# PlotCoder — for agents", "", AGENTS.lead, "", `The guide: ${AGENTS.guide}. Read it once, before your first call if you can; it is the whole and this page is its first page, and where the two differ, the guide wins. Then Call these first, below. The doors between are for wiring a server in; skip them when the tools are already in front of you.`, "", "## Doors"];
-  for (const door of AGENTS.doors) {
-    lines.push(`- ${door.name}: ${door.text}`);
-    if (door.code) lines.push("", "```", door.code, "```", "");
-  }
-  lines.push("## Call these first");
+  // The calls and the rules first, the doors after: an agent with the tools in
+  // front of it reads two pages of wiring it was told to skip before it reached
+  // the first call (round fifteen, entry 1).
+  const lines = ["# PlotCoder — for agents", "", AGENTS.lead, "", `The guide: ${AGENTS.guide}. Read it once, before your first call if you can; it is the whole and this page is its first page, and where the two differ, the guide wins. Then Call these first, below. The doors at the end are for wiring a server in; skip them when the tools are already in front of you.`, "", "## Call these first"];
   AGENTS.first.forEach((item, index) => lines.push(`${index + 1}. ${item.tool} — ${item.why}`));
   lines.push("", AGENTS.firstNote);
   lines.push("", "## Rules");
   for (const rule of AGENTS.rules) lines.push(`- ${rule}`);
-  lines.push("", "## For the person", AGENTS.person, "", "## The guide", AGENTS.guide, "");
+  lines.push("", "## Doors");
+  for (const door of AGENTS.doors) {
+    lines.push(`- ${door.name}: ${door.text}`);
+    if (door.code) lines.push("", "```", door.code, "```", "");
+  }
+  lines.push("## For the person", AGENTS.person, "", "## The guide", AGENTS.guide, "");
   return lines.join("\n");
 }

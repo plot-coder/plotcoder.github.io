@@ -33,6 +33,7 @@ import {
   NOTE_WIDTH,
   DEFAULT_TARGET_EIGHTHS,
   normalizeState,
+  newId,
   noteEighths,
   NOTE_COLORS,
   NOTE_RANKS,
@@ -564,7 +565,19 @@ async function throughAccount(read) {
   throw new DoorReply(accountRefusal ?? "The account door is shut.");
 }
 
+/** The project as last read, so any reading of the open board can know who is cast on another board (R51) without a second read. */
+let lastHeld = null;
 async function readProject() {
+  const held = await readProjectUncached();
+  lastHeld = held;
+  return held;
+}
+/** People on a card of another board of the project: the ids readWall must not ask about (round fifteen, entries 18 and 21). */
+function elsewhereIds(boardId) {
+  if (!lastHeld?.project) return [];
+  return Object.keys(castElsewhere(lastHeld.project, lastHeld.boards, boardId ?? lastHeld.project.activeBoardId));
+}
+async function readProjectUncached() {
   const viaAccount = await throughAccount(accountReadProject);
   if (viaAccount) return viaAccount;
   const base = await findBridge();
@@ -738,8 +751,13 @@ async function writeBoardRaw(next, rev, base, boardId = null) {
       log("bridge write failed, falling back to file:", error);
     }
   }
-  writeFileBoard(next, rev + 1, boardId);
-  syncProjectFileBoard(boardId, next);
+  // A board file from before the project file has no id of its own; once a
+  // project file exists it is that project's open board, and it has to say so,
+  // or nothing written here reaches the project's copy and open_board later
+  // brings back a stale one (found by round fifteen's cross-board move).
+  const id = boardId ?? readFileProject()?.project.activeBoardId ?? null;
+  writeFileBoard(next, rev + 1, id);
+  syncProjectFileBoard(id, next);
   return false;
 }
 
@@ -765,9 +783,12 @@ const sinceRead = [];
 /** What the last write did to the wall's questions and runtime, said once on that write's tail (round fourteen, entries 18, 19, 42). */
 let lastChange = null;
 const findingKey = (finding) => `${finding.kind}|${finding.ids.join(",")}|${finding.text}`;
-function noteChange(before, after) {
-  const was = readWall(before);
-  const now = readWall(after);
+function noteChange(before, after, boardId = null) {
+  // The same reading read_wall gives: a person cast on another board is not
+  // asked about, so a write's tail never names a question the reading does not.
+  const options = { elsewhere: elsewhereIds(boardId) };
+  const was = readWall(before, options);
+  const now = readWall(after, options);
   const wasKeys = new Set(was.findings.map(findingKey));
   const nowKeys = new Set(now.findings.map(findingKey));
   lastChange = {
@@ -845,7 +866,7 @@ async function commit(command) {
   const live = await writeBoard(next, rev, base, boardId, "exact");
   trail.push({ before: state, after: canon(next), what: describeCommand(command) });
   sinceRead.push(describeCommand(command));
-  noteChange(state, next);
+  noteChange(state, next, boardId);
   if (trail.length > TRAIL_CAP) trail.shift();
   undone.length = 0;
   return { state: next, changed, result, live };
@@ -877,7 +898,7 @@ async function commitAll(what, build) {
   const live = await writeBoard(current, rev, base, boardId, "exact");
   trail.push({ before: state, after: canon(current), what });
   sinceRead.push(what);
-  noteChange(state, current);
+  noteChange(state, current, boardId);
   if (trail.length > TRAIL_CAP) trail.shift();
   undone.length = 0;
   return { state: current, changed: true, value, live };
@@ -932,7 +953,7 @@ const CHECK_WORDS = {
   unlinked: "no card without an arrow",
   duplicate: "no two headlines alike",
   sequence: "no group too long for one sequence (act groups are not asked)",
-  uncast: "nobody in the cast on no card",
+  uncast: "nobody in the cast on no card of the project",
   absent: "nobody gone for a third of the story",
   backwards: "no payoff before its setup",
   unpaid: "no fold without a payoff",
@@ -1370,7 +1391,11 @@ server.registerTool(
       .map((group) => (group.dissolved ? ` Its group "${group.title}" dissolved: a frame needs two cards.` : ` Left its group "${group.title}", which keeps ${group.remaining} card${group.remaining === 1 ? "" : "s"}.`))
       .join("");
     const joined = result.joined ? ` The chain is joined behind it: "${result.joined.fromHeadline}" → "${result.joined.toHeadline}" (follows).` : "";
-    return ok(`Deleted "${result.headline}"${where(live)}.${arrows}${joined}${groups}`, result);
+    // The fold and where it paid off went with the card (round fifteen, entry 17).
+    const fold = result.plants
+      ? ` Its folded corner went with it${result.payoffBoardId ? ` — it paid off later, on "${(await readProject()).project.boards.find((meta) => meta.id === result.payoffBoardId)?.name ?? result.payoffBoardId}"` : ""}; nothing on the wall plants that now.`
+      : "";
+    return ok(`Deleted "${result.headline}"${where(live)}.${arrows}${joined}${groups}${fold}`, result);
   },
 );
 
@@ -1481,8 +1506,9 @@ server.registerTool(
   async (args) => {
     const wanted = args.questions?.length ? args.questions : args.kind ? [{ kind: args.kind, ids: args.ids, why: args.why }] : [];
     if (!wanted.length) return ok("Say which question: its kind as read_wall names it (and ids when that kind is asked more than once), or a list under questions.");
-    const { state } = await readBoard();
-    const reading = readWall(state);
+    const { state, boardId: leaveBoardId } = await readBoard();
+    const readOptions = { elsewhere: elsewhereIds(leaveBoardId) };
+    const reading = readWall(state, readOptions);
     const replies = [];
     const toLeave = [];
     for (const want of wanted) {
@@ -1522,7 +1548,7 @@ server.registerTool(
       after = out.state;
       for (const item of toLeave) replies.push(`Left, for now: [${item.finding.kind}] ${item.finding.text}${item.why ? ` — "${item.why}"` : ""}`);
     }
-    const still = readWall(after).findings;
+    const still = readWall(after, readOptions).findings;
     const tail = toLeave.length
       ? `${where(live)} ${once("leave-rule", "The wall keeps the writer's word and asks a left question again on its own when it would read differently; ask_again brings one back now. ")}The wall still asks ${still.length === 0 ? "nothing" : `${still.length}: ${still.map((finding) => `[${finding.kind}] ${finding.text}`).join(" ")}`}.`
       : "";
@@ -1542,7 +1568,8 @@ server.registerTool(
     const held = (state.left ?? []).filter((item) => item.kind === args.kind && (!args.ids || sameList(item.ids, args.ids)));
     if (held.length === 0) return ok(`Nothing of kind "${args.kind}"${args.ids ? ` about ids ${args.ids.join(", ")}` : ""} is left. read_wall lists what is, under "left, for now".`);
     const { result, live } = await commit({ type: "ask_again", kind: args.kind, ids: args.ids });
-    const reading = readWall((await readBoard()).state);
+    const again = await readBoard();
+    const reading = readWall(again.state, { elsewhere: elsewhereIds(again.boardId) });
     const back = reading.findings.filter((finding) => held.some((item) => item.kind === finding.kind && sameList(item.ids, finding.ids)));
     return ok(
       `Asked again${where(live)}: ${held.length} question${held.length === 1 ? "" : "s"} of kind "${args.kind}" ${held.length === 1 ? "is" : "are"} no longer left${back.length ? ` — the wall asks ${back.length === 1 ? "it" : `${back.length} of them`} now: ${back.map((finding) => finding.text).join(" ")}` : " — and the wall no longer asks it; the question had already changed"}.`,
@@ -1551,15 +1578,117 @@ server.registerTool(
   },
 );
 
+/**
+ * A scene moves to another board of the project (round fifteen, entry 16: a
+ * writer's "the shim should open episode two" had no tool, and the way round
+ * was a delete and a recreate by hand). Two frames, one per board: the card
+ * leaves the open board with everything a delete takes, and lands on the
+ * target with its own record — cast, place, when, rank, length, text, fold —
+ * wired after or before a card there, or at the head of that board's story.
+ */
+async function moveAcrossBoards(args, target, open, held) {
+  if (args.after && args.before) return ok("Say where: after one card's id, or before one, not both.");
+  const card = open.state.notes.find((note) => note.id === args.id);
+  if (!card) return ok(`No card with id ${args.id}. Call list_board.`);
+  const fromMeta = boardById(held.project, open.boardId ?? held.project.activeBoardId);
+  const targetState = isBoardState(held.boards[target.id]) ? normalizeState(held.boards[target.id]) : emptyState();
+  const anchorId = args.after ?? args.before;
+  const anchor = anchorId ? targetState.notes.find((note) => note.id === anchorId) : null;
+  if (anchorId && !anchor) return ok(`No card with id ${anchorId} on "${target.name}". open_board there and list_board for its ids, or leave after and before out to land at the head of its story.`);
+  // Leave: one frame on the board it is on.
+  let taken = null;
+  await commitAll(`move_scene "${card.headline}" to "${target.name}" (leave)`, (step) => {
+    taken = step({ type: "delete_note", id: card.id }).result;
+  });
+  // Open the board it is going to, everywhere.
+  const now = await readProject();
+  await openBoardEverywhere(now.project, now.boards, now.rev, now.base, target.id);
+  // Land: one frame there.
+  const isFollows = (arrow) => arrow.kind !== "setup";
+  let landedId = card.id;
+  let joinedGroup = null;
+  let headOf = null;
+  let forgotLater = false;
+  const { state: final, live } = await commitAll(`move_scene "${card.headline}" to "${target.name}" (land)`, (step, current) => {
+    const here = current();
+    landedId = here.notes.some((note) => note.id === card.id) ? newId() : card.id;
+    step({
+      type: "create_note",
+      id: landedId,
+      headline: card.headline,
+      change: card.change,
+      color: card.color,
+      rank: card.rank,
+      lengthEighths: card.lengthEighths,
+      characterIds: card.characterIds,
+      plants: card.plants,
+      location: card.location,
+      when: card.when,
+      text: card.text,
+      ...nextPlace(here),
+    });
+    if (card.plants && card.payoffBoardId && card.payoffBoardId !== target.id) step({ type: "set_payoff_board", ids: [landedId], boardId: card.payoffBoardId });
+    if (card.plants && card.payoffBoardId === target.id) forgotLater = true;
+    if (anchor) {
+      const mid = current();
+      if (args.after) {
+        for (const arrow of mid.arrows.filter((item) => isFollows(item) && item.from === anchor.id)) {
+          step({ type: "delete_arrow", id: arrow.id });
+          step({ type: "create_arrow", from: landedId, to: arrow.to, kind: "follows" });
+        }
+        step({ type: "create_arrow", from: anchor.id, to: landedId, kind: "follows" });
+      } else {
+        for (const arrow of mid.arrows.filter((item) => isFollows(item) && item.to === anchor.id)) {
+          step({ type: "delete_arrow", id: arrow.id });
+          step({ type: "create_arrow", from: arrow.from, to: landedId, kind: "follows" });
+        }
+        step({ type: "create_arrow", from: landedId, to: anchor.id, kind: "follows" });
+      }
+      const anchorGroup = current().groups.find((group) => group.noteIds.includes(anchor.id));
+      if (anchorGroup) {
+        step({ type: "add_to_group", id: anchorGroup.id, noteIds: [landedId] });
+        joinedGroup = anchorGroup.title || "an untitled group";
+      }
+    } else {
+      const head = storyOrder(here)[0];
+      if (head && here.arrows.some(isFollows)) {
+        step({ type: "create_arrow", from: landedId, to: head.id, kind: "follows" });
+        headOf = head.headline;
+      }
+    }
+    step({ type: "apply_poses", poses: organizePoses(current(), {}) });
+  });
+  const order = storyOrder(final);
+  const arrows = taken?.arrows?.length
+    ? ` Left behind on "${fromMeta.name}": ${taken.arrows.map((arrow) => `"${arrow.fromHeadline}" → "${arrow.toHeadline}" (${arrow.kind}${arrow.kind === "setup" && arrow.to === card.id ? "; that fold is unpaid again" : ""})`).join(", ")}${taken.joined ? `; the chain is joined behind it, "${taken.joined.fromHeadline}" → "${taken.joined.toHeadline}"` : ""}.`
+    : ` No arrow touched it on "${fromMeta.name}".`;
+  const groups = (taken?.groups ?? []).map((group) => (group.dissolved ? ` Its group "${group.title}" there dissolved: a frame needs two cards.` : ` It left its group "${group.title}" there, which keeps ${group.remaining} card${group.remaining === 1 ? "" : "s"}.`)).join("");
+  const landed = anchor
+    ? `${args.after ? "after" : "before"} "${anchor.headline}"${joinedGroup ? `, in "${joinedGroup}"` : ""}`
+    : headOf ? `at the head of the story, before "${headOf}"` : "as the only card wired to nothing yet";
+  const fold = card.plants ? (forgotLater ? " It paid off later on this board, so that mark is forgotten: draw the setup arrow here." : " Its folded corner came with it; a setup arrow does not cross boards, so draw the payoff here if it is here.") : "";
+  return ok(
+    `Moved "${card.headline}" from "${fromMeta.name}" to "${target.name}", with its cast, place, when, rank, length${card.text ? ", text" : ""} and colour; it is card ${landedId} there${where(live)}.${arrows}${groups} It landed ${landed}, and the wall was tidied.${fold} Story order on "${target.name}" now: ${order.map((note, index) => `${index + 1}. ${note.headline}`).join(", ")}. "${target.name}" is the open board now. Undo is per board: undo here takes back the landing; open_board "${fromMeta.name}" and undo takes back the leaving.`,
+    { id: landedId, board: target.id, order: order.map((note) => note.id) },
+  );
+}
+
 server.registerTool(
   "move_scene",
   {
     title: "Move a scene in the story",
     description:
-      "Move a card to another place in the story order — after one card, or before one — by rewiring its follows arrows and tidying the wall along them, as one step that undo takes back whole. The story order is the follows arrows: the card leaves its place (what pointed at it now points at what it pointed at) and lands between the target and what followed it. A person does this by dragging in the outline. Needs a wall with follows arrows; on a wall without any, create_arrow the sequence first, or move_note by position.",
-    inputSchema: { id: z.string(), after: z.string().optional(), before: z.string().optional() },
+      "Move a card to another place in the story order — after one card, or before one — by rewiring its follows arrows and tidying the wall along them, as one step that undo takes back whole. The story order is the follows arrows: the card leaves its place (what pointed at it now points at what it pointed at) and lands between the target and what followed it. A person does this by dragging in the outline. Needs a wall with follows arrows; on a wall without any, create_arrow the sequence first, or move_note by position. To another board of the project: pass board (name, id or number from list_boards) and, optionally, after or before a card there; with neither the card lands at the head of that board's story. Across boards the card keeps its cast, place, when, rank, length, text and fold; its arrows stay behind, and that board is then the open one. Undo is per board: one step there, one on the board it left.",
+    inputSchema: { id: z.string(), after: z.string().optional(), before: z.string().optional(), board: z.union([z.string().min(1), z.number()]).optional() },
   },
   async (args) => {
+    if (args.board !== undefined) {
+      const held = await readProject();
+      const target = findBoard(held.project, String(args.board));
+      if (!target) return ok(`No board matches "${args.board}". Call list_boards for the real ones.`);
+      const open = await readBoard();
+      if (target.id !== (open.boardId ?? held.project.activeBoardId)) return moveAcrossBoards(args, target, open, held);
+    }
     if (!args.after === !args.before) return ok("Say where: after one card's id, or before one, not both.");
     const { state } = await readBoard();
     const find = (id) => state.notes.find((note) => note.id === id);
@@ -2467,7 +2596,7 @@ server.registerTool(
         ? ok(`Already in the cast as "${result.name}" (${result.id}). Use that id.`, result)
         : ok("No character added: the name was empty.");
     }
-    return ok(`Added "${result.name}" to the project's cast${where(live)}; every board of the project casts from it.`, result);
+    return ok(`Added "${result.name}" (id ${result.id}) to the project's cast${where(live)}; every board of the project casts from it.`, result);
   },
 );
 
@@ -2706,7 +2835,7 @@ server.registerTool(
           : "No group made: a group needs at least two cards.",
       );
     }
-    return ok(`Grouped ${result.noteIds.length} cards as "${result.title}"${where(live)}.`, result);
+    return ok(`Grouped ${result.noteIds.length} cards as "${result.title}" (group id ${result.id})${where(live)}.`, result);
   },
 );
 

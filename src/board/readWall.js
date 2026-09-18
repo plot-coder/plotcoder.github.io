@@ -230,9 +230,14 @@ export function readWall(state, options = {}) {
     const note = byId.get(id);
     return note && (note.lengthEighths !== null || (note.text ?? "").trim());
   }));
-  if (between.length >= 2 && claimed) {
-    const typical = median(between.map((run) => run.eighths));
-    const longest = between.reduce((top, run) => (run.eighths > top.eighths ? run : top));
+  // The typical run is the median of the runs that hold a card: an empty run
+  // is a question of its own ("empty"), and counting it here made a small
+  // wall's one ordinary scene read as a sag against a median of an eighth
+  // (round fifteen, entry 10).
+  const filled = between.filter((run) => run.ids.length > 0);
+  if (filled.length >= 2 && claimed) {
+    const typical = median(filled.map((run) => run.eighths));
+    const longest = filled.reduce((top, run) => (run.eighths > top.eighths ? run : top));
     if (typical > 0 && longest.eighths > SAG_RATIO * typical) {
       findings.push({
         kind: "sag",

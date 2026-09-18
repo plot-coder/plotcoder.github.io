@@ -620,6 +620,10 @@ export function applyCommand(state, command, now = nowIso()) {
         result: {
           id: command.id,
           headline: gone.headline,
+          // The fold and where it paid off go with the card too; a door that
+          // says what went should say these (round fifteen, entry 17).
+          plants: gone.plants === true,
+          payoffBoardId: gone.payoffBoardId ?? null,
           arrows: taken.map((arrow) => ({ ...arrow, fromHeadline: headlineOf(arrow.from), toHeadline: headlineOf(arrow.to) })),
           joined: joined ? { ...joined, fromHeadline: headlineOf(joined.from), toHeadline: headlineOf(joined.to) } : null,
           groups: left,

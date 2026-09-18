@@ -190,6 +190,13 @@ describe("delete_note", () => {
     expect(applyCommand(already, { type: "delete_note", id: "b" }, NOW).state.arrows).toHaveLength(1);
   });
 
+  it("says whether the card was folded and where it paid off, so a door can say what went (round fifteen, entry 17)", () => {
+    let state = boardOf({ id: "a", x: 0, y: 0 }, { id: "b", x: 400, y: 0 });
+    state = run(state, { type: "set_plant", ids: ["a"], plants: true }, { type: "set_payoff_board", ids: ["a"], boardId: "episode-two" });
+    expect(applyCommand(state, { type: "delete_note", id: "a" }, NOW).result).toMatchObject({ plants: true, payoffBoardId: "episode-two" });
+    expect(applyCommand(state, { type: "delete_note", id: "b" }, NOW).result).toMatchObject({ plants: false, payoffBoardId: null });
+  });
+
   it("tidies only the cards that move, so a pose that changes nothing stamps nothing (round fourteen, entry 43)", () => {
     const state = boardOf({ id: "a", x: 0, y: 0 }, { id: "b", x: 400, y: 0 });
     const same = applyCommand(state, { type: "apply_poses", poses: [{ id: "a", x: 0, y: 0, rotate: state.notes[0].rotate }] }, NOW);

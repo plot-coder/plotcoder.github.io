@@ -24,7 +24,7 @@ is only the queue.
   is visible to the app (entries 11, 14, 15, 39, 41; seventeen's 8, 12,
   31). Beside it, **only a card can be open**: the logline, a when, the
   premise cannot say "not decided" (9, 22, 23, 32).
-- **The suites pass on `main`:** `npm test` 28 files / 552 tests,
+- **The suites pass on `main`:** `npm test` 28 files / 550 tests,
   `npm run build` clean. Eighty-two tools; fourteen checks.
 - **Released as 0.1.28** with round eighteen's fixes.
 

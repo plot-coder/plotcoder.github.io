@@ -330,7 +330,7 @@ export function readWall(state, options = {}) {
       findings.push({
         kind: "unlinked",
         ids: loose.map((note) => note.id),
-        text: `${loose.length === 1 ? "One card has" : `${loose.length} cards have`} no arrow in or out: ${list(loose)}. What sets ${loose.length === 1 ? "it" : "them"} up, and what ${loose.length === 1 ? "does it" : "do they"} pay off?`,
+        text: `${loose.length === 1 ? "One card has" : `${loose.length} cards have`} no arrow in or out: ${list(loose)}. What comes before ${loose.length === 1 ? "it" : "them"} in the story, and what after?`,
       });
     }
   }
@@ -524,10 +524,26 @@ export function readWall(state, options = {}) {
     payoffs,
     later,
     paidBy: paidHere,
-    open: order.filter((note) => openIds.has(note.id)).map((note) => ({ id: note.id, words: note.open.trim() })),
+    open: describeOpen(state, options, order, openIds),
     findings: asked,
     left,
   };
+}
+
+/**
+ * The open cards, each with the kinds of question it would be asked if it were
+ * closed (round eighteen, entry 27): the reading of the same wall with the
+ * words cleared, read once more, so the writer can see what the words hide.
+ */
+function describeOpen(state, options, order, openIds) {
+  if (!openIds.size) return [];
+  const hides = new Map();
+  if (!options.closedReading) {
+    const closed = { ...state, notes: state.notes.map((note) => (openIds.has(note.id) ? { ...note, open: "" } : note)) };
+    const again = readWall(closed, { ...options, closedReading: true });
+    for (const finding of again.findings) for (const id of finding.ids) if (openIds.has(id)) (hides.get(id) ?? hides.set(id, new Set()).get(id)).add(finding.kind);
+  }
+  return order.filter((note) => openIds.has(note.id)).map((note) => ({ id: note.id, words: note.open.trim(), hides: [...(hides.get(note.id) ?? [])] }));
 }
 
 function sameList(a, b) {

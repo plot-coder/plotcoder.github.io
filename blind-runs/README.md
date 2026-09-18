@@ -5,13 +5,13 @@ else, asked to build a wall and to keep a log of everything that made the job
 harder than it should have been. The friction log is the product; the wall is
 just what produces it.
 
-The practice is Robert's, from 2026-09-13. Fourteen rounds have been run;
-every finding is fixed or decided — see `REQUIREMENTS.md`, "The blind run",
-and the `friction, fixed` entries in the changelog. Round fourteen's report
-says at its head what was built from it and what was left on purpose. Round
-fifteen is cued in `prompt.md`: the first round on a project of two boards.
-The practice continues because it measures the thing the app is for — an
-agent helping a person turn an idea into a story (Robert, 2026-09-17).
+The practice is Robert's, from 2026-09-13. Fifteen rounds have been run;
+every finding is fixed, decided, or waiting on a mockup — see
+`REQUIREMENTS.md`, "The blind run", and the `friction, fixed` entries in the
+changelog. Round fifteen's report says at its head what was built from it
+the same evening and what waits (R58). The practice continues because it
+measures the thing the app is for — an agent helping a person turn an idea
+into a story (Robert, 2026-09-17).
 
 ## The rules that make a round worth running
 
@@ -45,7 +45,7 @@ agent helping a person turn an idea into a story (Robert, 2026-09-17).
 | Twelve | The published package, the treatment complete | "Low Season" | The directions | 33, all fixed; asked for R52 and R53 |
 | Thirteen | The published package, a feature, past the wall | "Ninety-Nine" | Pages: a scene written, Markdown out, the page count | 32 (`round-thirteen-report.md`); the six chosen first fixed, the rest open |
 | Fourteen | The published package, the same feature, the fixes in hand | "Ninety-Nine" | Past the wall and into production: exports three ways and back, the lock, a revision, a person's page | 49 (`round-fourteen-report.md`); fixed or decided the next day |
-| Fifteen | The published package, a series of two episodes | "The Weighbridge" | Not yet run: two boards, one cast, plants across the gap, a scene moved between episodes, the script out for both | — |
+| Fifteen | The published package, a series of two episodes | "The Weighbridge" | Two boards: a scene moved between episodes, a person's page across both, a structure beside one, the re-test written, Final Draft out for both, the length, a rename, the plants from both sides | 45 (`round-fifteen-report.md`); 34 fixed the same evening, R57 built, R58 proposed |
 
 ## What the rounds keep finding
 
@@ -67,6 +67,9 @@ point into `REQUIREMENTS.md`, "The blind run".
 | A question the writer has answered is asked again on every read | Twelve (21) | **R53**, leaving a question |
 | A scene's day has nowhere to live but the headline, where the duplicate check reads it as the scene's words | Ten, thirteen, fourteen, from three sides | **R55**, when a scene happens |
 | The wall's order is the cards' positions, so a card wired between two others reads somewhere else | Fourteen (38–42) | **R56**, story order is the arrows |
+| A scene cannot cross from one board of the project to another | Fifteen (16) | **R57**, a scene moves to another board |
+| A series plant is remembered at one end: the board it lands on knows nothing | Ten to thirteen asked for the fold; fifteen (5, 11, 43, 45) asked for its other end | **R58**, proposed: the receiving end, mocked first |
+| The hand-wired server entry is gone when the session starts | Nine; fifteen's first attempt | **R48** again: a door that does not live in a file on one machine |
 
 Two things came back and were deliberately **not** built: a length for part of
 a card (thirteen 9, fourteen 14), which is what the change line and the pages
@@ -93,12 +96,15 @@ published package, wired before the session, and were the first to reach the
 directions phase. Each round's findings are itemised in `REQUIREMENTS.md`,
 "The blind run".
 
-- `prompt.md` — round fifteen: the same door, a series of two episodes for
-  the first time, with the writer directing across the two boards — a scene
-  moved from one episode to the other, a person followed across both, the
-  script out for both. The test account is filled in (`test@test.com`,
-  password `test`; Robert's decision, so the prompt pastes without editing).
-  Paste everything below its divider.
+- `prompt.md` — round fifteen's, as it ran: a series of two episodes, the
+  writer directing across the two boards. The test account is filled in
+  (`test@test.com`, password `test`; Robert's decision, so the prompt pastes
+  without editing). Round sixteen has no prompt yet; before one runs, check
+  `~/.claude.json` still holds the `plotcoder-board` entry — it vanished
+  before round fifteen.
+- `round-fifteen-report.md` — the agent's report from round fifteen,
+  verbatim, under a head saying what was fixed from it the same evening and
+  what waits. The next session on the agent surface starts here.
 - `round-fifteen-treatment.md` — "The Weighbridge", two half-hour episodes
   with a premise, one cast, three plants that pay off in the second episode
   and one thing that is not a plant. Embedded in the current prompt.
@@ -106,9 +112,7 @@ directions phase. Each round's findings are itemised in `REQUIREMENTS.md`,
   ran, without their copy of the treatment.
 - `round-thirteen-prompt.md` — round thirteen's own instructions, as they
   ran. Its copy of the treatment is not kept: one treatment, one file.
-- `round-fourteen-report.md` — the agent's report from round fourteen,
-  verbatim, under a head saying what was fixed from it. The next session on
-  the agent surface starts here.
+- `round-fourteen-report.md` — round fourteen's, the same way.
 - `round-thirteen-report.md` — round thirteen's, the same way.
 - `round-thirteen-treatment.md` — "Ninety-Nine", a feature, used by rounds
   thirteen and fourteen and embedded in the current prompt. It answers the

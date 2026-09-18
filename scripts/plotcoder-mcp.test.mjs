@@ -921,7 +921,7 @@ describe("characters", () => {
 
   it("writes a person's page a line at a time, and list_board says which lines are written", async () => {
     const before = await cast.callTool("list_board");
-    expect(before).toContain('maya — "Maya" on 3 cards · page: empty');
+    expect(before).toContain('maya — "Maya" on 3 cards of this board · page: empty');
     const text = await cast.callTool("update_character", {
       id: "maya",
       looks: "Thirty-four, tall, a coat too good for the flat.",
@@ -946,7 +946,7 @@ describe("characters", () => {
       wants: "To keep the flat, and Tom in it.",
       voice: "",
     });
-    expect(await cast.callTool("list_board")).toContain('"Maya" on 3 cards · page: looks, wants');
+    expect(await cast.callTool("list_board")).toContain('"Maya" on 3 cards of this board · page: looks, wants');
   });
 
   it("puts scenes somewhere, and list_board says where", async () => {
@@ -2029,8 +2029,9 @@ describe("round seven's replies", () => {
     expect(first).toContain("about a page (unsized: the writer's guess until set_length)");
     expect(first).toContain("Placed after the last card in story order");
     const second = await seven.callTool("create_note", { headline: "The cash arrives", change: "An envelope, no name.", rank: "beat" });
-    // Said once per session (round thirteen, entry 10).
-    expect(second).not.toContain("Placed after the last card");
+    // Where it landed, every time (round sixteen, entry 13); the organize hint once per session (round thirteen, entry 10).
+    expect(second).toContain("Placed after the last card");
+    expect(second).not.toContain("organize lays the wall out");
     const placed = await seven.callToolData("list_board");
     const [one, two] = placed.notes.slice(-2);
     expect(two.y).toBe(one.y);

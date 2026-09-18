@@ -91,7 +91,9 @@ only when the server is started with `PLOTCODER_JSON=1`.
   one sequence, a person in the cast who is on no card, a person gone for more
   than a third of the story (and ten pages at least, so a short wall's gaps are
   not disappearances), a payoff that comes before its setup on the wall,
-  a folded card no setup arrow pays off, beats back to back with nothing
+  a folded card no setup arrow pays off, a setup arrow leaving a card that
+  is not folded, a card with nobody in it once the wall has a cast, beats
+  back to back with nothing
   between them (a chain of them is one question naming every turn), and cards
   that say no place once any card has one. It also lists every setup with the
   distance to its payoff. The tool's own description carries the same list,
@@ -320,7 +322,10 @@ card of another board is not asked about as uncast here.
 ### The project
 
 - `set_premise` / `rename_project` — the line above every board's logline, and
-  the project's name. `list_boards` shows both.
+  the project's name. `list_boards` shows both. The premise is the project's
+  whatever its board count: a series' line, or what is true before a film
+  starts — "the third year; the crowns can be cut for the first time" — so a
+  one-board film's standing facts have a home that is not a person's notes.
 - `list_reminders` / `add_reminder` / `remove_reminder` — the writer's
   principles. Read them before building or reading a wall; add only what the
   writer asked to keep in front of them.

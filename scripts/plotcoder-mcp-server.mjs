@@ -968,7 +968,7 @@ function isSampleWall(state) {
   return state.notes.map((note) => note.headline).sort().join("\n") === sample;
 }
 /** Every check read_wall runs, so silence can be named. */
-const CHECKS = ["unmarked", "sag", "empty", "unwritten", "unlinked", "duplicate", "sequence", "uncast", "absent", "backwards", "unpaid", "unplaced"];
+const CHECKS = ["unmarked", "sag", "empty", "unwritten", "unlinked", "duplicate", "sequence", "uncast", "nobody", "absent", "backwards", "unpaid", "unplanted", "unplaced"];
 /** What each check looks for, in words, so "clean" says what was checked rather than a kind's name. */
 const CHECK_WORDS = {
   unmarked: "a beat is marked",
@@ -979,9 +979,11 @@ const CHECK_WORDS = {
   duplicate: "no two headlines alike",
   sequence: "no group too long for one sequence (act groups are not asked)",
   uncast: "nobody in the cast on no card of the project",
+  nobody: "no card with nobody in it",
   absent: "nobody gone for a third of the story",
   backwards: "no payoff before its setup",
   unpaid: "no fold without a payoff",
+  unplanted: "no payoff without its fold",
   unplaced: "no card without a place",
 };
 const SAMPLE_NOTE = "sample: this is the wall PlotCoder starts with (Maya, Tom, the letter); nothing here is the writer's. Replace it, or new_board.";
@@ -1493,7 +1495,7 @@ server.registerTool(
   {
     title: "Read the wall",
     description:
-      "Read the board back: the beats in wall order (rows top to bottom, cards left to right), the pages of scenes between consecutive beats with the cards in each, every setup with the distance to its payoff, and the questions the wall raises — no beat marked yet; a run out of proportion with the others; beats back to back with nothing between them (a chain of them is one question); a card with a placeholder headline or no change line; a card no arrow touches; two headlines that read like the same scene; a group too long to be one sequence; a person in the cast on no card; a person gone for more than a third of the story and ten pages; a payoff before its setup on the wall; a folded card no setup arrow pays off; cards that say no place once any card has one. These are questions, not fixes: put them to the writer and do not act on them unasked. A question the writer answers with \"leave it\" is left with leave_question and listed under \"left, for now\" instead, until it would read differently. It says nothing about how many beats there should be, and neither should you. The prose carries every id; PLOTCODER_JSON=1 in the server's environment adds the same reading as JSON after it, for a program.",
+      "Read the board back: the beats in wall order (rows top to bottom, cards left to right), the pages of scenes between consecutive beats with the cards in each, every setup with the distance to its payoff, and the questions the wall raises — no beat marked yet; a run out of proportion with the others; beats back to back with nothing between them (a chain of them is one question); a card with a placeholder headline or no change line; a card no arrow touches; two headlines that read like the same scene; a group too long to be one sequence; a person in the cast on no card; a person gone for more than a third of the story and ten pages; a payoff before its setup on the wall; a folded card no setup arrow pays off; a setup arrow leaving a card that is not folded; a card with nobody in it once the wall has a cast; cards that say no place once any card has one. These are questions, not fixes: put them to the writer and do not act on them unasked. A question the writer answers with \"leave it\" is left with leave_question and listed under \"left, for now\" instead, until it would read differently. It says nothing about how many beats there should be, and neither should you. The prose carries every id; PLOTCODER_JSON=1 in the server's environment adds the same reading as JSON after it, for a program.",
     inputSchema: {},
   },
   async () => {
@@ -1534,6 +1536,8 @@ server.registerTool(
           : "(none)"
       }`,
       `pages: ${written === 0 ? "all estimates — no scene is written yet, so every card is the writer's guess" : written === state.notes.length ? "measured — every scene is written" : `estimates — ${written} of ${state.notes.length} cards are written${written <= 5 ? ` (${state.notes.filter((note) => isMeasured(note)).map((note) => `"${note.headline}"`).join(", ")})` : ""}, the rest are guesses`}`,
+      // A wall with cards and no follows arrows has no story order yet; say so rather than read the rows as one (round seventeen, entries 10, 11).
+      `story order: ${state.notes.length > 1 && !state.arrows.some((arrow) => arrow.kind !== "setup") ? "unset — no follows arrows, so the rows stand in for it; create_arrow the sequence and the reading, the numbers and every export follow the arrows" : "the follows arrows, and the rows where they say nothing"}`,
       `beats in wall order: ${
         reading.beats.length
           ? reading.beats.map((beat) => `"${beat.headline}"`).join(", ")
@@ -3253,7 +3257,7 @@ server.registerTool(
   {
     title: "Set the project's premise",
     description:
-      "Set the project's premise: the series- or story-level line above every board's logline. An empty string clears it. Boards keep their own loglines.",
+      "Set the project's premise: the line above every board's logline, held by the project whatever its board count — what a series is about, or what is true before a film starts ('the third year; the crowns can be cut for the first time'). An empty string clears it. Boards keep their own loglines.",
     inputSchema: { premise: z.string() },
   },
   async (args) => {

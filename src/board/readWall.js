@@ -359,6 +359,20 @@ export function readWall(state, options = {}) {
     }
   }
 
+  // A payoff with no fold (round seventeen, entry 12): a setup arrow leaves a
+  // card whose corner is not folded. The arrow says "this pays off", the
+  // card says nothing was planted — ask which.
+  for (const setup of setups) {
+    const tail = byId.get(setup.from);
+    if (tail && !tail.plants) {
+      findings.push({
+        kind: "unplanted",
+        ids: [setup.id, setup.from],
+        text: `${quote(tail)} pays off at ${quote(byId.get(setup.to))} by a setup arrow, but its corner is not folded. Fold it, or is the arrow wrong?`,
+      });
+    }
+  }
+
   // A folded corner nothing has paid off (R31). The fold says "this plants
   // something"; a setup arrow leaving the card is the payoff. Until one does,
   // the debt is open.
@@ -415,6 +429,19 @@ export function readWall(state, options = {}) {
   }
   const hereIds = new Set(order.map((note) => note.id));
   const paidHere = paidBy.filter((item) => hereIds.has(item.id));
+
+  // A card with nobody in it, once the wall has a cast (round seventeen,
+  // entry 28): a scene nobody is in passed every check.
+  if ((state.characters ?? []).length > 0) {
+    const empty = order.filter((note) => !(note.characterIds ?? []).length);
+    if (empty.length) {
+      findings.push({
+        kind: "nobody",
+        ids: empty.map((note) => note.id),
+        text: `${empty.length === 1 ? `${quote(empty[0])} has nobody in it` : `${empty.length} cards have nobody in them: ${empty.map((note) => quote(note)).join(", ")}`}. Who is in the scene${empty.length === 1 ? "" : "s"}?`,
+      });
+    }
+  }
 
   // The cast (R29): someone who vanishes for a stretch, or never appears.
   const total = boardEighths(state);

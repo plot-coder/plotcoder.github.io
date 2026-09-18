@@ -36,6 +36,8 @@ export const KIND_NAMES: Record<FindingKind, string> = {
   absent: "Someone disappears",
   backwards: "Payoff before setup",
   unpaid: "A setup with no payoff",
+  unplanted: "A payoff with no fold",
+  nobody: "Nobody in the scene",
   unplaced: "No place",
 };
 

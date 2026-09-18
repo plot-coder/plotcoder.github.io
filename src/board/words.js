@@ -36,7 +36,7 @@ export const WORD_GROUPS = [
       {
         id: "premise",
         name: "The premise",
-        sentence: "Above the logline when a project has several boards: the line the whole series is about.",
+        sentence: "The line above every board's logline, the project's whatever its board count: what a series is about, or what is true before a film starts.",
       },
       {
         id: "beat",

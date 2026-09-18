@@ -20,6 +20,10 @@ export type FindingKind =
   | "unlinked"
   /** Two headlines read like the same scene. */
   | "duplicate"
+  /** A setup arrow leaves a card whose corner is not folded: a payoff with no fold. */
+  | "unplanted"
+  /** A card with nobody in it, on a wall that has a cast. */
+  | "nobody"
   /** A group runs too long to be one sequence. */
   | "sequence"
   /** A character in the roster who is on no card. */

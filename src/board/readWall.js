@@ -262,6 +262,10 @@ export function readWall(state, options = {}) {
   // whose turns come thick at the end would otherwise ask the same sentence
   // six times (round four, finding 19).
   let chain = [];
+  // On a wall where most runs hold nothing, the turns are back to back by
+  // construction, and the question stands until scenes go in; say so rather
+  // than ask it as if it were a choice (round eighteen, entry 29).
+  const thin = between.length >= 2 && between.filter((run) => run.cards === 0).length * 2 > between.length ? " Most runs hold nothing yet, so this stands until scenes go in." : "";
   const askChain = () => {
     if (chain.length === 0) return;
     const ids = [chain[0].from, ...chain.map((run) => run.to)];
@@ -271,8 +275,8 @@ export function readWall(state, options = {}) {
       ids,
       text:
         ids.length === 2
-          ? `Nothing runs between ${names[0]} and ${names[1]}: two turns back to back. Are they one beat, or is a scene missing?`
-          : `Nothing runs between ${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}: ${countWord(ids.length)} turns back to back. Are some of them one beat, or are scenes missing between them?`,
+          ? `Nothing runs between ${names[0]} and ${names[1]}: two turns back to back. Are they one beat, or is a scene missing?${thin}`
+          : `Nothing runs between ${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}: ${countWord(ids.length)} turns back to back. Are some of them one beat, or are scenes missing between them?${thin}`,
     });
     chain = [];
   };

@@ -47,6 +47,7 @@ into a story (Robert, 2026-09-17).
 | Fourteen | The published package, the same feature, the fixes in hand | "Ninety-Nine" | Past the wall and into production: exports three ways and back, the lock, a revision, a person's page | 49 (`round-fourteen-report.md`); fixed or decided the next day |
 | Fifteen | The published package, a series of two episodes | "The Weighbridge" | Two boards: a scene moved between episodes, a person's page across both, a structure beside one, the re-test written, Final Draft out for both, the length, a rename, the plants from both sides | 45 (`round-fifteen-report.md`); 34 fixed the same evening, R57 and R58 built |
 | Sixteen | The published package, the same series, the fixes in hand | "The Weighbridge" | The move and the claims found as tools unprompted; a revision, a lock and a scene added under it, Final Draft out for both, the lengths, undo | 48 (`round-sixteen-report.md`); 41 fixed the same night, create_note with after/before built |
+| Seventeen | The published package, a page of notes instead of a treatment, the writer answering | "Plot 14" (`round-seventeen-idea.md`) | Not yet run: what the agent asks, what it does with a maybe, what the reading does for a story that does not exist yet | — |
 
 ## What the rounds keep finding
 
@@ -99,11 +100,17 @@ published package, wired before the session, and were the first to reach the
 directions phase. Each round's findings are itemised in `REQUIREMENTS.md`,
 "The blind run".
 
-- `prompt.md` — round sixteen's, as it ran: the same series against the
-  package with round fifteen's fixes, the writer directing further across
-  the two boards. Its first step checks `~/.claude.json` still holds the
-  `plotcoder-board` entry. Round seventeen has no prompt yet; the case never
-  measured is a third board, or a treatment that is not the writer's own.
+- `prompt.md` — round seventeen: a page of a writer's notes instead of a
+  treatment, the first round that starts from an idea. The writer's private
+  answers to what the notes leave open sit above the divider, so whoever
+  relays answers the same way each time. Its first step checks
+  `~/.claude.json` still holds the `plotcoder-board` entry. The test account
+  is filled in. Paste everything below its divider.
+- `round-seventeen-idea.md` — "The Allotments", the notes: eight scenes the
+  writer knows, two versions of the time, an ending not chosen, a break-in
+  with three suspects. Embedded in the current prompt.
+- `round-sixteen-prompt.md` — round sixteen's own instructions, as they ran,
+  without their copy of the treatment.
 - `round-sixteen-report.md` — the agent's report from round sixteen,
   verbatim, under a head saying what was fixed from it the same night. The
   next session on the agent surface starts here.
@@ -130,9 +137,12 @@ directions phase. Each round's findings are itemised in `REQUIREMENTS.md`,
 Rounds four to twelve used a TV pilot so they exercised a series premise
 above an episode logline. Rounds thirteen and fourteen used a feature so the
 app is measured on the primary user's form, with no premise and one board.
-Round fifteen uses two episodes so the project model is measured at last:
-one cast across two boards (R51), a fold paying off on another board (R50),
-and what a writer asks of a wall that is two walls.
+Rounds fifteen and sixteen used two episodes so the project model was
+measured at last: one cast across two boards (R51), a fold paying off on
+another board (R50), and what a writer asks of a wall that is two walls.
+Round seventeen uses notes, not a treatment, because every round since
+twelve fed the agent a finished story and the app is for making one from
+an idea.
 
 **What a round leaves behind, and what it does not.** Keep the report, whole
 and unedited: it is cheap, and it is the only record not written by whoever

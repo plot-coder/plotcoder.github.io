@@ -2617,8 +2617,11 @@ server.registerTool(
     }
     // The fold and the board it pays off on land as one change: one ⌘Z on the wall.
     const { value, live, changed } = await commitAll("set_plant", (step, current) => {
+      // What the folds claimed before, so the reply can say what a new claim replaced (round sixteen, entry 26).
+      const before = new Map(current().notes.filter((note) => args.ids.includes(note.id)).map((note) => [note.id, { plants: note.plants, boardId: note.payoffBoardId, noteId: note.payoffNoteId }]));
+      const alreadyFolded = args.plants && args.ids.every((id) => before.get(id)?.plants);
       let { result } = step({ type: "set_plant", ids: args.ids, plants: args.plants });
-      let laterLine = "";
+      let laterLine = alreadyFolded ? " (already folded)" : "";
       if (forgetting) {
         const cleared = step({ type: "set_payoff_board", ids: args.ids, boardId: null });
         if (cleared.changed) {
@@ -2629,11 +2632,16 @@ server.registerTool(
         const named = step({ type: "set_payoff_board", ids: args.ids, boardId: target.id, noteId: atNote?.id ?? null });
         if (named.changed) result = named.result;
         const here = current().notes.filter((note) => args.ids.includes(note.id));
-        laterLine = atNote
-          ? ` ${here.length} card(s) pay off at "${atNote.headline}" on "${target.name}": both boards' readings name it, and that card says what it pays off.`
+        // The claim that stood before, when this one replaces it.
+        const replaced = [...before.values()].filter((was) => was.boardId && (was.boardId !== target.id || (was.noteId && was.noteId !== (atNote?.id ?? null))));
+        const replacedLine = replaced.length
+          ? ` That replaces the earlier claim${replaced.length === 1 ? "" : "s"}: ${replaced.map((was) => `${was.noteId ? `"${(isBoardState(lastHeld?.boards?.[was.boardId]) ? lastHeld.boards[was.boardId].notes.find((note) => note.id === was.noteId)?.headline : null) ?? was.noteId}" on` : "a scene to come on"} "${lastHeld?.project?.boards?.find((meta) => meta.id === was.boardId)?.name ?? was.boardId}"`).join(", ")}, which no longer pays anything off.`
+          : "";
+        laterLine = `${laterLine}${atNote
+          ? ` ${here.length} fold(s) ${here.length === 1 ? "is" : "are"} paid off at "${atNote.headline}" on "${target.name}": both boards' readings name it, and that card says what it pays off.`
           : atClearing
-            ? ` ${here.length} card(s) pay off later, on "${target.name}", and no scene there is claimed: read_wall asks which once that board holds cards.`
-            : ` ${here.length} card(s) pay off later, on "${target.name}": the card says so, and read_wall asks which scene once that board holds cards — set_plant with at, or set_payoff from that board, names it.`;
+            ? ` ${here.length} fold(s) pay off later, on "${target.name}", and no scene there is claimed: read_wall asks which once that board holds cards.`
+            : ` ${here.length} fold(s) pay off later, on "${target.name}": the card says so, and read_wall asks which scene once that board holds cards — set_plant with at, or set_payoff from that board, names it.`}${replacedLine}`;
       }
       return { result, laterLine };
     });

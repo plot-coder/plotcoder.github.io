@@ -502,6 +502,30 @@ export function readWall(state, options = {}) {
     }
   }
 
+  // Threads (R60): a named string through cards, in story order, either end
+  // open until the writer ties it. The reading asks about each loose end from
+  // that end — the question a fold cannot ask, where a thing is first seen.
+  const threads = (state.threads ?? []).map((thread) => ({
+    id: thread.id,
+    name: thread.name,
+    ids: order.filter((note) => thread.noteIds.includes(note.id)).map((note) => note.id),
+    startOpen: thread.startOpen === true,
+    endOpen: thread.endOpen === true,
+  }));
+  for (const thread of threads) {
+    const first = thread.ids.length ? byId.get(thread.ids[0]) : null;
+    const last = thread.ids.length ? byId.get(thread.ids[thread.ids.length - 1]) : null;
+    if (!thread.ids.length) {
+      findings.push({ kind: "loose", ids: [thread.id], text: `"${thread.name}" runs through no card yet. Where is it first seen, and where does it come out?` });
+    } else if (thread.startOpen && thread.endOpen) {
+      findings.push({ kind: "loose", ids: [thread.id, ...thread.ids], text: `"${thread.name}" runs through ${list(thread.ids.map((id) => byId.get(id)))} and neither end is tied. Where is it first seen, and where does it come out?` });
+    } else if (thread.startOpen) {
+      findings.push({ kind: "loose", ids: [thread.id, first.id], text: `"${thread.name}" starts nowhere yet: it runs ${thread.ids.length === 1 ? "to" : "through"} ${list(thread.ids.map((id) => byId.get(id)))}. Where is it first seen?` });
+    } else if (thread.endOpen) {
+      findings.push({ kind: "loose", ids: [thread.id, last.id], text: `"${thread.name}" ends nowhere yet: it runs ${thread.ids.length === 1 ? "from" : "through"} ${list(thread.ids.map((id) => byId.get(id)))}. Where does it come out?` });
+    }
+  }
+
   // A question the writer has left (R53) is held back while it is still the
   // same question — same kind, same cards, same words. The moment it would
   // read differently (a page moved, a headline changed, the median shifted)
@@ -509,7 +533,8 @@ export function readWall(state, options = {}) {
   // reading does, on every read.
   const left = [];
   // A question whose every card is open is not asked (R59): the writer's word covers it.
-  const openCards = openIds.size ? findings.filter((finding) => finding.ids.some((id) => byId.has(id)) && finding.ids.filter((id) => byId.has(id)).every((id) => openIds.has(id))) : [];
+  // A thread's loose end (R60) is the writer's own claim, asked whether or not its cards are open.
+  const openCards = openIds.size ? findings.filter((finding) => finding.kind !== "loose" && finding.ids.some((id) => byId.has(id)) && finding.ids.filter((id) => byId.has(id)).every((id) => openIds.has(id))) : [];
   const asked = findings.filter((finding) => {
     if (openCards.includes(finding)) return false;
     const entry = (state.left ?? []).find(
@@ -529,6 +554,7 @@ export function readWall(state, options = {}) {
     later,
     paidBy: paidHere,
     open: describeOpen(state, options, order, openIds),
+    threads,
     findings: asked,
     left,
   };

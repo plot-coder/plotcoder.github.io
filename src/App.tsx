@@ -614,6 +614,16 @@ export function App() {
     boardStore.dispatch({ type: "set_open", ids, open });
   }
 
+  // Threads (R60): started at a card with the writer's name, the far end open; tied to a card from the corner.
+  function startThread(id: string, name: string, end: "start" | "end") {
+    boardStore.dispatch({ type: "create_thread", name, noteIds: [id], startOpen: end === "start", endOpen: end === "end" });
+  }
+
+  function tieThread(id: string, threadId: string, how: "start" | "end" | "through" | "off") {
+    if (how === "off") boardStore.dispatch({ type: "update_thread", id: threadId, remove: [id] });
+    else boardStore.dispatch({ type: "update_thread", id: threadId, add: [id], ...(how === "start" ? { startOpen: false } : how === "end" ? { endOpen: false } : {}) });
+  }
+
   function setPlant(id: string, plants: boolean) {
     const ids =
       selectedIds.includes(id) && selectedIds.length >= 2 ? selectedIds : [id];
@@ -964,6 +974,7 @@ export function App() {
         notes={notes}
         groups={groups}
         arrows={arrows}
+        threads={board.threads}
         characters={characters}
         castFocusId={castFocusId}
         placeFocus={placeFocus}
@@ -992,6 +1003,8 @@ export function App() {
         onSetRank={setRank}
         onSetLength={setLength}
         onSetPlant={setPlant}
+        onStartThread={startThread}
+        onTieThread={tieThread}
         onSetOpen={setOpen}
         onEdit={editNote}
         onCommit={commitBoard}

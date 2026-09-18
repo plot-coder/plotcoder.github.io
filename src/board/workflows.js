@@ -15,7 +15,7 @@ export const WORKFLOWS = [
     id: "break-a-treatment",
     name: "Break a treatment into a wall",
     ask: "Here is a treatment. Break it into a wall: one card per scene with a headline and what changes, the cast on each card, the places, and the major turns marked as beats.",
-    tools: ["list_words", "read_wall", "list_reminders", "list_board", "new_project", "new_board", "rename_project", "rename_board", "set_target", "set_logline", "set_premise", "create_note", "add_character", "cast", "update_character", "set_location", "set_when", "set_rank", "set_length", "set_plant", "create_arrow", "create_group", "organize"],
+    tools: ["list_words", "read_wall", "list_reminders", "list_board", "new_project", "new_board", "rename_project", "rename_board", "set_target", "set_logline", "set_premise", "create_note", "add_character", "cast", "update_character", "set_location", "set_when", "set_rank", "set_length", "set_plant", "create_thread", "create_arrow", "create_group", "organize"],
     then: "Start where the wall will live: on the account, new_project names it; in a folder, new_board for the writer's wall, then rename_project. Read the wall (read_wall) and say what it asks. A treatment is cards, one create_note each, with characters, location, rank and plants on the call; import_fountain is the door for pages, not a treatment — a scene's text measures its card.",
     // What a treatment should say (R49): eleven blind runs asked the writer
     // the same questions at the end of every build. Each is a fact the wall
@@ -30,7 +30,7 @@ export const WORKFLOWS = [
       { question: "Where does each scene happen?", hint: "In your own words. A scene that moves through one location is still one place.", tool: "set_location" },
       { question: "When does a scene happen, where that matters?", hint: "That night; the fourth of October. It goes beside the place, never in the headline.", tool: "set_when" },
       { question: "Who is in each scene, and what do we call them?", hint: "A full name, or a role for someone unnamed — the man in 42. And who is only spoken of, never in a scene? They go in someone's notes, not the cast.", tool: "add_character, cast, update_character" },
-      { question: "What is planted, and where does it pay off?", hint: "Name the episode when it pays off outside this one, so the fold is deliberate and the wall knows where to look.", tool: "set_plant with later, create_arrow" },
+      { question: "What is planted, and where does it pay off?", hint: "Name the episode when it pays off outside this one, so the fold is deliberate and the wall knows where to look. A thing whose far end you know and not its first sighting — the key, the bucket — is a thread with an open start.", tool: "set_plant with later, create_arrow; create_thread" },
       { question: "Which scenes do you already know run long or short?", hint: "A day in the story is not a page count; leave the rest unsized.", tool: "set_length" },
       { question: "What are the project and the board called?", hint: "The series, and this episode.", tool: "rename_project, rename_board" },
       { question: "What must not be invented?", hint: "Looks and voices are yours until you say; so is anything the treatment does not state.", tool: "update_character, later" },

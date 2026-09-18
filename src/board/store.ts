@@ -118,6 +118,9 @@ function coalesceKey(command: Command): string | null {
     // The words on an open card are typed (R59): one step back.
     case "set_open":
       return `set_open:${[...command.ids].sort().join(",")}`;
+    // A thread's name is typed (R60): one step back.
+    case "update_thread":
+      return command.name !== undefined ? `update_thread:${command.id}` : null;
     default:
       return null;
   }
@@ -859,6 +862,10 @@ export type PlotCoderWindowApi = {
   setWhen: (ids: string[], when: string) => unknown;
   /** Leave cards open with the writer's words (R59); "" closes. */
   setOpen: (ids: string[], open: string) => unknown;
+  /** A thread (R60): a named string through cards, either end open until tied. */
+  createThread: (name: string, noteIds?: string[], startOpen?: boolean, endOpen?: boolean) => unknown;
+  updateThread: (id: string, patch: { name?: string; add?: string[]; remove?: string[]; startOpen?: boolean; endOpen?: boolean }) => unknown;
+  deleteThread: (id: string) => unknown;
   /** The receiving end of a series plant (R58): the folds on another board that a card here pays off; null takes the claim back. */
   setPayoff: (fromBoardId: string, foldIds: string[], noteId: string | null) => unknown;
   updateCharacter: (id: string, patch: Partial<Record<CharacterField, string>>) => unknown;
@@ -906,6 +913,9 @@ export function installWindowApi(): void {
     setLocation: (ids, location) => boardStore.dispatch({ type: "set_location", ids, location }),
     setWhen: (ids, when) => boardStore.dispatch({ type: "set_when", ids, when }),
     setOpen: (ids, open) => boardStore.dispatch({ type: "set_open", ids, open }),
+    createThread: (name, noteIds = [], startOpen = false, endOpen = false) => boardStore.dispatch({ type: "create_thread", name, noteIds, startOpen, endOpen }),
+    updateThread: (id, patch) => boardStore.dispatch({ type: "update_thread", id, ...patch }),
+    deleteThread: (id) => boardStore.dispatch({ type: "delete_thread", id }),
     setPayoff: (fromBoardId, foldIds, noteId) => boardStore.dispatchOn(fromBoardId, { type: "set_payoff_board", ids: foldIds, boardId: boardStore.getProject().activeBoardId, noteId }),
     updateCharacter: (id, patch) => boardStore.dispatch({ type: "update_character", id, ...patch }),
     applyTemplate: (template) => boardStore.dispatch({ type: "apply_template", template }),

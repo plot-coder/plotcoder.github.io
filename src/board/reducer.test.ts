@@ -21,6 +21,7 @@ import {
   seedState,
   type BoardState,
   type Command,
+  type BoardThread,
 } from "./reducer";
 
 const NOW = "2026-01-01T00:00:00.000Z";
@@ -380,6 +381,45 @@ describe("groups", () => {
     state = run(state, { type: "ungroup", id: groupId });
     expect(state.groups).toHaveLength(0);
     expect(state.notes).toHaveLength(2);
+  });
+});
+
+describe("threads (R60)", () => {
+  it("names a thread through existing cards, once each, either end open on the writer's word", () => {
+    const state = boardOf({ id: "a", x: 0, y: 0 }, { id: "b", x: 300, y: 0 });
+    const made = applyCommand(state, { type: "create_thread", name: "  the  bucket ", noteIds: ["b", "ghost", "b"], startOpen: true }, NOW);
+    expect(made.changed).toBe(true);
+    expect(made.result).toEqual({ id: expect.any(String), name: "the bucket", noteIds: ["b"], startOpen: true, endOpen: false });
+    expect(applyCommand(state, { type: "create_thread", name: "   " }, NOW).changed).toBe(false);
+  });
+
+  it("ties an end, adds and removes cards, renames, and says when nothing changed", () => {
+    let state = run(boardOf({ id: "a", x: 0, y: 0 }, { id: "b", x: 300, y: 0 }), { type: "create_thread", id: "t", name: "the bucket", noteIds: ["b"], startOpen: true });
+    const tied = applyCommand(state, { type: "update_thread", id: "t", add: ["a"], startOpen: false }, NOW);
+    const tiedResult = tied.result as { thread: BoardThread; before: BoardThread };
+    expect(tiedResult.thread).toEqual({ id: "t", name: "the bucket", noteIds: ["b", "a"], startOpen: false, endOpen: false });
+    expect(tiedResult.before.startOpen).toBe(true);
+    state = tied.state;
+    expect(applyCommand(state, { type: "update_thread", id: "t", add: ["a"] }, NOW).changed).toBe(false);
+    expect(applyCommand(state, { type: "update_thread", id: "t", name: "  " }, NOW).changed).toBe(false);
+    expect((applyCommand(state, { type: "update_thread", id: "t", remove: ["b"], name: "the crowns" }, NOW).result as { thread: BoardThread }).thread).toEqual({ id: "t", name: "the crowns", noteIds: ["a"], startOpen: false, endOpen: false });
+    expect(applyCommand(state, { type: "update_thread", id: "ghost", name: "x" }, NOW).changed).toBe(false);
+    expect(applyCommand(state, { type: "delete_thread", id: "t" }, NOW).state.threads).toEqual([]);
+    expect(applyCommand(state, { type: "delete_thread", id: "ghost" }, NOW).changed).toBe(false);
+  });
+
+  it("takes a deleted card off its threads and says so; the thread stays", () => {
+    const state = run(boardOf({ id: "a", x: 0, y: 0 }, { id: "b", x: 300, y: 0 }), { type: "create_thread", id: "t", name: "the key", noteIds: ["a", "b"], endOpen: true });
+    const gone = applyCommand(state, { type: "delete_note", id: "a" }, NOW);
+    expect((gone.result as { threads: unknown }).threads).toEqual([{ id: "t", name: "the key", remaining: 1 }]);
+    expect(gone.state.threads).toEqual([{ id: "t", name: "the key", noteIds: ["b"], startOpen: false, endOpen: true }]);
+  });
+
+  it("repairs threads on load: none before R60, a missing card dropped, a nameless thread gone", () => {
+    const old = { logline: "", notes: seedState(NOW).notes, groups: [], arrows: [] };
+    expect(normalizeState(old).threads).toEqual([]);
+    const messy = { ...old, threads: [{ id: "t", name: "the key", noteIds: ["maya-letter", "ghost"], startOpen: "yes" }, { id: "u", noteIds: [] }, null] };
+    expect(normalizeState(messy).threads).toEqual([{ id: "t", name: "the key", noteIds: ["maya-letter"], startOpen: false, endOpen: false }]);
   });
 });
 

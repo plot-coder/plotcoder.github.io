@@ -223,6 +223,7 @@ export function emptyState() {
     characters: [],
     notes: [],
     groups: [],
+    threads: [],
     arrows: [],
     lock: null,
     revision: null,
@@ -277,6 +278,7 @@ export function seedState(now = nowIso()) {
       mk("letter-aloud", "The letter is read aloud", "The plan dies in the room.", "blue", 196, 340, 0.8, 3, ["maya", "tom"]),
     ],
     groups: [],
+    threads: [],
     arrows: [],
     lock: null,
     revision: null,
@@ -390,6 +392,25 @@ export function normalizeState(value) {
   // the writer leaves it.
   const left = Array.isArray(value.left) ? value.left.filter(isLeftQuestion) : [];
   const leftPatched = !Array.isArray(value.left) || left.length !== value.left.length;
+  // Boards written before R60 have no threads: a wall has none until the
+  // writer names one. A thread that names a card the board no longer holds
+  // drops that card; a thread with no name is not a thread.
+  const noteIdSet = new Set(notes.map((note) => note.id));
+  let threadsPatched = !Array.isArray(value.threads);
+  const threads = (Array.isArray(value.threads) ? value.threads : [])
+    .map((thread) => {
+      if (!thread || typeof thread !== "object" || typeof thread.id !== "string" || typeof thread.name !== "string" || !thread.name.trim()) {
+        threadsPatched = true;
+        return null;
+      }
+      const noteIds = Array.isArray(thread.noteIds) ? thread.noteIds.filter((id, index) => typeof id === "string" && noteIdSet.has(id) && thread.noteIds.indexOf(id) === index) : [];
+      const startOpen = thread.startOpen === true;
+      const endOpen = thread.endOpen === true;
+      if (Array.isArray(thread.noteIds) && noteIds.length === thread.noteIds.length && thread.startOpen === startOpen && thread.endOpen === endOpen) return thread;
+      threadsPatched = true;
+      return { ...thread, noteIds, startOpen, endOpen };
+    })
+    .filter(Boolean);
   if (
     value.logline === logline &&
     value.targetEighths === targetEighths &&
@@ -398,7 +419,8 @@ export function normalizeState(value) {
     !patched &&
     value.lock === lock &&
     value.revision === revision &&
-    !leftPatched
+    !leftPatched &&
+    !threadsPatched
   ) {
     return value;
   }
@@ -412,6 +434,7 @@ export function normalizeState(value) {
     lock,
     revision,
     left,
+    threads,
   };
 }
 
@@ -432,6 +455,11 @@ function bump(note, patch, now) {
 
 /** The writer's words for what is open about a card, one line, spaces collapsed; empty closes it (R59). */
 function cleanOpen(value) {
+  return typeof value === "string" ? value.trim().replace(/\s+/g, " ") : "";
+}
+
+/** A thread's name as the writer typed it, one line, spaces collapsed (R60). */
+function cleanThreadName(value) {
   return typeof value === "string" ? value.trim().replace(/\s+/g, " ") : "";
 }
 
@@ -631,10 +659,19 @@ export function applyCommand(state, command, now = nowIso()) {
           return { ...group, noteIds };
         }),
       );
+      // A thread through the card keeps its name and loses the card (R60);
+      // the thread stays, with one card fewer, so the writer can retie it.
+      const threadsLeft = [];
+      const threads = (state.threads ?? []).map((thread) => {
+        if (!thread.noteIds.includes(command.id)) return thread;
+        const noteIds = thread.noteIds.filter((id) => id !== command.id);
+        threadsLeft.push({ id: thread.id, name: thread.name, remaining: noteIds.length });
+        return { ...thread, noteIds };
+      });
       // The result says what went with the card, so a door can say it too
       // (round thirteen, entry 17: "Deleted card." and nothing of the arrows).
       return {
-        state: { ...state, notes, arrows, groups },
+        state: { ...state, notes, arrows, groups, threads },
         changed: true,
         result: {
           id: command.id,
@@ -647,6 +684,7 @@ export function applyCommand(state, command, now = nowIso()) {
           arrows: taken.map((arrow) => ({ ...arrow, fromHeadline: headlineOf(arrow.from), toHeadline: headlineOf(arrow.to) })),
           joined: joined ? { ...joined, fromHeadline: headlineOf(joined.from), toHeadline: headlineOf(joined.to) } : null,
           groups: left,
+          threads: threadsLeft,
         },
       };
     }
@@ -697,6 +735,50 @@ export function applyCommand(state, command, now = nowIso()) {
       );
       if (!touched) return { state, changed: false };
       return { state: { ...state, groups }, changed: true };
+    }
+
+    // A thread (R60): a named string through cards, either end open until the
+    // writer ties it. A record of its own beside the fold and the setup arrow;
+    // the reading asks about each loose end from that end.
+    case "create_thread": {
+      const name = cleanThreadName(command.name);
+      if (!name) return { state, changed: false };
+      const noteIds = (command.noteIds ?? []).filter((id, index, all) => all.indexOf(id) === index && state.notes.some((note) => note.id === id));
+      const thread = {
+        id: typeof command.id === "string" && command.id && !(state.threads ?? []).some((item) => item.id === command.id) ? command.id : newId(),
+        name,
+        noteIds,
+        startOpen: command.startOpen === true,
+        endOpen: command.endOpen === true,
+      };
+      return { state: { ...state, threads: [...(state.threads ?? []), thread] }, changed: true, result: thread };
+    }
+
+    case "update_thread": {
+      const current = (state.threads ?? []).find((thread) => thread.id === command.id);
+      if (!current) return { state, changed: false };
+      const exists = (id) => state.notes.some((note) => note.id === id);
+      let noteIds = Array.isArray(command.noteIds) ? command.noteIds.filter((id, index, all) => all.indexOf(id) === index && exists(id)) : [...current.noteIds];
+      if (Array.isArray(command.add)) for (const id of command.add) if (exists(id) && !noteIds.includes(id)) noteIds.push(id);
+      if (Array.isArray(command.remove)) noteIds = noteIds.filter((id) => !command.remove.includes(id));
+      const name = command.name === undefined ? current.name : cleanThreadName(command.name) || current.name;
+      const startOpen = typeof command.startOpen === "boolean" ? command.startOpen : current.startOpen;
+      const endOpen = typeof command.endOpen === "boolean" ? command.endOpen : current.endOpen;
+      if (name === current.name && startOpen === current.startOpen && endOpen === current.endOpen && sameIds(noteIds, current.noteIds) && noteIds.length === current.noteIds.length) {
+        return { state, changed: false };
+      }
+      const next = { ...current, name, noteIds, startOpen, endOpen };
+      return {
+        state: { ...state, threads: state.threads.map((thread) => (thread.id === command.id ? next : thread)) },
+        changed: true,
+        result: { thread: next, before: current },
+      };
+    }
+
+    case "delete_thread": {
+      const gone = (state.threads ?? []).find((thread) => thread.id === command.id);
+      if (!gone) return { state, changed: false };
+      return { state: { ...state, threads: state.threads.filter((thread) => thread.id !== command.id) }, changed: true, result: gone };
     }
 
     case "create_group": {

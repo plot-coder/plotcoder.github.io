@@ -150,11 +150,13 @@ describe("plotcoder MCP server", () => {
       "create_arrow",
       "create_group",
       "create_note",
+      "create_thread",
       "delete_arrow",
       "delete_board",
       "delete_account",
       "delete_note",
       "delete_project",
+      "delete_thread",
       "edit_scene",
       "empty_account",
       "end_revision",
@@ -217,6 +219,7 @@ describe("plotcoder MCP server", () => {
       "unlock_numbers",
       "update_character",
       "update_note",
+      "update_thread",
       "write_scene",
     ].sort();
 
@@ -1292,6 +1295,28 @@ describe("round sixteen", () => {
     expect(await six.callTool("set_open", { ids: ["ghost"], open: "x" })).toContain("No card with id ghost");
   });
 
+  it("names a thread through cards by headline, asks about its loose end, ties it, and cuts it (R60)", async () => {
+    expect(await six.callTool("create_thread", { name: "the bucket", cards: ["The night of the break-in", "nowhere"], startOpen: true })).toContain('No thread made: not on the board — "nowhere"');
+    const made = await six.callTool("create_thread", { name: "the bucket", cards: ["The night of the break-in"], startOpen: true });
+    expect(made).toContain('Named the thread "the bucket" (');
+    expect(made).toContain('"The night of the break-in" — starts nowhere yet');
+    expect(made).toContain("The reading asks where it is first seen until update_thread ties that end.");
+    const read = await six.callTool("read_wall");
+    expect(read).toContain('threads (the writer\'s strings through the story; a loose end is asked about below):');
+    expect(read).toContain('  - "the bucket": "The night of the break-in" — starts nowhere yet');
+    expect(read).toMatch(/\[loose\] "the bucket" starts nowhere yet: it runs to "The night of the break-in"\. Where is it first seen\?/);
+    expect(read).toMatch(/checks: 15 run/);
+    expect(await six.callTool("list_board")).toContain('  - "the bucket" (');
+    const tied = await six.callTool("update_thread", { thread: "the bucket", add: ["Declan wants Con to move to Naas"], startOpen: false });
+    expect(tied).toContain("Tied its start; the reading stops asking about it.");
+    expect(tied).toContain("both ends tied");
+    expect(await six.callTool("read_wall")).not.toContain("[loose]");
+    expect(await six.callTool("update_thread", { thread: "the bucket", add: ["Declan wants Con to move to Naas"] })).toContain('Nothing changed: "the bucket" already reads that way.');
+    expect(await six.callTool("update_thread", { thread: "no such thread", name: "x" })).toContain('No thread called "no such thread"');
+    expect(await six.callTool("delete_thread", { thread: "the bucket" })).toContain('Cut the thread "the bucket"');
+    expect(await six.callTool("delete_thread", { thread: "the bucket" })).toContain('No thread called "the bucket"');
+  });
+
 });
 
 // The folded corner (R31): a plant with no payoff yet.
@@ -1654,7 +1679,7 @@ describe("after the blind run", () => {
     expect(read).not.toMatch(/checked and clean:.*unwritten/);
     expect(read).toContain("pages: all estimates — no scene is written yet");
     expect(read).toContain("(distances in estimated pages)");
-    expect(read).toMatch(/checks: 14 run — asking (nothing|\d+ questions? of \d+ kinds?: [a-z ×0-9, ]+); checked and clean:/);
+    expect(read).toMatch(/checks: 15 run — asking (nothing|\d+ questions? of \d+ kinds?: [a-z ×0-9, ]+); checked and clean:/);
   });
 
   it("names the card's id and casts it in one call, adding a role-named person to the roster", async () => {

@@ -118,6 +118,8 @@ export type BoardState = {
   characters: BoardCharacter[];
   notes: BoardNote[];
   groups: BoardGroup[];
+  /** Threads (R60): named strings through cards, either end open until tied. */
+  threads: BoardThread[];
   arrows: BoardArrow[];
   /** Locked scene numbers, once a draft has gone out (Roadmap 2, item 8); null until then. */
   lock: import("./numbering").Lock | null;
@@ -125,6 +127,17 @@ export type BoardState = {
   revision: import("./numbering").Revision | null;
   /** Questions the writer has left, for now (R53): kept until the question would read differently. */
   left: LeftQuestion[];
+};
+
+/** A thread (R60): a name, the cards it runs through, and whether either end is still open. */
+export type BoardThread = {
+  id: string;
+  name: string;
+  noteIds: string[];
+  /** Where it is first seen is not decided. */
+  startOpen: boolean;
+  /** Where it comes out is not decided. */
+  endOpen: boolean;
 };
 
 /** A question the wall asked and the writer left (R53). */
@@ -179,6 +192,9 @@ export type Command =
   | { type: "ungroup"; id: string }
   | { type: "add_to_group"; id: string; noteIds: string[] }
   | { type: "rename_group"; id: string; title: string }
+  | { type: "create_thread"; name: string; noteIds?: string[]; startOpen?: boolean; endOpen?: boolean; id?: string }
+  | { type: "update_thread"; id: string; name?: string; noteIds?: string[]; add?: string[]; remove?: string[]; startOpen?: boolean; endOpen?: boolean }
+  | { type: "delete_thread"; id: string }
   | { type: "create_arrow"; from: string; to: string; kind?: ArrowKind }
   | { type: "delete_arrow"; id: string }
   | { type: "set_arrow_kind"; id: string; kind: ArrowKind }

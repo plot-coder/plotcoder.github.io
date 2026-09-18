@@ -9,12 +9,14 @@ import { arrowLayout, noteAtPoint, previewPath } from "./arrowGeometry";
 import { NoteCard } from "./NoteCard";
 import { atPlace, type ArrowKind, type BoardCharacter, type BoardState } from "./board/reducer";
 import { isRevised } from "./board/numbering";
+import { storyOrder } from "./board/readWall";
 import {
   NOTE_HEIGHT,
   NOTE_WIDTH,
   type MockArrow,
   type MockGroup,
   type MockNote,
+  type MockThread,
   type NoteColor,
   type NoteRank,
 } from "./noteMock";
@@ -41,6 +43,8 @@ type NoteBoardProps = {
   notes: MockNote[];
   groups: MockGroup[];
   arrows: MockArrow[];
+  /** Threads (R60): named strings through cards, drawn under them; a loose end where one is open. */
+  threads: MockThread[];
   characters: BoardCharacter[];
   /** When the cast lens holds or hovers someone, cards without them fade. */
   castFocusId: string | null;
@@ -96,6 +100,10 @@ type NoteBoardProps = {
   onSetRank: (id: string, rank: NoteRank) => void;
   onSetLength: (id: string, lengthEighths: number) => void;
   onSetPlant: (id: string, plants: boolean) => void;
+  /** Start a thread at a card with the writer's name for it (R60): the far end is the open one. */
+  onStartThread: (id: string, name: string, end: "start" | "end") => void;
+  /** Tie a thread to a card: as where it is first seen, where it comes out, a card along it, or off it. */
+  onTieThread: (id: string, threadId: string, how: "start" | "end" | "through" | "off") => void;
   /** Leave a card open with the writer's words, or close it with "" (R59). */
   onSetOpen: (id: string, open: string) => void;
   onEdit: (id: string, patch: { headline?: string; change?: string }) => void;
@@ -151,6 +159,7 @@ export function NoteBoard({
   notes,
   groups,
   arrows,
+  threads,
   characters,
   castFocusId,
   placeFocus,
@@ -191,6 +200,8 @@ export function NoteBoard({
   onSetRank,
   onSetLength,
   onSetPlant,
+  onStartThread,
+  onTieThread,
   onSetOpen,
   onEdit,
   onCommit,
@@ -527,6 +538,44 @@ export function NoteBoard({
             <polygon points="0 0, 12 4, 0 8" fill="currentColor" />
           </marker>
         </defs>
+        {/* Threads (R60): a string through the cards it runs through, in story
+            order, under the arrows; a loose end where the writer has not tied
+            one — a short stub and a ring, off the first or last card. */}
+        {threads.map((thread) => {
+          const along = storyOrder({ notes, arrows }).filter((note) => thread.noteIds.includes(note.id));
+          if (!along.length) return null;
+          const centres = along.map((note) => ({ x: note.x + NOTE_WIDTH / 2, y: note.y + NOTE_HEIGHT / 2 }));
+          const first = centres[0];
+          const last = centres[centres.length - 1];
+          const stub = 54;
+          const d = centres.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ");
+          return (
+            <g key={thread.id} className={`note-thread ${thread.startOpen || thread.endOpen ? "is-loose" : ""}`}>
+              {centres.length > 1 ? <path className="note-thread__line" d={d} /> : null}
+              {thread.startOpen ? (
+                <>
+                  <path className="note-thread__line note-thread__stub" d={`M ${first.x} ${first.y} L ${first.x - NOTE_WIDTH / 2 - stub} ${first.y}`} />
+                  <circle className="note-thread__end" cx={first.x - NOTE_WIDTH / 2 - stub - 5} cy={first.y} r={5} />
+                </>
+              ) : null}
+              {thread.endOpen ? (
+                <>
+                  <path className="note-thread__line note-thread__stub" d={`M ${last.x} ${last.y} L ${last.x + NOTE_WIDTH / 2 + stub} ${last.y}`} />
+                  <circle className="note-thread__end" cx={last.x + NOTE_WIDTH / 2 + stub + 5} cy={last.y} r={5} />
+                </>
+              ) : null}
+              <text
+                className="note-thread__tag"
+                x={thread.startOpen ? first.x - NOTE_WIDTH / 2 - stub : first.x - NOTE_WIDTH / 2 + 6}
+                y={first.y - 10}
+              >
+                {thread.name}
+                {thread.startOpen ? " · from ?" : ""}
+                {thread.endOpen ? " · to ?" : ""}
+              </text>
+            </g>
+          );
+        })}
         {arrows.map((arrow) => {
           const from = notesById.get(arrow.from);
           const to = notesById.get(arrow.to);
@@ -582,6 +631,9 @@ export function NoteBoard({
           payoffOpen={payoffOpen.has(note.id)}
           paysOff={paysOffOf.get(note.id) ?? null}
           waiting={waiting}
+          threads={threads.map((thread) => ({ id: thread.id, name: thread.name, on: thread.noteIds.includes(note.id), startOpen: thread.startOpen, endOpen: thread.endOpen }))}
+          onStartThread={onStartThread}
+          onTieThread={onTieThread}
           onClaim={onClaim}
           onUnclaim={onUnclaim}
           onOpenPages={onOpenPages}

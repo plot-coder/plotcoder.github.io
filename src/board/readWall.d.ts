@@ -33,11 +33,13 @@ export type FindingKind =
   /** A setup arrow whose payoff comes before its setup on the wall. */
   | "backwards"
   /** A card with a folded corner and no setup arrow leaving it. */
-  | "unpaid";
+  | "unpaid"
+  /** A thread (R60) with an end the writer has not tied: where it is first seen, or where it comes out. */
+  | "loose";
 
 export type Finding = {
   kind: FindingKind;
-  /** Card ids; a group id for "sequence"; a character id (then card ids) for "uncast" and "absent"; an arrow id (then card ids) for "backwards". Empty for "unmarked". */
+  /** Card ids; a group id for "sequence"; a character id (then card ids) for "uncast" and "absent"; an arrow id (then card ids) for "backwards"; a thread id (then card ids) for "loose". Empty for "unmarked". */
   ids: string[];
   /** The question, written for a writer. */
   text: string;
@@ -69,6 +71,8 @@ export type WallReading = {
   later: { id: string; boardId: string; noteId: string | null }[];
   /** Open cards (R59): the writer's words for what is not decided, in story order; not asked about while they stand. */
   open: Array<{ id: string; words: string; hides: FindingKind[] }>;
+  /** Threads (R60): each named string with its cards in story order and which ends are open. */
+  threads: Array<{ id: string; name: string; ids: string[]; startOpen: boolean; endOpen: boolean }>;
   /** Cards here that pay off a fold of another board (R58), composed by the door from the project. */
   paidBy: Array<{ id: string; fromBoardId: string; fromBoardName: string; fromNoteId: string; fromHeadline: string; fromColor: string }>;
   /** The questions the wall asks now. A left one (R53) is not here while its words hold. */

@@ -967,9 +967,10 @@ function isSampleWall(state) {
   return state.notes.map((note) => note.headline).sort().join("\n") === sample;
 }
 /** Every check read_wall runs, so silence can be named. */
-const CHECKS = ["sag", "empty", "unwritten", "unlinked", "duplicate", "sequence", "uncast", "absent", "backwards", "unpaid", "unplaced"];
+const CHECKS = ["unmarked", "sag", "empty", "unwritten", "unlinked", "duplicate", "sequence", "uncast", "absent", "backwards", "unpaid", "unplaced"];
 /** What each check looks for, in words, so "clean" says what was checked rather than a kind's name. */
 const CHECK_WORDS = {
+  unmarked: "a beat is marked",
   sag: "no run out of proportion",
   empty: "no beats back to back",
   unwritten: "no card without a headline or change line",

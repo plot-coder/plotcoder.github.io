@@ -2,7 +2,7 @@ import type { Line } from "./paginate";
 import type { BoardState } from "./reducer";
 
 /** What a document carries above the script: the board's name, the project's when it has several boards, the premise. */
-export type TakeOptions = { title?: string; project?: string; premise?: string };
+export type TakeOptions = { title?: string; episode?: string; premise?: string };
 
 /** The wall as Markdown (R54): title, premise, logline, beats as headings, a heading per scene, the text or the change line. */
 export declare function toMarkdown(state: BoardState, options?: TakeOptions): string;

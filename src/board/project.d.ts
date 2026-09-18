@@ -68,7 +68,7 @@ export declare function renameProject(project: ProjectRecord, name: string, now?
 export declare function setPremise(project: ProjectRecord, premise: string, now?: string): ProjectRecord;
 export declare function boardById(project: ProjectRecord, id: string): BoardMeta | null;
 /** What a script going out is called: a named project is the title, its board beside it only when the project has several. */
-export declare function scriptTitles(project: ProjectRecord, board: BoardMeta | null | undefined): { title: string; project?: string };
+export declare function scriptTitles(project: ProjectRecord, board: BoardMeta | null | undefined): { title: string; episode?: string };
 export declare function findBoard(project: ProjectRecord, key: string): BoardMeta | null;
 export declare function reidentifyProject(
   project: ProjectRecord,

@@ -12,6 +12,7 @@ export declare function unmark(text: string | null | undefined): { text: string;
 
 export declare function titlePage(titles: {
   title?: string;
+  episode?: string;
   credit?: string;
   author?: string;
   draftDate?: string;
@@ -22,7 +23,7 @@ export type FountainOptions = {
   /** The board's name. */
   title?: string;
   /** The project's name, when the board is one of several. */
-  project?: string;
+  episode?: string;
   premise?: string;
   author?: string;
   /** ISO date string; only the date is printed. */

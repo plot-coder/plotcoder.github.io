@@ -107,8 +107,8 @@ describe("runs between beats", () => {
       { id: "b2", rank: "beat", headline: "Read aloud" },
     );
     expect(describeRuns(readWall(state), state)).toEqual([
-      'Before "The letter": about 1 pages, 1 card',
-      '"The letter" → "Read aloud": about 1 4/8 pages, 1 card',
+      'Before "The letter": about 1 pages, 1 card, estimated',
+      '"The letter" → "Read aloud": about 1 4/8 pages, 1 card, estimated',
     ]);
   });
 });

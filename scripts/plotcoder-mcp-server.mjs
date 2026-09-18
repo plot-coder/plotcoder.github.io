@@ -1523,7 +1523,7 @@ server.registerTool(
       "the cast and the places are list_board's, not the reading's",
       state.targetEighths === DEFAULT_TARGET_EIGHTHS
         ? `runtime: about ${formatPages(boardEighths(state))} pages; no target set (set_target)`
-        : `runtime: about ${formatPages(boardEighths(state))} pages of a ${formatPages(state.targetEighths)}-page target — ${boardEighths(state) > state.targetEighths ? `${formatPages(boardEighths(state) - state.targetEighths)} over` : boardEighths(state) < state.targetEighths ? `${formatPages(state.targetEighths - boardEighths(state))} under` : "on it"}`,
+        : `runtime: about ${formatPages(boardEighths(state))} pages of a ${formatPages(state.targetEighths)}-page target — ${boardEighths(state) > state.targetEighths ? `${formatPages(boardEighths(state) - state.targetEighths)} over` : boardEighths(state) < state.targetEighths ? `${formatPages(state.targetEighths - boardEighths(state))} under` : "on it"} (the number to use until the scenes are written; page_count is the script so far)`,
       `groups: ${
         state.groups.length
           ? state.groups

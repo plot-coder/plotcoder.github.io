@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<title>The open card — three ways</title>
+<!-- The app's own paper: the source stylesheet, so the link never goes stale. -->
+<link rel="stylesheet" href="../../src/styles.css">
+<style>
+  body { margin: 0; padding: 2rem 2.5rem 3rem; font-family: ui-sans-serif, system-ui, sans-serif; }
+  h1 { font: 600 1.05rem/1.3 ui-serif, Georgia, serif; margin: 0 0 0.25rem; }
+  h2.sec { font: 600 0.95rem/1.3 ui-serif, Georgia, serif; margin: 2.6rem 0 0.2rem; }
+  .lede { font-size: 0.85rem; opacity: 0.75; margin: 0 0 2rem; max-width: 62ch; }
+  .row { display: flex; gap: 3.5rem; flex-wrap: wrap; align-items: flex-start; }
+  .opt { width: 230px; }
+  .opt h2 { font: 700 0.62rem/1.3 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; margin: 0 0 0.9rem; }
+  .paper { position: relative; height: 300px; }
+  .paper .note { position: absolute; left: 0; top: 0; }
+  .opt p { font-size: 0.8rem; line-height: 1.45; opacity: 0.8; margin: 0.9rem 0 0; max-width: 34ch; }
+  .note__when-sep { opacity: 0.55; margin: 0 0.3rem; }
+  /* A: the word on the edge, in the warm colour the wall uses for a debt. */
+  /* B: the card drawn as a sketch — the paper paler, the edge dashed — so it reads as provisional from Fit zoom. */
+  .note.is-open { outline: 2px dashed rgba(31, 24, 16, 0.55); outline-offset: -6px; }
+  .note.is-open .note__headline, .note.is-open .note__change { opacity: 0.72; }
+  .note.is-open::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(135deg, transparent 0 14px, rgba(255,255,255,0.28) 14px 16px); pointer-events: none; border-radius: inherit; }
+  /* C: a fifth line, typed like the cast and the place. */
+  .note__with--open { font-style: italic; }
+  pre.read { font: 0.72rem/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; background: rgba(127,127,127,0.12); padding: 0.9rem 1.1rem; border-radius: 6px; max-width: 78ch; white-space: pre-wrap; margin: 0.6rem 0 0; }
+  .light { margin-top: 3rem; padding: 2rem 2.5rem; background: #fff; color: #1f1810; border-radius: 6px; }
+  .light h2 { color: #1f1810; }
+  .ask { margin-top: 2.5rem; max-width: 64ch; font-size: 0.9rem; line-height: 1.5; }
+  .ask b { font-weight: 600; }
+</style>
+</head>
+<body>
+<h1>The open card (R59): a card that says "not decided"</h1>
+<p class="lede">From round seventeen, the first round to start from a page of notes instead of a treatment. Every record on the wall is an assertion: a card has a place or none, a change line or none, a spot in the order. A writer with an idea has cards that are not any of those things yet — "Declan wants him to move to Naas; where and whether Ruth is there, I don't know" — and the wall can hold that only as an absence the reading then asks about, or as an invention. Below, the same card three ways beside what ships, then the reading and the tool.</p>
+
+<div class="row">
+  <div class="opt">
+    <h2>As it ships</h2>
+    <div class="paper"><article class="note note--green" style="transform:rotate(0.6deg)">
+      <button class="note__fold"><span class="note__fold-flap"></span></button>
+      <div class="note__headline">Declan wants Con to sell the house and move to Naas</div>
+      <div class="note__change">Con hears it and says he will think about it.</div>
+      <button class="note__with">with Con Brady, Declan Brady</button>
+      <button class="note__with note__at note__with--empty"><span class="note__with-prefix">at</span> …</button>
+    </article></div>
+    <p>The change line is the agent's guess, because the field is required. The place is blank, so the reading asks "where does it happen?" every read until the writer answers, and the writer's answer is "I don't know yet".</p>
+  </div>
+
+  <div class="opt">
+    <h2>A · the word on the edge</h2>
+    <div class="paper"><article class="note note--green" style="transform:rotate(0.6deg)">
+      <button class="note__fold"><span class="note__fold-flap"></span></button>
+      <span class="note__edge"><span class="note__plant is-unpaid">Open · <b>where, and whether Ruth is there</b></span></span>
+      <div class="note__headline">Declan wants Con to sell the house and move to Naas</div>
+      <div class="note__change">What changes?</div>
+      <button class="note__with">with Con Brady, Declan Brady</button>
+      <button class="note__with note__at note__with--empty"><span class="note__with-prefix">at</span> …</button>
+    </article></div>
+    <p>The writer's own words for what is open, on the top edge where the fold and the payoff already say their word, in the warm colour the wall uses for a debt. The change line can stay the placeholder: an open card is allowed one. Reads at Fit zoom; the edge holds about twenty characters.</p>
+  </div>
+
+  <div class="opt">
+    <h2>B · a sketch of a card</h2>
+    <div class="paper"><article class="note note--green is-open" style="transform:rotate(0.6deg)">
+      <button class="note__fold"><span class="note__fold-flap"></span></button>
+      <span class="note__edge"><span class="note__plant is-unpaid">Open · <b>where, and whether Ruth is there</b></span></span>
+      <div class="note__headline">Declan wants Con to sell the house and move to Naas</div>
+      <div class="note__change">What changes?</div>
+      <button class="note__with">with Con Brady, Declan Brady</button>
+      <button class="note__with note__at note__with--empty"><span class="note__with-prefix">at</span> …</button>
+    </article></div>
+    <p>A with the paper itself saying so: a dashed edge and a paler face, the way a pencilled card looks beside inked ones. From across the room you can count the sketches. The same edge line says what is open; the same gesture sets it.</p>
+  </div>
+
+  <div class="opt">
+    <h2>C · a fifth line</h2>
+    <div class="paper"><article class="note note--green" style="transform:rotate(0.6deg)">
+      <button class="note__fold"><span class="note__fold-flap"></span></button>
+      <div class="note__headline">Declan wants Con to sell the house and move to Naas</div>
+      <div class="note__change">What changes?</div>
+      <button class="note__with">with Con Brady, Declan Brady</button>
+      <button class="note__with note__at note__with--empty"><span class="note__with-prefix">at</span> …</button>
+      <button class="note__with note__with--open"><span class="note__with-prefix">open</span> where, and whether Ruth is there</button>
+    </article></div>
+    <p>Its own line, typed like the cast and the place. Holds a whole sentence. Costs a line on every open card, and does not read from far away; a wall of ideas is mostly open cards.</p>
+  </div>
+</div>
+
+<h2 class="sec">The gesture</h2>
+<div class="row">
+  <div class="opt">
+    <p style="margin-top:0">On the card, the corner's picker already asks "fold it, or pay off a fold"; it gains a third line, <b>leave it open</b>, which asks for the writer's words in the edge and stamps the card. Tapping the edge's word edits it; clearing the words closes the card. For the agent, <code>set_open</code> with <code>ids</code> and <code>open</code> (the writer's words; <code>""</code> closes), and <code>create_note</code> takes <code>open</code>, so a card born from a maybe is born open.</p>
+  </div>
+  <div class="opt">
+    <p style="margin-top:0">An open card is not asked about. The reading lists it under its own head with the writer's words and asks nothing else of it — not its place, not its change line, not its arrows. It is still counted, still in the order, still a page. When the words are cleared the questions come back on their own, the way a left question does. It is the per-card twin of <code>leave_question</code>: that one leaves a question, this one leaves a card.</p>
+  </div>
+</div>
+
+<h2 class="sec">The reading and the tool</h2>
+<pre class="read">read_wall:
+open, by the writer's word (not asked about while they stand):
+  - "Declan wants Con to sell the house and move to Naas" — where, and whether Ruth is there
+  - "The day Ruth tells Con where she was" — where it happens
+  - "The council letter" — the buyer: housing, or a supermarket
+questions the wall raises:
+  - [empty] Nothing runs between "The letter" and "The parish hall" …
+checks: 12 run — asking 1 question of 1 kind; 3 cards open by the writer's word, not asked; checked and clean: …
+
+set_open   { ids: ["declan-1"], open: "where, and whether Ruth is there" }
+set_open   { ids: ["declan-1"], open: "" }            → closed; the wall asks again
+create_note { headline: "…", change: "What changes?", open: "the buyer" }
+
+list_board:  - declan-1 [scene, about a page, unsized, cast: Con Brady, Declan Brady, open: where, and whether Ruth is there] — …</pre>
+
+<div class="light">
+  <h2 style="font:700 0.62rem/1.3 ui-sans-serif,system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;margin:0 0 .9rem">B, on the light canvas</h2>
+  <div class="row">
+    <div class="paper" data-theme="light" style="width:230px"><article class="note note--green is-open" style="transform:rotate(0.6deg)">
+      <button class="note__fold"><span class="note__fold-flap"></span></button>
+      <span class="note__edge"><span class="note__plant is-unpaid">Open · <b>where, and whether Ruth is there</b></span></span>
+      <div class="note__headline">Declan wants Con to sell the house and move to Naas</div>
+      <div class="note__change">What changes?</div>
+      <button class="note__with">with Con Brady, Declan Brady</button>
+    </article></div>
+    <div class="paper" data-theme="light" style="width:230px"><article class="note note--yellow" style="transform:rotate(-0.6deg)">
+      <button class="note__fold"><span class="note__fold-flap"></span></button>
+      <span class="note__edge"><span>2</span></span>
+      <div class="note__headline">The council letter: Con pins it to the shed door</div>
+      <div class="note__change">The land is going for housing; Ruth learns from the shed door.</div>
+      <button class="note__with">with Con Brady, Ruth Kane</button>
+    </article></div>
+  </div>
+</div>
+
+<div class="ask">
+  <b>Recommended: B</b>, the sketch with the edge line, one field on the card (<code>open</code>, the writer's words or empty), one tool and a line in <code>create_note</code>. A card that is not decided should look undecided from across the room, which A alone does not give and C gives least; and the edge is already where a card says its claims — plants, pays off, the number — so "open" belongs there too. The reading treats it as the writer's word, the twin of a left question: listed, not asked. The paper's colour is untouched (R16).<br><br>
+  <b>Is this the best we could do?</b> Two things B cannot say. The edge holds about twenty characters, so the writer's words are short or clipped, and the whole sentence lives in <code>list_board</code> and the tooltip. And an open card silences every question about itself, including ones the writer might still want — an open card with no arrows will not be asked what links it; if that is too blunt, the words could name what is open and the reading skip only that, but then the writer is filling in a form. I would start blunt: open means "leave the whole card alone".
+</div>
+</body>
+</html>

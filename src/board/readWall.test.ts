@@ -434,6 +434,31 @@ describe("findings", () => {
     expect(readWall(state).paidBy).toEqual([]);
   });
 
+  it("asks about a setup arrow leaving a card that is not folded — a payoff with no fold (round seventeen, entry 12)", () => {
+    const state = run(
+      wall({ id: "b1", rank: "beat", headline: "The key" }, { id: "s1" }, { id: "b2", rank: "beat", headline: "The key is used" }),
+      { type: "create_arrow", from: "b1", to: "b2", kind: "setup" },
+    );
+    expect(readWall(state).findings.filter((f) => f.kind === "unplanted")).toEqual([
+      { kind: "unplanted", ids: [state.arrows[0].id, "b1"], text: '"The key" pays off at "The key is used" by a setup arrow, but its corner is not folded. Fold it, or is the arrow wrong?' },
+    ]);
+    const folded = run(state, { type: "set_plant", ids: ["b1"], plants: true });
+    expect(readWall(folded).findings.filter((f) => f.kind === "unplanted")).toEqual([]);
+  });
+
+  it("asks about a card with nobody in it once the wall has a cast (round seventeen, entry 28)", () => {
+    const state = run(
+      wall({ id: "b1", rank: "beat", headline: "The shed at night" }, { id: "s1", headline: "The morning after" }),
+      { type: "add_character", name: "Con" },
+    );
+    const withCon = run(state, { type: "set_cast", ids: ["s1"], characterIds: [state.characters[0].id] });
+    expect(readWall(withCon).findings.filter((f) => f.kind === "nobody")).toEqual([
+      { kind: "nobody", ids: ["b1"], text: '"The shed at night" has nobody in it. Who is in the scene?' },
+    ]);
+    // A wall with no cast yet is not asked: there is nobody to be in anything.
+    expect(readWall(wall({ id: "a" }, { id: "b" })).findings.filter((f) => f.kind === "nobody")).toEqual([]);
+  });
+
   it("never mutates the state it reads", () => {
     const state = wall({ id: "b1", rank: "beat" }, { id: "s1" }, { id: "b2", rank: "beat" });
     const snapshot = JSON.stringify(state);

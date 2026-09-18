@@ -2017,11 +2017,12 @@ server.registerTool(
     const short = state.targetEighths > 0 && boardEighths(state) * 2 < state.targetEighths;
     const lines = [
       `"${chosen.name}" beside this wall's ${beats} beat${beats === 1 ? "" : "s"}, of ${formatPages(state.targetEighths)} pages (the story so far runs to p. ${comparison.soFar}${allMeasured ? ", measured" : ", an estimate: unsized cards read as a page each"}); a match is the nearest of the wall's beats within ${MATCH_PAGES} pages, one to one and in order:`,
+      // On a wall under half its target the pairing is arithmetic; say so before the rows, not after them (round eighteen, entry 52).
+      ...(short ? [`the wall runs to less than half its target, so its beats sit early and the ${MATCH_PAGES}-page window pairs them with the structure's first beats by arithmetic; the pairing says more once the cards are sized or written, and whether a turn is missing is the writer's call, not this reading's`] : []),
       ...describeComparison(comparison).map((line) => `  - ${line}`),
       comparison.unmatched.length
         ? `beats of the wall no beat of the structure answers: ${comparison.unmatched.map((beat) => `"${beat.headline}" (p. ${beat.page})`).join(", ")}`
         : "every beat of the wall answers one of the structure's",
-      ...(short ? [`the wall runs to less than half its target, so its beats sit early and the ${MATCH_PAGES}-page window pairs them with the structure's first beats by arithmetic; the pairing says more once the cards are sized or written, and whether a turn is missing is the writer's call, not this reading's`] : []),
       beats === 0 ? "No card on this board is marked as a beat (set_rank), so there is nothing to compare; apply_template lays the structure's beats to fill." : "Nothing moved and nothing was made: this is a reading. apply_template lays the beats as cards when the writer wants them.",
     ];
     return ok(lines.join("\n"), { structure: { id: chosen.id, name: chosen.name }, ...comparison });
@@ -2939,7 +2940,8 @@ server.registerTool(
       return { meta, on };
     });
     const total = parts.reduce((sum, part) => sum + part.on.length, 0);
-    const where_ = (note) => [note.location ? `at ${note.location}` : "", note.when ? note.when : "", note.rank === "beat" ? "beat" : ""].filter(Boolean).join(" · ");
+    // An open card reads as open on a person's page too (round eighteen, entry 53).
+    const where_ = (note) => [note.location ? `at ${note.location}` : "", note.when ? note.when : "", note.rank === "beat" ? "beat" : "", note.open ? `open: ${note.open}` : ""].filter(Boolean).join(" · ");
     // A read opens with the door it came through, like every reading (round sixteen, entry 28); one scene a line (29).
     const lines = [
       `PlotCoder cast (${door(live, base)})`,
@@ -3648,7 +3650,7 @@ server.registerTool(
   {
     title: "Save the project as a file",
     description:
-      "The project the server is working, as the file Save project writes and Open project takes: the record, every board with its cards, the reminders and the writer's structures. Pass path to write it (a .json) — an absolute path, since a relative one resolves from the server's own folder, not yours; without a path, the reply's JSON is the file. Pictures and takes on the account are not in the file. Works through every door.",
+      "The project the server is working, as the file Save project writes and Open project takes: the record, every board with its cards, the reminders and the writer's structures. Pass path to write it (a .json) — an absolute path, since a relative one resolves from the folder the server was started in, not yours; without a path, the reply's JSON is the file. Pictures and takes on the account are not in the file. Works through every door.",
     inputSchema: { path: z.string().optional() },
   },
   async (args) => {

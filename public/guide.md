@@ -121,7 +121,10 @@ only when the server is started with `PLOTCODER_JSON=1`.
 - `create_note` — add a card. Requires `headline` **and** `change`. Optional
   `color` (yellow, pink, blue, green, orange), `rank`, `pages`, `plants`,
   `location`, `when`, `characters` (names; a name not in the cast is added to
-  it), and `x`/`y`. The reply names the card's id and what landed. **A scene is one
+  it), and `x`/`y`. The reply names the card's id and what landed. Make cards
+  one call at a time, in story order, or wire each with `after`: an unwired
+  card's place in the order is its position on the wall, and calls run in
+  parallel land in whatever order they arrive. **A scene is one
   place and one stretch of time**: a new place or a new time is a new card,
   which is how a treatment's paragraph splits. A **beat is a whole card** — the
   scene where the turn happens — not a moment inside one; when a treatment's

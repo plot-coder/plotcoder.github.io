@@ -1276,8 +1276,10 @@ describe("round sixteen", () => {
     expect(read).toMatch(/\(except 1 open card, not asked\)/);
     // A card born open may be born without its change line (round eighteen, entry 13); one born closed may not.
     expect(await six.callTool("create_note", { headline: "The night of the break-in" })).toContain("A card needs its change line");
-    const bornOpen = await six.callTool("create_note", { headline: "The night of the break-in", open: "who did it" });
+    const bornOpen = await six.callTool("create_note", { headline: "The night of the break-in", open: "who did it", characters: ["The kids"] });
     expect(bornOpen).toContain('open: "who did it"');
+    // A person's page shows the card as open (round eighteen, entry 53).
+    expect(await six.callTool("read_character", { name: "The kids" })).toContain('"The night of the break-in" (open: who did it)');
     expect(await six.callTool("list_board")).toContain("open: where, and whether Ruth is there");
     const closed = await six.callTool("set_open", { ids: [id], open: "" });
     expect(closed).toContain("1 card(s) closed");

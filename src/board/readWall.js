@@ -17,7 +17,7 @@
 // before any tidy — the arrows are the writer's claim about the order, and
 // where they say nothing the positions decide.
 
-import { boardEighths, EIGHTHS_PER_PAGE, formatPages, NOTE_HEIGHT, noteEighths } from "./reducer.js";
+import { isMeasured, boardEighths, EIGHTHS_PER_PAGE, formatPages, NOTE_HEIGHT, noteEighths } from "./reducer.js";
 
 /** What create_note writes before a person has. */
 export const PLACEHOLDER_HEADLINE = "New beat";
@@ -552,6 +552,10 @@ export function describeRuns(reading, state) {
           ? `After "${name(run.from)}"`
           : `"${name(run.from)}" → "${name(run.to)}"`;
     const count = run.cards === 1 ? "1 card" : `${run.cards} cards`;
-    return `${span}: about ${pages(run.eighths)} pages, ${count}`;
+    // Whose number a run's pages are (round seventeen, entry 39): measured
+    // from written text, or the cards' guess, or some of each.
+    const written = (run.ids ?? []).filter((id) => isMeasured(byId.get(id) ?? {})).length;
+    const whose = !run.cards ? "" : written === run.cards ? ", measured" : written ? `, ${written} of ${run.cards} measured` : ", estimated";
+    return `${span}: about ${pages(run.eighths)} pages, ${count}${whose}`;
   });
 }

@@ -804,8 +804,8 @@ describe("read_wall", () => {
     expect(text).toContain(
       'beats in wall order: "Inciting", "Lock in", "Midpoint", "All is lost"',
     );
-    expect(text).toContain('"Inciting" → "Lock in": about 3 pages, 1 card');
-    expect(text).toContain('"Lock in" → "Midpoint": about 12 pages, 3 cards');
+    expect(text).toContain('"Inciting" → "Lock in": about 3 pages, 1 card, estimated');
+    expect(text).toContain('"Lock in" → "Midpoint": about 12 pages, 3 cards, estimated');
     expect(text).toContain('"Midpoint" → "All is lost": about 3 pages, 1 card');
   });
 
@@ -2126,7 +2126,7 @@ describe("round seven's replies", () => {
     expect(workflows).toContain("How long is it? An hour, a half-hour, a feature — or a page count, if you have one. → set_target");
     // A new card lands after the last in reading order, so Fiona follows the cash.
     expect(read).toContain('"The ledger" → "The cash arrives": about 0 pages, 0 cards');
-    expect(read).toMatch(/After "The cash arrives": about \d+ pages, \d+ cards? — .*"Fiona at the launderette"/);
+    expect(read).toMatch(/After "The cash arrives": about \d+ pages, \d+ cards?(, [a-z0-9 ]+)? — .*"Fiona at the launderette"/);
   });
 });
 

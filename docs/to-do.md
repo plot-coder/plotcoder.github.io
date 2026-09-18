@@ -9,47 +9,45 @@ done and merged, what is left, and the order I would take it in.
 
 ## Where things stand
 
-- **Round sixteen has run** (2026-09-17 into 2026-09-18), the same series
-  against 0.1.21 with round fifteen's fixes in hand. Its report is
-  `blind-runs/round-sixteen-report.md`, verbatim, with a head saying what
-  became of each entry. Forty-eight entries; **forty-one fixed the same
-  night**, in pull requests #59 to #65, all merged to `main`.
-- **The question it was for is answered:** a stranger found the cross-board
-  move and the claim from either end without being told, and both boards
-  read their payoffs. R57 and R58 hold.
-- **Built from it:** `create_note` with `after`/`before`, so a scene added
-  under a lock is one call and one number — round fourteen's letter finding,
-  back a third time, closed by a tool; `page_count` on an unwritten board;
-  cues against the cast; changed lines starred in `read_pages`; the
-  runtime's kinds in pages; a written card's kept estimate; undo naming the
-  arrows and letters it moved.
-- **The suites pass on `main`:** `npm test` 28 files / 544 tests,
-  `npm run build` clean. Eighty-one tools.
-- **Released as 0.1.23** with all of it, so the package, the site and `main`
-  match.
+- **Round seventeen has run** (2026-09-18), the first to start from a page of
+  notes instead of a treatment. Its report is
+  `blind-runs/round-seventeen-report.md`, verbatim, with a head saying what
+  became of each entry. Thirty-nine entries.
+- **The round's finding: the wall has no way to hold a maybe.** Proposed and
+  mocked as **R59, the open card** (`docs/mockups/r59-the-open-card.html`,
+  B recommended); Robert's call, then build.
+- **Built the same night**, on Robert's word on the four proposals, in pull
+  requests #69 to #76: two new checks (a payoff with no fold, a card with
+  nobody in it), the premise as the project's whatever its board count,
+  "story order: unset" on a wall with no arrows, and the wordings.
+- **The suites pass on `main`:** `npm test` 28 files / 547 tests,
+  `npm run build` clean. Eighty-one tools; fourteen checks.
+- **Released as 0.1.24** with all of it.
 
 ---
 
 ## 1. Released
 
-0.1.23 carries round sixteen's fixes. Nothing to release until code
+0.1.24 carries round seventeen's fixes. Nothing to release until code
 changes; the README's version line follows `npm version` on its own.
 
 ---
 
-## 2. Run round seventeen
+## 2. R59 — the open card (mocked, waiting on Robert's word)
 
-Cued in `blind-runs/prompt.md`: a page of notes instead of a treatment, the
-writer answering as the agent asks — the first round that starts from an
-idea, which is what the app is for. The writer's private answers sit above
-the divider. Directions listed there. Afterwards: the report to
-`blind-runs/round-seventeen-report.md` verbatim with a head, the round's
-paragraph in `REQUIREMENTS.md`, the recurrence table if anything came back.
+The mockup is written: `docs/mockups/r59-the-open-card.html`. Three homes
+for a card that says "not decided": the words on the edge (A), a sketch of
+a card with the words on its edge (B), a fifth line (C); the corner's picker
+gaining "leave it open"; the reading listing open cards and asking nothing
+else of them; `set_open` and `create_note` with `open`. **Recommended: B.**
+The honest question: the edge holds about twenty characters, and an open
+card silences every question about itself, on purpose.
 
-**The decision this round makes:** if it comes back mostly wording, the
-rounds are into diminishing returns and the real script (Roadmap 2, item 0)
-is the next measurement. If it comes back with things the app cannot do
-for an idea that is not yet a story, those are the next requirements.
+Once chosen: the field and `normalizeState`, the kernel command, the two
+tools, the reading and `list_board`, then the corner's picker and the sketch
+in `NoteCard.tsx` and `styles.css`. After it, the thread that is not a fold
+(round seventeen, 8, 12, 31) is the next design question, and round
+eighteen on the same notes would measure both.
 
 ---
 
@@ -85,4 +83,4 @@ for an idea that is not yet a story, those are the next requirements.
 1. Read `blind-runs/README.md`'s recurrence table, then the head of
    `blind-runs/round-fifteen-report.md` and its sections 3 to 5.
 2. Release (item 1).
-3. Run round seventeen from `blind-runs/prompt.md`; then the decision it makes.
+3. Build R59 on Robert's word (item 2); then round eighteen on the same notes, or the real script.

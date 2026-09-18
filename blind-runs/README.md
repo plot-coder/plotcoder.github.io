@@ -5,7 +5,7 @@ else, asked to build a wall and to keep a log of everything that made the job
 harder than it should have been. The friction log is the product; the wall is
 just what produces it.
 
-The practice is Robert's, from 2026-09-13. Sixteen rounds have been run;
+The practice is Robert's, from 2026-09-13. Seventeen rounds have been run;
 every finding is fixed, decided, or waiting on a mockup — see
 `REQUIREMENTS.md`, "The blind run", and the `friction, fixed` entries in the
 changelog. Round fifteen's report says at its head what was built from it
@@ -47,7 +47,7 @@ into a story (Robert, 2026-09-17).
 | Fourteen | The published package, the same feature, the fixes in hand | "Ninety-Nine" | Past the wall and into production: exports three ways and back, the lock, a revision, a person's page | 49 (`round-fourteen-report.md`); fixed or decided the next day |
 | Fifteen | The published package, a series of two episodes | "The Weighbridge" | Two boards: a scene moved between episodes, a person's page across both, a structure beside one, the re-test written, Final Draft out for both, the length, a rename, the plants from both sides | 45 (`round-fifteen-report.md`); 34 fixed the same evening, R57 and R58 built |
 | Sixteen | The published package, the same series, the fixes in hand | "The Weighbridge" | The move and the claims found as tools unprompted; a revision, a lock and a scene added under it, Final Draft out for both, the lengths, undo | 48 (`round-sixteen-report.md`); 41 fixed the same night, create_note with after/before built |
-| Seventeen | The published package, a page of notes instead of a treatment, the writer answering | "Plot 14" (`round-seventeen-idea.md`) | Not yet run: what the agent asks, what it does with a maybe, what the reading does for a story that does not exist yet | — |
+| Seventeen | The published package, a page of notes instead of a treatment, the writer answering | "Plot 14" (`round-seventeen-idea.md`) | Twenty questions asked first; the turns proposed, the gaps proposed, a change of mind, the folds, a scene written, the length | 39 (`round-seventeen-report.md`); the wall has no way to hold a maybe — R59 proposed and mocked; two new checks and the wordings built the same night |
 
 ## What the rounds keep finding
 
@@ -73,7 +73,9 @@ point into `REQUIREMENTS.md`, "The blind run".
 | A series plant is remembered at one end: the board it lands on knows nothing | Ten to thirteen asked for the fold; fifteen (5, 11, 43, 45) asked for its other end | **R58**, proposed: the receiving end, mocked first |
 | The hand-wired server entry is gone when the session starts | Nine; fifteen's first attempt | **R48** again: a door that does not live in a file on one machine |
 | A scene added under a lock gets one letter where it lands and another when moved, and the reply says the letter follows the scene | Fourteen (38–44), sixteen (35, 36) | `create_note` with `after`/`before`: the scene lands where the writer said, one call, one number; the wording gone |
-| The on-ramp's doors stand between an agent with the tools and its first call | Eleven, fifteen (1), sixteen (1, 3) | The calls and rules before the doors; five first calls; the first-line rule with its exception |
+| The on-ramp's doors stand between an agent with the tools and its first call | Eleven, fifteen (1), sixteen (1, 3), seventeen (1, 2) | The calls and rules before the doors; five first calls; the first-line rule with its exception; the lead counts five |
+| A thing the writer has not decided has no home on the wall but an absence or an invention | Seventeen (6, 7, 10, 13, 15, 30) | **R59**, proposed: the open card, mocked first |
+| A payoff whose plant has no card yet cannot be folded, drawn or asked about | Seventeen (8, 9, 12, 31) | The reading asks about a setup arrow from an unfolded card; a thread of its own waits behind R59 |
 
 Two things came back and were deliberately **not** built: a length for part of
 a card (thirteen 9, fourteen 14), which is what the change line and the pages
@@ -100,20 +102,20 @@ published package, wired before the session, and were the first to reach the
 directions phase. Each round's findings are itemised in `REQUIREMENTS.md`,
 "The blind run".
 
-- `prompt.md` — round seventeen: a page of a writer's notes instead of a
-  treatment, the first round that starts from an idea. The writer's private
-  answers to what the notes leave open sit above the divider, so whoever
-  relays answers the same way each time. Its first step checks
-  `~/.claude.json` still holds the `plotcoder-board` entry. The test account
-  is filled in. Paste everything below its divider.
+- `prompt.md` — round seventeen's, as it ran: a page of a writer's notes
+  instead of a treatment, the first round that starts from an idea, the
+  writer's private answers above the divider. Round eighteen has no prompt
+  yet; if one runs, it should run after R59 is built, on the same notes, to
+  see what an agent does with a card it can leave open.
+- `round-seventeen-report.md` — the agent's report from round seventeen,
+  verbatim, under a head saying what was fixed from it the same night and
+  what was proposed. The next session on the agent surface starts here.
 - `round-seventeen-idea.md` — "The Allotments", the notes: eight scenes the
   writer knows, two versions of the time, an ending not chosen, a break-in
   with three suspects. Embedded in the current prompt.
 - `round-sixteen-prompt.md` — round sixteen's own instructions, as they ran,
   without their copy of the treatment.
-- `round-sixteen-report.md` — the agent's report from round sixteen,
-  verbatim, under a head saying what was fixed from it the same night. The
-  next session on the agent surface starts here.
+- `round-sixteen-report.md` — round sixteen's, the same way.
 - `round-fifteen-prompt.md` — round fifteen's own instructions, as they ran,
   without their copy of the treatment.
 - `round-fifteen-report.md` — round fifteen's, the same way.

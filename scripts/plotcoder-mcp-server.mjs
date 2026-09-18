@@ -1312,7 +1312,7 @@ server.registerTool(
       before: z.string().optional().describe("Or before this card (id or headline)."),
       location: z.string().optional(),
       when: z.string().optional().describe('When the scene happens, as the writer says it — "night", "day four, dawn" — printed after the place on the scene heading.'),
-      open: z.string().optional().describe("The writer's words for what is not decided about this card (R59) — \"where, and whether Ruth is there\" — so the card is born open: the reading lists it and asks nothing else of it until the words are cleared."),
+      open: z.string().optional().describe("The writer's words for what is not decided about this card — \"whether Tom knows\" — so the card is born open: the reading lists it and asks nothing else of it until the words are cleared."),
       characters: z.array(z.string().min(1)).optional(),
       x: z.number().optional(),
       y: z.number().optional(),
@@ -2678,7 +2678,7 @@ server.registerTool(
   {
     title: "Leave a card open",
     description:
-      "Mark one or more cards open, with the writer's words for what is not decided — \"where, and whether Ruth is there\", \"the buyer\". An open card is listed by read_wall under its own head and asked nothing else of while the words stand: not its place, not its change line, not its arrows. It is still counted, in the order, and a page. open \"\" closes the card and its questions come back on their own. Only on the writer's word — a card is open because they said so, never because you could not decide; where the notes have two versions, ask, and if they say leave it, this is how.",
+      "Mark one or more cards open, with the writer's words for what is not decided — \"whether Tom knows\", \"who sent the letter\". An open card is listed by read_wall under its own head and asked nothing else of while the words stand: not its place, not its change line, not its arrows. It is still counted, in the order, and a page. open \"\" closes the card and its questions come back on their own. Only on the writer's word — a card is open because they said so, never because you could not decide; where the notes have two versions, ask, and if they say leave it, this is how.",
     inputSchema: { ids: z.array(z.string()).min(1), open: z.string() },
   },
   async (args) => {
@@ -3291,7 +3291,7 @@ server.registerTool(
   {
     title: "Set the project's premise",
     description:
-      "Set the project's premise: the line above every board's logline, held by the project whatever its board count — what a series is about, or what is true before a film starts ('the third year; the crowns can be cut for the first time'). An empty string clears it. Boards keep their own loglines.",
+      "Set the project's premise: the line above every board's logline, held by the project whatever its board count — what a series is about, or what is true before a film starts ('the winter the shop closes'). An empty string clears it. Boards keep their own loglines.",
     inputSchema: { premise: z.string() },
   },
   async (args) => {

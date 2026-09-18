@@ -88,10 +88,11 @@ export function toFdx(state, options = {}) {
 
   const title = [];
   if (options.title) title.push(paragraph("General", options.title, ' Alignment="Center"'));
-  if (options.project && options.project !== options.title) title.push(paragraph("General", `An episode of ${options.project}`, ' Alignment="Center"'));
+  if (options.episode) title.push(paragraph("General", options.episode, ' Alignment="Center"'));
   if (options.author) title.push(paragraph("General", `Written by ${options.author}`, ' Alignment="Center"'));
   if (options.draftDate) title.push(paragraph("General", options.draftDate.slice(0, 10)));
-  title.push(paragraph("General", state.lock ? `Scene numbers locked ${String(state.lock.at).slice(0, 10)}.` : "Scene numbers follow the wall's order and are not locked."));
+  // A lock is a fact about the document; that there is none is the app's business, not the title page's (round fifteen, entry 36).
+  if (state.lock) title.push(paragraph("General", `Scene numbers locked ${String(state.lock.at).slice(0, 10)}.`));
   if (state.revision) title.push(paragraph("General", `${revisionLine(state)}; changed paragraphs are marked.`));
   // The revision set Final Draft shows its marks from (round fourteen, entry 45).
   const revisions = state.revision

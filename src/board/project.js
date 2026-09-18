@@ -300,7 +300,15 @@ export function scriptTitles(project, board) {
   const boardName = (board?.name ?? "").trim() || "Untitled";
   const named = typeof project?.name === "string" && project.name.trim() && project.name !== DEFAULT_PROJECT_NAME;
   if (!named) return { title: boardName };
-  if ((project.boards ?? []).length > 1) return { title: boardName, project: project.name };
+  const boards = project.boards ?? [];
+  if (boards.length > 1) {
+    // A series: the project is the title and the board is the episode line,
+    // numbered in the project's order, so one file says which episode it is
+    // (round fifteen, entries 32 and 37).
+    const index = boards.findIndex((item) => item.id === board?.id);
+    const number = index >= 0 ? `Episode ${index + 1} of ${boards.length}` : "An episode";
+    return { title: project.name, episode: `${number} · ${boardName}` };
+  }
   return { title: project.name };
 }
 

@@ -17,10 +17,10 @@ function wall() {
 
 describe("Markdown out (R54)", () => {
   it("reads the wall out: title, premise, logline, beats as headings, a heading per scene, the text or the change line", () => {
-    const text = toMarkdown(wall(), { title: "Pilot", project: "Low Season", premise: "A season about a lie." });
+    const text = toMarkdown(wall(), { title: "Low Season", episode: "Episode 1 of 3 · Pilot", premise: "A season about a lie." });
     expect(text).toBe(
       [
-        "# Low Season · Pilot",
+        "# Low Season · Episode 1 of 3 · Pilot",
         "",
         "*A season about a lie.*",
         "",
@@ -82,10 +82,10 @@ describe("plain text out (R54)", () => {
   });
 
   it("writes the script as it prints, titled, with the cue and the lines under it", () => {
-    const text = toPlainText(wall(), { title: "Pilot", project: "Low Season" });
+    const text = toPlainText(wall(), { title: "Low Season", episode: "Episode 1 of 3 · Pilot" });
     const lines = text.split("\n");
     expect(lines[0].trim()).toBe("LOW SEASON");
-    expect(lines[2].trim()).toBe("Pilot");
+    expect(lines[2].trim()).toBe("Episode 1 of 3 · Pilot");
     expect(text).toContain(`1    ${"THE PIANO SHOP".padEnd(60)} 1`);
     expect(text).toContain(`${" ".repeat(GUTTER)}Her father kept the site's books by hand.`);
     expect(text).toContain(`${" ".repeat(GUTTER + COLUMN.character)}NESSA\n${" ".repeat(GUTTER + COLUMN.dialogue)}Who paid this?`);

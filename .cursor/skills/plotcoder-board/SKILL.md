@@ -286,8 +286,12 @@ card of another board is not asked about as uncast here.
   Pass `path` to write a file; otherwise the text comes back. The writer has
   the same five formats under Save as… in the Pages panel. **Every script
   out is titled the same way:** a named project is the title — a one-board
-  film goes out under its own name — and the board's name follows only when
-  the project has several boards. **An unwritten scene** prints its change
+  film goes out under its own name — and when the project has several
+  boards each file carries an episode line under it, "Episode 2 of 6 ·
+  Certified", numbered in the project's order, even when a board shares the
+  project's name. One board per file: a series is one file per episode, and
+  a Final Draft file returned as text names itself in a comment on its
+  second line. **An unwritten scene** prints its change
   line after the mark `[Unwritten]` in every format (the mark in bold in
   Markdown), so a reader can tell a placeholder from a page; the mark comes
   back in as unwritten. **What each form carries:** Markdown has the beats

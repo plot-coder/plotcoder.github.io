@@ -69,7 +69,7 @@ const SAMPLE = `<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
 
 describe("Final Draft out (c3)", () => {
   it("writes one paragraph per element, dual dialogue as a pair, numbers by wall order, and a title page", () => {
-    const xml = toFdx(wall(), { title: "Episode 2", project: "The Letter", draftDate: "2026-09-13T10:00:00Z" });
+    const xml = toFdx(wall(), { title: "The Letter", episode: "Episode 2 of 3 · The pier", draftDate: "2026-09-13T10:00:00Z" });
     expect(xml.startsWith('<?xml version="1.0"')).toBe(true);
     expect(xml).toContain('<Paragraph Type="Scene Heading" Number="1">');
     expect(xml).toContain("<Text>THE PIANO SHOP</Text>");
@@ -81,8 +81,9 @@ describe("Final Draft out (c3)", () => {
     expect(xml).toContain("<Text>[Unwritten] Maya starts to doubt him.</Text>");
     expect(xml).not.toContain("<Text>Maya starts to doubt him.</Text>");
     expect(xml).toContain('Number="3"');
-    expect(xml).toContain("<Text>Episode 2</Text>");
-    expect(xml).toContain("<Text>An episode of The Letter</Text>");
+    expect(xml).toContain("<Text>The Letter</Text>");
+    expect(xml).toContain("<Text>Episode 2 of 3 · The pier</Text>");
+    expect(xml).not.toContain("not locked");
     expect(xml).toContain("<Text>2026-09-13</Text>");
   });
 });

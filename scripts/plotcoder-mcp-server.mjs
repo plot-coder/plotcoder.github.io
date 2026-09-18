@@ -2578,14 +2578,31 @@ server.registerTool(
     const live = await writeBoard(last.before, rev, base, boardId, "exact");
     const orderLine = /^(move_scene|organize)/.test(last.what) ? ` Story order now: ${storyOrder(last.before).map((note, index) => `${index + 1}. ${note.headline}`).join(", ")}.` : "";
     const cardsDiff = last.before.notes.length - state.notes.length;
-    const arrowsDiff = last.before.arrows.length - state.arrows.length;
+    // The arrows by name, back and gone, not the net (round sixteen, entry 45).
+    const headlineIn = (board, id) => board.notes.find((note) => note.id === id)?.headline ?? id;
+    const arrowName = (board, arrow) => `"${headlineIn(board, arrow.from)}" → "${headlineIn(board, arrow.to)}" (${arrow.kind ?? "follows"})`;
+    const arrowsBack = last.before.arrows.filter((arrow) => !state.arrows.some((item) => item.id === arrow.id)).map((arrow) => arrowName(last.before, arrow));
+    const arrowsGone = state.arrows.filter((arrow) => !last.before.arrows.some((item) => item.id === arrow.id)).map((arrow) => arrowName(state, arrow));
     const groupsChanged = last.before.groups
       .filter((group) => { const now = state.groups.find((item) => item.id === group.id); return !now || now.noteIds.length !== group.noteIds.length; })
       .map((group) => `"${group.title}" (${group.noteIds.length} cards)`);
-    const withIt = [arrowsDiff > 0 ? `${arrowsDiff} arrow(s) back` : arrowsDiff < 0 ? `${-arrowsDiff} arrow(s) gone` : null, groupsChanged.length ? `groups as they were: ${groupsChanged.join(", ")}` : null].filter(Boolean);
+    const withIt = [
+      arrowsBack.length ? `${arrowsBack.length} arrow(s) back: ${arrowsBack.join(", ")}` : null,
+      arrowsGone.length ? `${arrowsGone.length} arrow(s) gone: ${arrowsGone.join(", ")}` : null,
+      groupsChanged.length ? `groups as they were: ${groupsChanged.join(", ")}` : null,
+    ].filter(Boolean);
     const countLine = `${cardsDiff > 0 ? ` ${cardsDiff} card(s) back` : cardsDiff < 0 ? ` ${-cardsDiff} card(s) gone` : ""}${withIt.length ? `${cardsDiff ? ", with " : " "}${withIt.join("; ")}` : ""}${cardsDiff || withIt.length ? "." : ""}`;
-    const more = trail.length >= TRAIL_CAP ? `${trail.length} more of mine can be undone — the most I keep, so the oldest have gone` : `${trail.length} more of mine can be undone`;
-    return ok(`Undid ${last.what}${where(live)}.${orderLine}${countLine} ${more}. list_board has the board.`, { undid: last.what, notes: last.before.notes.length, arrows: last.before.arrows.length, groups: last.before.groups.length });
+    // Under a lock, the letters that changed with the undo (entry 46).
+    let lockLine = "";
+    if (last.before.lock) {
+      const was = sceneNumbers(storyOrder(state), state.lock ?? last.before.lock);
+      const now = sceneNumbers(storyOrder(last.before), last.before.lock);
+      const moved = last.before.notes.filter((note) => was.get(note.id) && now.get(note.id) && was.get(note.id) !== now.get(note.id)).map((note) => `"${note.headline}" is ${now.get(note.id)} again (was ${was.get(note.id)})`);
+      lockLine = moved.length ? ` Under the lock, ${moved.join("; ")}.` : "";
+    }
+    // Whose trail the count is (entry 47): this session's, across the boards.
+    const more = `${trail.length} more of this session's changes can be undone, across the boards — each only on the board it was made on, and only while that board is as the change left it${trail.length >= TRAIL_CAP ? "; that is the most I keep, so the oldest have gone" : ""}`;
+    return ok(`Undid ${last.what}${where(live)}.${orderLine}${countLine}${lockLine} ${more}. list_board has the board.`, { undid: last.what, notes: last.before.notes.length, arrows: last.before.arrows.length, groups: last.before.groups.length });
   },
 );
 

@@ -9,43 +9,44 @@ done and merged, what is left, and the order I would take it in.
 
 ## Where things stand
 
-- **Round fifteen has run** (2026-09-17), the first on a project of two
-  boards, and its report is `blind-runs/round-fifteen-report.md`, verbatim,
-  with a head saying what became of each entry. Forty-five entries.
-- **Thirty-four were fixed the same evening**, in pull requests #47 to #52,
-  all merged to `main`. Two requirements came out of it and both are built:
-  **R57**, a scene moves to another board, and **R58**, the receiving end of
-  a series plant (mocked, then built on Robert's word).
-- **The suites pass on `main`:** `npm test` 28 files / 540 tests,
+- **Round sixteen has run** (2026-09-17 into 2026-09-18), the same series
+  against 0.1.21 with round fifteen's fixes in hand. Its report is
+  `blind-runs/round-sixteen-report.md`, verbatim, with a head saying what
+  became of each entry. Forty-eight entries; **forty-one fixed the same
+  night**, in pull requests #59 to #65, all merged to `main`.
+- **The question it was for is answered:** a stranger found the cross-board
+  move and the claim from either end without being told, and both boards
+  read their payoffs. R57 and R58 hold.
+- **Built from it:** `create_note` with `after`/`before`, so a scene added
+  under a lock is one call and one number — round fourteen's letter finding,
+  back a third time, closed by a tool; `page_count` on an unwritten board;
+  cues against the cast; changed lines starred in `read_pages`; the
+  runtime's kinds in pages; a written card's kept estimate; undo naming the
+  arrows and letters it moved.
+- **The suites pass on `main`:** `npm test` 28 files / 544 tests,
   `npm run build` clean. Eighty-one tools.
-- **Round sixteen is cued:** `blind-runs/prompt.md`, the same series against
-  0.1.21 with the fixes in hand — does a stranger find the cross-board move
-  and the claim from either end unprompted; a revision and a lock across
-  two boards; undo per board. Not yet run. Its first step checks the server
-  wiring that vanished before round fifteen.
-- **The last release is 0.1.21**, with everything above in it.
+- **Released as 0.1.22** with all of it, so the package, the site and `main`
+  match.
 
 ---
 
 ## 1. Released
 
-0.1.21 is on npm and matches `main` and the site: round fifteen's fixes,
-R57 and R58. Nothing to release until code changes. The README's version
-line follows `npm version` on its own.
+0.1.22 carries round sixteen's fixes. Nothing to release until code
+changes; the README's version line follows `npm version` on its own.
 
 ---
 
-## 2. R58 is built
+## 2. Round seventeen, or the real script
 
-The receiving end of a series plant, mocked and built the same evening on
-Robert's "I trust your judgement": the corner folded in, the edge line, the
-picker, one record on the fold's card, `set_plant` with `at` and
-`set_payoff`, the reading asking which scene once the promised board holds
-cards. Merged; released with the round's fixes. What it cannot say is
-recorded in R58: a card paying off two folds says "2 folds", and the page
-carries nothing. Round sixteen, if one runs, should put a two-board
-treatment through again and see whether an agent finds `at` and `set_payoff`
-without being told.
+Sixteen rounds have run. The last two each drew fewer findings that were
+anything but wording — forty-one of forty-eight in sixteen were replies and
+descriptions — and every tool a two-board series needs was found unprompted
+this time. The cases never measured: a third board; a treatment the writer
+did not write (a stranger's, with its own gaps); the account shared with a
+second writer while an agent works it. Or stop here and put a real script
+through (Roadmap 2, item 0), which the handover before round fifteen already
+leaned toward. Robert's call.
 
 ---
 
@@ -81,4 +82,4 @@ without being told.
 1. Read `blind-runs/README.md`'s recurrence table, then the head of
    `blind-runs/round-fifteen-report.md` and its sections 3 to 5.
 2. Release (item 1).
-3. Run round sixteen from `blind-runs/prompt.md`; put the three calls in section 3 to Robert in one message.
+3. Ask Robert: round seventeen (which case) or the real script; put the three calls in section 3 to him in the same message.

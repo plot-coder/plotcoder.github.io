@@ -32,7 +32,12 @@ is only the queue.
 
 ## 1. The next design question: a thread that is not a fold
 
-Not built; not yet mocked. What the rounds have shown, twice:
+**Mocked, not built:** `docs/mockups/r60-the-payoff-first.html`, recorded
+as **R60, proposed** — the paying-off card three ways beside what ships; A
+recommended (the receiving corner folded in over nothing, the writer's
+words on the edge, one field `paysOff` on the payoff card, no new mark and
+no new question kind). Waiting on Robert's word; build on it kernel first,
+then the tools, then the wall. What the rounds have shown, twice:
 
 - A **plant** is one record on the fold card, and every question the wall
   asks about it starts there: unpaid, unplanted, backwards. A payoff card
@@ -99,8 +104,7 @@ it; the two share the words "open, by the writer's word".
 
 1. Read `blind-runs/README.md`'s recurrence table, then the head of
    `blind-runs/round-eighteen-report.md` and its sections 3 to 6.
-2. Mock the thread (item 1) on the app's paper — `docs/mockups/` — and ask
-   in writing; build on Robert's word, kernel first, then the tools, then
-   the wall.
+2. The thread is mocked (item 1, R60); build it on Robert's word, kernel
+   first, then the tools, then the wall.
 3. Cue round nineteen only when there is something new to measure: the
    thread, or a fresh idea from a different writer.

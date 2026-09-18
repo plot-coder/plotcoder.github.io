@@ -8,6 +8,36 @@ is only the queue.
 
 ---
 
+## Next, in order (Robert's word, 2026-09-18, after the thread shipped)
+
+1. **Write the prompt for round nineteen** into `blind-runs/prompt.md`
+   (archive eighteen's as `round-nineteen-prompt.md`'s predecessor): the
+   same notes, "The Allotments", against 0.1.29 with the thread in hand.
+   The writer answers as before; for the key and the bucket the writer
+   says only "I know where it pays off, not where it is first seen". The
+   round measures whether a stranger reaches for `create_thread`
+   unprompted, whether the loose-end question lands where the writer
+   wanted it, and whether the thread and the fold ever contradict each
+   other on one wall (the combine log's rule). Check `~/.claude.json` for
+   the `plotcoder-board` entry first.
+2. **Run it**: Robert opens the session, this side drives it from the
+   prompt's list of directions, fixes the friction while it runs, files
+   `blind-runs/round-nineteen-report.md` verbatim with a head, records the
+   round in `REQUIREMENTS.md` and the two tables, and releases.
+3. **Mock the open fields** (item 2 below): the logline, the premise and a
+   card's when able to say "not decided" in the writer's words, listed by
+   the reading and not asked. Ask in writing before building.
+4. **The thread's own edges**, found while building it, not yet decided:
+   a thread's name can be typed only when it is started on the wall (the
+   tag on the string is not editable; `update_thread` renames it); a thread
+   is one board's, so a strand across episodes is still R50's fold; a
+   subplot thread has a start and an end but the reading says nothing
+   about the cards between; and the reading's `loose` question is asked
+   even when the thread's only card is open — by design, recorded in R60,
+   worth a look if a round finds it wrong.
+
+---
+
 ## Where things stand
 
 - **Round eighteen has run** (2026-09-18), the same page of notes as

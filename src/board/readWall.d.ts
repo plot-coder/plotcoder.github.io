@@ -68,7 +68,7 @@ export type WallReading = {
   /** Folded cards that pay off on another board of the project (R50): the card, the board, and the scene there that claims it (R58) or null while the board is a promise. */
   later: { id: string; boardId: string; noteId: string | null }[];
   /** Open cards (R59): the writer's words for what is not decided, in story order; not asked about while they stand. */
-  open: Array<{ id: string; words: string }>;
+  open: Array<{ id: string; words: string; hides: FindingKind[] }>;
   /** Cards here that pay off a fold of another board (R58), composed by the door from the project. */
   paidBy: Array<{ id: string; fromBoardId: string; fromBoardName: string; fromNoteId: string; fromHeadline: string; fromColor: string }>;
   /** The questions the wall asks now. A left one (R53) is not here while its words hold. */

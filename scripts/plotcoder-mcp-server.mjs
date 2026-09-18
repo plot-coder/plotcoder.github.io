@@ -1303,7 +1303,7 @@ server.registerTool(
       "Add a card (post-it) to the board. A card is one scene: a headline plus the change it causes. Provide both headline and change. Optionally set color, x/y position, rank ('beat' for one of the major turns — a beat is a whole card, the scene where the turn happens), pages (how long it runs; leave it out and the card is taken to be about a page), plants (true if this scene sets something up that must pay off later), location (where it happens, as the writer would say it — 'the piano shop', not 'INT. PIANO SHOP'), and characters (who is in the scene, by name; a name not in the cast yet is added to it — name an unnamed person by their role, 'Dana's mother', rather than leaving them off). The reply names the card's id.",
     inputSchema: {
       headline: z.string().min(1),
-      change: z.string().min(1),
+      change: z.string().optional().describe("What is different when the scene ends. Required, unless the card is born open — then it may wait, and the reading will not ask for it while the words stand."),
       color: colorSchema.optional(),
       rank: rankSchema.optional(),
       pages: pagesSchema.optional(),
@@ -1326,6 +1326,8 @@ server.registerTool(
     // The card, anyone new in its cast, and the casting land as one change, so
     // one ⌘Z on the wall takes back the whole call and not just the cast.
     if (args.after && args.before) return ok("Say where: after one card, or before one, not both.");
+    // A card needs its change line — unless it is born open (round eighteen, entry 13): the writer had no consequence yet.
+    if (!(args.change ?? "").trim() && !(args.open ?? "").trim()) return ok("A card needs its change line: what is different when the scene ends. If the writer has not decided it, pass open with their words and the change line waits.");
     // The card beside which the new scene goes (round sixteen, entry 36): by id or headline, on this board.
     const besideKey = (args.after ?? args.before ?? "").trim();
     const beside = besideKey ? state.notes.find((note) => note.id === besideKey) ?? state.notes.find((note) => note.headline.trim().toLowerCase() === besideKey.toLowerCase()) ?? null : null;
@@ -1336,7 +1338,7 @@ server.registerTool(
       let made = step({
         type: "create_note",
         headline: args.headline,
-        change: args.change,
+        change: (args.change ?? "").trim() || undefined,
         // One colour unless the agent chooses: a wall an agent builds in one go
         // would otherwise stripe through the cycle, and a writer reads a pattern
         // into it (round four, finding 17). The wall's own new-card button keeps
@@ -1556,7 +1558,7 @@ server.registerTool(
       ...reading.later.map((item) => `  - "${state.notes.find((note) => note.id === item.id)?.headline ?? item.id}" is folded and pays off later, on "${boardById(projectForRead, item.boardId)?.name ?? item.boardId}"${item.noteId ? `, at ${episodeLabel(projectForRead, boardsNow, item.boardId, item.noteId)} "${boardsNow[item.boardId]?.notes?.find((note) => note.id === item.noteId)?.headline ?? item.noteId}"` : " — no scene there claims it yet"}`),
       ...reading.paidBy.map((item) => `  - "${state.notes.find((note) => note.id === item.id)?.headline ?? item.id}" pays off "${item.fromHeadline}" from "${item.fromBoardName}" (${episodeLabel(projectForRead, boardsNow, item.fromBoardId, item.fromNoteId)}), one board earlier`),
       ...(reading.open.length
-        ? ["open, by the writer's word (listed, not asked about while the words stand; set_open with \"\" closes):", ...reading.open.map((item) => `  - "${state.notes.find((note) => note.id === item.id)?.headline ?? item.id}" — ${item.words}`)]
+        ? ["open, by the writer's word (listed, not asked about while the words stand; set_open with \"\" closes):", ...reading.open.map((item) => `  - "${state.notes.find((note) => note.id === item.id)?.headline ?? item.id}" — ${item.words}${item.hides.length ? ` (would be asked, closed: ${item.hides.map((kind) => CHECK_WORDS[kind] ?? kind).join("; ")})` : ""}`)]
         : []),
       "questions the wall raises:",
       ...(reading.findings.length
@@ -1583,6 +1585,9 @@ server.registerTool(
         }
         if (kind === "unplaced" && !state.notes.some((note) => (note.location ?? "").trim())) return "no card without a place (not asked: no card placed yet)";
         if (kind === "sequence" && state.groups.length === 0) return "no group too long for one sequence (not asked: no groups)";
+        // A kind clean only because an open card is not asked says so (round eighteen, entry 18).
+        const hiddenBy = reading.open.filter((item) => item.hides.includes(kind)).length;
+        if (hiddenBy) return `${CHECK_WORDS[kind]} (except ${hiddenBy} open card${hiddenBy === 1 ? "" : "s"}, not asked)`;
         return CHECK_WORDS[kind];
       }).join("; ") || "(nothing — every check found something)"}`,
     ];

@@ -226,13 +226,13 @@ describe("findings", () => {
     expect(unlinked).toHaveLength(1);
     expect(unlinked[0].ids).toEqual(["s3", "s4"]);
     expect(unlinked[0].text).toBe(
-      '2 cards have no arrow in or out: "Scene s3", "Scene s4". What sets them up, and what do they pay off?',
+      '2 cards have no arrow in or out: "Scene s3", "Scene s4". What comes before them in the story, and what after?',
     );
 
     const single = run(twoArrows, { type: "create_arrow", from: "s2", to: "s3" });
     const one = readWall(single).findings.filter((f) => f.kind === "unlinked");
     expect(one[0].text).toBe(
-      'One card has no arrow in or out: "Scene s4". What sets it up, and what does it pay off?',
+      'One card has no arrow in or out: "Scene s4". What comes before it in the story, and what after?',
     );
   });
 
@@ -472,7 +472,10 @@ describe("findings", () => {
     expect(before).toEqual(expect.arrayContaining(["unplaced", "unlinked", "nobody"]));
     const opened = run(state, { type: "set_open", ids: ["s1"], open: "where, and whether Ruth is there" });
     const reading = readWall(opened);
-    expect(reading.open).toEqual([{ id: "s1", words: "where, and whether Ruth is there" }]);
+    expect(reading.open).toHaveLength(1);
+    expect(reading.open[0]).toMatchObject({ id: "s1", words: "where, and whether Ruth is there" });
+    // What the words hide (round eighteen, entry 27): the questions the card would be asked if closed.
+    expect(reading.open[0].hides).toEqual(expect.arrayContaining(["unplaced", "unlinked", "nobody"]));
     expect(reading.findings.filter((f) => f.ids.includes("s1"))).toEqual([]);
     // Closed, the questions come back on their own.
     const closed = run(opened, { type: "set_open", ids: ["s1"], open: "" });

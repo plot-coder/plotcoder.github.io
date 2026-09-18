@@ -1271,8 +1271,13 @@ describe("round sixteen", () => {
     const id = (await six.callToolData("list_board")).notes.find((note) => note.headline.startsWith("Declan")).id;
     const read = await six.callTool("read_wall");
     expect(read).toContain("open, by the writer's word");
-    expect(read).toContain('"Declan wants Con to move to Naas" — where, and whether Ruth is there');
+    expect(read).toContain('"Declan wants Con to move to Naas" — where, and whether Ruth is there (would be asked, closed: ');
     expect(read).toContain("1 card open by the writer's word, not asked");
+    expect(read).toMatch(/\(except 1 open card, not asked\)/);
+    // A card born open may be born without its change line (round eighteen, entry 13); one born closed may not.
+    expect(await six.callTool("create_note", { headline: "The night of the break-in" })).toContain("A card needs its change line");
+    const bornOpen = await six.callTool("create_note", { headline: "The night of the break-in", open: "who did it" });
+    expect(bornOpen).toContain('open: "who did it"');
     expect(await six.callTool("list_board")).toContain("open: where, and whether Ruth is there");
     const closed = await six.callTool("set_open", { ids: [id], open: "" });
     expect(closed).toContain("1 card(s) closed");

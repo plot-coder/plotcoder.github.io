@@ -24,7 +24,9 @@ The board holds five kinds of thing:
 - **length** — how many pages a card runs. An unsized card is taken to be about
   one page. Like rank, it belongs to the card and never moves it.
 - **plants** — the corner is folded: this scene sets something up that must
-  pay off later. A setup arrow leaving the card is the payoff.
+  pay off later. A setup arrow leaving the card is the payoff; a fold can
+  pay off more than once — the key is given, then used — and each setup
+  arrow leaving it is one payoff, listed in the reading with its distance.
 - **groups** — a named frame around two or more cards: a sequence, a set piece.
 - **arrows** — directed links between cards, each with a `kind`: `follows` (what
   comes after what, the default) or `setup` (the tail plants what the head pays

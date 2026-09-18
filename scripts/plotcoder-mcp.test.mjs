@@ -1168,7 +1168,7 @@ describe("move_scene across boards", () => {
     expect(asking).toContain('no scene there claims it yet');
     // From the fold's side: at names the scene on the other board.
     const at = await series.callTool("set_plant", { ids: ["tom-lies"], plants: true, later: "Episode 2", at: "The plate fails" });
-    expect(at).toContain('pay off at "The plate fails" on "Episode 2"');
+    expect(at).toContain('is paid off at "The plate fails" on "Episode 2"');
     const wall = await series.callTool("read_wall");
     expect(wall).toContain('"Tom lies about the job" is folded and pays off later, on "Episode 2", at Ep 2, sc');
     expect(wall).not.toContain("no scene there claims it yet");

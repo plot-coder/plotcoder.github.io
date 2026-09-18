@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<title>A payoff that asks for its plant — three ways</title>
+<!-- The app's own paper: the source stylesheet, so the link never goes stale. -->
+<link rel="stylesheet" href="../../src/styles.css">
+<style>
+  body { margin: 0; padding: 2rem 2.5rem 3rem; font-family: ui-sans-serif, system-ui, sans-serif; }
+  h1 { font: 600 1.05rem/1.3 ui-serif, Georgia, serif; margin: 0 0 0.25rem; }
+  h2.sec { font: 600 0.95rem/1.3 ui-serif, Georgia, serif; margin: 2.6rem 0 0.2rem; }
+  .lede { font-size: 0.85rem; opacity: 0.75; margin: 0 0 2rem; max-width: 62ch; }
+  .row { display: flex; gap: 3.5rem; flex-wrap: wrap; align-items: flex-start; }
+  .opt { width: 230px; }
+  .opt h2 { font: 700 0.62rem/1.3 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; margin: 0 0 0.9rem; }
+  .paper { position: relative; height: 310px; }
+  .paper .note { position: absolute; left: 0; top: 0; }
+  .opt p { font-size: 0.8rem; line-height: 1.45; opacity: 0.8; margin: 0.9rem 0 0; max-width: 34ch; }
+  .note__when-sep { opacity: 0.55; margin: 0 0.3rem; }
+  /* A: the receiving corner (R58) with nothing behind the cut yet — the canvas
+     shows through where the plant's paper will, and the cut edge is dashed,
+     the way an open card's edge is (R59). Proposed CSS; the rest ships. */
+  .note.is-paying.is-unplanted .note__fold::before { background: var(--canvas); opacity: 0.85; }
+  .note.is-paying.is-unplanted .note__fold-flap { outline: 1.5px dashed rgba(31, 24, 16, 0.55); outline-offset: -2px; }
+  /* B: a thread as a thing of its own — a length of string from the payoff to nowhere. */
+  .yarn { position: absolute; left: -58px; top: 122px; width: 58px; height: 0; border-top: 2px dashed rgba(255, 130, 80, 0.8); }
+  .yarn::before { content: ""; position: absolute; left: -5px; top: -5px; width: 8px; height: 8px; border-radius: 50%; border: 2px dashed rgba(255, 130, 80, 0.8); }
+  .yarn-tag { position: absolute; left: -58px; top: 100px; font-size: 0.5rem; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.6; white-space: nowrap; }
+  /* The picker, as the length picker draws one. */
+  .pick { position: absolute; left: 26px; top: 30px; z-index: 5; width: 176px; background: var(--bar-bg, #1c1a16); color: var(--bar-ink, #eee); border: 1px solid var(--bar-border, #444); border-radius: 6px; padding: 0.4rem 0.5rem; font-size: 0.6rem; line-height: 1.5; box-shadow: 0 6px 18px rgba(0,0,0,0.35); }
+  .pick .cap { font-size: 0.5rem; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.6; margin: 0 0 0.25rem; }
+  .pick .it { padding: 0.15rem 0.3rem; border-radius: 3px; }
+  .pick .it.is-current { background: rgba(255,255,255,0.12); }
+  .pick .it small { opacity: 0.6; }
+  .light { margin-top: 3rem; padding: 2rem 2.5rem; background: #fff; color: #1f1810; border-radius: 6px; }
+  .light h2 { color: #1f1810; }
+  .light p, .light .lede { color: #1f1810; opacity: 0.8; }
+  pre.read { font: 0.72rem/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; background: rgba(127,127,127,0.12); padding: 0.9rem 1.1rem; border-radius: 6px; max-width: 78ch; white-space: pre-wrap; margin: 0.6rem 0 0; }
+  .ask { margin-top: 2.5rem; max-width: 64ch; font-size: 0.9rem; line-height: 1.5; }
+  .ask b { font-weight: 600; }
+</style>
+</head>
+<body>
+<h1>A payoff that asks for its plant (R60): the thread from the far end</h1>
+<p class="lede">From rounds seventeen and eighteen, on "The Allotments". The writer knows the bucket is in the last scene — Ruth keeps the crowns in it on a balcony — and the key changes hands the morning after the break-in. Where either is first seen, the writer does not know. Today a plant is one claim, made at the fold: a folded corner says "this scene plants something" and a setup arrow leaving it says where it pays off. A payoff with no plant has no corner to fold and no card to draw from, so the bucket became an open card and the key a sentence on Con's page, where the reading never looks. Below, the paying-off card three ways beside what ships, then the gesture, the two cards once the plant lands, and what the reading and the tool would say.</p>
+
+<div class="row">
+  <div class="opt">
+    <h2>As it ships · The last harvest</h2>
+    <div class="paper"><article class="note note--yellow is-beat" style="transform:rotate(-0.5deg)">
+      <button class="note__fold"><span class="note__fold-flap"></span></button>
+      <span class="note__edge"><span>9</span></span>
+      <div class="note__headline">The last harvest</div>
+      <div class="note__change">The plots are gone; Ruth keeps the crowns in a bucket on her balcony.</div>
+      <button class="note__with">with Con Brady, Ruth Kane</button>
+      <button class="note__with note__at"><span class="note__with-prefix">at</span> the allotments<span class="note__when-sep">·</span>October</button>
+    </article></div>
+    <p>A plain card. The bucket is in the change line and nowhere else. Nothing on the wall says it pays anything off, so the reading never asks where it is first seen; the writer's one question about it has no home.</p>
+  </div>
+
+  <div class="opt">
+    <h2>A · the corner folded in, over nothing</h2>
+    <div class="paper"><article class="note note--yellow is-beat is-paying is-unplanted" style="transform:rotate(-0.5deg)">
+      <button class="note__fold"><span class="note__fold-flap"></span></button>
+      <span class="note__edge"><span>9</span><span>·</span><span class="note__plant is-unpaid">Pays off · <b>the bucket</b></span></span>
+      <div class="note__headline">The last harvest</div>
+      <div class="note__change">The plots are gone; Ruth keeps the crowns in a bucket on her balcony.</div>
+      <button class="note__with">with Con Brady, Ruth Kane</button>
+      <button class="note__with note__at"><span class="note__with-prefix">at</span> the allotments<span class="note__when-sep">·</span>October</button>
+    </article></div>
+    <p>The receiving corner R58 already draws, with nothing behind the cut yet: the canvas shows through where the plant's paper will, and the cut's edge is dashed, as an open card's is. The edge names the thing in the writer's words, and the warm colour is the debt — the edge holds about twenty characters, so it says no more. One field on this card, <code>paysOff</code>; the wall asks from this end until a setup arrow from a folded card lands here, and then the cut fills with that card's paper.</p>
+  </div>
+
+  <div class="opt">
+    <h2>B · a thread of its own</h2>
+    <div class="paper"><article class="note note--yellow is-beat" style="transform:rotate(-0.5deg)">
+      <span class="yarn-tag">the bucket · from ?</span><span class="yarn"></span>
+      <button class="note__fold"><span class="note__fold-flap"></span></button>
+      <span class="note__edge"><span>9</span></span>
+      <div class="note__headline">The last harvest</div>
+      <div class="note__change">The plots are gone; Ruth keeps the crowns in a bucket on her balcony.</div>
+      <button class="note__with">with Con Brady, Ruth Kane</button>
+      <button class="note__with note__at"><span class="note__with-prefix">at</span> the allotments<span class="note__when-sep">·</span>October</button>
+    </article></div>
+    <p>A thread as a record on the project — a name, a plant card, a payoff card, either end empty — drawn as a length of string with one loose end. Honest about what a thread is, and it would hold Declan's subplot too. But it is a second model beside the fold and the setup arrow, which already are a thread with both ends, and every reading would have to reconcile the two.</p>
+  </div>
+
+  <div class="opt">
+    <h2>C · a placeholder plant, open and folded</h2>
+    <div class="paper"><article class="note note--yellow is-open is-planted" style="transform:rotate(0.6deg)">
+      <button class="note__fold"><span class="note__fold-flap"></span></button>
+      <span class="note__edge"><span class="note__plant is-unpaid">Open · <b>where the bucket is first seen</b></span></span>
+      <div class="note__headline">The bucket is first seen</div>
+      <div class="note__change">What changes?</div>
+      <button class="note__with note__with--empty"><span class="note__with-prefix">with</span> …</button>
+      <button class="note__with note__at note__with--empty"><span class="note__with-prefix">at</span> …</button>
+    </article></div>
+    <p>What ships, used as it stands: a card born open for the plant, folded, with a setup arrow to the last harvest. Nothing new to build. But it is a scene the writer has not got, counted as a page and sitting somewhere in the order the writer has to choose; and an open card is not asked about, so the one question the writer wants — where is it first seen — is exactly the one the wall stops asking.</p>
+  </div>
+</div>
+
+<h2 class="sec">The gesture, on A</h2>
+<div class="row">
+  <div class="opt">
+    <h2>Tap the corner</h2>
+    <div class="paper"><article class="note note--yellow is-beat" style="transform:rotate(-0.5deg)">
+      <button class="note__fold"><span class="note__fold-flap" style="opacity:0.35"></span></button>
+      <span class="note__edge"><span>9</span></span>
+      <div class="note__headline">The last harvest</div>
+      <div class="note__change">The plots are gone; Ruth keeps the crowns in a bucket on her balcony.</div>
+      <div class="pick">
+        <p class="cap">Corner</p>
+        <div class="it">Fold it: this scene plants something</div>
+        <div class="it is-current">Pays off something: not yet planted</div>
+        <div class="it">Leave it open: not decided yet</div>
+      </div>
+      <button class="note__with">with Con Brady, Ruth Kane</button>
+    </article></div>
+    <p>The corner's picker already holds every claim a corner can make — fold it, leave it open, pay off a fold waiting from another board. It gains one line. Pick it and the caret lands on the edge for the writer's words, as "leave it open" does; the corner folds in over nothing. A card that already pays off a fold by arrow never shows the line: the arrow is the claim.</p>
+  </div>
+
+  <div class="opt">
+    <h2>The last harvest, once the plant lands</h2>
+    <div class="paper"><article class="note note--yellow is-beat is-paying" style="transform:rotate(-0.5deg); --from-paper:#a8d8a0">
+      <button class="note__fold"><span class="note__fold-flap"></span></button>
+      <span class="note__edge"><span>9</span><span>·</span><span class="note__plant">Pays off · <b>sc 2</b></span></span>
+      <div class="note__headline">The last harvest</div>
+      <div class="note__change">The plots are gone; Ruth keeps the crowns in a bucket on her balcony.</div>
+      <button class="note__with">with Con Brady, Ruth Kane</button>
+      <button class="note__with note__at"><span class="note__with-prefix">at</span> the allotments<span class="note__when-sep">·</span>October</button>
+    </article></div>
+    <p>The writer decides the bucket is first seen on the asparagus bed, folds that card and draws the setup arrow here. The cut fills with the green card's paper, the edge says where from by scene number — as the receiving end of a series plant does — and the warm colour goes. The words stay on the card, in the tooltip, the list and the reading: the thread has a name. Nothing else to do; the arrow closed the claim.</p>
+  </div>
+
+  <div class="opt">
+    <h2>The asparagus bed, the fold's card</h2>
+    <div class="paper"><article class="note note--green is-planted" style="transform:rotate(0.6deg)">
+      <button class="note__fold"><span class="note__fold-flap"></span></button>
+      <span class="note__edge"><span>2</span><span>·</span><span class="note__plant">Plants · <b>paid off in 9</b></span></span>
+      <div class="note__headline">Con shows Ruth the asparagus bed</div>
+      <div class="note__change">Three years to a crop; Ruth carries the crowns to the bed in a bucket.</div>
+      <button class="note__with">with Con Brady, Ruth Kane</button>
+      <button class="note__with note__at"><span class="note__with-prefix">at</span> plot 14<span class="note__when-sep">·</span>March</button>
+    </article></div>
+    <p>The fold's card as it ships: nothing changes on it. The thing's name is the payoff's words, and the reading and the list say them at this end too — "plants the bucket, paid off in 9" — composed from the arrow, the way the receiving board composes its side of a series plant. No field on this card.</p>
+  </div>
+</div>
+
+<h2 class="sec">The reading and the tool</h2>
+<pre class="read">read_wall, while the bucket has no plant:
+setups and payoffs (distances in estimated pages):
+  - "The first morning" → "The morning after", the wrong tools, about 6 pages later
+  - "The last harvest" pays off the bucket — not yet planted
+questions the wall raises:
+  - [unplanted] "The last harvest" pays off the bucket, and no card plants it. Where is the bucket first seen?
+  - [unplanted] "The morning after" pays off the key, and no card plants it. Where is the key first seen?
+checks: 14 run — asking 2 questions of 1 kind …
+
+read_wall, once the asparagus bed is folded and the arrow drawn:
+  - "Con shows Ruth the asparagus bed" → "The last harvest", the bucket, about 7 pages later
+checks: … no payoff without its fold …
+
+The tool: the claim from the payoff's end, in the writer's words.
+  set_payoff  { id: "harvest", of: "the bucket" }         the card pays off the bucket; the wall asks where it is first seen
+  set_payoff  { id: "harvest", of: "" }                   takes the claim back
+  create_note { headline: "…", change: "…", paysOff: "the key" }
+  create_arrow { from: "asparagus", to: "harvest", kind: "setup" }
+      → "… pays the bucket off; the wall stops asking where it is first seen. Fold 'Con shows Ruth the asparagus bed' if it is not folded."
+
+list_board:  - harvest [beat, about a page, unsized, cast: Con Brady, Ruth Kane, pays off: the bucket (not yet planted)] — …
+             - harvest [beat, …, pays off: the bucket, from "Con shows Ruth the asparagus bed"] — …
+
+set_payoff keeps its other shape — { id, from, fold } claims a fold waiting from another board (R58) — and the two never meet: a card that pays off by arrow or by claim is not asked to say what for, and `of` on such a card names the thing on the edge and nothing more.</pre>
+
+<div class="light">
+  <h2 style="font:700 0.62rem/1.3 ui-sans-serif,system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;margin:0 0 .9rem">A, on the light canvas</h2>
+  <div class="row">
+    <div class="paper" data-theme="light" style="width:230px"><article class="note note--yellow is-beat is-paying is-unplanted" style="transform:rotate(-0.5deg)">
+      <button class="note__fold"><span class="note__fold-flap"></span></button>
+      <span class="note__edge"><span>9</span><span>·</span><span class="note__plant is-unpaid">Pays off · <b>the bucket</b></span></span>
+      <div class="note__headline">The last harvest</div>
+      <div class="note__change">The plots are gone; Ruth keeps the crowns in a bucket on her balcony.</div>
+      <button class="note__with">with Con Brady, Ruth Kane</button>
+    </article></div>
+    <div class="paper" data-theme="light" style="width:230px"><article class="note note--yellow is-beat is-paying" style="transform:rotate(-0.5deg); --from-paper:#a8d8a0">
+      <button class="note__fold"><span class="note__fold-flap"></span></button>
+      <span class="note__edge"><span>9</span><span>·</span><span class="note__plant">Pays off · <b>sc 2</b></span></span>
+      <div class="note__headline">The last harvest</div>
+      <div class="note__change">The plots are gone; Ruth keeps the crowns in a bucket on her balcony.</div>
+      <button class="note__with">with Con Brady, Ruth Kane</button>
+    </article></div>
+  </div>
+</div>
+
+<div class="ask">
+  <b>Recommended: A</b>, the corner folded in over nothing, the writer's words on the edge, one field on the payoff card. It is R58's receiving corner and R59's words put together, and both already exist on the card, so the wall gains no new mark and the picker gains one line. The record lives on the payoff because that is the end the writer has: a plant is the fold's claim, and this is the payoff's — the same thread read from the other end, and the setup arrow is what joins them, as it always was. The reading gains no new kind: "no payoff without its fold" already asks about a payoff whose card is not folded, and now asks about a payoff whose plant is not on the wall. B is the honest picture of a thread and the wrong number of models; C is what the agent did in round eighteen, and it silences the one question the writer wants asked.<br><br>
+  <b>Is this the best we could do?</b> Three things A cannot say. The edge holds about twenty characters, so it says "Pays off · the bucket" and no more — the debt is the colour, and "not yet planted" is said by the reading and the tooltip, not the card; a card that pays off two unplanted things — the key and the bucket in one scene — gets one edge line and one set of words, and the reading can ask about each only if the words are written "the key; the bucket", which is R58's limit again. The fold's card borrows the thing's name from the payoff, so a fold with no payoff still has no words of its own: "Plants · paid off in 9" stays unnamed until the far end says what; if that reads wrong, the fold could take words too, and then the same thread has two places to be named. And a subplot is not a plant: Declan's thread has no payoff to fold in from, and A leaves him where he was — colour and a group. I would build A and leave the subplot until a round asks for it by name.
+</div>
+</body>
+</html>

@@ -2767,7 +2767,7 @@ server.registerTool(
   async (args) => {
     const key = (args.id ?? args.name ?? "").trim();
     if (!key) return ok("Say who: the person's id or name from list_board.");
-    const { state, boardId } = await readBoard();
+    const { state, boardId, live, base } = await readBoard();
     const { project, boards } = await readProject();
     const wanted = key.toLowerCase();
     const person = state.characters.find((item) => item.id === key) ?? state.characters.find((item) => item.name.trim().toLowerCase() === wanted);
@@ -2782,13 +2782,15 @@ server.registerTool(
     });
     const total = parts.reduce((sum, part) => sum + part.on.length, 0);
     const where_ = (note) => [note.location ? `at ${note.location}` : "", note.when ? note.when : "", note.rank === "beat" ? "beat" : ""].filter(Boolean).join(" · ");
+    // A read opens with the door it came through, like every reading (round sixteen, entry 28); one scene a line (29).
     const lines = [
+      `PlotCoder cast (${door(live, base)})`,
       `${person.name} (${person.id}) — on ${total} card${total === 1 ? "" : "s"} across ${project.boards.length} board${project.boards.length === 1 ? "" : "s"} of the project`,
       ...CHARACTER_FIELDS.map((field) => `  ${field}: ${(person[field] ?? "").trim() || "(empty)"}`),
-      ...parts.map((part) =>
+      ...parts.flatMap((part) =>
         part.on.length
-          ? `  "${part.meta.name}", ${part.on.length} card${part.on.length === 1 ? "" : "s"} in story order: ${part.on.map((note, index) => `${index + 1}. "${note.headline}"${where_(note) ? ` (${where_(note)})` : ""}`).join("; ")}`
-          : `  "${part.meta.name}": on no card`,
+          ? [`  "${part.meta.name}", ${part.on.length} card${part.on.length === 1 ? "" : "s"} in story order:`, ...part.on.map((note, index) => `    ${index + 1}. "${note.headline}"${where_(note) ? ` (${where_(note)})` : ""}`)]
+          : [`  "${part.meta.name}": on no card`],
       ),
     ];
     return ok(lines.join("\n"), { ...person, cards: parts.flatMap((part) => part.on.map((note) => note.id)), boards: parts.map((part) => ({ id: part.meta.id, name: part.meta.name, cards: part.on.map((note) => note.id) })) });

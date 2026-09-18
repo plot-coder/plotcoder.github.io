@@ -936,7 +936,7 @@ describe("characters", () => {
     // The page reads back, by name or id, with every line and the cards.
     const page = await cast.callTool("read_character", { name: "maya" });
     expect(page).toContain("Maya (maya) — on 3 cards across 1 board of the project");
-    expect(page).toContain('"Board 1", 3 cards in story order: 1. "Maya finds the letter"');
+    expect(page).toContain('"Board 1", 3 cards in story order:\n    1. "Maya finds the letter"');
     expect(page).toContain("  looks: Thirty-four, tall, a coat too good for the flat.");
     expect(page).toContain("  voice: (empty)");
     expect(await cast.callTool("read_character", { id: "nobody" })).toContain('Nobody called "nobody" in the cast');
@@ -1136,8 +1136,9 @@ describe("move_scene across boards", () => {
     // Maya is on "Maya finds the letter", now on Episode 2, and on "Tom lies about the job" on Board 1.
     const reply = await series.callTool("read_character", { name: "Maya" });
     expect(reply).toContain("across 2 boards of the project");
-    expect(reply).toContain('"Board 1", 1 card in story order: 1. "Tom lies about the job"');
-    expect(reply).toContain('"Episode 2", 2 cards in story order: 1. "The letter is read aloud" (night); 2. "Maya finds the letter"');
+    expect(reply).toContain('"Board 1", 1 card in story order:\n    1. "Tom lies about the job"');
+    expect(reply).toContain('"Episode 2", 2 cards in story order:\n    1. "The letter is read aloud" (night)\n    2. "Maya finds the letter"');
+    expect(reply).toMatch(/^PlotCoder cast \(the file at /);
     await series.callTool("set_when", { ids: ["maya-letter"], when: "night" });
     await series.callTool("set_rank", { ids: ["maya-letter"], rank: "beat" });
     expect(await series.callTool("read_character", { name: "Maya" })).toContain('"Maya finds the letter" (night · beat)');

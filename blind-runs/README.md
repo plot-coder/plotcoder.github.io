@@ -47,7 +47,8 @@ into a story (Robert, 2026-09-17).
 | Fourteen | The published package, the same feature, the fixes in hand | "Ninety-Nine" | Past the wall and into production: exports three ways and back, the lock, a revision, a person's page | 49 (`round-fourteen-report.md`); fixed or decided the next day |
 | Fifteen | The published package, a series of two episodes | "The Weighbridge" | Two boards: a scene moved between episodes, a person's page across both, a structure beside one, the re-test written, Final Draft out for both, the length, a rename, the plants from both sides | 45 (`round-fifteen-report.md`); 34 fixed the same evening, R57 and R58 built |
 | Sixteen | The published package, the same series, the fixes in hand | "The Weighbridge" | The move and the claims found as tools unprompted; a revision, a lock and a scene added under it, Final Draft out for both, the lengths, undo | 48 (`round-sixteen-report.md`); 41 fixed the same night, create_note with after/before built |
-| Seventeen | The published package, a page of notes instead of a treatment, the writer answering | "Plot 14" (`round-seventeen-idea.md`) | Twenty questions asked first; the turns proposed, the gaps proposed, a change of mind, the folds, a scene written, the length | 39 (`round-seventeen-report.md`); the wall has no way to hold a maybe — R59 proposed and mocked; two new checks and the wordings built the same night |
+| Seventeen | The published package, a page of notes instead of a treatment, the writer answering | "Plot 14" (`round-seventeen-idea.md`) | Twenty questions asked first; the turns proposed, the gaps proposed, a change of mind, the folds, a scene written, the length | 39 (`round-seventeen-report.md`); the wall has no way to hold a maybe — R59 mocked and built the same day; two new checks and the wordings |
+| Eighteen | The published package, the same notes, the open card in hand | "Plot 14" (`round-seventeen-idea.md`) | Not yet run: does a stranger find the card that can be left open when told "leave it open"; what it does with the key and the bucket, the threads with no plant | — |
 
 ## What the rounds keep finding
 
@@ -102,11 +103,15 @@ published package, wired before the session, and were the first to reach the
 directions phase. Each round's findings are itemised in `REQUIREMENTS.md`,
 "The blind run".
 
-- `prompt.md` — round seventeen's, as it ran: a page of a writer's notes
-  instead of a treatment, the first round that starts from an idea, the
-  writer's private answers above the divider. Round eighteen has no prompt
-  yet; if one runs, it should run after R59 is built, on the same notes, to
-  see what an agent does with a card it can leave open.
+- `prompt.md` — round eighteen: the same notes as seventeen against the
+  package that carries the open card, the writer answering "I don't know
+  yet — leave it open" in those words and nothing more, to see whether a
+  stranger finds the card that can be left open and what it does with the
+  threads the wall still cannot hold. The writer's private answers sit
+  above the divider. Its first step checks the wiring. Paste everything
+  below its divider.
+- `round-seventeen-prompt.md` — round seventeen's own instructions, as they
+  ran, without their copy of the notes.
 - `round-seventeen-report.md` — the agent's report from round seventeen,
   verbatim, under a head saying what was fixed from it the same night and
   what was proposed. The next session on the agent surface starts here.

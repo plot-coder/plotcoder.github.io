@@ -51,9 +51,9 @@ An agent should call the tools, never fake mouse drags. The skill in `.cursor/sk
 A **blind run** is a fresh agent given the on-ramp and a treatment and nothing
 else, asked to build a wall and to keep a log of everything that made the job
 harder than it should have been. The friction log is the product; the wall is
-just what produces it. Seventeen rounds have been run, the first three through a
+just what produces it. Eighteen rounds have been run, the first three through a
 repo checkout and the rest through the account door; every finding from the
-first sixteen is fixed or decided, and round seventeen, the first to start from
+first seventeen is fixed or decided, and round seventeen, the first to start from
 a page of notes instead of a treatment, found the wall has no way to hold a
 maybe — the open card, R59, proposed and mocked from it. [`blind-runs/`](blind-runs/) holds the rules that keep a round honest,
 the table of rounds, and the next round's prompt with the test account filled in.

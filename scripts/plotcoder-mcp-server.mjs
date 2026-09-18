@@ -1703,16 +1703,17 @@ async function moveAcrossBoards(args, target, open, held) {
     step({ type: "apply_poses", poses: organizePoses(current(), {}) });
   });
   const order = storyOrder(final);
+  // "Left behind" read as "kept" (round sixteen, entry 22): the arrows are dropped, and the reply says so.
   const arrows = taken?.arrows?.length
-    ? ` Left behind on "${fromMeta.name}": ${taken.arrows.map((arrow) => `"${arrow.fromHeadline}" → "${arrow.toHeadline}" (${arrow.kind}${arrow.kind === "setup" && arrow.to === card.id ? "; that fold is unpaid again" : ""})`).join(", ")}${taken.joined ? `; the chain is joined behind it, "${taken.joined.fromHeadline}" → "${taken.joined.toHeadline}"` : ""}.`
+    ? ` Dropped on "${fromMeta.name}", because an arrow joins two cards of one wall: ${taken.arrows.map((arrow) => `"${arrow.fromHeadline}" → "${arrow.toHeadline}" (${arrow.kind}${arrow.kind === "setup" && arrow.to === card.id ? "; that fold is unpaid again" : ""})`).join(", ")}${taken.joined ? `; the chain there is joined behind it, "${taken.joined.fromHeadline}" → "${taken.joined.toHeadline}"` : ""}.`
     : ` No arrow touched it on "${fromMeta.name}".`;
   const groups = (taken?.groups ?? []).map((group) => (group.dissolved ? ` Its group "${group.title}" there dissolved: a frame needs two cards.` : ` It left its group "${group.title}" there, which keeps ${group.remaining} card${group.remaining === 1 ? "" : "s"}.`)).join("");
   const landed = anchor
-    ? `${args.after ? "after" : "before"} "${anchor.headline}"${joinedGroup ? `, in "${joinedGroup}"` : ""}`
-    : headOf ? `at the head of the story, before "${headOf}"` : "as the only card wired to nothing yet";
+    ? `${args.after ? "after" : "before"} "${anchor.headline}", with the follows arrows rewired around it${joinedGroup ? `, in "${joinedGroup}"` : `; "${anchor.headline}" is in no group, so this card joined none`}`
+    : headOf ? `at the head of the story, with a follows arrow drawn from it to "${headOf}"; it is in no group` : "as the only card wired to nothing yet";
   const fold = card.plants ? (forgotLater ? " It paid off later on this board, so that mark is forgotten: draw the setup arrow here." : " Its folded corner came with it; a setup arrow does not cross boards, so draw the payoff here if it is here.") : "";
   return ok(
-    `Moved "${card.headline}" from "${fromMeta.name}" to "${target.name}", with its cast, place, when, rank, length${card.text ? ", text" : ""} and colour; it is card ${landedId} there${where(live)}.${arrows}${groups} It landed ${landed}, and the wall was tidied.${fold} Story order on "${target.name}" now: ${order.map((note, index) => `${index + 1}. ${note.headline}`).join(", ")}. "${target.name}" is the open board now. Undo is per board: undo here takes back the landing; open_board "${fromMeta.name}" and undo takes back the leaving.`,
+    `Moved "${card.headline}" from "${fromMeta.name}" to "${target.name}", with its cast, place, when, rank, length${card.text ? ", text" : ""}, colour${card.plants ? " and folded corner" : ""}; it is card ${landedId} there${where(live)}.${arrows}${groups} It landed ${landed}, and the wall was tidied.${fold} Story order on "${target.name}" now: ${order.map((note, index) => `${index + 1}. ${note.headline}`).join(", ")}. "${target.name}" is the open board now. Undo is per board: undo here takes back the landing; open_board "${fromMeta.name}" and undo takes back the leaving.`,
     { id: landedId, board: target.id, order: order.map((note) => note.id) },
   );
 }

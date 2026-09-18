@@ -1093,7 +1093,9 @@ describe("move_scene across boards", () => {
     const reply = await series.callTool("move_scene", { id: "letter-aloud", board: "Episode 2" });
     expect(reply).toContain('Moved "The letter is read aloud" from "Board 1" to "Episode 2"');
     expect(reply).toContain('"Tom lies about the job" → "The letter is read aloud" (follows)');
-    expect(reply).toContain('at the head of the story, before "The inspector arrives"');
+    expect(reply).toContain('at the head of the story, with a follows arrow drawn from it to "The inspector arrives"');
+    expect(reply).toContain('Dropped on "Board 1"');
+    expect(reply).toContain("and folded corner");
     expect(reply).toContain("Its folded corner came with it");
     expect(reply).toContain('"Episode 2" is the open board now');
     expect(reply).toContain("Undo is per board");
@@ -1123,7 +1125,7 @@ describe("move_scene across boards", () => {
     await series.callTool("create_group", { noteIds: [arrives.id, fails.id], title: "Act one" });
     await series.callTool("open_board", { board: "1" });
     const reply = await series.callTool("move_scene", { id: "maya-letter", board: "Episode 2", after: arrives.id });
-    expect(reply).toContain('after "The inspector arrives", in "Act one"');
+    expect(reply).toContain('after "The inspector arrives", with the follows arrows rewired around it, in "Act one"');
     // It sits between the anchor and what followed the anchor, in the anchor's group.
     expect(reply).toContain("Story order on \"Episode 2\" now: 1. The letter is read aloud, 2. The inspector arrives, 3. Maya finds the letter, 4. The plate fails");
     const groups = (await series.callToolData("list_board")).groups;

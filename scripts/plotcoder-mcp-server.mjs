@@ -1010,6 +1010,13 @@ function cueReport(state, text) {
   return ` Cues: ${parts.join("; ")}.`;
 }
 
+/** A write on an open card does not close it: the words stay until the writer clears them, and the reply says so (round eighteen, entry 31). */
+function stillOpen(notes) {
+  const open = (notes ?? []).filter((note) => (note.open ?? "").trim());
+  if (!open.length) return "";
+  return ` ${open.length === 1 ? `"${open[0].headline}" is still open (${open[0].open})` : `${open.length} of them are still open`}: the words stay until set_open "" clears them, and the wall asks nothing else of ${open.length === 1 ? "it" : "them"} until then.`;
+}
+
 /** What kinds of number a runtime folds together: measured from text, set by the writer, or the default page (round fifteen, entry 39). */
 function runtimeKinds(state) {
   const measured = state.notes.filter((note) => isMeasured(note));
@@ -2668,8 +2675,8 @@ server.registerTool(
     const when = result[0]?.when ?? "";
     return ok(
       when
-        ? `${result.length} card(s) now happen ${/^(at|on|in|by|the)\b/i.test(when) ? "" : "at "}"${when}"${where(live)}. The heading prints as ${sceneHeading(result[0]).slice(1)}.`
-        : `${result.length} card(s) no longer say when they happen${where(live)}.`,
+        ? `${result.length} card(s) now happen ${/^(at|on|in|by|the)\b/i.test(when) ? "" : "at "}"${when}"${where(live)}. The heading prints as ${sceneHeading(result[0]).slice(1)}.${stillOpen(result)}`
+        : `${result.length} card(s) no longer say when they happen${where(live)}.${stillOpen(result)}`,
       result,
     );
   },
@@ -2998,7 +3005,7 @@ server.registerTool(
       : [];
     const warn = near.length ? ` The wall also has ${near.map((other) => `"${other}"`).join(", ")} — the same place spelled twice, or two places? Each distinct phrase counts as one place.` : "";
     return ok(
-      `${result.length} card(s) now ${place ? `at ${place}` : "nowhere"}${where(live)}.${warn}`,
+      `${result.length} card(s) now ${place ? `at ${place}` : "nowhere"}${where(live)}.${warn}${stillOpen(result)}`,
       result,
     );
   },
@@ -3070,7 +3077,7 @@ server.registerTool(
       (id) => state.characters.find((character) => character.id === id)?.name ?? id,
     );
     return ok(
-      `${result.length} card(s) now cast ${names.length ? names.join(", ") : "nobody"}: ${result.map((note) => `"${note.headline}"`).join(", ")}${added.length ? ` (added to the cast: ${added.join(", ")})` : ""}${where(live)}.`,
+      `${result.length} card(s) now cast ${names.length ? names.join(", ") : "nobody"}: ${result.map((note) => `"${note.headline}"`).join(", ")}${added.length ? ` (added to the cast: ${added.join(", ")})` : ""}${where(live)}.${stillOpen(result)}`,
       result,
     );
   },

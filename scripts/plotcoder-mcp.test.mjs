@@ -1282,6 +1282,8 @@ describe("round sixteen", () => {
     const closed = await six.callTool("set_open", { ids: [id], open: "" });
     expect(closed).toContain("1 card(s) closed");
     expect(await six.callTool("set_open", { ids: [id], open: "the buyer" })).toContain('1 card(s) open: "the buyer"');
+    // A write on an open card does not close it, and says so (round eighteen, entry 31).
+    expect(await six.callTool("set_location", { ids: [id], location: "the kitchen" })).toContain('is still open (the buyer): the words stay until set_open "" clears them');
     expect(await six.callTool("set_open", { ids: ["ghost"], open: "x" })).toContain("No card with id ghost");
   });
 

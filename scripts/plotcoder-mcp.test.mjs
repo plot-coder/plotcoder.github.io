@@ -1619,7 +1619,7 @@ describe("after the blind run", () => {
     expect(read).not.toMatch(/checked and clean:.*unwritten/);
     expect(read).toContain("pages: all estimates — no scene is written yet");
     expect(read).toContain("(distances in estimated pages)");
-    expect(read).toMatch(/checks: 11 run — asking (nothing|\d+ questions? of \d+ kinds?: [a-z ×0-9, ]+); checked and clean:/);
+    expect(read).toMatch(/checks: 12 run — asking (nothing|\d+ questions? of \d+ kinds?: [a-z ×0-9, ]+); checked and clean:/);
   });
 
   it("names the card's id and casts it in one call, adding a role-named person to the roster", async () => {

@@ -7,7 +7,7 @@
 
 export const AGENTS = {
   lead:
-    "A storyline wall. Cards are scenes, beats are the big turns, arrows say what follows or pays off what. An agent driven by a person has every tool a person here has; the person directs, the agent operates. Call the tools; never fake a mouse. Already have the plotcoder-board tools in front of you? Then your way in is: read the guide, make the four calls under Call these first, and skip the doors between — they are for wiring a server in.",
+    "A storyline wall. Cards are scenes, beats are the big turns, arrows say what follows or pays off what. An agent driven by a person has every tool a person here has; the person directs, the agent operates. Call the tools; never fake a mouse. Already have the plotcoder-board tools in front of you? Then your way in is: read the guide, make the five calls under Call these first, and skip the doors at the end — they are for wiring a server in.",
   doors: [
     {
       id: "mcp",

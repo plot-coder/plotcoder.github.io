@@ -567,7 +567,8 @@ describe("plotcoder MCP server", () => {
     expect(second).toContain("No arrow touched it.");
     expect(await client.callTool("undo")).toContain("1 card(s) back");
     const undone = await client.callTool("undo");
-    expect(undone).toContain("1 card(s) back, with 2 arrow(s) back; groups as they were: \"Act three\" (3 cards)");
+    expect(undone).toContain("1 card(s) back, with 2 arrow(s) back: ");
+    expect(undone).toContain("groups as they were: \"Act three\" (3 cards)");
     await client.callTool("redo");
     await client.callTool("redo");
     expect(second).toContain('Its group "Act three" dissolved: a frame needs two cards.');
@@ -1337,7 +1338,7 @@ describe("undo", () => {
 
     const first = await back.callTool("undo");
     expect(first).toContain("Undid move_note");
-    expect(first).toContain("1 more of mine");
+    expect(first).toContain("1 more of this session's changes");
     let board = JSON.parse(fs.readFileSync(file(), "utf8")).state;
     expect(board.notes.find((note) => note.id === "maya-letter")).toMatchObject({ x: 88, y: 120 });
     expect(board.notes.some((note) => note.headline === "The gun on the wall")).toBe(true);

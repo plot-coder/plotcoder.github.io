@@ -28,7 +28,7 @@ function upper(text) {
 
 function documentTitle(options) {
   const title = options.title || "Untitled";
-  return options.project && options.project !== title ? `${options.project} · ${title}` : title;
+  return options.episode ? `${title} · ${options.episode}` : title;
 }
 
 /** A scene's text as Markdown paragraphs: action as it is, a speech as its cue in bold with the lines hard-broken under it. */
@@ -177,8 +177,8 @@ export function toPlainText(state, options = {}) {
   );
   const title = options.title || "Untitled";
   const out = [];
-  if (options.project && options.project !== title) {
-    out.push(centred(upper(options.project)), "", centred(title));
+  if (options.episode) {
+    out.push(centred(upper(title)), "", centred(options.episode));
   } else {
     out.push(centred(upper(title)));
   }

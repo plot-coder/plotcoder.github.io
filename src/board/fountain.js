@@ -61,9 +61,10 @@ export function unmark(text) {
 }
 
 /** The title page block. `titles` is what the writer would put above the script. */
-export function titlePage({ title, credit, author, draftDate, notes }) {
+export function titlePage({ title, episode, credit, author, draftDate, notes }) {
   const lines = [];
   if (title) lines.push(`Title: ${title}`);
+  if (episode) lines.push(`Episode: ${episode}`);
   if (credit) lines.push(`Credit: ${credit}`);
   if (author) lines.push(`Author: ${author}`);
   if (draftDate) lines.push(`Draft date: ${draftDate}`);
@@ -97,7 +98,7 @@ export function toFountain(state, options = {}) {
 
   const head = titlePage({
     title: options.title || "Untitled",
-    credit: options.project && options.project !== options.title ? `An episode of ${options.project}` : undefined,
+    episode: options.episode,
     author: options.author,
     draftDate: options.draftDate ? options.draftDate.slice(0, 10) : undefined,
     notes,

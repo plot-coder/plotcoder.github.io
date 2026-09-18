@@ -13,8 +13,8 @@ describe("Fountain out (R23, slice a)", () => {
   });
 
   it("writes a title page with the wall's numbers in its notes", () => {
-    expect(titlePage({ title: "Episode 2", credit: "An episode of The Letter", draftDate: "2026-09-13", notes: ["Logline: x"] })).toBe(
-      "Title: Episode 2\nCredit: An episode of The Letter\nDraft date: 2026-09-13\nNotes:\n\tLogline: x",
+    expect(titlePage({ title: "The Letter", episode: "Episode 2 of 3 · The pier", draftDate: "2026-09-13", notes: ["Logline: x"] })).toBe(
+      "Title: The Letter\nEpisode: Episode 2 of 3 · The pier\nDraft date: 2026-09-13\nNotes:\n\tLogline: x",
     );
   });
 
@@ -24,11 +24,11 @@ describe("Fountain out (R23, slice a)", () => {
     state = applyCommand(state, { type: "set_rank", ids: ["maya-letter"], rank: "beat" }, NOW).state;
     state = applyCommand(state, { type: "set_location", ids: ["maya-letter", "letter-aloud"], location: "the piano shop" }, NOW).state;
     state = applyCommand(state, { type: "set_plant", ids: ["maya-letter"], plants: true }, NOW).state;
-    const text = toFountain(state, { title: "Episode 2", project: "The Letter", premise: "A season about a lie.", draftDate: "2026-09-13T10:00:00.000Z" });
+    const text = toFountain(state, { title: "The Letter", episode: "Episode 2 of 3 · The pier", premise: "A season about a lie.", draftDate: "2026-09-13T10:00:00.000Z" });
     expect(text).toBe(
       [
-        "Title: Episode 2",
-        "Credit: An episode of The Letter",
+        "Title: The Letter",
+        "Episode: Episode 2 of 3 · The pier",
         "Draft date: 2026-09-13",
         "Notes:",
         "\tPremise: A season about a lie.",
@@ -72,8 +72,8 @@ describe("Fountain out (R23, slice a)", () => {
 
 describe("Fountain in (R23, slice b)", () => {
   const doc = [
-    "Title: Episode 2",
-    "Credit: An episode of The Letter",
+    "Title: The Letter",
+    "Episode: Episode 2 of 3 · The pier",
     "Notes:",
     "\tLogline: Can Maya forgive a useful lie?",
     "",
@@ -106,7 +106,7 @@ describe("Fountain in (R23, slice b)", () => {
 
   it("parses a document into scenes with headings, synopses, sections and bodies", () => {
     const { titles, scenes } = fromFountain(doc);
-    expect(titles.title).toBe("Episode 2");
+    expect(titles.title).toBe("The Letter");
     expect(titles.notes).toBe("Logline: Can Maya forgive a useful lie?");
     expect(scenes).toHaveLength(3);
     expect(scenes[0]).toMatchObject({

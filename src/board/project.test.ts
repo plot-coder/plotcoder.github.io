@@ -273,7 +273,8 @@ describe("scriptTitles (round thirteen, entry 26)", () => {
     const film = { ...emptyProject(NOW), name: "Ninety-Nine", boards: [board("Feature")], activeBoardId: "feature" };
     expect(scriptTitles(film, film.boards[0])).toEqual({ title: "Ninety-Nine" });
     const season = { ...film, name: "Low Season", boards: [board("Pilot"), board("Episode two")] };
-    expect(scriptTitles(season, season.boards[0])).toEqual({ title: "Pilot", project: "Low Season" });
+    expect(scriptTitles(season, season.boards[0])).toEqual({ title: "Low Season", episode: "Episode 1 of 2 · Pilot" });
+    expect(scriptTitles(season, season.boards[1])).toEqual({ title: "Low Season", episode: "Episode 2 of 2 · Episode two" });
     const untitled = { ...film, name: "Untitled project" };
     expect(scriptTitles(untitled, untitled.boards[0])).toEqual({ title: "Feature" });
     expect(scriptTitles(untitled, null)).toEqual({ title: "Untitled" });

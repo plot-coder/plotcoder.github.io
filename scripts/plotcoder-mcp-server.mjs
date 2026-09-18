@@ -2159,7 +2159,7 @@ server.registerTool(
   {
     title: "Export as Final Draft",
     description:
-      "The open board as a Final Draft .fdx: a heading per card with its scene number by wall order, the scene's text as script paragraphs (action, character, parenthetical, dialogue, dual dialogue, transition) or the change line as action after the mark [Unwritten] when unwritten, and a title page for the project (a one-board film is its project). Pass a path to write the file; otherwise the XML comes back.",
+      "The open board as a Final Draft .fdx: a heading per card with its scene number by wall order, the scene's text as script paragraphs (action, character, parenthetical, dialogue, dual dialogue, transition) or the change line as action after the mark [Unwritten] when unwritten, and a title page: the project's name, and for a series the episode line (Episode 2 of 6 · its name). One board per file; a series is one file per episode. Pass a path to write the file; otherwise the XML comes back with the file's name in a comment on its second line.",
     inputSchema: { path: z.string().optional() },
   },
   async (args) => {
@@ -2168,12 +2168,14 @@ server.registerTool(
     const board = project.boards.find((item) => item.id === project.activeBoardId);
     const titles = scriptTitles(project, board);
     const xml = toFdx(state, { ...titles, draftDate: new Date().toISOString() });
+    // The file's name, so an agent writing it by hand has one (round fifteen, entry 34).
+    const filename = `${titles.title}${titles.episode ? ` - ${board?.name ?? ""}` : ""}`.replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim() + ".fdx";
     if (args.path) {
       fs.mkdirSync(path.dirname(path.resolve(args.path)), { recursive: true });
       fs.writeFileSync(args.path, xml);
-      return ok(`Wrote a Final Draft file with ${state.notes.length} scene(s), titled "${titles.title}", to ${args.path}.`);
+      return ok(`Wrote a Final Draft file with ${state.notes.length} scene(s), titled "${titles.title}"${titles.episode ? ` (${titles.episode})` : ""}, to ${args.path}.`);
     }
-    return ok(xml);
+    return ok(xml.replace(/^(<\?xml[^>]*\?>\n)/, `$1<!-- Save as: ${filename.replace(/--/g, "- -")} -->\n`));
   },
 );
 
@@ -3059,7 +3061,11 @@ server.registerTool(
     const next = renameProject(project, args.name);
     if (next === project) return ok("Project name unchanged.");
     await writeProject(next, boards, rev, base);
-    return ok(`Project renamed to "${next.name}"${where(live)}.`, next);
+    // The line at the head of every reply names the project it works; it must
+    // follow the rename (round fifteen, entry 40).
+    if (accountDoor) workingProject(next.id, next.name);
+    const several = (next.boards ?? []).length > 1;
+    return ok(`Project renamed to "${next.name}"${where(live)}. It shows at the head of every reply, in list_boards and read_wall, and as the title of every script out${several ? `, where each board follows it as an episode line (Episode 1 of ${next.boards.length} · ${next.boards[0].name})` : ""}. The boards keep their names.`, next);
   },
 );
 

@@ -25,14 +25,14 @@ done and merged, what is left, and the order I would take it in.
   arrows and letters it moved.
 - **The suites pass on `main`:** `npm test` 28 files / 544 tests,
   `npm run build` clean. Eighty-one tools.
-- **Released as 0.1.22** with all of it, so the package, the site and `main`
+- **Released as 0.1.23** with all of it, so the package, the site and `main`
   match.
 
 ---
 
 ## 1. Released
 
-0.1.22 carries round sixteen's fixes. Nothing to release until code
+0.1.23 carries round sixteen's fixes. Nothing to release until code
 changes; the README's version line follows `npm version` on its own.
 
 ---

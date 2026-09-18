@@ -22,13 +22,13 @@ done and merged, what is left, and the order I would take it in.
   "story order: unset" on a wall with no arrows, and the wordings.
 - **The suites pass on `main`:** `npm test` 28 files / 547 tests,
   `npm run build` clean. Eighty-two tools; fourteen checks.
-- **Released as 0.1.25** with all of it.
+- **Released as 0.1.26** with all of it and R59.
 
 ---
 
 ## 1. Released
 
-0.1.25 carries round seventeen's fixes. Nothing to release until code
+0.1.26 carries round seventeen's fixes and the open card. Nothing to release until code
 changes; the README's version line follows `npm version` on its own.
 
 ---

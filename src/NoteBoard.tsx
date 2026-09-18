@@ -67,6 +67,14 @@ type NoteBoardProps = {
   hasTake: Set<string>;
   /** Planted card id → the printed number of the scene that pays it off, or null. */
   payoffOf: Map<string, string | null>;
+  /** Folds the wall still asks about (R58): a promise on another board wears the warm colour too. */
+  payoffOpen: Set<string>;
+  /** Card id → what it pays off from another board, and that fold's paper (R58). */
+  paysOffOf: Map<string, { label: string; color: NoteColor }>;
+  /** Folds of other boards waiting for a scene on this one (R58), for the corner's picker. */
+  waiting: Array<{ fromBoardId: string; fromNoteId: string; label: string }>;
+  onClaim: (id: string, fromBoardId: string, fromNoteId: string) => void;
+  onUnclaim: (id: string) => void;
   /** Open Pages at a scene (the card's number is its address). */
   onOpenPages: (id: string) => void;
   onHoverNote: (id: string | null) => void;
@@ -156,6 +164,11 @@ export function NoteBoard({
   revision,
   hasTake,
   payoffOf,
+  payoffOpen,
+  paysOffOf,
+  waiting,
+  onClaim,
+  onUnclaim,
   onOpenPages,
   onHoverNote,
   selectedIds,
@@ -563,6 +576,11 @@ export function NoteBoard({
           sceneNumber={numberOf.get(note.id) ?? null}
           hasTake={hasTake.has(note.id)}
           payoff={payoffOf.get(note.id) ?? null}
+          payoffOpen={payoffOpen.has(note.id)}
+          paysOff={paysOffOf.get(note.id) ?? null}
+          waiting={waiting}
+          onClaim={onClaim}
+          onUnclaim={onUnclaim}
           onOpenPages={onOpenPages}
           revised={revision && isRevised(note, revision.snapshot[note.id]) ? revision.color : null}
           onCastNames={onCastNames}

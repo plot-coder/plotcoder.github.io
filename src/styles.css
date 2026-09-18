@@ -976,6 +976,51 @@ body {
   opacity: 1;
 }
 
+/* The receiving end (R58): the same corner turned the other way, with the
+   fold's paper showing through the cut, so a card that pays off a fold from
+   another board reads as its twin at Fit zoom. */
+.note.is-paying .note__fold-flap {
+  opacity: 1;
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+  background: linear-gradient(315deg, transparent 50%, rgba(31, 24, 16, 0.3) 50%, rgba(31, 24, 16, 0.14) 100%);
+}
+
+.note.is-paying .note__fold::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  clip-path: polygon(0 100%, 100% 0, 100% 100%);
+  background: var(--from-paper, #ffe56a);
+  opacity: 0.85;
+}
+
+/* The corner's picker (R58): fold it, or pay off a fold waiting from another board. */
+.note__lengths.note__corner-pick {
+  left: 0.35rem;
+  right: auto;
+  top: 1.7rem;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.18rem;
+  width: 10.5rem;
+}
+
+.note__lengths.note__corner-pick .note__picker-cap {
+  white-space: normal;
+}
+
+.note__length-option.note__corner-option {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  text-align: left;
+  font-size: 0.52rem;
+  line-height: 1.3;
+  white-space: normal;
+  padding: 0.22rem 0.32rem;
+}
+
 /* The corner "behind" the flap: the canvas showing through the cut. */
 .note.is-planted .note__fold::before {
   content: "";

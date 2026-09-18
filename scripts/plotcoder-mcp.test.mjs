@@ -204,6 +204,7 @@ describe("plotcoder MCP server", () => {
       "set_length",
       "set_location",
       "set_logline",
+      "set_payoff",
       "set_plant",
       "set_premise",
       "set_rank",
@@ -1155,6 +1156,40 @@ describe("move_scene across boards", () => {
     const boards = await series.callTool("list_boards");
     expect(boards).toMatch(/the whole project: \d+ cards, about [\d /]+ of [\d /]+ pages across 2 boards/);
     await series.callTool("open_board", { board: "2" });
+  });
+
+  it("claims a fold's payoff from either end, and both boards read it (R58)", async () => {
+    // Board 1's "Tom lies" pays off later on Episode 2 (claimed by the test before); Episode 2 holds cards, so the wall asks which.
+    await series.callTool("open_board", { board: "1" });
+    const asking = await series.callTool("read_wall");
+    expect(asking).toContain('"Tom lies about the job" pays off later, on "Episode 2", but no scene there claims it yet. Which one?');
+    expect(asking).toContain('no scene there claims it yet');
+    // From the fold's side: at names the scene on the other board.
+    const at = await series.callTool("set_plant", { ids: ["tom-lies"], plants: true, later: "Episode 2", at: "The plate fails" });
+    expect(at).toContain('pay off at "The plate fails" on "Episode 2"');
+    const wall = await series.callTool("read_wall");
+    expect(wall).toContain('"Tom lies about the job" is folded and pays off later, on "Episode 2", at Ep 2, sc');
+    expect(wall).not.toContain("no scene there claims it yet");
+    expect(await series.callTool("list_board")).toMatch(/plants → pays off later on "Episode 2" at Ep 2, sc \d+ "The plate fails"/);
+    // From the receiving side: the card there says what it pays off, and its reading lists it.
+    await series.callTool("open_board", { board: "2" });
+    const there = await series.callToolData("list_board");
+    const fails = there.notes.find((note) => note.headline === "The plate fails");
+    expect(await series.callTool("list_board")).toContain(`pays off "Tom lies about the job" from "Board 1" (Ep 1, sc`);
+    expect(await series.callTool("read_wall")).toContain('"The plate fails" pays off "Tom lies about the job" from "Board 1" (Ep 1, sc');
+    // set_payoff from here: a second fold, the same claim; then take it back.
+    await series.callTool("open_board", { board: "1" });
+    await series.callTool("create_note", { headline: "The key", change: "She keeps it.", plants: true });
+    await series.callTool("set_plant", { ids: [(await series.callToolData("list_board")).notes.find((note) => note.headline === "The key").id], plants: true, later: "Episode 2" });
+    await series.callTool("open_board", { board: "2" });
+    const paid = await series.callTool("set_payoff", { id: fails.id, from: "Board 1", fold: "The key" });
+    expect(paid).toContain('"The plate fails" pays off "The key" from "Board 1"');
+    expect(paid).toContain("This board is open again");
+    expect(await series.callTool("read_wall")).toContain('"The plate fails" pays off "The key" from "Board 1"');
+    const cleared = await series.callTool("set_payoff", { id: fails.id, from: "Board 1", fold: "" });
+    expect(cleared).toContain("no longer pays off");
+    expect(await series.callTool("read_wall")).not.toContain('pays off "The key"');
+    expect(await series.callTool("set_payoff", { id: fails.id, from: "Board 1", fold: "ghost" })).toContain('No card on "Board 1"');
   });
 
   it("delete_note says the fold went with the card", async () => {

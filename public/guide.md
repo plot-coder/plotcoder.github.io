@@ -139,10 +139,21 @@ only when the server is started with `PLOTCODER_JSON=1`.
   pays off until a `setup` arrow leaves it — or until `later` names another
   board of the project where it pays off (a series plant: `later: "Episode
   two"`, by name, id or number from `list_boards`; `later: ""` forgets it).
-  The card then says "pays off in Episode two", and the reading lists it.
-  Only the planting end is marked: nothing on the other board's card says
-  which fold it pays off, and that board's reading counts no setup for it.
-  Say it in the paying-off card's change line if the writer wants it read.
+  The card then says "pays off in Episode two", and the reading lists it. A
+  board alone is a promise: once that board holds cards, its reading and
+  this one ask which scene pays it off until one claims it. Name the scene
+  with `at` (its id or headline on that board) — `later: "Episode two", at:
+  "The ledger is gone"` — or from the other board with `set_payoff`. Then
+  the fold's card says "paid off in Ep 2, sc 2", the paying-off card says
+  "Pays off · Ep 1, sc 4" with its corner folded in, `read_wall` lists the
+  payoff on both boards, and `list_board` names it on both cards. `at: ""`
+  keeps the board and forgets the scene. One claim, one record, on the
+  fold's card; the receiving board composes its side from the project.
+- `set_payoff` — the same claim from the receiving board: `id` (the card
+  here), `from` (the fold's board), `fold` (the folded card there, by id or
+  headline); `fold: ""` takes back every claim that board makes on this
+  card. The other board is opened for the write and this one reopened
+  after, and undo on that board takes the claim back.
 - `set_location` — where one or more cards happen, as the writer would say it
   ("the piano shop", not "INT. PIANO SHOP"). `create_note` and `update_note`
   take `location` too; `list_board` shows it as `at: …`. No roster of places:

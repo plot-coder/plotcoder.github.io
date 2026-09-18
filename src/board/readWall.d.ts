@@ -61,8 +61,10 @@ export type WallReading = {
   /** Every planted card: the scene that pays it off (first setup arrow, by wall order), or null while unpaid. */
   /** For each folded card, the cards its setup arrows land on, in wall order; empty when unpaid. */
   payoffs: Record<string, string[]>;
-  /** Folded cards that pay off on another board of the project (R50): the card and the board. */
-  later: { id: string; boardId: string }[];
+  /** Folded cards that pay off on another board of the project (R50): the card, the board, and the scene there that claims it (R58) or null while the board is a promise. */
+  later: { id: string; boardId: string; noteId: string | null }[];
+  /** Cards here that pay off a fold of another board (R58), composed by the door from the project. */
+  paidBy: Array<{ id: string; fromBoardId: string; fromBoardName: string; fromNoteId: string; fromHeadline: string; fromColor: string }>;
   /** The questions the wall asks now. A left one (R53) is not here while its words hold. */
   findings: Finding[];
   /** Questions the writer has left, for now: the same question, with when it was left. */
@@ -78,6 +80,10 @@ export declare function readWall(
   options?: {
     /** Cast ids on a card of another board of the project (R51): not asked about as uncast here. */
     elsewhere?: string[];
+    /** Every board of the project by id (R58): a fold's promise is asked about once that board holds cards and no scene claims it. */
+    laterBoards?: Record<string, { name: string; cards: number; noteIds: string[] }>;
+    /** Folds of other boards that land on cards here (R58). */
+    paidBy?: Array<{ id: string; fromBoardId: string; fromBoardName: string; fromNoteId: string; fromHeadline: string; fromColor: string }>;
   },
 ): WallReading;
 export declare function describeRuns(reading: WallReading, state: BoardState): string[];

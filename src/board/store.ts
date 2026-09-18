@@ -328,6 +328,32 @@ class BoardStore {
     return result;
   };
 
+  /** Boards other than the open one that changed through this store (R58); the mirrors drain the list. */
+  private elsewhere: string[] = [];
+  drainElsewhere = (): string[] => {
+    const ids = this.elsewhere;
+    this.elsewhere = [];
+    return ids;
+  };
+
+  /**
+   * A command on another board of the project (R58): the claim that a card
+   * here pays off a fold there is written on the fold's card. No history —
+   * undo is the open board's — and the project record is touched so every
+   * listener, the mirrors included, sees a change.
+   */
+  dispatchOn = (boardId: string, command: Command): unknown => {
+    if (boardId === this.project.activeBoardId) return this.dispatch(command);
+    const stored = loadBoard(boardId);
+    if (!stored) return undefined;
+    const { state, changed, result } = applyCommand(withRoster(stored, this.project), command);
+    if (!changed) return result;
+    saveBoard(boardId, state);
+    if (!this.elsewhere.includes(boardId)) this.elsewhere.push(boardId);
+    this.setProject({ ...this.project, updatedAt: new Date().toISOString() });
+    return result;
+  };
+
   commit = (): void => {
     this.history.endGesture();
     this.refreshHistory();
@@ -828,6 +854,8 @@ export type PlotCoderWindowApi = {
   setTarget: (targetEighths: number) => unknown;
   setLocation: (ids: string[], location: string) => unknown;
   setWhen: (ids: string[], when: string) => unknown;
+  /** The receiving end of a series plant (R58): the folds on another board that a card here pays off; null takes the claim back. */
+  setPayoff: (fromBoardId: string, foldIds: string[], noteId: string | null) => unknown;
   updateCharacter: (id: string, patch: Partial<Record<CharacterField, string>>) => unknown;
   applyTemplate: (template: string) => unknown;
   setPremise: (premise: string) => void;
@@ -872,6 +900,7 @@ export function installWindowApi(): void {
     setTarget: (targetEighths) => boardStore.dispatch({ type: "set_target", targetEighths }),
     setLocation: (ids, location) => boardStore.dispatch({ type: "set_location", ids, location }),
     setWhen: (ids, when) => boardStore.dispatch({ type: "set_when", ids, when }),
+    setPayoff: (fromBoardId, foldIds, noteId) => boardStore.dispatchOn(fromBoardId, { type: "set_payoff_board", ids: foldIds, boardId: boardStore.getProject().activeBoardId, noteId }),
     updateCharacter: (id, patch) => boardStore.dispatch({ type: "update_character", id, ...patch }),
     applyTemplate: (template) => boardStore.dispatch({ type: "apply_template", template }),
     setPremise: (premise) => boardStore.setPremise(premise),

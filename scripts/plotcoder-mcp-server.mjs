@@ -73,6 +73,8 @@ import {
   reidentifyProject,
   renameProject,
   castElsewhere,
+  landingsOn,
+  laterBoards,
   liftCast,
   mergeRoster,
   sameRoster,
@@ -577,6 +579,27 @@ function elsewhereIds(boardId) {
   if (!lastHeld?.project) return [];
   return Object.keys(castElsewhere(lastHeld.project, lastHeld.boards, boardId ?? lastHeld.project.activeBoardId));
 }
+/** Everything a reading of one board needs to know about the rest of the project (R51, R58), from the last project read. */
+function readOptions(boardId, state = null) {
+  if (!lastHeld?.project) return { elsewhere: [] };
+  const id = boardId ?? lastHeld.project.activeBoardId;
+  const boards = state ? { ...lastHeld.boards, [id]: state } : lastHeld.boards;
+  return { elsewhere: elsewhereIds(id), laterBoards: laterBoards(lastHeld.project, boards), paidBy: landingsOn(lastHeld.project, boards, id).paid };
+}
+/** A card's number as the reading prints it: the lock's when locked, else its place in story order. */
+function sceneLabel(state, noteId) {
+  const numbers = state.lock ? sceneNumbers(storyOrder(state), state.lock) : null;
+  const numbered = numbers?.get?.(noteId);
+  if (numbered) return numbered;
+  const index = storyOrder(state).findIndex((note) => note.id === noteId);
+  return index >= 0 ? String(index + 1) : "?";
+}
+/** "Ep 1, sc 4": a scene on another board, named by the board's place in the project and the scene's in its story (R58). */
+function episodeLabel(project, boards, boardId, noteId) {
+  const index = project.boards.findIndex((meta) => meta.id === boardId);
+  const state = isBoardState(boards[boardId]) ? normalizeState(boards[boardId]) : null;
+  return `Ep ${index + 1}${state && noteId ? `, sc ${sceneLabel(state, noteId)}` : ""}`;
+}
 async function readProjectUncached() {
   const viaAccount = await throughAccount(accountReadProject);
   if (viaAccount) return viaAccount;
@@ -786,9 +809,8 @@ const findingKey = (finding) => `${finding.kind}|${finding.ids.join(",")}|${find
 function noteChange(before, after, boardId = null) {
   // The same reading read_wall gives: a person cast on another board is not
   // asked about, so a write's tail never names a question the reading does not.
-  const options = { elsewhere: elsewhereIds(boardId) };
-  const was = readWall(before, options);
-  const now = readWall(after, options);
+  const was = readWall(before, readOptions(boardId, before));
+  const now = readWall(after, readOptions(boardId, after));
   const wasKeys = new Set(was.findings.map(findingKey));
   const nowKeys = new Set(now.findings.map(findingKey));
   lastChange = {
@@ -974,19 +996,25 @@ function runtimeKinds(state) {
 
 function summarize(state) {
   const nameOf = new Map(state.characters.map((character) => [character.id, character.name]));
+  // What lands here from the other boards' folds (R58), from the last project read.
+  const paidByHere = lastHeld?.project ? landingsOn(lastHeld.project, { ...lastHeld.boards, [lastHeld.project.activeBoardId]: state }, lastHeld.project.activeBoardId).paid : [];
   const notes = storyOrder(state)
     .map((note) => {
       const cast = note.characterIds.map((id) => nameOf.get(id) ?? id);
       const who = cast.length ? `, cast: ${cast.join(", ")}` : "";
       // The board it pays off on, named here as read_wall names it (round fifteen, entry 44).
-      const plant = note.plants ? (note.payoffBoardId ? `, plants → pays off later on "${lastHeld?.project?.boards?.find((meta) => meta.id === note.payoffBoardId)?.name ?? note.payoffBoardId}"` : ", plants") : "";
+      const laterName = note.payoffBoardId ? (lastHeld?.project?.boards?.find((meta) => meta.id === note.payoffBoardId)?.name ?? note.payoffBoardId) : null;
+      const laterAt = note.payoffBoardId && note.payoffNoteId && lastHeld?.project ? ` at ${episodeLabel(lastHeld.project, lastHeld.boards, note.payoffBoardId, note.payoffNoteId)} "${lastHeld.boards[note.payoffBoardId]?.notes?.find((item) => item.id === note.payoffNoteId)?.headline ?? note.payoffNoteId}"` : "";
+      const plant = note.plants ? (note.payoffBoardId ? `, plants → pays off later on "${laterName}"${laterAt || ", no scene there claimed yet"}` : ", plants") : "";
+      // The receiving end (R58): what this card pays off from another board, composed from the project.
+      const pays = paidByHere.filter((item) => item.id === note.id).map((item) => `, pays off "${item.fromHeadline}" from "${item.fromBoardName}" (${episodeLabel(lastHeld.project, lastHeld.boards, item.fromBoardId, item.fromNoteId)})`).join("");
       const snap = state.revision?.snapshot?.[note.id];
       const revised = snap && (snap.headline !== note.headline || snap.change !== note.change || (snap.text ?? "") !== (note.text ?? "") || (snap.location ?? "") !== (note.location ?? "")) ? `, changed in ${state.revision.color}` : "";
       const place = note.location ? `, at: ${note.location}` : "";
       const when = note.when ? `, when: ${note.when}` : "";
       const count = formatPages(noteEighths(note));
       const pages = isMeasured(note) ? `${count} ${count === "1" ? "page" : "pages"}, written` : note.lengthEighths === null ? "about a page, unsized" : `${count} ${count === "1" ? "page" : "pages"}`;
-      return `  - ${note.id} [${note.rank ?? "scene"}, ${pages}${who}${place}${when}${plant}${revised}] — "${note.headline}" (${note.color}) at ${Math.round(note.x)},${Math.round(note.y)}`;
+      return `  - ${note.id} [${note.rank ?? "scene"}, ${pages}${who}${place}${when}${plant}${pays}${revised}] — "${note.headline}" (${note.color}) at ${Math.round(note.x)},${Math.round(note.y)}`;
     })
     .join("\n");
   const cast = state.characters
@@ -1424,8 +1452,10 @@ server.registerTool(
     const { project: projectForRead } = await readProject();
     const readBoardMeta = boardById(projectForRead, readBoardId ?? projectForRead.activeBoardId);
     const { boards: boardsForRead } = await readProject();
-    const elsewhereForRead = castElsewhere(projectForRead, boardsForRead, readBoardId ?? projectForRead.activeBoardId);
-    const reading = readWall(state, { elsewhere: Object.keys(elsewhereForRead) });
+    const readId = readBoardId ?? projectForRead.activeBoardId;
+    const boardsNow = { ...boardsForRead, [readId]: state };
+    const elsewhereForRead = castElsewhere(projectForRead, boardsForRead, readId);
+    const reading = readWall(state, { elsewhere: Object.keys(elsewhereForRead), laterBoards: laterBoards(projectForRead, boardsNow), paidBy: landingsOn(projectForRead, boardsNow, readId).paid });
     lastReading = { findings: reading.findings };
     sinceRead.length = 0;
     const runs = describeRuns(reading, state).map((line, index) => {
@@ -1466,7 +1496,8 @@ server.registerTool(
       ...(reading.setups.length
         ? describeSetups(reading, state).map((line) => `  - ${line}`)
         : ["  (no arrow is marked as a setup)"]),
-      ...reading.later.map((item) => `  - "${state.notes.find((note) => note.id === item.id)?.headline ?? item.id}" is folded and pays off later, on "${boardById(projectForRead, item.boardId)?.name ?? item.boardId}"`),
+      ...reading.later.map((item) => `  - "${state.notes.find((note) => note.id === item.id)?.headline ?? item.id}" is folded and pays off later, on "${boardById(projectForRead, item.boardId)?.name ?? item.boardId}"${item.noteId ? `, at ${episodeLabel(projectForRead, boardsNow, item.boardId, item.noteId)} "${boardsNow[item.boardId]?.notes?.find((note) => note.id === item.noteId)?.headline ?? item.noteId}"` : " — no scene there claims it yet"}`),
+      ...reading.paidBy.map((item) => `  - "${state.notes.find((note) => note.id === item.id)?.headline ?? item.id}" pays off "${item.fromHeadline}" from "${item.fromBoardName}" (${episodeLabel(projectForRead, boardsNow, item.fromBoardId, item.fromNoteId)}), one board earlier`),
       "questions the wall raises:",
       ...(reading.findings.length
         ? reading.findings.map((finding) => `  - [${finding.kind}] ${finding.text}${finding.ids.length ? ` (ids: ${finding.ids.join(", ")})` : ""}`)
@@ -1517,8 +1548,8 @@ server.registerTool(
     const wanted = args.questions?.length ? args.questions : args.kind ? [{ kind: args.kind, ids: args.ids, why: args.why }] : [];
     if (!wanted.length) return ok("Say which question: its kind as read_wall names it (and ids when that kind is asked more than once), or a list under questions.");
     const { state, boardId: leaveBoardId } = await readBoard();
-    const readOptions = { elsewhere: elsewhereIds(leaveBoardId) };
-    const reading = readWall(state, readOptions);
+    const readOptions_ = readOptions(leaveBoardId, state);
+    const reading = readWall(state, readOptions_);
     const replies = [];
     const toLeave = [];
     for (const want of wanted) {
@@ -1558,7 +1589,7 @@ server.registerTool(
       after = out.state;
       for (const item of toLeave) replies.push(`Left, for now: [${item.finding.kind}] ${item.finding.text}${item.why ? ` — "${item.why}"` : ""}`);
     }
-    const still = readWall(after, readOptions).findings;
+    const still = readWall(after, readOptions(leaveBoardId, after)).findings;
     const tail = toLeave.length
       ? `${where(live)} ${once("leave-rule", "The wall keeps the writer's word and asks a left question again on its own when it would read differently; ask_again brings one back now. ")}The wall still asks ${still.length === 0 ? "nothing" : `${still.length}: ${still.map((finding) => `[${finding.kind}] ${finding.text}`).join(" ")}`}.`
       : "";
@@ -1579,7 +1610,7 @@ server.registerTool(
     if (held.length === 0) return ok(`Nothing of kind "${args.kind}"${args.ids ? ` about ids ${args.ids.join(", ")}` : ""} is left. read_wall lists what is, under "left, for now".`);
     const { result, live } = await commit({ type: "ask_again", kind: args.kind, ids: args.ids });
     const again = await readBoard();
-    const reading = readWall(again.state, { elsewhere: elsewhereIds(again.boardId) });
+    const reading = readWall(again.state, readOptions(again.boardId, again.state));
     const back = reading.findings.filter((finding) => held.some((item) => item.kind === finding.kind && sameList(item.ids, finding.ids)));
     return ok(
       `Asked again${where(live)}: ${held.length} question${held.length === 1 ? "" : "s"} of kind "${args.kind}" ${held.length === 1 ? "is" : "are"} no longer left${back.length ? ` — the wall asks ${back.length === 1 ? "it" : `${back.length} of them`} now: ${back.map((finding) => finding.text).join(" ")}` : " — and the wall no longer asks it; the question had already changed"}.`,
@@ -2542,11 +2573,12 @@ server.registerTool(
   {
     title: "Fold the corner",
     description:
-      `Fold the corner of cards — mark them as planting something — or unfold them. ${wordSentence("corner")} The setup arrow is create_arrow with kind 'setup'. A fold that pays off in a later episode: pass later, another board of the project by name, id or number — a board that exists; new_board makes one — and the wall stops asking where it comes back, listing the card under the reading's 'later' instead of 'payoffs'; later '' forgets it. Folding never moves a card.`,
+      `Fold the corner of cards — mark them as planting something — or unfold them. ${wordSentence("corner")} The setup arrow is create_arrow with kind 'setup'. A fold that pays off in a later episode: pass later, another board of the project by name, id or number — a board that exists; new_board makes one — and, once you know it, at: the scene on that board that pays it off, by id or headline. A board alone is a promise: the reading lists the card under 'later' and, once that board holds cards, asks which scene until one claims it; with at, both boards' readings name the payoff and the paying-off card says so. later '' forgets the board; at '' keeps the board and forgets the scene. set_payoff makes the same claim from the other board. Folding never moves a card.`,
     inputSchema: {
       ids: z.array(z.string()).min(1),
       plants: z.boolean(),
       later: z.string().optional(),
+      at: z.string().optional(),
     },
   },
   async (args) => {
@@ -2554,15 +2586,29 @@ server.registerTool(
     // The kernel cannot check the board exists; this door can, before anything lands.
     let target = null;
     let forgetting = false;
-    if (args.plants && args.later !== undefined) {
-      const { project } = await readProject();
-      const { boardId: current } = await readBoard();
-      if (args.later.trim() === "") {
+    let atNote = null;
+    let atClearing = false;
+    if (args.plants && (args.later !== undefined || args.at !== undefined)) {
+      const { project, boards } = await readProject();
+      const { state: here, boardId: current } = await readBoard();
+      if (args.later !== undefined && args.later.trim() === "") {
         forgetting = true;
       } else {
-        target = findBoard(project, args.later);
+        // `at` alone means the board the fold already names.
+        const key = args.later ?? here.notes.find((note) => args.ids.includes(note.id) && note.payoffBoardId)?.payoffBoardId;
+        if (!key) return ok("Say which board with later before at: a scene belongs to a board.");
+        target = findBoard(project, String(key));
         if (!target) return ok(`No board called "${args.later}" yet. A fold pays off later on a board of the project: new_board "${args.later}" makes it (empty), open_board back to this one, then set_plant again with later.`);
         if (target.id === (current ?? project.activeBoardId)) return ok(`"${target.name}" is this board. A payoff on the same board is a setup arrow: create_arrow from the fold to the scene, kind 'setup'.`);
+        if (args.at !== undefined) {
+          if (args.at.trim() === "") atClearing = true;
+          else {
+            const there = isBoardState(boards[target.id]) ? normalizeState(boards[target.id]) : emptyState();
+            const wanted = args.at.trim().toLowerCase();
+            atNote = there.notes.find((note) => note.id === args.at.trim()) ?? there.notes.find((note) => note.headline.trim().toLowerCase() === wanted) ?? null;
+            if (!atNote) return ok(`No card on "${target.name}" with id or headline "${args.at}". open_board there and list_board for its cards; or leave at out and the fold stays a promise on that board.`);
+          }
+        }
       }
     }
     // The fold and the board it pays off on land as one change: one ⌘Z on the wall.
@@ -2576,10 +2622,14 @@ server.registerTool(
           laterLine = " The board it paid off on is forgotten; read_wall asks again until a setup arrow or a board pays it off.";
         }
       } else if (target) {
-        const named = step({ type: "set_payoff_board", ids: args.ids, boardId: target.id });
+        const named = step({ type: "set_payoff_board", ids: args.ids, boardId: target.id, noteId: atNote?.id ?? null });
         if (named.changed) result = named.result;
         const here = current().notes.filter((note) => args.ids.includes(note.id));
-        laterLine = ` ${here.length} card(s) pay off later, on "${target.name}": read_wall stops asking where they come back, and the card says so.`;
+        laterLine = atNote
+          ? ` ${here.length} card(s) pay off at "${atNote.headline}" on "${target.name}": both boards' readings name it, and that card says what it pays off.`
+          : atClearing
+            ? ` ${here.length} card(s) pay off later, on "${target.name}", and no scene there is claimed: read_wall asks which once that board holds cards.`
+            : ` ${here.length} card(s) pay off later, on "${target.name}": the card says so, and read_wall asks which scene once that board holds cards — set_plant with at, or set_payoff from that board, names it.`;
       }
       return { result, laterLine };
     });
@@ -2596,6 +2646,52 @@ server.registerTool(
 );
 
 // --- Characters -------------------------------------------------------
+
+// The receiving end of a series plant (R58), claimed from the board it lands
+// on: the same record set_plant's `at` writes, on the fold's own card, so one
+// claim has one owner. Two board switches around one frame on the fold's
+// board, which is where undo takes it back.
+server.registerTool(
+  "set_payoff",
+  {
+    title: "Pay off a fold from another board",
+    description:
+      "Say that a card on this board pays off a fold of another board of the project: id (the card here), from (that board, by name, id or number), and fold (the folded card there, by id or headline). The claim is written on the fold's card — the twin of set_plant with later and at — so both boards' readings name it and the card here says what it pays off. fold '' takes back every claim of that board on this card. The wall's other board is opened for the write and this one reopened after; undo on that board takes the claim back.",
+    inputSchema: { id: z.string(), from: z.union([z.string().min(1), z.number()]), fold: z.string() },
+  },
+  async (args) => {
+    const { project, boards } = await readProject();
+    const { state: here, boardId } = await readBoard();
+    const hereId = boardId ?? project.activeBoardId;
+    const card = here.notes.find((note) => note.id === args.id);
+    if (!card) return ok(`No card with id ${args.id} on this board. Call list_board.`);
+    const source = findBoard(project, String(args.from));
+    if (!source) return ok(`No board matches "${args.from}". Call list_boards for the real ones.`);
+    if (source.id === hereId) return ok(`"${source.name}" is this board. A payoff on the same board is a setup arrow: create_arrow from the fold to this card, kind 'setup'.`);
+    const there = isBoardState(boards[source.id]) ? normalizeState(boards[source.id]) : emptyState();
+    const clearing = args.fold.trim() === "";
+    const wanted = args.fold.trim().toLowerCase();
+    const folds = clearing
+      ? there.notes.filter((note) => note.plants && note.payoffBoardId === hereId && note.payoffNoteId === card.id)
+      : [there.notes.find((note) => note.id === args.fold.trim()) ?? there.notes.find((note) => note.headline.trim().toLowerCase() === wanted)].filter(Boolean);
+    if (!folds.length) return ok(clearing ? `No fold of "${source.name}" claims "${card.headline}".` : `No card on "${source.name}" with id or headline "${args.fold}". open_board there and list_board for its cards.`);
+    if (!clearing && !folds[0].plants) return ok(`"${folds[0].headline}" on "${source.name}" is not folded: nothing to pay off. set_plant it there first, with later "${boardById(project, hereId)?.name ?? hereId}".`);
+    const held = await readProject();
+    await openBoardEverywhere(held.project, held.boards, held.rev, held.base, source.id);
+    const { changed } = await commitAll(`set_payoff "${card.headline}"`, (step) => {
+      for (const fold of folds) step({ type: "set_payoff_board", ids: [fold.id], boardId: clearing ? hereId : hereId, noteId: clearing ? null : card.id });
+    });
+    const back = await readProject();
+    const { live } = await openBoardEverywhere(back.project, back.boards, back.rev, back.base, hereId);
+    if (!changed) return ok(`No change: ${clearing ? "nothing was claimed" : `"${folds[0].headline}" already pays off at "${card.headline}"`}.`);
+    return ok(
+      clearing
+        ? `"${card.headline}" no longer pays off ${folds.map((fold) => `"${fold.headline}"`).join(", ")} from "${source.name}"; ${folds.length === 1 ? "that fold is" : "those folds are"} a promise on this board again${where(live)}. This board is open again; undo on "${source.name}" takes it back.`
+        : `"${card.headline}" pays off "${folds[0].headline}" from "${source.name}" (${episodeLabel(project, { ...boards, [hereId]: here }, source.id, folds[0].id)})${where(live)}. The fold's card there says "paid off in ${episodeLabel(project, { ...boards, [hereId]: here }, hereId, card.id)}", this card says what it pays off, and both readings list it. This board is open again; undo on "${source.name}" takes the claim back.`,
+      { fold: folds.map((fold) => fold.id), board: source.id, card: card.id },
+    );
+  },
+);
 
 server.registerTool(
   "add_character",

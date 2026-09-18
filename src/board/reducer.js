@@ -249,8 +249,10 @@ export function seedState(now = nowIso()) {
     text: "",
     plants: false,
     // A fold that pays off on another board — a later episode — names it here;
-    // null claims nothing (R50).
+    // null claims nothing (R50). The scene there that pays it off, once one
+    // does (R58); null while the board is a promise.
     payoffBoardId: null,
+    payoffNoteId: null,
     createdAt: now,
     updatedAt: now,
   });
@@ -346,6 +348,8 @@ export function normalizeState(value) {
     const plants = note?.plants === true;
     // Cards written before R50 pay off on their own board or not at all.
     const payoffBoardId = plants && typeof note?.payoffBoardId === "string" && note.payoffBoardId ? note.payoffBoardId : null;
+    // Cards written before R58 name a board and no scene on it.
+    const payoffNoteId = payoffBoardId && typeof note?.payoffNoteId === "string" && note.payoffNoteId ? note.payoffNoteId : null;
     // Cards written before R37 have no place; a scene is nowhere until it is.
     const location = typeof note?.location === "string" ? note.location : "";
     // Cards written before R55 have no when; a scene is at no time until it is.
@@ -360,6 +364,7 @@ export function normalizeState(value) {
       sameIds(note.characterIds, characterIds) &&
       note.plants === plants &&
       note.payoffBoardId === payoffBoardId &&
+      note.payoffNoteId === payoffNoteId &&
       note.location === location &&
       note.when === when &&
       note.text === text
@@ -367,7 +372,7 @@ export function normalizeState(value) {
       return note;
     }
     patched = true;
-    return { ...note, rank, lengthEighths, characterIds, plants, payoffBoardId, location, when, text };
+    return { ...note, rank, lengthEighths, characterIds, plants, payoffBoardId, payoffNoteId, location, when, text };
   });
 
   // Boards written before the production half (Roadmap 2, item 8) have no
@@ -453,6 +458,7 @@ export function applyCommand(state, command, now = nowIso()) {
         characterIds: knownCast(command.characterIds, state.characters ?? []),
         plants: command.plants === true,
         payoffBoardId: null,
+        payoffNoteId: null,
         location: cleanPlace(command.location),
         when: cleanWhen(command.when),
         text: typeof command.text === "string" ? command.text : "",
@@ -624,6 +630,7 @@ export function applyCommand(state, command, now = nowIso()) {
           // says what went should say these (round fifteen, entry 17).
           plants: gone.plants === true,
           payoffBoardId: gone.payoffBoardId ?? null,
+          payoffNoteId: gone.payoffNoteId ?? null,
           arrows: taken.map((arrow) => ({ ...arrow, fromHeadline: headlineOf(arrow.from), toHeadline: headlineOf(arrow.to) })),
           joined: joined ? { ...joined, fromHeadline: headlineOf(joined.from), toHeadline: headlineOf(joined.to) } : null,
           groups: left,
@@ -909,6 +916,7 @@ export function applyCommand(state, command, now = nowIso()) {
         characterIds: [],
         plants: false,
         payoffBoardId: null,
+        payoffNoteId: null,
         location: "",
         when: "",
         text: "",
@@ -1040,8 +1048,9 @@ export function applyCommand(state, command, now = nowIso()) {
         if (!ids.has(note.id)) return note;
         // Unfolding forgets where it paid off; a claim that no longer stands.
         const payoffBoardId = plants ? note.payoffBoardId : null;
-        if (note.plants === plants && note.payoffBoardId === payoffBoardId) return note;
-        const next = bump(note, { plants, payoffBoardId }, now);
+        const payoffNoteId = plants ? (note.payoffNoteId ?? null) : null;
+        if (note.plants === plants && note.payoffBoardId === payoffBoardId && note.payoffNoteId === payoffNoteId) return note;
+        const next = bump(note, { plants, payoffBoardId, payoffNoteId }, now);
         touched.push(next);
         return next;
       });
@@ -1053,14 +1062,18 @@ export function applyCommand(state, command, now = nowIso()) {
     // stops asking where it comes back, and the reading says where. The
     // kernel cannot check the board exists; the door that knows the project
     // does. Null takes the claim back.
+    // With noteId, the scene on that board that pays it off (R58): the
+    // receiving end, kept here on the fold so one claim has one owner. A
+    // board alone is a promise; a note is the payoff.
     case "set_payoff_board": {
       const ids = new Set(command.ids);
       if (ids.size === 0) return { state, changed: false };
       const payoffBoardId = typeof command.boardId === "string" && command.boardId ? command.boardId : null;
+      const payoffNoteId = payoffBoardId && typeof command.noteId === "string" && command.noteId ? command.noteId : null;
       const touched = [];
       const notes = state.notes.map((note) => {
-        if (!ids.has(note.id) || !note.plants || note.payoffBoardId === payoffBoardId) return note;
-        const next = bump(note, { payoffBoardId }, now);
+        if (!ids.has(note.id) || !note.plants || (note.payoffBoardId === payoffBoardId && (note.payoffNoteId ?? null) === payoffNoteId)) return note;
+        const next = bump(note, { payoffBoardId, payoffNoteId }, now);
         touched.push(next);
         return next;
       });

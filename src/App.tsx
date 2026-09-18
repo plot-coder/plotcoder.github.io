@@ -29,7 +29,8 @@ import { organizePoses } from "./board/organize";
 import { ProjectModal } from "./ProjectModal";
 import { RemindersModal } from "./RemindersModal";
 import { StructureSheet } from "./StructureSheet";
-import { castElsewhere } from "./board/project";
+import { castElsewhere, landingsOn, laterBoards } from "./board/project";
+import { storyOrder } from "./board/readWall";
 import { TEMPLATES } from "./board/templates";
 import { PagesPanel } from "./PagesPanel";
 import { paginateBoard } from "./pagesLayout";
@@ -167,18 +168,38 @@ export function App() {
   const placeNames = useMemo(() => places.map((place) => place.name), [places]);
   // One reading of the wall for the lens and the map, so they agree.
   // Who is on a card of another board of the project (R51): the lens says where, and the reading does not ask.
-  const castElsewhereMap = useMemo(() => {
+  const otherBoards = useMemo(() => {
     const boards: Record<string, BoardState> = {};
     for (const meta of project.boards) {
       if (meta.id === project.activeBoardId) continue;
       const state = boardStore.boardState(meta.id);
       if (state) boards[meta.id] = state;
     }
-    return castElsewhere(project, boards, project.activeBoardId);
+    return boards;
     // The open board is a dependency so a change that reached another board through the record recomputes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [project, board]);
-  const reading = useMemo(() => readWall(board, { elsewhere: Object.keys(castElsewhereMap) }), [board, castElsewhereMap]);
+  const castElsewhereMap = useMemo(() => castElsewhere(project, otherBoards, project.activeBoardId), [project, otherBoards]);
+  // What lands here from the other boards' folds, and every board's shape, for the reading and the corner (R58).
+  const landings = useMemo(() => landingsOn(project, { ...otherBoards, [project.activeBoardId]: board }, project.activeBoardId), [project, otherBoards, board]);
+  const boardsHeld = useMemo(() => laterBoards(project, { ...otherBoards, [project.activeBoardId]: board }), [project, otherBoards, board]);
+  const reading = useMemo(
+    () => readWall(board, { elsewhere: Object.keys(castElsewhereMap), laterBoards: boardsHeld, paidBy: landings.paid }),
+    [board, castElsewhereMap, boardsHeld, landings],
+  );
+  // "Ep 1, sc 4": a scene on another board, by the board's place in the project and the scene's in its story (R58).
+  const episodeLabel = useCallback(
+    (boardId: string, noteId: string | null): string => {
+      const index = project.boards.findIndex((meta) => meta.id === boardId);
+      const state = otherBoards[boardId];
+      if (!state || !noteId) return `Ep ${index + 1}`;
+      const order = storyOrder(state);
+      const locked = state.lock ? sceneNumbers(order, state.lock).get(noteId) : undefined;
+      const place = locked ?? (order.findIndex((note) => note.id === noteId) >= 0 ? String(order.findIndex((note) => note.id === noteId) + 1) : "?");
+      return `Ep ${index + 1}, sc ${place}`;
+    },
+    [project, otherBoards],
+  );
   const stripStructure = useMemo(() => {
     if (!stripStructureId) return null;
     const found = TEMPLATES.find((template) => template.id === stripStructureId) ?? (project.structures ?? []).find((structure) => structure.id === stripStructureId);
@@ -255,14 +276,39 @@ export function App() {
       const labels = tos.map((to) => numberOf.get(to) ?? (reading.order.includes(to) ? String(reading.order.indexOf(to) + 1) : null) ?? notes.find((note) => note.id === to)?.headline ?? to);
       map.set(from, labels.length ? `paid off in ${labels.join(", ")}` : null);
     }
-    // A fold that pays off on another board (R50): the card says which.
+    // A fold that pays off on another board (R50): the card says which — and,
+    // once a scene there claims it (R58), where.
     const boards = boardStore.getProject().boards;
     for (const item of reading.later) {
       const board = boards.find((candidate) => candidate.id === item.boardId);
-      map.set(item.id, `pays off in ${board?.name ?? "a later board"}`);
+      map.set(item.id, item.noteId ? `paid off in ${episodeLabel(item.boardId, item.noteId)}` : `pays off in ${board?.name ?? "a later board"}`);
     }
     return map;
-  }, [reading, numberOf, notes]);
+  }, [reading, numberOf, notes, episodeLabel]);
+  // Folds the wall still asks about, promises included: the card wears the warm colour (R58).
+  const payoffOpen = useMemo(() => new Set(reading.findings.filter((finding) => finding.kind === "unpaid").flatMap((finding) => finding.ids)), [reading]);
+  // The receiving end (R58): what each card here pays off, and the folds waiting for a scene here.
+  const paysOffOf = useMemo(() => {
+    const map = new Map<string, { label: string; color: NoteColor }>();
+    for (const item of landings.paid) {
+      const held = map.get(item.id);
+      if (held) map.set(item.id, { ...held, label: `${landings.paid.filter((other) => other.id === item.id).length} folds` });
+      else map.set(item.id, { label: episodeLabel(item.fromBoardId, item.fromNoteId), color: item.fromColor as NoteColor });
+    }
+    return map;
+  }, [landings, episodeLabel]);
+  const waitingFolds = useMemo(
+    () => landings.waiting.map((item) => ({ fromBoardId: item.fromBoardId, fromNoteId: item.fromNoteId, label: `${item.fromHeadline} · ${episodeLabel(item.fromBoardId, item.fromNoteId)}` })),
+    [landings, episodeLabel],
+  );
+  function claimPayoff(id: string, fromBoardId: string, fromNoteId: string) {
+    boardStore.dispatchOn(fromBoardId, { type: "set_payoff_board", ids: [fromNoteId], boardId: project.activeBoardId, noteId: id });
+  }
+  function unclaimPayoff(id: string) {
+    for (const item of landings.paid.filter((landing) => landing.id === id)) {
+      boardStore.dispatchOn(item.fromBoardId, { type: "set_payoff_board", ids: [item.fromNoteId], boardId: project.activeBoardId, noteId: null });
+    }
+  }
 
   // Light elements on the wall for a moment; fit first so they are in the window.
   function light(find: () => HTMLElement[]) {
@@ -903,6 +949,11 @@ export function App() {
         revision={board.revision}
         hasTake={hasTake}
         payoffOf={payoffOf}
+        payoffOpen={payoffOpen}
+        paysOffOf={paysOffOf}
+        waiting={waitingFolds}
+        onClaim={claimPayoff}
+        onUnclaim={unclaimPayoff}
         onOpenPages={openPagesAt}
         notes={notes}
         groups={groups}

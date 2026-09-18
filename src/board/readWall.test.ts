@@ -129,7 +129,7 @@ describe("findings", () => {
 
   it("returns nothing at all for an empty board", () => {
     const reading = readWall(emptyState());
-    expect(reading).toEqual({ order: [], beats: [], runs: [], setups: [], payoffs: {}, later: [], findings: [], left: [] });
+    expect(reading).toEqual({ order: [], beats: [], runs: [], setups: [], payoffs: {}, later: [], paidBy: [], findings: [], left: [] });
   });
 
   it("notes that runs cannot be read until a beat is marked, and passes no judgement on the count", () => {
@@ -403,6 +403,37 @@ describe("findings", () => {
     expect(readWall(paid).findings.filter((f) => f.kind === "unpaid")).toEqual([]);
   });
 
+  it("asks which scene pays off a fold's promise once the named board holds cards, and stops when one claims it (R58)", () => {
+    const base = run(
+      wall({ id: "b1", rank: "beat", headline: "The ledger" }, { id: "s1" }, { id: "b2", rank: "beat" }),
+      { type: "set_plant", ids: ["b1"], plants: true },
+      { type: "set_payoff_board", ids: ["b1"], boardId: "ep2" },
+    );
+    // A promise alone is quiet, as R50 made it — and stays quiet while the board is empty.
+    expect(readWall(base).findings.filter((f) => f.kind === "unpaid")).toEqual([]);
+    expect(readWall(base, { laterBoards: { ep2: { name: "Certified", cards: 0, noteIds: [] } } }).findings.filter((f) => f.kind === "unpaid")).toEqual([]);
+    // Cards on that board and no claim: the wall asks which.
+    const held = { ep2: { name: "Certified", cards: 2, noteIds: ["e1", "e2"] } };
+    expect(readWall(base, { laterBoards: held }).findings.filter((f) => f.kind === "unpaid")).toEqual([
+      { kind: "unpaid", ids: ["b1"], text: '"The ledger" pays off later, on "Certified", but no scene there claims it yet. Which one?' },
+    ]);
+    // A claimed scene answers it; a claim on a scene that is gone is a promise again.
+    const claimed = run(base, { type: "set_payoff_board", ids: ["b1"], boardId: "ep2", noteId: "e2" });
+    expect(readWall(claimed, { laterBoards: held }).findings.filter((f) => f.kind === "unpaid")).toEqual([]);
+    expect(readWall(claimed, { laterBoards: held }).later).toEqual([{ id: "b1", boardId: "ep2", noteId: "e2" }]);
+    const gone = { ep2: { name: "Certified", cards: 1, noteIds: ["e1"] } };
+    expect(readWall(claimed, { laterBoards: gone }).later).toEqual([{ id: "b1", boardId: "ep2", noteId: null }]);
+    expect(readWall(claimed, { laterBoards: gone }).findings.filter((f) => f.kind === "unpaid")).toHaveLength(1);
+  });
+
+  it("lists the folds of other boards that land on cards here, and only those on cards that exist (R58)", () => {
+    const state = wall({ id: "e1", rank: "beat" }, { id: "e2" });
+    const landing = { fromBoardId: "pilot", fromBoardName: "Pilot", fromNoteId: "p1", fromHeadline: "The ledger", fromColor: "yellow" };
+    const reading = readWall(state, { paidBy: [{ id: "e2", ...landing }, { id: "ghost", ...landing }] });
+    expect(reading.paidBy).toEqual([{ id: "e2", ...landing }]);
+    expect(readWall(state).paidBy).toEqual([]);
+  });
+
   it("never mutates the state it reads", () => {
     const state = wall({ id: "b1", rank: "beat" }, { id: "s1" }, { id: "b2", rank: "beat" });
     const snapshot = JSON.stringify(state);
@@ -439,7 +470,7 @@ describe("a fold that pays off on another board (R50)", () => {
     state = applyCommand(state, { type: "set_payoff_board", ids: [key.id], boardId: "ep2" }).state;
     const reading = readWall(state);
     expect(reading.findings.filter((f) => f.kind === "unpaid")).toHaveLength(0);
-    expect(reading.later).toEqual([{ id: key.id, boardId: "ep2" }]);
+    expect(reading.later).toEqual([{ id: key.id, boardId: "ep2", noteId: null }]);
     expect(reading.payoffs[key.id]).toBeUndefined();
   });
 });

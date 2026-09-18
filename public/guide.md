@@ -183,7 +183,8 @@ card of another board is not asked about as uncast here.
   card on every board; removing takes them off every card here and leaves the
   cards, and is refused while another board has them on a card — cast them
   off there first, or leave them.
-- `read_character` — a person's page back, by id or name: the five lines as
+- `read_character` — a person's page back, by id or name, across every
+  board of the project (one cast, one page, R51): the five lines as
   they stand and the cards they are on. `list_board` says which lines are
   written; this says what they say.
 - `update_character` — write a person's page by `id` or `name`: `looks`, `voice`, `wants`,
@@ -251,7 +252,13 @@ card of another board is not asked about as uncast here.
   CIARA) are not tied to the card's cast: the cast is the card's claim about
   who is in the scene, the cues are the page's, and the app relates the two
   only by name. Keep them agreeing yourself — `cast` when a cue names someone
-  the card does not.
+  the card does not. A person named by their role cues as that role, article
+  and all: THE INSPECTOR. Writing a scene from a treatment: the treatment's
+  reported speech becomes lines in the mouths it names — "she asks whose hand
+  it is" is the inspector's line — and that is not inventing; a fact, a look
+  or a line the treatment does not have is. Once written, the card is
+  measured from its lines and the wall reads that; the writer's estimate is
+  kept underneath for when the text goes.
 - `edit_scene` — one line of a scene, by `find` and `replace`: the text must
   occur once. For "change her last line", not a rewrite.
 - `import_fountain` — a `.fountain` file or text onto the open board: scenes

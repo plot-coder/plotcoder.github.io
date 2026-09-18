@@ -1840,7 +1840,8 @@ server.registerTool(
     const lines = [
       `the writer's own: ${own.length}`,
       ...own.map((structure) => `  - ${structure.id} — "${structure.name}" (${structure.beats.length} beats: ${structure.beats.map((beat) => `${beat.name} at ${Math.round(beat.at * 100)}%`).join(", ")})`),
-      `built in: ${TEMPLATES.length} — ${TEMPLATES.map((template) => `${template.id} "${template.name}" (${template.beats.length} beats)`).join(", ")}; each beat's name, prompt and place in the story are in the JSON`,
+      `built in: ${TEMPLATES.length}`,
+      ...TEMPLATES.map((template) => `  - ${template.id} — "${template.name}" (${template.beats.length} beats: ${template.beats.map((beat) => `${beat.name} at ${Math.round(beat.at * 100)}%`).join(", ")})`),
       "compare_structure sets one of these beside this wall's beats, page by page, and lays nothing",
     ];
     return ok(lines.join("\n"), { builtIn: TEMPLATES.map((template) => ({ id: template.id, name: template.name, beats: template.beats })), own });
@@ -1866,12 +1867,15 @@ server.registerTool(
     if (!chosen) return ok(`No structure called "${args.structure}". list_structures names the built-in five and the writer's own.`);
     const comparison = compareStructure(state, chosen.beats);
     const beats = state.notes.filter((note) => note.rank === "beat").length;
+    const allMeasured = state.notes.length > 0 && state.notes.every((note) => isMeasured(note));
+    const short = state.targetEighths > 0 && boardEighths(state) * 2 < state.targetEighths;
     const lines = [
-      `"${chosen.name}" beside this wall's ${beats} beat${beats === 1 ? "" : "s"}, of ${formatPages(state.targetEighths)} pages (the story so far runs to p. ${comparison.soFar}); a match is the nearest of the wall's beats within ${MATCH_PAGES} pages, one to one and in order:`,
+      `"${chosen.name}" beside this wall's ${beats} beat${beats === 1 ? "" : "s"}, of ${formatPages(state.targetEighths)} pages (the story so far runs to p. ${comparison.soFar}${allMeasured ? ", measured" : ", an estimate: unsized cards read as a page each"}); a match is the nearest of the wall's beats within ${MATCH_PAGES} pages, one to one and in order:`,
       ...describeComparison(comparison).map((line) => `  - ${line}`),
       comparison.unmatched.length
         ? `beats of the wall no beat of the structure answers: ${comparison.unmatched.map((beat) => `"${beat.headline}" (p. ${beat.page})`).join(", ")}`
         : "every beat of the wall answers one of the structure's",
+      ...(short ? [`the wall runs to less than half its target, so its beats sit early and the ${MATCH_PAGES}-page window pairs them with the structure's first beats by arithmetic; the pairing says more once the cards are sized or written, and whether a turn is missing is the writer's call, not this reading's`] : []),
       beats === 0 ? "No card on this board is marked as a beat (set_rank), so there is nothing to compare; apply_template lays the structure's beats to fill." : "Nothing moved and nothing was made: this is a reading. apply_template lays the beats as cards when the writer wants them.",
     ];
     return ok(lines.join("\n"), { structure: { id: chosen.id, name: chosen.name }, ...comparison });
@@ -1999,7 +2003,7 @@ server.registerTool(
     }
     const printed = sceneLineCount(args.text);
     return ok(
-      `Wrote "${result.headline}": ${printed} line(s) as they print (headings, blank lines and wrapped dialogue counted), measured at ${formatPages(noteEighths(result))} of a 55-line page, rounded to the nearest eighth and never below one${where(live)}.${revisionMark(state, result.id)}${once("heading-from-place", " The heading comes from the card's place and when, so the text starts with the action.")} While the text stands the card is measured, not estimated; the estimate underneath is untouched.`,
+      `Wrote "${result.headline}": ${printed} line(s) as they print (headings, blank lines and wrapped dialogue counted), measured at ${formatPages(noteEighths(result))} of a 55-line page, rounded to the nearest eighth and never below one eighth${where(live)}.${revisionMark(state, result.id)}${once("heading-from-place", " The heading comes from the card's place and when, so the text starts with the action.")} While the text stands the wall reads the measure, not the estimate${result.lengthEighths !== null ? ` (the writer's ${formatPages(result.lengthEighths)} pages)` : ""}; the estimate is kept for when the text goes, and set_length changes it.`,
       { ...result, eighths: noteEighths(result), measured: true, printedLines: printed },
     );
   },
@@ -2634,22 +2638,37 @@ server.registerTool(
   {
     title: "Read a person's page",
     description:
-      "Read one person's page back, by id or by name: the five lines — looks, voice, wants, needs, notes — as they stand, and which cards the person is on. list_board says only which lines are written; this says what they say.",
+      "Read one person's page back, by id or by name: the five lines — looks, voice, wants, needs, notes — as they stand, and every card the person is on across every board of the project, in story order, each with its place, when and rank. The cast is the project's (one record, one page), so this reads all of it; list_board says only which lines are written.",
     inputSchema: { id: z.string().optional(), name: z.string().optional() },
   },
   async (args) => {
     const key = (args.id ?? args.name ?? "").trim();
     if (!key) return ok("Say who: the person's id or name from list_board.");
-    const { state } = await readBoard();
+    const { state, boardId } = await readBoard();
+    const { project, boards } = await readProject();
     const wanted = key.toLowerCase();
     const person = state.characters.find((item) => item.id === key) ?? state.characters.find((item) => item.name.trim().toLowerCase() === wanted);
     if (!person) return ok(`Nobody called "${key}" in the cast. Call list_board for the cast, or add_character.`);
-    const on = storyOrder(state).filter((note) => note.characterIds.includes(person.id));
+    // The person's part is the project's, not one board's (R51; round fifteen,
+    // entries 22 and 23): every board, in the project's order, the open one read live.
+    const openId = boardId ?? project.activeBoardId;
+    const parts = project.boards.map((meta) => {
+      const held = meta.id === openId ? state : isBoardState(boards[meta.id]) ? normalizeState(boards[meta.id]) : emptyState();
+      const on = storyOrder(held).filter((note) => (note.characterIds ?? []).includes(person.id));
+      return { meta, on };
+    });
+    const total = parts.reduce((sum, part) => sum + part.on.length, 0);
+    const where_ = (note) => [note.location ? `at ${note.location}` : "", note.when ? note.when : "", note.rank === "beat" ? "beat" : ""].filter(Boolean).join(" · ");
     const lines = [
-      `${person.name} (${person.id}) — on ${on.length} card${on.length === 1 ? "" : "s"}${on.length ? `, in story order: ${on.map((note) => `"${note.headline}"`).join(", ")}` : ""}`,
+      `${person.name} (${person.id}) — on ${total} card${total === 1 ? "" : "s"} across ${project.boards.length} board${project.boards.length === 1 ? "" : "s"} of the project`,
       ...CHARACTER_FIELDS.map((field) => `  ${field}: ${(person[field] ?? "").trim() || "(empty)"}`),
+      ...parts.map((part) =>
+        part.on.length
+          ? `  "${part.meta.name}", ${part.on.length} card${part.on.length === 1 ? "" : "s"} in story order: ${part.on.map((note, index) => `${index + 1}. "${note.headline}"${where_(note) ? ` (${where_(note)})` : ""}`).join("; ")}`
+          : `  "${part.meta.name}": on no card`,
+      ),
     ];
-    return ok(lines.join("\n"), { ...person, cards: on.map((note) => note.id) });
+    return ok(lines.join("\n"), { ...person, cards: parts.flatMap((part) => part.on.map((note) => note.id)), boards: parts.map((part) => ({ id: part.meta.id, name: part.meta.name, cards: part.on.map((note) => note.id) })) });
   },
 );
 

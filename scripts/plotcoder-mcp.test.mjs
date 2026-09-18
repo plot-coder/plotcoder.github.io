@@ -1146,6 +1146,17 @@ describe("move_scene across boards", () => {
     expect(text).not.toContain("in the JSON");
   });
 
+  it("names the board a fold pays off on, totals the project, and says what kinds of number a runtime holds (round fifteen, entries 38, 39, 44)", async () => {
+    await series.callTool("open_board", { board: "1" });
+    await series.callTool("set_plant", { ids: ["tom-lies"], plants: true, later: "Episode 2" });
+    const board = await series.callTool("list_board");
+    expect(board).toContain('plants → pays off later on "Episode 2"');
+    expect(board).toMatch(/of its \d+ cards?, \d+ measured from written text, \d+ sized by the writer, \d+ unsized and read as a page each/);
+    const boards = await series.callTool("list_boards");
+    expect(boards).toMatch(/the whole project: \d+ cards, about [\d /]+ of [\d /]+ pages across 2 boards/);
+    await series.callTool("open_board", { board: "2" });
+  });
+
   it("delete_note says the fold went with the card", async () => {
     const reply = await series.callTool("delete_note", { id: "letter-aloud" });
     expect(reply).toContain("Its folded corner went with it");

@@ -5,7 +5,7 @@ import type { FountainScene } from "./fountain";
 
 export declare function toFdx(
   state: BoardState,
-  options?: { title?: string; project?: string; author?: string; draftDate?: string },
+  options?: { title?: string; episode?: string; author?: string; draftDate?: string },
 ): string;
 
 export type SetAside = {

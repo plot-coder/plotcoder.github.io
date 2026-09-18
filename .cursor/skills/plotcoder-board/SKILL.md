@@ -177,7 +177,7 @@ only when the server is started with `PLOTCODER_JSON=1`.
   name the location. A treatment that names a spot per paragraph is naming
   where the camera is, which may still be one place.
 - `set_open` — leave a card **open**, with the writer's words for what is
-  not decided: "where, and whether Ruth is there", "the buyer". The reading
+  not decided: "whether Tom knows", "who sent the letter". The reading
   lists open cards under their own head and asks nothing else of them while
   the words stand — not their place, not their change line, not their
   arrows; they are still counted, in the order, and a page. `open: ""`
@@ -260,8 +260,9 @@ card of another board is not asked about as uncast here.
   planted, and where does it pay off — "later in the series" counts? Which
   scenes are known to run long or short? What are the project and the board
   called? What must not be invented? `list_workflows` carries the same
-  questions with the tool each answer lands in; the writer sees them under
-  Reminders.
+  questions with the tool each answer lands in, under break-a-treatment;
+  `list_reminders` does not — that is the house principles. The writer sees
+  the questions in the app under Reminders, on its "Before a treatment" tab.
 - **A treatment is cards, one call each.** `import_fountain` is the door for
   pages, not a treatment: a new card takes its headline from the `= synopsis`
   line (else the heading), its place from a forced heading (`.the piano shop`)
@@ -342,7 +343,7 @@ card of another board is not asked about as uncast here.
 - `set_premise` / `rename_project` — the line above every board's logline, and
   the project's name. `list_boards` shows both. The premise is the project's
   whatever its board count: a series' line, or what is true before a film
-  starts — "the third year; the crowns can be cut for the first time" — so a
+  starts — "the winter the shop closes" — so a
   one-board film's standing facts have a home that is not a person's notes.
 - `list_reminders` / `add_reminder` / `remove_reminder` — the writer's
   principles. Read them before building or reading a wall; add only what the

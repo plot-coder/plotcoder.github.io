@@ -252,6 +252,12 @@ it; the two share the words "open, by the writer's word".
 
 ## 3. Robert's calls still open
 
+**Drawn before and after, 2026-09-19:** `docs/mockups/roberts-calls.html` —
+calls 2 to 6 below, the target that cannot be open (twenty-one 7) and the
+written sketch that shrinks the wall (18:43, 19:47, 20:49, 21:37), each as
+it ships beside the change, with its cost and a recommendation. Robert's
+word on each is the word to build it.
+
 | # | Thing | Where it came from | Recommendation |
 | --- | --- | --- | --- |
 | 1 | ~~A reading of the project as a whole (every board's questions in one call)~~ | 15:14 | **Built 2026-09-19 as `read_project`**, once the thread existed, as recommended |

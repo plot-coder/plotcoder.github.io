@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<title>Robert's open calls — before and after</title>
+<!-- The app's own paper: the source stylesheet, so the link never goes stale. -->
+<link rel="stylesheet" href="../../src/styles.css">
+<style>
+  body { margin: 0; padding: 2rem 2.5rem 3rem; font-family: ui-sans-serif, system-ui, sans-serif; }
+  h1 { font: 600 1.05rem/1.3 ui-serif, Georgia, serif; margin: 0 0 0.25rem; }
+  h2.sec { font: 600 0.95rem/1.3 ui-serif, Georgia, serif; margin: 2.8rem 0 0.2rem; padding-top: 1.2rem; border-top: 1px solid rgba(127,127,127,0.25); }
+  .lede { font-size: 0.85rem; opacity: 0.75; margin: 0 0 1.4rem; max-width: 64ch; }
+  .row { display: flex; gap: 2.5rem; flex-wrap: wrap; align-items: flex-start; }
+  .opt { width: 420px; }
+  .opt h3 { font: 700 0.62rem/1.3 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; margin: 0 0 0.6rem; }
+  .opt p { font-size: 0.8rem; line-height: 1.45; opacity: 0.8; margin: 0.7rem 0 0; max-width: 52ch; }
+  pre.read { font: 0.7rem/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; background: rgba(127,127,127,0.12); padding: 0.8rem 1rem; border-radius: 6px; white-space: pre-wrap; margin: 0; max-width: 60ch; }
+  pre.read b { color: var(--over); font-weight: 600; }
+  .paper { position: relative; height: 250px; width: 420px; border-radius: 6px; background: var(--canvas); outline: 1px solid rgba(127,127,127,0.18); overflow: hidden; }
+  .paper .note { position: absolute; }
+  .paper .note.is-behind { transform: rotate(3deg); left: 190px; top: 30px; opacity: 0.85; filter: brightness(0.92); }
+  .paper .note.is-front { transform: rotate(-1deg); left: 150px; top: 22px; }
+  .paper .note.is-left { transform: rotate(-1deg); left: 20px; top: 22px; }
+  .paper .note.is-right { transform: rotate(1deg); left: 215px; top: 22px; }
+  .alt-tag { position: absolute; left: 150px; top: 8px; font-size: 0.5rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--over); }
+  .readout-mock { font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); padding: 0.6rem 0.8rem; background: rgba(127,127,127,0.12); border-radius: 6px; display: inline-block; }
+  .readout-mock b { color: var(--over); font-weight: 700; }
+  .diagram { font: 0.7rem/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; background: rgba(127,127,127,0.12); padding: 0.8rem 1rem; border-radius: 6px; white-space: pre; margin: 0; }
+  .ask { margin-top: 1.1rem; max-width: 72ch; font-size: 0.86rem; line-height: 1.5; }
+  .ask b { font-weight: 600; }
+  table.cost { font-size: 0.78rem; border-collapse: collapse; margin-top: 0.6rem; }
+  table.cost td, table.cost th { padding: 0.25rem 0.7rem 0.25rem 0; text-align: left; vertical-align: top; border-bottom: 1px solid rgba(127,127,127,0.2); }
+  .note__when-sep { opacity: 0.55; margin: 0 0.3rem; }
+</style>
+</head>
+<body>
+<h1>Robert's open calls, before and after</h1>
+<p class="lede">Seven things the rounds left to Robert, each drawn as it ships on the left and as it would be on the right — on the app's paper where it is a screen, as the reply an agent reads where it is the agent's side. Under each: what it costs, what it cannot say, and a recommendation. The calls are the handover's table (2 to 6) and the two things twenty-one said for a fourth time: a target that cannot be open, and a written sketch that shrinks the wall. None of these is built; a yes to any one is the word to build it.</p>
+
+<h2 class="sec">1 · The write tails carrying the wall's questions mid-build (call 2; 15:9, 18:20)</h2>
+<div class="row">
+  <div class="opt">
+    <h3>As it ships · every write's reply</h3>
+<pre class="read">Created card 8f2a…: a scene, about a page (unsized), yellow paper, no place yet (saved to the account; live on every open wall)<b>; the wall now asks 4 questions (new: [unlinked] One card has no arrow in or out: "The parish hall". What comes before it in the story, and what after? [nobody] "The parish hall" has nobody in it. Who is in the scene?)</b>. Cast: Con Brady.</pre>
+    <p>Built on round fourteen's word: every write says when the wall's questions changed and quotes the new ones. Fifteen (9) and eighteen (20) then found that mid-build, with twelve cards going in one after another, each tail quotes questions the next call answers, and the tails of parallel calls disagree; they are snapshots and say "now".</p>
+  </div>
+  <div class="opt">
+    <h3>After · the count until the first reading, the words after it</h3>
+<pre class="read">Created card 8f2a…: a scene, about a page (unsized), yellow paper, no place yet (saved to the account; live on every open wall)<b>; the wall's questions have changed since your last read_wall: 4 now, 2 of them new — read_wall lists them</b>. Cast: Con Brady.
+
+— and after a read_wall in this session, as today —
+… (saved to the account; live on every open wall)<b>; the wall now asks 3 questions (gone: [nobody] "The parish hall" has nobody in it)</b>.</pre>
+    <p>Until the agent has read the wall once, a write's tail counts and points; after the first <code>read_wall</code> it quotes, as now, because from then on a change is a change to something the agent has read. One flag in the server (the session has read), no new record.</p>
+  </div>
+</div>
+<div class="ask"><b>Recommended:</b> the count until the first reading. It keeps what fourteen asked for — a write says when the questions moved — and drops what fifteen and eighteen minded, twelve quoted snapshots during a build nobody has read yet. <b>What it cannot say:</b> a tail that only counts can hide a question the agent would have wanted at once (a backwards arrow it just drew); the count says "2 new" and the agent has to read. I would take that: the build ends with a reading anyway.</div>
+
+<h2 class="sec">2 · A wiring that cannot vanish from one machine's file (call 3; round nine, fifteen's first attempt, before nineteen)</h2>
+<div class="row">
+  <div class="opt">
+    <h3>As it ships · a block in ~/.claude.json, by hand</h3>
+<pre class="read">"mcpServers": {
+  "plotcoder-board": {
+    "type": "stdio",
+    "command": "npx", "args": ["-y", "plotcoder-board@latest"],
+    "env": { "PLOTCODER_EMAIL": "test@test.com", "PLOTCODER_PASSWORD": "test" }
+  }
+}</pre>
+    <p>The desktop app rewrites this file, and three rounds started with the block gone. The server itself is fine; the wiring lives in one file on one machine, and the app's own settings do not know it.</p>
+  </div>
+  <div class="opt">
+    <h3>After · the hosted door, on a host, added once as a connector</h3>
+<pre class="diagram">the writer's machine                  a host (Fly.io, the repo's Dockerfile)
+┌──────────────────┐   https + Basic   ┌──────────────────────────────┐
+│ Claude desktop   │ ───────────────▶ │ npx plotcoder-board serve    │
+│ connector: URL   │                   │ one writer per request,      │
+│ (in the app's    │ ◀─────────────── │ signs in with the header,    │
+│  own settings)   │      MCP          │ no disk, the account is the  │
+└──────────────────┘                   │ wall                         │
+                                       └──────────────┬───────────────┘
+                                                      │ Supabase (as today)
+                                                      ▼</pre>
+<pre class="read">claude mcp add plotcoder --transport http https://mcp.plotcoder.com/mcp \
+  --header "Authorization: Basic dGVzdEB0ZXN0LmNvbTp0ZXN0"
+
+— or, in the desktop app: Settings › Connectors › Add custom connector › the URL —</pre>
+    <p>R48's hosted door already exists in the package (<code>serve</code>) and the repo has a Dockerfile; nothing to build but the deployment. A remote server can be a <em>connector</em> in the desktop app's own settings, which the app keeps and syncs, instead of a block in a file it rewrites. The wiring that vanished is the stdio kind; a URL is the kind the app was built to hold.</p>
+    <table class="cost">
+      <tr><th>Host</th><th>Cost</th><th>Notes</th></tr>
+      <tr><td>Fly.io, one small machine</td><td>about $2–3 a month</td><td>the Dockerfile as is; a subdomain via Cloudflare; sleeps and wakes in a second</td></tr>
+      <tr><td>Render, free tier</td><td>$0</td><td>sleeps after idle and wakes slowly; fine for rounds, not for a writer mid-thought</td></tr>
+      <tr><td>A $5 VPS</td><td>$5 a month</td><td>always on; someone keeps it patched</td></tr>
+    </table>
+  </div>
+</div>
+<div class="ask"><b>Recommended:</b> Fly.io with the Dockerfile, at mcp.plotcoder.com, added in the desktop app as a connector. It answers question 29 and the recurrence table's row. <b>What it cannot say:</b> the Basic header carries the writer's password (base64, not encrypted) in the app's settings, the same secret the env block carries today, over https; a writer sharing a machine should know. And a remote server is one more thing that can be down; the stdio door stays as the fallback and the on-ramp says both.</div>
+
+<h2 class="sec">3 · A reply that shows a wall is open on someone's screen (call 4; 18:54)</h2>
+<div class="row">
+  <div class="opt">
+    <h3>As it ships · every write asserts it</h3>
+<pre class="read">Folded 1 card: "The first morning" plants the wrong tools <b>(saved to the account; live on every open wall)</b>.</pre>
+    <p>"Live on every open wall" is true and says nothing: the agent has no read that shows a wall is open anywhere, and eighteen's agent said so in its last entry. The server already joins the project's Realtime channel and tracks itself as "an agent, as you", which is how People shows it.</p>
+  </div>
+  <div class="opt">
+    <h3>After · the channel's presence, in the tail</h3>
+<pre class="read">Folded 1 card: "The first morning" plants the wrong tools <b>(saved to the account; open on Robert's screen now)</b>.
+
+— with nobody on the wall —
+… <b>(saved to the account; no wall open right now — it shows the moment one opens)</b>.
+
+— list_projects —
+  - 2221…-"Plot 14" (working): 1 board · test@test.com · <b>open now on 1 screen: Robert</b></pre>
+    <p>The channel the server joins carries presence for everyone on it, the people the app's People sheet lists; the server reads that state when it writes a tail. One read on a channel it already holds; no new record, no new tool. Presence lags a second or two and can hold a stale name after a laptop sleeps, so the tail says "now" and never "seen by".</p>
+  </div>
+</div>
+<div class="ask"><b>Recommended:</b> build it. The handover's default was "presence is not the server's to know", but the server is on the channel already and the app shows the same names; this only lets the reply say what the wall shows. <b>What it cannot say:</b> that the person is looking, or on which board of a project; "open on Robert's screen" means a wall of this project is open in a window, which is what the agent asked for.</div>
+
+<h2 class="sec">4 · Two versions of one scene (call 5; 18:8, nineteen 9, twenty-one 9)</h2>
+<div class="row">
+  <div class="opt">
+    <h3>As it ships · two cards, one open, or one card with both in its words</h3>
+    <div class="paper">
+      <article class="note note--yellow is-beat is-left">
+        <button class="note__fold"><span class="note__fold-flap"></span></button>
+        <span class="note__edge"><span>9</span></span>
+        <div class="note__headline">They lose the plots; Ruth keeps the crowns in a bucket</div>
+        <div class="note__change">The plots are gone; the crowns are not.</div>
+        <button class="note__with">with Ruth Kane</button>
+      </article>
+      <article class="note note--yellow is-open is-right">
+        <button class="note__fold"><span class="note__fold-flap"></span></button>
+        <span class="note__edge"><span class="note__plant is-unpaid">Open · <b>the other ending</b></span></span>
+        <div class="note__headline">Con dies; Ruth plants the crowns somewhere</div>
+        <div class="note__change">What changes?</div>
+        <button class="note__with">with Ruth Kane</button>
+      </article>
+    </div>
+    <p>Two cards both in the order, both counted, one open. The reading lists the open one and asks nothing of it, but the wall still says the film has two last scenes, and nothing says they are one or the other.</p>
+  </div>
+  <div class="opt">
+    <h3>After · a card tucked behind its sibling: an alternative</h3>
+    <div class="paper">
+      <span class="alt-tag">two versions · not chosen</span>
+      <article class="note note--yellow is-open is-behind">
+        <button class="note__fold"><span class="note__fold-flap"></span></button>
+        <div class="note__headline">Con dies; Ruth plants the crowns somewhere</div>
+        <div class="note__change">What changes?</div>
+        <button class="note__with">with Ruth Kane</button>
+      </article>
+      <article class="note note--yellow is-beat is-front">
+        <button class="note__fold"><span class="note__fold-flap"></span></button>
+        <span class="note__edge"><span>9</span><span>·</span><span class="note__plant is-unpaid">or: Con dies</span></span>
+        <div class="note__headline">They lose the plots; Ruth keeps the crowns in a bucket</div>
+        <div class="note__change">The plots are gone; the crowns are not.</div>
+        <button class="note__with">with Ruth Kane</button>
+      </article>
+    </div>
+<pre class="read">set_alternative { id: "con-dies", of: "the-balcony" }
+read_wall:
+  two versions, not chosen: "They lose the plots; Ruth keeps the crowns in a bucket" or "Con dies; Ruth plants the crowns somewhere" (the first is in the count; choose_version decides it)</pre>
+    <p>One record on the alternative card, <code>alternativeOf</code>: it sits behind its sibling on the wall, is out of the order, the count, the pages and the exports, and the reading lists the pair under its own head and asks nothing until the writer chooses, when the other is deleted or kept as a plain card. The edge of the front card names the other version in the debt colour, as a fold names its thing.</p>
+  </div>
+</div>
+<div class="ask"><b>Recommended:</b> leave it, as the handover says — two cards, one open — until a round asks for it by name; three rounds have named it once each, at the asking, and each time the writer decided before the build. Drawn here so the choice is seen. <b>What the after costs:</b> a card that is not in the story is a second kind of card, and every consumer — the order, the runtime, the pages, the exports, organize, the checks — must skip it; that is R59's cost again, larger. The words on an open card hold "or: Con dies" today.</div>
+
+<h2 class="sec">5 · A written scene's lines the camera cannot see (call 6; 18:44)</h2>
+<div class="row">
+  <div class="opt">
+    <h3>As it ships · the page passes, the reminder stands</h3>
+<pre class="read">THE ALLOTMENTS
+
+Ruth stands there with the wrong tools. <b>Con knows what she means.</b> He unlocks the shed. <b>She feels the cold of the morning.</b>
+
+read_wall: … checked and clean: no card without a headline or change line … (nothing about the text)
+list_reminders: 5. Write for the camera and the cut — …</pre>
+    <p>No check reads prose. The house principle is in the reminders every project starts with, and a writer's agent is expected to keep it. Eighteen's agent wrote three such lines from the notes' facts and noted that nothing flagged them.</p>
+  </div>
+  <div class="opt">
+    <h3>After · read_pages marks them, the wall asks nothing</h3>
+<pre class="read">read_pages:
+1  THE ALLOTMENTS  — 1/8 page, written  <b>· camera: 2 lines it cannot see (knows, feels)</b>
+
+  Ruth stands there with the wrong tools. Con knows what she means.   <b>◂ knows</b>
+  He unlocks the shed. She feels the cold of the morning.             <b>◂ feels</b>
+
+write_scene reply: … <b>2 lines the camera cannot see (knows, feels): the reminder "Write for the camera" is the house's; show it or cut it, on the writer's word.</b></pre>
+    <p>A small list of interior verbs in action lines — knows, feels, thinks, remembers, realises, wants, decides, understands — marked where the page is read and counted in the write's reply. Not a question on the wall: the wall's questions are about the story's shape, and a sentence on a page is the writer's. Dialogue is never read; only action.</p>
+  </div>
+</div>
+<div class="ask"><b>Recommended:</b> the marks on the page and in the write's reply, no wall question. It costs a word list and two lines of reading, and it puts the house principle where the writer can see it act. <b>What it cannot say:</b> "She knows the way to the shed" is a fact the camera can show and it would be marked; the list will be wrong sometimes, which is why it marks and never asks. If that is too much noise, the default — leave it — stands and costs nothing.</div>
+
+<h2 class="sec">6 · A target that cannot be open (twenty-one 7; acts and lengths beside it, 14, 15)</h2>
+<div class="row">
+  <div class="opt">
+    <h3>As it ships · 120 by default, said in the reply</h3>
+    <div class="readout-mock">≈ 3 of 120 pages · target 120 →</div>
+<pre class="read">new_project: Started "Plot 14" … Its target is 120 pages, the default for a feature; set_target for a pilot or a half-hour, or pass pages or minutes here.
+read_wall: runtime: about 10 pages (10 unsized, read as a page each); <b>no target set (set_target)</b></pre>
+    <p>A target is a number, so "half-hour or feature, not decided" has nowhere to go; the default stands and the reply says it is the default. Acts are groups and lengths are sizes: an act break undecided is no group, a length undecided is unsized, and both replies say so.</p>
+  </div>
+  <div class="opt">
+    <h3>After · the target open, in the writer's words</h3>
+    <div class="readout-mock">≈ 3 pages · <b>target open: half-hour or feature</b></div>
+<pre class="read">set_target { open: "half-hour or feature" }
+read_wall: runtime: about 10 pages (10 unsized, read as a page each); <b>target open, by the writer's word — "half-hour or feature" (against 30 it would be 20 under; against 120, 110 under)</b>
+open, by the writer's word:
+  - <b>the target — half-hour or feature</b></pre>
+    <p>R61's shape on one more field: <code>targetOpen</code> on the board, the words in the strip's readout and under the open head, the runtime read against both defaults while it stands, <code>set_target</code> with <code>open</code>, and <code>new_project</code> without <code>pages</code> born open when asked. Acts and lengths stay as they are: a group with no cards is nothing, and unsized already says "not sized", which is the writer's word for a length.</p>
+  </div>
+</div>
+<div class="ask"><b>Recommended:</b> build the target's open, the same drawing as R61's, one field and one tool grown by a word; leave acts and lengths. <b>What it cannot say:</b> an open target still has to read the runtime against something, so it reads against both defaults and says so; and a writer who says "feature" has decided a target and should say the number, which the reply already asks for.</div>
+
+<h2 class="sec">7 · A written sketch that shrinks the wall (18:43, 19:47, 20:49, 21:37)</h2>
+<div class="row">
+  <div class="opt">
+    <h3>As it ships · the measure replaces the guess at once</h3>
+<pre class="read">write_scene: Wrote "The first morning": 3 line(s) as they print, measured at 1/8 of a 55-line page; <b>runtime now about 10 1/8 of 90 pages … the runtime moved 7/8 down</b>.
+read_wall: runtime: about 10 1/8 pages of the 90-page target — 79 7/8 under (1 measured from written text (1/8), 10 unsized and read as a page each (10))</pre>
+    <p>Four rounds wrote the first morning from the facts alone — three silent lines — and watched the film's first turn become an eighth of a page. The measure is the truth (R23 b, D23), the reply says why, and the estimate is kept underneath; but a sketch reads as a finished eighth.</p>
+  </div>
+  <div class="opt">
+    <h3>After · a sketch is named, and the wall says both numbers</h3>
+<pre class="read">write_scene: Wrote "The first morning": 3 line(s) as they print, measured at 1/8 of a 55-line page — <b>a sketch: shorter than the page it was read as; the wall counts the measure and says so</b>.
+read_wall: runtime: about 10 1/8 pages of the 90-page target — 79 7/8 under (1 measured, 10 unsized); <b>1 written scene is a sketch, measured under the page it was read as: about 11 if it ran to that</b>
+list_board:  - morning [beat, 1/8 page, written <b>(a sketch: under its page)</b>, cast: …]</pre>
+    <p>No new record and no change to the count: a written card whose measure is under the estimate it replaced (the writer's, or the page an unsized card is read as) is called a sketch, and the runtime line carries the second number beside the first. When the scene is written out and passes its page, the word goes. The measure stays the truth; the reading stops pretending the sketch is the scene.</p>
+  </div>
+</div>
+<div class="ask"><b>Recommended:</b> build it — a word and a second number, no record. It is what four agents asked for in the same breath, and it keeps D21: the app counts and says which count it is. <b>What it cannot say:</b> a deliberately short scene — a one-line beat — reads as a sketch until the writer sizes it at an eighth, which is one call; and "about 11 if it ran to that" is a guess about a guess, said as one.</div>
+
+<h2 class="sec">Not drawn</h2>
+<p class="lede" style="margin-top:0.6rem">Playwright's browser on the Mac (one command, a download) and R64's <code>questions</code> migration on the Supabase project (a session with the connector, or the dashboard) are not the app's to draw. The rounds themselves: the next starts from a new page of notes, or pauses; that is a choice, not a picture.</p>
+</body>
+</html>

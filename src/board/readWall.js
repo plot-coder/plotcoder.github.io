@@ -420,7 +420,7 @@ export function readWall(state, options = {}) {
       findings.push({
         kind: "unpaid",
         ids: [note.id],
-        text: `${quote(note)} plants something, and no arrow pays it off. Where does it come back?`,
+        text: `${quote(note)} plants ${note.plantsWhat || "something"}, and no arrow pays it off. Where does ${note.plantsWhat ? "it" : "it"} come back?`.replace("Where does it come back?", note.plantsWhat ? `Where ${/s$/i.test(note.plantsWhat) ? "do" : "does"} ${note.plantsWhat} come back?` : "Where does it come back?"),
       });
     }
   }
@@ -614,7 +614,8 @@ export function describeSetups(reading, state) {
         : setup.eighths === 0
           ? "in the same place on the wall"
           : `about ${pages(-setup.eighths)} pages earlier`;
-    return `"${name(setup.from)}" sets up "${name(setup.to)}", ${distance}`;
+    const what = byId.get(setup.from)?.plantsWhat ?? "";
+    return `"${name(setup.from)}" sets up "${name(setup.to)}"${what ? ` — ${what}` : ""}, ${distance}`;
   });
 }
 

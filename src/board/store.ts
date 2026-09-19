@@ -117,6 +117,9 @@ function coalesceKey(command: Command): string | null {
     case "set_location":
     case "set_when":
       return `place_line:${[...command.ids].sort().join(",")}`;
+    // The fold's words are typed on the edge (R62): one step back.
+    case "set_plant":
+      return command.what !== undefined ? `set_plant_what:${[...command.ids].sort().join(",")}` : null;
     // The words on an open card are typed (R59): one step back.
     case "set_open":
       return `set_open:${[...command.ids].sort().join(",")}`;

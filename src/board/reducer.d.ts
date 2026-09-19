@@ -79,6 +79,8 @@ export type BoardNote = {
   characterIds: string[];
   /** The corner is folded: this card plants something that must pay off (R31). */
   plants: boolean;
+  /** What the fold plants, in the writer's words (R62), or empty; never set on an unfolded card. */
+  plantsWhat: string;
   /** When folded: the id of another board of the project where it pays off (R50), or null. */
   payoffBoardId: string | null;
   /** The scene on that board that pays it off (R58), or null while the board is only a promise. */
@@ -179,6 +181,8 @@ export type Command =
       lengthEighths?: number;
       characterIds?: string[];
       plants?: boolean;
+      /** What it plants, in the writer's words (R62); naming a plant folds the card. */
+      plantsWhat?: string;
       location?: string;
       when?: string;
       whenOpen?: string;
@@ -209,7 +213,7 @@ export type Command =
   | { type: "remove_character"; id: string }
   | ({ type: "update_character"; id: string } & Partial<Record<CharacterField, string>>)
   | { type: "set_cast"; ids: string[]; characterIds: string[] }
-  | { type: "set_plant"; ids: string[]; plants: boolean }
+  | { type: "set_plant"; ids: string[]; plants?: boolean; what?: string }
   | { type: "set_open"; ids: string[]; open: string }
   | { type: "set_payoff_board"; ids: string[]; boardId: string | null; noteId?: string | null }
   | { type: "set_location"; ids: string[]; location: string }

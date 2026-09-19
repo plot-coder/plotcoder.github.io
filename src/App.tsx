@@ -640,6 +640,11 @@ export function App() {
     boardStore.dispatch({ type: "set_plant", ids, plants });
   }
 
+  // What the fold plants, in the writer's words (R62): one card, typed on its edge.
+  function setPlantWhat(id: string, what: string) {
+    boardStore.dispatch({ type: "set_plant", ids: [id], what });
+  }
+
   function setTarget(pages: number) {
     boardStore.dispatch({
       type: "set_target",
@@ -1017,6 +1022,7 @@ export function App() {
         onSetRank={setRank}
         onSetLength={setLength}
         onSetPlant={setPlant}
+        onSetPlantWhat={setPlantWhat}
         onStartThread={startThread}
         onTieThread={tieThread}
         onSetOpen={setOpen}

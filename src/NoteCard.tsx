@@ -57,6 +57,8 @@ type NoteCardProps = {
   onSetRank: (id: string, rank: NoteRank) => void;
   onSetLength: (id: string, lengthEighths: number) => void;
   onSetPlant: (id: string, plants: boolean) => void;
+  /** What the fold plants, in the writer's words (R62); "" keeps the fold and drops the words. */
+  onSetPlantWhat: (id: string, what: string) => void;
   /** Leave the card open with the writer's words, or close it with "" (R59). */
   onSetOpen: (id: string, open: string) => void;
   /** The board's threads (R60), each saying whether this card is on it and which ends are open. */
@@ -96,6 +98,7 @@ export function NoteCard({
   onSetRank,
   onSetLength,
   onSetPlant,
+  onSetPlantWhat,
   onSetOpen,
   threads,
   onStartThread,
@@ -116,6 +119,13 @@ export function NoteCard({
   const [editingOpen, setEditingOpen] = useState(false);
   const [openText, setOpenText] = useState("");
   const openInput = useRef<HTMLInputElement>(null);
+  // The fold's words (R62): typed on the edge after "Plants ·", as the open words are.
+  const [editingPlant, setEditingPlant] = useState(false);
+  const [plantText, setPlantText] = useState("");
+  const plantInput = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (editingPlant) plantInput.current?.focus();
+  }, [editingPlant]);
   // A thread started at this card (R60): its name typed on the edge, like the open words; which end stays open.
   const [editingThread, setEditingThread] = useState<"start" | "end" | null>(null);
   const [threadText, setThreadText] = useState("");
@@ -158,6 +168,22 @@ export function NoteCard({
     setEditingOpen(false);
     const next = text.trim().replace(/\s+/g, " ");
     if (next !== (note.open ?? "")) onSetOpen(note.id, next);
+  }
+
+  function commitPlant(text: string) {
+    setEditingPlant(false);
+    const next = text.trim().replace(/\s+/g, " ");
+    if (next !== (note.plantsWhat ?? "")) onSetPlantWhat(note.id, next);
+  }
+
+  function onPlantKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setEditingPlant(false);
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      commitPlant(plantText);
+    }
   }
 
   function onOpenKeyDown(event: KeyboardEvent<HTMLInputElement>) {
@@ -217,6 +243,11 @@ export function NoteCard({
             onClick={() => {
               onSetPlant(note.id, !note.plants);
               setCornering(false);
+              // Folding lands the caret on the edge for what it plants (R62), as leaving it open does for its words.
+              if (!note.plants) {
+                setPlantText("");
+                setEditingPlant(true);
+              }
             }}
           >
             {note.plants ? "Unfold: it plants nothing" : "Fold it: this scene plants something"}
@@ -334,6 +365,22 @@ export function NoteCard({
           />
         </span>
       ) : null}
+      {editingPlant ? (
+        <span className="note__edge note__edge--editing" onPointerDown={(event) => event.stopPropagation()}>
+          <span className="note__plant is-unpaid" aria-hidden="true">Plants ·</span>
+          <input
+            ref={plantInput}
+            className="note__open-input"
+            value={plantText}
+            aria-label={`What ${note.headline} plants`}
+            placeholder="what does it plant?"
+            spellCheck={false}
+            onChange={(event) => setPlantText(event.target.value)}
+            onKeyDown={onPlantKeyDown}
+            onBlur={() => commitPlant(plantText)}
+          />
+        </span>
+      ) : null}
       {editingThread ? (
         <span className="note__edge note__edge--editing" onPointerDown={(event) => event.stopPropagation()}>
           <span className="note__plant is-unpaid" aria-hidden="true">Thread ·</span>
@@ -350,7 +397,7 @@ export function NoteCard({
           />
         </span>
       ) : null}
-      {!editingOpen && !editingThread && (sceneNumber || note.plants || paysOff || isOpen) ? (
+      {!editingOpen && !editingThread && !editingPlant && (sceneNumber || note.plants || paysOff || isOpen) ? (
         <span className="note__edge">
           {sceneNumber ? (
             <button
@@ -365,16 +412,31 @@ export function NoteCard({
             </button>
           ) : null}
           {note.plants ? (
-            <span className={`note__plant ${payoff && !payoffOpen ? "" : "is-unpaid"}`} aria-live="polite">
+            <button
+              type="button"
+              className={`note__plant note__plant-words ${payoff && !payoffOpen ? "" : "is-unpaid"}`}
+              aria-live="polite"
+              aria-label={`Plants${note.plantsWhat ? ` ${note.plantsWhat}` : " something"}${payoff ? `, ${payoff}` : ", unpaid"}. Tap to say what it plants, in your words.`}
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={() => {
+                setPlantText(note.plantsWhat ?? "");
+                setEditingPlant(true);
+              }}
+            >
               {sceneNumber ? <span aria-hidden="true">· </span> : null}
-              {payoff ? (
+              {note.plantsWhat ? (
+                <>
+                  Plants · <b>{note.plantsWhat}</b>
+                  {payoff ? <> · {payoff}</> : null}
+                </>
+              ) : payoff ? (
                 <>
                   Plants · <b>{payoff}</b>
                 </>
               ) : (
                 "Plants · unpaid"
               )}
-            </span>
+            </button>
           ) : null}
           {paysOff ? (
             <span className="note__plant" aria-label={`Pays off a fold from another board: ${paysOff.label}`}>

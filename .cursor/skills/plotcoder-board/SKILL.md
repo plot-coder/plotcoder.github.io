@@ -153,8 +153,16 @@ only when the server is started with `PLOTCODER_JSON=1`.
 - `set_plant` — fold or unfold the corner of cards: `ids` and `plants`
   true/false (the card tools that take several cards take `ids`; the group and
   cast tools take `noteIds`, because a group has an `id` of its own). Fold a
-  card when the writer says it sets something up; `read_wall` will ask where it
-  pays off until a `setup` arrow leaves it — or until `later` names another
+  card when the writer says it sets something up, and say **what** in the
+  writer's words — `what: "the wrong tools"` — which folds the card and
+  puts the words on its edge ("Plants · the wrong tools"); `create_note`
+  takes `plantsWhat`. `read_wall` then asks where the wrong tools come back,
+  and the setup line names them; `what: ""` keeps the fold and drops the
+  words. A card has one fold: a second thing the same scene plants is a
+  thread. A payoff the writer knows without a scene for it — "he gives her
+  his tools", which scene undecided — is a card born open at the payoff end
+  with the setup arrow landed on it, not an unpaid fold. `read_wall` will
+  ask where a fold pays off until a `setup` arrow leaves it — or until `later` names another
   board of the project where it pays off (a series plant: `later: "Episode
   two"`, by name, id or number from `list_boards`; `later: ""` forgets it).
   The card then says "pays off in Episode two", and the reading lists it. A
@@ -202,10 +210,14 @@ only when the server is started with `PLOTCODER_JSON=1`.
   seen?" — until `update_thread` ties it (`add` the card and `startOpen`
   false in one call). The wall draws it as a dashed string through its
   cards, a ring where an end is loose. A thread is beside the fold and the
-  setup arrow, not instead of them: when both scenes exist, fold the one
-  that plants and draw the arrow; a thread is the writer's word before
-  they do, and the home for a strand a fold cannot hold. Only on the
-  writer's word.
+  setup arrow, not instead of them, and the app keeps the rule: a thread
+  tied at both ends through two or more cards is the fold's — if the first
+  card's fold is free, tying it folds that card, names the fold from the
+  thread and draws the setup arrow to the last card, and the reply says so;
+  if the first card is folded for something else, the thread stays a thread,
+  tied and listed, and no arrow is drawn, because a card has one fold. A
+  thread is the writer's word before both scenes exist, and the home for a
+  strand a fold cannot hold. Only on the writer's word.
 - `set_when` — **when** a scene happens, as the writer says it: "night",
   "day four, dawn", "the next morning". Free text on the card beside its
   place, printed after the place on every scene heading — THE PIER AT FENIT

@@ -188,6 +188,28 @@ function summarize(row: ProjectRow, me: string): ProjectSummary | null {
   };
 }
 
+/** What this device asked while signed out (R64): kept in the browser, since a stranger's question has no address to show its answer under. */
+export type AskedHere = { id: string; question: string; askedAt: string };
+const ASKED_KEY = "plotcoder.help.asked";
+
+export function askedHere(): AskedHere[] {
+  try {
+    const raw = localStorage.getItem(ASKED_KEY);
+    const list = raw ? (JSON.parse(raw) as unknown) : [];
+    return Array.isArray(list) ? list.filter((item): item is AskedHere => Boolean(item && typeof item.id === "string" && typeof item.question === "string")) : [];
+  } catch {
+    return [];
+  }
+}
+
+function rememberAsked(item: AskedHere): void {
+  try {
+    localStorage.setItem(ASKED_KEY, JSON.stringify([item, ...askedHere()].slice(0, 20)));
+  } catch {
+    // A browser that keeps nothing keeps nothing; the question still went.
+  }
+}
+
 class AccountStore {
   private account: Account = {
     ready: false,
@@ -1213,14 +1235,23 @@ class AccountStore {
 
   // --- Help in the app (R64) ----------------------------------------------
 
-  /** The writer's question the guide did not answer, with their email, for the people who build the app. */
-  async askQuestion(question: string): Promise<void> {
-    const user = this.account.user;
-    if (!user || !this.client) throw new Error("Sign in to ask.");
+  /**
+   * The writer's question the guide did not answer, for the people who build
+   * the app. Signed in, it carries their id and email, so the answer shows
+   * under Your questions; signed out, it goes without an address, and this
+   * device remembers what it asked (Robert's word, 2026-09-19: anyone may ask).
+   */
+  async askQuestion(question: string): Promise<{ id: string; askedAt: string }> {
     const text = question.trim().replace(/\s+/g, " ");
-    if (!text) return;
-    const { error } = await this.client.from("questions").insert({ user_id: user.id, email: user.name, question: text });
-    if (error) throw new Error(/relation .* does not exist|schema cache/i.test(error.message) ? "Asking is not switched on yet." : error.message);
+    if (!text) throw new Error("Type the question first.");
+    const user = this.account.user;
+    const client = this.client ?? supabase();
+    const row: Record<string, string> = user ? { user_id: user.id, email: user.name, question: text } : { question: text };
+    const { data, error } = await client.from("questions").insert(row).select("id, asked_at").single();
+    if (error) throw new Error(/relation .* does not exist|schema cache|violates not-null|row-level security/i.test(error.message) ? "Asking is not switched on yet." : error.message);
+    const asked = { id: String(data.id), askedAt: String(data.asked_at) };
+    if (!user) rememberAsked({ ...asked, question: text });
+    return asked;
   }
 
   /** The writer's own questions, newest first, with any answer and the guide's section it went into. */

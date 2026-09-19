@@ -919,8 +919,9 @@ export function App() {
             else setHelpQuestions([]);
           }}
           onAsk={async (question) => {
-            await accountStore.askQuestion(question);
-            setHelpQuestions(await accountStore.myQuestions());
+            const asked = await accountStore.askQuestion(question);
+            if (account.user) setHelpQuestions(await accountStore.myQuestions());
+            return asked;
           }}
         />
         <AsksSheet

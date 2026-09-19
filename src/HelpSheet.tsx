@@ -6,6 +6,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { indexGuide, searchHelp, type GuideParagraph } from "./board/help";
 import { WORDS } from "./board/words";
+import { askedHere, type AskedHere } from "./board/account";
 
 export type HelpQuestion = {
   id: string;
@@ -24,7 +25,7 @@ type HelpSheetProps = {
   /** The writer's own questions, or null until they are read. */
   questions: HelpQuestion[] | null;
   onLoad: () => void;
-  onAsk: (question: string) => Promise<void>;
+  onAsk: (question: string) => Promise<unknown>;
 };
 
 const GUIDE_URL = "/writers.html";
@@ -41,6 +42,7 @@ export function HelpSheet({ open, onClose, signedIn, questions, onLoad, onAsk }:
   const [asking, setAsking] = useState(false);
   const [sent, setSent] = useState<string | null>(null);
   const [failed, setFailed] = useState<string | null>(null);
+  const [askedHereList, setAskedHereList] = useState<AskedHere[]>([]);
   const searchRef = useRef<HTMLInputElement>(null);
 
   // The guide's page, fetched once the sheet first opens; without it the words still answer.
@@ -48,6 +50,7 @@ export function HelpSheet({ open, onClose, signedIn, questions, onLoad, onAsk }:
     if (!open) return;
     searchRef.current?.focus();
     onLoad();
+    setAskedHereList(askedHere());
     if (guide !== null) return;
     let live = true;
     fetch(GUIDE_URL)
@@ -75,6 +78,7 @@ export function HelpSheet({ open, onClose, signedIn, questions, onLoad, onAsk }:
       await onAsk(asked);
       setSent(asked);
       setQuery("");
+      setAskedHereList(askedHere());
     } catch (error) {
       setFailed(error instanceof Error ? error.message : "It did not send.");
     } finally {
@@ -132,24 +136,19 @@ export function HelpSheet({ open, onClose, signedIn, questions, onLoad, onAsk }:
         {asked && hits.length === 0 ? (
           <div className="help__askwrap">
             <p className="help__none">Nothing in the guide or the words answers that.</p>
-            {signedIn ? (
-              <>
-                <p className="help__fine">
-                  Ask, and this question goes, with your email, to the people who build PlotCoder. The answer lands in the
-                  guide, without your name, and here under Your questions. It takes days, not minutes.
-                </p>
-                {failed ? <p className="help__fine help__fine--warm">{failed}</p> : null}
-                <button type="button" className="help__button" disabled={asking} onClick={() => void ask()}>
-                  {asking ? "Sending…" : "Ask this question"}
-                </button>
-              </>
-            ) : (
-              <p className="help__fine">Sign in to ask: a question needs an address to answer to. The guide is at plotcoder.com/writers.html.</p>
-            )}
+            <p className="help__fine">
+              {signedIn
+                ? "Ask, and this question goes, with your email, to the people who build PlotCoder. The answer lands in the guide, without your name, and here under Your questions. It takes days, not minutes."
+                : "Ask, and this question goes to the people who build PlotCoder, with no name on it. The answer lands in the guide; this device keeps a note of what you asked. Sign in first if you want the answer shown to you here. It takes days, not minutes."}
+            </p>
+            {failed ? <p className="help__fine help__fine--warm">{failed}</p> : null}
+            <button type="button" className="help__button" disabled={asking} onClick={() => void ask()}>
+              {asking ? "Sending…" : "Ask this question"}
+            </button>
           </div>
         ) : null}
 
-        {sent ? <p className="help__fine">Sent: "{sent}". It is under Your questions until it is answered.</p> : null}
+        {sent ? <p className="help__fine">Sent: "{sent}". {signedIn ? "It is under Your questions until it is answered." : "The answer will land in the guide."}</p> : null}
 
         {!asked && signedIn ? (
           <section className="account__group" aria-label="Your questions">
@@ -177,6 +176,18 @@ export function HelpSheet({ open, onClose, signedIn, questions, onLoad, onAsk }:
                 </p>
               ))
             )}
+          </section>
+        ) : null}
+
+        {!asked && !signedIn && askedHereList.length > 0 ? (
+          <section className="account__group" aria-label="Asked from this device">
+            <p className="cast-lens__kicker">Asked from this device</p>
+            {askedHereList.map((item) => (
+              <p key={item.id} className="help__q">
+                {item.question} <span className="help__state">· asked {whenSaid(item.askedAt)}</span>
+              </p>
+            ))}
+            <p className="help__fine">The answers land in the guide. Sign in to ask with an address and see them here.</p>
           </section>
         ) : null}
 

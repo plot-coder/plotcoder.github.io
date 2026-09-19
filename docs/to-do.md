@@ -172,6 +172,36 @@ in `src/board/words.js`, the guide's bullet in
 and `scripts/plotcoder-mcp.test.mjs` (search `R60`). The mockup that led
 to it is `docs/mockups/r60-the-payoff-first.html`.
 
+**On another machine (2026-09-19):** everything that matters is in the
+repo on `main`; a Claude session's own transcript and memory stay on the
+Mac they ran on, so a person picking up elsewhere starts from this file and
+the latest round's report, not from a session. What a new machine needs,
+none of it in the repo:
+
+- **The repo and its tools:** `git clone`, `npm ci`, `npx playwright
+  install chromium` for the e2e suite. Node 20 runs the app and the tests;
+  wrangler wants 22.
+- **GitHub:** `gh auth login`, to open and merge pull requests. Pushing a
+  `v*` tag publishes to npm through the "Publish to npm" workflow with
+  `NPM_TOKEN` in the repo's secrets; no npm login is needed on the machine.
+- **Supabase:** the CLI (`brew install supabase/tap/supabase`) and
+  `supabase login`, to redeploy the hosted door's function (project ref
+  `kmpahjsggbleygsnuwug`). The Management API route the other session used
+  for a migration takes a personal access token from the dashboard; make
+  one there when needed and remove it after. `SUPABASE_SERVICE_ROLE_KEY`,
+  for the wipe script and R64's two tools, comes from the dashboard's API
+  settings and lives only in an ignored `.env.local` or the shell; it is
+  on Robert's Mac in the other worktree's `.env.local` and nowhere else.
+- **Cloudflare:** `wrangler login` (the account is Robert's, the one
+  plotcoder.com's DNS is on), to redeploy the name in `cloudflare/mcp-door`;
+  the folder's README has the Node and architecture wrinkle.
+- **The agent's wiring:** the PlotCoder connector in the desktop app
+  (Settings › Connectors) is on the claude.ai account, so it follows the
+  person, not the machine; the prompt's first step says how to add it. The
+  stdio block in `~/.claude.json` is no longer needed for a round.
+- **The test account** is in `blind-runs/prompt.md`; nothing on it is
+  anyone's work.
+
 ---
 
 ## Where things stand

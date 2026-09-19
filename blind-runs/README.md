@@ -5,12 +5,12 @@ else, asked to build a wall and to keep a log of everything that made the job
 harder than it should have been. The friction log is the product; the wall is
 just what produces it.
 
-The practice is Robert's, from 2026-09-13. Eighteen rounds have been run;
+The practice is Robert's, from 2026-09-13. Nineteen rounds have been run;
 every finding is fixed, decided, or waiting on a mockup — see
 `REQUIREMENTS.md`, "The blind run", and the `friction, fixed` entries in the
-changelog. The latest report, round eighteen's, says at its head what was
-built from it the same night and what waits; the thread (R60) was built from
-it the next morning. The practice continues because it
+changelog. The latest report, round nineteen's, says at its head what was
+fixed from it the same night and what waits; round eighteen's asked for the
+thread (R60), and nineteen measured it. The practice continues because it
 measures the thing the app is for — an agent helping a person turn an idea
 into a story (Robert, 2026-09-17).
 
@@ -50,6 +50,7 @@ into a story (Robert, 2026-09-17).
 | Sixteen | The published package, the same series, the fixes in hand | "The Weighbridge" | The move and the claims found as tools unprompted; a revision, a lock and a scene added under it, Final Draft out for both, the lengths, undo | 48 (`round-sixteen-report.md`); 41 fixed the same night, create_note with after/before built |
 | Seventeen | The published package, a page of notes instead of a treatment, the writer answering | "Plot 14" (`round-seventeen-idea.md`) | Twenty questions asked first; the turns proposed, the gaps proposed, a change of mind, the folds, a scene written, the length | 39 (`round-seventeen-report.md`); the wall has no way to hold a maybe — R59 mocked and built the same day; two new checks and the wordings |
 | Eighteen | The published package, the same notes, the open card in hand | "Plot 14" (`round-seventeen-idea.md`) | Told "leave it open" in those words: the open card found unprompted; Declan wired in, the turns marked, the asparagus bed added, the key and the bucket, the first morning written, the length, what a writer would ask next | 54 (`round-eighteen-report.md`); 24 fixed the same night; the thread that is not a fold confirmed — the next design question, and the open field beside it |
+| Nineteen | The published package, the same notes, the thread in hand, the on-ramp naming it | "Plot 14" (`round-seventeen-idea.md`) | Told only "I know where it pays off, not where it is first seen": both threads named at build; the loose end asked from the payoff end until tied; the key's start tied and the setup arrow declined because the first morning's one fold is the tools'; the asparagus bed, the first morning written, the length, what a writer would ask next | 52 (`round-nineteen-report.md`); 18 fixed the same night; a fold cannot say which of two things a scene plants — the thread's edges |
 
 ## What the rounds keep finding
 
@@ -77,7 +78,8 @@ point into `REQUIREMENTS.md`, "The blind run".
 | A scene added under a lock gets one letter where it lands and another when moved, and the reply says the letter follows the scene | Fourteen (38–44), sixteen (35, 36) | `create_note` with `after`/`before`: the scene lands where the writer said, one call, one number; the wording gone |
 | The on-ramp's doors stand between an agent with the tools and its first call | Eleven, fifteen (1), sixteen (1, 3), seventeen (1, 2), eighteen (1, 2) | The calls and rules before the doors; five first calls; the first-line rule with its exception; the lead counts five; the doors' length stands, decided in seventeen |
 | A thing the writer has not decided has no home on the wall but an absence or an invention | Seventeen (6, 7, 10, 13, 15, 30) | **R59**, the open card, mocked and built; found unprompted in eighteen |
-| A payoff whose plant has no card yet cannot be folded, drawn or asked about | Seventeen (8, 9, 12, 31); eighteen (11, 14, 15, 39, 41) | **R60**, the thread: mocked three ways, B chosen by Robert and built — a named string through cards with either end open, asked about from the loose end |
+| A payoff whose plant has no card yet cannot be folded, drawn or asked about | Seventeen (8, 9, 12, 31); eighteen (11, 14, 15, 39, 41) | **R60**, the thread: mocked three ways, B chosen by Robert and built — a named string through cards with either end open, asked about from the loose end; named at build in nineteen, on the on-ramp's sentence |
+| A fold is one flag per card: a scene that plants two things cannot say which, and a payoff the writer knows without a scene for it has no home | Eighteen (16, 39); nineteen (21, 42, 43) | Open: the thread's edges in the handover; whether the fold learns what it plants, or the thread absorbs it, is the next design question after the open fields |
 | Only a card can be open: the logline, a when, the premise cannot say "not decided", and an empty one cannot tell undecided from unconsidered | Eighteen (9, 22, 23, 32) | Open, beside the thread; the same claim on a field as R59 puts on a card |
 | The reading and the records are two reads an agent merges by hand, and they tell the runtime with different honesty | Sixteen, seventeen (37, 39), eighteen (26, 45, 47, 50) | The reading now carries the runtime's breakdown and the beats' own pages; two reads by design, and the reading says so |
 
@@ -106,18 +108,29 @@ published package, wired before the session, and were the first to reach the
 directions phase. Each round's findings are itemised in `REQUIREMENTS.md`,
 "The blind run".
 
-- `prompt.md` — round eighteen: the same notes as seventeen against the
-  package that carries the open card, the writer answering "I don't know
-  yet — leave it open" in those words and nothing more, to see whether a
-  stranger finds the card that can be left open and what it does with the
-  threads the wall still cannot hold. The writer's private answers sit
+- `prompt.md` — round nineteen, as it ran: the same notes as seventeen and
+  eighteen against the package that carries the thread, the writer answering as
+  before and, for the key and the bucket, only "I know where it pays off,
+  not where it is first seen", to see whether a stranger names a thread for
+  each with only the on-ramp's sentence and the guide to go on, whether
+  the loose-end question lands where the writer
+  wanted it, and whether the thread and the fold contradict each other once
+  the key's first sighting is decided. The writer's private answers sit
   above the divider. Its first step checks the wiring. Paste everything
   below its divider.
+- `round-nineteen-report.md` — the agent's report from round nineteen,
+  verbatim, under a head saying what was fixed from it the same night and
+  what waits. The next session on the agent surface starts here.
+- `round-eighteen-prompt.md` — round eighteen's own instructions, as they
+  ran, without their copy of the notes.
+- `round-eighteen-report.md` — the agent's report from round eighteen,
+  verbatim, under a head saying what was fixed from it the same night and
+  what was decided against.
 - `round-seventeen-prompt.md` — round seventeen's own instructions, as they
   ran, without their copy of the notes.
 - `round-seventeen-report.md` — the agent's report from round seventeen,
   verbatim, under a head saying what was fixed from it the same night and
-  what was proposed. The next session on the agent surface starts here.
+  what was proposed.
 - `round-seventeen-idea.md` — "The Allotments", the notes: eight scenes the
   writer knows, two versions of the time, an ending not chosen, a break-in
   with three suspects. Embedded in the current prompt.

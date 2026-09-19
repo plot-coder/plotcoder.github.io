@@ -533,8 +533,11 @@ export function readWall(state, options = {}) {
   // reading does, on every read.
   const left = [];
   // A question whose every card is open is not asked (R59): the writer's word covers it.
-  // A thread's loose end (R60) is the writer's own claim, asked whether or not its cards are open.
-  const openCards = openIds.size ? findings.filter((finding) => finding.kind !== "loose" && finding.ids.some((id) => byId.has(id)) && finding.ids.filter((id) => byId.has(id)).every((id) => openIds.has(id))) : [];
+  // Not so for a question about the story around the card: a thread's loose end
+  // (R60) is the writer's own claim, and the run's questions — beats back to
+  // back, a sag — are about the cards between, as the guide promises (round
+  // nineteen, entry 28). Those are asked whether or not the cards are open.
+  const openCards = openIds.size ? findings.filter((finding) => !ASKED_OF_OPEN_CARDS.has(finding.kind) && finding.ids.some((id) => byId.has(id)) && finding.ids.filter((id) => byId.has(id)).every((id) => openIds.has(id))) : [];
   const asked = findings.filter((finding) => {
     if (openCards.includes(finding)) return false;
     const entry = (state.left ?? []).find(
@@ -565,13 +568,19 @@ export function readWall(state, options = {}) {
  * closed (round eighteen, entry 27): the reading of the same wall with the
  * words cleared, read once more, so the writer can see what the words hide.
  */
+/** The question kinds an open card does not silence: about the story around it, not the card (R59, R60). */
+const ASKED_OF_OPEN_CARDS = new Set(["loose", "empty", "sag"]);
+
 function describeOpen(state, options, order, openIds) {
   if (!openIds.size) return [];
   const hides = new Map();
   if (!options.closedReading) {
     const closed = { ...state, notes: state.notes.map((note) => (openIds.has(note.id) ? { ...note, open: "" } : note)) };
     const again = readWall(closed, { ...options, closedReading: true });
-    for (const finding of again.findings) for (const id of finding.ids) if (openIds.has(id)) (hides.get(id) ?? hides.set(id, new Set()).get(id)).add(finding.kind);
+    // A question about the story around the card is asked whether or not the
+    // card is open, so it is never something the open words hide (round
+    // nineteen, entries 23 and 28).
+    for (const finding of again.findings) if (!ASKED_OF_OPEN_CARDS.has(finding.kind)) for (const id of finding.ids) if (openIds.has(id)) (hides.get(id) ?? hides.set(id, new Set()).get(id)).add(finding.kind);
   }
   return order.filter((note) => openIds.has(note.id)).map((note) => ({ id: note.id, words: note.open.trim(), hides: [...(hides.get(note.id) ?? [])] }));
 }

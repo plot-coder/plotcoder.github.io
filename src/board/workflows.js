@@ -25,7 +25,7 @@ export const WORKFLOWS = [
     needs: [
       { question: "How long is it?", hint: "An hour, a half-hour, a feature — or a page count, if you have one.", tool: "set_target" },
       { question: "What is the central question, in one sentence?", hint: "And if this is one episode of something, what is the series about?", tool: "set_logline, set_premise" },
-      { question: "Which scenes are the turns?", hint: "Name them, or say \"propose them and I will strike\".", tool: "set_rank" },
+      { question: "Which scenes are the turns?", hint: "Name them, say \"propose them and I will strike\", or say \"mark none yet\" — every card stays a scene and the reading asks once for a beat until you do.", tool: "set_rank" },
       { question: "Does it have acts?", hint: "If so, where does each break fall?", tool: "create_group" },
       { question: "Where does each scene happen?", hint: "In your own words. A scene that moves through one location is still one place.", tool: "set_location" },
       { question: "When does a scene happen, where that matters?", hint: "That night; the fourth of October. It goes beside the place, never in the headline.", tool: "set_when" },

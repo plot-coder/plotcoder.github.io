@@ -36,7 +36,11 @@ order), fixed. Merged as pull request #104 and released as 0.1.34.
    `answer_question`. Merged as pull request #110 and released as 0.1.36.
    **The migration is applied** (2026-09-19, through the Management API with
    a personal access token, since no session held the connector; the token
-   was removed after use). **One thing to do by hand:** set up the weekly
+   was removed after use). **The two tools were run live** on 2026-09-19:
+   the test question listed waiting, answered, filed under #s6, read back
+   answered by the writer; two bugs found and fixed on the way, released as
+   0.1.40. The service key for them sits in this worktree's ignored
+   `.env.local` on Robert's Mac. **One thing to do by hand:** set up the weekly
    agent — a scheduled session that, with `SUPABASE_SERVICE_ROLE_KEY` in the
    server's environment, calls `list_questions`, writes each answer into
    `public/writers.html` in the section it names, opens one pull request,
@@ -158,7 +162,7 @@ that way, one pull request per fix or per round.
 registry lags a few minutes (`npm view plotcoder-board dist-tags.latest
 --prefer-online`). Then a pull request for the version commit. The hosted
 door pins the package version in `supabase/functions/mcp/index.ts`; bump
-it and redeploy when the door should carry the release. 0.1.39 is the
+it and redeploy when the door should carry the release. 0.1.40 is the
 latest (0.1.33 was cut from `main` between #103 and #104 by another
 session, before the round's fixes).
 

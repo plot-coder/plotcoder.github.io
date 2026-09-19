@@ -33,7 +33,8 @@ order), fixed. Merged as pull request #104 and released as 0.1.34.
    whether the drawing carries, then build.
 0a. ~~**R64, Help in the app**~~ **Built 2026-09-19** on Robert's "A": Help,
    top right; the sheet; `questions` on the account; `list_questions` and
-   `answer_question`. **Two things to do by hand:** apply
+   `answer_question`. Merged as pull request #110 and released as 0.1.36.
+   **Two things to do by hand:** apply
    `supabase/migrations/20260919170000_questions.sql` through the connector
    (until then Ask says it is not switched on); and set up the weekly
    agent — a scheduled session that, with `SUPABASE_SERVICE_ROLE_KEY` in the
@@ -141,7 +142,7 @@ that way, one pull request per fix or per round.
 (a hook rewrites the README's "Version x.y.z." line), `git push`,
 `git push --tags`; the tag runs the "Publish to npm" workflow, and the
 registry lags a few minutes (`npm view plotcoder-board dist-tags.latest
---prefer-online`). Then a pull request for the version commit. 0.1.35 is the
+--prefer-online`). Then a pull request for the version commit. 0.1.36 is the
 latest (0.1.33 was cut from `main` between #103 and #104 by another
 session, before the round's fixes).
 

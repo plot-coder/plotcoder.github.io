@@ -42,7 +42,8 @@ is only the queue.
 3. ~~**Mock the open fields**~~ **R61 mocked and built 2026-09-18**, on
    Robert's "Build A": `open` beside the logline, the premise, a card's when
    and a board's name; the four tools grown by `open`; the offer on the
-   wall. Not yet run blind. Left for a round to ask: the offer on a board's
+   wall. Merged as pull request #99 and released as 0.1.31 the same night.
+   Not yet run blind. Left for a round to ask: the offer on a board's
    name from the wall (the crumb draws the words; typing a name decides
    it), and a check for a missing when, which the rounds said blank must
    not become.
@@ -91,7 +92,7 @@ that way, one pull request per fix or per round.
 (a hook rewrites the README's "Version x.y.z." line), `git push`,
 `git push --tags`; the tag runs the "Publish to npm" workflow, and the
 registry lags a few minutes (`npm view plotcoder-board dist-tags.latest
---prefer-online`). Then a pull request for the version commit. 0.1.30 is the
+--prefer-online`). Then a pull request for the version commit. 0.1.31 is the
 latest.
 
 **Drive a blind run:** Robert opens a fresh session with

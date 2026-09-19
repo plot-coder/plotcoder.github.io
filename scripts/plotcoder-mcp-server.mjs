@@ -4088,7 +4088,7 @@ server.registerTool(
     if (error) return ok(`Could not read the questions: ${error.message}`);
     const rows = args.all ? data : data.filter((row) => !row.answered_at);
     const waiting = data.filter((row) => !row.answered_at).length;
-    const line = (row) => `  - ${row.id.slice(0, 8)} · ${String(row.asked_at).slice(0, 10)} · ${row.email} · "${row.question}" · ${row.answered_at ? `answered ${String(row.answered_at).slice(0, 10)}${row.section ? ` → ${row.section}` : ""}` : "waiting"}`;
+    const line = (row) => `  - ${row.id.slice(0, 8)} · ${String(row.asked_at).slice(0, 10)} · ${row.email ?? "(not signed in)"} · "${row.question}" · ${row.answered_at ? `answered ${String(row.answered_at).slice(0, 10)}${row.section ? ` → ${row.section}` : ""}` : "waiting"}`;
     return ok(
       [`${waiting} waiting, ${data.length - waiting} answered.${args.all ? "" : " (all: true lists the answered ones too)"}`, ...(rows.length ? rows.map(line) : ["  (none)"])].join("\n"),
       rows,

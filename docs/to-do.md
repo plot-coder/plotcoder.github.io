@@ -26,9 +26,12 @@ order), fixed. Merged as pull request #104 and released as 0.1.34.
    `open`, `new_project` with `open` in place of a name, the reading's
    open head, the place line's offer before the dot, the panel. Merged as
    pull request #106 and released as 0.1.35. Not yet run blind.
-2. **Round twenty-one**, once that ships: the same notes, the place open,
-   the tie rule right — or a new page of notes, since four rounds have run
-   on this one and the recurrence table says what kept coming back.
+2. **Round twenty-one is cued** — `blind-runs/prompt.md` — the same notes
+   with the place and the title open and the tie rule right, against
+   0.1.35: does a stranger leave the title and the places open through the
+   fields' own `open`; does the tie rule do both halves right when the key
+   (a taken fold) and the bucket (a free fold) are decided; do an
+   open-placed card's other questions stand. Run it as twenty was run.
 3. Robert's calls (section 3) and the smaller things (section 4). New in
    twenty: a placeless card's heading on the pages, said by three rounds
    (18:46, 19:44, 20:48) — decide; "Con does not die in this film" and the

@@ -1,84 +1,58 @@
 # To do — where the last session stopped
 
-Written 2026-09-18, late, at the end of the session that ran rounds
-seventeen and eighteen and fixed most of both while they ran; brought up
-to date the same night by the session that cued round nineteen. Everything
-here is a handover: what is done and merged, what is left, and the order I
-would take it in. `REQUIREMENTS.md` is still the source of truth; this file
-is only the queue.
+Written 2026-09-19, late, at the end of the session that ran rounds
+nineteen to twenty-one, built R61, R62 and R65 with Robert's seven calls,
+and gave the hosted door its name. Everything here is a handover: what is
+done and merged, what is left, and the order I would take it in.
+`REQUIREMENTS.md` is still the source of truth; this file is only the queue.
 
 ---
 
-## Next, in order (2026-09-19, after R61 and R62 shipped)
+## Next, in order (2026-09-19, night, after 0.1.41)
 
-**Now:** round twenty has run (2026-09-19) — `blind-runs/round-twenty-report.md`,
-fifty-seven entries, twenty-two fixed the same morning, the four
-measurements answered in its head: the fields left open through their own
-`open`, the fold named, the known payoff on an open card with its arrow,
-and the key's decision finding a bug in the tie rule (the thread's list
-order), fixed. Merged as pull request #104 and released as 0.1.34.
-**Next, in order:**
+**Now:** everything the last three rounds asked for and Robert decided is
+built, merged and released. 0.1.41 is on npm and plotcoder.com; the hosted
+door at `https://mcp.plotcoder.com` carries it. The rounds on "The
+Allotments" have run five times (seventeen to twenty-one) and their findings
+are mostly repeats now, so the next round starts from a new page of notes.
+Not yet run blind: R62's named fold and the tie rule's adjacent case, R65's
+two versions, the camera marks, the sketch, the open target, the counting
+tail, the presence tail, and the door's name as the wiring.
 
-0. ~~**R63, the writer's guide**~~ **Built 2026-09-19** on Robert's "A":
-   `public/writers.html` at plotcoder.com/writers.html, linked from the
-   on-ramp's "For the person", the Agents sheet and the README; the rule in
-   `CLAUDE.md`. Left: Robert's read of the text against the wall, and a
-   Help sheet in the bar (B) if a writer asks for help in place.
-1. **R61's edge: a place and a project's name that can be open** (twenty 6,
-   16). The same drawing as the when's — the place line reads "at · Open
-   words", the project's name in the panel — so no new mockup: `locationOpen`
-   on the card and `nameOpen` on the project, `set_location` and
-   `rename_project` with `open`, `new_project` with `open` for its name,
-   the reading's open head, the place line's offer. Ask in writing first
-   whether the drawing carries, then build.
-0a. ~~**R64, Help in the app**~~ **Built 2026-09-19** on Robert's "A": Help,
-   top right; the sheet; `questions` on the account; `list_questions` and
-   `answer_question`. Merged as pull request #110 and released as 0.1.36.
-   **The migration is applied** (2026-09-19, through the Management API with
-   a personal access token, since no session held the connector; the token
-   was removed after use). **The two tools were run live** on 2026-09-19:
-   the test question listed waiting, answered, filed under #s6, read back
-   answered by the writer; two bugs found and fixed on the way, released as
-   0.1.40. The service key for them sits in this worktree's ignored
-   `.env.local` on Robert's Mac. **Anyone may ask** since the same evening:
-   `20260919190000_questions_anyone.sql`, applied and tested live the same
-   evening (a stranger's row goes in, a named or over-long one is refused). **One thing
-   to do by hand:** set up the weekly
-   agent — a scheduled session that, with `SUPABASE_SERVICE_ROLE_KEY` in the
-   server's environment, calls `list_questions`, writes each answer into
+1. ~~**Cue round twenty-two** through the name~~ **Cued 2026-09-19:**
+   `blind-runs/prompt.md`, on "The Last Bus" (`round-twenty-two-idea.md`);
+   twenty-one's prompt archived. What it was to be: The wiring is the round's
+   first measurement: the agent's session gets `https://mcp.plotcoder.com`
+   with the test account's Basic header, not the stdio block that vanished
+   from `~/.claude.json` before three rounds. Write a new page of notes
+   (`round-twenty-two-idea.md`) in the shape of seventeen's: gaps, maybes,
+   two versions of one thing, at least one scene the writer has two ways
+   of, so R65 gets asked for without being named. Measure: whether a
+   stranger reaches `set_alternative` for a scene told "I have it two ways,
+   keep both"; whether the fold gets named in one call; whether the camera
+   marks on a written scene are read as marks and not as questions; and
+   what the tail says before and after the first reading.
+2. **Run it**, as before; file the report verbatim under a head; fix what
+   it finds; release.
+3. **R64's weekly agent, by hand** (the other session's note): a scheduled
+   session that, with `SUPABASE_SERVICE_ROLE_KEY` in the server's
+   environment, calls `list_questions`, writes each answer into
    `public/writers.html` in the section it names, opens one pull request,
-   and calls `answer_question` for each with the section.
-1. ~~**R61's edge: a place and a project's name that can be open**~~
-   **Built 2026-09-19** (twenty 6, 16), on the R61 drawing, the question
-   asked and answered in writing in R61's entry: `locationOpen` on the card,
-   `nameOpen` on the project, `set_location` and `rename_project` with
-   `open`, `new_project` with `open` in place of a name, the reading's
-   open head, the place line's offer before the dot, the panel. Merged as
-   pull request #106 and released as 0.1.35. Not yet run blind.
-2. ~~**Round twenty-one is cued**~~ **Run 2026-09-19** —
-   `blind-runs/round-twenty-one-report.md`, forty-two entries, eight fixed
-   the same morning, the three measurements answered in its head: the
-   title and the places left open through the fields' own `open`, the tie
-   rule right both ways, an open-placed card's other questions standing.
-   Merged as pull request #113 and released as 0.1.37.
-   **Next:** the rounds on "The Allotments" have run five times and the
-   findings are now mostly repeats (a target, acts and lengths that cannot
-   be open; a measured eighth under an unsized page; the three lengths).
-   The next round should start from a new page of notes, or the practice
-   pauses for the calls below. The two guide sentences from twenty-one are
-   written (24, 2), with the rest of the outstanding to-dos, 2026-09-19;
-   merged as pull request #115 and released as 0.1.38. Robert's seven
-   calls decided on the calls page and built the same day — the tails,
-   the hosted door on Supabase, presence, R65's two versions of a scene,
-   the camera, the open target, the sketch, and Playwright installed —
-   merged as pull request #119 and released as 0.1.39. **Next:** round
-   twenty-two, wired through the hosted door as a desktop-app connector
-   (call 3), on a new page of notes; the section 3 calls that remain are
-   the smaller ones in section 4.
-3. Robert's calls (section 3) and the smaller things (section 4). New in
-   twenty: a placeless card's heading on the pages, said by three rounds
-   (18:46, 19:44, 20:48) — decide; "Con does not die in this film" and the
-   span have no home but the premise and a person's notes (20:9, 20:20).
+   and calls `answer_question` for each with the section. Confirm first
+   that `20260919190000_questions_anyone.sql` is applied on the plotcoder
+   project; the other session's note asks and does not answer.
+4. Robert's calls that remain (section 3, all struck; the table stays as
+   the record) and the smaller things (section 4). Decide: a placeless
+   card's heading on the pages, said by three rounds (18:46, 19:44, 20:48);
+   "Con does not die in this film" and the span have no home but the
+   premise and a person's notes (20:9, 20:20).
+
+**Done today, in order:** round twenty run and fixed (#104, 0.1.34); R61's
+edge (#106, 0.1.35); the other session's R63 writer's guide and R64 Help
+(#107, #110, 0.1.36, 0.1.40); round twenty-one run and fixed (#113,
+0.1.37); the outstanding to-dos with `read_project` (#115, 0.1.38);
+Robert's seven calls drawn before and after (#118), decided and built
+(#119, 0.1.39); the hosted door's name (#124, 0.1.41).
 
 **Done this stretch, in order:**
 
@@ -140,24 +114,26 @@ order), fixed. Merged as pull request #104 and released as 0.1.34.
 ## Orientation, for whoever picks this up
 
 **Read in this order:** this file; `CLAUDE.md` (the rules); the head of
-`blind-runs/round-eighteen-report.md` and its sections 3 to 6; the
+`blind-runs/round-twenty-one-report.md` and its sections 3 to 6; the
 recurrence table in `blind-runs/README.md`; then `REQUIREMENTS.md` for any
-requirement you touch (R58, R59, R60 are the newest, at the end of the
-numbered list, with a combine-log row for the thread).
+requirement you touch (R61 to R65 are the newest, at the end of the
+numbered list; R48 has the hosted door and its name).
 
-**Run it:** `npm ci` once; `npm test` (28 files, DOM-free: kernel, reading,
-server); `npm run build` (typecheck and bundle). The dev server on this Mac
-is the launch entry `plotcoder-dev-5180` (5173 and 5175 belong to another
-project); `window.plotcoder` is on the page for driving the wall from the
-console. Playwright's chromium is not installed here, so `npm run test:e2e`
-runs only in CI on the Pages deploy.
+**Run it:** `npm ci` once; `npm test` (30 files, 595 tests, DOM-free:
+kernel, reading, camera, server); `npm run build` (typecheck and bundle);
+`npm run test:e2e` (ten Playwright specs over the doors; chromium is
+installed on this Mac). The dev server is the launch entry
+`plotcoder-dev-5180`, or `plotcoder-dev-5181` when another worktree's
+session holds 5180 (5173 and 5175 belong to another project);
+`window.plotcoder` is on the page for driving the wall from the console.
 
 **Land a change:** run the suite and the build first, and read the suite's
 own summary line — a plain grep for "failed" matches test titles. Then
-commit on the working branch (`claude/app-familiarization-c1520c` in the
-worktree `.claude/worktrees/app-familiarization-c1520c`), push, open a pull
-request against `main`, merge. Every change since round fifteen went in
-that way, one pull request per fix or per round.
+commit on the session's working branch in its worktree under
+`.claude/worktrees/`, push, open a pull request against `main`, merge.
+Every change since round fifteen went in that way, one pull request per
+fix or per round. Two sessions often work at once; merge `origin/main`
+before a release and expect the version number to have moved.
 
 **Release:** from a clean tree with main merged, `npm version patch`
 (a hook rewrites the README's "Version x.y.z." line), `git push`,
@@ -165,18 +141,21 @@ that way, one pull request per fix or per round.
 registry lags a few minutes (`npm view plotcoder-board dist-tags.latest
 --prefer-online`). Then a pull request for the version commit. The hosted
 door pins the package version in `supabase/functions/mcp/index.ts`; bump
-it and redeploy when the door should carry the release. 0.1.40 is the
-latest (0.1.33 was cut from `main` between #103 and #104 by another
-session, before the round's fixes).
+it and redeploy (`supabase functions deploy mcp --no-verify-jwt --use-api
+--project-ref kmpahjsggbleygsnuwug`) when the door should carry the
+release. The name in front of it, `cloudflare/mcp-door`, changes only if
+the function's address does. 0.1.41 is the latest.
 
 **Drive a blind run:** Robert opens a fresh session with
 `blind-runs/prompt.md`; this side relays the writer's answers and the
 prompt's directions with the session tools (list the sessions, read the
 latest events, send a message), waits with a background sleep, fixes the
 friction entries while the round runs, and at "stop" files the report
-verbatim under a head. Before a round, check `~/.claude.json` still has the
-`plotcoder-board` entry (it has vanished once) and that the registry serves
-the version the round is meant to test.
+verbatim under a head. Before a round, check the registry and the door
+carry the version the round is meant to test, and that the session's
+wiring answers: from round twenty-two on, that is the name,
+`https://mcp.plotcoder.com` with the test account's Basic header; before
+it, a stdio block in `~/.claude.json` that vanished three times.
 
 **Where the thread (R60) lives, if you are continuing it:** the record and
 its three commands in `src/board/reducer.js` (search `create_thread`), types
@@ -197,74 +176,54 @@ to it is `docs/mockups/r60-the-payoff-first.html`.
 
 ## Where things stand
 
-- **Round nineteen has run** (2026-09-18), the same notes with the thread
-  in hand and the on-ramp naming it. Its report is
-  `blind-runs/round-nineteen-report.md`, verbatim, with a head saying what
-  became of each entry. Fifty-two entries; eighteen fixed the same night,
-  merged in pull request #97 and released as 0.1.30.
-- **The round measured what it was cued to measure:** both threads named at
-  build (on the on-ramp's sentence — its example "the key" was this film's
-  and was changed to the sample's); the loose question lands from the
-  payoff end and stands until tied; the thread's start tied without a setup
-  arrow because the fold was the tools' — the agent asked, and the finding
-  is the fold's, above.
-- **Round eighteen has run** (2026-09-18), the same page of notes as
-  seventeen with the open card in hand. Its report is
-  `blind-runs/round-eighteen-report.md`, verbatim, with a head saying what
-  became of each entry. Fifty-four entries; twenty-four fixed the same
-  night in pull requests #81 to #88.
-- **The round measured what it was cued to measure:** told "leave it open"
-  in those words, a stranger found `set_open` and `create_note`'s `open`
-  unprompted.
-- **The round's finding: a thread is not a fold, confirmed.** The key and
-  the bucket both run payoff-first — the writer knows where each pays off,
-  not where it is first seen — and a plant is one-directional, so neither
-  is visible to the app (entries 11, 14, 15, 39, 41; seventeen's 8, 12,
-  31). Beside it, **only a card can be open**: the logline, a when, the
-  premise cannot say "not decided" (9, 22, 23, 32).
-- **R60, the thread, is built** on Robert's choice of B; see item 1.
-- **The suites pass on `main`:** `npm test` 28 files, `npm run build`
-  clean. Eighty-five tools; fifteen checks.
-- **Released as 0.1.29** with round eighteen's fixes and the thread.
+- **Rounds twenty and twenty-one have run** (2026-09-19), the same notes as
+  seventeen to nineteen with the open fields and the thread's edges in hand.
+  Their reports are `blind-runs/round-twenty-report.md` (fifty-seven
+  entries, twenty-two fixed) and `round-twenty-one-report.md` (forty-two,
+  eight fixed), verbatim under heads saying what became of each entry.
+- **What they measured:** the fields left open through their own `open`
+  (the logline, a when, the premise, the place, the title); the fold named
+  in one call; the tie rule doing both halves right once the thread's cards
+  were held in story order; an open-placed card's other questions standing.
+- **Robert's seven calls are built** (2026-09-19): the tails count and point
+  until the session's first reading; the hosted door runs on Supabase and
+  is named `https://mcp.plotcoder.com`; the account tail says whose screen
+  the wall is open on; R65 holds two versions of one scene; the camera's
+  lines are marked, never asked; a target can be open; a written sketch is
+  named. `docs/mockups/roberts-calls.html` is the drawing and the decisions.
+- **The other session built R63**, the writer's guide at
+  plotcoder.com/writers.html, and **R64**, Help in the app with `questions`
+  on the account and its two tools.
+- **The suites pass on `main`:** `npm test` 30 files, 595 tests;
+  `npm run build` clean; `npm run test:e2e` ten of ten. Ninety tools;
+  fifteen checks.
+- **Released as 0.1.41.**
 
 ---
 
-## 1. The next design question: a thread that is not a fold
+## 1. The thread that is not a fold, and its edges
 
-**Built as B, on Robert's word** (2026-09-18): `docs/mockups/r60-the-payoff-first.html`
-showed three ways, A was recommended, Robert chose B — a thread as a
-record of its own. **R60, built:** `threads` on the board, three tools,
-the fifteenth check (loose), the string on the wall, the corner's picker.
-The second-model concern is recorded in the combine log. Not yet run
-blind: round nineteen should measure whether a stranger names a thread
-unprompted for the key and the bucket. What the rounds had shown, twice:
+**Built:** R60 (the thread, a record of its own, on Robert's choice of B,
+`docs/mockups/r60-the-payoff-first.html`), then R62 (the fold says what it
+plants; the tie rule in the kernel, both halves; a known payoff with no
+scene is an open card at the payoff end,
+`docs/mockups/r62-what-the-fold-plants.html`). Rounds nineteen to
+twenty-one ran them. Still not decided, for a round to find wrong: a
+thread's name is typed only when it is started on the wall; a thread is one
+board's, so a strand across episodes is R50's fold; a subplot thread says
+nothing about the cards between its ends; the `loose` question is asked
+even when the thread's only card is open. Several named plants on one card
+(R62's B) waits for a wall to need it.
 
-- A **plant** is one record on the fold card, and every question the wall
-  asks about it starts there: unpaid, unplanted, backwards. A payoff card
-  cannot ask for its setup.
-- A writer with an idea often knows the **payoff first** — the bucket on
-  the balcony, the key that opens the shed — and not where the thing is
-  first seen. Today that lives as an open card at the payoff end (listed,
-  not asked) or as a sentence on a person's page (never read).
-- A **subplot** (Declan) has colour and groups, and colour means nothing to
-  the app.
+## 2. The open fields
 
-The shape to mock, on the app's paper beside what ships, then ask in
-writing: a claim on the *payoff* card — "pays off something not yet
-planted", in the writer's words — that the reading asks about from that
-end ("where is the bucket first seen?") until a setup arrow lands on it,
-the mirror of the fold. Whether that is a second corner, a second fold, or
-the same fold read from either end is the mockup's question. One record,
-on the card; no second model for a thread. R58's receiving end and R59's
-open card are the two nearest shapes.
-
-## 2. Beside it: open fields
-
-The open card's claim on a field. The logline, the premise and a card's
-when can be blank, and blank cannot say "not decided" (eighteen 9, 22, 23,
-32). Same words as R59, on a field: the writer's words in place of a
-value, listed by the reading, not asked. Mock with the thread or after
-it; the two share the words "open, by the writer's word".
+**Built:** R61 (`docs/mockups/r61-the-open-field.html`) and its edge — the
+logline, the premise, a when, a place, a board's name, a project's name and
+the target can each be open by the writer's word, through the field's own
+`open`, listed by the reading and not asked. Rounds twenty and twenty-one
+ran all but the target. Left for a round to ask: the offer on a board's
+name from the wall, and a check for a missing when, which the rounds said
+blank must not become.
 
 ## 3. Robert's calls still open
 
@@ -278,7 +237,7 @@ word on each is the word to build it.
 | --- | --- | --- | --- |
 | 1 | ~~A reading of the project as a whole (every board's questions in one call)~~ | 15:14 | **Built 2026-09-19 as `read_project`**, once the thread existed, as recommended |
 | 2 | ~~The write tails carrying the wall's questions mid-build~~ | 15:9, built on 14's word; 18:20 | **Built 2026-09-19:** the tail counts and points until the session's first `read_wall`, then quotes |
-| 3 | ~~A wiring that cannot vanish from one machine's file~~ | 15's first attempt, round nine; it vanished again before nineteen | **Deployed 2026-09-19 on Supabase**, `supabase/functions/mcp`, at `https://kmpahjsggbleygsnuwug.supabase.co/functions/v1/mcp`, verified; the on-ramp names it. The next round can wire the agent through it as a desktop-app connector instead of the stdio block. Redeploy with `supabase functions deploy mcp --no-verify-jwt --use-api --project-ref kmpahjsggbleygsnuwug` after bumping the pinned package version |
+| 3 | ~~A wiring that cannot vanish from one machine's file~~ | 15's first attempt, round nine; it vanished again before nineteen | **Deployed 2026-09-19 on Supabase**, `supabase/functions/mcp`, named `https://mcp.plotcoder.com` by the Cloudflare Worker in `cloudflare/mcp-door` (deploy: `npx -y wrangler@latest deploy` in that folder, signed in once with `wrangler login`); the on-ramp names it. The next round can wire the agent through it as a desktop-app connector instead of the stdio block. Redeploy with `supabase functions deploy mcp --no-verify-jwt --use-api --project-ref kmpahjsggbleygsnuwug` after bumping the pinned package version |
 | 4 | ~~A reply that shows a wall is open on someone's screen~~ | 18:54 | **Built 2026-09-19:** the account tail says "open on Robert's screen now" or "no wall open right now", from the presence the server follows; `list_projects` says the same |
 | 5 | ~~Two versions of one scene~~ | 18:8 | **Built 2026-09-19 as R65:** a card behind another as its other version, out of the story until chosen |
 | 6 | ~~A written scene's lines the camera cannot see~~ | 18:44 | **Built 2026-09-19:** marked on the page and in the write's reply, never asked |
@@ -300,22 +259,28 @@ word on each is the word to build it.
   `plotcoder-dev-5180` is the one to use, and `plotcoder-dev-5181` when a
   second worktree's session already holds 5180. The MCP bridge probe scans
   neither.
-- **`~/.claude.json` lost the `plotcoder-board` entry** before round
-  fifteen; check it before every round (a memory records the shape).
+- ~~**`~/.claude.json` lost the `plotcoder-board` entry**~~ The name is the
+  answer (call 3): from round twenty-two the wiring is
+  `https://mcp.plotcoder.com`, held where the app keeps it, not in that
+  file. The stdio block is still there for a session that wants a local
+  server.
 - ~~**Playwright's chromium is not installed** on this Mac~~ Installed
   2026-09-19 on Robert's word; `npm run test:e2e` passes locally, ten of
   ten, on its own port.
-- **R64's `questions` table** needs its migration applied on the
-  plotcoder Supabase project by a session with the Supabase connector
-  (`supabase/migrations/20260919170000_questions.sql`); this session had
-  none and said so when asked.
+- ~~**R64's `questions` table** needs its migration applied~~ Applied
+  2026-09-19 by the other session through the Management API. Whether
+  `20260919190000_questions_anyone.sql` is applied too is not recorded;
+  confirm before the weekly agent is set up.
+- **wrangler wants Node 22**, and this Mac's default is 20; the Homebrew
+  `node@22` at `/usr/local/opt/node@22/bin` is x64 while npx's cache had an
+  arm64 wrangler. `cloudflare/mcp-door/README.md` says how to get round it.
 
 ---
 
 ## 5. How to pick this up
 
-1. Read `blind-runs/README.md`'s recurrence table, then the head of
-   `blind-runs/round-twenty-report.md` and its sections 3 to 6.
-2. Build R61's edge — the place and the project's name open — as the queue
-   above says, then cue round twenty-one.
-3. Then Robert's calls (section 3), and the smaller things (section 4).
+1. Read the head of `blind-runs/round-twenty-one-report.md` and its
+   sections 3 to 6, then `blind-runs/README.md`'s recurrence table.
+2. Cue round twenty-two through the name, on a new page of notes, as the
+   queue above says; run it; fix what it finds; release.
+3. Then R64's weekly agent, and the two decisions in item 4 of the queue.

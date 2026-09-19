@@ -1,0 +1,13 @@
+{
+  // The hosted door's name: mcp.plotcoder.com, a Cloudflare Worker forwarding
+  // to the Supabase Edge Function. Deploy from this folder with
+  //   npx -y wrangler@latest deploy
+  // after `npx -y wrangler@latest login` once on the machine. The custom
+  // domain makes Cloudflare write the DNS record and the certificate itself.
+  "$schema": "https://unpkg.com/wrangler@latest/config-schema.json",
+  "name": "plotcoder-mcp-door",
+  "main": "worker.mjs",
+  "compatibility_date": "2026-09-01",
+  "workers_dev": false,
+  "routes": [{ "pattern": "mcp.plotcoder.com", "custom_domain": true }]
+}

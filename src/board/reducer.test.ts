@@ -873,6 +873,28 @@ describe("what the fold plants (R62)", () => {
   });
 });
 
+describe("set_location with open (R61's edge)", () => {
+  it("leaves a card's place open in the writer's words; a place decides it; open \"\" leaves it blank", () => {
+    const base = run(emptyState(), { type: "create_note", id: "a", headline: "She tells him", change: "Con knows." });
+    const open = run(base, { type: "set_location", ids: ["a"], open: "where it happens" });
+    expect(open.notes[0].location).toBe("");
+    expect(open.notes[0].locationOpen).toBe("where it happens");
+    expect(applyCommand(open, { type: "set_location", ids: ["a"], open: "where it happens" }, NOW).changed).toBe(false);
+    const decided = run(open, { type: "set_location", ids: ["a"], location: "the allotments" });
+    expect(decided.notes[0].location).toBe("the allotments");
+    expect(decided.notes[0].locationOpen).toBe("");
+    const blank = run(decided, { type: "set_location", ids: ["a"], open: "" , location: "" });
+    expect(blank.notes[0].location).toBe("");
+    expect(blank.notes[0].locationOpen).toBe("");
+    const born = run(emptyState(), { type: "create_note", id: "b", headline: "B", change: "x", location: "the shed", locationOpen: "which shed" });
+    expect(born.notes[0].location).toBe("");
+    expect(born.notes[0].locationOpen).toBe("which shed");
+    const old = JSON.parse(JSON.stringify(open));
+    delete old.notes[0].locationOpen;
+    expect(normalizeState(old).notes[0].locationOpen).toBe("");
+  });
+});
+
 describe("set_when with open (R61)", () => {
   it("leaves a card's when open in the writer's words; a when decides it; open \"\" leaves it blank", () => {
     const base = run(emptyState(), { type: "create_note", id: "a", headline: "The key", change: "Ruth has it." });

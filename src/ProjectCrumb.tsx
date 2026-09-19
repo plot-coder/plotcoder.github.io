@@ -168,6 +168,14 @@ export function ProjectCrumb({
             placeholder="Untitled project"
             stopPointerDown={false}
           />
+          {project.nameOpen ? (
+            <p className="project-panel__open is-open-field" title={`The title is not decided: ${project.nameOpen}. Type a name to decide it.`}>
+              <span className="open-mark" aria-hidden="true">
+                Open
+              </span>
+              {project.nameOpen}
+            </p>
+          ) : null}
           <EditableText
             as="p"
             className="project-panel__premise"

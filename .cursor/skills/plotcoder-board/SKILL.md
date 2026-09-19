@@ -188,6 +188,11 @@ only when the server is started with `PLOTCODER_JSON=1`.
   location — the kitchen, the yard, the barn of one farm — is one place:
   name the location. A treatment that names a spot per paragraph is naming
   where the camera is, which may still be one place.
+  Not decided: `open` with the writer's words — "where it happens" — leaves
+  the place open; the reading lists it and stops asking where, while the
+  card's other questions stand (unlike `set_open` on the whole card); a
+  place decides it, `open: ""` leaves it blank; `create_note` takes
+  `locationOpen`.
 - `set_open` — leave a card **open**, with the writer's words for what is
   not decided: "whether Tom knows", "who sent the letter". The reading
   lists open cards under their own head and asks nothing of the card itself
@@ -382,7 +387,10 @@ card of another board is not asked about as uncast here.
   starts — "the winter the shop closes" — so a
   one-board film's standing facts have a home that is not a person's notes.
   Not decided — "a sale, or a lease" — `set_premise` with `open` and
-  the writer's words leaves it open; a line decides it.
+  the writer's words leaves it open; a line decides it. A title not decided
+  — "The Allotments, or Plot 14" — `rename_project` with `open` leaves the
+  project's name open while it stands, and `new_project` with `open`
+  instead of a name starts the project that way.
 - `list_reminders` / `add_reminder` / `remove_reminder` — the writer's
   principles. Read them before building or reading a wall; add only what the
   writer asked to keep in front of them.

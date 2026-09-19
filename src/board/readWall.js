@@ -241,7 +241,8 @@ export function readWall(state, options = {}) {
   // A card that says no place, once the writer has started placing cards.
   // One question however many there are; a wall with no places at all is a
   // wall the writer has not placed yet, and is not asked.
-  const unplaced = order.filter((note) => askable(note) && !(note.location ?? "").trim());
+  // A place left open in the writer's words (R61's edge) is listed, not asked.
+  const unplaced = order.filter((note) => askable(note) && !(note.location ?? "").trim() && !(note.locationOpen ?? "").trim());
   if (unplaced.length > 0 && unplaced.length < order.length) {
     findings.push({
       kind: "unplaced",
@@ -535,6 +536,7 @@ export function readWall(state, options = {}) {
 function describeOpenFields(state, order) {
   const fields = [];
   if ((state.loglineOpen ?? "").trim()) fields.push({ field: "logline", words: state.loglineOpen.trim() });
+  for (const note of order) if ((note.locationOpen ?? "").trim()) fields.push({ field: "location", id: note.id, words: note.locationOpen.trim() });
   for (const note of order) if ((note.whenOpen ?? "").trim()) fields.push({ field: "when", id: note.id, words: note.whenOpen.trim() });
   return fields;
 }

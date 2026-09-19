@@ -1048,6 +1048,29 @@ describe("open fields (R61): the logline, the premise, a when and a board's name
     expect(await client.callTool("read_wall")).not.toContain("— when:");
   });
 
+  it("leaves a card's place open while the card is still asked about the rest, and the project's name open while it stands (R61's edge)", async () => {
+    expect(await client.callTool("set_location", { ids: ["tom-lies"] })).toContain("Say which");
+    const left = await client.callTool("set_location", { ids: ["tom-lies"], open: "where it happens" });
+    expect(left).toContain('have their place left open, by the writer\'s word: "where it happens"');
+    expect(await client.callTool("list_board")).toContain('at: open, by the writer\'s word — "where it happens"');
+    const read = await client.callTool("read_wall");
+    expect(read).toContain('  - "Tom lies about the job" — where: where it happens');
+    expect(read).not.toMatch(/\[unplaced\][^\n]*Tom lies about the job/);
+    expect(await client.callTool("export_fountain", {})).toContain("place open: where it happens");
+    expect(await client.callTool("set_location", { ids: ["tom-lies"], location: "the office" })).toContain("now at the office");
+    expect(await client.callTool("read_wall")).not.toContain("— where:");
+
+    expect(await client.callTool("rename_project", {})).toContain("Say which");
+    const title = await client.callTool("rename_project", { open: "The Allotments, or Plot 14" });
+    expect(title).toContain('its name is left open, by the writer\'s word: "The Allotments, or Plot 14"');
+    expect(await client.callTool("list_boards")).toContain('its name is open, by the writer\'s word: "The Allotments, or Plot 14"');
+    expect(await client.callTool("read_wall")).toContain("  - the project's name — The Allotments, or Plot 14");
+    const named = await client.callTool("rename_project", { name: "Plot 14" });
+    expect(named).toContain('Project renamed to "Plot 14"');
+    expect(named).toContain("the open words are gone");
+    expect(await client.callTool("read_wall")).not.toContain("the project's name —");
+  });
+
   it("leaves the premise and a board's name open, and a value decides each", async () => {
     expect(await client.callTool("set_premise", {})).toContain("Say which");
     expect(await client.callTool("set_premise", { open: "the buyer: housing, or a supermarket" })).toContain('Premise left open, by the writer\'s word: "the buyer: housing, or a supermarket"');

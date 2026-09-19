@@ -53,9 +53,11 @@ else, asked to build a wall and to keep a log of everything that made the job
 harder than it should have been. The friction log is the product; the wall is
 just what produces it. Eighteen rounds have been run, the first three through a
 repo checkout and the rest through the account door; every finding from the
-first seventeen is fixed or decided, and round seventeen, the first to start from
+first seventeen is fixed or decided. Round seventeen, the first to start from
 a page of notes instead of a treatment, found the wall has no way to hold a
-maybe — the open card, R59, proposed and mocked from it. [`blind-runs/`](blind-runs/) holds the rules that keep a round honest,
+maybe — the open card, R59, built from it; round eighteen confirmed that a
+thread is not a fold — the thread, R60, built from it, a named string through
+cards with either end open until the writer ties it. [`blind-runs/`](blind-runs/) holds the rules that keep a round honest,
 the table of rounds, and the next round's prompt with the test account filled in.
 
 A round works a **test account** — a throwaway marked on its writer row, and the

@@ -19,7 +19,10 @@ is only the queue.
    unprompted, whether the loose-end question lands where the writer
    wanted it, and whether the thread and the fold ever contradict each
    other on one wall (the combine log's rule). Check `~/.claude.json` for
-   the `plotcoder-board` entry first.
+   the `plotcoder-board` entry first. Note that the on-ramp's rules now
+   name the open card and the thread in one sentence (added 2026-09-18,
+   after eighteen), so nineteen measures the on-ramp's sentence plus the
+   guide, not the guide alone.
 2. **Run it**: Robert opens the session, this side drives it from the
    prompt's list of directions, fixes the friction while it runs, files
    `blind-runs/round-nineteen-report.md` verbatim with a head, records the
@@ -35,6 +38,61 @@ is only the queue.
    about the cards between; and the reading's `loose` question is asked
    even when the thread's only card is open — by design, recorded in R60,
    worth a look if a round finds it wrong.
+
+---
+
+## Orientation, for whoever picks this up
+
+**Read in this order:** this file; `CLAUDE.md` (the rules); the head of
+`blind-runs/round-eighteen-report.md` and its sections 3 to 6; the
+recurrence table in `blind-runs/README.md`; then `REQUIREMENTS.md` for any
+requirement you touch (R58, R59, R60 are the newest, at the end of the
+numbered list, with a combine-log row for the thread).
+
+**Run it:** `npm ci` once; `npm test` (28 files, DOM-free: kernel, reading,
+server); `npm run build` (typecheck and bundle). The dev server on this Mac
+is the launch entry `plotcoder-dev-5180` (5173 and 5175 belong to another
+project); `window.plotcoder` is on the page for driving the wall from the
+console. Playwright's chromium is not installed here, so `npm run test:e2e`
+runs only in CI on the Pages deploy.
+
+**Land a change:** run the suite and the build first, and read the suite's
+own summary line — a plain grep for "failed" matches test titles. Then
+commit on the working branch (`claude/app-familiarization-c1520c` in the
+worktree `.claude/worktrees/app-familiarization-c1520c`), push, open a pull
+request against `main`, merge. Every change since round fifteen went in
+that way, one pull request per fix or per round.
+
+**Release:** from a clean tree with main merged, `npm version patch`
+(a hook rewrites the README's "Version x.y.z." line), `git push`,
+`git push --tags`; the tag runs the "Publish to npm" workflow, and the
+registry lags a few minutes (`npm view plotcoder-board dist-tags.latest
+--prefer-online`). Then a pull request for the version commit. 0.1.29 is the
+latest.
+
+**Drive a blind run:** Robert opens a fresh session with
+`blind-runs/prompt.md`; this side relays the writer's answers and the
+prompt's directions with the session tools (list the sessions, read the
+latest events, send a message), waits with a background sleep, fixes the
+friction entries while the round runs, and at "stop" files the report
+verbatim under a head. Before a round, check `~/.claude.json` still has the
+`plotcoder-board` entry (it has vanished once) and that the registry serves
+the version the round is meant to test.
+
+**Where the thread (R60) lives, if you are continuing it:** the record and
+its three commands in `src/board/reducer.js` (search `create_thread`), types
+in `reducer.d.ts`; the `loose` check and the `threads` list in
+`src/board/readWall.js`; the three tools, `threadLine`, and the sections in
+`list_board` and `read_wall` in `scripts/plotcoder-mcp-server.mjs` (search
+`Threads (R60)`); the string on the wall in `src/NoteBoard.tsx` (search
+`note-thread`), the corner picker and the edge input in `src/NoteCard.tsx`
+(search `editingThread`), the handlers in `src/App.tsx` (`startThread`,
+`tieThread`), the styles under `.note-thread` in `src/styles.css`; the words
+in `src/board/words.js`, the guide's bullet in
+`.cursor/skills/plotcoder-board/SKILL.md`, the workflow's tool list in
+`src/board/workflows.js`; tests in `reducer.test.ts`, `readWall.test.ts`
+and `scripts/plotcoder-mcp.test.mjs` (search `R60`). The mockup that led
+to it is `docs/mockups/r60-the-payoff-first.html`.
 
 ---
 

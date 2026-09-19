@@ -8,8 +8,9 @@ just what produces it.
 The practice is Robert's, from 2026-09-13. Eighteen rounds have been run;
 every finding is fixed, decided, or waiting on a mockup — see
 `REQUIREMENTS.md`, "The blind run", and the `friction, fixed` entries in the
-changelog. Round fifteen's report says at its head what was built from it
-the same evening and what waits (R58). The practice continues because it
+changelog. The latest report, round eighteen's, says at its head what was
+built from it the same night and what waits; the thread (R60) was built from
+it the next morning. The practice continues because it
 measures the thing the app is for — an agent helping a person turn an idea
 into a story (Robert, 2026-09-17).
 

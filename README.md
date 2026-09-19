@@ -4,6 +4,8 @@ A storylining app for screenwriters, live at [plotcoder.com](http://plotcoder.co
 
 PlotCoder is a set of tools for building a storyline, covering the activities a writer does today in Final Draft. It is designed so that an **agent driven by a person** has every one of those tools: the person directs, the agent operates, and the board on screen is the person's window onto the same records. The first tool is the wall, a digital corkboard for breaking and rearranging plot before writing the script, because that is the part of the job Final Draft does worst. Pages come last. Once the tools exist, workflows get launched on top of them. The horizon, a long way off: a person makes a storyline they believe in, then the app helps them drive agents that build segments of the movie with video generation tools.
 
+**Using it as a writer:** [plotcoder.com/writers.html](https://plotcoder.com/writers.html) says how, from the door to the script out, the agent first. Its source is `public/writers.html`, and a change to a gesture or a sheet changes it in the same pull request (R63).
+
 The full statement of purpose, every decision, and every requirement lives in [REQUIREMENTS.md](REQUIREMENTS.md). Read it before changing anything. It is the source of truth; this file is the front door.
 
 ## The method the tools serve

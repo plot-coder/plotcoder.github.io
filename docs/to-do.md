@@ -59,7 +59,8 @@ order), fixed. Merged as pull request #104 and released as 0.1.34.
    be open; a measured eighth under an unsized page; the three lengths).
    The next round should start from a new page of notes, or the practice
    pauses for the calls below. The two guide sentences from twenty-one are
-   written (24, 2), with the rest of the outstanding to-dos, 2026-09-19.
+   written (24, 2), with the rest of the outstanding to-dos, 2026-09-19;
+   merged as pull request #115 and released as 0.1.38.
 3. Robert's calls (section 3) and the smaller things (section 4). New in
    twenty: a placeless card's heading on the pages, said by three rounds
    (18:46, 19:44, 20:48) — decide; "Con does not die in this film" and the
@@ -148,7 +149,7 @@ that way, one pull request per fix or per round.
 (a hook rewrites the README's "Version x.y.z." line), `git push`,
 `git push --tags`; the tag runs the "Publish to npm" workflow, and the
 registry lags a few minutes (`npm view plotcoder-board dist-tags.latest
---prefer-online`). Then a pull request for the version commit. 0.1.37 is the
+--prefer-online`). Then a pull request for the version commit. 0.1.38 is the
 latest (0.1.33 was cut from `main` between #103 and #104 by another
 session, before the round's fixes).
 

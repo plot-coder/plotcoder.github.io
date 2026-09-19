@@ -23,3 +23,11 @@ Needs `SUPABASE_SERVICE_ROLE_KEY` in the shell. Every table cascades off
 `auth.users`, so removing the account removes its rows; storage cascades
 nothing, which is why the script removes the bucket's files first, while the
 membership its policies read still exists.
+
+## The writers' questions (R64)
+
+`questions` holds what a writer asked from the app's Help sheet that the guide
+did not answer. A writer inserts and reads their own; nobody else reads. The
+maintainer's tools, `list_questions` and `answer_question`, take
+`SUPABASE_SERVICE_ROLE_KEY` from the server's environment, as the wipe script
+does. Apply `migrations/20260919170000_questions.sql` through the connector.

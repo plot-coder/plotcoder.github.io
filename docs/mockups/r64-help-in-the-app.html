@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<title>Help in the app — two homes, one sheet</title>
+<!-- The app's own paper: the source stylesheet, so the link never goes stale. -->
+<link rel="stylesheet" href="../../src/styles.css">
+<style>
+  body { margin: 0; padding: 2rem 2.5rem 3rem; font-family: ui-sans-serif, system-ui, sans-serif; }
+  h1 { font: 600 1.05rem/1.3 ui-serif, Georgia, serif; margin: 0 0 0.25rem; }
+  h2.sec { font: 600 0.95rem/1.3 ui-serif, Georgia, serif; margin: 2.6rem 0 0.2rem; }
+  .lede { font-size: 0.85rem; opacity: 0.75; margin: 0 0 2rem; max-width: 62ch; }
+  .row { display: flex; gap: 3rem; flex-wrap: wrap; align-items: flex-start; }
+  .opt { width: 360px; }
+  .opt.wide { width: 420px; }
+  .opt h2 { font: 700 0.62rem/1.3 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; margin: 0 0 0.9rem; }
+  .opt > p { font-size: 0.8rem; line-height: 1.45; opacity: 0.8; margin: 0.9rem 0 0; max-width: 40ch; }
+  /* A corner of the app's chrome: the top-right buttons, or the bar's icon row. */
+  .chrome { position: relative; height: 90px; width: 360px; border-radius: 6px; background: var(--canvas); outline: 1px solid rgba(127,127,127,0.18); overflow: hidden; }
+  .chrome .top-actions { position: absolute; top: 0.9rem; right: 0.9rem; }
+  .chrome .cast-launch { font-size: 0.55rem; padding: 0.35rem 0.7rem; }
+  .chrome .cast-launch.is-new { outline: 1.5px dashed rgba(255,130,80,0.8); outline-offset: 2px; }
+  .icons { position: absolute; right: 0.9rem; bottom: 0.9rem; display: flex; gap: 0.35rem; align-items: center; }
+  .icons .bar-icon { width: 2rem; height: 2rem; display: grid; place-items: center; border-radius: 999px; border: 1px solid var(--bar-border); background: var(--bar, rgba(127,127,127,0.12)); color: var(--ink); font: 600 0.8rem ui-sans-serif, system-ui, sans-serif; }
+  .icons .bar-icon.is-new { outline: 1.5px dashed rgba(255,130,80,0.8); outline-offset: 2px; }
+  .icons .bar-icon.is-gone { opacity: 0.35; text-decoration: line-through; }
+  /* The sheet, drawn static: the words sheet's own classes, without the fixed root. */
+  .sheetwrap .modal { width: 300px; max-height: none; padding: 1rem 1.1rem 1rem; }
+  .sheetwrap .modal__title { font-size: 1.3rem; }
+  .help__search { width: 100%; box-sizing: border-box; padding: 0.5rem 0.7rem; border-radius: 0.6rem; border: 1px solid var(--bar-border); background: var(--slot); color: var(--ink); font: inherit; font-size: 0.9rem; }
+  .help__hit { margin: 0.7rem 0 0; }
+  .help__from { font: 600 0.58rem/1.3 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin: 0 0 0.1rem; }
+  .help__text { margin: 0; font-size: 0.86rem; line-height: 1.45; }
+  .help__text b { font-weight: 600; }
+  .help__go { display: inline-block; margin-top: 0.15rem; font: 600 0.62rem/1.3 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--over); }
+  .help__none { margin: 0.8rem 0 0; font-size: 0.86rem; line-height: 1.45; color: var(--muted); }
+  .help__ask { margin-top: 0.6rem; }
+  .help__ask textarea { width: 100%; box-sizing: border-box; min-height: 3.2rem; padding: 0.5rem 0.7rem; border-radius: 0.6rem; border: 1px dashed var(--bar-border); background: transparent; color: var(--ink); font: inherit; font-size: 0.86rem; }
+  .help__fine { margin: 0.35rem 0 0; font-size: 0.72rem; line-height: 1.4; color: var(--muted); }
+  .help__button { margin-top: 0.5rem; padding: 0.4rem 0.9rem; border-radius: 999px; border: 1px solid var(--bar-border); background: var(--ink); color: var(--canvas); font: 600 0.66rem/1.3 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; }
+  .help__button.is-quiet { background: transparent; color: var(--ink); }
+  .help__q { margin: 0.55rem 0 0; font-size: 0.86rem; line-height: 1.45; }
+  .help__state { font: 600 0.58rem/1.3 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  .help__state.is-warm { color: var(--over); }
+  .light { margin-top: 3rem; padding: 2rem 2.5rem; background: #fff; color: #1f1810; border-radius: 6px; }
+  .light h2 { color: #1f1810; }
+  pre.read { font: 0.72rem/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; background: rgba(127,127,127,0.12); padding: 0.9rem 1.1rem; border-radius: 6px; max-width: 84ch; white-space: pre-wrap; margin: 0.6rem 0 0; }
+  .ask { margin-top: 2.5rem; max-width: 64ch; font-size: 0.9rem; line-height: 1.5; }
+  .ask b { font-weight: 600; }
+</style>
+</head>
+<body>
+<h1>Help in the app (R64): search the guide, and ask what it does not answer</h1>
+<p class="lede">The writer's guide (R63) is a page; its only check is a person reading it. Robert's ask, 2026-09-19: a docs icon where a writer searches for a question, and if it is not there, requests an answer that goes to a list a session can read and answer into the docs. Below, the two homes the door could have, drawn on the app's chrome; the one sheet both open, in its three states; what the maintainer's side is; and the question.</p>
+
+<div class="row">
+  <div class="opt">
+    <h2>A · a fifth button, top right</h2>
+    <div class="chrome">
+      <div class="top-actions">
+        <button class="cast-launch">Pages</button>
+        <button class="cast-launch">Cast</button>
+        <button class="cast-launch">Reminders</button>
+        <button class="cast-launch">⇅</button>
+        <button class="cast-launch is-new">Help</button>
+      </div>
+    </div>
+    <p>As asked: Help beside Reminders, where the writer looks for the app's own things — the pages, the cast, the principles. Found at once; but a fifth pill on a row that already crowds a laptop, and the bar keeps its words button, so "what does this word mean" and "how do I" are two doors.</p>
+  </div>
+  <div class="opt">
+    <h2>B · the words button grows into Help</h2>
+    <div class="chrome">
+      <div class="top-actions">
+        <button class="cast-launch">Pages</button>
+        <button class="cast-launch">Cast</button>
+        <button class="cast-launch">Reminders</button>
+        <button class="cast-launch">⇅</button>
+      </div>
+      <div class="icons">
+        <span class="bar-icon">+</span><span class="bar-icon">↶</span><span class="bar-icon">↷</span><span class="bar-icon">⋮⋮</span><span class="bar-icon">▤</span><span class="bar-icon is-new">?</span>
+      </div>
+    </div>
+    <p>The bar's "What these words mean" becomes <b>Help</b>: the same button, the same sheet, with the thirty-four words as its first entries and the guide's sections behind them. One door for "what does this mean" and "how do I", which is one question. Less found from the top; found where every other verb is.</p>
+  </div>
+</div>
+
+<h2 class="sec">The sheet, in both homes</h2>
+<div class="row">
+  <div class="opt sheetwrap">
+    <h2>A question the guide answers</h2>
+    <div class="modal modal--narrow account words">
+      <div class="modal__header">
+        <div><p class="modal__kicker">PlotCoder</p><h2 class="modal__title">Help</h2></div>
+        <button class="modal__close">Close</button>
+      </div>
+      <input class="help__search" value="how do I mark a beat" readonly>
+      <div class="help__hit">
+        <p class="help__from">The words · Beat</p>
+        <p class="help__text">A whole card, one of the 8 to 15 major turns the story hangs on. Rank is carried by the card, never by where it sits.</p>
+      </div>
+      <div class="help__hit">
+        <p class="help__from">The guide · The wall · Length, colour, rank</p>
+        <p class="help__text">A card is a scene until you <b>mark it a beat</b> — one of the turns — with the mark on the card's own edge, which the readout counts; marking it never moves it.</p>
+        <span class="help__go">Read it there →</span>
+      </div>
+      <div class="help__hit">
+        <p class="help__from">The guide · Reading the wall</p>
+        <p class="help__text">The readout, bottom left of the bar, counts the <b>beats</b> and scenes and says how long the wall runs against its target…</p>
+        <span class="help__go">Read it there →</span>
+      </div>
+    </div>
+    <p>Type, and the sheet matches as you go: the words first, then the guide's paragraphs, each under the section it comes from, with a link that opens the guide there. Client-side, over the page the site already serves; nothing leaves the device.</p>
+  </div>
+
+  <div class="opt sheetwrap">
+    <h2>A question it does not</h2>
+    <div class="modal modal--narrow account words">
+      <div class="modal__header">
+        <div><p class="modal__kicker">PlotCoder</p><h2 class="modal__title">Help</h2></div>
+        <button class="modal__close">Close</button>
+      </div>
+      <input class="help__search" value="can two writers be on a video call from the wall" readonly>
+      <p class="help__none">Nothing in the guide or the words answers that.</p>
+      <div class="help__ask">
+        <textarea readonly>Can two writers be on a video call from the wall while we work?</textarea>
+        <p class="help__fine">Your question goes, with your email, to the people who build PlotCoder. The answer lands in the guide, without your name, and here under Your questions.</p>
+        <button class="help__button">Ask</button>
+      </div>
+    </div>
+    <p>When nothing matches, the question is already typed: one press sends it. The fine print says who reads it and where the answer goes. Signed out, the sheet says "Sign in to ask: a question needs an address to answer to", and the search still works.</p>
+  </div>
+
+  <div class="opt sheetwrap">
+    <h2>Your questions</h2>
+    <div class="modal modal--narrow account words">
+      <div class="modal__header">
+        <div><p class="modal__kicker">PlotCoder</p><h2 class="modal__title">Help</h2></div>
+        <button class="modal__close">Close</button>
+      </div>
+      <input class="help__search" value="" placeholder="What do you want to know?" readonly>
+      <section class="account__group">
+        <p class="cast-lens__kicker">Your questions</p>
+        <p class="help__q"><span class="help__state is-warm">Waiting</span><br>Can two writers be on a video call from the wall while we work? <span class="help__state">· asked 19 Sept</span></p>
+        <p class="help__q"><span class="help__state">Answered 20 Sept</span><br>How do I leave a place open when I don't know it yet? <span class="help__go">The wall · A card →</span></p>
+      </section>
+    </div>
+    <p>With nothing typed, the sheet lists the writer's own questions: waiting, or answered with the section the answer went into. An answer is the guide, not a private reply, so the next writer finds it too. The words follow, as they do today.</p>
+  </div>
+</div>
+
+<h2 class="sec">The maintainer's side: the list, the tools, the agent</h2>
+<pre class="read">A questions table on PlotCoder's own project, beside writers and projects:
+  id · writer (email) · question · asked_at · answered_at · answer · section (the guide's anchor, "#s5")
+  policy: a signed-in writer inserts their own and reads their own; nobody else reads, but the app's tools with a maintainer's sign-in.
+
+list_questions                → 2 waiting, 11 answered.
+  - q_7f3a · 19 Sept · test@test.com · "Can two writers be on a video call from the wall while we work?" · waiting
+  - q_2c19 · 19 Sept · a@b.ie · "How do I leave a place open when I don't know it yet?" · answered 20 Sept → #s5
+
+answer_question { id: "q_7f3a", answer: "No. Two writers on a project see each other's changes live and who is here now (People, under the wordmark); talking is yours to arrange.", section: "#s8" }
+  → Answered q_7f3a and filed it under "People on a project"; the writer sees it under Your questions. Now put the answer in public/writers.html and open the pull request: the guide is the answer, this list is the promise.
+
+The agent: a scheduled session, weekly, that calls list_questions, writes each answer into writers.html in the section it names, opens one pull request for the week, and calls answer_question for each — the same loop a blind run's fixes take, with the writer's question in place of the friction entry.</pre>
+
+<div class="light">
+  <h2 style="font:700 0.62rem/1.3 ui-sans-serif,system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;margin:0 0 .9rem">B, on the light canvas</h2>
+  <div class="row">
+    <div class="chrome" data-theme="light">
+      <div class="top-actions">
+        <button class="cast-launch">Pages</button>
+        <button class="cast-launch">Cast</button>
+        <button class="cast-launch">Reminders</button>
+        <button class="cast-launch">⇅</button>
+      </div>
+      <div class="icons">
+        <span class="bar-icon">+</span><span class="bar-icon">↶</span><span class="bar-icon">↷</span><span class="bar-icon">⋮⋮</span><span class="bar-icon">▤</span><span class="bar-icon is-new">?</span>
+      </div>
+    </div>
+    <div class="sheetwrap" data-theme="light">
+      <div class="modal modal--narrow account words">
+        <div class="modal__header">
+          <div><p class="modal__kicker">PlotCoder</p><h2 class="modal__title">Help</h2></div>
+          <button class="modal__close">Close</button>
+        </div>
+        <input class="help__search" value="how do I mark a beat" readonly>
+        <div class="help__hit">
+          <p class="help__from">The words · Beat</p>
+          <p class="help__text">A whole card, one of the 8 to 15 major turns the story hangs on.</p>
+        </div>
+        <div class="help__hit">
+          <p class="help__from">The guide · The wall · Length, colour, rank</p>
+          <p class="help__text">A card is a scene until you <b>mark it a beat</b> — with the mark on the card's own edge.</p>
+          <span class="help__go">Read it there →</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="ask">
+  <b>Robert's call, 2026-09-19: A.</b> Built as drawn: Help, a fifth button top right, the sheet in its three states, the questions table with its policy, the two maintainer tools behind the service role, the word and the guide's paragraph. The words sheet stays in the bar; the combine log records the two doors.<br><br>
+  <b>Recommended: B</b>, the bar's words button grown into Help, with the one sheet drawn above. "What does this word mean" and "how do I" are one question, and the app already has a door for it with thirty-four answers behind it; a fifth pill top right would be a second door to the same place and a row in the combine log. The sheet is the same in either home, so A is one button away if a round or a writer says the bar is not where they looked. The search is client-side over the page the site serves, so it costs nothing to host and nothing leaves the device until the writer presses Ask. The ask is one table with a policy of its own, two tools behind a maintainer's sign-in, and a scheduled agent, so that a question asked is a question answered.<br><br>
+  <b>Is this the best we could do?</b> Three things to say. The search is words matching words over ten sections; while the guide is that size it is enough, and the day it is not, the sheet's list of unanswered searches — which the ask table can also hold, without an email — says which words the guide lacks. A question sent is a writer's words on our account: the fine print says who reads it and that the answer carries no name, signed out cannot ask, and the table's policy lets a writer read only their own. And a list nobody works is worse than no list: the scheduled agent is part of the build, not an afterthought, and until it runs the sheet should say how long an answer takes. I would build B with the sheet as drawn, the table, the two tools, and the weekly agent.
+</div>
+</body>
+</html>

@@ -39,6 +39,7 @@ import { TakeSheet } from "./TakeSheet";
 import { TakesPanel } from "./TakesPanel";
 import { AccountSheet } from "./AccountSheet";
 import { WordsSheet } from "./WordsSheet";
+import { HelpSheet, type HelpQuestion } from "./HelpSheet";
 import { AsksSheet } from "./AsksSheet";
 import { AgentsSheet } from "./AgentsSheet";
 import type { WordTarget } from "./board/words";
@@ -121,6 +122,9 @@ export function App() {
   const [wordsOpen, setWordsOpen] = useState(false);
   const [asksOpen, setAsksOpen] = useState(false);
   const [agentsOpen, setAgentsOpen] = useState(false);
+  // Help in the app (R64): the fifth button top right, and the writer's own questions once read.
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [helpQuestions, setHelpQuestions] = useState<HelpQuestion[] | null>(null);
   // The brief (R28, first step): for the selected card or cards.
   const [briefOpen, setBriefOpen] = useState(false);
   const [takeOpen, setTakeOpen] = useState(false);
@@ -879,6 +883,14 @@ export function App() {
           onOpen={() => setRemindersOpen(true)}
           onClose={() => setRemindersOpen(false)}
         />
+        <button
+          type="button"
+          className={`cast-launch ${helpOpen ? "is-open" : ""}`}
+          aria-pressed={helpOpen}
+          onClick={() => setHelpOpen(true)}
+        >
+          Help
+        </button>
         <ProjectModal
           open={projectOpen}
           onOpen={() => setProjectOpen(true)}
@@ -888,6 +900,20 @@ export function App() {
         <AccountSheet open={accountOpen} onClose={() => setAccountOpen(false)} currentProjectId={project.id} onAgents={() => setAgentsOpen(true)} />
         <WordsSheet open={wordsOpen} onClose={() => setWordsOpen(false)} onShow={showWord} onAgents={() => setAgentsOpen(true)} />
         <AgentsSheet open={agentsOpen} onClose={() => setAgentsOpen(false)} />
+        <HelpSheet
+          open={helpOpen}
+          onClose={() => setHelpOpen(false)}
+          signedIn={account.user !== null}
+          questions={helpQuestions}
+          onLoad={() => {
+            if (account.user) void accountStore.myQuestions().then(setHelpQuestions);
+            else setHelpQuestions([]);
+          }}
+          onAsk={async (question) => {
+            await accountStore.askQuestion(question);
+            setHelpQuestions(await accountStore.myQuestions());
+          }}
+        />
         <AsksSheet
           open={asksOpen}
           findings={reading.findings}

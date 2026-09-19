@@ -5,12 +5,13 @@ else, asked to build a wall and to keep a log of everything that made the job
 harder than it should have been. The friction log is the product; the wall is
 just what produces it.
 
-The practice is Robert's, from 2026-09-13. Nineteen rounds have been run;
+The practice is Robert's, from 2026-09-13. Twenty rounds have been run;
 every finding is fixed, decided, or waiting on a mockup — see
 `REQUIREMENTS.md`, "The blind run", and the `friction, fixed` entries in the
-changelog. The latest report, round nineteen's, says at its head what was
-fixed from it the same night and what waits; round eighteen's asked for the
-thread (R60), and nineteen measured it. The practice continues because it
+changelog. The latest report, round twenty's, says at its head what was
+fixed from it the same morning and what waits; nineteen asked for the open
+field and the fold's words, and twenty measured them and found the tie
+rule's bug. The practice continues because it
 measures the thing the app is for — an agent helping a person turn an idea
 into a story (Robert, 2026-09-17).
 
@@ -51,6 +52,7 @@ into a story (Robert, 2026-09-17).
 | Seventeen | The published package, a page of notes instead of a treatment, the writer answering | "Plot 14" (`round-seventeen-idea.md`) | Twenty questions asked first; the turns proposed, the gaps proposed, a change of mind, the folds, a scene written, the length | 39 (`round-seventeen-report.md`); the wall has no way to hold a maybe — R59 mocked and built the same day; two new checks and the wordings |
 | Eighteen | The published package, the same notes, the open card in hand | "Plot 14" (`round-seventeen-idea.md`) | Told "leave it open" in those words: the open card found unprompted; Declan wired in, the turns marked, the asparagus bed added, the key and the bucket, the first morning written, the length, what a writer would ask next | 54 (`round-eighteen-report.md`); 24 fixed the same night; the thread that is not a fold confirmed — the next design question, and the open field beside it |
 | Nineteen | The published package, the same notes, the thread in hand, the on-ramp naming it | "Plot 14" (`round-seventeen-idea.md`) | Told only "I know where it pays off, not where it is first seen": both threads named at build; the loose end asked from the payoff end until tied; the key's start tied and the setup arrow declined because the first morning's one fold is the tools'; the asparagus bed, the first morning written, the length, what a writer would ask next | 52 (`round-nineteen-report.md`); 18 fixed the same night; a fold cannot say which of two things a scene plants — the thread's edges |
+| Twenty | The published package, the same notes, the open field and the fold's words in hand | "Plot 14" (`round-seventeen-idea.md`) | Told "leave it open" of the logline and the board's name: the fields left open through their own `open`, the fold named, the known payoff born open with its arrow; the key's decision folded the wrong card — the tie rule's bug, found and fixed; the bucket, the first morning written, the length, what a writer would ask next | 57 (`round-twenty-report.md`); 22 fixed the same morning; a place and a project's name cannot be open — R61's edge |
 
 ## What the rounds keep finding
 
@@ -80,7 +82,7 @@ point into `REQUIREMENTS.md`, "The blind run".
 | A thing the writer has not decided has no home on the wall but an absence or an invention | Seventeen (6, 7, 10, 13, 15, 30) | **R59**, the open card, mocked and built; found unprompted in eighteen |
 | A payoff whose plant has no card yet cannot be folded, drawn or asked about | Seventeen (8, 9, 12, 31); eighteen (11, 14, 15, 39, 41) | **R60**, the thread: mocked three ways, B chosen by Robert and built — a named string through cards with either end open, asked about from the loose end; named at build in nineteen, on the on-ramp's sentence |
 | A fold is one flag per card: a scene that plants two things cannot say which, and a payoff the writer knows without a scene for it has no home | Eighteen (16, 39); nineteen (21, 42, 43) | Open: the thread's edges in the handover; whether the fold learns what it plants, or the thread absorbs it, is the next design question after the open fields |
-| Only a card can be open: the logline, a when, the premise cannot say "not decided", and an empty one cannot tell undecided from unconsidered | Eighteen (9, 22, 23, 32) | Open, beside the thread; the same claim on a field as R59 puts on a card |
+| Only a card can be open: the logline, a when, the premise cannot say "not decided", and an empty one cannot tell undecided from unconsidered | Eighteen (9, 22, 23, 32); nineteen (8, 10, 13, 25, 32) | **R61**, the open field, mocked and built; found and used in twenty — which asked for the place and the project's name too (twenty 6, 16) |
 | The reading and the records are two reads an agent merges by hand, and they tell the runtime with different honesty | Sixteen, seventeen (37, 39), eighteen (26, 45, 47, 50) | The reading now carries the runtime's breakdown and the beats' own pages; two reads by design, and the reading says so |
 
 Two things came back and were deliberately **not** built: a length for part of
@@ -108,7 +110,10 @@ published package, wired before the session, and were the first to reach the
 directions phase. Each round's findings are itemised in `REQUIREMENTS.md`,
 "The blind run".
 
-- `prompt.md` — round twenty: the same notes as seventeen to nineteen
+- `round-twenty-report.md` — the agent's report from round twenty,
+  verbatim, under a head saying what was fixed from it the same morning and
+  what waits. The next session on the agent surface starts here.
+- `prompt.md` — round twenty, as it ran: the same notes as seventeen to nineteen
   against the package that carries the open field (R61) and the fold's
   words (R62), the writer answering as before and "leave it open" of the
   logline and the board's name, to see whether a stranger leaves a field
@@ -121,7 +126,7 @@ directions phase. Each round's findings are itemised in `REQUIREMENTS.md`,
   ran, without their copy of the notes.
 - `round-nineteen-report.md` — the agent's report from round nineteen,
   verbatim, under a head saying what was fixed from it the same night and
-  what waits. The next session on the agent surface starts here.
+  what waits.
 - `round-eighteen-prompt.md` — round eighteen's own instructions, as they
   ran, without their copy of the notes.
 - `round-eighteen-report.md` — the agent's report from round eighteen,

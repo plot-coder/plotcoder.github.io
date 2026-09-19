@@ -397,7 +397,8 @@ describe("threads (R60)", () => {
     let state = run(boardOf({ id: "a", x: 0, y: 0 }, { id: "b", x: 300, y: 0 }), { type: "create_thread", id: "t", name: "the bucket", noteIds: ["b"], startOpen: true });
     const tied = applyCommand(state, { type: "update_thread", id: "t", add: ["a"], startOpen: false }, NOW);
     const tiedResult = tied.result as { thread: BoardThread; before: BoardThread };
-    expect(tiedResult.thread).toEqual({ id: "t", name: "the bucket", noteIds: ["b", "a"], startOpen: false, endOpen: false });
+    // Held in story order: a sits left of b on the wall, so it comes first whatever order it was added.
+    expect(tiedResult.thread).toEqual({ id: "t", name: "the bucket", noteIds: ["a", "b"], startOpen: false, endOpen: false });
     expect(tiedResult.before.startOpen).toBe(true);
     state = tied.state;
     expect(applyCommand(state, { type: "update_thread", id: "t", add: ["a"] }, NOW).changed).toBe(false);
@@ -795,7 +796,7 @@ describe("formatPages", () => {
   });
 });
 
-type Fold = { kept: boolean; firstId?: string; lastId?: string; what?: string; folded?: boolean; named?: boolean; arrow?: { from: string; to: string } | null } | null;
+type Fold = { kept: boolean; firstId?: string; lastId?: string; what?: string; folded?: boolean; named?: boolean; arrow?: { from: string; to: string } | null; adjacent?: boolean } | null;
 
 describe("what the fold plants (R62)", () => {
   it("names a fold in the writer's words, folds an unfolded card when named, and forgets the words on unfolding", () => {
@@ -855,6 +856,18 @@ describe("what the fold plants (R62)", () => {
     const took = applyCommand(bare, { type: "create_thread", id: "key", name: "the key", noteIds: ["a", "k"] }, NOW);
     expect((took.result as { fold: Fold }).fold).toMatchObject({ kept: false, folded: false, named: true });
     expect(took.state.notes.find((note) => note.id === "a")?.plantsWhat).toBe("the key");
+    // Added last but first in the story (round twenty, entry 40): the rule folds the first card in the story.
+    const chain = run(
+      wallOf,
+      { type: "create_arrow", from: "a", to: "k", kind: "follows" },
+      { type: "create_arrow", from: "k", to: "t", kind: "follows" },
+      { type: "create_thread", id: "key2", name: "the shed key", noteIds: ["k"], startOpen: true },
+    );
+    const appended = applyCommand(chain, { type: "update_thread", id: "key2", add: ["a"], startOpen: false }, NOW);
+    expect((appended.result as { thread: { noteIds: string[] } }).thread.noteIds).toEqual(["a", "k"]);
+    // The payoff is the very next scene, and a follows arrow already runs there: the fold is named, and no setup arrow is drawn over it.
+    expect((appended.result as { fold: Fold }).fold).toMatchObject({ kept: false, firstId: "a", lastId: "k", folded: true, arrow: null, adjacent: true });
+    expect(appended.state.notes.find((note) => note.id === "k")?.plants).toBe(false);
     // A loose end, or one card: no rule.
     expect((applyCommand(wallOf, { type: "create_thread", id: "b", name: "the bucket", noteIds: ["t"], startOpen: true }, NOW).result as { fold: Fold }).fold).toBeNull();
   });

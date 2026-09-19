@@ -474,6 +474,73 @@ function cleanOpen(value) {
   return typeof value === "string" ? value.trim().replace(/\s+/g, " ") : "";
 }
 
+
+// --- Order (R56, moved here for R62) -------------------------------------
+//
+// Story order is the follows arrows where they exist and the wall's reading
+// order — rows top to bottom, cards left to right — where they do not. The
+// reading composes everything from it; the kernel needs it to hold a
+// thread's cards in story order, so the tie rule folds the first card and
+// not the last one the writer happened to add.
+
+/** Cards within half a card's height of each other sit on one row. */
+const ROW_TOLERANCE = NOTE_HEIGHT / 2;
+
+export function readingOrder(notes) {
+  const byTop = [...notes].sort((a, b) => a.y - b.y || a.x - b.x);
+  const rows = [];
+  let row = null;
+  for (const note of byTop) {
+    if (row && note.y - row.top <= ROW_TOLERANCE) {
+      row.notes.push(note);
+    } else {
+      row = { top: note.y, notes: [note] };
+      rows.push(row);
+    }
+  }
+  return rows.flatMap((band) => band.notes.sort((a, b) => a.x - b.x || a.y - b.y));
+}
+
+/**
+ * Cards in reading order: banded into rows by y, then left to right. A free
+ * wall has no rows, so this is the order a person's eye takes across it.
+ */
+/**
+ * Story order: reading order, with each follows arrow pulling its source in
+ * front of its target; a pair pointing both ways is a tie and reading order
+ * keeps it. The order organize lays the wall out in, and the order every
+ * reading, numbering and page uses (R56). Returns the notes.
+ */
+export function storyOrder(state, ids) {
+  const scope = ids ? new Set(ids) : null;
+  const notes = state.notes.filter((note) => !scope || scope.has(note.id));
+  const reading = readingOrder(notes);
+  const byId = new Map(reading.map((note) => [note.id, note]));
+  const rank = new Map(reading.map((note, index) => [note.id, index]));
+  const preds = new Map(reading.map((note) => [note.id, []]));
+  for (const arrow of state.arrows ?? []) {
+    if (arrow.kind === "setup") continue;
+    if (!rank.has(arrow.from) || !rank.has(arrow.to)) continue;
+    preds.get(arrow.to).push(arrow.from);
+  }
+  for (const list of preds.values()) list.sort((a, b) => rank.get(a) - rank.get(b));
+  const placed = new Set();
+  const visiting = new Set();
+  const order = [];
+  function visit(id) {
+    if (placed.has(id) || visiting.has(id)) return;
+    visiting.add(id);
+    for (const from of preds.get(id)) {
+      if (preds.get(from).includes(id)) continue;
+      visit(from);
+    }
+    visiting.delete(id);
+    placed.add(id);
+    order.push(byId.get(id));
+  }
+  for (const note of reading) visit(note.id);
+  return order;
+}
 /**
  * The combine log's rule, both halves (R60, R62). A thread tied at both ends
  * through two or more cards is a plant between two scenes that exist, and
@@ -504,16 +571,20 @@ function tieIntoFold(state, thread, now) {
       notes: next.notes.map((note) => (note.id === firstId ? bump(note, { plants: true, plantsWhat: thread.name }, now) : note)),
     };
   }
-  const hasArrow = next.arrows.some((arrow) => arrow.kind === "setup" && arrow.from === firstId && arrow.to === lastId);
+  // One arrow per direction between two cards (R15): a follows arrow already
+  // running from the first card to the last means the payoff is the very next
+  // scene, and the setup cannot be drawn over it.
+  const existing = next.arrows.find((arrow) => arrow.from === firstId && arrow.to === lastId);
   let arrow = null;
-  if (!hasArrow) {
+  const adjacent = Boolean(existing && existing.kind !== "setup");
+  if (!existing) {
     const drawn = applyCommand(next, { type: "create_arrow", from: firstId, to: lastId, kind: "setup" }, now);
     if (drawn.changed) {
       next = drawn.state;
       arrow = { from: firstId, to: lastId };
     }
   }
-  return { state: next, fold: { kept: false, firstId, lastId, folded, named, arrow } };
+  return { state: next, fold: { kept: false, firstId, lastId, folded, named, arrow, adjacent } };
 }
 
 /** A thread's name as the writer typed it, one line, spaces collapsed (R60). */
@@ -809,7 +880,9 @@ export function applyCommand(state, command, now = nowIso()) {
     case "create_thread": {
       const name = cleanThreadName(command.name);
       if (!name) return { state, changed: false };
-      const noteIds = (command.noteIds ?? []).filter((id, index, all) => all.indexOf(id) === index && state.notes.some((note) => note.id === id));
+      const wanted = (command.noteIds ?? []).filter((id, index, all) => all.indexOf(id) === index && state.notes.some((note) => note.id === id));
+      // Held in story order, whatever order the writer named them (R62).
+      const noteIds = storyOrder(state, wanted).map((note) => note.id);
       const thread = {
         id: typeof command.id === "string" && command.id && !(state.threads ?? []).some((item) => item.id === command.id) ? command.id : newId(),
         name,
@@ -828,6 +901,9 @@ export function applyCommand(state, command, now = nowIso()) {
       let noteIds = Array.isArray(command.noteIds) ? command.noteIds.filter((id, index, all) => all.indexOf(id) === index && exists(id)) : [...current.noteIds];
       if (Array.isArray(command.add)) for (const id of command.add) if (exists(id) && !noteIds.includes(id)) noteIds.push(id);
       if (Array.isArray(command.remove)) noteIds = noteIds.filter((id) => !command.remove.includes(id));
+      // Held in story order, whatever order the cards were added (R62): the
+      // rule below folds the first card in the story, not the last one named.
+      noteIds = storyOrder(state, noteIds).map((note) => note.id);
       const name = command.name === undefined ? current.name : cleanThreadName(command.name) || current.name;
       const startOpen = typeof command.startOpen === "boolean" ? command.startOpen : current.startOpen;
       const endOpen = typeof command.endOpen === "boolean" ? command.endOpen : current.endOpen;

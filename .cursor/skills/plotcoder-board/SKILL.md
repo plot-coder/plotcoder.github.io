@@ -154,9 +154,9 @@ only when the server is started with `PLOTCODER_JSON=1`.
   true/false (the card tools that take several cards take `ids`; the group and
   cast tools take `noteIds`, because a group has an `id` of its own). Fold a
   card when the writer says it sets something up, and say **what** in the
-  writer's words — `what: "the wrong tools"` — which folds the card and
-  puts the words on its edge ("Plants · the wrong tools"); `create_note`
-  takes `plantsWhat`. `read_wall` then asks where the wrong tools come back,
+  writer's words — `what: "the letter"` — which folds the card and
+  puts the words on its edge ("Plants · the letter"); `create_note`
+  takes `plantsWhat`. `read_wall` then asks where the letter comes back,
   and the setup line names them; `what: ""` keeps the fold and drops the
   words. A card has one fold: a second thing the same scene plants is a
   thread. A payoff the writer knows without a scene for it — "he gives her
@@ -206,7 +206,7 @@ only when the server is started with `PLOTCODER_JSON=1`.
   and string it through cards by id or headline in story order; say
   `startOpen` when the writer knows where it comes out and not where it is
   first seen, `endOpen` the other way round. The reading lists every thread
-  and asks about each open end from that end — "where is the bucket first
+  and asks about each open end from that end — "where is the ring first
   seen?" — until `update_thread` ties it (`add` the card and `startOpen`
   false in one call). The wall draws it as a dashed string through its
   cards, a ring where an end is loose. A thread is beside the fold and the
@@ -381,7 +381,7 @@ card of another board is not asked about as uncast here.
   whatever its board count: a series' line, or what is true before a film
   starts — "the winter the shop closes" — so a
   one-board film's standing facts have a home that is not a person's notes.
-  Not decided — "housing, or a supermarket" — `set_premise` with `open` and
+  Not decided — "a sale, or a lease" — `set_premise` with `open` and
   the writer's words leaves it open; a line decides it.
 - `list_reminders` / `add_reminder` / `remove_reminder` — the writer's
   principles. Read them before building or reading a wall; add only what the
@@ -469,9 +469,10 @@ card of another board is not asked about as uncast here.
 
 ## Workflow
 
-1. **Start as the on-ramp says** — `list_words`, `read_wall`, `list_workflows`,
-   `list_reminders` — then `list_board` before any move, edit, group, or arrow,
-   and use the real `id`s it returns. Never guess ids.
+1. **Start as the on-ramp says** — the five calls, in any order: `list_words`,
+   `read_wall`, `list_workflows`, `list_reminders`, `list_board` — and use
+   the real `id`s `list_board` returns before any move, edit, group, or
+   arrow. Never guess ids.
 2. Give every card a real `headline` and `change` — not placeholders. A card
    whose change line is empty is a card that has not earned its place.
 3. To lay cards out, draw the arrows and call `organize`. A straight

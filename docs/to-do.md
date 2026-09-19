@@ -34,9 +34,9 @@ order), fixed. Merged as pull request #104 and released as 0.1.34.
 0a. ~~**R64, Help in the app**~~ **Built 2026-09-19** on Robert's "A": Help,
    top right; the sheet; `questions` on the account; `list_questions` and
    `answer_question`. Merged as pull request #110 and released as 0.1.36.
-   **Two things to do by hand:** apply
-   `supabase/migrations/20260919170000_questions.sql` through the connector
-   (until then Ask says it is not switched on); and set up the weekly
+   **The migration is applied** (2026-09-19, through the Management API with
+   a personal access token, since no session held the connector; the token
+   was removed after use). **One thing to do by hand:** set up the weekly
    agent — a scheduled session that, with `SUPABASE_SERVICE_ROLE_KEY` in the
    server's environment, calls `list_questions`, writes each answer into
    `public/writers.html` in the section it names, opens one pull request,

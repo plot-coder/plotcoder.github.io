@@ -30,4 +30,4 @@ membership its policies read still exists.
 did not answer. A writer inserts and reads their own; nobody else reads. The
 maintainer's tools, `list_questions` and `answer_question`, take
 `SUPABASE_SERVICE_ROLE_KEY` from the server's environment, as the wipe script
-does. Apply `migrations/20260919170000_questions.sql` through the connector.
+does. `migrations/20260919170000_questions.sql` was applied 2026-09-19 through the Management API's query endpoint with a personal access token, the connector being in no session that day; a later migration can go the same way, or through the connector as before.

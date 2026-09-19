@@ -40,7 +40,7 @@ Before you paste:
    "PLOTCODER_PASSWORD": "test" } }` — and start the session after. It has
    vanished before three rounds now.
 2. **Land the fixes where the round will find them.** Both plotcoder.com and
-   `npx -y plotcoder-board@latest` carry 0.1.36, which has everything round
+   `npx -y plotcoder-board@latest` carry 0.1.38, which has everything round
    twenty produced and the open place and title; if code has changed since,
    merge to `main`, wait for the Pages deploy, and release from a current
    `main`:

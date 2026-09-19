@@ -982,7 +982,7 @@ const CHECK_WORDS = {
   sag: "no run out of proportion",
   empty: "no beats back to back",
   unwritten: "no card without a headline or change line",
-  unlinked: "no card without an arrow",
+  unlinked: "no card without a follows arrow (a setup arrow is a claim, not a place in the story)",
   duplicate: "no two headlines alike",
   sequence: "no group too long for one sequence (act groups are not asked)",
   uncast: "nobody in the cast on no card of the project",
@@ -1345,11 +1345,13 @@ server.registerTool(
       rank: rankSchema.optional(),
       pages: pagesSchema.optional(),
       plants: z.boolean().optional(),
-      plantsWhat: z.string().optional(),
+      plantsWhat: z.string().optional().describe("What the folded corner plants, in the writer's words; naming it folds the card."),
       after: z.string().optional().describe("Wire the new scene into the story after this card (id or headline): one call, one number under a lock. On a wall with no follows arrows yet this draws the first, so a wall can be built in order from its second card."),
       before: z.string().optional().describe("Or before this card (id or headline)."),
       location: z.string().optional(),
       when: z.string().optional().describe('When the scene happens, as the writer says it — "night", "day four, dawn" — printed after the place on the scene heading.'),
+      locationOpen: z.string().optional().describe("The writer's words for why the place is not decided (R61's edge): the card is born with its place open, listed and not asked where, while its other questions stand."),
+      whenOpen: z.string().optional().describe("The writer's words for why the when is not decided: the card is born with its when open, listed and not asked."),
       open: z.string().optional().describe("The writer's words for what is not decided about this card — \"whether Tom knows\" — so the card is born open: the reading lists it and asks nothing else of it until the words are cleared."),
       characters: z.array(z.string().min(1)).optional(),
       x: z.number().optional(),
@@ -1389,6 +1391,8 @@ server.registerTool(
         plants: args.plants,
         plantsWhat: args.plantsWhat,
         location: args.location,
+        locationOpen: args.locationOpen,
+        whenOpen: args.whenOpen,
         when: args.when,
         open: args.open,
         x: landing.x,
@@ -1433,8 +1437,8 @@ server.registerTool(
       result?.lengthEighths === null ? "about a page (unsized: the writer's guess until set_length)" : `${formatPages(noteEighths(result))} ${formatPages(noteEighths(result)) === "1" ? "page" : "pages"}`,
       result?.color ? `${result.color} paper${args.color ? "" : once("paper", " (pass color to choose)")}` : null,
       result?.plants ? `corner folded${result.plantsWhat ? ` — plants ${result.plantsWhat}` : ""}` : null,
-      result?.location ? `at ${result.location}` : `no place yet${once("place", " (location here, or set_location)")}`,
-      result?.when ? `when: ${result.when}` : null,
+      result?.location ? `at ${result.location}` : result?.locationOpen ? `place open: "${result.locationOpen}" (listed, not asked where)` : `no place yet${once("place", " (location here, or set_location)")}`,
+      result?.when ? `when: ${result.when}` : result?.whenOpen ? `when open: "${result.whenOpen}" (listed, not asked)` : null,
       result?.open ? `open: "${result.open}" (listed, not asked about)` : null,
     ].filter(Boolean).join(", ");
     // Where it landed matters only until the tidy, so the reply says the rule once and never the coordinates (round fourteen, entry 11).
@@ -1669,7 +1673,10 @@ server.registerTool(
         if (kind === "sequence" && state.groups.length === 0) return "no group too long for one sequence (not asked: no groups)";
         // A kind clean only because an open card is not asked says so (round eighteen, entry 18).
         const hiddenBy = reading.open.filter((item) => item.hides.includes(kind)).length;
-        if (hiddenBy) return `${CHECK_WORDS[kind]} (except ${hiddenBy} open card${hiddenBy === 1 ? "" : "s"}, not asked)`;
+        // A place left open is not an open card (round twenty-one, entry 26): say which.
+        const placesOpen = kind === "unplaced" ? reading.openFields.filter((field) => field.field === "location").length : 0;
+        const except = [hiddenBy ? `${hiddenBy} open card${hiddenBy === 1 ? "" : "s"}` : "", placesOpen ? `${placesOpen} with ${placesOpen === 1 ? "its" : "their"} place open` : ""].filter(Boolean).join(" and ");
+        if (except) return `${CHECK_WORDS[kind]} (except ${except}, not asked)`;
         return CHECK_WORDS[kind];
       }).join("; ") || "(nothing — every check found something)"}`,
     ];
@@ -2286,7 +2293,7 @@ server.registerTool(
       if (/^\.(?!\.)/.test(line) && index < ids.length) {
         const note = state.notes.find((item) => item.id === ids[index]);
         index += 1;
-        const standIn = note && !(note.location ?? "").trim() ? `${note.open ? " · open card" : ""} · no place: the headline stands in for the heading${note.open ? ", not a place" : ""}` : "";
+        const standIn = note && !(note.location ?? "").trim() ? ((note.locationOpen ?? "").trim() ? ` · place open: the writer's words head the scene, marked, not a place` : `${note.open ? " · open card" : ""} · no place: the headline stands in for the heading${note.open ? ", not a place" : ""}`) : "";
         const numbered = note && pageNumbers?.get(note.id) ? ` · locked no. ${pageNumbers.get(note.id)}` : "";
         const mark = note ? marks.get(note.id) : null;
         const sourceLines = (note?.text ?? "").split("\n");

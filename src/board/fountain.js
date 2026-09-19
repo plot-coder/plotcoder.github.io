@@ -24,10 +24,16 @@ function upper(text) {
  * A forced scene heading: the place, or the headline when the card has none,
  * and the card's when after a dash — THE PIER AT FENIT - NIGHT (R55).
  */
+/** The heading's mark for a place the writer has left open (R61's edge): the words print, and never read back as a place. */
+export const OPEN_PLACE_HEADING = "PLACE NOT DECIDED:";
+
 export function sceneHeading(note) {
   const place = typeof note.location === "string" ? note.location.trim() : "";
+  const placeOpen = typeof note.locationOpen === "string" ? note.locationOpen.trim() : "";
   const when = typeof note.when === "string" ? note.when.trim() : "";
-  const words = place || note.headline || "UNTITLED";
+  // No place but the writer's words for why: the words head the scene, marked,
+  // so a reader never takes them for a place and the headline is not a slugline.
+  const words = place || (placeOpen ? `${OPEN_PLACE_HEADING} ${placeOpen}` : "") || note.headline || "UNTITLED";
   return `.${upper(words)}${when ? ` - ${upper(when)}` : ""}`;
 }
 
@@ -266,6 +272,8 @@ export function mergeFountain(state, parsed) {
     const headline = scene.synopsis || titleCase(scene.heading);
     const isPlace = scene.forced && Boolean(scene.synopsis);
     const parts = splitHeading(scene.heading);
+    // A heading that says the place is not decided comes back as an open place, not a place named that.
+    const openPlace = parts.place.toUpperCase().startsWith(OPEN_PLACE_HEADING) ? parts.place.slice(OPEN_PLACE_HEADING.length).trim().toLowerCase() : "";
     const id = `scene-${Math.random().toString(36).slice(2, 8)}`;
     // A marked body is an unwritten scene: its words are the change line, not a page.
     const body = unmark(scene.text);
@@ -274,7 +282,8 @@ export function mergeFountain(state, parsed) {
       id,
       headline,
       change: body.marked ? body.text || "What changes?" : scene.text ? firstSentence(scene.text) : "What changes?",
-      location: isPlace ? titleCase(parts.place) : "",
+      location: isPlace && !openPlace ? titleCase(parts.place) : "",
+      locationOpen: isPlace && openPlace ? openPlace : "",
       when: isPlace ? parts.when.toLowerCase() : "",
       text: body.marked ? "" : scene.text,
       x: anchor ? anchor.x + 40 : 140,

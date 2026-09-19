@@ -38,12 +38,20 @@ order), fixed. Merged as pull request #104 and released as 0.1.34.
    `open`, `new_project` with `open` in place of a name, the reading's
    open head, the place line's offer before the dot, the panel. Merged as
    pull request #106 and released as 0.1.35. Not yet run blind.
-2. **Round twenty-one is cued** — `blind-runs/prompt.md` — the same notes
-   with the place and the title open and the tie rule right, against
-   0.1.35: does a stranger leave the title and the places open through the
-   fields' own `open`; does the tie rule do both halves right when the key
-   (a taken fold) and the bucket (a free fold) are decided; do an
-   open-placed card's other questions stand. Run it as twenty was run.
+2. ~~**Round twenty-one is cued**~~ **Run 2026-09-19** —
+   `blind-runs/round-twenty-one-report.md`, forty-two entries, eight fixed
+   the same morning, the three measurements answered in its head: the
+   title and the places left open through the fields' own `open`, the tie
+   rule right both ways, an open-placed card's other questions standing.
+   **Next:** the rounds on "The Allotments" have run five times and the
+   findings are now mostly repeats (a target, acts and lengths that cannot
+   be open; a measured eighth under an unsized page; the three lengths).
+   The next round should start from a new page of notes, or the practice
+   pauses for the calls below. Two small things from twenty-one worth a
+   sentence: the guide could say which of `set_location`'s `open` and
+   `leave_question` answers "leave it open" on an asked question (24), and
+   the guide's copy of the treatment questions could go, since the workflow
+   carries them with their tools (2).
 3. Robert's calls (section 3) and the smaller things (section 4). New in
    twenty: a placeless card's heading on the pages, said by three rounds
    (18:46, 19:44, 20:48) — decide; "Con does not die in this film" and the

@@ -6,7 +6,7 @@ The guide: https://plotcoder.com/guide.md. Read it once, before your first call 
 
 ## Call these first
 1. list_words — the room's words, the app's meaning.
-2. read_wall — the reading: the beats, the runs, the setups, and what the wall asks. The records — every card, the cast, the places, the rows — are list_board's. A fresh folder holds a sample wall (Maya, Tom, the letter) and the reading says so only when it is the sample; it is not the writer's.
+2. read_wall — the reading: the beats, the runs, the setups, and what the wall asks. The records — every card, the cast, the places, the rows — are list_board's. A fresh folder holds a sample wall (Maya, Tom, the letter) and the reading says so only when it is the sample; it is not the writer's. An account can hold a wall from earlier work that is neither the sample nor what the writer means to work now: every reading names the project it read and list_projects names who is on it; ask the writer before touching it, and new_project starts theirs beside it.
 3. list_workflows — what a writer can ask you for.
 4. list_reminders — the house principles the app starts with, and the writer's own; read them before you change anything. Reminders live on the project and go with it.
 5. list_board — the records — every card, the cast, the places, the rows — with their ids, which the reading does not carry and every write needs.

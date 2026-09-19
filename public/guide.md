@@ -119,10 +119,13 @@ only when the server is started with `PLOTCODER_JSON=1`.
 
 ### Cards
 
-- `create_note` — add a card. Requires `headline` **and** `change`. Optional
-  `color` (yellow, pink, blue, green, orange), `rank`, `pages`, `plants`,
-  `location`, `when`, `characters` (names; a name not in the cast is added to
-  it), and `x`/`y`. The reply names the card's id and what landed. Make cards
+- `create_note` — add a card. Requires `headline` **and** `change` — unless
+  the card is born open with `open`, when the change line may wait for the
+  writer (the schema can only mark the headline required; this is the
+  rule). Optional `color` (yellow, pink, blue, green, orange), `rank`,
+  `pages`, `plants` and `plantsWhat`, `location` or `locationOpen`, `when`
+  or `whenOpen`, `open`, `characters` (names; a name not in the cast is
+  added to it), and `x`/`y`. The reply names the card's id and what landed. Make cards
   one call at a time, in story order, or wire each with `after`: an unwired
   card's place in the order is its position on the wall, and calls run in
   parallel land in whatever order they arrive. **A scene is one

@@ -16,7 +16,8 @@ fifty-seven entries, twenty-two fixed the same morning, the four
 measurements answered in its head: the fields left open through their own
 `open`, the fold named, the known payoff on an open card with its arrow,
 and the key's decision finding a bug in the tie rule (the thread's list
-order), fixed. **Next, in order:**
+order), fixed. Merged as pull request #104 and released as 0.1.34.
+**Next, in order:**
 
 1. **R61's edge: a place and a project's name that can be open** (twenty 6,
    16). The same drawing as the when's — the place line reads "at · Open
@@ -116,8 +117,9 @@ that way, one pull request per fix or per round.
 (a hook rewrites the README's "Version x.y.z." line), `git push`,
 `git push --tags`; the tag runs the "Publish to npm" workflow, and the
 registry lags a few minutes (`npm view plotcoder-board dist-tags.latest
---prefer-online`). Then a pull request for the version commit. 0.1.32 is the
-latest.
+--prefer-online`). Then a pull request for the version commit. 0.1.34 is the
+latest (0.1.33 was cut from `main` between #103 and #104 by another
+session, before the round's fixes).
 
 **Drive a blind run:** Robert opens a fresh session with
 `blind-runs/prompt.md`; this side relays the writer's answers and the

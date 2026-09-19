@@ -41,7 +41,8 @@ order), fixed. Merged as pull request #104 and released as 0.1.34.
    answered by the writer; two bugs found and fixed on the way, released as
    0.1.40. The service key for them sits in this worktree's ignored
    `.env.local` on Robert's Mac. **Anyone may ask** since the same evening:
-   `20260919190000_questions_anyone.sql` — applied? see below. **One thing
+   `20260919190000_questions_anyone.sql`, applied and tested live the same
+   evening (a stranger's row goes in, a named or over-long one is refused). **One thing
    to do by hand:** set up the weekly
    agent — a scheduled session that, with `SUPABASE_SERVICE_ROLE_KEY` in the
    server's environment, calls `list_questions`, writes each answer into

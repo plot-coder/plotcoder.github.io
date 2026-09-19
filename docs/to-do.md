@@ -70,9 +70,13 @@ order), fixed. Merged as pull request #104 and released as 0.1.34.
    calls decided on the calls page and built the same day — the tails,
    the hosted door on Supabase, presence, R65's two versions of a scene,
    the camera, the open target, the sketch, and Playwright installed —
-   merged as pull request #119 and released as 0.1.39. **Next:** round
-   twenty-two, wired through the hosted door as a desktop-app connector
-   (call 3), on a new page of notes; the section 3 calls that remain are
+   merged as pull request #119 and released as 0.1.39. The door's name,
+   `https://mcp.plotcoder.com`, a Cloudflare Worker in `cloudflare/mcp-door`
+   in front of the function, deployed and verified the same day; merged as
+   pull request #124 and released as 0.1.41 (0.1.40 was the other session's
+   Help release). **Next:** round twenty-two, wired through
+   `https://mcp.plotcoder.com` as a desktop-app connector (call 3), on a
+   new page of notes; the section 3 calls that remain are
    the smaller ones in section 4.
 3. Robert's calls (section 3) and the smaller things (section 4). New in
    twenty: a placeless card's heading on the pages, said by three rounds
@@ -164,7 +168,7 @@ that way, one pull request per fix or per round.
 registry lags a few minutes (`npm view plotcoder-board dist-tags.latest
 --prefer-online`). Then a pull request for the version commit. The hosted
 door pins the package version in `supabase/functions/mcp/index.ts`; bump
-it and redeploy when the door should carry the release. 0.1.40 is the
+it and redeploy when the door should carry the release. 0.1.41 is the
 latest (0.1.33 was cut from `main` between #103 and #104 by another
 session, before the round's fixes).
 

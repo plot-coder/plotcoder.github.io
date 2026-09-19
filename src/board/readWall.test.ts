@@ -129,7 +129,7 @@ describe("findings", () => {
 
   it("returns nothing at all for an empty board", () => {
     const reading = readWall(emptyState());
-    expect(reading).toEqual({ order: [], beats: [], runs: [], setups: [], payoffs: {}, later: [], paidBy: [], open: [], openFields: [], threads: [], findings: [], left: [] });
+    expect(reading).toEqual({ order: [], beats: [], runs: [], setups: [], payoffs: {}, later: [], paidBy: [], open: [], openFields: [], versions: [], threads: [], findings: [], left: [] });
   });
 
   it("notes that runs cannot be read until a beat is marked, and passes no judgement on the count", () => {
@@ -538,6 +538,19 @@ describe("what the fold plants (R62): the question and the setup in the writer's
     expect(readWall(bare).findings.find((finding) => finding.kind === "unpaid")?.text).toBe('"The first morning" plants something, and no arrow pays it off. Where does it come back?');
     const paid = run(state, { type: "create_arrow", from: "a", to: "b", kind: "setup" });
     expect(describeSetups(readWall(paid), paid)[0]).toContain('"The first morning" sets up "Con gives Ruth his tools" — the wrong tools,');
+  });
+});
+
+describe("two versions of one scene (R65): listed, never asked", () => {
+  it("lists the pair in story order and asks nothing of the version", () => {
+    const state = run(
+      wall({ id: "a", headline: "The balcony" }, { id: "b", headline: "Con dies" }),
+      { type: "set_alternative", id: "b", of: "a" },
+    );
+    const reading = readWall(state);
+    expect(reading.versions).toEqual([{ id: "a", alternatives: ["b"] }]);
+    expect(reading.order).toEqual(["a"]);
+    expect(reading.findings.every((finding) => !finding.ids.includes("b"))).toBe(true);
   });
 });
 

@@ -22,6 +22,7 @@ import {
   type BoardState,
   type Command,
   type BoardThread,
+  storyOrder,
 } from "./reducer";
 
 const NOW = "2026-01-01T00:00:00.000Z";
@@ -870,6 +871,62 @@ describe("what the fold plants (R62)", () => {
     expect(appended.state.notes.find((note) => note.id === "k")?.plants).toBe(false);
     // A loose end, or one card: no rule.
     expect((applyCommand(wallOf, { type: "create_thread", id: "b", name: "the bucket", noteIds: ["t"], startOpen: true }, NOW).result as { fold: Fold }).fold).toBeNull();
+  });
+});
+
+describe("two versions of one scene (R65)", () => {
+  it("sets a card behind another, out of the order and the count; choosing either leaves one scene", () => {
+    const wallOf = run(
+      emptyState(),
+      { type: "create_note", id: "a", headline: "The parish hall", change: "x" },
+      { type: "create_note", id: "b", headline: "They lose the plots", change: "x" },
+      { type: "create_note", id: "c", headline: "Con dies", change: "x" },
+      { type: "create_arrow", from: "a", to: "b", kind: "follows" },
+      { type: "create_arrow", from: "b", to: "c", kind: "follows" },
+    );
+    const paired = run(wallOf, { type: "set_alternative", id: "c", of: "b" });
+    expect(paired.notes.find((note) => note.id === "c")?.alternativeOf).toBe("b");
+    expect(storyOrder(paired).map((note) => note.id)).toEqual(["a", "b"]);
+    expect(boardEighths(paired)).toBe(boardEighths(wallOf) - 8);
+    expect(paired.arrows.some((arrow) => arrow.to === "c")).toBe(false);
+    expect(applyCommand(paired, { type: "set_alternative", id: "c", of: "b" }, NOW).changed).toBe(false);
+    // A version of a version, or a front made a version: refused.
+    expect(applyCommand(paired, { type: "set_alternative", id: "a", of: "c" }, NOW).changed).toBe(false);
+    expect(applyCommand(paired, { type: "set_alternative", id: "b", of: "a" }, NOW).changed).toBe(false);
+    // Choosing the front: the version goes.
+    const front = run(paired, { type: "choose_version", id: "b" });
+    expect(front.notes.map((note) => note.id)).toEqual(["a", "b"]);
+    // Choosing the version: it steps into the front's place with its arrows; the front goes.
+    const behind = run(paired, { type: "choose_version", id: "c" });
+    expect(behind.notes.map((note) => note.id)).toEqual(["a", "c"]);
+    expect(behind.notes.find((note) => note.id === "c")?.alternativeOf).toBeNull();
+    expect(behind.arrows.some((arrow) => arrow.from === "a" && arrow.to === "c")).toBe(true);
+    // Keep: the other stands beside, plain and unwired.
+    const kept = run(paired, { type: "choose_version", id: "c", keep: true });
+    expect(kept.notes.map((note) => note.id).sort()).toEqual(["a", "b", "c"]);
+    expect(kept.notes.find((note) => note.id === "b")?.alternativeOf).toBeNull();
+    expect(kept.arrows.some((arrow) => arrow.to === "b" || arrow.from === "b")).toBe(false);
+    // Deleting the front leaves the version as a plain card; a load repairs a stale sibling.
+    expect(run(paired, { type: "delete_note", id: "b" }).notes.find((note) => note.id === "c")?.alternativeOf).toBeNull();
+    const old = JSON.parse(JSON.stringify(paired));
+    (old.notes as Array<{ id: string; alternativeOf: string | null }>).find((note) => note.id === "c")!.alternativeOf = "ghost";
+    expect(normalizeState(old).notes.find((note) => note.id === "c")?.alternativeOf).toBeNull();
+  });
+});
+
+describe("set_target with open (the handover's call 6)", () => {
+  it("leaves the target open in the writer's words while the number stands; a number decides it", () => {
+    const open = run(emptyState(), { type: "set_target", open: "half-hour or feature" });
+    expect(open.targetOpen).toBe("half-hour or feature");
+    expect(open.targetEighths).toBe(emptyState().targetEighths);
+    expect(applyCommand(open, { type: "set_target", open: "half-hour or feature" }, NOW).changed).toBe(false);
+    const decided = run(open, { type: "set_target", targetEighths: 90 * 8 });
+    expect(decided.targetEighths).toBe(90 * 8);
+    expect(decided.targetOpen).toBe("");
+    expect(run(open, { type: "set_target", open: "" }).targetOpen).toBe("");
+    const old = JSON.parse(JSON.stringify(open));
+    delete old.targetOpen;
+    expect(normalizeState(old).targetOpen).toBe("");
   });
 });
 

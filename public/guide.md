@@ -199,6 +199,16 @@ only when the server is started with `PLOTCODER_JSON=1`.
   card's other questions stand (unlike `set_open` on the whole card); a
   place decides it, `open: ""` leaves it blank; `create_note` takes
   `locationOpen`.
+- `set_alternative` / `choose_version` — **two versions of one scene** (R65):
+  set a card behind another as its other version, by id or headline, and it
+  leaves the story — out of the order, the count, the pages and every
+  export, its follows arrows dropped — and waits there; the wall draws it
+  tucked behind its sibling and `read_wall` lists the pair under "two
+  versions, not chosen", asking nothing of it. `choose_version` decides: the
+  chosen card is the scene, in the front card's place with its arrows, rank
+  and group; the other goes, or stands beside it as a plain card with
+  `keep`. `of: ""` takes a card out from behind. Only on the writer's word:
+  two versions the notes hold, never two the agent could not choose between.
 - `set_open` — leave a card **open**, with the writer's words for what is
   not decided: "whether Tom knows", "who sent the letter". The reading
   lists open cards under their own head and asks nothing of the card itself
@@ -426,6 +436,10 @@ card of another board is not asked about as uncast here.
   `boardOpen` and `new_board`'s `open` for a board born from a maybe). Only
   on the writer's word, never to fill a field you could not decide.
 - `set_target` — target script length in `pages`: 120 feature, 60 hour, 30 half.
+  Not decided — "half-hour or feature" — `set_target` with `open` and the
+  writer's words leaves the target open: the reading lists it, reads the
+  runtime against a half-hour and a feature meanwhile, and a number decides
+  it; `new_project` takes `targetOpen` the same way.
 - `create_group` — frame two or more cards: `noteIds`, with an optional
   `title`. The reply names the group's id. A cold open is not an act: leave
   its card outside any group, and a one-card cold open could not be a frame
@@ -516,6 +530,29 @@ PlotCoder's words — beat, logline, change line, the folded corner, eighths —
 are the room's, and many writers are not from the room. `list_words` gives
 every one in a sentence, the app's own meaning; use those sentences rather
 than a dictionary's, so the app and you never explain a word two ways.
+
+## The reply's tail, presence, a sketch, and the camera
+
+- **A write's tail** says when the wall's questions changed. Until the
+  session's first `read_wall` it counts and points — "the wall's questions
+  have changed since your last read_wall: 4 now, 2 of them new" — because a
+  build is a run of writes whose quoted questions the next write answers;
+  after the first reading it quotes them.
+- **The account tail** says what the wall shows: "open on Robert's screen
+  now", or "no wall open right now — it shows the moment one opens", read
+  from the presence the server already follows; `list_projects` says the
+  same of the working project. Never "seen by": presence lags a second or
+  two.
+- **A sketch:** a written scene measured under the page it was read as is
+  named one — on `write_scene`'s reply, on the card's line in `list_board`,
+  and on the runtime line, which carries the second number: "about 11 pages
+  if it ran to that". The measure is still the count; the reading says
+  which count it is.
+- **The camera:** `write_scene`'s reply and `read_pages` mark the action
+  lines that say what someone knows, feels, thinks or wants — "2 lines the
+  camera cannot see (knows, feels)", and ◂ beside each on the page. Never a
+  question on the wall: the house principle is the reminder's, and a
+  sentence on a page is the writer's. Dialogue is never read.
 
 ## Do not have opinions about beat count, and do not treat page counts as facts
 

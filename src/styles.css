@@ -4767,3 +4767,9 @@ body {
   margin-top: 0.2rem;
   color: var(--ink);
 }
+
+/* Another version of a scene (R65): tucked behind its sibling, a shade quieter, until chosen. */
+.note.is-version {
+  opacity: 0.92;
+  filter: brightness(0.96);
+}

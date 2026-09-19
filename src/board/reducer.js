@@ -167,7 +167,7 @@ export function isMeasured(note) {
 }
 
 export function boardEighths(state) {
-  return state.notes.reduce((total, note) => total + noteEighths(note), 0);
+  return state.notes.reduce((total, note) => total + (note.alternativeOf ? 0 : noteEighths(note)), 0);
 }
 
 /**
@@ -220,6 +220,7 @@ export function emptyState() {
   return {
     logline: "",
     targetEighths: DEFAULT_TARGET_EIGHTHS,
+    targetOpen: "",
     loglineOpen: "",
     characters: [],
     notes: [],
@@ -256,6 +257,8 @@ export function seedState(now = nowIso()) {
     plants: false,
     // What the fold plants, in the writer's words (R62), or nothing.
     plantsWhat: "",
+    // Another version of another card (R65): the card this one stands behind, or null.
+    alternativeOf: null,
     // A fold that pays off on another board — a later episode — names it here;
     // null claims nothing (R50). The scene there that pays it off, once one
     // does (R58); null while the board is a promise.
@@ -274,6 +277,7 @@ export function seedState(now = nowIso()) {
     // new writer finds out the logline is there at all.
     logline: "",
     targetEighths: DEFAULT_TARGET_EIGHTHS,
+    targetOpen: "",
     loglineOpen: "",
     // Two people, cast on the cards, so a new writer sees what the roster is for.
     characters: [
@@ -349,7 +353,8 @@ export function normalizeState(value) {
   // Cards written before R25 have no length; a scene is about a page. Cards
   // written before R29 have no cast; nobody is in the scene until someone is.
   let patched = false;
-  const notes = value.notes.map((note) => {
+
+  const rawIds = new Set((value.notes ?? []).map((item) => item?.id).filter((id) => typeof id === "string"));  const notes = value.notes.map((note) => {
     const rank = note && NOTE_RANKS.includes(note.rank) ? note.rank : "scene";
     // Unsized stays unsized: null (or no field, before R25) claims nothing and
     // reads as about a page. A number is the writer's estimate, kept in range.
@@ -368,6 +373,8 @@ export function normalizeState(value) {
     const payoffNoteId = payoffBoardId && typeof note?.payoffNoteId === "string" && note.payoffNoteId ? note.payoffNoteId : null;
     // Cards written before R59 are not open; a card claims to be decided until the writer says otherwise.
     const open = typeof note?.open === "string" ? note.open : "";
+    // Cards written before R65 are versions of nothing; a version whose sibling is gone, or of itself, stands as a plain card.
+    const alternativeOf = typeof note?.alternativeOf === "string" && note.alternativeOf !== note?.id && rawIds.has(note.alternativeOf) ? note.alternativeOf : null;
     // Cards written before R37 have no place; a scene is nowhere until it is.
     const location = typeof note?.location === "string" ? note.location : "";
     // Cards written before R61's edge have no open place; a place is decided or blank until the writer says otherwise.
@@ -386,6 +393,7 @@ export function normalizeState(value) {
       sameIds(note.characterIds, characterIds) &&
       note.plants === plants &&
       note.plantsWhat === plantsWhat &&
+      note.alternativeOf === alternativeOf &&
       note.payoffBoardId === payoffBoardId &&
       note.payoffNoteId === payoffNoteId &&
       note.open === open &&
@@ -398,8 +406,17 @@ export function normalizeState(value) {
       return note;
     }
     patched = true;
-    return { ...note, rank, lengthEighths, characterIds, plants, plantsWhat, payoffBoardId, payoffNoteId, open, location, locationOpen, when, whenOpen, text };
+    return { ...note, rank, lengthEighths, characterIds, plants, plantsWhat, alternativeOf, payoffBoardId, payoffNoteId, open, location, locationOpen, when, whenOpen, text };
   });
+  // A version of a version is a version of the front card, so the pair stays a pair.
+  for (const [index, note] of notes.entries()) {
+    if (!note.alternativeOf) continue;
+    const front = notes.find((item) => item.id === note.alternativeOf);
+    if (front?.alternativeOf) {
+      patched = true;
+      notes[index] = { ...note, alternativeOf: front.alternativeOf === note.id ? null : front.alternativeOf };
+    }
+  }
 
   // Boards written before the production half (Roadmap 2, item 8) have no
   // lock and no revision; both are null until a draft goes out.
@@ -430,10 +447,13 @@ export function normalizeState(value) {
     .filter(Boolean);
   // Boards written before R61 have no open logline; a logline is decided or blank until the writer says otherwise.
   const loglineOpen = typeof value.loglineOpen === "string" ? value.loglineOpen : "";
+  // A target left open in the writer's words (the handover's calls, 2026-09-19): the number stands as the default meanwhile.
+  const targetOpen = typeof value.targetOpen === "string" ? value.targetOpen : "";
   if (
     value.logline === logline &&
     value.loglineOpen === loglineOpen &&
     value.targetEighths === targetEighths &&
+    value.targetOpen === targetOpen &&
     !rosterPatched &&
     !arrowsPatched &&
     !patched &&
@@ -449,6 +469,7 @@ export function normalizeState(value) {
     logline,
     loglineOpen,
     targetEighths,
+    targetOpen,
     characters,
     notes: patched ? notes : value.notes,
     arrows: arrowsPatched ? arrows : value.arrows,
@@ -491,6 +512,11 @@ function cleanOpen(value) {
 /** Cards within half a card's height of each other sit on one row. */
 const ROW_TOLERANCE = NOTE_HEIGHT / 2;
 
+/** A card that is another version of a card is not in the story (R65): not in the order, the count or the pages, until chosen. */
+export function inStory(note) {
+  return !note.alternativeOf;
+}
+
 export function readingOrder(notes) {
   const byTop = [...notes].sort((a, b) => a.y - b.y || a.x - b.x);
   const rows = [];
@@ -518,7 +544,7 @@ export function readingOrder(notes) {
  */
 export function storyOrder(state, ids) {
   const scope = ids ? new Set(ids) : null;
-  const notes = state.notes.filter((note) => !scope || scope.has(note.id));
+  const notes = state.notes.filter((note) => inStory(note) && (!scope || scope.has(note.id)));
   const reading = readingOrder(notes);
   const byId = new Map(reading.map((note) => [note.id, note]));
   const rank = new Map(reading.map((note, index) => [note.id, index]));
@@ -635,6 +661,7 @@ export function applyCommand(state, command, now = nowIso()) {
             ? null
             : clampEighths(command.lengthEighths, DEFAULT_NOTE_EIGHTHS, MAX_NOTE_EIGHTHS),
         characterIds: knownCast(command.characterIds, state.characters ?? []),
+        alternativeOf: null,
         plants: command.plants === true || Boolean(cleanOpen(command.plantsWhat)),
         // What it plants, in the writer's words (R62): naming a plant folds the card.
         plantsWhat: command.plants === false ? "" : cleanOpen(command.plantsWhat),
@@ -716,19 +743,14 @@ export function applyCommand(state, command, now = nowIso()) {
     }
 
     case "set_target": {
-      const targetEighths = clampEighths(
-        command.targetEighths,
-        DEFAULT_TARGET_EIGHTHS,
-        MAX_TARGET_EIGHTHS,
-      );
-      if (targetEighths === (state.targetEighths ?? DEFAULT_TARGET_EIGHTHS)) {
-        return { state, changed: false };
-      }
-      return {
-        state: { ...state, targetEighths },
-        changed: true,
-        result: { targetEighths },
-      };
+      // A number decides the target and clears the open words; open words
+      // leave the number where it is (the default, or the last one set) and
+      // say the writer has not decided; open "" takes the words back.
+      const hasOpen = typeof command.open === "string";
+      const targetOpen = hasOpen ? cleanOpen(command.open) : typeof command.targetEighths === "number" ? "" : (state.targetOpen ?? "");
+      const targetEighths = typeof command.targetEighths === "number" ? clampEighths(command.targetEighths, DEFAULT_TARGET_EIGHTHS, MAX_TARGET_EIGHTHS) : state.targetEighths;
+      if (targetEighths === state.targetEighths && targetOpen === (state.targetOpen ?? "")) return { state, changed: false };
+      return { state: { ...state, targetEighths, targetOpen }, changed: true, result: { targetEighths, targetOpen } };
     }
 
     case "set_rank": {
@@ -780,7 +802,7 @@ export function applyCommand(state, command, now = nowIso()) {
       const gone = state.notes.find((note) => note.id === command.id);
       if (!gone) return { state, changed: false };
       const headlineOf = (id) => state.notes.find((note) => note.id === id)?.headline ?? id;
-      const notes = state.notes.filter((note) => note.id !== command.id);
+      let notes = state.notes.filter((note) => note.id !== command.id);
       const taken = state.arrows.filter((arrow) => arrow.from === command.id || arrow.to === command.id);
       let arrows = state.arrows.filter((arrow) => !taken.includes(arrow));
       // A card wired into a chain — one follows in, one follows out — leaves
@@ -804,6 +826,8 @@ export function applyCommand(state, command, now = nowIso()) {
       );
       // A thread through the card keeps its name and loses the card (R60);
       // the thread stays, with one card fewer, so the writer can retie it.
+      // A version whose front card goes stands as a plain card (R65).
+      notes = notes.map((note) => (note.alternativeOf === command.id ? { ...note, alternativeOf: null } : note));
       const threadsLeft = [];
       const threads = (state.threads ?? []).map((thread) => {
         if (!thread.noteIds.includes(command.id)) return thread;
@@ -878,6 +902,60 @@ export function applyCommand(state, command, now = nowIso()) {
       );
       if (!touched) return { state, changed: false };
       return { state: { ...state, groups }, changed: true };
+    }
+
+    // Two versions of one scene (R65): a card set behind another as its
+    // alternative leaves the story — the order, the count, the pages — and
+    // waits there until the writer chooses one. The reading lists the pair.
+    case "set_alternative": {
+      const note = state.notes.find((item) => item.id === command.id);
+      if (!note) return { state, changed: false };
+      const of = typeof command.of === "string" && command.of ? command.of : null;
+      if (of === null) {
+        if (!note.alternativeOf) return { state, changed: false };
+        const notes = state.notes.map((item) => (item.id === command.id ? bump(item, { alternativeOf: null }, now) : item));
+        return { state: { ...state, notes }, changed: true, result: { id: command.id, of: null, arrowsDropped: 0 } };
+      }
+      const front = state.notes.find((item) => item.id === of);
+      if (!front || of === command.id || front.alternativeOf || state.notes.some((item) => item.alternativeOf === command.id)) return { state, changed: false };
+      if (note.alternativeOf === of) return { state, changed: false };
+      // Out of the story: its follows arrows go with it; setup arrows are claims and stay.
+      const arrows = state.arrows.filter((arrow) => arrow.kind === "setup" || (arrow.from !== command.id && arrow.to !== command.id));
+      const notes = state.notes.map((item) => (item.id === command.id ? bump(item, { alternativeOf: of }, now) : item));
+      return { state: { ...state, notes, arrows }, changed: true, result: { id: command.id, of, arrowsDropped: state.arrows.length - arrows.length } };
+    }
+
+    // Choose one of two versions (R65): the chosen card is the scene, in the
+    // front card's place; the other goes, or stands beside it as a plain
+    // card when the writer says keep.
+    case "choose_version": {
+      const chosen = state.notes.find((item) => item.id === command.id);
+      if (!chosen) return { state, changed: false };
+      const other = chosen.alternativeOf ? state.notes.find((item) => item.id === chosen.alternativeOf) : state.notes.find((item) => item.alternativeOf === chosen.id);
+      if (!other) return { state, changed: false };
+      const frontId = chosen.alternativeOf ? other.id : chosen.id;
+      let notes = state.notes;
+      let arrows = state.arrows;
+      let groups = state.groups;
+      if (chosen.alternativeOf) {
+        // The alternative steps forward: the front's arrows, place in the order, rank and group are its now.
+        arrows = arrows.map((arrow) => ({ ...arrow, from: arrow.from === frontId ? chosen.id : arrow.from, to: arrow.to === frontId ? chosen.id : arrow.to })).filter((arrow) => arrow.from !== arrow.to);
+        groups = groups.map((group) => (group.noteIds.includes(frontId) ? { ...group, noteIds: group.noteIds.map((id) => (id === frontId ? chosen.id : id)) } : group));
+        notes = notes.map((item) => (item.id === chosen.id ? bump(item, { alternativeOf: null, x: other.x, y: other.y, rank: other.rank, z: other.z }, now) : item));
+      }
+      const keep = command.keep === true;
+      if (keep) {
+        notes = notes.map((item) => (item.id === other.id ? bump(item, { alternativeOf: null, x: item.x + 40, y: item.y + 40 }, now) : item));
+        if (chosen.alternativeOf) {
+          arrows = arrows.filter((arrow) => arrow.kind === "setup" || (arrow.from !== other.id && arrow.to !== other.id));
+          groups = groups.map((group) => (group.noteIds.includes(other.id) ? { ...group, noteIds: group.noteIds.filter((id) => id !== other.id) } : group));
+        }
+      } else {
+        notes = notes.filter((item) => item.id !== other.id);
+        arrows = arrows.filter((arrow) => arrow.from !== other.id && arrow.to !== other.id);
+        groups = pruneGroups(groups.map((group) => ({ ...group, noteIds: group.noteIds.filter((id) => id !== other.id) })));
+      }
+      return { state: { ...state, notes, arrows, groups }, changed: true, result: { chosen: chosen.id, other: other.id, kept: keep, steppedForward: Boolean(chosen.alternativeOf) } };
     }
 
     // A thread (R60): a named string through cards, either end open until the
@@ -1167,6 +1245,7 @@ export function applyCommand(state, command, now = nowIso()) {
         characterIds: [],
         plants: false,
         plantsWhat: "",
+        alternativeOf: null,
         payoffBoardId: null,
         payoffNoteId: null,
         open: "",

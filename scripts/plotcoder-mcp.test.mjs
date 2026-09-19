@@ -146,6 +146,7 @@ describe("plotcoder MCP server", () => {
       "ask_again",
       "build_segment",
       "cast",
+      "choose_version",
       "claim_account",
       "compare_structure",
       "create_arrow",
@@ -209,6 +210,7 @@ describe("plotcoder MCP server", () => {
       "set_length",
       "set_location",
       "set_logline",
+      "set_alternative",
       "set_open",
       "set_payoff",
       "set_plant",
@@ -1060,6 +1062,45 @@ describe("open fields (R61): the logline, the premise, a when and a board's name
     await client.callTool("organize");
     const again = await client.callTool("organize");
     expect(again).toMatch(/^Nothing moved: the \d+ card\(s\) already lie along the arrows in /);
+  });
+
+  it("leaves the target open, names a sketch with its second number, and marks the lines the camera cannot see (the handover's calls 5, 6, 7)", async () => {
+    const left = await client.callTool("set_target", { open: "half-hour or feature" });
+    expect(left).toContain('Target left open, by the writer\'s word: "half-hour or feature"');
+    expect(left).toMatch(/against 30, [\d /]+ (under|over); against 120, [\d /]+ under/);
+    const read = await client.callTool("read_wall");
+    expect(read).toContain('target open, by the writer\'s word — "half-hour or feature"');
+    expect(read).toContain("  - the target — half-hour or feature");
+    expect(await client.callTool("set_target", { pages: 90 })).toContain("Target is 90 pages");
+    expect(await client.callTool("read_wall")).not.toContain("the target —");
+    // A three-line scene on an unsized card is a sketch, and the reading carries the second number.
+    const wrote = await client.callTool("write_scene", { id: "maya-letter", text: "Maya finds the letter on the mat. She knows what it is.\n\nShe feels the cold." });
+    expect(wrote).toContain("a sketch: shorter than the page it was read as");
+    expect(wrote).toContain("2 lines the camera cannot see (knows, feels)");
+    const listed = await client.callTool("list_board");
+    expect(listed).toContain("written (a sketch: under the page it was read as)");
+    expect(listed).toMatch(/1 written scene is a sketch, measured under the page it was read as: about [\d /]+ pages if it ran to that/);
+    const pages = await client.callTool("read_pages");
+    expect(pages).toContain("camera: 2 lines it cannot see (knows, feels)");
+    expect(pages).toContain("◂ knows");
+    await client.callTool("write_scene", { id: "maya-letter", text: "" });
+  });
+
+  it("holds two versions of one scene behind each other and chooses one (R65)", async () => {
+    const ending = await client.callToolData("create_note", { headline: "They lose the plots", change: "The plots are gone." });
+    const other = await client.callToolData("create_note", { headline: "Con dies", change: "Ruth plants the crowns." });
+    const paired = await client.callTool("set_alternative", { id: other.id, of: "They lose the plots" });
+    expect(paired).toContain('"Con dies" is now the other version of "They lose the plots"');
+    const listed = await client.callTool("list_board");
+    expect(listed).toContain('versions, not chosen');
+    expect(listed).toContain(`  - ${other.id} — "Con dies", a version of "They lose the plots"`);
+    expect(await client.callTool("read_wall")).toContain('  - "They lose the plots" or "Con dies"');
+    expect(await client.callTool("set_alternative", { id: ending.id, of: other.id })).toContain("is itself a version");
+    const chosen = await client.callTool("choose_version", { id: "Con dies" });
+    expect(chosen).toContain('Chose "Con dies" — it steps forward');
+    expect(chosen).toContain('"They lose the plots" is gone');
+    expect(await client.callTool("read_wall")).not.toContain("two versions");
+    await client.callTool("delete_note", { id: other.id });
   });
 
   it("bears a card with its place and when open (round twenty-one, entry 3)", async () => {

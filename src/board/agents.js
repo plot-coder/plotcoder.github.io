@@ -23,7 +23,7 @@ export const AGENTS = {
     {
       id: "hosted",
       name: "The hosted door, with nothing installed",
-      text: "Where someone runs PlotCoder's server for you — npx -y plotcoder-board@latest serve puts it on a port, and the repo has a Dockerfile — an MCP client connects over HTTP with the writer's sign-in on the request: claude mcp add plotcoder --transport http https://<that host>/mcp --header \"Authorization: Basic <base64 of email:password>\", then start the session again. The same server, the same tools, the account as the wall, no disk. PlotCoder does not run a public one yet; the address is the writer's to give.",
+      text: "Where someone runs PlotCoder's server for you — npx -y plotcoder-board@latest serve puts it on a port, and the repo has a Dockerfile — an MCP client connects over HTTP with the writer's sign-in on the request: claude mcp add plotcoder --transport http https://<that host>/mcp --header \"Authorization: Basic <base64 of email:password>\", then start the session again. The same server, the same tools, the account as the wall, no disk. PlotCoder runs one, as a Supabase Edge Function: https://kmpahjsggbleygsnuwug.supabase.co/functions/v1/mcp — claude mcp add plotcoder --transport http https://kmpahjsggbleygsnuwug.supabase.co/functions/v1/mcp --header \"Authorization: Basic <base64 of email:password>\", or in the Claude desktop app, Settings › Connectors › add a custom connector with that address and header: the app keeps a connector in its own settings, where a stdio block in a file can vanish. The password rides in the header, base64 over https, as the env block carries it; share a machine and know it.",
     },
     {
       id: "account",

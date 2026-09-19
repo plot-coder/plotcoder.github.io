@@ -32,6 +32,7 @@ import {
   NOTE_HEIGHT,
   NOTE_WIDTH,
   DEFAULT_TARGET_EIGHTHS,
+  DEFAULT_NOTE_EIGHTHS,
   normalizeState,
   newId,
   noteEighths,
@@ -43,6 +44,7 @@ import { TEMPLATES } from "../src/board/templates.js";
 import { wordSentence, wordsAsText } from "../src/board/words.js";
 import { fromFountain, mergeFountain, toFountain } from "../src/board/fountain.js";
 import { toMarkdown, toPlainText } from "../src/board/markdown.js";
+import { cameraLines, cameraVerbs } from "../src/board/camera.js";
 import { fromProjectFile, toProjectFile } from "../src/board/projectFile.js";
 import { describeSetAside, fromFdx, toFdx } from "../src/board/fdx.js";
 import { paginate } from "../src/board/paginate.js";
@@ -806,6 +808,8 @@ const undone = [];
 /** The last read_wall's questions, and what changed since: a leave answers the reading in front of the agent (round thirteen, entry 19). */
 let lastReading = null;
 const sinceRead = [];
+/** Whether this session has read a wall yet: until it has, a write's tail counts the questions and points at read_wall; after, it quotes them (the handover's call 2). */
+let readOnce = false;
 /** What the last write did to the wall's questions and runtime, said once on that write's tail (round fourteen, entries 18, 19, 42). */
 let lastChange = null;
 // The same question in the same words is the same question, whatever order its names come in (round seventeen, entry 21).
@@ -833,7 +837,13 @@ function changeNote() {
   lastChange = null;
   if (!change) return "";
   const parts = [];
-  if (change.gone.length || change.came.length) {
+  // Before the session's first reading a tail counts and points: a build is
+  // twelve writes whose quoted questions the next write answers (round
+  // fifteen 9, eighteen 20). After it, a change is to something read, and
+  // the tail quotes it.
+  if (!readOnce && (change.gone.length || change.came.length)) {
+    parts.push(`the wall's questions have changed since your last read_wall: ${change.asks} now${change.came.length ? `, ${change.came.length} of them new` : ""} — read_wall lists them`);
+  } else if (change.gone.length || change.came.length) {
     parts.push(
       `the wall now asks ${change.asks} question${change.asks === 1 ? "" : "s"}${change.gone.length ? ` (gone: ${change.gone.map((finding) => `[${finding.kind}] ${finding.text.replace(/\.$/, "")}`).join(" ")})` : ""}${change.came.length ? ` (new: ${change.came.map((finding) => `[${finding.kind}] ${finding.text.replace(/\.$/, "")}`).join(" ")})` : ""}`,
     );
@@ -964,8 +974,27 @@ function workingProject(id, name, count) {
 }
 
 /** Where a change landed, for the tail of a tool's reply. */
+/** Who has a wall of the working project open on a screen now, from the presence the server already follows (the handover's call 4); never the agent itself. */
+function presentPeople() {
+  try {
+    const state = accountDoor?.channel?.presenceState?.() ?? {};
+    const names = new Set();
+    for (const entries of Object.values(state)) for (const entry of entries ?? []) if (entry && typeof entry.name === "string" && !/^an agent, as /.test(entry.name)) names.add(entry.name);
+    return [...names];
+  } catch {
+    return [];
+  }
+}
+
+/** The account tail says what the wall shows: open on whose screen, or no wall open, never a bare "live". */
+function accountTail() {
+  const people = presentPeople();
+  if (!people.length) return " (saved to the account; no wall open right now — it shows the moment one opens)";
+  return ` (saved to the account; open on ${people.length === 1 ? `${people[0]}'s screen` : `${people.length} screens: ${people.join(", ")}`} now)`;
+}
+
 function where(live) {
-  const tail = live === ACCOUNT ? " (saved to the account; live on every open wall)" : live ? " (visible on the open board)" : " (written to file; the wall shows it the next time the app runs from this folder)";
+  const tail = live === ACCOUNT ? accountTail() : live ? " (visible on the open board)" : " (written to file; the wall shows it the next time the app runs from this folder)";
   return `${tail}${changeNote()}`;
 }
 
@@ -1038,6 +1067,25 @@ function stillOpen(notes) {
   return ` ${open.length === 1 ? `"${open[0].headline}" is still open (${open[0].open})` : `${open.length} of them are still open`}: the words stay until set_open "" clears them, and the wall asks nothing else of ${open.length === 1 ? "it" : "them"} until then.`;
 }
 
+/** "20 under", "3 over" or "on it", against a target in eighths. */
+function againstWord(state, targetEighths) {
+  const total = boardEighths(state);
+  return total > targetEighths ? `${formatPages(total - targetEighths)} over` : total < targetEighths ? `${formatPages(targetEighths - total)} under` : "on it";
+}
+
+/** The written scenes measured under the page they were read as (the handover's call 7, four rounds): a sketch is counted as measured and named. */
+function sketches(state) {
+  return state.notes.filter((note) => isMeasured(note) && noteEighths(note) < (note.lengthEighths ?? DEFAULT_NOTE_EIGHTHS));
+}
+
+/** The runtime's second number while a sketch stands: what the cards would come to if each sketch ran to the page it was read as. */
+function sketchLine(state) {
+  const found = sketches(state);
+  if (!found.length) return "";
+  const ifRan = boardEighths(state) + found.reduce((sum, note) => sum + ((note.lengthEighths ?? DEFAULT_NOTE_EIGHTHS) - noteEighths(note)), 0);
+  return `; ${found.length} written scene${found.length === 1 ? " is a sketch" : "s are sketches"}, measured under the page ${found.length === 1 ? "it was" : "they were"} read as: about ${formatPages(ifRan)} pages if ${found.length === 1 ? "it" : "they"} ran to that`;
+}
+
 /** What kinds of number a runtime folds together: measured from text, set by the writer, or the default page (round fifteen, entry 39). */
 function runtimeKinds(state) {
   const measured = state.notes.filter((note) => isMeasured(note));
@@ -1072,7 +1120,8 @@ function summarize(state) {
       const count = formatPages(noteEighths(note));
       // A written card's estimate is kept underneath for when the text goes; say it, or it is invisible (round sixteen, entry 44).
       const underneath = isMeasured(note) && note.lengthEighths !== null ? `; the writer's estimate underneath: ${formatPages(note.lengthEighths)}` : "";
-      const pages = isMeasured(note) ? `${count} ${count === "1" ? "page" : "pages"}, written${underneath}` : note.lengthEighths === null ? "about a page, unsized" : `${count} ${count === "1" ? "page" : "pages"}`;
+      const sketch = isMeasured(note) && noteEighths(note) < (note.lengthEighths ?? DEFAULT_NOTE_EIGHTHS) ? " (a sketch: under the page it was read as)" : "";
+      const pages = isMeasured(note) ? `${count} ${count === "1" ? "page" : "pages"}, written${sketch}${underneath}` : note.lengthEighths === null ? "about a page, unsized" : `${count} ${count === "1" ? "page" : "pages"}`;
       return `  - ${note.id} [${note.rank ?? "scene"}, ${pages}${who}${place}${when}${openWord}${plant}${pays}${revised}] — "${note.headline}" (${note.color}) at ${Math.round(note.x)},${Math.round(note.y)}`;
     })
     .join("\n");
@@ -1142,12 +1191,17 @@ function summarize(state) {
     ...production,
     `left, for now: ${leftCount ? `${leftCount} question(s) the writer left; read_wall lists them` : "none"}`,
     `beats: ${beats}, scenes: ${scenes}`,
-    state.targetEighths === DEFAULT_TARGET_EIGHTHS
-      ? `runtime: about ${formatPages(runtime)} pages (an estimate from the cards; a page runs about a minute); no target set — set_target for a pilot (60) or a half-hour (30); against the feature default of 120 it would be ${formatPages(-over)} under${runtimeKinds(state)}`
-      : `runtime: about ${formatPages(runtime)} pages of the ${formatPages(state.targetEighths)}-page target the writer set (set_target changes it) — ${over > 0 ? `${formatPages(over)} over` : over < 0 ? `${formatPages(-over)} under` : "on it"} (an estimate from the cards; a page runs about a minute; page_count is the script so far)${runtimeKinds(state)}`,
+    state.targetOpen
+      ? `runtime: about ${formatPages(runtime)} pages (an estimate from the cards; a page runs about a minute); target open, by the writer's word — "${state.targetOpen}" (against 30 it would be ${againstWord(state, 30 * EIGHTHS_PER_PAGE)}; against 120, ${againstWord(state, 120 * EIGHTHS_PER_PAGE)}; set_target decides it)${runtimeKinds(state)}${sketchLine(state)}`
+      : state.targetEighths === DEFAULT_TARGET_EIGHTHS
+      ? `runtime: about ${formatPages(runtime)} pages (an estimate from the cards; a page runs about a minute); no target set — set_target for a pilot (60) or a half-hour (30); against the feature default of 120 it would be ${formatPages(-over)} under${runtimeKinds(state)}${sketchLine(state)}`
+      : `runtime: about ${formatPages(runtime)} pages of the ${formatPages(state.targetEighths)}-page target the writer set (set_target changes it) — ${over > 0 ? `${formatPages(over)} over` : over < 0 ? `${formatPages(-over)} under` : "on it"} (an estimate from the cards; a page runs about a minute; page_count is the script so far)${runtimeKinds(state)}${sketchLine(state)}`,
     `notes: ${state.notes.length}, groups: ${state.groups.length}, arrows: ${state.arrows.length}, cast: ${state.characters.length}`,
     "cards (in story order — the follows arrows over the rows; each with its id):",
     notes || "  (no cards)",
+    ...(state.notes.some((note) => note.alternativeOf)
+      ? ["versions, not chosen (behind their front cards; out of the order, the count and the pages; choose_version decides):", ...state.notes.filter((note) => note.alternativeOf).map((note) => `  - ${note.id} — "${note.headline}", a version of "${state.notes.find((item) => item.id === note.alternativeOf)?.headline ?? note.alternativeOf}"`)]
+      : []),
     "rows on the wall (top to bottom, left to right; ★ a beat):",
     ...(rowLines.length ? rowLines : ["  (no cards)"]),
     "cast (the project's; every board of it casts from here; read_character reads a person's whole page, update_character writes it):",
@@ -1316,15 +1370,20 @@ server.registerTool(
   {
     title: "Set target length",
     description:
-      "Set the board's target script length, in pages or in minutes (a page runs about a minute): 120 for a feature, 30 for a half-hour, 60 for an hour drama. This is what the runtime estimate is measured against.",
-    inputSchema: { pages: pagesSchema.optional(), minutes: z.number().positive().optional() },
+      "Set the board's target script length, in pages or in minutes (a page runs about a minute): 120 for a feature, 30 for a half-hour, 60 for an hour drama. This is what the runtime estimate is measured against. Or leave the target open: pass open with the writer's words for why it is not decided — \"half-hour or feature\" — and the reading lists it under open, by the writer's word, and reads the runtime against both defaults while the words stand; a number decides it, open \"\" takes the words back.",
+    inputSchema: { pages: pagesSchema.optional(), minutes: z.number().positive().optional(), open: z.string().optional() },
   },
   async (args) => {
-    if (args.pages === undefined && args.minutes === undefined) return ok("Say the target in pages or in minutes.");
-    const { state, live } = await commit({
+    if (args.pages === undefined && args.minutes === undefined && args.open === undefined) return ok("Say the target in pages or in minutes, or open with the writer's words for why it is not decided.");
+    const { state, changed, live } = await commit({
       type: "set_target",
-      targetEighths: toEighths(args.pages ?? args.minutes),
+      ...(args.pages !== undefined || args.minutes !== undefined ? { targetEighths: toEighths(args.pages ?? args.minutes) } : {}),
+      ...(args.open !== undefined ? { open: args.open } : {}),
     });
+    if (!changed) return ok("Target unchanged: it already read that way.");
+    if (state.targetOpen) {
+      return ok(`Target left open, by the writer's word: "${state.targetOpen}"${where(live)}. The reading lists it and reads the cards against a half-hour and a feature meanwhile: about ${formatPages(boardEighths(state))} pages — against 30, ${againstWord(state, 30 * EIGHTHS_PER_PAGE)}; against 120, ${againstWord(state, 120 * EIGHTHS_PER_PAGE)}. set_target with pages or minutes decides it.`, { targetEighths: state.targetEighths, targetOpen: state.targetOpen });
+    }
     return ok(
       `Target is ${formatPages(state.targetEighths)} pages${where(live)}. The cards add up to about ${formatPages(boardEighths(state))} — ${boardEighths(state) > state.targetEighths ? `${formatPages(boardEighths(state) - state.targetEighths)} over` : `${formatPages(state.targetEighths - boardEighths(state))} under`}.`,
       { targetEighths: state.targetEighths },
@@ -1567,6 +1626,7 @@ server.registerTool(
     const reading = readWall(state, { elsewhere: Object.keys(elsewhereForRead), laterBoards: laterBoards(projectForRead, boardsNow), paidBy: landingsOn(projectForRead, boardsNow, readId).paid });
     lastReading = { findings: reading.findings };
     sinceRead.length = 0;
+    readOnce = true;
     const runs = describeRuns(reading, state).map((line, index) => {
       const ids = reading.runs[index]?.ids ?? [];
       return ids.length ? `${line} — ${ids.map((id) => `"${state.notes.find((note) => note.id === id)?.headline ?? id}"`).join(", ")}` : line;
@@ -1582,6 +1642,7 @@ server.registerTool(
     // Fields left open by the writer's word (R61): the logline and the whens are the reading's; the premise and the board's name are the project's.
     const openFieldLines = [
       ...(projectForRead.nameOpen ? [`  - the project's name — ${projectForRead.nameOpen}`] : []),
+      ...(state.targetOpen ? [`  - the target — ${state.targetOpen}`] : []),
       ...reading.openFields.filter((field) => field.field === "logline").map((field) => `  - the logline — ${field.words}`),
       ...(projectForRead.premiseOpen ? [`  - the premise — ${projectForRead.premiseOpen}`] : []),
       ...(readBoardMeta?.nameOpen ? [`  - this board's name — ${readBoardMeta.nameOpen}`] : []),
@@ -1610,9 +1671,11 @@ server.registerTool(
       ...(projectForRead.premiseOpen ? [`premise: open, by the writer's word — "${projectForRead.premiseOpen}"`] : []),
       `logline: ${state.loglineOpen ? `open, by the writer's word — "${state.loglineOpen}"` : state.logline ? `"${state.logline}"` : "(none yet)"}`,
       "the cast and the places are list_board's, not the reading's",
-      state.targetEighths === DEFAULT_TARGET_EIGHTHS
-        ? `runtime: about ${formatPages(boardEighths(state))} pages (${whose || "no cards"}); no target set (set_target)`
-        : `runtime: about ${formatPages(boardEighths(state))} pages of the ${formatPages(state.targetEighths)}-page target the writer set (set_target changes it) — ${boardEighths(state) > state.targetEighths ? `${formatPages(boardEighths(state) - state.targetEighths)} over` : boardEighths(state) < state.targetEighths ? `${formatPages(state.targetEighths - boardEighths(state))} under` : "on it"} (${whose || "no cards"}; page_count is the script so far)`,
+      state.targetOpen
+        ? `runtime: about ${formatPages(boardEighths(state))} pages (${whose || "no cards"}); target open, by the writer's word — "${state.targetOpen}" (against 30 it would be ${againstWord(state, 30 * EIGHTHS_PER_PAGE)}; against 120, ${againstWord(state, 120 * EIGHTHS_PER_PAGE)})${sketchLine(state)}`
+        : state.targetEighths === DEFAULT_TARGET_EIGHTHS
+        ? `runtime: about ${formatPages(boardEighths(state))} pages (${whose || "no cards"}); no target set (set_target)${sketchLine(state)}`
+        : `runtime: about ${formatPages(boardEighths(state))} pages of the ${formatPages(state.targetEighths)}-page target the writer set (set_target changes it) — ${boardEighths(state) > state.targetEighths ? `${formatPages(boardEighths(state) - state.targetEighths)} over` : boardEighths(state) < state.targetEighths ? `${formatPages(state.targetEighths - boardEighths(state))} under` : "on it"} (${whose || "no cards"}; page_count is the script so far)${sketchLine(state)}`,
       `groups: ${
         state.groups.length
           ? state.groups
@@ -1642,6 +1705,9 @@ server.registerTool(
       ...reading.paidBy.map((item) => `  - "${state.notes.find((note) => note.id === item.id)?.headline ?? item.id}" pays off "${item.fromHeadline}" from "${item.fromBoardName}" (${episodeLabel(projectForRead, boardsNow, item.fromBoardId, item.fromNoteId)}), one board earlier`),
       ...(reading.open.length || openFieldLines.length
         ? ["open, by the writer's word (listed, not asked about while the words stand; set_open with \"\" closes a card, the field's own tool with open \"\" a field):", ...openFieldLines, ...reading.open.map((item) => `  - "${state.notes.find((note) => note.id === item.id)?.headline ?? item.id}" — ${item.words}${item.hides.length ? ` (closed, it would be asked ${item.hides.map((kind) => ASK_WORDS[kind] ?? CHECK_WORDS[kind] ?? kind).join("; ")})` : ""}`)]
+        : []),
+      ...(reading.versions.length
+        ? ["two versions, not chosen (the front card is in the story; choose_version decides):", ...reading.versions.map((pair) => `  - "${state.notes.find((note) => note.id === pair.id)?.headline ?? pair.id}" or ${pair.alternatives.map((id) => `"${state.notes.find((note) => note.id === id)?.headline ?? id}"`).join(" or ")}`)]
         : []),
       ...(reading.threads.length
         ? ["threads (the writer's strings through the story; a loose end is asked about below):", ...reading.threads.map((thread) => `  - "${thread.name}": ${thread.ids.length ? thread.ids.map((id) => `"${state.notes.find((note) => note.id === id)?.headline ?? id}"`).join(" → ") : "no card yet"}${thread.startOpen ? " — starts nowhere yet" : ""}${thread.endOpen ? " — ends nowhere yet" : ""}${!thread.startOpen && !thread.endOpen && thread.ids.length >= 2 ? ` — both ends tied, about ${formatPages(thread.apart)} pages apart` : ""}`)]
@@ -2223,7 +2289,7 @@ server.registerTool(
     }
     const printed = sceneLineCount(args.text);
     return ok(
-      `Wrote "${result.headline}": ${printed} line(s) as they print (headings, blank lines and wrapped dialogue counted), measured at ${formatPages(noteEighths(result))} of a 55-line page, rounded to the nearest eighth and never below one eighth${where(live)}.${revisionMark(state, result.id)}${once("heading-from-place", " The heading comes from the card's place and when, so the text starts with the action.")} While the text stands the wall reads the measure, not the estimate${(() => {
+      `Wrote "${result.headline}": ${printed} line(s) as they print (headings, blank lines and wrapped dialogue counted), measured at ${formatPages(noteEighths(result))} of a 55-line page, rounded to the nearest eighth and never below one eighth${noteEighths(result) < (result.lengthEighths ?? DEFAULT_NOTE_EIGHTHS) ? " — a sketch: shorter than the page it was read as; the wall counts the measure and says so" : ""}${(() => { const found = cameraLines(result.text); return found.length ? ` — ${found.length} line${found.length === 1 ? "" : "s"} the camera cannot see (${cameraVerbs(found).join(", ")}): the reminder "Write for the camera" is the house's; show it or cut it, on the writer's word` : ""; })()}${where(live)}.${revisionMark(state, result.id)}${once("heading-from-place", " The heading comes from the card's place and when, so the text starts with the action.")} While the text stands the wall reads the measure, not the estimate${(() => {
         // How far the measure sits from what the card was read as before (round eighteen, entry 43): the writer's estimate, or the page an unsized card is read as.
         const before = result.lengthEighths !== null ? result.lengthEighths : 8;
         const label = result.lengthEighths !== null ? `the writer's ${formatPages(result.lengthEighths)} pages` : "the page an unsized card is read as";
@@ -2290,6 +2356,7 @@ server.registerTool(
     let index = 0;
     // The changed lines of the scene being printed, starred in the right margin as plain text stars them (round sixteen, entry 32).
     let changedTexts = new Set();
+    let cameraByText = new Map();
     for (const line of text.split("\n")) {
       if (/^\.(?!\.)/.test(line) && index < ids.length) {
         const note = state.notes.find((item) => item.id === ids[index]);
@@ -2300,9 +2367,14 @@ server.registerTool(
         const sourceLines = (note?.text ?? "").split("\n");
         changedTexts = new Set([...(mark?.lines ?? [])].map((at) => sourceLines[at]).filter((item) => item && item.trim()));
         const revised = mark?.revised ? ` · changed in the ${state.revision.color} revision${changedTexts.size ? ` (${changedTexts.size} line${changedTexts.size === 1 ? "" : "s"} starred below)` : ""}` : "";
-        lines.push(`${line}    [[id: ${note?.id ?? "?"} · ${note && isMeasured(note) ? "measured" : "estimated"} ${formatPages(note ? noteEighths(note) : 0)}pp${standIn}${numbered}${revised}]]`);
+        // The lines the camera cannot see (the handover's call 6): marked on the page, never asked on the wall.
+        const camera = note ? cameraLines(note.text ?? "") : [];
+        cameraByText = new Map(camera.map((item) => [item.line, item.verbs]));
+        const cameraNote = camera.length ? ` · camera: ${camera.length} line${camera.length === 1 ? "" : "s"} it cannot see (${cameraVerbs(camera).join(", ")})` : "";
+        lines.push(`${line}    [[id: ${note?.id ?? "?"} · ${note && isMeasured(note) ? "measured" : "estimated"} ${formatPages(note ? noteEighths(note) : 0)}pp${standIn}${numbered}${revised}${cameraNote}]]`);
       } else {
-        lines.push(changedTexts.has(line) ? `${line}    *` : line);
+        const verbs = cameraByText.get(line.trim());
+        lines.push(`${line}${changedTexts.has(line) ? "    *" : ""}${verbs ? `    ◂ ${verbs.join(", ")}` : ""}`);
       }
     }
     return ok(lines.join("\n"));
@@ -2785,6 +2857,56 @@ server.registerTool(
 // The open card (R59): the writer's word that a card is not decided. The
 // per-card twin of leave_question — that one leaves a question, this one
 // leaves a card.
+/**
+ * Two versions of one scene (R65, the handover's call 5 on Robert's word):
+ * a card set behind another as its other version leaves the story — the
+ * order, the count, the pages, every export — and waits there; the reading
+ * lists the pair and asks nothing of it until the writer chooses.
+ */
+server.registerTool(
+  "set_alternative",
+  {
+    title: "Another version of a scene",
+    description:
+      "Set a card behind another as its other version — two endings, two ways a scene could go — by id or headline. The version leaves the story: out of the order, the count, the pages and every export; its follows arrows are dropped (setup arrows stay). The wall draws it tucked behind its sibling; read_wall lists the pair under \"two versions, not chosen\" and asks nothing of it; choose_version decides. of: \"\" takes a card out from behind and it stands as a plain card again. Only on the writer's word: two versions the notes hold, never two the agent could not choose between.",
+    inputSchema: { id: z.string(), of: z.string() },
+  },
+  async (args) => {
+    const { state: current } = await readBoard();
+    const byRef = (ref) => current.notes.find((note) => note.id === ref) ?? current.notes.find((note) => note.headline.trim().toLowerCase() === ref.trim().toLowerCase()) ?? null;
+    const card = byRef(args.id);
+    if (!card) return ok(`No card with id or headline "${args.id}". Call list_board.`);
+    const front = args.of.trim() ? byRef(args.of) : null;
+    if (args.of.trim() && !front) return ok(`No card with id or headline "${args.of}". Call list_board.`);
+    if (front?.alternativeOf) return ok(`"${front.headline}" is itself a version of another card; set the version behind the front card, "${current.notes.find((note) => note.id === front.alternativeOf)?.headline ?? front.alternativeOf}".`);
+    if (front && current.notes.some((note) => note.alternativeOf === card.id)) return ok(`"${card.headline}" has a version behind it already; choose_version there first.`);
+    const { state, changed, result, live } = await commit({ type: "set_alternative", id: card.id, of: front ? front.id : null });
+    if (!changed) return ok(front ? `"${card.headline}" already stands behind "${front.headline}".` : `"${card.headline}" is not a version of another card.`);
+    if (!front) return ok(`"${card.headline}" stands as a plain card again, unwired${where(live)}: create_arrow or move_scene puts it in the order.`, result);
+    return ok(`"${card.headline}" is now the other version of "${front.headline}"${where(live)}: out of the order, the count and the pages${result.arrowsDropped ? `, ${result.arrowsDropped} follows arrow${result.arrowsDropped === 1 ? "" : "s"} dropped` : ""}. The reading lists the pair as two versions, not chosen, and asks nothing of it; choose_version decides. The wall draws it tucked behind its sibling.`, result);
+  },
+);
+
+server.registerTool(
+  "choose_version",
+  {
+    title: "Choose a version",
+    description:
+      "Choose one of two versions of a scene, by id or headline: the chosen card is the scene, in the front card's place — its arrows, its rank, its group; the other goes, or with keep true stands beside it as a plain unwired card. Only on the writer's word.",
+    inputSchema: { id: z.string(), keep: z.boolean().optional() },
+  },
+  async (args) => {
+    const { state: current } = await readBoard();
+    const card = current.notes.find((note) => note.id === args.id) ?? current.notes.find((note) => note.headline.trim().toLowerCase() === args.id.trim().toLowerCase());
+    if (!card) return ok(`No card with id or headline "${args.id}". Call list_board.`);
+    const other = card.alternativeOf ? current.notes.find((note) => note.id === card.alternativeOf) : current.notes.find((note) => note.alternativeOf === card.id);
+    if (!other) return ok(`"${card.headline}" has no other version; nothing to choose.`);
+    const { changed, result, live } = await commit({ type: "choose_version", id: card.id, keep: args.keep === true });
+    if (!changed) return ok("Nothing chosen.");
+    return ok(`Chose "${card.headline}"${result.steppedForward ? ` — it steps forward into "${other.headline}"'s place, with its arrows, rank and group` : ""}${where(live)}. "${other.headline}" ${result.kept ? "stands beside it as a plain card, unwired" : "is gone"}.`, result);
+  },
+);
+
 server.registerTool(
   "set_open",
   {
@@ -3735,7 +3857,7 @@ server.registerTool(
     return ok(
       [
         `projects: ${projects.length} (as ${account.email})${projects.length === 0 ? ` — ${noProjectYet()}` : ""}`,
-        ...projects.map((row) => `  - ${row.id} — "${row.record.name}"${row.id === account.projectId ? " (working)" : ""}: ${row.record.boards.length} board(s) · ${(row.people ?? []).join(", ")}`),
+        ...projects.map((row) => `  - ${row.id} — "${row.record.name}"${row.id === account.projectId ? " (working)" : ""}: ${row.record.boards.length} board(s) · ${(row.people ?? []).join(", ")}${row.id === account.projectId ? (() => { const people = presentPeople(); return people.length ? ` · open now on ${people.length} screen${people.length === 1 ? "" : "s"}: ${people.join(", ")}` : " · no wall open right now"; })() : ""}`),
       ].join("\n"),
       projects.map((row) => ({ id: row.id, name: row.record.name, boards: row.record.boards.length, people: row.people })),
     );
@@ -3813,7 +3935,7 @@ server.registerTool(
     title: "Start a project",
     description:
       "Through the account door: start a new project of the writer's with this name — one empty board, nothing on it — and work it from now on. The writer sees it under Projects on every device. A title not decided: open with the writer's words (\"The Allotments, or Plot 14\") instead of a name, and the project starts as Untitled project with those words beside it. board names the first board; boardOpen leaves its name open in the writer's words instead (\"the pilot, or the film\"), so a board born from a maybe is not silently \"Board 1\".",
-    inputSchema: { name: z.string().min(1).optional(), open: z.string().optional(), board: z.string().optional(), boardOpen: z.string().optional(), pages: pagesSchema.optional(), minutes: z.number().positive().optional() },
+    inputSchema: { name: z.string().min(1).optional(), open: z.string().optional(), board: z.string().optional(), boardOpen: z.string().optional(), pages: pagesSchema.optional(), minutes: z.number().positive().optional(), targetOpen: z.string().optional().describe("The writer's words for why the length is not decided — \"half-hour or feature\" — so the target is born open instead of the feature default standing unsaid.") },
   },
   async (args) => {
     const account = await findAccount();
@@ -3829,12 +3951,12 @@ server.registerTool(
     const inserted = await account.client.from("projects").insert({ id: record.id, record, reminders: null, rev: 1 });
     if (inserted.error) return ok(`Could not start the project: ${inserted.error.message}`);
     const target = args.pages ?? args.minutes;
-    const state = target === undefined ? emptyState() : { ...emptyState(), targetEighths: toEighths(target) };
+    const state = { ...emptyState(), ...(target === undefined ? {} : { targetEighths: toEighths(target) }), ...(args.targetOpen?.trim() && target === undefined ? { targetOpen: args.targetOpen.trim().replace(/\s+/g, " ") } : {}) };
     const board = await account.client.from("boards").insert({ id: record.activeBoardId, project_id: record.id, state, rev: 1, updated_by: null });
     if (board.error) return ok(`Started "${record.name}" but could not make its first board: ${board.error.message}`);
     workingProject(record.id, record.name, (account.projectCount ?? 0) + 1);
     joinPresence(record.id);
-    const targetLine = target === undefined ? ` Its target is ${formatPages(state.targetEighths)} pages, the default for a feature; set_target for a pilot or a half-hour, or pass pages or minutes here.` : ` Its target is ${formatPages(state.targetEighths)} pages.`;
+    const targetLine = state.targetOpen ? ` Its target is left open, by the writer's word: "${state.targetOpen}"; the reading reads the cards against a half-hour and a feature until set_target decides it.` : target === undefined ? ` Its target is ${formatPages(state.targetEighths)} pages, the default for a feature; set_target for a pilot or a half-hour, or pass pages or minutes here.` : ` Its target is ${formatPages(state.targetEighths)} pages.`;
     const first = record.boards[0];
     const nameOpenLine = `${record.nameOpen ? ` The project's name is left open, by the writer's word: "${record.nameOpen}"; rename_project decides it.` : ""}${first.nameOpen ? ` The board's name is left open, by the writer's word: "${first.nameOpen}"; rename_board decides it.` : ""}`;
     return ok(`Started "${record.name}" (${record.id}) with its first board "${first.name}" (${first.id}), and working it now, as ${account.email}.${targetLine}${nameOpenLine}${oneCallHint(record)}`, { id: record.id, name: record.name, boardId: first.id, boardName: first.name, boardNameOpen: first.nameOpen ?? "", targetEighths: state.targetEighths });

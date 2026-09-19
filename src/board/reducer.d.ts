@@ -81,6 +81,8 @@ export type BoardNote = {
   plants: boolean;
   /** What the fold plants, in the writer's words (R62), or empty; never set on an unfolded card. */
   plantsWhat: string;
+  /** Another version of another card (R65): the id of the card this one stands behind, or null. A version is out of the order, the count and the pages until chosen. */
+  alternativeOf: string | null;
   /** When folded: the id of another board of the project where it pays off (R50), or null. */
   payoffBoardId: string | null;
   /** The scene on that board that pays it off (R58), or null while the board is only a promise. */
@@ -120,6 +122,8 @@ export type BoardState = {
   logline: string;
   /** The writer's words for why there is no logline yet (R61), or empty. */
   loglineOpen: string;
+  /** The writer's words for why the target is not decided, or empty; the number stands as the default meanwhile. */
+  targetOpen: string;
   /** Target script length in eighths of a page; 120 pages for a feature (R25). */
   targetEighths: number;
   /** The roster: every person in the story, whether or not they are on a card yet (R29). */
@@ -169,7 +173,7 @@ export type Command =
   | { type: "set_logline"; logline?: string; open?: string }
   | { type: "set_rank"; ids: string[]; rank: NoteRank }
   | { type: "set_length"; ids: string[]; lengthEighths: number | null }
-  | { type: "set_target"; targetEighths: number }
+  | { type: "set_target"; targetEighths?: number; open?: string }
   | {
       type: "create_note";
       id?: string;
@@ -218,6 +222,8 @@ export type Command =
   | { type: "set_cast"; ids: string[]; characterIds: string[] }
   | { type: "set_plant"; ids: string[]; plants?: boolean; what?: string }
   | { type: "set_open"; ids: string[]; open: string }
+  | { type: "set_alternative"; id: string; of: string | null }
+  | { type: "choose_version"; id: string; keep?: boolean }
   | { type: "set_payoff_board"; ids: string[]; boardId: string | null; noteId?: string | null }
   | { type: "set_location"; ids: string[]; location?: string; open?: string }
   | { type: "set_when"; ids: string[]; when?: string; open?: string }
@@ -250,3 +256,8 @@ export declare function applyCommand(
   command: Command,
   now?: string,
 ): CommandResult;
+
+/** Rows top to bottom, cards left to right within a row (moved here for R62). */
+export declare function readingOrder(notes: BoardNote[]): BoardNote[];
+/** The follows arrows where they exist, reading order where they do not; versions of other cards left out (R56, R65). */
+export declare function storyOrder(state: BoardState, ids?: string[]): BoardNote[];

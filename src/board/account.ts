@@ -1210,6 +1210,37 @@ class AccountStore {
     }
     return (data ?? []) as BoardRow[];
   }
+
+  // --- Help in the app (R64) ----------------------------------------------
+
+  /** The writer's question the guide did not answer, with their email, for the people who build the app. */
+  async askQuestion(question: string): Promise<void> {
+    const user = this.account.user;
+    if (!user || !this.client) throw new Error("Sign in to ask.");
+    const text = question.trim().replace(/\s+/g, " ");
+    if (!text) return;
+    const { error } = await this.client.from("questions").insert({ user_id: user.id, email: user.name, question: text });
+    if (error) throw new Error(/relation .* does not exist|schema cache/i.test(error.message) ? "Asking is not switched on yet." : error.message);
+  }
+
+  /** The writer's own questions, newest first, with any answer and the guide's section it went into. */
+  async myQuestions(): Promise<Array<{ id: string; question: string; askedAt: string; answeredAt: string | null; answer: string | null; section: string | null }>> {
+    if (!this.account.user || !this.client) return [];
+    const { data, error } = await this.client
+      .from("questions")
+      .select("id, question, asked_at, answered_at, answer, section")
+      .order("asked_at", { ascending: false });
+    if (error || !Array.isArray(data)) return [];
+    return data.map((row) => ({
+      id: String(row.id),
+      question: String(row.question ?? ""),
+      askedAt: String(row.asked_at ?? ""),
+      answeredAt: row.answered_at ? String(row.answered_at) : null,
+      answer: row.answer ? String(row.answer) : null,
+      section: row.section ? String(row.section) : null,
+    }));
+  }
+
 }
 
 function readPicked(): boolean {

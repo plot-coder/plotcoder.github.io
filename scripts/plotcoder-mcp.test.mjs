@@ -141,6 +141,7 @@ describe("plotcoder MCP server", () => {
       "add_to_group",
       "add_picture",
       "add_take",
+      "answer_question",
       "apply_template",
       "ask_again",
       "build_segment",
@@ -173,6 +174,7 @@ describe("plotcoder MCP server", () => {
       "list_boards",
       "list_files",
       "list_projects",
+      "list_questions",
       "lock_numbers",
       "list_reminders",
       "list_structures",
@@ -1150,6 +1152,11 @@ describe("round nineteen: create_note with after on a wall with no follows arrow
     const free = await client.callTool("create_thread", { name: "the letter", cards: ["Tom lies about the job", "The key changes hands"] });
     expect(free).toContain('Tied at both ends, so it is the fold\'s now: folded "Tom lies about the job", named its fold "the letter", drew the setup arrow to "The key changes hands"');
     expect(await client.callTool("list_board")).toContain("plants: the letter");
+  });
+
+  it("the writers' questions are the maintainer's: without the service role both tools say what they need (R64)", async () => {
+    expect(await client.callTool("list_questions")).toContain("set SUPABASE_SERVICE_ROLE_KEY in the server's environment");
+    expect(await client.callTool("answer_question", { id: "q_1", answer: "No." })).toContain("the maintainer's key, never in the repo");
   });
 
   it("update_note names a near-matching place as set_location does (entry 36)", async () => {

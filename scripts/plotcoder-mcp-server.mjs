@@ -3884,6 +3884,63 @@ server.registerTool(
   },
 );
 
+// Help in the app (R64): the questions writers asked that the guide did not
+// answer. They are the app's, not a project's, so these two tools take the
+// maintainer's service role from the server's environment — the key never
+// ships, as the wipe script's does not — and every other door refuses them.
+async function questionsDoor() {
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.PLOTCODER_SERVICE_ROLE_KEY;
+  if (!key) return null;
+  const { createClient } = await import("@supabase/supabase-js");
+  return createClient(process.env.SUPABASE_URL || SUPABASE_URL, key, { auth: { persistSession: false } });
+}
+const NO_QUESTIONS_DOOR = "The questions are the app's, not a project's: set SUPABASE_SERVICE_ROLE_KEY in the server's environment — the maintainer's key, never in the repo — and call again. A writer asks from the Help sheet; the answer goes into public/writers.html and back to them through answer_question.";
+
+server.registerTool(
+  "list_questions",
+  {
+    title: "The writers' questions",
+    description:
+      "The questions writers asked from the app's Help sheet that the guide did not answer, waiting first: who asked, when, the words. Maintainer only — needs the service role in the server's environment. Answer one with answer_question after the answer is in public/writers.html.",
+    inputSchema: { all: z.boolean().optional() },
+  },
+  async (args) => {
+    const db = await questionsDoor();
+    if (!db) return ok(NO_QUESTIONS_DOOR);
+    const { data, error } = await db.from("questions").select("id, email, question, asked_at, answered_at, answer, section").order("asked_at", { ascending: false });
+    if (error) return ok(`Could not read the questions: ${error.message}`);
+    const rows = args.all ? data : data.filter((row) => !row.answered_at);
+    const waiting = data.filter((row) => !row.answered_at).length;
+    const line = (row) => `  - ${row.id.slice(0, 8)} · ${String(row.asked_at).slice(0, 10)} · ${row.email} · "${row.question}" · ${row.answered_at ? `answered ${String(row.answered_at).slice(0, 10)}${row.section ? ` → ${row.section}` : ""}` : "waiting"}`;
+    return ok(
+      [`${waiting} waiting, ${data.length - waiting} answered.${args.all ? "" : " (all: true lists the answered ones too)"}`, ...(rows.length ? rows.map(line) : ["  (none)"])].join("\n"),
+      rows,
+    );
+  },
+);
+
+server.registerTool(
+  "answer_question",
+  {
+    title: "Answer a writer's question",
+    description:
+      "Mark a writer's question answered, with the answer in a sentence or two and the guide's section it went into (\"#s5\"), once the answer is in public/writers.html: the writer sees both under Your questions. Maintainer only — needs the service role in the server's environment. The guide is the answer; this is the promise kept.",
+    inputSchema: { id: z.string().min(1), answer: z.string().min(1), section: z.string().optional() },
+  },
+  async (args) => {
+    const db = await questionsDoor();
+    if (!db) return ok(NO_QUESTIONS_DOOR);
+    const { data: found, error: findError } = await db.from("questions").select("id, question, answered_at").ilike("id", `${args.id}%`);
+    if (findError) return ok(`Could not read the questions: ${findError.message}`);
+    if (!found?.length) return ok(`No question whose id starts "${args.id}". list_questions shows them.`);
+    if (found.length > 1) return ok(`${found.length} questions start "${args.id}": say more of the id.`);
+    const row = found[0];
+    const { error } = await db.from("questions").update({ answered_at: new Date().toISOString(), answer: args.answer.trim(), section: args.section?.trim() || null }).eq("id", row.id);
+    if (error) return ok(`Could not answer it: ${error.message}`);
+    return ok(`Answered "${row.question}"${args.section ? ` and filed it under ${args.section.trim()}` : ""}${row.answered_at ? " (it had been answered before; this replaces that)" : ""}. The writer sees it under Your questions. If the answer is not yet in public/writers.html, put it there and open the pull request: the guide is the answer, this list is the promise.`, { id: row.id });
+  },
+);
+
 server.registerTool(
   "export_project",
   {

@@ -53,6 +53,7 @@ order), fixed. Merged as pull request #104 and released as 0.1.34.
    the same morning, the three measurements answered in its head: the
    title and the places left open through the fields' own `open`, the tie
    rule right both ways, an open-placed card's other questions standing.
+   Merged as pull request #113 and released as 0.1.37.
    **Next:** the rounds on "The Allotments" have run five times and the
    findings are now mostly repeats (a target, acts and lengths that cannot
    be open; a measured eighth under an unsized page; the three lengths).
@@ -150,7 +151,7 @@ that way, one pull request per fix or per round.
 (a hook rewrites the README's "Version x.y.z." line), `git push`,
 `git push --tags`; the tag runs the "Publish to npm" workflow, and the
 registry lags a few minutes (`npm view plotcoder-board dist-tags.latest
---prefer-online`). Then a pull request for the version commit. 0.1.36 is the
+--prefer-online`). Then a pull request for the version commit. 0.1.37 is the
 latest (0.1.33 was cut from `main` between #103 and #104 by another
 session, before the round's fixes).
 

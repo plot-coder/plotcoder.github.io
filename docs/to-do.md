@@ -31,6 +31,15 @@ order), fixed. Merged as pull request #104 and released as 0.1.34.
    `rename_project` with `open`, `new_project` with `open` for its name,
    the reading's open head, the place line's offer. Ask in writing first
    whether the drawing carries, then build.
+0a. ~~**R64, Help in the app**~~ **Built 2026-09-19** on Robert's "A": Help,
+   top right; the sheet; `questions` on the account; `list_questions` and
+   `answer_question`. **Two things to do by hand:** apply
+   `supabase/migrations/20260919170000_questions.sql` through the connector
+   (until then Ask says it is not switched on); and set up the weekly
+   agent — a scheduled session that, with `SUPABASE_SERVICE_ROLE_KEY` in the
+   server's environment, calls `list_questions`, writes each answer into
+   `public/writers.html` in the section it names, opens one pull request,
+   and calls `answer_question` for each with the section.
 1. ~~**R61's edge: a place and a project's name that can be open**~~
    **Built 2026-09-19** (twenty 6, 16), on the R61 drawing, the question
    asked and answered in writing in R61's entry: `locationOpen` on the card,

@@ -74,6 +74,11 @@ export const WORD_GROUPS = [
         sentence: "A named string through the cards a thing runs through — the letter, the key, a subplot — with either end open until the writer ties it. Drawn on the wall as a dashed string, a ring where an end is loose; the reading asks where a loose thread is first seen, or where it comes out.",
       },
       {
+        id: "help",
+        name: "Help",
+        sentence: "The button top right: type a question and the words and the writer's guide answer as you go; when nothing does, Ask sends it to the people who build PlotCoder, and the answer lands in the guide and under Your questions.",
+      },
+      {
         id: "corner",
         name: "The folded corner",
         sentence:

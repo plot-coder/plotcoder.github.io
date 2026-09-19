@@ -4,6 +4,19 @@ import { applyCommand, emptyState, isMeasured, measuredEighths, noteEighths, see
 
 const NOW = "2026-01-01T00:00:00.000Z";
 
+describe("an open place on the heading (R61's edge, round twenty-one entry 25)", () => {
+  it("prints the writer's words marked as not a place, and reads them back as an open place", () => {
+    const heading = sceneHeading({ headline: "The day Ruth tells Con where she was", location: "", locationOpen: "where it happens", when: "night" } as never);
+    expect(heading).toBe(".PLACE NOT DECIDED: WHERE IT HAPPENS - NIGHT");
+    const parsed = fromFountain(`${heading}\n= The day Ruth tells Con where she was\n\nCon knows.\n`);
+    const back = mergeFountain(emptyState(), parsed);
+    const created = back.commands.find((command) => command.type === "create_note") as { location: string; locationOpen: string; when: string } | undefined;
+    expect(created?.location).toBe("");
+    expect(created?.locationOpen).toBe("where it happens");
+    expect(created?.when).toBe("night");
+  });
+});
+
 describe("Fountain out (R23, slice a)", () => {
   it("forces a scene heading from the place, or the headline when there is none", () => {
     const seed = seedState();

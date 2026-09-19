@@ -1050,6 +1050,20 @@ describe("open fields (R61): the logline, the premise, a when and a board's name
     expect(await client.callTool("read_wall")).not.toContain("— when:");
   });
 
+  it("bears a card with its place and when open (round twenty-one, entry 3)", async () => {
+    const card = await client.callToolData("create_note", { headline: "The parish hall", change: "Con says nothing.", locationOpen: "which hall", whenOpen: "which evening" });
+    const born = await client.callTool("list_board");
+    expect(born).toContain('at: open, by the writer\'s word — "which hall"');
+    expect(born).toContain('when: open, by the writer\'s word — "which evening"');
+    const read = await client.callTool("read_wall");
+    expect(read).toContain('  - "The parish hall" — where: which hall');
+    expect(read).toContain('  - "The parish hall" — when: which evening');
+    // Decided, so the tests after this one start from a wall with nothing open.
+    await client.callTool("set_location", { ids: [card.id], location: "the parish hall" });
+    await client.callTool("set_when", { ids: [card.id], when: "evening" });
+    expect(await client.callTool("read_wall")).not.toContain("— where:");
+  });
+
   it("leaves a card's place open while the card is still asked about the rest, and the project's name open while it stands (R61's edge)", async () => {
     expect(await client.callTool("set_location", { ids: ["tom-lies"] })).toContain("Say which");
     const left = await client.callTool("set_location", { ids: ["tom-lies"], open: "where it happens" });

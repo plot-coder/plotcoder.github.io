@@ -58,11 +58,8 @@ order), fixed. Merged as pull request #104 and released as 0.1.34.
    findings are now mostly repeats (a target, acts and lengths that cannot
    be open; a measured eighth under an unsized page; the three lengths).
    The next round should start from a new page of notes, or the practice
-   pauses for the calls below. Two small things from twenty-one worth a
-   sentence: the guide could say which of `set_location`'s `open` and
-   `leave_question` answers "leave it open" on an asked question (24), and
-   the guide's copy of the treatment questions could go, since the workflow
-   carries them with their tools (2).
+   pauses for the calls below. The two guide sentences from twenty-one are
+   written (24, 2), with the rest of the outstanding to-dos, 2026-09-19.
 3. Robert's calls (section 3) and the smaller things (section 4). New in
    twenty: a placeless card's heading on the pages, said by three rounds
    (18:46, 19:44, 20:48) — decide; "Con does not die in this film" and the
@@ -256,9 +253,9 @@ it; the two share the words "open, by the writer's word".
 
 | # | Thing | Where it came from | Recommendation |
 | --- | --- | --- | --- |
-| 1 | A reading of the project as a whole (every board's questions in one call) | 15:14 | Worth a tool once the thread exists, since the payoffs are the cross-board reading; not before |
+| 1 | ~~A reading of the project as a whole (every board's questions in one call)~~ | 15:14 | **Built 2026-09-19 as `read_project`**, once the thread existed, as recommended |
 | 2 | The write tails carrying the wall's questions mid-build | 15:9, built on 14's word; 18:20 (they are snapshots and say "now") | Leave; or quiet them until the first `read_wall` of a session |
-| 3 | A wiring that cannot vanish from one machine's file | 15's first attempt, round nine | R48's hosted door, deployed somewhere; question 29 |
+| 3 | A wiring that cannot vanish from one machine's file | 15's first attempt, round nine; it vanished again before nineteen | R48's hosted door, deployed somewhere; question 29 — needs a host, Robert's call |
 | 4 | A reply that shows a wall is open on someone's screen | 18:54 | The mirror is a mirror; presence is not the server's to know. Leave, unless the account door grows a "who has it open" read |
 | 5 | Two versions of one scene | 18:8 | Two cards, one open, until a better shape comes; no second model |
 | 6 | A written scene's lines the camera cannot see | 18:44 | No check reads prose; a reminder is the house's answer. Leave |
@@ -267,15 +264,15 @@ it; the two share the words "open, by the writer's word".
 
 ## 4. Smaller things noticed and not done
 
-- **`organize` after a rank change** says "Nothing moved" and the agent
-  cannot tell whether a beat row still stands (15:20); a reply that names
-  the rows would settle it.
-- **A duplicate check on two headings** that differ only by a time word
-  (15:12) was never exercised; worth a unit test either way.
+- ~~**`organize` after a rank change** says "Nothing moved"~~ Done
+  2026-09-19: it says what already stands, in the same words as a tidy.
+- ~~**A duplicate check on two headings** that differ only by a time word~~
+  Done 2026-09-19: a unit test says a leading day phrase is the when and a
+  time word inside the headline is the scene's.
 - **A person only spoken of** lives in another's notes, and if they get a
-  scene the notes move by hand (18:12).
-- **The reply tails** end "pages.." when a change note precedes a full stop;
-  cosmetic, in `changeNote`.
+  scene the notes move by hand (18:12). Design; a round has not asked twice.
+- ~~**The reply tails** end "pages.."~~ Done 2026-09-19: a finding's own
+  full stop never doubles the reply's.
 - **Port 5173** is held by another project on Robert's Mac; the launch entry
   `plotcoder-dev-5180` is the one to use, and `plotcoder-dev-5181` when a
   second worktree's session already holds 5180. The MCP bridge probe scans
@@ -284,6 +281,12 @@ it; the two share the words "open, by the writer's word".
   fifteen; check it before every round (a memory records the shape).
 - **Playwright's chromium is not installed** on this Mac, so the e2e suite
   runs only in CI (the Pages deploy). A change to a door shows up there.
+  `npx playwright install chromium` would put it on the Mac; Robert's to
+  run, since it downloads a browser.
+- **R64's `questions` table** needs its migration applied on the
+  plotcoder Supabase project by a session with the Supabase connector
+  (`supabase/migrations/20260919170000_questions.sql`); this session had
+  none and said so when asked.
 
 ---
 

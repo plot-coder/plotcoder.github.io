@@ -835,7 +835,7 @@ function changeNote() {
   const parts = [];
   if (change.gone.length || change.came.length) {
     parts.push(
-      `the wall now asks ${change.asks} question${change.asks === 1 ? "" : "s"}${change.gone.length ? ` (gone: ${change.gone.map((finding) => `[${finding.kind}] ${finding.text}`).join(" ")})` : ""}${change.came.length ? ` (new: ${change.came.map((finding) => `[${finding.kind}] ${finding.text}`).join(" ")})` : ""}`,
+      `the wall now asks ${change.asks} question${change.asks === 1 ? "" : "s"}${change.gone.length ? ` (gone: ${change.gone.map((finding) => `[${finding.kind}] ${finding.text.replace(/\.$/, "")}`).join(" ")})` : ""}${change.came.length ? ` (new: ${change.came.map((finding) => `[${finding.kind}] ${finding.text.replace(/\.$/, "")}`).join(" ")})` : ""}`,
     );
   }
   if (change.leftAfter !== change.leftBefore) parts.push(`left, for now: ${change.leftAfter} (was ${change.leftBefore})`);
@@ -1982,7 +1982,6 @@ server.registerTool(
     const poses = organizePoses(state, { onlyIds: args.noteIds });
     if (poses.length === 0) return ok("Nothing to organize: no cards in scope.");
     const { changed, live } = await commit({ type: "apply_poses", poses });
-    if (!changed) return ok("Nothing moved.");
     const rows = new Set(poses.map((pose) => pose.y)).size;
     const beats = state.notes.filter(
       (note) => note.rank === "beat" && poses.some((pose) => pose.id === note.id),
@@ -2004,6 +2003,8 @@ server.registerTool(
     const shape = beats
       ? `${opening ? `an opening row of ${opening} card(s) before the first beat, then ` : ""}${beats} row(s), one per beat${wrappedUnder.length ? `; ${wrappedUnder.map((item) => `the row of "${item.beat.headline}" wraps under from "${item.first.headline}", indented under the row's first scene, never under the beat`).join(", ")}` : ""}`
       : `${rows} row(s) five cards wide — no beats yet, so nothing sets the rows; set_rank the turns and organize again for a row per beat`;
+    // Nothing moved says what already stands (round fifteen, entry 20): after a rank change the agent asked whether a beat row still held.
+    if (!changed) return ok(`Nothing moved: the ${poses.length} card(s) already lie along the arrows in ${shape}.`, poses);
     return ok(`Organized ${poses.length} card(s) along the arrows into ${shape}${where(live)}.`, poses);
   },
 );
@@ -3511,6 +3512,53 @@ function describeBoards(project, boards, changedAt = null) {
     })
     .join("\n");
 }
+
+/**
+ * The project as a whole (round fifteen, entry 14; the handover's first
+ * call): every board's questions in one reading, with what each board
+ * leaves open, the folds that pay off on another board, and the project's
+ * length. Each board is read as read_wall reads it — the same checks, the
+ * same cross-board context — so this never says something read_wall would
+ * not; it only says it for every board at once.
+ */
+server.registerTool(
+  "read_project",
+  {
+    title: "Read the project",
+    description:
+      "Every board's reading in one call: for each board in the writer's order, its logline, its runtime, the questions it asks and what it leaves open by the writer's word — the same checks read_wall runs, board by board — then the folds that pay off on another board and the project's length. The records — cards, ids, cast, places — are list_board's, board by board; open_board and read_wall for one board in full.",
+    inputSchema: {},
+  },
+  async () => {
+    const { project, boards, live, base } = await readProject();
+    const states = new Map(project.boards.map((meta) => [meta.id, isBoardState(boards[meta.id]) ? normalizeState(boards[meta.id]) : emptyState()]));
+    const boardsNow = Object.fromEntries(states);
+    const lines = [
+      `PlotCoder project "${project.name}"${project.nameOpen ? ` — its name is open, by the writer's word: "${project.nameOpen}"` : ""} (${door(live, base)})`,
+      `premise: ${project.premiseOpen ? `open, by the writer's word — "${project.premiseOpen}"` : project.premise ? `"${project.premise}"` : "(not set)"}`,
+    ];
+    let asked = 0;
+    for (const [index, meta] of project.boards.entries()) {
+      const state = states.get(meta.id);
+      const reading = readWall(state, { elsewhere: Object.keys(castElsewhere(project, boardsNow, meta.id)), laterBoards: laterBoards(project, boardsNow), paidBy: landingsOn(project, boardsNow, meta.id).paid });
+      asked += reading.findings.length;
+      const open = reading.open.length + reading.openFields.length + (meta.nameOpen ? 1 : 0);
+      const headline = (id) => `"${state.notes.find((note) => note.id === id)?.headline ?? id}"`;
+      lines.push(
+        `${index + 1}. "${meta.name}"${meta.nameOpen ? ` (name open: "${meta.nameOpen}")` : ""}${meta.id === project.activeBoardId ? " (open)" : ""} — ${state.notes.length} card${state.notes.length === 1 ? "" : "s"}, ${reading.beats.length} beat${reading.beats.length === 1 ? "" : "s"}, about ${formatPages(boardEighths(state))} of ${formatPages(state.targetEighths)} pages; logline: ${state.loglineOpen ? `open — "${state.loglineOpen}"` : state.logline ? `"${state.logline}"` : "(none yet)"}`,
+        ...(reading.findings.length ? reading.findings.map((finding) => `   - [${finding.kind}] ${finding.text}`) : [`   (asks nothing${reading.left.length ? `; ${reading.left.length} left by the writer` : ""}${state.notes.length ? "" : ": no cards yet"})`]),
+        ...(open ? [`   open by the writer's word: ${[reading.open.length ? `${reading.open.length} card${reading.open.length === 1 ? "" : "s"}` : "", reading.openFields.length ? `${reading.openFields.length} field${reading.openFields.length === 1 ? "" : "s"}` : "", meta.nameOpen ? "the board's name" : ""].filter(Boolean).join(", ")} — read_wall there lists them`] : []),
+        ...reading.threads.filter((thread) => thread.startOpen || thread.endOpen).map((thread) => `   thread "${thread.name}" — ${thread.startOpen ? "starts nowhere yet" : ""}${thread.startOpen && thread.endOpen ? ", " : ""}${thread.endOpen ? "ends nowhere yet" : ""}`),
+        ...reading.later.map((item) => `   "${headline(item.id)}" is folded and pays off later, on "${boardById(project, item.boardId)?.name ?? item.boardId}"${item.noteId ? `, at "${boardsNow[item.boardId]?.notes?.find((note) => note.id === item.noteId)?.headline ?? item.noteId}"` : ", no scene there claimed yet"}`),
+      );
+    }
+    const pages = [...states.values()].reduce((sum, state) => sum + boardEighths(state), 0);
+    const target = [...states.values()].reduce((sum, state) => sum + state.targetEighths, 0);
+    const cards = [...states.values()].reduce((sum, state) => sum + state.notes.length, 0);
+    lines.push(`the whole project: ${cards} card${cards === 1 ? "" : "s"}, about ${formatPages(pages)} of ${formatPages(target)} pages across ${project.boards.length} board${project.boards.length === 1 ? "" : "s"}; ${asked} question${asked === 1 ? "" : "s"} in all (each board's runtime is an estimate unless every scene is written)`);
+    return ok(lines.join("\n"), { project: { id: project.id, name: project.name }, boards: project.boards.map((meta) => meta.id), asked });
+  },
+);
 
 server.registerTool(
   "list_boards",

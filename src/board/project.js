@@ -33,6 +33,7 @@ export function emptyProject(now = nowIso()) {
     version: PROJECT_VERSION,
     id: newId(),
     name: DEFAULT_PROJECT_NAME,
+    nameOpen: "",
     premise: "",
     premiseOpen: "",
     boards: [board],
@@ -87,6 +88,8 @@ export function normalizeProject(value, now = nowIso()) {
     ...rest,
     version: PROJECT_VERSION,
     name: trimmed(value.name, DEFAULT_PROJECT_NAME),
+    // A project named before R61's edge has no open name; the name stands until the writer says it is not decided.
+    nameOpen: openWords(value.nameOpen),
     premise: typeof value.premise === "string" ? value.premise.trim() : "",
     // A project written before R61 has no open premise (R61).
     premiseOpen: openWords(value.premiseOpen),
@@ -342,8 +345,16 @@ export function setActiveBoard(project, id, now = nowIso()) {
 
 export function renameProject(project, name, now = nowIso()) {
   const next = trimmed(name, "");
-  if (!next || next === project.name) return project;
-  return touch(project, { name: next }, now);
+  if (!next || (next === project.name && !(project.nameOpen ?? ""))) return project;
+  // A name decides the field: the open words go (R61's edge).
+  return touch(project, { name: next, nameOpen: "" }, now);
+}
+
+/** The writer's words for why the project's name is not decided (R61's edge), or "" to take them back; the name stands meanwhile. */
+export function setProjectNameOpen(project, words, now = nowIso()) {
+  const next = openWords(words);
+  if (next === (project.nameOpen ?? "")) return project;
+  return touch(project, { nameOpen: next }, now);
 }
 
 export function setPremise(project, premise, now = nowIso()) {

@@ -564,11 +564,11 @@ export function App() {
   // Where a scene happens (R37) and when (R55), typed as one line on the
   // card. Applies to the whole selection, like the cast line. Two commands,
   // each quiet when its part did not change, so ⌘Z takes back what was typed.
-  function setLocation(id: string, location: string, when: string, whenOpen: string) {
+  function setLocation(id: string, location: string, when: string, whenOpen: string, locationOpen: string) {
     const ids =
       selectedIds.includes(id) && selectedIds.length >= 2 ? selectedIds : [id];
-    boardStore.dispatch({ type: "set_location", ids, location });
-    // The when, or the writer's words for why it is not decided (R61), in one command.
+    // The place and the when, or the writer's words for why either is not decided (R61), one command each.
+    boardStore.dispatch({ type: "set_location", ids, location, open: locationOpen });
     boardStore.dispatch({ type: "set_when", ids, when, open: whenOpen });
   }
 

@@ -19,13 +19,13 @@ and the key's decision finding a bug in the tie rule (the thread's list
 order), fixed. Merged as pull request #104 and released as 0.1.34.
 **Next, in order:**
 
-1. **R61's edge: a place and a project's name that can be open** (twenty 6,
-   16). The same drawing as the when's — the place line reads "at · Open
-   words", the project's name in the panel — so no new mockup: `locationOpen`
-   on the card and `nameOpen` on the project, `set_location` and
-   `rename_project` with `open`, `new_project` with `open` for its name,
-   the reading's open head, the place line's offer. Ask in writing first
-   whether the drawing carries, then build.
+1. ~~**R61's edge: a place and a project's name that can be open**~~
+   **Built 2026-09-19** (twenty 6, 16), on the R61 drawing, the question
+   asked and answered in writing in R61's entry: `locationOpen` on the card,
+   `nameOpen` on the project, `set_location` and `rename_project` with
+   `open`, `new_project` with `open` in place of a name, the reading's
+   open head, the place line's offer before the dot, the panel. Not yet run
+   blind.
 2. **Round twenty-one**, once that ships: the same notes, the place open,
    the tie rule right — or a new page of notes, since four rounds have run
    on this one and the recurrence table says what kept coming back.
@@ -243,8 +243,9 @@ it; the two share the words "open, by the writer's word".
 - **The reply tails** end "pages.." when a change note precedes a full stop;
   cosmetic, in `changeNote`.
 - **Port 5173** is held by another project on Robert's Mac; the launch entry
-  `plotcoder-dev-5180` is the one to use. The MCP bridge probe does not scan
-  5180.
+  `plotcoder-dev-5180` is the one to use, and `plotcoder-dev-5181` when a
+  second worktree's session already holds 5180. The MCP bridge probe scans
+  neither.
 - **`~/.claude.json` lost the `plotcoder-board` entry** before round
   fifteen; check it before every round (a memory records the shape).
 - **Playwright's chromium is not installed** on this Mac, so the e2e suite

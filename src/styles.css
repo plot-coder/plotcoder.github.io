@@ -4638,3 +4638,10 @@ body {
   cursor: text;
   text-align: left;
 }
+
+/* The project's open name in the panel (R61's edge): the words under the name, as a field. */
+.project-panel__open {
+  margin: 0.1rem 0 0.5rem;
+  font-size: 0.78rem;
+  line-height: 1.3;
+}

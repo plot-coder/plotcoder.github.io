@@ -47,7 +47,7 @@ type NoteCardProps = {
   onOpenPages: (id: string) => void;
   onCastNames: (id: string, names: string[]) => void;
   /** Where and when the scene happens, typed as one line on the card (R37, R55). */
-  onLocation: (id: string, location: string, when: string, whenOpen: string) => void;
+  onLocation: (id: string, location: string, when: string, whenOpen: string, locationOpen: string) => void;
   onRaise: (id: string) => void;
   /** The pointer is over this card (or has left it): the Story Map lights its block. */
   onHover: (id: string | null) => void;
@@ -490,9 +490,10 @@ export function NoteCard({
         location={note.location}
         when={note.when}
         whenOpen={note.whenOpen}
+        locationOpen={note.locationOpen}
         places={places}
         onBegin={() => onRaise(note.id)}
-        onCommit={(location, when, whenOpen) => onLocation(note.id, location, when, whenOpen)}
+        onCommit={(location, when, whenOpen, locationOpen) => onLocation(note.id, location, when, whenOpen, locationOpen)}
       />
       <button
         type="button"

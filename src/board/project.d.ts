@@ -19,6 +19,8 @@ export type ProjectRecord = {
   version: number;
   id: string;
   name: string;
+  /** The writer's words for why the project's name is not decided (R61's edge), or empty; the name stands meanwhile. */
+  nameOpen: string;
   premise: string;
   /** The writer's words for why there is no premise yet (R61), or empty. */
   premiseOpen: string;
@@ -75,6 +77,8 @@ export declare function setPremise(project: ProjectRecord, premise: string, now?
 export declare function setPremiseOpen(project: ProjectRecord, words: string, now?: string): ProjectRecord;
 /** The writer's words for why a board's name is not decided (R61); the name stands meanwhile. */
 export declare function setBoardNameOpen(project: ProjectRecord, id: string, words: string, now?: string): ProjectRecord;
+/** The writer's words for why the project's name is not decided (R61's edge); the name stands meanwhile. */
+export declare function setProjectNameOpen(project: ProjectRecord, words: string, now?: string): ProjectRecord;
 export declare function boardById(project: ProjectRecord, id: string): BoardMeta | null;
 /** What a script going out is called: a named project is the title, its board beside it only when the project has several. */
 export declare function scriptTitles(project: ProjectRecord, board: BoardMeta | null | undefined): { title: string; episode?: string };

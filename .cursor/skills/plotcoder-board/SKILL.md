@@ -73,7 +73,7 @@ folder whose wall you mean.
 (what is here and what it asks — a fresh folder holds a sample wall, Maya and
 Tom and the letter, and says so; it is not the writer's), `list_workflows`
 (what a writer can ask for), `list_reminders` (the writer's principles),
-`list_board` (the records and their ids) — then change anything.
+`list_board` (the records and their ids) — and only then change anything.
 
 ### Reading
 

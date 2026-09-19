@@ -492,6 +492,18 @@ describe("findings", () => {
 });
 
 describe("threads (R60): a loose end is asked about from that end", () => {
+  it("asks a loose end even when its card is open, and never lists loose among what the open words hide (round nineteen, entry 23)", () => {
+    const state = run(
+      wall({ id: "a", headline: "The first morning" }, { id: "c", headline: "Ruth keeps the crowns in a bucket" }),
+      { type: "create_thread", id: "bucket", name: "the bucket", noteIds: ["c"], startOpen: true },
+      { type: "set_open", ids: ["c"], open: "when" },
+    );
+    const reading = readWall(state);
+    expect(reading.findings.filter((finding) => finding.kind === "loose")).toHaveLength(1);
+    expect(reading.open).toHaveLength(1);
+    expect(reading.open[0].hides).not.toContain("loose");
+  });
+
   it("lists threads with their cards in story order and asks where a thread is first seen, or where it comes out", () => {
     const state = run(
       wall({ id: "a", headline: "The first morning" }, { id: "b", headline: "The break-in" }, { id: "c", headline: "The last harvest" }),
@@ -569,6 +581,21 @@ describe("two beats back to back", () => {
     expect(empty[0].ids).toEqual([state.notes[0].id, state.notes[1].id]);
     state = applyCommand(state, { type: "create_note", headline: "The diner", change: "Miguel pockets the tips.", x: 300, y: 0 }).state;
     expect(readWall(state).findings.filter((finding) => finding.kind === "empty")).toHaveLength(0);
+  });
+});
+
+describe("beats back to back are asked even when both beats are open (round nineteen, entry 28)", () => {
+  it("keeps the run's question and never lists it among what the open words hide", () => {
+    const state = run(
+      wall({ id: "a", rank: "beat", headline: "The key" }, { id: "b", rank: "beat", headline: "She tells him" }),
+      { type: "create_arrow", from: "a", to: "b", kind: "follows" },
+      { type: "set_open", ids: ["a", "b"], open: "where and when" },
+    );
+    const reading = readWall(state);
+    const empty = reading.findings.filter((finding) => finding.kind === "empty");
+    expect(empty).toHaveLength(1);
+    expect(empty[0].ids).toEqual(["a", "b"]);
+    expect(reading.open.map((card) => card.hides)).toEqual([[], []]);
   });
 });
 

@@ -991,6 +991,19 @@ const CHECK_WORDS = {
   unplaced: "no card without a place",
   loose: "no thread with a loose end",
 };
+/** What an open card would be asked once closed, as the question and not the check's clean form (round nineteen, entry 31). */
+const ASK_WORDS = {
+  unwritten: "its change line",
+  unlinked: "what comes before and after it",
+  duplicate: "which of two alike headlines it is",
+  sequence: "whether its group is one sequence",
+  nobody: "who is in it",
+  absent: "who has been gone too long",
+  backwards: "why its payoff comes before its setup",
+  unpaid: "where its fold pays off",
+  unplanted: "what plants its payoff",
+  unplaced: "where it happens",
+};
 const SAMPLE_NOTE = "sample: this is the wall PlotCoder starts with (Maya, Tom, the letter); nothing here is the writer's. Replace it, or new_board.";
 
 // --- Reporting -------------------------------------------------------------
@@ -1051,7 +1064,7 @@ function summarize(state) {
       const revised = snap && (snap.headline !== note.headline || snap.change !== note.change || (snap.text ?? "") !== (note.text ?? "") || (snap.location ?? "") !== (note.location ?? "")) ? `, changed in ${state.revision.color}` : "";
       const place = note.location ? `, at: ${note.location}` : "";
       const when = note.when ? `, when: ${note.when}` : "";
-      const openWord = note.open ? `, open: ${note.open}` : "";
+      const openWord = note.open ? `, open (the writer's words): "${note.open}"` : "";
       const count = formatPages(noteEighths(note));
       // A written card's estimate is kept underneath for when the text goes; say it, or it is invisible (round sixteen, entry 44).
       const underneath = isMeasured(note) && note.lengthEighths !== null ? `; the writer's estimate underneath: ${formatPages(note.lengthEighths)}` : "";
@@ -1127,19 +1140,19 @@ function summarize(state) {
     `beats: ${beats}, scenes: ${scenes}`,
     state.targetEighths === DEFAULT_TARGET_EIGHTHS
       ? `runtime: about ${formatPages(runtime)} pages (an estimate from the cards; a page runs about a minute); no target set — set_target for a pilot (60) or a half-hour (30); against the feature default of 120 it would be ${formatPages(-over)} under${runtimeKinds(state)}`
-      : `runtime: about ${formatPages(runtime)} pages of a ${formatPages(state.targetEighths)}-page target — ${over > 0 ? `${formatPages(over)} over` : over < 0 ? `${formatPages(-over)} under` : "on it"} (an estimate from the cards; a page runs about a minute)${runtimeKinds(state)}`,
+      : `runtime: about ${formatPages(runtime)} pages of the ${formatPages(state.targetEighths)}-page target the writer set (set_target changes it) — ${over > 0 ? `${formatPages(over)} over` : over < 0 ? `${formatPages(-over)} under` : "on it"} (an estimate from the cards; a page runs about a minute)${runtimeKinds(state)}`,
     `notes: ${state.notes.length}, groups: ${state.groups.length}, arrows: ${state.arrows.length}, cast: ${state.characters.length}`,
     "cards (in story order — the follows arrows over the rows; each with its id):",
     notes || "  (no cards)",
     "rows on the wall (top to bottom, left to right; ★ a beat):",
     ...(rowLines.length ? rowLines : ["  (no cards)"]),
-    "cast (the project's; every board of it casts from here):",
+    "cast (the project's; every board of it casts from here; read_character reads a person's whole page, update_character writes it):",
     cast || "  (no one yet — add_character to start the roster)",
     "places (each phrase is its own place, and the app relates none of them — if two are one place, set_location them the same):",
     places || "  (no card says where it happens yet)",
     "groups:",
     groups || "  (no groups)",
-    "threads (R60; a named string through cards, in story order; an open end is asked about by the reading):",
+    "threads (a named string through cards, in story order; an open end is asked about by the reading):",
     ...((state.threads ?? []).length ? state.threads.map((thread) => `  - ${threadLine(state, thread)}`) : ["  (no threads — create_thread names one)"]),
     "arrows:",
     arrows || "  (no arrows)",
@@ -1387,7 +1400,8 @@ server.registerTool(
         }
       }
       // Wired into the story where the writer said, in the same frame.
-      if (beside && made?.id && wallHasFollows) {
+      // On a wall with no follows arrows yet, after or before draws the first one (round nineteen, entry 14).
+      if (beside && made?.id) {
         // Count the rewiring, so the reply can say it as move_scene does (round eighteen, entry 36).
         const run = (command) => {
           const done = step(command);
@@ -1413,9 +1427,7 @@ server.registerTool(
     ].filter(Boolean).join(", ");
     // Where it landed matters only until the tidy, so the reply says the rule once and never the coordinates (round fourteen, entry 11).
     const placed = beside
-      ? wallHasFollows
-        ? ` Wired ${args.after ? "after" : "before"} "${beside.headline}" in the story (${removedArrows} follows arrow${removedArrows === 1 ? "" : "s"} removed, ${drawnArrows} drawn)${joinedGroup ? `, in "${joinedGroup}"` : ""}, and the wall tidied.`
-        : ` The wall has no follows arrows, so "${args.after ? "after" : "before"}" has no story to land in: it sits after the last card; create_arrow the sequence, then move_scene.`
+      ? ` Wired ${args.after ? "after" : "before"} "${beside.headline}" in the story (${removedArrows} follows arrow${removedArrows === 1 ? "" : "s"} removed, ${drawnArrows} drawn${wallHasFollows ? "" : "; the wall's first, so the story order starts here"})${joinedGroup ? `, in "${joinedGroup}"` : ""}, and the wall tidied.`
       : args.x === undefined && args.y === undefined ? ` Placed after the last card in story order.${once("placed", " organize lays the wall out along the arrows.")}` : "";
     // Under a lock a new scene has a letter, not a number: say it, since the board is the only other place to learn it (round fourteen, entry 44).
     const numbered = after?.lock && result?.id ? ` Numbered ${sceneNumbers(storyOrder(after), after.lock).get(result.id)} (the numbers are locked; a new scene's letter is its place between locked ones now, worked out again from where it sits if it moves; the locked numbers never move).` : "";
@@ -1452,7 +1464,8 @@ server.registerTool(
       .map(([field, word]) => `${word}: "${prior?.[field] ?? ""}" → "${result[field] ?? ""}"`);
     if (!changed || fields.length === 0) return ok(`Nothing changed on "${result.headline}": the card already read that way.`);
     const mark = state.revision && state.revision.snapshot?.[result.id] && (state.revision.snapshot[result.id].headline !== result.headline || state.revision.snapshot[result.id].change !== result.change) ? ` Marked changed in the ${state.revision.color} revision "${state.revision.name}".` : "";
-    return ok(`Updated "${result.headline}" — ${fields.join("; ")}${where(live)}.${mark}`, result);
+    const placeNote = args.location !== undefined && (prior?.location ?? "") !== (result.location ?? "") ? nearPlaces(state, result.location) : "";
+    return ok(`Updated "${result.headline}" — ${fields.join("; ")}${where(live)}.${mark}${placeNote}`, result);
   },
 );
 
@@ -1558,7 +1571,7 @@ server.registerTool(
       "the cast and the places are list_board's, not the reading's",
       state.targetEighths === DEFAULT_TARGET_EIGHTHS
         ? `runtime: about ${formatPages(boardEighths(state))} pages (${whose || "no cards"}); no target set (set_target)`
-        : `runtime: about ${formatPages(boardEighths(state))} pages of a ${formatPages(state.targetEighths)}-page target — ${boardEighths(state) > state.targetEighths ? `${formatPages(boardEighths(state) - state.targetEighths)} over` : boardEighths(state) < state.targetEighths ? `${formatPages(state.targetEighths - boardEighths(state))} under` : "on it"}  (${whose || "no cards"}; page_count is the script so far)`,
+        : `runtime: about ${formatPages(boardEighths(state))} pages of the ${formatPages(state.targetEighths)}-page target the writer set (set_target changes it) — ${boardEighths(state) > state.targetEighths ? `${formatPages(boardEighths(state) - state.targetEighths)} over` : boardEighths(state) < state.targetEighths ? `${formatPages(state.targetEighths - boardEighths(state))} under` : "on it"}  (${whose || "no cards"}; page_count is the script so far)`,
       `groups: ${
         state.groups.length
           ? state.groups
@@ -1587,12 +1600,12 @@ server.registerTool(
       ...reading.later.map((item) => `  - "${state.notes.find((note) => note.id === item.id)?.headline ?? item.id}" is folded and pays off later, on "${boardById(projectForRead, item.boardId)?.name ?? item.boardId}"${item.noteId ? `, at ${episodeLabel(projectForRead, boardsNow, item.boardId, item.noteId)} "${boardsNow[item.boardId]?.notes?.find((note) => note.id === item.noteId)?.headline ?? item.noteId}"` : " — no scene there claims it yet"}`),
       ...reading.paidBy.map((item) => `  - "${state.notes.find((note) => note.id === item.id)?.headline ?? item.id}" pays off "${item.fromHeadline}" from "${item.fromBoardName}" (${episodeLabel(projectForRead, boardsNow, item.fromBoardId, item.fromNoteId)}), one board earlier`),
       ...(reading.open.length
-        ? ["open, by the writer's word (listed, not asked about while the words stand; set_open with \"\" closes):", ...reading.open.map((item) => `  - "${state.notes.find((note) => note.id === item.id)?.headline ?? item.id}" — ${item.words}${item.hides.length ? ` (would be asked, closed: ${item.hides.map((kind) => CHECK_WORDS[kind] ?? kind).join("; ")})` : ""}`)]
+        ? ["open, by the writer's word (listed, not asked about while the words stand; set_open with \"\" closes):", ...reading.open.map((item) => `  - "${state.notes.find((note) => note.id === item.id)?.headline ?? item.id}" — ${item.words}${item.hides.length ? ` (closed, it would be asked ${item.hides.map((kind) => ASK_WORDS[kind] ?? CHECK_WORDS[kind] ?? kind).join("; ")})` : ""}`)]
         : []),
       ...(reading.threads.length
         ? ["threads (the writer's strings through the story; a loose end is asked about below):", ...reading.threads.map((thread) => `  - "${thread.name}": ${thread.ids.length ? thread.ids.map((id) => `"${state.notes.find((note) => note.id === id)?.headline ?? id}"`).join(" → ") : "no card yet"}${thread.startOpen ? " — starts nowhere yet" : ""}${thread.endOpen ? " — ends nowhere yet" : ""}`)]
         : []),
-      "questions the wall raises:",
+      "questions the wall raises (each stands on every reading until the wall changes to answer it, or the writer leaves it — leave_question, with their reason):",
       ...(reading.findings.length
         ? reading.findings.map((finding) => `  - [${finding.kind}] ${finding.text}${finding.ids.length ? ` (ids: ${finding.ids.join(", ")})` : ""}`)
         : [reading.left.length ? "  (none the writer has not left)" : "  (none that this reading can see)"]),
@@ -2026,7 +2039,7 @@ server.registerTool(
     const allMeasured = state.notes.length > 0 && state.notes.every((note) => isMeasured(note));
     const short = state.targetEighths > 0 && boardEighths(state) * 2 < state.targetEighths;
     const lines = [
-      `"${chosen.name}" beside this wall's ${beats} beat${beats === 1 ? "" : "s"}, of ${formatPages(state.targetEighths)} pages (the story so far runs to p. ${comparison.soFar}${allMeasured ? ", measured" : ", an estimate: unsized cards read as a page each"}); a match is the nearest of the wall's beats within ${MATCH_PAGES} pages, one to one and in order:`,
+      `"${chosen.name}" beside this wall's ${beats} beat${beats === 1 ? "" : "s"}, of ${formatPages(state.targetEighths)} pages (the story so far runs to p. ${comparison.soFar}, the page its last card ends on — read_wall counts the same cards as about ${formatPages(boardEighths(state))} pages${allMeasured ? ", measured" : ", an estimate: unsized cards read as a page each"}); a match is the nearest of the wall's beats within ${MATCH_PAGES} pages, one to one and in order:`,
       // On a wall under half its target the pairing is arithmetic; say so before the rows, not after them (round eighteen, entry 52).
       ...(short ? [`the wall runs to less than half its target, so its beats sit early and the ${MATCH_PAGES}-page window pairs them with the structure's first beats by arithmetic; the pairing says more once the cards are sized or written, and whether a turn is missing is the writer's call, not this reading's`] : []),
       ...describeComparison(comparison).map((line) => `  - ${line}`),
@@ -2951,7 +2964,7 @@ server.registerTool(
     });
     const total = parts.reduce((sum, part) => sum + part.on.length, 0);
     // An open card reads as open on a person's page too (round eighteen, entry 53).
-    const where_ = (note) => [note.location ? `at ${note.location}` : "", note.when ? note.when : "", note.rank === "beat" ? "beat" : "", note.open ? `open: ${note.open}` : ""].filter(Boolean).join(" · ");
+    const where_ = (note) => [note.location ? `at ${note.location}` : "", note.when ? note.when : "", note.rank === "beat" ? "beat" : "", note.open ? `open: "${note.open}"` : ""].filter(Boolean).join(" · ");
     // A read opens with the door it came through, like every reading (round sixteen, entry 28); one scene a line (29).
     const lines = [
       `PlotCoder cast (${door(live, base)})`,
@@ -3009,6 +3022,17 @@ server.registerTool(
   },
 );
 
+/** A near match on the wall is probably the same place spelled twice (round ten; update_note too, round nineteen entry 36). */
+function nearPlaces(state, place) {
+  const wanted = (place ?? "").trim().toLowerCase();
+  const near = wanted
+    ? [...new Set(state.notes.map((note) => (note.location ?? "").trim()).filter(Boolean))].filter(
+        (other) => other.toLowerCase() !== wanted && (other.toLowerCase().includes(wanted) || wanted.includes(other.toLowerCase())),
+      )
+    : [];
+  return near.length ? ` The wall also has ${near.map((other) => `"${other}"`).join(", ")} — the same place spelled twice, or two places? Each distinct phrase counts as one place.` : "";
+}
+
 server.registerTool(
   "set_location",
   {
@@ -3029,16 +3053,8 @@ server.registerTool(
       return ok("No place changed: those cards already read that way.");
     }
     const place = result[0].location;
-    // A near match on the wall is probably the same place spelled twice.
-    const wanted = (place ?? "").trim().toLowerCase();
-    const near = wanted
-      ? [...new Set(state.notes.map((note) => (note.location ?? "").trim()).filter(Boolean))].filter(
-          (other) => other.toLowerCase() !== wanted && (other.toLowerCase().includes(wanted) || wanted.includes(other.toLowerCase())),
-        )
-      : [];
-    const warn = near.length ? ` The wall also has ${near.map((other) => `"${other}"`).join(", ")} — the same place spelled twice, or two places? Each distinct phrase counts as one place.` : "";
     return ok(
-      `${result.length} card(s) now ${place ? `at ${place}` : "nowhere"}${where(live)}.${warn}${stillOpen(result)}`,
+      `${result.length} card(s) now ${place ? `at ${place}` : "nowhere"}${where(live)}.${nearPlaces(state, place)}${stillOpen(result)}`,
       result,
     );
   },
@@ -3780,7 +3796,7 @@ server.registerTool(
   {
     title: "Save the project as a file",
     description:
-      "The project the server is working, as the file Save project writes and Open project takes: the record, every board with its cards, the reminders and the writer's structures. Pass path to write it (a .json) — an absolute path, since a relative one resolves from the folder the server was started in, not yours; without a path, the reply's JSON is the file. Pictures and takes on the account are not in the file. Works through every door.",
+      `The project the server is working, as the file Save project writes and Open project takes: the record, every board with its cards, the reminders and the writer's structures. Pass path to write it (a .json) — an absolute path, since a relative one resolves from the folder the server was started in, which is ${process.cwd()}, not yours; without a path, the reply's JSON is the file. Pictures and takes on the account are not in the file. Works through every door.`,
     inputSchema: { path: z.string().optional() },
   },
   async (args) => {

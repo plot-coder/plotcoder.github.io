@@ -1,7 +1,8 @@
 # To do — where the last session stopped
 
 Written 2026-09-18, late, at the end of the session that ran rounds
-seventeen and eighteen and fixed most of both while they ran. Everything
+seventeen and eighteen and fixed most of both while they ran; brought up
+to date the same night by the session that cued round nineteen. Everything
 here is a handover: what is done and merged, what is left, and the order I
 would take it in. `REQUIREMENTS.md` is still the source of truth; this file
 is only the queue.
@@ -10,27 +11,47 @@ is only the queue.
 
 ## Next, in order (Robert's word, 2026-09-18, after the thread shipped)
 
-1. **Write the prompt for round nineteen** into `blind-runs/prompt.md`
-   (archive eighteen's as `round-nineteen-prompt.md`'s predecessor): the
-   same notes, "The Allotments", against 0.1.29 with the thread in hand.
-   The writer answers as before; for the key and the bucket the writer
-   says only "I know where it pays off, not where it is first seen". The
-   round measures whether a stranger reaches for `create_thread`
-   unprompted, whether the loose-end question lands where the writer
-   wanted it, and whether the thread and the fold ever contradict each
-   other on one wall (the combine log's rule). Check `~/.claude.json` for
-   the `plotcoder-board` entry first. Note that the on-ramp's rules now
+1. ~~**Write the prompt for round nineteen**~~ **Done 2026-09-18:**
+   `blind-runs/prompt.md` is round nineteen's; eighteen's is archived as
+   `round-eighteen-prompt.md`. The same notes, "The Allotments", against
+   0.1.29 with the thread in hand. The writer answers as before; for the
+   key and the bucket the writer says only "I know where it pays off, not
+   where it is first seen". The round measures whether a stranger reaches
+   for `create_thread` with only the on-ramp's one sentence and the guide
+   to go on, whether the loose-end question lands where the writer wanted
+   it, and whether the thread and the fold ever contradict each other on
+   one wall (the combine log's rule) — the sixth direction decides the
+   key's first sighting to find out. Note that the on-ramp's rules now
    name the open card and the thread in one sentence (added 2026-09-18,
-   after eighteen), so nineteen measures the on-ramp's sentence plus the
-   guide, not the guide alone.
-2. **Run it**: Robert opens the session, this side drives it from the
-   prompt's list of directions, fixes the friction while it runs, files
-   `blind-runs/round-nineteen-report.md` verbatim with a head, records the
-   round in `REQUIREMENTS.md` and the two tables, and releases.
+   after eighteen, pull request #96), so nineteen measures the on-ramp's
+   sentence plus the guide, not the guide alone; and that sentence's
+   example is "the key", which is this film's, the thing eighteen's entry
+   5 had the guide's examples changed for. `~/.claude.json` had lost the
+   `plotcoder-board` entry again; it was put back the same night (a copy
+   of the file before the edit is in `~/.claude/backups`). The server
+   never ships the on-ramp's text, so 0.1.29 on npm and the deployed site
+   together carry everything the round needs; no release before it.
+2. ~~**Run it**~~ **Done 2026-09-18:** round nineteen ran the same
+   night, driven from the cueing session by cross-session messages (the
+   agent noticed, entry 12). Fifty-two entries in
+   `blind-runs/round-nineteen-report.md`, verbatim under a head; eighteen
+   fixed on the branch while it ran, recorded in `REQUIREMENTS.md` and the
+   two tables. The three measurements are answered in the head. **Not yet
+   done: the merge and the release** — the fixes are on the branch, tests
+   and build green (561 unit tests); merge to `main`, wait for the Pages
+   deploy, and `npm version patch` for 0.1.30.
 3. **Mock the open fields** (item 2 below): the logline, the premise and a
    card's when able to say "not decided" in the writer's words, listed by
    the reading and not asked. Ask in writing before building.
-4. **The thread's own edges**, found while building it, not yet decided:
+4. **The thread's own edges**, found while building it and in round
+   nineteen, not yet decided: **a fold is one flag per card and cannot say
+   which of two things a scene plants** (nineteen 42: the first morning
+   plants the tools and the key, and a setup arrow for the key would count
+   the tools' fold paid); **a payoff the writer knows without a scene for it
+   has no home** (nineteen 21: the fold asks "where does it come back?" as
+   if the answer were unknown). Whether the fold learns what it plants, or
+   the thread absorbs the fold's job, is the design question after the open
+   fields — mock before building. The earlier edges:
    a thread's name can be typed only when it is started on the wall (the
    tag on the string is not editable; `update_thread` renames it); a thread
    is one board's, so a strand across episodes is still R50's fold; a
@@ -98,6 +119,17 @@ to it is `docs/mockups/r60-the-payoff-first.html`.
 
 ## Where things stand
 
+- **Round nineteen has run** (2026-09-18), the same notes with the thread
+  in hand and the on-ramp naming it. Its report is
+  `blind-runs/round-nineteen-report.md`, verbatim, with a head saying what
+  became of each entry. Fifty-two entries; eighteen fixed the same night on
+  the branch, not yet merged or released.
+- **The round measured what it was cued to measure:** both threads named at
+  build (on the on-ramp's sentence — its example "the key" was this film's
+  and was changed to the sample's); the loose question lands from the
+  payoff end and stands until tied; the thread's start tied without a setup
+  arrow because the fold was the tools' — the agent asked, and the finding
+  is the fold's, above.
 - **Round eighteen has run** (2026-09-18), the same page of notes as
   seventeen with the open card in hand. Its report is
   `blind-runs/round-eighteen-report.md`, verbatim, with a head saying what

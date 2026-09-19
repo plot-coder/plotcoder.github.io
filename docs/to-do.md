@@ -47,15 +47,16 @@ is only the queue.
    name from the wall (the crumb draws the words; typing a name decides
    it), and a check for a missing when, which the rounds said blank must
    not become.
-4. **The thread's own edges**, found while building it and in round
-   nineteen, not yet decided: **a fold is one flag per card and cannot say
-   which of two things a scene plants** (nineteen 42: the first morning
-   plants the tools and the key, and a setup arrow for the key would count
-   the tools' fold paid); **a payoff the writer knows without a scene for it
-   has no home** (nineteen 21: the fold asks "where does it come back?" as
-   if the answer were unknown). Whether the fold learns what it plants, or
-   the thread absorbs the fold's job, is the design question after the open
-   fields — mock before building. The earlier edges:
+4. ~~**The thread's own edges**~~ **R62 mocked and built 2026-09-19**, on
+   Robert's "Build A": the fold says what it plants, in the writer's words;
+   the tie rule runs in the kernel, both halves; a known payoff with no
+   scene is an open card at the payoff end, said by the guide. Not yet run
+   blind. Left for a wall to need: several named plants on one card (B).
+   What it answers: **a fold is one flag per card and cannot say which of
+   two things a scene plants** (nineteen 42); **a payoff the writer knows
+   without a scene has no home** (nineteen 21). Whether the fold learns
+   what it plants or the thread absorbs it was the question, and A answers
+   it with the    fold; mock before building. The earlier edges:   fields — mock before building. The earlier edges:
    a thread's name can be typed only when it is started on the wall (the
    tag on the string is not editable; `update_thread` renames it); a thread
    is one board's, so a strand across episodes is still R50's fold; a

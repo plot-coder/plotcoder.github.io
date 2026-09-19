@@ -491,6 +491,20 @@ describe("findings", () => {
   });
 });
 
+describe("what the fold plants (R62): the question and the setup in the writer's words", () => {
+  it("asks where the named thing comes back, and names it on the setup line", () => {
+    const state = run(
+      wall({ id: "a", headline: "The first morning" }, { id: "b", headline: "Con gives Ruth his tools" }),
+      { type: "set_plant", ids: ["a"], what: "the wrong tools" },
+    );
+    expect(readWall(state).findings.find((finding) => finding.kind === "unpaid")?.text).toBe('"The first morning" plants the wrong tools, and no arrow pays it off. Where do the wrong tools come back?');
+    const bare = run(state, { type: "set_plant", ids: ["a"], what: "" });
+    expect(readWall(bare).findings.find((finding) => finding.kind === "unpaid")?.text).toBe('"The first morning" plants something, and no arrow pays it off. Where does it come back?');
+    const paid = run(state, { type: "create_arrow", from: "a", to: "b", kind: "setup" });
+    expect(describeSetups(readWall(paid), paid)[0]).toContain('"The first morning" sets up "Con gives Ruth his tools" — the wrong tools,');
+  });
+});
+
 describe("open fields (R61): the logline and a card's when, in the writer's words", () => {
   it("lists them in story order and asks nothing about them", () => {
     const state = run(

@@ -4625,3 +4625,16 @@ body {
 .note__when.is-open-field {
   text-decoration-thickness: 1px;
 }
+
+/* The fold's words on the edge (R62): a button that reads as the edge line. */
+.note__plant-words {
+  pointer-events: auto;
+  background: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  cursor: text;
+  text-align: left;
+}

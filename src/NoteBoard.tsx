@@ -100,6 +100,7 @@ type NoteBoardProps = {
   onSetRank: (id: string, rank: NoteRank) => void;
   onSetLength: (id: string, lengthEighths: number) => void;
   onSetPlant: (id: string, plants: boolean) => void;
+  onSetPlantWhat: (id: string, what: string) => void;
   /** Start a thread at a card with the writer's name for it (R60): the far end is the open one. */
   onStartThread: (id: string, name: string, end: "start" | "end") => void;
   /** Tie a thread to a card: as where it is first seen, where it comes out, a card along it, or off it. */
@@ -200,6 +201,7 @@ export function NoteBoard({
   onSetRank,
   onSetLength,
   onSetPlant,
+  onSetPlantWhat,
   onStartThread,
   onTieThread,
   onSetOpen,
@@ -648,6 +650,7 @@ export function NoteBoard({
           onSetRank={onSetRank}
           onSetLength={onSetLength}
           onSetPlant={onSetPlant}
+          onSetPlantWhat={onSetPlantWhat}
           onSetOpen={onSetOpen}
           onEdit={onEdit}
         />

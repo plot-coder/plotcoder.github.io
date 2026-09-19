@@ -252,6 +252,8 @@ export function seedState(now = nowIso()) {
     whenOpen: "",
     text: "",
     plants: false,
+    // What the fold plants, in the writer's words (R62), or nothing.
+    plantsWhat: "",
     // A fold that pays off on another board — a later episode — names it here;
     // null claims nothing (R50). The scene there that pays it off, once one
     // does (R58); null while the board is a promise.
@@ -356,6 +358,8 @@ export function normalizeState(value) {
     const characterIds = knownCast(note?.characterIds, characters);
     // Cards written before R31 have no fold; a plant is a claim you make.
     const plants = note?.plants === true;
+    // Cards folded before R62 say "something": the fold's words are the writer's, or nothing.
+    const plantsWhat = plants && typeof note?.plantsWhat === "string" ? note.plantsWhat : "";
     // Cards written before R50 pay off on their own board or not at all.
     const payoffBoardId = plants && typeof note?.payoffBoardId === "string" && note.payoffBoardId ? note.payoffBoardId : null;
     // Cards written before R58 name a board and no scene on it.
@@ -377,6 +381,7 @@ export function normalizeState(value) {
       Array.isArray(note.characterIds) &&
       sameIds(note.characterIds, characterIds) &&
       note.plants === plants &&
+      note.plantsWhat === plantsWhat &&
       note.payoffBoardId === payoffBoardId &&
       note.payoffNoteId === payoffNoteId &&
       note.open === open &&
@@ -388,7 +393,7 @@ export function normalizeState(value) {
       return note;
     }
     patched = true;
-    return { ...note, rank, lengthEighths, characterIds, plants, payoffBoardId, payoffNoteId, open, location, when, whenOpen, text };
+    return { ...note, rank, lengthEighths, characterIds, plants, plantsWhat, payoffBoardId, payoffNoteId, open, location, when, whenOpen, text };
   });
 
   // Boards written before the production half (Roadmap 2, item 8) have no
@@ -469,6 +474,48 @@ function cleanOpen(value) {
   return typeof value === "string" ? value.trim().replace(/\s+/g, " ") : "";
 }
 
+/**
+ * The combine log's rule, both halves (R60, R62). A thread tied at both ends
+ * through two or more cards is a plant between two scenes that exist, and
+ * that is the fold's and the setup arrow's to draw: when the first card's
+ * fold is free — unfolded, or folded for the same thing, or folded with no
+ * words — the card is folded, the fold takes the thread's name, and a setup
+ * arrow runs from the first card to the last. When the first card's fold is
+ * another thing's, the thread stays a thread and nothing is drawn. Returns
+ * the state and what it did, so the door can say it.
+ */
+function tieIntoFold(state, thread, now) {
+  const none = { state, fold: null };
+  if (thread.startOpen || thread.endOpen || thread.noteIds.length < 2) return none;
+  const firstId = thread.noteIds[0];
+  const lastId = thread.noteIds[thread.noteIds.length - 1];
+  const first = state.notes.find((note) => note.id === firstId);
+  if (!first) return none;
+  const what = first.plantsWhat ?? "";
+  if (first.plants && what && what.toLowerCase() !== thread.name.toLowerCase()) {
+    return { state, fold: { kept: true, firstId, what } };
+  }
+  let next = state;
+  const folded = !first.plants;
+  const named = !what;
+  if (folded || named) {
+    next = {
+      ...next,
+      notes: next.notes.map((note) => (note.id === firstId ? bump(note, { plants: true, plantsWhat: thread.name }, now) : note)),
+    };
+  }
+  const hasArrow = next.arrows.some((arrow) => arrow.kind === "setup" && arrow.from === firstId && arrow.to === lastId);
+  let arrow = null;
+  if (!hasArrow) {
+    const drawn = applyCommand(next, { type: "create_arrow", from: firstId, to: lastId, kind: "setup" }, now);
+    if (drawn.changed) {
+      next = drawn.state;
+      arrow = { from: firstId, to: lastId };
+    }
+  }
+  return { state: next, fold: { kept: false, firstId, lastId, folded, named, arrow } };
+}
+
 /** A thread's name as the writer typed it, one line, spaces collapsed (R60). */
 function cleanThreadName(value) {
   return typeof value === "string" ? value.trim().replace(/\s+/g, " ") : "";
@@ -512,7 +559,9 @@ export function applyCommand(state, command, now = nowIso()) {
             ? null
             : clampEighths(command.lengthEighths, DEFAULT_NOTE_EIGHTHS, MAX_NOTE_EIGHTHS),
         characterIds: knownCast(command.characterIds, state.characters ?? []),
-        plants: command.plants === true,
+        plants: command.plants === true || Boolean(cleanOpen(command.plantsWhat)),
+        // What it plants, in the writer's words (R62): naming a plant folds the card.
+        plantsWhat: command.plants === false ? "" : cleanOpen(command.plantsWhat),
         payoffBoardId: null,
         payoffNoteId: null,
         open: cleanOpen(command.open),
@@ -768,7 +817,8 @@ export function applyCommand(state, command, now = nowIso()) {
         startOpen: command.startOpen === true,
         endOpen: command.endOpen === true,
       };
-      return { state: { ...state, threads: [...(state.threads ?? []), thread] }, changed: true, result: thread };
+      const tied = tieIntoFold({ ...state, threads: [...(state.threads ?? []), thread] }, thread, now);
+      return { state: tied.state, changed: true, result: { ...thread, fold: tied.fold } };
     }
 
     case "update_thread": {
@@ -785,10 +835,17 @@ export function applyCommand(state, command, now = nowIso()) {
         return { state, changed: false };
       }
       const next = { ...current, name, noteIds, startOpen, endOpen };
+      // A fold this thread named follows a rename (R62), so the two never drift apart on the wall's word alone.
+      let notes = state.notes;
+      if (name !== current.name && noteIds.length) {
+        const firstId = noteIds[0];
+        notes = notes.map((note) => (note.id === firstId && note.plants && (note.plantsWhat ?? "").toLowerCase() === current.name.toLowerCase() ? bump(note, { plantsWhat: name }, now) : note));
+      }
+      const tied = tieIntoFold({ ...state, notes, threads: state.threads.map((thread) => (thread.id === command.id ? next : thread)) }, next, now);
       return {
-        state: { ...state, threads: state.threads.map((thread) => (thread.id === command.id ? next : thread)) },
+        state: tied.state,
         changed: true,
-        result: { thread: next, before: current },
+        result: { thread: next, before: current, fold: tied.fold },
       };
     }
 
@@ -1027,6 +1084,7 @@ export function applyCommand(state, command, now = nowIso()) {
         lengthEighths: null,
         characterIds: [],
         plants: false,
+        plantsWhat: "",
         payoffBoardId: null,
         payoffNoteId: null,
         open: "",
@@ -1183,15 +1241,20 @@ export function applyCommand(state, command, now = nowIso()) {
     case "set_plant": {
       const ids = new Set(command.ids);
       if (ids.size === 0) return { state, changed: false };
-      const plants = command.plants === true;
+      // What the fold plants, in the writer's words (R62): `what` names it and
+      // folds an unfolded card; `plants` alone keeps the words; unfolding
+      // forgets them, as it forgets where it paid off.
+      const what = typeof command.what === "string" ? cleanOpen(command.what) : null;
       const touched = [];
       const notes = state.notes.map((note) => {
         if (!ids.has(note.id)) return note;
+        const plants = typeof command.plants === "boolean" ? command.plants : note.plants || Boolean(what);
+        const plantsWhat = !plants ? "" : what === null ? (note.plantsWhat ?? "") : what;
         // Unfolding forgets where it paid off; a claim that no longer stands.
         const payoffBoardId = plants ? note.payoffBoardId : null;
         const payoffNoteId = plants ? (note.payoffNoteId ?? null) : null;
-        if (note.plants === plants && note.payoffBoardId === payoffBoardId && note.payoffNoteId === payoffNoteId) return note;
-        const next = bump(note, { plants, payoffBoardId, payoffNoteId }, now);
+        if (note.plants === plants && (note.plantsWhat ?? "") === plantsWhat && note.payoffBoardId === payoffBoardId && note.payoffNoteId === payoffNoteId) return note;
+        const next = bump(note, { plants, plantsWhat, payoffBoardId, payoffNoteId }, now);
         touched.push(next);
         return next;
       });

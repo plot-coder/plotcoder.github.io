@@ -389,7 +389,7 @@ describe("threads (R60)", () => {
     const state = boardOf({ id: "a", x: 0, y: 0 }, { id: "b", x: 300, y: 0 });
     const made = applyCommand(state, { type: "create_thread", name: "  the  bucket ", noteIds: ["b", "ghost", "b"], startOpen: true }, NOW);
     expect(made.changed).toBe(true);
-    expect(made.result).toEqual({ id: expect.any(String), name: "the bucket", noteIds: ["b"], startOpen: true, endOpen: false });
+    expect(made.result).toEqual({ id: expect.any(String), name: "the bucket", noteIds: ["b"], startOpen: true, endOpen: false, fold: null });
     expect(applyCommand(state, { type: "create_thread", name: "   " }, NOW).changed).toBe(false);
   });
 
@@ -792,6 +792,71 @@ describe("formatPages", () => {
     [0, "0"],
   ])("%i eighths reads as %s", (eighths, expected) => {
     expect(formatPages(eighths)).toBe(expected);
+  });
+});
+
+type Fold = { kept: boolean; firstId?: string; lastId?: string; what?: string; folded?: boolean; named?: boolean; arrow?: { from: string; to: string } | null } | null;
+
+describe("what the fold plants (R62)", () => {
+  it("names a fold in the writer's words, folds an unfolded card when named, and forgets the words on unfolding", () => {
+    const base = run(emptyState(), { type: "create_note", id: "a", headline: "The first morning", change: "x" });
+    const named = run(base, { type: "set_plant", ids: ["a"], what: "  the wrong  tools " });
+    expect(named.notes[0].plants).toBe(true);
+    expect(named.notes[0].plantsWhat).toBe("the wrong tools");
+    expect(applyCommand(named, { type: "set_plant", ids: ["a"], what: "the wrong tools" }, NOW).changed).toBe(false);
+    // plants alone keeps the words; what "" keeps the fold and clears them.
+    expect(run(named, { type: "set_plant", ids: ["a"], plants: true }).notes[0].plantsWhat).toBe("the wrong tools");
+    const unnamed = run(named, { type: "set_plant", ids: ["a"], what: "" });
+    expect(unnamed.notes[0].plants).toBe(true);
+    expect(unnamed.notes[0].plantsWhat).toBe("");
+    const unfolded = run(named, { type: "set_plant", ids: ["a"], plants: false });
+    expect(unfolded.notes[0].plants).toBe(false);
+    expect(unfolded.notes[0].plantsWhat).toBe("");
+    const born = run(emptyState(), { type: "create_note", id: "b", headline: "B", change: "x", plantsWhat: "the key" });
+    expect(born.notes[0].plants).toBe(true);
+    expect(born.notes[0].plantsWhat).toBe("the key");
+    const old = JSON.parse(JSON.stringify(named));
+    delete old.notes[0].plantsWhat;
+    expect(normalizeState(old).notes[0].plantsWhat).toBe("");
+    expect(normalizeState({ ...old, notes: [{ ...old.notes[0], plants: false, plantsWhat: "stale" }] }).notes[0].plantsWhat).toBe("");
+  });
+
+  it("ties a thread into the fold and the arrow when the first card's fold is free, and leaves it a thread when the fold is another's", () => {
+    const wallOf = run(
+      emptyState(),
+      { type: "create_note", id: "a", headline: "The first morning", change: "x" },
+      { type: "create_note", id: "k", headline: "Con gives Ruth the key", change: "x" },
+      { type: "create_note", id: "t", headline: "Con gives Ruth his tools", change: "x" },
+    );
+    // Free fold: the thread names the fold and draws the arrow.
+    const tied = run(wallOf, { type: "create_thread", id: "key", name: "the key", noteIds: ["a", "k"] });
+    expect(tied.notes.find((note) => note.id === "a")).toMatchObject({ plants: true, plantsWhat: "the key" });
+    expect(tied.arrows.some((arrow) => arrow.kind === "setup" && arrow.from === "a" && arrow.to === "k")).toBe(true);
+    const outcome = applyCommand(wallOf, { type: "create_thread", id: "key", name: "the key", noteIds: ["a", "k"] }, NOW);
+    expect((outcome.result as { fold: Fold }).fold).toMatchObject({ kept: false, firstId: "a", lastId: "k", folded: true, named: true, arrow: { from: "a", to: "k" } });
+    // Tied later by update_thread: the same, once.
+    const open = run(wallOf, { type: "create_thread", id: "key", name: "the key", noteIds: ["k"], startOpen: true });
+    expect(open.notes.find((note) => note.id === "a")?.plants).toBe(false);
+    const later = applyCommand(open, { type: "update_thread", id: "key", add: ["a"], noteIds: ["a", "k"], startOpen: false }, NOW);
+    expect((later.result as { fold: Fold }).fold).toMatchObject({ kept: false, folded: true, named: true });
+    expect(later.state.arrows.filter((arrow) => arrow.kind === "setup")).toHaveLength(1);
+    // Renamed, the fold it named follows, and the rule finds nothing left to do.
+    const renamed = applyCommand(later.state, { type: "update_thread", id: "key", name: "the shed key" }, NOW);
+    expect((renamed.result as { fold: Fold }).fold).toMatchObject({ kept: false, folded: false, named: false, arrow: null });
+    expect(renamed.state.notes.find((note) => note.id === "a")?.plantsWhat).toBe("the shed key");
+    // The fold is another's: the thread stays a thread and nothing is drawn.
+    const tools = run(wallOf, { type: "set_plant", ids: ["a"], what: "the wrong tools" });
+    const kept = applyCommand(tools, { type: "create_thread", id: "key", name: "the key", noteIds: ["a", "k"] }, NOW);
+    expect((kept.result as { fold: Fold }).fold).toEqual({ kept: true, firstId: "a", what: "the wrong tools" });
+    expect(kept.state.notes.find((note) => note.id === "a")?.plantsWhat).toBe("the wrong tools");
+    expect(kept.state.arrows).toHaveLength(0);
+    // A fold with no words is free: it takes the thread's name.
+    const bare = run(wallOf, { type: "set_plant", ids: ["a"], plants: true });
+    const took = applyCommand(bare, { type: "create_thread", id: "key", name: "the key", noteIds: ["a", "k"] }, NOW);
+    expect((took.result as { fold: Fold }).fold).toMatchObject({ kept: false, folded: false, named: true });
+    expect(took.state.notes.find((note) => note.id === "a")?.plantsWhat).toBe("the key");
+    // A loose end, or one card: no rule.
+    expect((applyCommand(wallOf, { type: "create_thread", id: "b", name: "the bucket", noteIds: ["t"], startOpen: true }, NOW).result as { fold: Fold }).fold).toBeNull();
   });
 });
 

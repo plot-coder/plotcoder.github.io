@@ -1059,7 +1059,8 @@ function summarize(state) {
       // The board it pays off on, named here as read_wall names it (round fifteen, entry 44).
       const laterName = note.payoffBoardId ? (lastHeld?.project?.boards?.find((meta) => meta.id === note.payoffBoardId)?.name ?? note.payoffBoardId) : null;
       const laterAt = note.payoffBoardId && note.payoffNoteId && lastHeld?.project ? ` at ${episodeLabel(lastHeld.project, lastHeld.boards, note.payoffBoardId, note.payoffNoteId)} "${lastHeld.boards[note.payoffBoardId]?.notes?.find((item) => item.id === note.payoffNoteId)?.headline ?? note.payoffNoteId}"` : "";
-      const plant = note.plants ? (note.payoffBoardId ? `, plants → pays off later on "${laterName}"${laterAt || ", no scene there claimed yet"}` : ", plants") : "";
+      const what = note.plantsWhat ? `: ${note.plantsWhat}` : "";
+      const plant = note.plants ? (note.payoffBoardId ? `, plants${what} → pays off later on "${laterName}"${laterAt || ", no scene there claimed yet"}` : `, plants${what}`) : "";
       // The receiving end (R58): what this card pays off from another board, composed from the project.
       const pays = paidByHere.filter((item) => item.id === note.id).map((item) => `, pays off "${item.fromHeadline}" from "${item.fromBoardName}" (${episodeLabel(lastHeld.project, lastHeld.boards, item.fromBoardId, item.fromNoteId)})`).join("");
       const snap = state.revision?.snapshot?.[note.id];
@@ -1384,6 +1385,7 @@ server.registerTool(
         rank: args.rank,
         lengthEighths: args.pages === undefined ? undefined : toEighths(args.pages),
         plants: args.plants,
+        plantsWhat: args.plantsWhat,
         location: args.location,
         when: args.when,
         open: args.open,
@@ -1428,7 +1430,7 @@ server.registerTool(
       result?.rank === "beat" ? "a beat" : "a scene",
       result?.lengthEighths === null ? "about a page (unsized: the writer's guess until set_length)" : `${formatPages(noteEighths(result))} ${formatPages(noteEighths(result)) === "1" ? "page" : "pages"}`,
       result?.color ? `${result.color} paper${args.color ? "" : once("paper", " (pass color to choose)")}` : null,
-      result?.plants ? "corner folded" : null,
+      result?.plants ? `corner folded${result.plantsWhat ? ` — plants ${result.plantsWhat}` : ""}` : null,
       result?.location ? `at ${result.location}` : `no place yet${once("place", " (location here, or set_location)")}`,
       result?.when ? `when: ${result.when}` : null,
       result?.open ? `open: "${result.open}" (listed, not asked about)` : null,
@@ -2783,12 +2785,14 @@ server.registerTool(
       `Fold the corner of cards — mark them as planting something — or unfold them. ${wordSentence("corner")} The setup arrow is create_arrow with kind 'setup'. A fold that pays off in a later episode: pass later, another board of the project by name, id or number — a board that exists; new_board makes one — and, once you know it, at: the scene on that board that pays it off, by id or headline. A board alone is a promise: the reading lists the card under 'later' and, once that board holds cards, asks which scene until one claims it; with at, both boards' readings name the payoff and the paying-off card says so. later '' forgets the board; at '' keeps the board and forgets the scene. set_payoff makes the same claim from the other board. Folding never moves a card.`,
     inputSchema: {
       ids: z.array(z.string()).min(1),
-      plants: z.boolean(),
+      plants: z.boolean().optional(),
+      what: z.string().optional(),
       later: z.string().optional(),
       at: z.string().optional(),
     },
   },
   async (args) => {
+    if (args.plants === undefined && args.what === undefined) return ok("Say which: plants (true folds, false unfolds), or what (the writer's words for what it plants, which folds the card; \"\" keeps the fold and drops the words).");
     // A series plant (R50): the fold pays off on another board of the project.
     // The kernel cannot check the board exists; this door can, before anything lands.
     let target = null;
@@ -2823,7 +2827,7 @@ server.registerTool(
       // What the folds claimed before, so the reply can say what a new claim replaced (round sixteen, entry 26).
       const before = new Map(current().notes.filter((note) => args.ids.includes(note.id)).map((note) => [note.id, { plants: note.plants, boardId: note.payoffBoardId, noteId: note.payoffNoteId }]));
       const alreadyFolded = args.plants && args.ids.every((id) => before.get(id)?.plants);
-      let { result } = step({ type: "set_plant", ids: args.ids, plants: args.plants });
+      let { result } = step({ type: "set_plant", ids: args.ids, ...(args.plants !== undefined ? { plants: args.plants } : {}), ...(args.what !== undefined ? { what: args.what } : {}) });
       let laterLine = alreadyFolded ? " (already folded)" : "";
       if (forgetting) {
         const cleared = step({ type: "set_payoff_board", ids: args.ids, boardId: null });
@@ -2851,10 +2855,11 @@ server.registerTool(
     const { result, laterLine } = value;
     const count = result?.length ?? 0;
     if (!changed || count === 0) return ok("No change: those cards were already that way, or the ids are not on the board.");
+    const what = result?.[0]?.plantsWhat ?? "";
     return ok(
-      args.plants
-        ? `${count} card(s) now plant something${where(live)}.${laterLine || " read_wall will ask about each until a setup arrow pays it off, or later names the board it pays off on."}`
-        : `${count} card(s) no longer marked as planting${where(live)}.`,
+      args.plants !== false
+        ? `${count} card(s) now plant ${what ? `"${what}"` : "something"}${where(live)}.${what ? ` The card says "Plants · ${what}", and read_wall asks where ${what} come${/s$/i.test(what) ? "" : "s"} back` : " read_wall will ask about each"}${laterLine || " until a setup arrow pays it off, or later names the board it pays off on."}${args.what === "" ? " The fold keeps no words now." : ""}`
+        : `${count} card(s) no longer marked as planting${where(live)}.${result?.some((note) => !note.plantsWhat) && args.ids.length ? "" : ""}`,
       result,
     );
   },
@@ -3180,6 +3185,15 @@ function cardsByRef(state, refs) {
   return { found, missing };
 }
 
+/** What tying a thread at both ends did to the fold (R62), in words for the reply. */
+function foldLine(state, fold, thread) {
+  if (!fold) return "";
+  const head = (id) => `"${state.notes.find((note) => note.id === id)?.headline ?? id}"`;
+  if (fold.kept) return ` ${head(fold.firstId)} is folded for ${fold.what}, so "${thread.name}" stays a thread and no arrow is drawn: a card has one fold.`;
+  const did = [fold.folded ? `folded ${head(fold.firstId)}` : null, fold.named ? `named its fold "${thread.name}"` : null, fold.arrow ? `drew the setup arrow to ${head(fold.lastId)}` : null].filter(Boolean);
+  return did.length ? ` Tied at both ends, so it is the fold's now: ${did.join(", ")}.` : "";
+}
+
 function threadLine(state, thread) {
   const order = storyOrder(state).filter((note) => thread.noteIds.includes(note.id));
   const cards = order.length ? order.map((note) => `"${note.headline}"`).join(" → ") : "no card yet";
@@ -3208,7 +3222,7 @@ server.registerTool(
     if (!changed) return ok("No thread made: a thread needs a name.");
     const asks = [result.startOpen ? "where it is first seen" : null, result.endOpen ? "where it comes out" : null].filter(Boolean);
     return ok(
-      `Named the thread ${threadLine(state, result)}${where(live)}.${asks.length ? ` The reading asks ${asks.join(" and ")} until update_thread ties ${asks.length === 1 ? "that end" : "them"}.` : result.noteIds.length ? " Both ends are tied; the reading lists it and asks nothing." : " No card yet: the reading asks where it is first seen and where it comes out."} The wall draws it as a string through its cards, a loose end where one is open.`,
+      `Named the thread ${threadLine(state, result)}${where(live)}.${asks.length ? ` The reading asks ${asks.join(" and ")} until update_thread ties ${asks.length === 1 ? "that end" : "them"}.` : result.noteIds.length ? " Both ends are tied; the reading lists it and asks nothing." : " No card yet: the reading asks where it is first seen and where it comes out."}${foldLine(state, result.fold, result)} The wall draws it as a string through its cards, a loose end where one is open.`,
       result,
     );
   },
@@ -3250,7 +3264,7 @@ server.registerTool(
     const tied = [result.before.startOpen && !result.thread.startOpen ? "its start" : null, result.before.endOpen && !result.thread.endOpen ? "its end" : null].filter(Boolean);
     const reopened = [!result.before.startOpen && result.thread.startOpen ? "its start" : null, !result.before.endOpen && result.thread.endOpen ? "its end" : null].filter(Boolean);
     return ok(
-      `Now ${threadLine(state, result.thread)}${where(live)}.${tied.length ? ` Tied ${tied.join(" and ")}; the reading stops asking about ${tied.length === 1 ? "it" : "them"}.` : ""}${reopened.length ? ` Opened ${reopened.join(" and ")}; the reading asks about ${reopened.length === 1 ? "it" : "them"} again.` : ""}`,
+      `Now ${threadLine(state, result.thread)}${where(live)}.${tied.length ? ` Tied ${tied.join(" and ")}; the reading stops asking about ${tied.length === 1 ? "it" : "them"}.` : ""}${reopened.length ? ` Opened ${reopened.join(" and ")}; the reading asks about ${reopened.length === 1 ? "it" : "them"} again.` : ""}${foldLine(state, result.fold, result.thread)}`,
       result.thread,
     );
   },

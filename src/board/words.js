@@ -77,7 +77,7 @@ export const WORD_GROUPS = [
         id: "corner",
         name: "The folded corner",
         sentence:
-          "This card plants something — a gun on the wall — that must pay off later. The card says unpaid, and the bar’s Asks line keeps asking, until a setup arrow leaves it. One thing, three words: the corner is folded, the tool’s flag is plants, the wall’s question is unpaid.",
+          "This card plants something — a gun on the wall — that must pay off later, and can say what, in the writer’s words: Plants · the wrong tools. The card says unpaid, and the bar’s Asks line keeps asking where it comes back, until a setup arrow leaves it. One thing, three words: the corner is folded, the tool’s flag is plants, the wall’s question is unpaid.",
         target: "corner",
       },
       {

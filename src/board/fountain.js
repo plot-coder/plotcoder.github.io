@@ -122,7 +122,7 @@ export function toFountain(state, options = {}) {
     const revisionMarksFor = (_list, card) => Boolean(revisionOf.get(card.id)?.revised);
     const cast = (note.characterIds ?? []).map((id) => nameOf.get(id)).filter(Boolean);
     if (cast.length) marks.push(`with ${cast.join(", ")}`);
-    if (note.plants) marks.push("plants something to pay off later");
+    if (note.plants) marks.push(note.plantsWhat ? `plants ${note.plantsWhat}` : "plants something to pay off later");
     if (note.open) marks.push(`open: ${note.open}`);
     if (note.whenOpen) marks.push(`when open: ${note.whenOpen}`);
     const onThreads = (state.threads ?? []).filter((thread) => thread.noteIds.includes(note.id)).map((thread) => thread.name);

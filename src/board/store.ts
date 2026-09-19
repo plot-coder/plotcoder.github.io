@@ -31,6 +31,8 @@ import {
   renameProject as renameProjectTo,
   setActiveBoard,
   setPremise as setPremiseOn,
+  setPremiseOpen as setPremiseOpenOn,
+  setBoardNameOpen as setBoardNameOpenOn,
   structureBeats,
   liftCast,
   sameRoster,
@@ -464,6 +466,16 @@ class BoardStore {
     this.setProject(setPremiseOn(this.project, premise));
   };
 
+  /** The writer's words for why there is no premise yet (R61); "" takes them back. */
+  setPremiseOpen = (words: string): void => {
+    this.setProject(setPremiseOpenOn(this.project, words));
+  };
+
+  /** The writer's words for why a board's name is not decided (R61); the name stands. */
+  setBoardNameOpen = (id: string, words: string): void => {
+    this.setProject(setBoardNameOpenOn(this.project, id, words));
+  };
+
   // --- the account mirror (R4) --------------------------------------------
 
   /** The state of any board of the project: the open one live, the rest from storage, each with the project's cast. */
@@ -678,7 +690,7 @@ class BoardStore {
           ...project,
           boards: [
             ...project.boards,
-            { id: boardId, name: `Board ${project.boards.length + 1}`, createdAt: now, updatedAt: now },
+            { id: boardId, name: `Board ${project.boards.length + 1}`, nameOpen: "", createdAt: now, updatedAt: now },
           ],
           updatedAt: now,
         };
@@ -856,10 +868,16 @@ export type PlotCoderWindowApi = {
   setRank: (id: string, rank: "beat" | "scene") => unknown;
   /** null unsizes: the card reads as about a page again. */
   setLength: (id: string, lengthEighths: number | null) => unknown;
-  setLogline: (logline: string) => unknown;
+  /** The logline, or with `open` the writer's words for why there is none yet (R61). */
+  setLogline: (logline: string, open?: string) => unknown;
   setTarget: (targetEighths: number) => unknown;
   setLocation: (ids: string[], location: string) => unknown;
-  setWhen: (ids: string[], when: string) => unknown;
+  /** A when, or with `open` the writer's words for why it is not decided (R61). */
+  setWhen: (ids: string[], when: string, open?: string) => unknown;
+  /** The writer's words for why there is no premise yet (R61); "" takes them back. */
+  setPremiseOpen: (words: string) => unknown;
+  /** The writer's words for why a board's name is not decided (R61). */
+  setBoardNameOpen: (id: string, words: string) => unknown;
   /** Leave cards open with the writer's words (R59); "" closes. */
   setOpen: (ids: string[], open: string) => unknown;
   /** A thread (R60): a named string through cards, either end open until tied. */
@@ -908,10 +926,12 @@ export function installWindowApi(): void {
     newBoard: (name) => boardStore.addBoard(name),
     setRank: (id, rank) => boardStore.dispatch({ type: "set_rank", ids: [id], rank }),
     setLength: (id, lengthEighths) => boardStore.dispatch({ type: "set_length", ids: [id], lengthEighths }),
-    setLogline: (logline) => boardStore.dispatch({ type: "set_logline", logline }),
+    setLogline: (logline, open) => boardStore.dispatch({ type: "set_logline", logline, ...(open !== undefined ? { open } : {}) }),
     setTarget: (targetEighths) => boardStore.dispatch({ type: "set_target", targetEighths }),
     setLocation: (ids, location) => boardStore.dispatch({ type: "set_location", ids, location }),
-    setWhen: (ids, when) => boardStore.dispatch({ type: "set_when", ids, when }),
+    setWhen: (ids, when, open) => boardStore.dispatch({ type: "set_when", ids, when, ...(open !== undefined ? { open } : {}) }),
+    setPremiseOpen: (words) => boardStore.setPremiseOpen(words),
+    setBoardNameOpen: (id, words) => boardStore.setBoardNameOpen(id, words),
     setOpen: (ids, open) => boardStore.dispatch({ type: "set_open", ids, open }),
     createThread: (name, noteIds = [], startOpen = false, endOpen = false) => boardStore.dispatch({ type: "create_thread", name, noteIds, startOpen, endOpen }),
     updateThread: (id, patch) => boardStore.dispatch({ type: "update_thread", id, ...patch }),

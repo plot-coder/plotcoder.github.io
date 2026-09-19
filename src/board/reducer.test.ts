@@ -795,6 +795,38 @@ describe("formatPages", () => {
   });
 });
 
+describe("set_when with open (R61)", () => {
+  it("leaves a card's when open in the writer's words; a when decides it; open \"\" leaves it blank", () => {
+    const base = run(emptyState(), { type: "create_note", id: "a", headline: "The key", change: "Ruth has it." });
+    const open = run(base, { type: "set_when", ids: ["a"], open: "after the break-in; which day" });
+    expect(open.notes[0].when).toBe("");
+    expect(open.notes[0].whenOpen).toBe("after the break-in; which day");
+    expect(applyCommand(open, { type: "set_when", ids: ["a"], open: "after the break-in; which day" }, NOW).changed).toBe(false);
+    const decided = run(open, { type: "set_when", ids: ["a"], when: "the morning after" });
+    expect(decided.notes[0].when).toBe("the morning after");
+    expect(decided.notes[0].whenOpen).toBe("");
+    const reopened = run(decided, { type: "set_when", ids: ["a"], open: "which morning" });
+    expect(reopened.notes[0].when).toBe("");
+    const blank = run(reopened, { type: "set_when", ids: ["a"], open: "" });
+    expect(blank.notes[0].when).toBe("");
+    expect(blank.notes[0].whenOpen).toBe("");
+    // Born open: create_note with whenOpen.
+    const born = run(emptyState(), { type: "create_note", id: "b", headline: "B", change: "x", when: "night", whenOpen: "day or night" });
+    expect(born.notes[0].when).toBe("");
+    expect(born.notes[0].whenOpen).toBe("day or night");
+  });
+
+  it("repairs a board and its cards written before R61 with blank open fields", () => {
+    const old = JSON.parse(JSON.stringify(run(emptyState(), { type: "create_note", id: "a", headline: "A", change: "x" })));
+    delete old.loglineOpen;
+    delete old.notes[0].whenOpen;
+    const fixed = normalizeState(old);
+    expect(fixed.loglineOpen).toBe("");
+    expect(fixed.notes[0].whenOpen).toBe("");
+    expect(normalizeState(fixed)).toBe(fixed);
+  });
+});
+
 describe("set_logline", () => {
   it("sets the central question", () => {
     const outcome = applyCommand(
@@ -818,6 +850,22 @@ describe("set_logline", () => {
       { type: "set_logline", logline: "" },
     );
     expect(state.logline).toBe("");
+  });
+
+  it("leaves the logline open in the writer's words, and a value decides it (R61)", () => {
+    const open = run(emptyState(), { type: "set_logline", open: "  two candidates,   not chosen " });
+    expect(open.logline).toBe("");
+    expect(open.loglineOpen).toBe("two candidates, not chosen");
+    expect(applyCommand(open, { type: "set_logline", open: "two candidates, not chosen" }, NOW).changed).toBe(false);
+    const decided = run(open, { type: "set_logline", logline: "Can three years be grown in one?" });
+    expect(decided.logline).toBe("Can three years be grown in one?");
+    expect(decided.loglineOpen).toBe("");
+    const reopened = run(decided, { type: "set_logline", open: "not sure that is the question" });
+    expect(reopened.logline).toBe("");
+    expect(reopened.loglineOpen).toBe("not sure that is the question");
+    const blank = run(reopened, { type: "set_logline", open: "" });
+    expect(blank.logline).toBe("");
+    expect(blank.loglineOpen).toBe("");
   });
 
   it("leaves the cards alone", () => {

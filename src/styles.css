@@ -4554,3 +4554,74 @@ body {
   color: var(--muted);
   white-space: nowrap;
 }
+
+/* A field left open (R61): the writer's words where the value would be, in
+   the debt colour under a dashed line, the way an open card wears its words on
+   its edge. The mark says which it is from across the room. */
+.open-field {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  max-width: 100%;
+}
+
+.is-open-field {
+  color: var(--over);
+  font-style: italic;
+  text-decoration: underline dashed;
+  text-decoration-color: rgba(255, 130, 80, 0.55);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.22em;
+}
+
+.open-mark {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.55rem;
+  font-weight: 700;
+  font-style: normal;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--over);
+  opacity: 0.85;
+  margin-right: 0.35rem;
+}
+
+.crumb__open {
+  margin-left: 0.45rem;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 14rem;
+}
+
+/* The offer on an empty field: shows on hover, as the premise button does. */
+.field-offer {
+  font: 600 0.55rem/1.4 ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: none;
+  border: 1px dashed rgba(127, 127, 127, 0.5);
+  border-radius: 3px;
+  padding: 0.05rem 0.4rem;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.logline:hover .field-offer,
+.field-offer:focus-visible,
+.note__with--editing .field-offer {
+  opacity: 1;
+}
+
+.note__offer {
+  margin-top: 0.15rem;
+  opacity: 1;
+}
+
+.note__when.is-open-field {
+  text-decoration-thickness: 1px;
+}

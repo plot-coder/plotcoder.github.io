@@ -39,9 +39,13 @@ is only the queue.
    two tables. The three measurements are answered in the head. Merged as
    pull request #97 and **released as 0.1.30** the same night (561 unit
    tests, build clean).
-3. **Mock the open fields** (item 2 below): the logline, the premise and a
-   card's when able to say "not decided" in the writer's words, listed by
-   the reading and not asked. Ask in writing before building.
+3. ~~**Mock the open fields**~~ **R61 mocked and built 2026-09-18**, on
+   Robert's "Build A": `open` beside the logline, the premise, a card's when
+   and a board's name; the four tools grown by `open`; the offer on the
+   wall. Not yet run blind. Left for a round to ask: the offer on a board's
+   name from the wall (the crumb draws the words; typing a name decides
+   it), and a check for a missing when, which the rounds said blank must
+   not become.
 4. **The thread's own edges**, found while building it and in round
    nineteen, not yet decided: **a fold is one flag per card and cannot say
    which of two things a scene plants** (nineteen 42: the first morning

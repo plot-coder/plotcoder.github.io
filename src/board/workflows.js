@@ -24,15 +24,15 @@ export const WORKFLOWS = [
     // an agent asks the ones the treatment leaves open, and invents none.
     needs: [
       { question: "How long is it?", hint: "An hour, a half-hour, a feature — or a page count, if you have one.", tool: "set_target" },
-      { question: "What is the central question, in one sentence?", hint: "And if this is one episode of something, what is the series about?", tool: "set_logline, set_premise" },
+      { question: "What is the central question, in one sentence?", hint: "And if this is one episode of something, what is the series about? Not decided: either takes open with the writer's words, and the reading lists it.", tool: "set_logline, set_premise" },
       { question: "Which scenes are the turns?", hint: "Name them, say \"propose them and I will strike\", or say \"mark none yet\" — every card stays a scene and the reading asks once for a beat until you do.", tool: "set_rank" },
       { question: "Does it have acts?", hint: "If so, where does each break fall?", tool: "create_group" },
       { question: "Where does each scene happen?", hint: "In your own words. A scene that moves through one location is still one place.", tool: "set_location" },
-      { question: "When does a scene happen, where that matters?", hint: "That night; the fourth of October. It goes beside the place, never in the headline.", tool: "set_when" },
+      { question: "When does a scene happen, where that matters?", hint: "That night; the fourth of October. It goes beside the place, never in the headline. Not decided: set_when with open and the writer's words, and the card is still asked about the rest.", tool: "set_when" },
       { question: "Who is in each scene, and what do we call them?", hint: "A full name, or a role for someone unnamed — the man in 42. And who is only spoken of, never in a scene? They go in someone's notes, not the cast.", tool: "add_character, cast, update_character" },
       { question: "What is planted, and where does it pay off?", hint: "Name the episode when it pays off outside this one, so the fold is deliberate and the wall knows where to look. A thing whose far end you know and not its first sighting — the key, the bucket — is a thread with an open start.", tool: "set_plant with later, create_arrow; create_thread" },
       { question: "Which scenes do you already know run long or short?", hint: "A day in the story is not a page count; leave the rest unsized.", tool: "set_length" },
-      { question: "What are the project and the board called?", hint: "The series, and this episode.", tool: "rename_project, rename_board" },
+      { question: "What are the project and the board called?", hint: "The series, and this episode. A board's name not decided: rename_board, new_project and new_board take open with the writer's words.", tool: "rename_project, rename_board" },
       { question: "What must not be invented?", hint: "Looks and voices are yours until you say; so is anything the treatment does not state.", tool: "update_character, later" },
     ],
   },

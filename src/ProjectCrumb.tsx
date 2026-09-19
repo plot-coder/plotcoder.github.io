@@ -128,6 +128,14 @@ export function ProjectCrumb({
             placeholder="Board"
             stopPointerDown={false}
           />
+          {active.nameOpen ? (
+            <span className="crumb__open is-open-field" title={`The name is not decided: ${active.nameOpen}. Type a name to decide it.`}>
+              <span className="open-mark" aria-hidden="true">
+                Open
+              </span>
+              {active.nameOpen}
+            </span>
+          ) : null}
         </>
       ) : null}
       <button

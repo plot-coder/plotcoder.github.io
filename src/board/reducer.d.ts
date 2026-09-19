@@ -89,6 +89,8 @@ export type BoardNote = {
   location: string;
   /** When the scene happens, as the writer says it — "night", "day four, dawn" — printed after the place on the heading (R55). Empty when unsaid. */
   when: string;
+  /** The writer's words for why the when is not decided (R61), or empty; while they stand the when is blank and the reading lists them. */
+  whenOpen: string;
   /** The scene's text in Fountain (R23 b): action, cues, dialogue; empty until written. */
   text: string;
   createdAt: string;
@@ -112,6 +114,8 @@ export type BoardArrow = {
 export type BoardState = {
   /** The board's central question — what this story is arguing (R19). */
   logline: string;
+  /** The writer's words for why there is no logline yet (R61), or empty. */
+  loglineOpen: string;
   /** Target script length in eighths of a page; 120 pages for a feature (R25). */
   targetEighths: number;
   /** The roster: every person in the story, whether or not they are on a card yet (R29). */
@@ -158,7 +162,7 @@ export declare function fillCharacter(character: { id: string; name: string } & 
 export declare function sameName(a: string, b: string): boolean;
 
 export type Command =
-  | { type: "set_logline"; logline: string }
+  | { type: "set_logline"; logline?: string; open?: string }
   | { type: "set_rank"; ids: string[]; rank: NoteRank }
   | { type: "set_length"; ids: string[]; lengthEighths: number | null }
   | { type: "set_target"; targetEighths: number }
@@ -177,6 +181,7 @@ export type Command =
       plants?: boolean;
       location?: string;
       when?: string;
+      whenOpen?: string;
       open?: string;
       text?: string;
     }
@@ -208,7 +213,7 @@ export type Command =
   | { type: "set_open"; ids: string[]; open: string }
   | { type: "set_payoff_board"; ids: string[]; boardId: string | null; noteId?: string | null }
   | { type: "set_location"; ids: string[]; location: string }
-  | { type: "set_when"; ids: string[]; when: string }
+  | { type: "set_when"; ids: string[]; when?: string; open?: string }
   | { type: "apply_template"; template: string; beats?: Array<{ name: string; prompt: string; at: number }> }
   | { type: "set_text"; id: string; text: string }
   | { type: "lock_numbers"; order?: string[] }

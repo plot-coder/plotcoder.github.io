@@ -993,6 +993,78 @@ describe("characters", () => {
 });
 
 // Typed arrows (R30): a setup and its payoff, and a fresh wall.
+describe("open fields (R61): the logline, the premise, a when and a board's name in the writer's words", () => {
+  let root;
+  let client;
+  beforeAll(async () => {
+    root = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-r61-"));
+    client = new McpClient(root);
+    await client.start();
+  }, 30000);
+  afterAll(() => {
+    client?.stop();
+    if (root) fs.rmSync(root, { recursive: true, force: true });
+  });
+
+  it("leaves the logline open, lists it, and a sentence decides it", async () => {
+    expect(await client.callTool("set_logline", {})).toContain("Say which");
+    const left = await client.callTool("set_logline", { open: "two candidates, not chosen" });
+    expect(left).toContain('Logline left open, by the writer\'s word: "two candidates, not chosen"');
+    expect(await client.callTool("list_board")).toContain('logline: open, by the writer\'s word — "two candidates, not chosen"');
+    const read = await client.callTool("read_wall");
+    expect(read).toContain('logline: open, by the writer\'s word — "two candidates, not chosen"');
+    expect(read).toContain("  - the logline — two candidates, not chosen");
+    expect(read).toContain("1 field open by the writer's word, not asked");
+    expect(await client.callTool("set_logline", { open: "two candidates, not chosen" })).toContain("unchanged");
+    expect(await client.callTool("set_logline", { logline: "Can three years be grown in one?" })).toContain("Logline set");
+    expect(await client.callTool("read_wall")).not.toContain("the logline —");
+    expect(await client.callTool("set_logline", { open: "" })).toContain("unchanged");
+  });
+
+  it("leaves a card's when open while the card is still asked about the rest", async () => {
+    expect(await client.callTool("set_when", { ids: ["maya-letter"] })).toContain("Say which");
+    const left = await client.callTool("set_when", { ids: ["maya-letter"], open: "after the break-in; which day" });
+    expect(left).toContain('have their when left open, by the writer\'s word: "after the break-in; which day"');
+    expect(left).toContain("still asked about everything else");
+    expect(await client.callTool("list_board")).toContain('when: open, by the writer\'s word — "after the break-in; which day"');
+    const read = await client.callTool("read_wall");
+    expect(read).toContain('  - "Maya finds the letter" — when: after the break-in; which day');
+    expect(read).toContain("field open by the writer's word, not asked");
+    // The heading prints no time; the Fountain note carries the words.
+    const fountain = await client.callTool("export_fountain", {});
+    expect(fountain).not.toContain("AFTER THE BREAK-IN");
+    expect(fountain).toContain("when open: after the break-in; which day");
+    const decided = await client.callTool("set_when", { ids: ["maya-letter"], when: "night" });
+    expect(decided).toContain("now happen");
+    expect(await client.callTool("read_wall")).not.toContain("— when:");
+  });
+
+  it("leaves the premise and a board's name open, and a value decides each", async () => {
+    expect(await client.callTool("set_premise", {})).toContain("Say which");
+    expect(await client.callTool("set_premise", { open: "the buyer: housing, or a supermarket" })).toContain('Premise left open, by the writer\'s word: "the buyer: housing, or a supermarket"');
+    expect(await client.callTool("list_boards")).toContain('premise: open, by the writer\'s word — "the buyer: housing, or a supermarket"');
+    expect(await client.callTool("read_wall")).toContain("  - the premise — the buyer: housing, or a supermarket");
+    expect(await client.callTool("set_premise", { premise: "The land is going for housing" })).toContain("Premise set");
+    expect(await client.callTool("read_wall")).not.toContain("the premise —");
+
+    expect(await client.callTool("rename_board", { board: 1 })).toContain("Say which");
+    const left = await client.callTool("rename_board", { board: 1, open: "the title, or Feature" });
+    expect(left).toContain('keeps its name and its name is left open, by the writer\'s word: "the title, or Feature"');
+    expect(await client.callTool("list_boards")).toContain('(name open, by the writer\'s word: "the title, or Feature")');
+    const read = await client.callTool("read_wall");
+    expect(read).toContain('its name is open, by the writer\'s word: "the title, or Feature"');
+    expect(read).toContain("  - this board's name — the title, or Feature");
+    const named = await client.callTool("rename_board", { board: 1, name: "Plot 14" });
+    expect(named).toContain('to "Plot 14"');
+    expect(named).toContain("the open words are gone");
+    expect(await client.callTool("read_wall")).not.toContain("this board's name —");
+
+    const born = await client.callTool("new_board", { open: "an episode, or the film" });
+    expect(born).toContain('its name left open, by the writer\'s word: "an episode, or the film"');
+    expect(await client.callTool("read_wall")).toContain("  - this board's name — an episode, or the film");
+  });
+});
+
 describe("round nineteen: create_note with after on a wall with no follows arrows yet", () => {
   let root;
   let client;

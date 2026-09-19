@@ -8,6 +8,8 @@ export declare const DEFAULT_PROJECT_NAME: string;
 export type BoardMeta = {
   id: string;
   name: string;
+  /** The writer's words for why the name is not decided (R61), or empty; the name stands meanwhile. */
+  nameOpen: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -18,6 +20,8 @@ export type ProjectRecord = {
   id: string;
   name: string;
   premise: string;
+  /** The writer's words for why there is no premise yet (R61), or empty. */
+  premiseOpen: string;
   boards: BoardMeta[];
   activeBoardId: string;
   /** A writer's own structures, saved from a wall's beats (Roadmap 2, item 7). */
@@ -41,7 +45,7 @@ export declare function addStructure(
 ): { project: ProjectRecord; structure: OwnStructure };
 export declare function removeStructure(project: ProjectRecord, id: string, now?: string): ProjectRecord;
 
-export declare function newBoardMeta(name: string, now?: string): BoardMeta;
+export declare function newBoardMeta(name: string, now?: string, nameOpen?: string): BoardMeta;
 export declare function emptyProject(now?: string): ProjectRecord;
 export declare function isProjectRecord(value: unknown): value is ProjectRecord;
 export declare function normalizeProject(value: unknown, now?: string): ProjectRecord;
@@ -49,6 +53,7 @@ export declare function addBoard(
   project: ProjectRecord,
   name: string,
   now?: string,
+  nameOpen?: string,
 ): { project: ProjectRecord; board: BoardMeta };
 export declare function renameBoard(
   project: ProjectRecord,
@@ -66,6 +71,10 @@ export declare function moveBoard(
 export declare function setActiveBoard(project: ProjectRecord, id: string, now?: string): ProjectRecord;
 export declare function renameProject(project: ProjectRecord, name: string, now?: string): ProjectRecord;
 export declare function setPremise(project: ProjectRecord, premise: string, now?: string): ProjectRecord;
+/** The writer's words for why there is no premise yet (R61); words clear the premise, "" takes them back. */
+export declare function setPremiseOpen(project: ProjectRecord, words: string, now?: string): ProjectRecord;
+/** The writer's words for why a board's name is not decided (R61); the name stands meanwhile. */
+export declare function setBoardNameOpen(project: ProjectRecord, id: string, words: string, now?: string): ProjectRecord;
 export declare function boardById(project: ProjectRecord, id: string): BoardMeta | null;
 /** What a script going out is called: a named project is the title, its board beside it only when the project has several. */
 export declare function scriptTitles(project: ProjectRecord, board: BoardMeta | null | undefined): { title: string; episode?: string };

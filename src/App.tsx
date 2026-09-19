@@ -485,8 +485,17 @@ export function App() {
     boardStore.dispatch({ type: "set_logline", logline: text });
   }
 
+  // The logline left open (R61): the writer's words for why there is none yet.
+  function setLoglineOpen(words: string) {
+    boardStore.dispatch({ type: "set_logline", open: words });
+  }
+
   function savePremise(text: string) {
     boardStore.setPremise(text);
+  }
+
+  function savePremiseOpen(words: string) {
+    boardStore.setPremiseOpen(words);
   }
 
   // Switching boards clears what belongs to the old wall: selection and the view.
@@ -555,11 +564,12 @@ export function App() {
   // Where a scene happens (R37) and when (R55), typed as one line on the
   // card. Applies to the whole selection, like the cast line. Two commands,
   // each quiet when its part did not change, so ⌘Z takes back what was typed.
-  function setLocation(id: string, location: string, when: string) {
+  function setLocation(id: string, location: string, when: string, whenOpen: string) {
     const ids =
       selectedIds.includes(id) && selectedIds.length >= 2 ? selectedIds : [id];
     boardStore.dispatch({ type: "set_location", ids, location });
-    boardStore.dispatch({ type: "set_when", ids, when });
+    // The when, or the writer's words for why it is not decided (R61), in one command.
+    boardStore.dispatch({ type: "set_when", ids, when, open: whenOpen });
   }
 
   // Every picture of a person as one package (Roadmap 2, item 5).
@@ -811,9 +821,13 @@ export function App() {
       />
       <Logline
         logline={board.logline}
+        loglineOpen={board.loglineOpen}
         premise={premise}
+        premiseOpen={project.premiseOpen}
         onSetLogline={setLogline}
+        onSetLoglineOpen={setLoglineOpen}
         onSetPremise={savePremise}
+        onSetPremiseOpen={savePremiseOpen}
       />
       <div className="top-actions">
         <button

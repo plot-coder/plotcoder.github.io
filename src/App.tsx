@@ -638,6 +638,15 @@ export function App() {
     else boardStore.dispatch({ type: "update_thread", id: threadId, add: [id], ...(how === "start" ? { startOpen: false } : how === "end" ? { endOpen: false } : {}) });
   }
 
+  // Two versions of one scene (R65): a card behind another, and the choice.
+  function setAlternative(id: string, of: string | null) {
+    boardStore.dispatch({ type: "set_alternative", id, of });
+  }
+
+  function chooseVersion(id: string) {
+    boardStore.dispatch({ type: "choose_version", id });
+  }
+
   function setPlant(id: string, plants: boolean) {
     const ids =
       selectedIds.includes(id) && selectedIds.length >= 2 ? selectedIds : [id];
@@ -1051,6 +1060,8 @@ export function App() {
         onSetPlantWhat={setPlantWhat}
         onStartThread={startThread}
         onTieThread={tieThread}
+        onSetAlternative={setAlternative}
+        onChooseVersion={chooseVersion}
         onSetOpen={setOpen}
         onEdit={editNote}
         onCommit={commitBoard}

@@ -516,6 +516,8 @@ export function readWall(state, options = {}) {
     paidBy: paidHere,
     open: describeOpen(state, options, order, openIds),
     openFields: describeOpenFields(state, order),
+    // Two versions of one scene (R65): the front card and the one behind it, in story order; listed, never asked.
+    versions: order.filter((note) => state.notes.some((item) => item.alternativeOf === note.id)).map((note) => ({ id: note.id, alternatives: state.notes.filter((item) => item.alternativeOf === note.id).map((item) => item.id) })),
     threads,
     findings: asked,
     left,

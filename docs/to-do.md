@@ -261,11 +261,11 @@ word on each is the word to build it.
 | # | Thing | Where it came from | Recommendation |
 | --- | --- | --- | --- |
 | 1 | ~~A reading of the project as a whole (every board's questions in one call)~~ | 15:14 | **Built 2026-09-19 as `read_project`**, once the thread existed, as recommended |
-| 2 | The write tails carrying the wall's questions mid-build | 15:9, built on 14's word; 18:20 (they are snapshots and say "now") | Leave; or quiet them until the first `read_wall` of a session |
-| 3 | A wiring that cannot vanish from one machine's file | 15's first attempt, round nine; it vanished again before nineteen | R48's hosted door, deployed somewhere; question 29 — needs a host, Robert's call |
-| 4 | A reply that shows a wall is open on someone's screen | 18:54 | The mirror is a mirror; presence is not the server's to know. Leave, unless the account door grows a "who has it open" read |
-| 5 | Two versions of one scene | 18:8 | Two cards, one open, until a better shape comes; no second model |
-| 6 | A written scene's lines the camera cannot see | 18:44 | No check reads prose; a reminder is the house's answer. Leave |
+| 2 | ~~The write tails carrying the wall's questions mid-build~~ | 15:9, built on 14's word; 18:20 | **Built 2026-09-19:** the tail counts and points until the session's first `read_wall`, then quotes |
+| 3 | ~~A wiring that cannot vanish from one machine's file~~ | 15's first attempt, round nine; it vanished again before nineteen | **Deployed 2026-09-19 on Supabase**, `supabase/functions/mcp`, at `https://kmpahjsggbleygsnuwug.supabase.co/functions/v1/mcp`, verified; the on-ramp names it. The next round can wire the agent through it as a desktop-app connector instead of the stdio block. Redeploy with `supabase functions deploy mcp --no-verify-jwt --use-api --project-ref kmpahjsggbleygsnuwug` after bumping the pinned package version |
+| 4 | ~~A reply that shows a wall is open on someone's screen~~ | 18:54 | **Built 2026-09-19:** the account tail says "open on Robert's screen now" or "no wall open right now", from the presence the server follows; `list_projects` says the same |
+| 5 | ~~Two versions of one scene~~ | 18:8 | **Built 2026-09-19 as R65:** a card behind another as its other version, out of the story until chosen |
+| 6 | ~~A written scene's lines the camera cannot see~~ | 18:44 | **Built 2026-09-19:** marked on the page and in the write's reply, never asked |
 
 ---
 
@@ -286,10 +286,9 @@ word on each is the word to build it.
   neither.
 - **`~/.claude.json` lost the `plotcoder-board` entry** before round
   fifteen; check it before every round (a memory records the shape).
-- **Playwright's chromium is not installed** on this Mac, so the e2e suite
-  runs only in CI (the Pages deploy). A change to a door shows up there.
-  `npx playwright install chromium` would put it on the Mac; Robert's to
-  run, since it downloads a browser.
+- ~~**Playwright's chromium is not installed** on this Mac~~ Installed
+  2026-09-19 on Robert's word; `npm run test:e2e` passes locally, ten of
+  ten, on its own port.
 - **R64's `questions` table** needs its migration applied on the
   plotcoder Supabase project by a session with the Supabase connector
   (`supabase/migrations/20260919170000_questions.sql`); this session had

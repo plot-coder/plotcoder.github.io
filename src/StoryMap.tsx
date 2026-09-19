@@ -115,7 +115,15 @@ export function StoryMap({
       </button>
       {open ? (
         <p className="story-map__readout">
-          ≈{formatPages(layout.totalEighths)} of {formatPages(layout.targetEighths)} pages
+          {board.targetOpen ? (
+            <>
+              ≈{formatPages(layout.totalEighths)} pages · <span className="is-open-field">target open: {board.targetOpen}</span>
+            </>
+          ) : (
+            <>
+              ≈{formatPages(layout.totalEighths)} of {formatPages(layout.targetEighths)} pages
+            </>
+          )}
           {over > 0 ? ` · ${formatPages(over)} over` : ""}
         </p>
       ) : null}

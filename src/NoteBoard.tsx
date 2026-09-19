@@ -103,6 +103,9 @@ type NoteBoardProps = {
   onSetPlantWhat: (id: string, what: string) => void;
   /** Start a thread at a card with the writer's name for it (R60): the far end is the open one. */
   onStartThread: (id: string, name: string, end: "start" | "end") => void;
+  /** Two versions of one scene (R65): set a card behind another, or choose one. */
+  onSetAlternative: (id: string, of: string | null) => void;
+  onChooseVersion: (id: string) => void;
   /** Tie a thread to a card: as where it is first seen, where it comes out, a card along it, or off it. */
   onTieThread: (id: string, threadId: string, how: "start" | "end" | "through" | "off") => void;
   /** Leave a card open with the writer's words, or close it with "" (R59). */
@@ -204,6 +207,8 @@ export function NoteBoard({
   onSetPlantWhat,
   onStartThread,
   onTieThread,
+  onSetAlternative,
+  onChooseVersion,
   onSetOpen,
   onEdit,
   onCommit,
@@ -612,10 +617,19 @@ export function NoteBoard({
         ) : null}
       </svg>
 
-      {notes.map((note) => (
+      {notes.map((note) => {
+        // A version is drawn tucked behind its sibling (R65): its own place on the wall waits until it is chosen.
+        const front = note.alternativeOf ? notesById.get(note.alternativeOf) ?? null : null;
+        const shown = front ? { ...note, x: front.x + 40, y: front.y + 14, z: front.z - 1 } : note;
+        return (
         <NoteCard
           key={note.id}
-          note={note}
+          note={shown}
+          versionOf={front ? front.headline : null}
+          versions={notes.filter((item) => item.alternativeOf === note.id).map((item) => ({ id: item.id, headline: item.headline }))}
+          candidates={front ? [] : notes.filter((item) => item.id !== note.id && !item.alternativeOf && !notes.some((other) => other.alternativeOf === item.id)).map((item) => ({ id: item.id, headline: item.headline }))}
+          onSetAlternative={onSetAlternative}
+          onChooseVersion={onChooseVersion}
           active={drag?.kind === "note" && drag.id === note.id}
           selected={selectedIds.includes(note.id)}
           linking={drag?.kind === "arrow" && drag.fromId === note.id}
@@ -654,7 +668,8 @@ export function NoteBoard({
           onSetOpen={onSetOpen}
           onEdit={onEdit}
         />
-      ))}
+        );
+      })}
 
       {lasso ? <div className="lasso" style={lasso} /> : null}
 

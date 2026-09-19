@@ -4062,7 +4062,14 @@ async function questionsDoor() {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.PLOTCODER_SERVICE_ROLE_KEY;
   if (!key) return null;
   const { createClient } = await import("@supabase/supabase-js");
-  return createClient(process.env.SUPABASE_URL || SUPABASE_URL, key, { auth: { persistSession: false } });
+  // Node 20 has no native WebSocket; the realtime client wants one even when unused, as the account door knows.
+  let transport;
+  try {
+    transport = (await import("ws")).default;
+  } catch {
+    transport = undefined;
+  }
+  return createClient(process.env.SUPABASE_URL || SUPABASE_URL, key, { auth: { persistSession: false }, ...(transport ? { realtime: { transport } } : {}) });
 }
 const NO_QUESTIONS_DOOR = "The questions are the app's, not a project's: set SUPABASE_SERVICE_ROLE_KEY in the server's environment — the maintainer's key, never in the repo — and call again. A writer asks from the Help sheet; the answer goes into public/writers.html and back to them through answer_question.";
 
@@ -4100,8 +4107,11 @@ server.registerTool(
   async (args) => {
     const db = await questionsDoor();
     if (!db) return ok(NO_QUESTIONS_DOOR);
-    const { data: found, error: findError } = await db.from("questions").select("id, question, answered_at").ilike("id", `${args.id}%`);
+    // A uuid takes no pattern match in Postgres; the prefix is matched here, as list_questions prints it.
+    const { data: rows, error: findError } = await db.from("questions").select("id, question, answered_at");
     if (findError) return ok(`Could not read the questions: ${findError.message}`);
+    const wantedId = args.id.trim().toLowerCase();
+    const found = (rows ?? []).filter((row) => String(row.id).toLowerCase().startsWith(wantedId));
     if (!found?.length) return ok(`No question whose id starts "${args.id}". list_questions shows them.`);
     if (found.length > 1) return ok(`${found.length} questions start "${args.id}": say more of the id.`);
     const row = found[0];

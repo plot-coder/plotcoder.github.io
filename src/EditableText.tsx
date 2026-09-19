@@ -24,6 +24,8 @@ type EditableTextProps = {
   /** Cards swallow pointerdown so typing never starts a drag. */
   stopPointerDown?: boolean;
   debounceMs?: number;
+  /** Put the caret in the field as it appears (R61: a field the writer just chose to leave open). */
+  autoFocus?: boolean;
 };
 
 export function EditableText({
@@ -35,8 +37,12 @@ export function EditableText({
   className,
   stopPointerDown = true,
   debounceMs = 250,
+  autoFocus = false,
 }: EditableTextProps) {
   const ref = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (autoFocus) ref.current?.focus();
+  }, [autoFocus]);
   const timer = useRef<number | undefined>(undefined);
   // Kept in a ref so the debounced commit always compares against the newest
   // value rather than the one captured when the timer was set.

@@ -18,8 +18,13 @@ function trimmed(value, fallback) {
   return typeof value === "string" && value.trim() ? value.trim() : fallback;
 }
 
-export function newBoardMeta(name, now = nowIso()) {
-  return { id: newId(), name: trimmed(name, "Board"), createdAt: now, updatedAt: now };
+export function newBoardMeta(name, now = nowIso(), nameOpen = "") {
+  return { id: newId(), name: trimmed(name, "Board"), nameOpen: openWords(nameOpen), createdAt: now, updatedAt: now };
+}
+
+/** The writer's words for why a field is not decided (R61), one line, spaces collapsed; empty is decided or blank. */
+function openWords(value) {
+  return typeof value === "string" ? value.trim().replace(/\s+/g, " ") : "";
 }
 
 export function emptyProject(now = nowIso()) {
@@ -29,6 +34,7 @@ export function emptyProject(now = nowIso()) {
     id: newId(),
     name: DEFAULT_PROJECT_NAME,
     premise: "",
+    premiseOpen: "",
     boards: [board],
     activeBoardId: board.id,
     createdAt: now,
@@ -60,6 +66,8 @@ export function normalizeProject(value, now = nowIso()) {
   const boards = value.boards.filter(isBoardMeta).map((board) => ({
     ...board,
     name: trimmed(board.name, "Board"),
+    // A board named before R61 has no open name; the name stands until the writer says it is not decided.
+    nameOpen: openWords(board.nameOpen),
     createdAt: typeof board.createdAt === "string" ? board.createdAt : now,
     updatedAt: typeof board.updatedAt === "string" ? board.updatedAt : now,
   }));
@@ -80,6 +88,8 @@ export function normalizeProject(value, now = nowIso()) {
     version: PROJECT_VERSION,
     name: trimmed(value.name, DEFAULT_PROJECT_NAME),
     premise: typeof value.premise === "string" ? value.premise.trim() : "",
+    // A project written before R61 has no open premise (R61).
+    premiseOpen: openWords(value.premiseOpen),
     boards,
     activeBoardId,
     structures,
@@ -261,9 +271,9 @@ function touch(project, patch, now) {
 }
 
 /** Add a board after the others and open it. Returns the project and the new board. */
-export function addBoard(project, name, now = nowIso()) {
+export function addBoard(project, name, now = nowIso(), nameOpen = "") {
   const fallback = `Board ${project.boards.length + 1}`;
-  const board = newBoardMeta(trimmed(name, fallback), now);
+  const board = newBoardMeta(trimmed(name, fallback), now, nameOpen);
   return {
     project: touch(project, { boards: [...project.boards, board], activeBoardId: board.id }, now),
     board,
@@ -275,9 +285,26 @@ export function renameBoard(project, id, name, now = nowIso()) {
   if (!next) return project;
   let changed = false;
   const boards = project.boards.map((board) => {
-    if (board.id !== id || board.name === next) return board;
+    if (board.id !== id || (board.name === next && !(board.nameOpen ?? ""))) return board;
     changed = true;
-    return { ...board, name: next, updatedAt: now };
+    // A name decides the field: the open words go (R61).
+    return { ...board, name: next, nameOpen: "", updatedAt: now };
+  });
+  return changed ? touch(project, { boards }, now) : project;
+}
+
+/**
+ * The writer's words for why a board's name is not decided (R61), or "" to
+ * take them back. The name stands as it is — "Board 1" is still what every
+ * reply calls it — but the reading lists the words and the crumb draws them.
+ */
+export function setBoardNameOpen(project, id, words, now = nowIso()) {
+  const next = openWords(words);
+  let changed = false;
+  const boards = project.boards.map((board) => {
+    if (board.id !== id || (board.nameOpen ?? "") === next) return board;
+    changed = true;
+    return { ...board, nameOpen: next, updatedAt: now };
   });
   return changed ? touch(project, { boards }, now) : project;
 }
@@ -321,8 +348,18 @@ export function renameProject(project, name, now = nowIso()) {
 
 export function setPremise(project, premise, now = nowIso()) {
   const next = typeof premise === "string" ? premise.trim() : "";
-  if (next === project.premise) return project;
-  return touch(project, { premise: next }, now);
+  // A premise decides the field: the open words go (R61); clearing it leaves them.
+  const premiseOpen = next ? "" : (project.premiseOpen ?? "");
+  if (next === project.premise && premiseOpen === (project.premiseOpen ?? "")) return project;
+  return touch(project, { premise: next, premiseOpen }, now);
+}
+
+/** The writer's words for why there is no premise yet (R61), or "" to take them back; words clear the premise. */
+export function setPremiseOpen(project, words, now = nowIso()) {
+  const next = openWords(words);
+  const premise = next ? "" : project.premise;
+  if (next === (project.premiseOpen ?? "") && premise === project.premise) return project;
+  return touch(project, { premise, premiseOpen: next }, now);
 }
 
 /**

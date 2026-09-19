@@ -129,7 +129,7 @@ describe("findings", () => {
 
   it("returns nothing at all for an empty board", () => {
     const reading = readWall(emptyState());
-    expect(reading).toEqual({ order: [], beats: [], runs: [], setups: [], payoffs: {}, later: [], paidBy: [], open: [], threads: [], findings: [], left: [] });
+    expect(reading).toEqual({ order: [], beats: [], runs: [], setups: [], payoffs: {}, later: [], paidBy: [], open: [], openFields: [], threads: [], findings: [], left: [] });
   });
 
   it("notes that runs cannot be read until a beat is marked, and passes no judgement on the count", () => {
@@ -488,6 +488,23 @@ describe("findings", () => {
     const snapshot = JSON.stringify(state);
     readWall(state);
     expect(JSON.stringify(state)).toBe(snapshot);
+  });
+});
+
+describe("open fields (R61): the logline and a card's when, in the writer's words", () => {
+  it("lists them in story order and asks nothing about them", () => {
+    const state = run(
+      wall({ id: "a", headline: "The first morning" }, { id: "b", headline: "The key" }),
+      { type: "set_logline", open: "two candidates, not chosen" },
+      { type: "set_when", ids: ["b"], open: "after the break-in; which day" },
+    );
+    const reading = readWall(state);
+    expect(reading.openFields).toEqual([
+      { field: "logline", words: "two candidates, not chosen" },
+      { field: "when", id: "b", words: "after the break-in; which day" },
+    ]);
+    expect(reading.open).toEqual([]);
+    expect(readWall(run(state, { type: "set_logline", logline: "A question." }, { type: "set_when", ids: ["b"], when: "night" })).openFields).toEqual([]);
   });
 });
 

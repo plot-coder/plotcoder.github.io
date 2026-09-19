@@ -205,7 +205,10 @@ only when the server is started with `PLOTCODER_JSON=1`.
   `update_note` take `when` too, and `list_board` shows it. On the wall it is
   the place line after a dot — at the pier at Fenit · night — and the writer
   types it there. A card with no when says nothing about time; if the writer
-  says the day is unknown, that is a when too: `when: "day unknown"`.
+  says the day is unknown, that is a when too: `when: "day unknown"`; if
+  they say it is not decided, `open` with their words leaves the when open
+  — listed by the reading, no time on the heading, and the card still
+  asked about everything else, unlike `set_open` on the whole card.
 - `delete_note` — remove a card. Its arrows go with it and it leaves its
   group; a card wired into a chain — one `follows` in, one out — leaves the
   chain joined behind it. The reply names each arrow by its cards, the join,
@@ -357,6 +360,8 @@ card of another board is not asked about as uncast here.
   whatever its board count: a series' line, or what is true before a film
   starts — "the winter the shop closes" — so a
   one-board film's standing facts have a home that is not a person's notes.
+  Not decided — "housing, or a supermarket" — `set_premise` with `open` and
+  the writer's words leaves it open; a line decides it.
 - `list_reminders` / `add_reminder` / `remove_reminder` — the writer's
   principles. Read them before building or reading a wall; add only what the
   writer asked to keep in front of them.
@@ -380,6 +385,13 @@ card of another board is not asked about as uncast here.
   order, headline as the beat, change line as the prompt), list them beside
   the built-in five, remove one by name. Save only when the writer asks.
 - `set_logline` — set the board's central question. Empty string clears it.
+  Not decided: `open` with the writer's words — "two candidates, not chosen"
+  — leaves the logline **open**; the reading lists it under "open, by the
+  writer's word" and asks nothing; a sentence decides it, `open: ""` leaves
+  it blank. The premise, a card's when and a board's name take `open` the
+  same way (`set_premise`, `set_when`, `rename_board`, and `new_project`'s
+  `boardOpen` and `new_board`'s `open` for a board born from a maybe). Only
+  on the writer's word, never to fill a field you could not decide.
 - `set_target` — target script length in `pages`: 120 feature, 60 hour, 30 half.
 - `create_group` — frame two or more cards: `noteIds`, with an optional
   `title`. The reply names the group's id. A cold open is not an act: leave
@@ -419,8 +431,10 @@ card of another board is not asked about as uncast here.
   as a number). Every card tool
   then works on that board; the writer's wall switches too.
 - `new_board` — add an empty board to the project and open it, keeping the
-  target. The other boards are untouched. Give it a name.
-- `rename_board` — by id, name, or number.
+  target. The other boards are untouched. Give it a name, or `open` with the
+  writer's words when the name is not decided.
+- `rename_board` — by id, name, or number; or `open` with the writer's
+  words to leave the name open while it stands.
 - `delete_board` — remove a board and everything on it. **Cannot be undone**,
   not even from the wall: ask the writer first, say how many cards it holds,
   suggest Save project. The last board of a project cannot be deleted.

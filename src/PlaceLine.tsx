@@ -14,11 +14,29 @@ type PlaceLineProps = {
   headline: string;
   location: string;
   when: string;
+  /** The writer's words for why the when is not decided (R61), or empty. */
+  whenOpen: string;
   /** Every place on the wall, in order of first appearance. */
   places: string[];
   onBegin: () => void;
-  onCommit: (location: string, when: string) => void;
+  /** The place, the when, and the writer's words when the when is left open (R61). */
+  onCommit: (location: string, when: string, whenOpen: string) => void;
 };
+
+/**
+ * While the line is being typed, an open when is written after the dot with a
+ * leading question mark — "the allotments · ? which day" — so the writer can see
+ * it is their words and not a time. The mark never reaches the record: on
+ * commit the words go to whenOpen and the when is blank.
+ */
+export const OPEN_WHEN_MARK = "?";
+
+/** The when part of a typed line into a when, or the open words. */
+export function readWhenPart(when: string): { when: string; whenOpen: string } {
+  const typed = clean(when);
+  if (typed.startsWith(OPEN_WHEN_MARK)) return { when: "", whenOpen: clean(typed.slice(OPEN_WHEN_MARK.length)) };
+  return { when: typed, whenOpen: "" };
+}
 
 /** The dot between the place and the when on the card. */
 export const WHEN_SEPARATOR = "·";
@@ -63,7 +81,7 @@ export function placeCompletions(fragment: string, places: string[]): string[] {
   return [...starts, ...contains].filter((place) => place.toLowerCase() !== needle).slice(0, 6);
 }
 
-export function PlaceLine({ headline, location, when, places, onBegin, onCommit }: PlaceLineProps) {
+export function PlaceLine({ headline, location, when, whenOpen, places, onBegin, onCommit }: PlaceLineProps) {
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState("");
   const [highlight, setHighlight] = useState(0);
@@ -80,15 +98,27 @@ export function PlaceLine({ headline, location, when, places, onBegin, onCommit 
 
   function begin() {
     onBegin();
-    setText(joinPlaceLine(location, when));
+    setText(joinPlaceLine(location, when || (whenOpen ? `${OPEN_WHEN_MARK} ${whenOpen}` : "")));
     setHighlight(0);
     setEditing(true);
   }
 
   function commit(finalText: string) {
     setEditing(false);
-    const next = splitPlaceLine(finalText);
-    if (next.location !== location || next.when !== when) onCommit(next.location, next.when);
+    const split = splitPlaceLine(finalText);
+    const next = { location: split.location, ...readWhenPart(split.when) };
+    if (next.location !== location || next.when !== when || next.whenOpen !== whenOpen) onCommit(next.location, next.when, next.whenOpen);
+  }
+
+  /** "Not decided yet…" after the dot (R61): the words typed there become the open words; none yet, and the caret waits for them. */
+  function leaveWhenOpen() {
+    const part = typed ?? splitPlaceLine(text);
+    if (part.when.trim() && !part.when.trim().startsWith(OPEN_WHEN_MARK)) {
+      commit(joinPlaceLine(part.location, `${OPEN_WHEN_MARK} ${part.when}`));
+      return;
+    }
+    setText(joinPlaceLine(part.location, `${OPEN_WHEN_MARK} `));
+    inputRef.current?.focus();
   }
 
   /** A completion taken keeps whatever when the line already carried. */
@@ -128,8 +158,8 @@ export function PlaceLine({ headline, location, when, places, onBegin, onCommit 
   }
 
   if (!editing) {
-    const empty = !location && !when;
-    const said = [location ? `at ${location}` : "", when ? `when: ${when}` : ""].filter(Boolean).join(", ");
+    const empty = !location && !when && !whenOpen;
+    const said = [location ? `at ${location}` : "", when ? `when: ${when}` : whenOpen ? `when left open: ${whenOpen}` : ""].filter(Boolean).join(", ");
     return (
       <button
         type="button"
@@ -138,13 +168,22 @@ export function PlaceLine({ headline, location, when, places, onBegin, onCommit 
         onPointerDown={stop}
         onClick={begin}
       >
-        <span className="note__with-prefix">at</span> {location || (when ? "" : "…")}
-        {when ? (
+        <span className="note__with-prefix">at</span> {location || (when || whenOpen ? "" : "…")}
+        {when || whenOpen ? (
           <>
             <span className="note__when-sep" aria-hidden="true">
               {WHEN_SEPARATOR}
             </span>
-            <span className="note__when">{when}</span>
+            {when ? (
+              <span className="note__when">{when}</span>
+            ) : (
+              <span className="note__when is-open-field">
+                <span className="open-mark" aria-hidden="true">
+                  Open
+                </span>
+                {whenOpen}
+              </span>
+            )}
           </>
         ) : null}
       </button>
@@ -169,6 +208,19 @@ export function PlaceLine({ headline, location, when, places, onBegin, onCommit 
         onKeyDown={onKeyDown}
         onBlur={() => commit(text)}
       />
+      {text.includes(WHEN_SEPARATOR) && !(typed?.when ?? "").trim().startsWith(OPEN_WHEN_MARK) ? (
+        <button
+          type="button"
+          className="field-offer note__offer"
+          onPointerDown={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            leaveWhenOpen();
+          }}
+        >
+          Not decided yet…
+        </button>
+      ) : null}
       {options.length > 0 ? (
         <ul className="note__complete" role="listbox" aria-label="Places on the wall">
           {options.map((place, index) => (

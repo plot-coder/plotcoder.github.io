@@ -69,6 +69,8 @@ import {
   removeStructure,
   setActiveBoard,
   setPremise,
+  setPremiseOpen,
+  setBoardNameOpen,
   structureBeats,
   reidentifyProject,
   renameProject,
@@ -1063,7 +1065,7 @@ function summarize(state) {
       const snap = state.revision?.snapshot?.[note.id];
       const revised = snap && (snap.headline !== note.headline || snap.change !== note.change || (snap.text ?? "") !== (note.text ?? "") || (snap.location ?? "") !== (note.location ?? "")) ? `, changed in ${state.revision.color}` : "";
       const place = note.location ? `, at: ${note.location}` : "";
-      const when = note.when ? `, when: ${note.when}` : "";
+      const when = note.when ? `, when: ${note.when}` : note.whenOpen ? `, when: open, by the writer's word — "${note.whenOpen}"` : "";
       const openWord = note.open ? `, open (the writer's words): "${note.open}"` : "";
       const count = formatPages(noteEighths(note));
       // A written card's estimate is kept underneath for when the text goes; say it, or it is invisible (round sixteen, entry 44).
@@ -1134,7 +1136,7 @@ function summarize(state) {
   const leftCount = (state.left ?? []).length;
   return [
     ...(isSampleWall(state) ? [SAMPLE_NOTE] : []),
-    `logline: ${state.logline ? `"${state.logline}"` : "(not set)"}`,
+    `logline: ${state.loglineOpen ? `open, by the writer's word — "${state.loglineOpen}"` : state.logline ? `"${state.logline}"` : "(not set)"}`,
     ...production,
     `left, for now: ${leftCount ? `${leftCount} question(s) the writer left; read_wall lists them` : "none"}`,
     `beats: ${beats}, scenes: ${scenes}`,
@@ -1221,18 +1223,24 @@ server.registerTool(
   {
     title: "Set logline",
     description:
-      "Set the board's logline — the central question, what this story is arguing. One sentence. Every card on the wall should be checkable against it. Pass an empty string to clear it.",
+      "Set the board's logline — the central question, what this story is arguing. One sentence. Every card on the wall should be checkable against it. Pass an empty string to clear it. Or leave it open: pass open with the writer's words for why there is no logline yet — \"two candidates, not chosen\" — and the reading lists it under open, by the writer's word, and asks nothing; text decides it and clears the words; open \"\" takes the words back and leaves the field blank. Only on the writer's word: an open field is theirs, never a guess of yours.",
     inputSchema: {
-      logline: z.string(),
+      logline: z.string().optional(),
+      open: z.string().optional(),
     },
   },
   async (args) => {
-    const { state, live } = await commit({ type: "set_logline", logline: args.logline });
+    if (args.logline === undefined && args.open === undefined) return ok("Say which: logline (the sentence, or \"\" to clear it), or open (the writer's words for why there is none yet).");
+    const { state, changed, live } = await commit({ type: "set_logline", ...(args.logline !== undefined ? { logline: args.logline } : {}), ...(args.open !== undefined ? { open: args.open } : {}) });
+    if (!changed) return ok(args.logline === "" && !state.loglineOpen ? "Logline cleared." : "Logline unchanged: it already read that way.");
+    if (state.loglineOpen) {
+      return ok(`Logline left open, by the writer's word: "${state.loglineOpen}"${where(live)}. The reading lists it and asks nothing; set_logline with text decides it, open "" leaves it blank.`, { logline: state.logline, loglineOpen: state.loglineOpen });
+    }
     return ok(
       state.logline
         ? `Logline set: "${state.logline}"${where(live)}.`
-        : "Logline cleared.",
-      { logline: state.logline },
+        : `Logline cleared${where(live)}.`,
+      { logline: state.logline, loglineOpen: state.loglineOpen },
     );
   },
 );
@@ -1563,11 +1571,19 @@ server.registerTool(
     const whose = runtimeKinds(state).replace(/^; /, "");
     // A beat's own pages are in no run (entry 48); say how many pages that is.
     const beatEighths = reading.beats.reduce((sum, beat) => sum + noteEighths(state.notes.find((note) => note.id === beat.id) ?? {}), 0);
+    // Fields left open by the writer's word (R61): the logline and the whens are the reading's; the premise and the board's name are the project's.
+    const openFieldLines = [
+      ...reading.openFields.filter((field) => field.field === "logline").map((field) => `  - the logline — ${field.words}`),
+      ...(projectForRead.premiseOpen ? [`  - the premise — ${projectForRead.premiseOpen}`] : []),
+      ...(readBoardMeta?.nameOpen ? [`  - this board's name — ${readBoardMeta.nameOpen}`] : []),
+      ...reading.openFields.filter((field) => field.field === "when").map((field) => `  - "${state.notes.find((note) => note.id === field.id)?.headline ?? field.id}" — when: ${field.words}`),
+    ];
     const lines = [
       `PlotCoder wall (${door(live, base)})`,
       ...(state.lock ? [`numbers: locked since ${String(state.lock.at).slice(0, 10)}; read_pages shows each scene's number`] : []),
-      `board: "${readBoardMeta?.name ?? "?"}"${projectForRead.boards.length > 1 ? ` — board ${projectForRead.boards.findIndex((meta) => meta.id === readBoardMeta?.id) + 1} of ${projectForRead.boards.length} in the project "${projectForRead.name}"; open_board reads another` : ""}`,
-      `logline: ${state.logline ? `"${state.logline}"` : "(none yet)"}`,
+      `board: "${readBoardMeta?.name ?? "?"}"${readBoardMeta?.nameOpen ? ` — its name is open, by the writer's word: "${readBoardMeta.nameOpen}"` : ""}${projectForRead.boards.length > 1 ? ` — board ${projectForRead.boards.findIndex((meta) => meta.id === readBoardMeta?.id) + 1} of ${projectForRead.boards.length} in the project "${projectForRead.name}"; open_board reads another` : ""}`,
+      ...(projectForRead.premiseOpen ? [`premise: open, by the writer's word — "${projectForRead.premiseOpen}"`] : []),
+      `logline: ${state.loglineOpen ? `open, by the writer's word — "${state.loglineOpen}"` : state.logline ? `"${state.logline}"` : "(none yet)"}`,
       "the cast and the places are list_board's, not the reading's",
       state.targetEighths === DEFAULT_TARGET_EIGHTHS
         ? `runtime: about ${formatPages(boardEighths(state))} pages (${whose || "no cards"}); no target set (set_target)`
@@ -1599,8 +1615,8 @@ server.registerTool(
         : [reading.paidBy.length ? "  (no setup arrow on this board; what pays off a fold of another board is listed below)" : "  (no arrow is marked as a setup)"]),
       ...reading.later.map((item) => `  - "${state.notes.find((note) => note.id === item.id)?.headline ?? item.id}" is folded and pays off later, on "${boardById(projectForRead, item.boardId)?.name ?? item.boardId}"${item.noteId ? `, at ${episodeLabel(projectForRead, boardsNow, item.boardId, item.noteId)} "${boardsNow[item.boardId]?.notes?.find((note) => note.id === item.noteId)?.headline ?? item.noteId}"` : " — no scene there claims it yet"}`),
       ...reading.paidBy.map((item) => `  - "${state.notes.find((note) => note.id === item.id)?.headline ?? item.id}" pays off "${item.fromHeadline}" from "${item.fromBoardName}" (${episodeLabel(projectForRead, boardsNow, item.fromBoardId, item.fromNoteId)}), one board earlier`),
-      ...(reading.open.length
-        ? ["open, by the writer's word (listed, not asked about while the words stand; set_open with \"\" closes):", ...reading.open.map((item) => `  - "${state.notes.find((note) => note.id === item.id)?.headline ?? item.id}" — ${item.words}${item.hides.length ? ` (closed, it would be asked ${item.hides.map((kind) => ASK_WORDS[kind] ?? CHECK_WORDS[kind] ?? kind).join("; ")})` : ""}`)]
+      ...(reading.open.length || openFieldLines.length
+        ? ["open, by the writer's word (listed, not asked about while the words stand; set_open with \"\" closes a card, the field's own tool with open \"\" a field):", ...openFieldLines, ...reading.open.map((item) => `  - "${state.notes.find((note) => note.id === item.id)?.headline ?? item.id}" — ${item.words}${item.hides.length ? ` (closed, it would be asked ${item.hides.map((kind) => ASK_WORDS[kind] ?? CHECK_WORDS[kind] ?? kind).join("; ")})` : ""}`)]
         : []),
       ...(reading.threads.length
         ? ["threads (the writer's strings through the story; a loose end is asked about below):", ...reading.threads.map((thread) => `  - "${thread.name}": ${thread.ids.length ? thread.ids.map((id) => `"${state.notes.find((note) => note.id === id)?.headline ?? id}"`).join(" → ") : "no card yet"}${thread.startOpen ? " — starts nowhere yet" : ""}${thread.endOpen ? " — ends nowhere yet" : ""}`)]
@@ -1622,7 +1638,7 @@ server.registerTool(
         const counts = new Map();
         for (const finding of asked) counts.set(finding.kind, (counts.get(finding.kind) ?? 0) + 1);
         return `asking ${asked.length} question${asked.length === 1 ? "" : "s"} of ${counts.size} kind${counts.size === 1 ? "" : "s"}: ${[...counts.entries()].map(([kind, n]) => (n > 1 ? `${kind} ×${n}` : kind)).join(", ")}${held}`;
-      })()}${reading.left.length ? `; left by the writer, so not clean: ${[...new Set(reading.left.map((finding) => finding.kind))].map((kind) => `[${kind}]`).join(" ")}` : ""}${reading.open.length ? `; ${reading.open.length} card${reading.open.length === 1 ? "" : "s"} open by the writer's word, not asked` : ""}; checked and clean: ${CHECKS.filter((kind) => !reading.findings.some((finding) => finding.kind === kind) && !reading.left.some((finding) => finding.kind === kind)).map((kind) => {
+      })()}${reading.left.length ? `; left by the writer, so not clean: ${[...new Set(reading.left.map((finding) => finding.kind))].map((kind) => `[${kind}]`).join(" ")}` : ""}${reading.open.length || openFieldLines.length ? `; ${[reading.open.length ? `${reading.open.length} card${reading.open.length === 1 ? "" : "s"}` : "", openFieldLines.length ? `${openFieldLines.length} field${openFieldLines.length === 1 ? "" : "s"}` : ""].filter(Boolean).join(" and ")} open by the writer's word, not asked` : ""}; checked and clean: ${CHECKS.filter((kind) => !reading.findings.some((finding) => finding.kind === kind) && !reading.left.some((finding) => finding.kind === kind)).map((kind) => {
         if (kind === "unlinked" && state.arrows.length === 0) return "no card without an arrow (not asked until half the cards are wired: no arrows yet)";
         if (kind === "unlinked") {
           const linked = new Set(state.arrows.flatMap((arrow) => [arrow.from, arrow.to]));
@@ -2708,16 +2724,21 @@ server.registerTool(
   {
     title: "Set when scenes happen",
     description:
-      "When one or more scenes happen, as the writer would say it — \"night\", \"day four, dawn\", \"the next morning\" — on the card beside its place, and printed after the place on every scene heading: THE PIER AT FENIT - NIGHT. Free text, the writer's phrase; an empty string clears it. This is where a scene's day and time live, not the headline, so the duplicate check never reads a day as a scene's words. create_note and update_note take when too; list_board shows it as when: …",
-    inputSchema: { ids: z.array(z.string()).min(1), when: z.string() },
+      "When one or more scenes happen, as the writer would say it — \"night\", \"day four, dawn\", \"the next morning\" — on the card beside its place, and printed after the place on every scene heading: THE PIER AT FENIT - NIGHT. Free text, the writer's phrase; an empty string clears it. Or leave the when open: pass open with the writer's words for why it is not decided — \"after the break-in; which day\" — and the reading lists it under open, by the writer's word, while the card's other questions still stand; a when decides it, open \"\" leaves it blank. This is where a scene's day and time live, not the headline, so the duplicate check never reads a day as a scene's words. create_note and update_note take when too; list_board shows it as when: …",
+    inputSchema: { ids: z.array(z.string()).min(1), when: z.string().optional(), open: z.string().optional() },
   },
   async (args) => {
-    const { state, changed, result, live } = await commit({ type: "set_when", ids: args.ids, when: args.when });
+    if (args.when === undefined && args.open === undefined) return ok("Say which: when (the writer's phrase, or \"\" to clear it), or open (their words for why the when is not decided).");
+    const { state, changed, result, live } = await commit({ type: "set_when", ids: args.ids, ...(args.when !== undefined ? { when: args.when } : {}), ...(args.open !== undefined ? { open: args.open } : {}) });
     if (!changed) {
       const missing = args.ids.filter((id) => !state.notes.some((note) => note.id === id));
-      return ok(missing.length ? `No card with id ${missing.join(", ")}. Call list_board for the real ids.` : `Nothing changed: ${args.ids.length === 1 ? "the card already says" : "those cards already say"} "${args.when.trim()}".`);
+      return ok(missing.length ? `No card with id ${missing.join(", ")}. Call list_board for the real ids.` : `Nothing changed: ${args.ids.length === 1 ? "the card already says" : "those cards already say"} "${(args.when ?? args.open ?? "").trim()}".`);
     }
     const when = result[0]?.when ?? "";
+    const whenOpen = result[0]?.whenOpen ?? "";
+    if (whenOpen) {
+      return ok(`${result.length} card(s) have their when left open, by the writer's word: "${whenOpen}"${where(live)}. The reading lists it and asks nothing; the heading prints no time; set_when with a when decides it, open "" leaves it blank. The card is still asked about everything else.${stillOpen(result)}`, result);
+    }
     return ok(
       when
         ? `${result.length} card(s) now happen ${/^(at|on|in|by|the)\b/i.test(when) ? "" : "at "}"${when}"${where(live)}. The heading prints as ${sceneHeading(result[0]).slice(1)}.${stillOpen(result)}`
@@ -2964,7 +2985,7 @@ server.registerTool(
     });
     const total = parts.reduce((sum, part) => sum + part.on.length, 0);
     // An open card reads as open on a person's page too (round eighteen, entry 53).
-    const where_ = (note) => [note.location ? `at ${note.location}` : "", note.when ? note.when : "", note.rank === "beat" ? "beat" : "", note.open ? `open: "${note.open}"` : ""].filter(Boolean).join(" · ");
+    const where_ = (note) => [note.location ? `at ${note.location}` : "", note.when ? note.when : note.whenOpen ? `when open: "${note.whenOpen}"` : "", note.rank === "beat" ? "beat" : "", note.open ? `open: "${note.open}"` : ""].filter(Boolean).join(" · ");
     // A read opens with the door it came through, like every reading (round sixteen, entry 28); one scene a line (29).
     const lines = [
       `PlotCoder cast (${door(live, base)})`,
@@ -3430,7 +3451,8 @@ function describeBoards(project, boards, changedAt = null) {
           ? `${state.notes.length} cards, about ${formatPages(boardEighths(normalizeState(state)))} of ${formatPages(normalizeState(state).targetEighths)} pages`
           : "no cards";
       const changed = changedAt?.[board.id] ? `, last changed ${changedAt[board.id]}` : "";
-      return `  ${index + 1}. ${board.id} — "${board.name}"${open}: ${shape}${changed}`;
+      const nameOpen = board.nameOpen ? ` (name open, by the writer's word: "${board.nameOpen}")` : "";
+      return `  ${index + 1}. ${board.id} — "${board.name}"${nameOpen}${open}: ${shape}${changed}`;
     })
     .join("\n");
 }
@@ -3448,7 +3470,7 @@ server.registerTool(
     return ok(
       [
         `Project "${project.name}" (${door(live, base)})`,
-        `premise: ${project.premise ? `"${project.premise}"` : "(not set)"}`,
+        `premise: ${project.premiseOpen ? `open, by the writer's word — "${project.premiseOpen}"` : project.premise ? `"${project.premise}"` : "(not set)"}`,
         `boards: ${project.boards.length}`,
         describeBoards(project, boards, changedAt),
         // The project's length as one line, so a series is not arithmetic by hand (round fifteen, entry 38).
@@ -3472,14 +3494,16 @@ server.registerTool(
   {
     title: "Set the project's premise",
     description:
-      "Set the project's premise: the line above every board's logline, held by the project whatever its board count — what a series is about, or what is true before a film starts ('the winter the shop closes'). An empty string clears it. Boards keep their own loglines.",
-    inputSchema: { premise: z.string() },
+      "Set the project's premise: the line above every board's logline, held by the project whatever its board count — what a series is about, or what is true before a film starts ('the winter the shop closes'). An empty string clears it. Or leave it open: pass open with the writer's words for why there is no premise yet — \"the buyer: housing, or a supermarket\" — and the reading lists it under open, by the writer's word; a premise decides it, open \"\" leaves it blank. Boards keep their own loglines.",
+    inputSchema: { premise: z.string().optional(), open: z.string().optional() },
   },
   async (args) => {
+    if (args.premise === undefined && args.open === undefined) return ok("Say which: premise (the line, or \"\" to clear it), or open (the writer's words for why there is none yet).");
     const { project, boards, rev, base, live } = await readProject();
-    const next = setPremise(project, args.premise);
+    const next = args.open !== undefined ? setPremiseOpen(project, args.open) : setPremise(project, args.premise);
     if (next === project) return ok("Premise unchanged.");
     await writeProject(next, boards, rev, base);
+    if (next.premiseOpen) return ok(`Premise left open, by the writer's word: "${next.premiseOpen}"${where(live)}. The reading lists it and asks nothing; set_premise with a line decides it, open "" leaves it blank.`, next);
     return ok(`Premise ${next.premise ? `set to "${next.premise}"` : "cleared"}${where(live)}.`, next);
   },
 );
@@ -3678,14 +3702,16 @@ server.registerTool(
   {
     title: "Start a project",
     description:
-      "Through the account door: start a new project of the writer's with this name — one empty board, nothing on it — and work it from now on. The writer sees it under Projects on every device.",
-    inputSchema: { name: z.string().min(1), board: z.string().optional(), pages: pagesSchema.optional(), minutes: z.number().positive().optional() },
+      "Through the account door: start a new project of the writer's with this name — one empty board, nothing on it — and work it from now on. The writer sees it under Projects on every device. board names the first board; boardOpen leaves its name open in the writer's words instead (\"the title, or Feature\"), so a board born from a maybe is not silently \"Board 1\".",
+    inputSchema: { name: z.string().min(1), board: z.string().optional(), boardOpen: z.string().optional(), pages: pagesSchema.optional(), minutes: z.number().positive().optional() },
   },
   async (args) => {
     const account = await findAccount();
     if (!account) return shut("No account door: there is one project here, the open one. Set PLOTCODER_EMAIL and PLOTCODER_PASSWORD to start another on the writer's account.");
     let record = renameProject(emptyProject(), args.name.trim());
     if (args.board?.trim()) record = renameBoard(record, record.activeBoardId, args.board.trim());
+    // A board born from a maybe is born open on its name (R61): boardOpen holds the writer's words.
+    if (args.boardOpen?.trim()) record = setBoardNameOpen(record, record.activeBoardId, args.boardOpen);
     const inserted = await account.client.from("projects").insert({ id: record.id, record, reminders: null, rev: 1 });
     if (inserted.error) return ok(`Could not start the project: ${inserted.error.message}`);
     const target = args.pages ?? args.minutes;
@@ -3696,7 +3722,8 @@ server.registerTool(
     joinPresence(record.id);
     const targetLine = target === undefined ? ` Its target is ${formatPages(state.targetEighths)} pages, the default for a feature; set_target for a pilot or a half-hour, or pass pages or minutes here.` : ` Its target is ${formatPages(state.targetEighths)} pages.`;
     const first = record.boards[0];
-    return ok(`Started "${record.name}" (${record.id}) with its first board "${first.name}" (${first.id}), and working it now, as ${account.email}.${targetLine}${oneCallHint(record)}`, { id: record.id, name: record.name, boardId: first.id, boardName: first.name, targetEighths: state.targetEighths });
+    const nameOpenLine = first.nameOpen ? ` The board's name is left open, by the writer's word: "${first.nameOpen}"; rename_board decides it.` : "";
+    return ok(`Started "${record.name}" (${record.id}) with its first board "${first.name}" (${first.id}), and working it now, as ${account.email}.${targetLine}${nameOpenLine}${oneCallHint(record)}`, { id: record.id, name: record.name, boardId: first.id, boardName: first.name, boardNameOpen: first.nameOpen ?? "", targetEighths: state.targetEighths });
   },
 );
 
@@ -3894,19 +3921,19 @@ server.registerTool(
   {
     title: "New board",
     description:
-      "Add a board to the project and open it: an empty wall with the logline placeholder, under the same premise, with the same target length as the board that was open. Nothing else is touched — the other boards stay as they are. Name it for what it is: an episode, a draft, a story.",
-    inputSchema: { name: z.string().optional() },
+      "Add a board to the project and open it: an empty wall with the logline placeholder, under the same premise, with the same target length as the board that was open. Nothing else is touched — the other boards stay as they are. Name it for what it is: an episode, a draft, a story; or pass open with the writer's words for why the name is not decided, and it is born open on its name.",
+    inputSchema: { name: z.string().optional(), open: z.string().optional() },
   },
   async (args) => {
     const { project, boards, rev, base } = await readProject();
     const previous = boards[project.activeBoardId];
     const target =
       previous && isBoardState(previous) ? normalizeState(previous).targetEighths : undefined;
-    const { project: next, board } = addBoard(project, args.name ?? "");
+    const { project: next, board } = addBoard(project, args.name ?? "", undefined, args.open ?? "");
     const fresh = { ...emptyState(), ...(target ? { targetEighths: target } : {}) };
     const { live } = await openBoardEverywhere(next, { ...boards, [board.id]: fresh }, rev, base, board.id);
     return ok(
-      `Added "${board.name}" (${board.id}) and opened it${where(live)}: every card call lands there now, and the writer's open wall switched with it; open_board ${project.boards.findIndex((item) => item.id === project.activeBoardId) + 1} returns to "${project.boards.find((item) => item.id === project.activeBoardId)?.name ?? "the one before"}". It is empty, and the project's cast is already there to cast from. The logline is the story's question when the writer has one — leave it empty rather than invent it — and the cards come next.${next.name === "Untitled project" ? " The project is still \"Untitled project\": rename_project names it." : ""}${next.boards.length === 2 && isSampleWall(isBoardState(boards[next.boards[0].id]) ? normalizeState(boards[next.boards[0].id]) : emptyState()) ? " The sample stays as Board 1; delete_board drops it." : ""}`,
+      `Added "${board.name}" (${board.id})${board.nameOpen ? ` — its name left open, by the writer's word: "${board.nameOpen}"` : ""} and opened it${where(live)}: every card call lands there now, and the writer's open wall switched with it; open_board ${project.boards.findIndex((item) => item.id === project.activeBoardId) + 1} returns to "${project.boards.find((item) => item.id === project.activeBoardId)?.name ?? "the one before"}". It is empty, and the project's cast is already there to cast from. The logline is the story's question when the writer has one — leave it empty rather than invent it — and the cards come next.${next.name === "Untitled project" ? " The project is still \"Untitled project\": rename_project names it." : ""}${next.boards.length === 2 && isSampleWall(isBoardState(boards[next.boards[0].id]) ? normalizeState(boards[next.boards[0].id]) : emptyState()) ? " The sample stays as Board 1; delete_board drops it." : ""}`,
       board,
     );
   },
@@ -3916,17 +3943,25 @@ server.registerTool(
   "rename_board",
   {
     title: "Rename board",
-    description: "Rename a board of the project by id, name, or number.",
-    inputSchema: { board: z.union([z.string().min(1), z.number()]), name: z.string().min(1) },
+    description: "Rename a board of the project by id, name, or number. Or leave its name open: pass open with the writer's words for why it is not decided — \"the title, or Feature\" — and the name stands as it is (every reply still calls it that) while the reading lists the words; a name decides it, open \"\" takes the words back.",
+    inputSchema: { board: z.union([z.string().min(1), z.number()]), name: z.string().min(1).optional(), open: z.string().optional() },
   },
   async (args) => {
+    if (args.name === undefined && args.open === undefined) return ok("Say which: name, or open (the writer's words for why the name is not decided).");
     const { project, boards, rev, base } = await readProject();
     const target = findBoard(project, String(args.board));
     if (!target) return ok(`No board matches "${args.board}". Call list_boards for the real ones.`);
+    if (args.name === undefined) {
+      const next = setBoardNameOpen(project, target.id, args.open);
+      if (next === project) return ok(`"${target.name}" already reads that way.`);
+      const live = await writeProject(next, boards, rev, base);
+      const words = boardById(next, target.id)?.nameOpen ?? "";
+      return ok(words ? `Board "${target.name}" (${target.id}) keeps its name and its name is left open, by the writer's word: "${words}"${where(live)}. The reading lists it; rename_board with a name decides it.` : `Board "${target.name}" (${target.id}) is no longer open on its name${where(live)}.`, { id: target.id, name: target.name, nameOpen: words });
+    }
     const next = renameBoard(project, target.id, args.name);
     if (next === project) return ok(`"${target.name}" already has that name.`);
     const live = await writeProject(next, boards, rev, base);
-    return ok(`Renamed board "${target.name}" (${target.id}) to "${args.name.trim()}"${where(live)}.`, { id: target.id, name: args.name.trim() });
+    return ok(`Renamed board "${target.name}" (${target.id}) to "${args.name.trim()}"${where(live)}.${target.nameOpen ? " Its name is decided; the open words are gone." : ""}`, { id: target.id, name: args.name.trim() });
   },
 );
 

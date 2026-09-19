@@ -557,6 +557,7 @@ export function readWall(state, options = {}) {
     later,
     paidBy: paidHere,
     open: describeOpen(state, options, order, openIds),
+    openFields: describeOpenFields(state, order),
     threads,
     findings: asked,
     left,
@@ -568,6 +569,19 @@ export function readWall(state, options = {}) {
  * closed (round eighteen, entry 27): the reading of the same wall with the
  * words cleared, read once more, so the writer can see what the words hide.
  */
+/**
+ * The fields the writer has left open (R61), in the writer's words: the
+ * board's logline, and a card's when, in story order. The premise and the
+ * board's name live on the project, and the door adds them. Listed, never
+ * asked about: no check asks about a missing logline or when.
+ */
+function describeOpenFields(state, order) {
+  const fields = [];
+  if ((state.loglineOpen ?? "").trim()) fields.push({ field: "logline", words: state.loglineOpen.trim() });
+  for (const note of order) if ((note.whenOpen ?? "").trim()) fields.push({ field: "when", id: note.id, words: note.whenOpen.trim() });
+  return fields;
+}
+
 /** The question kinds an open card does not silence: about the story around it, not the card (R59, R60). */
 const ASKED_OF_OPEN_CARDS = new Set(["loose", "empty", "sag"]);
 

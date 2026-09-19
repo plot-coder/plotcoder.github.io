@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<title>A field that says "not decided" — three ways</title>
+<!-- The app's own paper: the source stylesheet, so the link never goes stale. -->
+<link rel="stylesheet" href="../../src/styles.css">
+<style>
+  body { margin: 0; padding: 2rem 2.5rem 3rem; font-family: ui-sans-serif, system-ui, sans-serif; }
+  h1 { font: 600 1.05rem/1.3 ui-serif, Georgia, serif; margin: 0 0 0.25rem; }
+  h2.sec { font: 600 0.95rem/1.3 ui-serif, Georgia, serif; margin: 2.6rem 0 0.2rem; }
+  .lede { font-size: 0.85rem; opacity: 0.75; margin: 0 0 2rem; max-width: 62ch; }
+  .row { display: flex; gap: 3rem; flex-wrap: wrap; align-items: flex-start; }
+  .opt { width: 300px; }
+  .opt h2 { font: 700 0.62rem/1.3 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; margin: 0 0 0.9rem; }
+  .opt p { font-size: 0.8rem; line-height: 1.45; opacity: 0.8; margin: 0.9rem 0 0; max-width: 40ch; }
+  /* A corner of the wall: the crumb top left, the logline strip across, one card below. */
+  .paper { position: relative; height: 440px; width: 300px; border-radius: 6px; background: var(--canvas); outline: 1px solid rgba(127,127,127,0.18); overflow: hidden; }
+  .paper .crumb { left: 0.7rem; top: 0.7rem; max-width: 100%; }
+  .paper .logline { left: 0; transform: none; width: 100%; top: 2.9rem; }
+  .paper .logline__question { font-size: 0.82rem; }
+  .paper .note { position: absolute; left: 34px; top: 172px; }
+  .note__when-sep { opacity: 0.55; margin: 0 0.3rem; }
+  /* A: the same claim on a field — the writer's words where the value would be,
+     in the warm colour the wall uses for a debt, under a dashed line the way an
+     open card's edge is dashed (R59). Proposed CSS; the rest ships. */
+  .is-open-field { color: var(--over) !important; font-style: italic; text-decoration: underline dashed; text-decoration-color: rgba(255,130,80,0.55); text-underline-offset: 0.22em; text-decoration-thickness: 1px; }
+  .is-open-field .open-mark { font-style: normal; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.55rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; text-decoration: none; margin-right: 0.35rem; opacity: 0.85; }
+  .crumb__board.is-open-field { font-weight: 500; }
+  /* B: the writer's own list, a strip under the logline. */
+  .open-list { position: absolute; left: 0.5rem; right: 0.5rem; top: 8.1rem; text-align: center; font-size: 0.6rem; line-height: 1.5; color: var(--over); font-style: italic; }
+  .open-list b { font-style: normal; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; font-size: 0.52rem; margin-right: 0.35rem; opacity: 0.85; }
+  /* The offer on an empty field, on hover. */
+  .offer { position: absolute; font-size: 0.55rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); border: 1px dashed rgba(127,127,127,0.5); border-radius: 3px; padding: 0.05rem 0.35rem; white-space: nowrap; }
+  /* The picker, as the place line's completions draw one. */
+  .pick { position: absolute; z-index: 5; width: 176px; background: var(--bar-bg, #1c1a16); color: var(--bar-ink, #eee); border: 1px solid var(--bar-border, #444); border-radius: 6px; padding: 0.4rem 0.5rem; font-size: 0.6rem; line-height: 1.5; box-shadow: 0 6px 18px rgba(0,0,0,0.35); }
+  .pick .cap { font-size: 0.5rem; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.6; margin: 0 0 0.25rem; }
+  .pick .it { padding: 0.15rem 0.3rem; border-radius: 3px; }
+  .pick .it.is-current { background: rgba(255,255,255,0.12); }
+  .pick .it small { opacity: 0.6; }
+  .light { margin-top: 3rem; padding: 2rem 2.5rem; background: #fff; color: #1f1810; border-radius: 6px; }
+  .light h2 { color: #1f1810; }
+  .light .paper { outline-color: rgba(0,0,0,0.12); }
+  pre.read { font: 0.72rem/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; background: rgba(127,127,127,0.12); padding: 0.9rem 1.1rem; border-radius: 6px; max-width: 84ch; white-space: pre-wrap; margin: 0.6rem 0 0; }
+  .ask { margin-top: 2.5rem; max-width: 64ch; font-size: 0.9rem; line-height: 1.5; }
+  .ask b { font-weight: 600; }
+</style>
+</head>
+<body>
+<h1>A field that says "not decided" (R61): the open card's claim, on a field</h1>
+<p class="lede">From rounds eighteen and nineteen, on "The Allotments". A card can be left open in the writer's words (R59), and the reading lists it and asks nothing else of it. Nothing else can. The logline is "leave it open" and the wall can only say "(none yet)"; the premise cannot hold "housing, or a supermarket" as undecided; a card's when is blank on six cards and the wall never asks, so blank cannot tell undecided from unconsidered; a board's name left open became "Board 1". And a writer who opened a card for its when alone lost every other question about it (nineteen 19). Below, the four fields three ways beside what ships — a corner of the wall with the crumb, the logline strip and one card — then the gesture, the reading and the tool.</p>
+
+<div class="row">
+  <div class="opt">
+    <h2>As it ships</h2>
+    <div class="paper">
+      <div class="crumb"><span class="crumb__mark">Plot 14</span><span class="crumb__sep">/</span><span class="crumb__board">Board 1</span></div>
+      <div class="logline">
+        <p class="logline__premise">The third year; the crowns can be cut for the first time</p>
+        <p class="logline__question" data-placeholder="What is this story arguing?"></p>
+      </div>
+      <article class="note note--yellow is-beat" style="transform:rotate(-0.5deg)">
+        <button class="note__fold"><span class="note__fold-flap"></span></button>
+        <span class="note__edge"><span>7</span></span>
+        <div class="note__headline">Con gives Ruth the only key to the shed</div>
+        <div class="note__change">Ruth can open the shed without him.</div>
+        <button class="note__with">with Con Brady, Ruth Kane</button>
+        <button class="note__with note__at"><span class="note__with-prefix">at</span> the allotments</button>
+      </article>
+    </div>
+    <p>The logline is a placeholder in italics, nearly invisible, and reads the same whether the writer has not thought about it or has two candidates and cannot choose. The board is "Board 1" because a board must have a name. The card has a place and no when, and no check asks about a when, so the line is quiet either way. To say "not decided" about the when, the writer opens the whole card and loses its other questions.</p>
+  </div>
+
+  <div class="opt">
+    <h2>A · the same claim, on the field</h2>
+    <div class="paper">
+      <div class="crumb"><span class="crumb__mark">Plot 14</span><span class="crumb__sep">/</span><span class="crumb__board is-open-field"><span class="open-mark">Open</span>the title, or "Feature"</span></div>
+      <div class="logline">
+        <p class="logline__premise is-open-field"><span class="open-mark">Open</span>the buyer: housing, or a supermarket</p>
+        <p class="logline__question is-open-field"><span class="open-mark">Open</span>two candidates, not chosen</p>
+      </div>
+      <article class="note note--yellow is-beat" style="transform:rotate(-0.5deg)">
+        <button class="note__fold"><span class="note__fold-flap"></span></button>
+        <span class="note__edge"><span>7</span></span>
+        <div class="note__headline">Con gives Ruth the only key to the shed</div>
+        <div class="note__change">Ruth can open the shed without him.</div>
+        <button class="note__with">with Con Brady, Ruth Kane</button>
+        <button class="note__with note__at"><span class="note__with-prefix">at</span> the allotments<span class="note__when-sep">·</span><span class="is-open-field"><span class="open-mark">Open</span>after the break-in; which day</span></button>
+      </article>
+    </div>
+    <p>The writer's words where the value would be, in the warm colour the wall uses for a debt, under a dashed line the way an open card's edge is dashed. One record beside each field — <code>open</code> twin to the value, the words or empty — on the board for the logline, on the project for the premise, on the card for the when, on the board's entry for its name. The card is not open: its place, cast and arrows are still asked about; only the when is the writer's word. The reading lists the four under the same head as open cards. Nothing prints on a heading: an open when is no when.</p>
+  </div>
+
+  <div class="opt">
+    <h2>B · the writer's own list</h2>
+    <div class="paper">
+      <div class="crumb"><span class="crumb__mark">Plot 14</span><span class="crumb__sep">/</span><span class="crumb__board">Board 1</span></div>
+      <div class="logline">
+        <p class="logline__premise">The third year; the crowns can be cut for the first time</p>
+        <p class="logline__question" data-placeholder="What is this story arguing?"></p>
+      </div>
+      <div class="open-list"><b>Open</b>the logline · the buyer · the title · which day the key changes hands · two endings</div>
+      <article class="note note--yellow is-beat" style="transform:rotate(-0.5deg)">
+        <button class="note__fold"><span class="note__fold-flap"></span></button>
+        <span class="note__edge"><span>7</span></span>
+        <div class="note__headline">Con gives Ruth the only key to the shed</div>
+        <div class="note__change">Ruth can open the shed without him.</div>
+        <button class="note__with">with Con Brady, Ruth Kane</button>
+        <button class="note__with note__at"><span class="note__with-prefix">at</span> the allotments</button>
+      </article>
+    </div>
+    <p>A list of the writer's open things in their words, on the project, drawn as a strip under the logline and listed by the reading beside the wall's questions. Tied to nothing, so it holds what no field can — "two endings", "the buyer" before there is a premise — and costs one record. But tied to nothing: setting the logline does not strike "the logline", the card still has a blank when and the list a sentence about it, and the writer keeps two places in step by hand. It is a notebook beside the wall, not the wall.</p>
+  </div>
+
+  <div class="opt">
+    <h2>C · the value carries the words</h2>
+    <div class="paper">
+      <div class="crumb"><span class="crumb__mark">Plot 14</span><span class="crumb__sep">/</span><span class="crumb__board">? the title, or "Feature"</span></div>
+      <div class="logline">
+        <p class="logline__premise">? housing, or a supermarket</p>
+        <p class="logline__question">? two candidates, not chosen</p>
+      </div>
+      <article class="note note--yellow is-beat" style="transform:rotate(-0.5deg)">
+        <button class="note__fold"><span class="note__fold-flap"></span></button>
+        <span class="note__edge"><span>7</span></span>
+        <div class="note__headline">Con gives Ruth the only key to the shed</div>
+        <div class="note__change">Ruth can open the shed without him.</div>
+        <button class="note__with">with Con Brady, Ruth Kane</button>
+        <button class="note__with note__at"><span class="note__with-prefix">at</span> the allotments<span class="note__when-sep">·</span>day unknown</button>
+      </article>
+    </div>
+    <p>What ships, used as a convention: the words typed into the field with a mark, as the guide already allows "day unknown" for a when. Nothing to build. But the app cannot tell the mark from a value: the logline goes out on the title page as "? two candidates", the when prints on the heading as THE ALLOTMENTS - DAY UNKNOWN on every page (eighteen 22), the board's name is a question in every reply, and the reading lists none of it, so from the agent's side it is exactly as unconsidered as blank.</p>
+  </div>
+</div>
+
+<h2 class="sec">The gesture, on A</h2>
+<div class="row">
+  <div class="opt">
+    <h2>An empty field, on hover</h2>
+    <div class="paper">
+      <div class="crumb"><span class="crumb__mark">Plot 14</span><span class="crumb__sep">/</span><span class="crumb__board">Board 1</span></div>
+      <div class="logline">
+        <p class="logline__premise">The third year; the crowns can be cut for the first time</p>
+        <p class="logline__question" data-placeholder="What is this story arguing?" style="background: rgba(255,255,255,0.45)"></p>
+        <span class="offer" style="position:static; margin-top:0.2rem">Not decided yet…</span>
+      </div>
+      <article class="note note--yellow is-beat" style="transform:rotate(-0.5deg); top: 190px">
+        <button class="note__fold"><span class="note__fold-flap"></span></button>
+        <span class="note__edge"><span>7</span></span>
+        <div class="note__headline">Con gives Ruth the only key to the shed</div>
+        <div class="note__change">Ruth can open the shed without him.</div>
+        <button class="note__with">with Con Brady, Ruth Kane</button>
+        <button class="note__with note__at"><span class="note__with-prefix">at</span> the allotments</button>
+      </article>
+    </div>
+    <p>An empty logline, premise or board name offers one thing on hover beside the placeholder: "Not decided yet…". Tap it and the caret lands in the field in the open style, for the writer's words; Return keeps them as the open words, not the value. Typing into the field as before sets the value and clears the open words. A field that already holds a value offers nothing: decided is decided, and the value is cleared first.</p>
+  </div>
+  <div class="opt">
+    <h2>The when, from the place line</h2>
+    <div class="paper">
+      <div class="crumb"><span class="crumb__mark">Plot 14</span><span class="crumb__sep">/</span><span class="crumb__board">Board 1</span></div>
+      <div class="logline">
+        <p class="logline__premise">The third year; the crowns can be cut for the first time</p>
+        <p class="logline__question">Can three years be grown in one?</p>
+      </div>
+      <article class="note note--yellow is-beat" style="transform:rotate(-0.5deg)">
+        <button class="note__fold"><span class="note__fold-flap"></span></button>
+        <span class="note__edge"><span>7</span></span>
+        <div class="note__headline">Con gives Ruth the only key to the shed</div>
+        <div class="note__change">Ruth can open the shed without him.</div>
+        <button class="note__with">with Con Brady, Ruth Kane</button>
+        <button class="note__with note__at note__with--editing"><span class="note__with-prefix">at</span> the allotments · |</button>
+        <div class="pick" style="left: 20px; top: 200px">
+          <p class="cap">When</p>
+          <div class="it is-current">Not decided yet… <small>the writer's words</small></div>
+          <div class="it">March</div>
+          <div class="it">October</div>
+          <div class="it">night</div>
+        </div>
+      </article>
+    </div>
+    <p>The place line already completes places as you type; after the dot it can offer the whens on the wall, and the first row is "Not decided yet…". Pick it and the words after the dot are the open words, drawn warm on the card. The corner's picker is untouched: it leaves the whole card open, as before, and a card open whole lists its open when as part of its words, not twice.</p>
+  </div>
+  <div class="opt">
+    <h2>For the agent</h2>
+    <p style="margin-top:0">The four tools that set the fields take <code>open</code> beside the value: <code>set_logline { open: "two candidates, not chosen" }</code>, <code>set_premise { open: "…" }</code>, <code>set_when { ids, open: "…" }</code>, <code>rename_board { open: "…" }</code>. Setting a value clears the open words; <code>open: ""</code> closes the field with no value, so it is blank again, as a card's <code>open: ""</code> does. <code>new_project</code> and <code>new_board</code> take <code>open</code> for the board's name, so a board born from a maybe is born open and not "Board 1". The words are free text, as a card's are, and the guide says the same thing about them: only on the writer's word, never to fill a field the agent could not decide.</p>
+  </div>
+</div>
+
+<h2 class="sec">The reading and the tool</h2>
+<pre class="read">read_wall:
+board: open, by the writer's word — "the title, or 'Feature'"
+premise: open, by the writer's word — "the buyer: housing, or a supermarket"
+logline: open, by the writer's word — "two candidates, not chosen"
+…
+open, by the writer's word (listed, not asked about while the words stand):
+  - the logline — two candidates, not chosen
+  - the premise — the buyer: housing, or a supermarket
+  - this board's name — the title, or "Feature"
+  - "Con gives Ruth the only key to the shed" — when: after the break-in; which day
+  - "The last harvest" — where, when, and who is in it        (the whole card, as today)
+questions the wall raises:
+  - [unplaced] …                                              (the key card is still asked about its place, arrows and cast)
+checks: 15 run — asking 4 questions of 3 kinds; 1 card and 4 fields open by the writer's word, not asked; …
+
+set_logline  { open: "two candidates, not chosen" }   → Logline left open: "two candidates, not chosen". The reading lists it; set_logline with text decides it.
+set_logline  { logline: "Can three years be grown in one?" }   → Logline set … (the open words cleared)
+set_when     { ids: ["key"], open: "after the break-in; which day" }   → 1 card's when left open …; the card is still asked about everything else.
+rename_board { open: "the title, or 'Feature'" }   → Board 1's name left open …; it is still "Board 1" in every reply until named.
+new_project  { name: "Plot 14", pages: 90, board: { open: "the title" } }
+
+list_board:  logline: open — "two candidates, not chosen"
+             - key [beat, about a page, unsized, cast: Con Brady, Ruth Kane, at: the allotments, when: open — "after the break-in; which day"] — …
+
+Every export prints nothing for an open field: no "?" on the title page, no when on the heading, the board's name as it stands.</pre>
+
+<div class="light">
+  <h2 style="font:700 0.62rem/1.3 ui-sans-serif,system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;margin:0 0 .9rem">A, on the light canvas</h2>
+  <div class="row">
+    <div class="paper" data-theme="light">
+      <div class="crumb"><span class="crumb__mark">Plot 14</span><span class="crumb__sep">/</span><span class="crumb__board is-open-field"><span class="open-mark">Open</span>the title, or "Feature"</span></div>
+      <div class="logline">
+        <p class="logline__premise is-open-field"><span class="open-mark">Open</span>the buyer: housing, or a supermarket</p>
+        <p class="logline__question is-open-field"><span class="open-mark">Open</span>two candidates, not chosen</p>
+      </div>
+      <article class="note note--yellow is-beat" style="transform:rotate(-0.5deg)">
+        <button class="note__fold"><span class="note__fold-flap"></span></button>
+        <span class="note__edge"><span>7</span></span>
+        <div class="note__headline">Con gives Ruth the only key to the shed</div>
+        <div class="note__change">Ruth can open the shed without him.</div>
+        <button class="note__with">with Con Brady, Ruth Kane</button>
+        <button class="note__with note__at"><span class="note__with-prefix">at</span> the allotments<span class="note__when-sep">·</span><span class="is-open-field"><span class="open-mark">Open</span>after the break-in; which day</span></button>
+      </article>
+    </div>
+    <div class="paper" data-theme="light">
+      <div class="crumb"><span class="crumb__mark">Plot 14</span><span class="crumb__sep">/</span><span class="crumb__board">Plot 14</span></div>
+      <div class="logline">
+        <p class="logline__premise">The third year; the crowns can be cut for the first time</p>
+        <p class="logline__question">Can three years be grown in one?</p>
+      </div>
+      <article class="note note--yellow is-beat" style="transform:rotate(-0.5deg)">
+        <button class="note__fold"><span class="note__fold-flap"></span></button>
+        <span class="note__edge"><span>7</span></span>
+        <div class="note__headline">Con gives Ruth the only key to the shed</div>
+        <div class="note__change">Ruth can open the shed without him.</div>
+        <button class="note__with">with Con Brady, Ruth Kane</button>
+        <button class="note__with note__at"><span class="note__with-prefix">at</span> the allotments<span class="note__when-sep">·</span>the morning after</button>
+      </article>
+    </div>
+  </div>
+</div>
+
+<div class="ask">
+  <b>Robert's call, 2026-09-18: A.</b> "Build A." Built as drawn: one <code>open</code> beside each of the four values, the four tools grown by it, a board born open, the offer on the wall; the board's name draws its words in the crumb and takes them from the tool, and its own offer on the wall waits for a round to ask.<br><br>
+  <b>Recommended: A</b>, the same claim R59 makes on a card, made on a field: one <code>open</code> beside each of the four values, the writer's words drawn where the value would be, in the debt colour under a dashed line; the reading lists them under the head it already has for open cards and asks nothing else; the four tools that set the fields take <code>open</code>, and a board can be born open. It closes what two rounds found — the logline (eighteen 23), the premise (eighteen 32, nineteen 8, 10), the when (eighteen 22, nineteen 25, 32), the board's name (nineteen 13) — and it answers nineteen 19: a writer who does not know the when opens the when, and the card's other questions keep asking. B is honest about what a notebook holds and is not the wall; C is what the agent will do without A, and every export prints the question.<br><br>
+  <b>Is this the best we could do?</b> Three things A cannot say. The when is the only field the wall never asks about, so an open when is listed and closes only by the writer's hand, as today's card-open-on-when does — the difference is that the rest of the card stays asked about, which is what nineteen wanted; if a check for a missing when is ever wanted, it is a separate call, and the round's finding was that blank must not become a question on every card. A fact that is no field — "two endings", "kids or the developer's people" — still has no home but an open card or the premise's open words, and B would hold it; I would not build B until a round asks for a notebook by name, because the premise's open words already hold the story-level maybe and a scene's maybe is a card's. And four fields mean four records repaired in <code>normalizeState</code> and four tools grown by a word; the alternative — one <code>open</code> map on the board keyed by field — is one record and a second shape beside the card's string, which I would not do. I would build A as drawn, the when's picker row included, and leave the board's name for last: it is the least of the four, and "Board 1" told the truth.
+</div>
+</body>
+</html>

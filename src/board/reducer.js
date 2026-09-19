@@ -220,6 +220,7 @@ export function emptyState() {
   return {
     logline: "",
     targetEighths: DEFAULT_TARGET_EIGHTHS,
+    loglineOpen: "",
     characters: [],
     notes: [],
     groups: [],
@@ -247,6 +248,8 @@ export function seedState(now = nowIso()) {
     characterIds,
     location: "",
     when: "",
+    // The writer's words for why the when is not decided (R61), or nothing.
+    whenOpen: "",
     text: "",
     plants: false,
     // A fold that pays off on another board — a later episode — names it here;
@@ -267,6 +270,7 @@ export function seedState(now = nowIso()) {
     // new writer finds out the logline is there at all.
     logline: "",
     targetEighths: DEFAULT_TARGET_EIGHTHS,
+    loglineOpen: "",
     // Two people, cast on the cards, so a new writer sees what the roster is for.
     characters: [
       fillCharacter({ id: "maya", name: "Maya", createdAt: now, updatedAt: now }),
@@ -362,6 +366,8 @@ export function normalizeState(value) {
     const location = typeof note?.location === "string" ? note.location : "";
     // Cards written before R55 have no when; a scene is at no time until it is.
     const when = typeof note?.when === "string" ? note.when : "";
+    // Cards written before R61 have no open when; a when is decided or blank until the writer says otherwise.
+    const whenOpen = typeof note?.whenOpen === "string" ? note.whenOpen : "";
     // Cards written before pages (R23 b) have no text; a scene is unwritten until it is.
     const text = typeof note?.text === "string" ? note.text : "";
     if (
@@ -376,12 +382,13 @@ export function normalizeState(value) {
       note.open === open &&
       note.location === location &&
       note.when === when &&
+      note.whenOpen === whenOpen &&
       note.text === text
     ) {
       return note;
     }
     patched = true;
-    return { ...note, rank, lengthEighths, characterIds, plants, payoffBoardId, payoffNoteId, open, location, when, text };
+    return { ...note, rank, lengthEighths, characterIds, plants, payoffBoardId, payoffNoteId, open, location, when, whenOpen, text };
   });
 
   // Boards written before the production half (Roadmap 2, item 8) have no
@@ -411,8 +418,11 @@ export function normalizeState(value) {
       return { ...thread, noteIds, startOpen, endOpen };
     })
     .filter(Boolean);
+  // Boards written before R61 have no open logline; a logline is decided or blank until the writer says otherwise.
+  const loglineOpen = typeof value.loglineOpen === "string" ? value.loglineOpen : "";
   if (
     value.logline === logline &&
+    value.loglineOpen === loglineOpen &&
     value.targetEighths === targetEighths &&
     !rosterPatched &&
     !arrowsPatched &&
@@ -427,6 +437,7 @@ export function normalizeState(value) {
   return {
     ...value,
     logline,
+    loglineOpen,
     targetEighths,
     characters,
     notes: patched ? notes : value.notes,
@@ -474,10 +485,15 @@ function pruneGroups(groups) {
 
 export function applyCommand(state, command, now = nowIso()) {
   switch (command.type) {
+    // The logline, or the writer's words for why there is none yet (R61): a
+    // value clears the open words, open words clear the value, and open ""
+    // leaves the field blank.
     case "set_logline": {
-      const logline = typeof command.logline === "string" ? command.logline.trim() : "";
-      if (logline === (state.logline ?? "")) return { state, changed: false };
-      return { state: { ...state, logline }, changed: true, result: { logline } };
+      const hasOpen = typeof command.open === "string";
+      const logline = hasOpen && command.open.trim() ? "" : typeof command.logline === "string" ? command.logline.trim() : (state.logline ?? "");
+      const loglineOpen = hasOpen ? cleanOpen(command.open) : logline ? "" : (state.loglineOpen ?? "");
+      if (logline === (state.logline ?? "") && loglineOpen === (state.loglineOpen ?? "")) return { state, changed: false };
+      return { state: { ...state, logline, loglineOpen }, changed: true, result: { logline, loglineOpen } };
     }
 
     case "create_note": {
@@ -501,7 +517,8 @@ export function applyCommand(state, command, now = nowIso()) {
         payoffNoteId: null,
         open: cleanOpen(command.open),
         location: cleanPlace(command.location),
-        when: cleanWhen(command.when),
+        when: cleanOpen(command.whenOpen) ? "" : cleanWhen(command.when),
+        whenOpen: cleanOpen(command.whenOpen),
         text: typeof command.text === "string" ? command.text : "",
         z: maxZ(state.notes) + 1,
         createdAt: now,
@@ -1015,6 +1032,7 @@ export function applyCommand(state, command, now = nowIso()) {
         open: "",
         location: "",
         when: "",
+        whenOpen: "",
         text: "",
         createdAt: now,
         updatedAt: now,
@@ -1121,11 +1139,21 @@ export function applyCommand(state, command, now = nowIso()) {
     case "set_when": {
       const ids = new Set(command.ids);
       if (ids.size === 0) return { state, changed: false };
-      const when = cleanWhen(command.when);
+      // The when, or the writer's words for why there is none yet (R61): a
+      // value clears the open words, open words clear the value, open "" leaves
+      // the when blank.
+      const hasOpen = typeof command.open === "string";
+      const whenOpen = hasOpen ? cleanOpen(command.open) : null;
+      const when = hasOpen ? (whenOpen ? "" : typeof command.when === "string" ? cleanWhen(command.when) : null) : cleanWhen(command.when);
       const touched = [];
       const notes = state.notes.map((note) => {
-        if (!ids.has(note.id) || note.when === when) return note;
-        const next = bump(note, { when }, now);
+        if (!ids.has(note.id)) return note;
+        const patch = {
+          when: when === null ? (note.when ?? "") : when,
+          whenOpen: whenOpen === null ? (when ? "" : (note.whenOpen ?? "")) : whenOpen,
+        };
+        if (patch.when === (note.when ?? "") && patch.whenOpen === (note.whenOpen ?? "")) return note;
+        const next = bump(note, patch, now);
         touched.push(next);
         return next;
       });

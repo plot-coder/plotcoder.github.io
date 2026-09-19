@@ -52,7 +52,7 @@ type NoteBoardProps = {
   placeFocus: string | null;
   places: string[];
   onCastNames: (id: string, names: string[]) => void;
-  onLocation: (id: string, location: string, when: string) => void;
+  onLocation: (id: string, location: string, when: string, whenOpen: string) => void;
   /** The empty wall offers a structure (R38). */
   onStructure: () => void;
   /** What these words mean (R42). */

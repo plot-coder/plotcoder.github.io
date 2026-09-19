@@ -25,6 +25,8 @@ import {
   addStructure,
   removeStructure,
   scriptTitles,
+  setPremiseOpen,
+  setBoardNameOpen,
 } from "./project";
 
 const NOW = "2026-01-01T00:00:00.000Z";
@@ -63,6 +65,46 @@ describe("addBoard", () => {
   it("names an unnamed board by its number", () => {
     const { board } = addBoard(emptyProject(NOW), "", NOW);
     expect(board.name).toBe("Board 2");
+  });
+});
+
+describe("open fields on the project (R61)", () => {
+  it("leaves the premise open in the writer's words, a premise decides it, and a load repairs the shape", () => {
+    const project = emptyProject(NOW);
+    const open = setPremiseOpen(setPremise(project, "The third year", NOW), "  the buyer:  housing, or a supermarket ", LATER);
+    expect(open.premise).toBe("");
+    expect(open.premiseOpen).toBe("the buyer: housing, or a supermarket");
+    expect(setPremiseOpen(open, "the buyer: housing, or a supermarket", LATER)).toBe(open);
+    const decided = setPremise(open, "The land is going for housing", LATER);
+    expect(decided.premiseOpen).toBe("");
+    expect(setPremise(decided, "", LATER).premiseOpen).toBe("");
+    const blank = setPremiseOpen(open, "", LATER);
+    expect(blank.premise).toBe("");
+    expect(blank.premiseOpen).toBe("");
+    const old = JSON.parse(JSON.stringify(project));
+    delete old.premiseOpen;
+    delete old.boards[0].nameOpen;
+    const fixed = normalizeProject(old, NOW);
+    expect(fixed.premiseOpen).toBe("");
+    expect(fixed.boards[0].nameOpen).toBe("");
+  });
+
+  it("leaves a board's name open while the name stands, and a rename decides it", () => {
+    const project = emptyProject(NOW);
+    const id = project.boards[0].id;
+    const open = setBoardNameOpen(project, id, "the title, or \"Feature\"", LATER);
+    expect(open.boards[0].name).toBe("Board 1");
+    expect(open.boards[0].nameOpen).toBe("the title, or \"Feature\"");
+    expect(setBoardNameOpen(open, id, "the title, or \"Feature\"", LATER)).toBe(open);
+    expect(setBoardNameOpen(open, "nope", "x", LATER)).toBe(open);
+    const named = renameBoard(open, id, "Plot 14", LATER);
+    expect(named.boards[0].nameOpen).toBe("");
+    // The same name again, while open, still decides it.
+    const sameName = renameBoard(open, id, "Board 1", LATER);
+    expect(sameName.boards[0].nameOpen).toBe("");
+    const { board } = addBoard(project, "", NOW, "an episode, or the film");
+    expect(board.name).toBe("Board 2");
+    expect(board.nameOpen).toBe("an episode, or the film");
   });
 });
 
@@ -210,11 +252,11 @@ describe("one cast for the project (R51)", () => {
   const NOW = "2026-09-14T00:00:00.000Z";
   const person = (id: string, name: string, notes = "") => ({ id, name, looks: "", voice: "", wants: "", needs: "", notes, createdAt: NOW, updatedAt: NOW });
   const card = (id: string, characterIds: string[]) => ({
-    id, headline: id, change: "Turns.", color: "yellow" as const, x: 0, y: 0, rotate: 0, z: 1, rank: "scene" as const, lengthEighths: null, characterIds, plants: false, payoffBoardId: null, payoffNoteId: null, open: "", location: "", when: "", text: "", createdAt: NOW, updatedAt: NOW,
+    id, headline: id, change: "Turns.", color: "yellow" as const, x: 0, y: 0, rotate: 0, z: 1, rank: "scene" as const, lengthEighths: null, characterIds, plants: false, payoffBoardId: null, payoffNoteId: null, open: "", location: "", when: "", whenOpen: "", text: "", createdAt: NOW, updatedAt: NOW,
   });
 
   it("lifts the boards' rosters onto a record written before it, merging by name and recasting folded ids", () => {
-    const project = { ...emptyProject(NOW), boards: [{ id: "pilot", name: "Pilot", createdAt: NOW, updatedAt: NOW }, { id: "ep2", name: "Episode two", createdAt: NOW, updatedAt: NOW }], activeBoardId: "pilot" };
+    const project = { ...emptyProject(NOW), boards: [{ id: "pilot", name: "Pilot", nameOpen: "", createdAt: NOW, updatedAt: NOW }, { id: "ep2", name: "Episode two", nameOpen: "", createdAt: NOW, updatedAt: NOW }], activeBoardId: "pilot" };
     delete (project as { characters?: unknown }).characters;
     const boards = {
       pilot: { ...emptyState(), characters: [person("n1", "Nessa Boyd"), person("d1", "Dessie Kane", "a bad knee")], notes: [card("a", ["n1", "d1"])] },
@@ -258,14 +300,14 @@ describe("one cast for the project (R51)", () => {
   });
 
   it("says who is on a card of another board, and leaves the cast absent from a record that has none", () => {
-    const project = { ...emptyProject(NOW), boards: [{ id: "pilot", name: "Pilot", createdAt: NOW, updatedAt: NOW }, { id: "ep2", name: "Episode two", createdAt: NOW, updatedAt: NOW }], activeBoardId: "ep2" };
+    const project = { ...emptyProject(NOW), boards: [{ id: "pilot", name: "Pilot", nameOpen: "", createdAt: NOW, updatedAt: NOW }, { id: "ep2", name: "Episode two", nameOpen: "", createdAt: NOW, updatedAt: NOW }], activeBoardId: "ep2" };
     const boards = { pilot: { ...emptyState(), notes: [card("a", ["n1", "d1"]), card("b", ["n1"])] }, ep2: { ...emptyState(), notes: [] } };
     expect(castElsewhere(project, boards, "ep2")).toEqual({ n1: [{ board: "Pilot", boardId: "pilot", cards: 2 }], d1: [{ board: "Pilot", boardId: "pilot", cards: 1 }] });
     expect(castElsewhere(project, boards, "pilot")).toEqual({});
   });
 
   it("composes what lands on a board from the other boards' folds (R58): paid where a scene here claims it, waiting otherwise", () => {
-    const project = { ...emptyProject(NOW), boards: [{ id: "pilot", name: "Pilot", createdAt: NOW, updatedAt: NOW }, { id: "ep2", name: "Episode two", createdAt: NOW, updatedAt: NOW }], activeBoardId: "ep2" };
+    const project = { ...emptyProject(NOW), boards: [{ id: "pilot", name: "Pilot", nameOpen: "", createdAt: NOW, updatedAt: NOW }, { id: "ep2", name: "Episode two", nameOpen: "", createdAt: NOW, updatedAt: NOW }], activeBoardId: "ep2" };
     const fold = (id: string, headline: string, payoffNoteId: string | null) => ({ ...card(id, []), headline, color: "yellow" as const, plants: true, payoffBoardId: "ep2", payoffNoteId });
     const boards = {
       pilot: { ...emptyState(), notes: [fold("p1", "The ledger", "e1"), fold("p2", "The letter", null), fold("p3", "The shim", "gone"), { ...card("p4", []), plants: true, payoffBoardId: null, payoffNoteId: null }] },
@@ -283,7 +325,7 @@ describe("one cast for the project (R51)", () => {
 });
 
 describe("scriptTitles (round thirteen, entry 26)", () => {
-  const board = (name: string) => ({ id: name.toLowerCase(), name, createdAt: NOW, updatedAt: NOW });
+  const board = (name: string) => ({ id: name.toLowerCase(), name, nameOpen: "", createdAt: NOW, updatedAt: NOW });
 
   it("titles a one-board film for its project, an episode for its board with the project beside it, and an untitled project's board for itself", () => {
     const film = { ...emptyProject(NOW), name: "Ninety-Nine", boards: [board("Feature")], activeBoardId: "feature" };

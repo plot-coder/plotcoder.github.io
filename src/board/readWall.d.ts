@@ -71,6 +71,8 @@ export type WallReading = {
   later: { id: string; boardId: string; noteId: string | null }[];
   /** Open cards (R59): the writer's words for what is not decided, in story order; not asked about while they stand. */
   open: Array<{ id: string; words: string; hides: FindingKind[] }>;
+  /** Fields left open by the writer's word (R61): the board's logline, and each card's when, in story order. Listed, not asked. */
+  openFields: Array<{ field: "logline"; words: string } | { field: "when"; id: string; words: string }>;
   /** Threads (R60): each named string with its cards in story order and which ends are open. */
   threads: Array<{ id: string; name: string; ids: string[]; startOpen: boolean; endOpen: boolean }>;
   /** Cards here that pay off a fold of another board (R58), composed by the door from the project. */

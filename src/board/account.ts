@@ -1246,10 +1246,12 @@ class AccountStore {
     if (!text) throw new Error("Type the question first.");
     const user = this.account.user;
     const client = this.client ?? supabase();
-    const row: Record<string, string> = user ? { user_id: user.id, email: user.name, question: text } : { question: text };
-    const { data, error } = await client.from("questions").insert(row).select("id, asked_at").single();
+    // A stranger has no read policy, so the insert must return nothing: the
+    // row takes an id made here, and the time is this device's.
+    const asked = { id: crypto.randomUUID(), askedAt: new Date().toISOString() };
+    const row: Record<string, string> = user ? { id: asked.id, user_id: user.id, email: user.name, question: text } : { id: asked.id, question: text };
+    const { error } = await client.from("questions").insert(row);
     if (error) throw new Error(/relation .* does not exist|schema cache|violates not-null|row-level security/i.test(error.message) ? "Asking is not switched on yet." : error.message);
-    const asked = { id: String(data.id), askedAt: String(data.asked_at) };
     if (!user) rememberAsked({ ...asked, question: text });
     return asked;
   }

@@ -491,6 +491,17 @@ describe("findings", () => {
   });
 });
 
+describe("two headings that differ only by a time word (round fifteen, entry 12)", () => {
+  it("reads a leading day phrase as the when, not the scene's words, and a time word inside the headline as the scene's", () => {
+    // "Day three. The pier" and "Day four. The pier" are one scene twice: the day is the guide's old convention for when.
+    const days = wall({ id: "a", headline: "Day three. The pier at Fenit" }, { id: "b", headline: "Day four. The pier at Fenit" });
+    expect(readWall(days).findings.some((finding) => finding.kind === "duplicate")).toBe(true);
+    // "The pier at night" and "The pier at dawn" are two scenes: the time is part of what the scene is.
+    const times = wall({ id: "a", headline: "The pier at night" }, { id: "b", headline: "The pier at dawn" });
+    expect(readWall(times).findings.some((finding) => finding.kind === "duplicate")).toBe(false);
+  });
+});
+
 describe("round twenty: the cast's names are not a scene's words, and a setup arrow does not link a card", () => {
   it("does not read two scenes with the same people as one scene (entry 15)", () => {
     const state = run(

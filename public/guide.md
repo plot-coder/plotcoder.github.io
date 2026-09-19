@@ -84,6 +84,12 @@ only when the server is started with `PLOTCODER_JSON=1`.
 - `list_board` — the logline, the beat/scene counts, the runtime estimate against
   the target, then every **card**, **group**, and **arrow** with its **id**. Ids
   come from here and from the reply of the tool that made the thing.
+- `read_project` — every board's reading in one call: each board's
+  questions and what it leaves open by the writer's word, its loose
+  threads, the folds that pay off on another board, and the project's
+  length — the same checks `read_wall` runs, board by board, so it never
+  says what `read_wall` would not. For a series, read this first;
+  `read_wall` for one board in full.
 - `read_wall` — step 4 of the method. The beats in wall order, the pages of
   scenes between consecutive beats, and the **questions the wall raises**: a run
   out of proportion with the others, a card with no change line, a card no arrow
@@ -115,7 +121,13 @@ only when the server is started with `PLOTCODER_JSON=1`.
   words — so the next reader sees it on the wall; leave several at once with
   `questions`, one step. The reply says what the wall still asks, so no read
   after is needed. Every write's reply says when the wall's questions changed
-  because of it, and the runtime when that moved.
+  because of it, and the runtime when that moved. **"Leave it open" on a
+  question the wall asks is not a leave:** when the writer says a thing the
+  wall asks about is not decided — where a scene happens, when, who is in
+  it — the field's own `open` is the answer (`set_location`, `set_when`,
+  `set_open`): the question goes, the words are listed, and the card's
+  other questions stand. `leave_question` is for a question that is to
+  stand as it is, with the writer's reason.
 
 ### Cards
 
@@ -287,17 +299,15 @@ card of another board is not asked about as uncast here.
   estimate" — never as a verdict either way.
 - **What a treatment should answer.** Eleven blind runs ended every build
   with the same questions to the writer. Before you build, check the
-  treatment for these, and ask for the ones it leaves open — invent none.
-  How long is it? What is the central question, and the series premise?
-  Which scenes are the turns? Does it have acts, and where do they break?
-  Where does each scene happen? When, where that matters? Who is in each
-  scene and what do we call them, and who is only spoken of? What is
-  planted, and where does it pay off — "later in the series" counts? Which
-  scenes are known to run long or short? What are the project and the board
-  called? What must not be invented? `list_workflows` carries the same
-  questions with the tool each answer lands in, under break-a-treatment;
-  `list_reminders` does not — that is the house principles. The writer sees
-  the questions in the app under Reminders, on its "Before a treatment" tab.
+  treatment for them and ask for the ones it leaves open — invent none. The
+  questions live in one place: `list_workflows`, under break-a-treatment,
+  each with the tool its answer lands in (the length, the central question
+  and the premise, the order, the turns, the acts, where and when each
+  scene happens, who is in it, what is planted and where it pays off, what
+  runs long or short, what the project and the board are called, what must
+  not be invented). `list_reminders` is not that list — it is the house
+  principles. The writer sees the same questions in the app under
+  Reminders, on its "Before a treatment" tab.
 - **A treatment is cards, one call each.** `import_fountain` is the door for
   pages, not a treatment: a new card takes its headline from the `= synopsis`
   line (else the heading), its place from a forced heading (`.the piano shop`)

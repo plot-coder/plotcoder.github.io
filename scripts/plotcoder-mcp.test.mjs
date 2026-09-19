@@ -191,6 +191,7 @@ describe("plotcoder MCP server", () => {
       "page_count",
       "read_character",
       "read_pages",
+      "read_project",
       "read_wall",
       "recolor_note",
       "redo",
@@ -1048,6 +1049,17 @@ describe("open fields (R61): the logline, the premise, a when and a board's name
     const decided = await client.callTool("set_when", { ids: ["maya-letter"], when: "night" });
     expect(decided).toContain("now happen");
     expect(await client.callTool("read_wall")).not.toContain("— when:");
+  });
+
+  it("reads the project as a whole: every board's questions in one call, and organize says what stands when nothing moves", async () => {
+    const read = await client.callTool("read_project");
+    expect(read).toContain('PlotCoder project "');
+    expect(read).toMatch(/1\. "Board 1"[^\n]*\(open\) — \d+ cards?, \d+ beats?, about [\d /]+ of 120 pages; logline:/);
+    expect(read).toContain("   - [unmarked]");
+    expect(read).toMatch(/the whole project: \d+ cards?, about [\d /]+ of 120 pages across 1 board; \d+ questions? in all/);
+    await client.callTool("organize");
+    const again = await client.callTool("organize");
+    expect(again).toMatch(/^Nothing moved: the \d+ card\(s\) already lie along the arrows in /);
   });
 
   it("bears a card with its place and when open (round twenty-one, entry 3)", async () => {

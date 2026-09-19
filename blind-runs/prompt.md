@@ -1,49 +1,56 @@
-# The blind-run prompt — round twenty-one: the same notes, with the place and the title open and the tie rule right
+# The blind-run prompt — round twenty-two: new notes, through the door's name
 
-Paste everything below the line into a fresh agent session. The credentials are
-already in the server's wiring: the test account is `test@test.com`, password
-`test`, a throwaway that holds nothing of anyone's. The agent checks and
-empties it itself at the start of the round, in case round twenty left
-something.
+Paste everything below the line into a fresh agent session. The credentials
+ride in the connector's header: the test account is `test@test.com`,
+password `test`, a throwaway that holds nothing of anyone's. The agent
+checks and empties it itself at the start of the round, in case round
+twenty-one left something.
 
-Round twenty-one runs the same page of notes as seventeen to twenty —
-`round-seventeen-idea.md`, "The Allotments" — against the package that
-carries what twenty produced: a place and a project's name that can be open
-(R61's edge), the tie rule holding a thread's cards in story order so it
-folds the first card in the story and not the last one added (twenty 40),
-`create_note` with `plantsWhat`, and twenty's other fixes. It measures
-three things. Whether a stranger, told "leave it open" of the title and of a
-scene's place, leaves the field open through the field's own `open` — the
-title through `new_project`'s `open` in place of a name, the place through
-`set_location`'s `open` — rather than the whole card or nothing. Whether the
-tie rule now does both halves right when the writer decides: the key's
-first sighting on a card whose fold is the tools' leaves the key a thread
-and draws nothing, and the bucket's first sighting on a card whose fold is
-free folds that card, names the fold and draws the arrow, and the replies
-say so. And whether, with the place open, the wall's questions about the
-rest of an open-placed card still stand. Beside those, unmeasured but worth
-reading for: whether the fold is named in one call now, and what the
-reading's open head looks like with a title, places and whens all open.
+Round twenty-two is the first on a new page of notes — `round-twenty-two-idea.md`,
+"The Last Bus" — and the first through the hosted door's name,
+`https://mcp.plotcoder.com`, wired into the session as a desktop-app
+connector rather than a stdio block in a file (Robert's call 3: a wiring
+that cannot vanish). It runs against 0.1.41, which carries what rounds
+twenty and twenty-one produced and Robert's seven calls: the tails that
+count until the first reading, presence, R65's two versions of a scene, the
+camera marks, the open target and the sketch. It measures five things.
+Whether the connector answers from the first message, with the writer
+signed in and nothing to install. Whether a stranger, told of a scene "I
+have it two ways, keep both", reaches `set_alternative` and later
+`choose_version`, rather than two plain cards or one card with a note.
+Whether the fold gets named in one call now, and the tie rule does the
+adjacent half right. What the write's reply says about the camera, and
+whether the agent reads those marks as marks and not as questions to bring
+the writer. And what the tail says about the wall's questions before the
+first `read_wall` and after it. Beside those, unmeasured but worth reading
+for: the target left open by the writer's word, and what the runtime line
+and the reading do with it; whether a written scene comes out a sketch and
+what the reply calls it; and what the presence line says with no wall open.
 Nothing here tells the agent what any of these are.
 
 Before you paste:
 
-1. **Check the wiring.**
+1. **Wire the name.** In the Claude desktop app, Settings › Connectors ›
+   Add custom connector: name **PlotCoder**, URL
+   `https://mcp.plotcoder.com`, and under Request headers one header,
+   `authorization`, with the value `Basic dGVzdEB0ZXN0LmNvbTp0ZXN0` (that is
+   `test@test.com:test`, base64). Make sure the connector is enabled for
+   the fresh session and not for any session of your own work: it is
+   signed in as the test account. Check the door answers first:
 
    ```bash
-   node -e 'const c=require(process.env.HOME+"/.claude.json");const p=c.mcpServers&&c.mcpServers["plotcoder-board"];console.log(p?"wired as "+p.env.PLOTCODER_EMAIL:"NOT WIRED")'
+   curl -s https://mcp.plotcoder.com
    ```
 
-   If it says not wired, put the entry back by hand — top-level `mcpServers`,
-   `"plotcoder-board": { "type": "stdio", "command": "npx", "args": ["-y",
-   "plotcoder-board@latest"], "env": { "PLOTCODER_EMAIL": "test@test.com",
-   "PLOTCODER_PASSWORD": "test" } }` — and start the session after. It has
-   vanished before three rounds now.
-2. **Land the fixes where the round will find them.** Both plotcoder.com and
-   `npx -y plotcoder-board@latest` carry 0.1.38, which has everything round
-   twenty produced and the open place and title; if code has changed since,
-   merge to `main`, wait for the Pages deploy, and release from a current
-   `main`:
+   It should say what the door is. If the connector does not appear in the
+   session or offers no tools, that is the round's first finding; note it,
+   and fall back to `claude mcp add --transport http plotcoder https://mcp.plotcoder.com --header "Authorization: Basic dGVzdEB0ZXN0LmNvbTp0ZXN0" --scope user`
+   so the round can go on.
+2. **Land the fixes where the round will find them.** plotcoder.com, the
+   registry and the door all carry 0.1.41; if code has changed since, merge
+   to `main`, wait for the Pages deploy, release from a current `main`, then
+   bump the version pinned in `supabase/functions/mcp/index.ts` and
+   redeploy the function:
 
    ```bash
    npm version patch && git push && git push --tags
@@ -52,42 +59,35 @@ Before you paste:
 3. Start the session with no folder (the app's "No folder" scratch workspace
    is right). Inside a repo worktree the harness puts `CLAUDE.md` in the
    agent's context, and the run is not blind.
-4. **The writer's answers.** The same as rounds seventeen to twenty, so
-   the walls are comparable, with one change: the title is left open.
-   Answer only what the agent asks; where it does not ask, do not volunteer:
-   - It is a feature, ninety pages. **The title: "I don't know yet — leave
-     it open"**, in those words; the notes' two titles stand. Whether the
-     agent starts the project with its name open, picks one, or asks
-     again, is the measurement.
-   - It is the third year. Con's wife, Bridie, died two years ago; he has
-     been on the plot alone since. The crowns were planted the spring before
-     she died. This is the first year they can be cut.
-   - The land is going for housing. The council man has no name.
-   - Ruth was in hospital — a breakdown, four months. She says so on the
-     day she tells him. Her surname is Kane. The sister is never seen and
-     never named.
-   - The letter is posted to the house; Con pins it to the shed door
-     himself, which is how Ruth learns of it.
-   - The break-in: kids from the estate, and Con knows which ones. Say
-     "kids" first; if the agent asks whether Con knows them, yes.
-   - Declan's wish to move him to Naas is pressure on the plot, not the
-     plot: a subplot.
-   - The ending: they lose the plots. Ruth keeps the crowns in a bucket on
-     her balcony. Con does not die in this film.
+4. **The writer's answers.** Answer only what the agent asks; where it does
+   not ask, do not volunteer:
+   - **Half an hour or a feature: "I don't know yet — leave it open"**, in
+     those words. Whether the agent leaves the target open, picks one, or
+     asks again, is worth reading for.
+   - **The title: "The Last Bus."**
+   - Tomás's surname is Ó Ceallaigh. The mother is Bríd Ó Ceallaigh. The
+     inspector has no name.
+   - What he goes to the town for: a music lesson — the fiddle, with an old
+     man above a shop, paid for from the jar. Nuala finds out when she sees
+     the fiddle case. Say this only when asked what he goes for; before
+     that, if asked whether it is decided, "yes, but not yet on the wall".
+   - The cut is announced in September, in the first scene; the film is
+     September to New Year.
+   - **The breakdown: "I have it two ways. Keep both on the wall until I
+     decide."** In those words, every time it is asked about, and nothing
+     about how. Whether the agent finds a way to hold two versions of one
+     scene, and what it calls them, is the measurement.
+   - **The depot: the same words**, "I have it two ways. Keep both on the
+     wall until I decide."
+   - The ending: nobody on the last run but the boy.
    - The turns: "propose them and I will strike".
-   - The wrong tools pay off when Con gives her his; the key pays off after
-     the break-in, when he gives her the only one; the bucket pays off in
-     the last scene.
-   - **The key and the bucket**, asked where either is first seen, which
-     scene plants it, how the wall should hold it, or anything else about
-     it: **"I know where it pays off, not where it is first seen"**, in
-     those words, every time, and nothing more.
+   - The jar pays off on the last run: he empties it into her hand. The
+     timetable pays off when the mother reads it in the shelter. The keys:
+     **"I know where they pay off, not where they are first seen"** — the
+     inspector's hand, the last scene — in those words, every time, and
+     nothing more.
    - **Where a scene happens**, when the notes do not say: **"I don't know
-     yet — leave it open"**, in those words. Whether the agent leaves the
-     place open, opens the whole card, or leaves it blank, is the
-     measurement.
-   - **The logline**, and the board's name: **"I don't know yet — leave it
-     open"**, in those words.
+     yet — leave it open"**, in those words.
    - Anything else the notes do not say: **"I don't know yet — leave it
      open"**, in those words, every time. Do not say how.
 5. The agent stops after its first calls with the first friction entries and
@@ -96,26 +96,24 @@ Before you paste:
    - give the order, and have it propose the turns and mark them;
    - "what is still open on this wall, and what would close each one" — ask
      it to answer from the wall, not from memory;
-   - "I have decided about Declan's scene: it is at Con's house, in the
-     kitchen, and Ruth is not there" — and see what closes, and whether the
-     open place closes with it;
-   - "add the teaching scene between the first morning and the letter: Con
-     shows her the asparagus bed and tells her three years. That is all I
-     know about it";
-   - "I have decided about the key: it is first seen on the first morning.
-     Con unlocks the shed while she stands there with the wrong tools. Put
-     that on the wall" — the first morning's fold is the tools', so the key
-     should stay a thread and nothing be drawn; see what the reply says and
-     whether the wall carries anything it should not;
-   - "I have decided about the bucket: it is first seen on the asparagus
-     bed. Ruth carries the crowns to it in a bucket. Put that on the wall"
-     — the bed's fold is free, so the tie should fold it, name it and draw
-     the arrow to the balcony; see what the reply says and what the reading
-     says about the bucket after;
-   - "the title: I have decided. It is Plot 14" — and see what decides it
-     and what the replies call the project after;
-   - write the first morning;
-   - how long is it, and what is missing to reach ninety;
+   - "I have decided about the breakdown: it is the second way, she walks
+     him home and meets the mother. Keep the other; I may come back to it"
+     — and see what it does with the two, and whether the one not chosen
+     leaves the count and the order;
+   - "the jar is first seen on the first morning: he counts the fare out of
+     it on the step of the bus. Put that on the wall" — the first morning's
+     fold is free, so the tie should fold it, name it and draw the arrow to
+     the last run; see what the reply says and whether it took one call;
+   - "the keys are first seen in the depot scene, either way of it" — the
+     depot has two versions; see what it does and what it asks;
+   - "add the scene where the mother comes to the stop, between the
+     breakdown and the day Nuala finds out. That is all I know about it";
+   - write the first morning — and read what the reply says about the
+     camera, then "are those questions for me?";
+   - how long is it, and what is missing — with the target open, see what it
+     reads against;
+   - "the target: I have decided. It is a feature" — and see what closes;
+   - "who has this wall open right now?";
    - anything else a writer would ask on day one.
    It brings you the new entries at each step; "log so far" gets the whole
    log, "stop" gets the report.
@@ -134,10 +132,11 @@ Now read this, and whatever it tells you to read, and nothing else:
 
 ## Your way in
 
-The PlotCoder server is already wired into this session and signed in as me
-— as my test account, test@test.com — so its tools are in front of you from
-your first message: no clone, no install, no shell. If there is no `plotcoder-board` server, or it offers one
-tool called `plotcoder_not_installed`, say so and stop.
+PlotCoder is wired into this session as a connector named **PlotCoder**,
+signed in as me — as my test account, test@test.com — so its tools are in
+front of you from your first message: no clone, no install, no shell. If
+there is no PlotCoder connector, or its tools are not there, say so and
+stop.
 
 You are working **my account**, not a wall on your own machine. There is no dev
 server running and there will not be one. Nothing you build lives in a folder.
@@ -249,43 +248,48 @@ anything you smooth over is something I will not fix.
 
 ## The notes
 
-Something about the allotments behind the railway in a midlands town. Con
-Brady, seventies, has had plot 14 for forty years. The council is selling
-the land — to whom? A supermarket, or housing. Decide.
+A country bus route in the west, one bus a day each way, and the company is
+cutting it at the end of the year. Nuala Feeney, sixties, has driven it for
+twenty-two years. She knows every passenger by their stop.
 
-A younger woman gets the plot next to his. Ruth. Thirties. She is just out
-of something — prison, or hospital, or a marriage — and does not say which.
-She turns up the first morning with the wrong tools.
+A boy, Tomás, fourteen, starts riding it into the town every morning and
+back on the evening run. He pays in coins from a jar. He will not say what he
+goes to the town for. School is in the other direction.
 
-He teaches her to grow something. Beans, potatoes — no, something slow.
-Asparagus: three years before you cut it. That is the point: three years,
-and they have one season. Or is it the third year already? If it takes
-three years there is no crop the first season, so maybe it is the third
-year and he has been on his own for two.
+Somewhere in the middle: the bus breaks down on the bog road at night, with
+only the two of them on it. I have this two ways and I cannot choose yet.
+One: they sit it out till morning and he talks. Two: she walks him the four
+miles home and meets the mother. Keep both until I know.
 
-Ending: I don't know. Either they lose the plots and she keeps the crowns in
-a bucket on a balcony, or he dies and she plants them somewhere. Not both.
+The depot: an inspector comes out from the city about the cut. Either he
+comes to the depot and she says nothing, or she drives to the city and says
+too much. Two ways of that one as well.
+
+Ending: the last run. Who is on it? Everyone, or nobody but the boy. I lean
+to nobody but the boy.
 
 Scenes I know:
-- the first morning, the wrong tools
-- the council letter (pinned to the shed door? or posted to the house?)
-- a meeting in the parish hall where Con says nothing
-- the night the shed is broken into — by whom? kids, or the developer's
-  people, or Con himself for the insurance. Probably kids.
-- the day she tells him where she was
-- the last harvest
-- Declan, the son, wants him to sell the house and move to Naas. That is a
-  subplot, or it is the plot.
-- something with the key to the shed. He has the only one.
+- the first morning he gets on, the jar of coins
+- the timetable she rewrites by hand every winter and pins in the shelter
+- the breakdown (two ways, above)
+- the depot (two ways, above)
+- the mother comes to the stop to see who is driving her son about
+- the day Nuala finds out what he goes to the town for
+- the last run
 
-Time: one growing season, March to October. Or the third year, see above.
+What is he going to the town for? A hospital visit, a music lesson, or the
+courthouse. I keep changing my mind. Decide, or leave it.
 
-Half-hour? Feature? A feature, I think, but I only have eight scenes.
+Time: September to New Year. The cut is announced in September. Or it is
+announced in the first scene, and the film is the last month only.
 
-Names: Con Brady. Ruth — surname? Declan Brady. The council man, no name.
-Ruth's sister rings her; we never see the sister.
+Half an hour? A feature? I honestly do not know; it could be either.
 
-Things that should pay off: the wrong tools (she buys the right ones with
-her first wages, or he gives her his). The key. The bucket.
+Things that should pay off: the jar of coins (he empties it on the last run,
+or she gives it back full). The hand-written timetable. The keys to the
+bus — she keeps them when it is over, or hands them to the inspector.
 
-Title: The Allotments, or Plot 14.
+Names: Nuala Feeney. Tomás — surname? The mother: Bríd. The inspector, no
+name.
+
+Title: The Last Bus, or Route 43.

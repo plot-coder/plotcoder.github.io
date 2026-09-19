@@ -117,15 +117,19 @@ directions phase. Each round's findings are itemised in `REQUIREMENTS.md`,
 - `round-twenty-report.md` — the agent's report from round twenty,
   verbatim, under a head saying what was fixed from it the same morning and
   what waits.
-- `prompt.md` — round twenty-one, as it ran: the same notes as seventeen to twenty
-  against the package that carries the open place and title (R61's edge)
-  and the tie rule holding a thread's cards in story order, the writer
-  answering as before and "leave it open" of the title and of each place
-  the notes do not give, to see whether a stranger leaves those open through
-  the fields' own `open`, and whether the tie rule does both halves right
-  when the key and the bucket are decided. The writer's private answers sit
-  above the divider. Its first step checks the wiring. Paste everything
-  below its divider.
+- `prompt.md` — round twenty-two, as it runs: a new page of notes, "The
+  Last Bus" (`round-twenty-two-idea.md`), through the hosted door's name
+  `https://mcp.plotcoder.com` wired as a desktop-app connector, against
+  0.1.41 with Robert's seven calls in it. It measures the wiring, whether a
+  stranger holds a scene two ways through `set_alternative`, the fold named
+  in one call, the camera marks read as marks, and the tail before and after
+  the first reading. The writer's private answers sit above the divider. Its
+  first step wires the name. Paste everything below its divider.
+- `round-twenty-two-idea.md` — "The Last Bus", the notes: seven scenes the
+  writer knows, two of them two ways, a target not chosen, three things that
+  should pay off. Embedded in the current prompt.
+- `round-twenty-one-prompt.md` — round twenty-one's own instructions, as
+  they ran, without their copy of the notes.
 - `round-twenty-prompt.md` — round twenty's own instructions, as they ran,
   without their copy of the notes.
 - `round-nineteen-prompt.md` — round nineteen's own instructions, as they
@@ -177,7 +181,10 @@ measured at last: one cast across two boards (R51), a fold paying off on
 another board (R50), and what a writer asks of a wall that is two walls.
 Round seventeen uses notes, not a treatment, because every round since
 twelve fed the agent a finished story and the app is for making one from
-an idea.
+an idea. Rounds seventeen to twenty-one ran the same notes so the walls
+were comparable; round twenty-two starts a second page of notes, with a
+scene the writer has two ways, because the findings on the first had
+become repeats.
 
 **What a round leaves behind, and what it does not.** Keep the report, whole
 and unedited: it is cheap, and it is the only record not written by whoever

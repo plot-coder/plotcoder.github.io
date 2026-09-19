@@ -274,7 +274,7 @@ export default defineConfig({
         // The whole built app, so a wall opens with no network at all.
         globPatterns: ["**/*.{js,css,html,svg,png,webmanifest}"],
         // Never intercept the account (Supabase) or the dev bridge.
-        navigateFallbackDenylist: [/^\/__plotcoder\//],
+        navigateFallbackDenylist: [/^\/__plotcoder\//, /^\/writers/],
       },
       devOptions: { enabled: false },
     }),

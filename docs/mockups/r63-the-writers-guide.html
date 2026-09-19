@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<title>The writer's guide — two homes</title>
+<!-- The app's own paper: the source stylesheet, so the link never goes stale. -->
+<link rel="stylesheet" href="../../src/styles.css">
+<style>
+  body { margin: 0; padding: 2rem 2.5rem 3rem; font-family: ui-sans-serif, system-ui, sans-serif; }
+  h1 { font: 600 1.05rem/1.3 ui-serif, Georgia, serif; margin: 0 0 0.25rem; }
+  h2.sec { font: 600 0.95rem/1.3 ui-serif, Georgia, serif; margin: 2.6rem 0 0.2rem; }
+  .lede { font-size: 0.85rem; opacity: 0.75; margin: 0 0 2rem; max-width: 62ch; }
+  .row { display: flex; gap: 3rem; flex-wrap: wrap; align-items: flex-start; }
+  .opt h2 { font: 700 0.62rem/1.3 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; margin: 0 0 0.9rem; }
+  .opt > p { font-size: 0.8rem; line-height: 1.45; opacity: 0.8; margin: 0.9rem 0 0; max-width: 44ch; }
+  /* A: a page on the site, on the app's paper — the doc reads as the words sheet does. */
+  .page { width: min(64ch, 100%); background: var(--canvas); color: var(--ink); border-radius: 6px; outline: 1px solid rgba(127,127,127,0.18); padding: 2rem 2.4rem 2.4rem; }
+  .page .mark { font: 700 0.62rem/1.3 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); }
+  .page h1 { font: 600 1.35rem/1.25 ui-serif, Georgia, serif; margin: 0.4rem 0 0.2rem; }
+  .page .sub { color: var(--muted); font-size: 0.85rem; margin: 0 0 1.6rem; }
+  .page h2 { font: 600 1rem/1.3 ui-serif, Georgia, serif; margin: 1.8rem 0 0.3rem; }
+  .page h3 { font: 700 0.62rem/1.3 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin: 1.2rem 0 0.2rem; }
+  .page p, .page li { font-size: 0.88rem; line-height: 1.55; }
+  .page p { margin: 0.5rem 0; }
+  .page ul, .page ol { padding-left: 1.2rem; margin: 0.4rem 0; }
+  .page li { margin: 0.25rem 0; }
+  .page b { font-weight: 600; }
+  .page .word { font-style: italic; }
+  .page code { font: 0.8rem ui-monospace, SFMono-Regular, Menlo, monospace; opacity: 0.85; }
+  .page .toc { columns: 2; column-gap: 2rem; font-size: 0.82rem; margin: 0.8rem 0 0; padding-left: 1.1rem; }
+  /* B: a Help sheet in the general bar, as the words sheet draws one. */
+  .sheet { width: 300px; background: var(--bar-bg, #1c1a16); color: var(--bar-ink, #eee); border: 1px solid var(--bar-border, #444); border-radius: 8px; padding: 0.8rem 1rem 1rem; box-shadow: 0 10px 30px rgba(0,0,0,0.4); font-size: 0.72rem; line-height: 1.5; }
+  .sheet .cap { font-size: 0.55rem; letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.6; margin: 0 0 0.4rem; display: flex; justify-content: space-between; }
+  .sheet h4 { margin: 0.8rem 0 0.1rem; font: 600 0.78rem/1.3 ui-serif, Georgia, serif; }
+  .sheet p { margin: 0.1rem 0; opacity: 0.85; }
+  .sheet .more { opacity: 0.55; font-style: italic; }
+  .bar { margin-top: 0.8rem; display: flex; gap: 0.5rem; align-items: center; font-size: 0.7rem; opacity: 0.8; }
+  .bar span { border: 1px solid rgba(255,255,255,0.25); border-radius: 999px; padding: 0.15rem 0.6rem; }
+  .bar span.is-on { background: rgba(255,255,255,0.15); }
+  .ask { margin-top: 2.5rem; max-width: 64ch; font-size: 0.9rem; line-height: 1.5; }
+  .ask b { font-weight: 600; }
+</style>
+</head>
+<body>
+<h1>The writer's guide (R63): how a person uses PlotCoder</h1>
+<p class="lede">Twenty rounds wrote the agent's side of the documentation — the on-ramp, the guide, the skill, the words — and the person's side is one paragraph in the README, forty tooltips and a glossary. Below, the guide itself, drafted in the app's own words and in the order a writer meets things, shown in the two homes it could have: a page on the site, read before or after signing in and linked from the on-ramp's "For the person" (A), or a Help sheet in the general bar that opens the same text where the writer already is (B). The text is the thing; the home is the question.</p>
+
+<div class="row">
+  <div class="opt">
+    <h2>A · a page on the site · plotcoder.com/writers</h2>
+    <article class="page">
+      <div class="mark">PlotCoder</div>
+      <h1>For the writer</h1>
+      <p class="sub">How to use PlotCoder, from the door to the script out. Ten minutes. Your agent has its own page, and this one says what your half of the work is.</p>
+
+      <ol class="toc">
+        <li>What it is</li>
+        <li>Working with an agent</li>
+        <li>The door</li>
+        <li>A project</li>
+        <li>The wall</li>
+        <li>Reading the wall</li>
+        <li>The pages</li>
+        <li>People on a project</li>
+        <li>Getting things out, and in</li>
+        <li>The words</li>
+      </ol>
+
+      <h2>1. What it is</h2>
+      <p>PlotCoder is a wall of index cards for breaking a story before you write it. One card is one scene: a <b>headline</b> and the <b>change</b> it causes. You string the cards into an order, mark the turns, fold the corners of the scenes that plant something, and the wall reads itself back and asks you questions — the run that sags, the setup nothing pays off, the person who disappears. When the wall reads right, you write the pages on the cards, and the script goes out as Fountain, Final Draft, Markdown, plain text or PDF.</p>
+      <p>The method, in five steps: state the <span class="word">logline</span>, the question the story is arguing; mark the <span class="word">beats</span>, the eight to fifteen turns it hangs on; fill the space between them with scenes; <span class="word">read the wall</span>; only then write pages. Nothing here makes you follow it. Everything here is built for it.</p>
+
+      <h2>2. Working with an agent</h2>
+      <p>PlotCoder is built so that an agent can do everything you can do on the wall, and the way most people will use it is to direct one. You say what you know and what you have not decided; the agent builds the wall, reads it back, and asks. Everything it does lands on your screen as it happens, and every change it makes is a step you can take back with ⌘Z.</p>
+      <p><b>Wiring one in.</b> Open the PlotCoder wordmark, top left, then <b>Agents</b>. The sheet shows the line to paste into Cursor or Claude Code, with your email and password beside it, and the address of the agent's own guide. Wire it before you start the agent's session; an agent wired from inside a session connects on the next one. Give the account door only to an agent on a machine you trust: it signs in as you, and it shows under People as "an agent, as you" while it runs.</p>
+      <p><b>What to give it.</b> A treatment, or a page of notes. The agent's guide tells it to ask you what a treatment should answer — how long it is, the central question, which scenes are the turns, where each happens, who is in it, what is planted and where it pays off, what must not be invented — and to invent nothing. Answer what you know.</p>
+      <p><b>What to say when you do not know.</b> Say so, in those words, and the wall holds it. "I don't know yet — leave it open" leaves a card, or a field, <span class="word">open</span> in your words: listed, not asked about, until you decide. "I know where it pays off, not where it is first seen" becomes a <span class="word">thread</span> with a loose end, and the wall asks where the thing is first seen until you say. "Propose the turns and I will strike" is how most writers mark the beats.</p>
+      <p><b>What it brings back.</b> The reading: the beats, the runs between them in pages, every setup and its payoff, and the questions the wall raises, in the app's words. Ask it to answer from the wall, not from memory, and it will read the wall again. Ask it what is open and what would close each one. Ask it to write a scene, and it writes on the card, from what the wall holds and nothing else.</p>
+      <p><b>What it will not do.</b> Decide for you. The agent's rules say questions, not fixes; no opinions about how many beats there should be; no invented people, loglines or facts; and to ask before anything it cannot undo. If it does any of those, tell it, and tell us.</p>
+
+      <h2>3. The door</h2>
+      <p>plotcoder.com asks for your <b>email and a password</b>. The password has no rules. A new address is in the moment its password is set; there is no account to make first. <b>Forgotten?</b> sends a reset link to the address. That is all the door asks.</p>
+      <p>Signed in, your projects follow you to every device and are live for the people you share them with. Signed out, the app still works: one project, on this device, in the browser. Nothing you do signed out is uploaded, and the day you sign in, the project comes with you if it holds your work.</p>
+
+      <h2>4. A project</h2>
+      <p>A <b>project</b> is a film, or a series. It has a name, a <span class="word">premise</span> — the line above every board's logline, what a series is about or what is true before a film starts — and one or more <b>boards</b>: one wall for a feature, one per episode for a series. The cast is the project's, so a person is one person across every board.</p>
+      <p>The <b>wordmark</b>, top left, opens <b>You and your projects</b>: your projects, with New project; the people on the open one; your password; Agents; and Delete account, which takes everything and asks first. With several projects, signing in asks "What are you working on today?"</p>
+      <p>The <b>crumb</b> beside the wordmark names the open board when a project has several. Its arrow opens the <b>project panel</b>: the project's name and premise, its boards in order, Add a board, a revision (Start a revision: a blue draft, and End), and Delete for a board, which cannot be undone and says how many cards it holds.</p>
+
+      <h2>5. The wall</h2>
+      <p>The wall is a canvas you can pan and zoom; the view is in the general bar, bottom right, with <b>fit</b> to see everything, and a light or dark canvas.</p>
+      <h3>A card</h3>
+      <p><b>New note</b> in the bar makes a card. <b>Tap the words to type</b>: the headline, then the change line, "what changes?". <b>Drag the paper to move it.</b> Under the change line are two more lines: <b>with</b>, the cast — type names, and the cast completes as you type, or add a name and the roster gains it — and <b>at</b>, the place, with the when after a dot: <i>at the pier at Fenit · night</i>. A place is its spelling: type it the same way on every card that happens there, and the line completes it for you.</p>
+      <h3>The corner</h3>
+      <p>Tap the card's top-left corner and it asks what the card claims. <b>Fold it</b> — this scene plants something — and say what, in your words, on the edge: "Plants · the wrong tools". <b>Leave it open</b> — not decided yet — and the edge carries your words for what is undecided; the wall lists an open card and asks nothing else of it until you clear the words. <b>Start a thread here</b>, or <b>end one here</b>, for a thing that runs through the story and whose far end you do not know yet: the wall draws it as a string through the cards, a ring at the loose end, and asks where it is first seen or where it comes out. When a fold from another board is waiting, the corner offers to pay it off here.</p>
+      <h3>The edge</h3>
+      <p>The top edge of a card says what it claims: the scene's number once the numbers are locked, what it plants and where that pays off, its thread, its open words. Tap the words to change them.</p>
+      <h3>Length, colour, rank</h3>
+      <p>A card is about a page until you say otherwise: tap its length to size it in pages, or leave it unsized. Written, it is measured from its text. The tab on the card changes the paper's colour, which means nothing to the app and whatever you like to you. A card is a <b>scene</b> until you mark it a <b>beat</b> — one of the turns — with the mark on the card's own edge, which the readout counts; marking it never moves it.</p>
+      <h3>Arrows</h3>
+      <p><b>Drag a card's handle onto another card</b> for an arrow. An arrow says what follows what, and the follows arrows are the story's order: the reading, the numbers and the pages all go by them. Tap an arrow to select it: <b>Sets up</b> makes it a setup — this scene plants something that scene pays off — and back to plain sequence; Delete removes it. A setup arrow leaving a folded card is the payoff, and the wall stops asking.</p>
+      <h3>Groups</h3>
+      <p><b>Drag on the empty canvas to lasso</b> cards, then <b>Group</b> in the bar. A group is a named frame: an act, a sequence, a night. Type its title on the frame; <b>Ungroup</b> on the frame dissolves it and the cards stay where they are. <b>Organize</b> lays the wall out along the arrows, a row per beat, with groups kept together.</p>
+      <h3>Undo</h3>
+      <p>⌘Z takes back the last step, yours or your agent's, one at a time; ⇧⌘Z puts it back.</p>
+
+      <h2>6. Reading the wall</h2>
+      <p>The <b>readout</b>, bottom left of the bar, counts the beats and scenes and says how long the wall runs against its target — an estimate, since an unwritten scene is your guess — and how many questions the wall has. <b>Read the wall</b> opens the <b>Asks</b> sheet: every question in the app's words, each with the cards it is about, which light up on the wall. A question you have an answer for and do not want asked again can be <b>left</b>, with your reason; it comes back on its own if the wall changes under it.</p>
+      <p>The <b>story map</b>, along the bottom, is the wall laid on a page axis: the beats as marks, the runs between them as lengths, setups as arcs from plant to payoff, an arc to nowhere for a fold nothing pays off, and the target as a line. Move along the strip to read the story. It stays in view while you rearrange.</p>
+      <p><b>Start from a structure</b> lays a structure's beats on an empty wall, or sets one beside a wall that has beats — Turns, three acts, eight sequences, fifteen beats, the story circle, or one of your own saved from a wall — and says which of your beats answers which of its, and how far off.</p>
+      <p><b>Reminders</b>, top right, hold the house principles the app starts with, what a writer can ask an agent for, and any rule you want kept in front of you. <b>What these words mean</b>, in the bar, is the app's glossary.</p>
+
+      <h2>7. The pages</h2>
+      <p><b>Pages</b>, top right, is the script as the wall reads now: a heading per scene from its place and when, the headline as a line of synopsis, and the scene's text where there is one. Click a scene to write it, on its card; the card is then measured from the text, and the readout says so. <b>Outline</b> is the same script as a list.</p>
+      <p>Before a draft goes out, the project panel can <b>lock the numbers</b>, so every scene keeps its number and a scene added later takes a letter; a <b>revision</b> marks what changed since, in its colour, on the wall and in every format out.</p>
+      <p><b>Cast</b>, top right, is the roster: everyone on the project, with their scenes. Open a person's page for what they look like, how they sound, what they want, what they need, and your notes, and pictures of them.</p>
+
+      <h2>8. People on a project</h2>
+      <p>Under the wordmark, <b>Share with an email</b> puts another writer on the project. Both of you write it; changes arrive live, as steps the other can undo, and the sheet shows who is on the project and who is here now. An agent working your account shows there too, as you. The owner can remove a person; a person can leave.</p>
+
+      <h2>9. Getting things out, and in</h2>
+      <p><b>Save as…</b> in the Pages head takes the script out as Markdown, plain text, Fountain, Final Draft or PDF, copied or downloaded. The <b>transfer arrows</b> beside Reminders save the whole project as a file and open one, and bring a Final Draft script in onto the open board's cards. A project file is the wall, the cast, the reminders and your structures; pictures and takes stay on the account.</p>
+
+      <h2>10. The words</h2>
+      <p>The app uses a few words in one sense each — beat, run, fold, setup, thread, open, left, the readout — and they are all in <b>What these words mean</b>, in the bar. Your agent uses the same words, so you can say them to each other.</p>
+    </article>
+    <p>A page on the site, served beside the on-ramp and written on the app's paper, so it reads as the words sheet does. Linked from the on-ramp's "For the person", from the Agents sheet, and from the README. Readable before signing in, on a phone, and by an agent asked "what does my writer see?". Kept true the way the on-ramp is: a change to a gesture or a sheet changes this page in the same pull request.</p>
+  </div>
+
+  <div class="opt">
+    <h2>B · a Help sheet in the general bar</h2>
+    <div class="sheet">
+      <p class="cap"><span>Help</span><span>Close</span></p>
+      <h4>Working with an agent</h4>
+      <p>You direct; the agent operates. Say what you know and what is not decided…</p>
+      <h4>A card</h4>
+      <p>Tap the words to type, drag the paper to move. With, the cast; at, the place · when.</p>
+      <h4>The corner</h4>
+      <p>Fold it and say what it plants. Leave it open in your words. Start or end a thread.</p>
+      <h4>Arrows, groups, organize</h4>
+      <p>Drag a handle onto a card. Lasso, then Group. Organize lays the wall along the arrows.</p>
+      <h4>Reading the wall</h4>
+      <p>Read the wall opens the Asks. The story map runs along the bottom.</p>
+      <h4>The pages</h4>
+      <p class="more">… and six more sections, the same text as A, folded.</p>
+    </div>
+    <div class="bar"><span>new</span><span>undo</span><span>organize</span><span>structure</span><span>words</span><span class="is-on">help</span></div>
+    <p>The same text, one section at a time, in a sheet the bar opens beside the words sheet. Where the writer already is, and the sections can light the thing they describe. But it is behind the door and behind a button, it cannot be read on a phone before deciding to sign up, an agent cannot be pointed at it, and a sheet is the wrong size for ten minutes of reading — the words sheet is thirty-four entries and already scrolls.</p>
+  </div>
+</div>
+
+<div class="ask">
+  <b>Robert's call, 2026-09-19: A.</b> Built as drafted: `public/writers.html`, served at plotcoder.com/writers.html on the app's paper, linked from the on-ramp's "For the person", the Agents sheet and the README, with the rule in `CLAUDE.md` that a change to the surface changes the page.<br><br>
+  <b>Recommended: A</b>, a page on the site at plotcoder.com/writers, on the app's paper, with the text above as its first draft: it can be read before the door, on a phone, and by an agent; it is linked from the three places a person already looks (the on-ramp's "For the person", the Agents sheet, the README); and it is kept true the way the on-ramp is, in the same pull request as the change it describes. B can follow as the same text folded into a sheet once a round or a writer asks for help where they stand — the page's sections are already the sheet's.<br><br>
+  <b>Is this the best we could do?</b> Three things to say. The page describes gestures, and gestures are what the rounds never test, so the only check on it is a person reading it against the wall — I would have the next real writer read it before the next round, and write down what did not match. It puts the agent first because the app is built that way (D24), which means a writer who wants to work the wall by hand reads a page and a half before reaching "a card"; the table of contents is there so they can skip. And it says nothing about the video half — briefs and takes — on purpose, since that is the horizon and not something a writer does today. I would build A as drafted, and have Robert read it first.
+</div>
+</body>
+</html>

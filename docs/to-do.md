@@ -19,6 +19,11 @@ and the key's decision finding a bug in the tie rule (the thread's list
 order), fixed. Merged as pull request #104 and released as 0.1.34.
 **Next, in order:**
 
+0. ~~**R63, the writer's guide**~~ **Built 2026-09-19** on Robert's "A":
+   `public/writers.html` at plotcoder.com/writers.html, linked from the
+   on-ramp's "For the person", the Agents sheet and the README; the rule in
+   `CLAUDE.md`. Left: Robert's read of the text against the wall, and a
+   Help sheet in the bar (B) if a writer asks for help in place.
 1. **R61's edge: a place and a project's name that can be open** (twenty 6,
    16). The same drawing as the when's — the place line reads "at · Open
    words", the project's name in the panel — so no new mockup: `locationOpen`

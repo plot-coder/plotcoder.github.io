@@ -135,12 +135,12 @@ export function HelpSheet({ open, onClose, signedIn, questions, onLoad, onAsk }:
             {signedIn ? (
               <>
                 <p className="help__fine">
-                  Ask, and your question goes, with your email, to the people who build PlotCoder. The answer lands in the guide,
-                  without your name, and here under Your questions. It takes days, not minutes.
+                  Ask, and this question goes, with your email, to the people who build PlotCoder. The answer lands in the
+                  guide, without your name, and here under Your questions. It takes days, not minutes.
                 </p>
                 {failed ? <p className="help__fine help__fine--warm">{failed}</p> : null}
                 <button type="button" className="help__button" disabled={asking} onClick={() => void ask()}>
-                  {asking ? "Sending…" : "Ask"}
+                  {asking ? "Sending…" : "Ask this question"}
                 </button>
               </>
             ) : (

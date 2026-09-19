@@ -113,15 +113,17 @@ directions phase. Each round's findings are itemised in `REQUIREMENTS.md`,
 - `round-twenty-report.md` — the agent's report from round twenty,
   verbatim, under a head saying what was fixed from it the same morning and
   what waits. The next session on the agent surface starts here.
-- `prompt.md` — round twenty, as it ran: the same notes as seventeen to nineteen
-  against the package that carries the open field (R61) and the fold's
-  words (R62), the writer answering as before and "leave it open" of the
-  logline and the board's name, to see whether a stranger leaves a field
-  open through the field's own `open`, says what the fold plants, lands the
-  key's decision as one record, and puts the known payoff with no scene on
-  an open card at the payoff end. The writer's private answers sit above
-  the divider. Its first step checks the wiring. Paste everything below its
-  divider.
+- `prompt.md` — round twenty-one: the same notes as seventeen to twenty
+  against the package that carries the open place and title (R61's edge)
+  and the tie rule holding a thread's cards in story order, the writer
+  answering as before and "leave it open" of the title and of each place
+  the notes do not give, to see whether a stranger leaves those open through
+  the fields' own `open`, and whether the tie rule does both halves right
+  when the key and the bucket are decided. The writer's private answers sit
+  above the divider. Its first step checks the wiring. Paste everything
+  below its divider.
+- `round-twenty-prompt.md` — round twenty's own instructions, as they ran,
+  without their copy of the notes.
 - `round-nineteen-prompt.md` — round nineteen's own instructions, as they
   ran, without their copy of the notes.
 - `round-nineteen-report.md` — the agent's report from round nineteen,

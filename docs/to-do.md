@@ -36,10 +36,9 @@ is only the queue.
    agent noticed, entry 12). Fifty-two entries in
    `blind-runs/round-nineteen-report.md`, verbatim under a head; eighteen
    fixed on the branch while it ran, recorded in `REQUIREMENTS.md` and the
-   two tables. The three measurements are answered in the head. **Not yet
-   done: the merge and the release** — the fixes are on the branch, tests
-   and build green (561 unit tests); merge to `main`, wait for the Pages
-   deploy, and `npm version patch` for 0.1.30.
+   two tables. The three measurements are answered in the head. Merged as
+   pull request #97 and **released as 0.1.30** the same night (561 unit
+   tests, build clean).
 3. **Mock the open fields** (item 2 below): the logline, the premise and a
    card's when able to say "not decided" in the writer's words, listed by
    the reading and not asked. Ask in writing before building.
@@ -88,7 +87,7 @@ that way, one pull request per fix or per round.
 (a hook rewrites the README's "Version x.y.z." line), `git push`,
 `git push --tags`; the tag runs the "Publish to npm" workflow, and the
 registry lags a few minutes (`npm view plotcoder-board dist-tags.latest
---prefer-online`). Then a pull request for the version commit. 0.1.29 is the
+--prefer-online`). Then a pull request for the version commit. 0.1.30 is the
 latest.
 
 **Drive a blind run:** Robert opens a fresh session with
@@ -122,8 +121,8 @@ to it is `docs/mockups/r60-the-payoff-first.html`.
 - **Round nineteen has run** (2026-09-18), the same notes with the thread
   in hand and the on-ramp naming it. Its report is
   `blind-runs/round-nineteen-report.md`, verbatim, with a head saying what
-  became of each entry. Fifty-two entries; eighteen fixed the same night on
-  the branch, not yet merged or released.
+  became of each entry. Fifty-two entries; eighteen fixed the same night,
+  merged in pull request #97 and released as 0.1.30.
 - **The round measured what it was cued to measure:** both threads named at
   build (on the on-ramp's sentence — its example "the key" was this film's
   and was changed to the sample's); the loose question lands from the

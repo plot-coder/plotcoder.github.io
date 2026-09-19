@@ -50,8 +50,8 @@ is only the queue.
 4. ~~**The thread's own edges**~~ **R62 mocked and built 2026-09-19**, on
    Robert's "Build A": the fold says what it plants, in the writer's words;
    the tie rule runs in the kernel, both halves; a known payoff with no
-   scene is an open card at the payoff end, said by the guide. Not yet run
-   blind. Left for a wall to need: several named plants on one card (B).
+   scene is an open card at the payoff end, said by the guide. Merged as
+   pull request #101 and released as 0.1.32. Not yet run blind. Left for a wall to need: several named plants on one card (B).
    What it answers: **a fold is one flag per card and cannot say which of
    two things a scene plants** (nineteen 42); **a payoff the writer knows
    without a scene has no home** (nineteen 21). Whether the fold learns
@@ -93,7 +93,7 @@ that way, one pull request per fix or per round.
 (a hook rewrites the README's "Version x.y.z." line), `git push`,
 `git push --tags`; the tag runs the "Publish to npm" workflow, and the
 registry lags a few minutes (`npm view plotcoder-board dist-tags.latest
---prefer-online`). Then a pull request for the version commit. 0.1.31 is the
+--prefer-online`). Then a pull request for the version commit. 0.1.32 is the
 latest.
 
 **Drive a blind run:** Robert opens a fresh session with

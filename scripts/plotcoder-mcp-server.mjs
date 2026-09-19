@@ -995,16 +995,16 @@ const CHECK_WORDS = {
 };
 /** What an open card would be asked once closed, as the question and not the check's clean form (round nineteen, entry 31). */
 const ASK_WORDS = {
-  unwritten: "its change line",
-  unlinked: "what comes before and after it",
-  duplicate: "which of two alike headlines it is",
+  unwritten: "its change line (update_note)",
+  unlinked: "what comes before and after it (move_scene, or create_arrow)",
+  duplicate: "which of two alike headlines it is (update_note)",
   sequence: "whether its group is one sequence",
-  nobody: "who is in it",
+  nobody: "who is in it (cast)",
   absent: "who has been gone too long",
   backwards: "why its payoff comes before its setup",
-  unpaid: "where its fold pays off",
-  unplanted: "what plants its payoff",
-  unplaced: "where it happens",
+  unpaid: "where its fold pays off (create_arrow, kind setup)",
+  unplanted: "what plants its payoff (set_plant on the card that does)",
+  unplaced: "where it happens (set_location)",
 };
 const SAMPLE_NOTE = "sample: this is the wall PlotCoder starts with (Maya, Tom, the letter); nothing here is the writer's. Replace it, or new_board.";
 
@@ -1143,7 +1143,7 @@ function summarize(state) {
     `beats: ${beats}, scenes: ${scenes}`,
     state.targetEighths === DEFAULT_TARGET_EIGHTHS
       ? `runtime: about ${formatPages(runtime)} pages (an estimate from the cards; a page runs about a minute); no target set — set_target for a pilot (60) or a half-hour (30); against the feature default of 120 it would be ${formatPages(-over)} under${runtimeKinds(state)}`
-      : `runtime: about ${formatPages(runtime)} pages of the ${formatPages(state.targetEighths)}-page target the writer set (set_target changes it) — ${over > 0 ? `${formatPages(over)} over` : over < 0 ? `${formatPages(-over)} under` : "on it"} (an estimate from the cards; a page runs about a minute)${runtimeKinds(state)}`,
+      : `runtime: about ${formatPages(runtime)} pages of the ${formatPages(state.targetEighths)}-page target the writer set (set_target changes it) — ${over > 0 ? `${formatPages(over)} over` : over < 0 ? `${formatPages(-over)} under` : "on it"} (an estimate from the cards; a page runs about a minute; page_count is the script so far)${runtimeKinds(state)}`,
     `notes: ${state.notes.length}, groups: ${state.groups.length}, arrows: ${state.arrows.length}, cast: ${state.characters.length}`,
     "cards (in story order — the follows arrows over the rows; each with its id):",
     notes || "  (no cards)",
@@ -1344,7 +1344,8 @@ server.registerTool(
       rank: rankSchema.optional(),
       pages: pagesSchema.optional(),
       plants: z.boolean().optional(),
-      after: z.string().optional().describe("Wire the new scene into the story after this card (id or headline): one call, one number under a lock. Needs follows arrows on the wall."),
+      plantsWhat: z.string().optional(),
+      after: z.string().optional().describe("Wire the new scene into the story after this card (id or headline): one call, one number under a lock. On a wall with no follows arrows yet this draws the first, so a wall can be built in order from its second card."),
       before: z.string().optional().describe("Or before this card (id or headline)."),
       location: z.string().optional(),
       when: z.string().optional().describe('When the scene happens, as the writer says it — "night", "day four, dawn" — printed after the place on the scene heading.'),
@@ -1578,7 +1579,21 @@ server.registerTool(
       ...reading.openFields.filter((field) => field.field === "logline").map((field) => `  - the logline — ${field.words}`),
       ...(projectForRead.premiseOpen ? [`  - the premise — ${projectForRead.premiseOpen}`] : []),
       ...(readBoardMeta?.nameOpen ? [`  - this board's name — ${readBoardMeta.nameOpen}`] : []),
-      ...reading.openFields.filter((field) => field.field === "when").map((field) => `  - "${state.notes.find((note) => note.id === field.id)?.headline ?? field.id}" — when: ${field.words}`),
+      // Whens left open in the same words are one line, not one per card (round twenty, entry 22).
+      ...(() => {
+        const byWords = new Map();
+        for (const field of reading.openFields.filter((item) => item.field === "when")) {
+          const key = field.words.toLowerCase();
+          if (!byWords.has(key)) byWords.set(key, { words: field.words, ids: [] });
+          byWords.get(key).ids.push(field.id);
+        }
+        const name = (id) => `"${state.notes.find((note) => note.id === id)?.headline ?? id}"`;
+        return [...byWords.values()].map((group) =>
+          group.ids.length === 1
+            ? `  - ${name(group.ids[0])} — when: ${group.words}`
+            : `  - when, on ${group.ids.length} cards${group.ids.length === state.notes.length ? " (every card)" : ""} — ${group.words}${group.ids.length === state.notes.length ? "" : `: ${group.ids.map(name).join(", ")}`}`,
+        );
+      })(),
     ];
     const lines = [
       `PlotCoder wall (${door(live, base)})`,
@@ -1589,7 +1604,7 @@ server.registerTool(
       "the cast and the places are list_board's, not the reading's",
       state.targetEighths === DEFAULT_TARGET_EIGHTHS
         ? `runtime: about ${formatPages(boardEighths(state))} pages (${whose || "no cards"}); no target set (set_target)`
-        : `runtime: about ${formatPages(boardEighths(state))} pages of the ${formatPages(state.targetEighths)}-page target the writer set (set_target changes it) — ${boardEighths(state) > state.targetEighths ? `${formatPages(boardEighths(state) - state.targetEighths)} over` : boardEighths(state) < state.targetEighths ? `${formatPages(state.targetEighths - boardEighths(state))} under` : "on it"}  (${whose || "no cards"}; page_count is the script so far)`,
+        : `runtime: about ${formatPages(boardEighths(state))} pages of the ${formatPages(state.targetEighths)}-page target the writer set (set_target changes it) — ${boardEighths(state) > state.targetEighths ? `${formatPages(boardEighths(state) - state.targetEighths)} over` : boardEighths(state) < state.targetEighths ? `${formatPages(state.targetEighths - boardEighths(state))} under` : "on it"} (${whose || "no cards"}; page_count is the script so far)`,
       `groups: ${
         state.groups.length
           ? state.groups
@@ -1621,7 +1636,7 @@ server.registerTool(
         ? ["open, by the writer's word (listed, not asked about while the words stand; set_open with \"\" closes a card, the field's own tool with open \"\" a field):", ...openFieldLines, ...reading.open.map((item) => `  - "${state.notes.find((note) => note.id === item.id)?.headline ?? item.id}" — ${item.words}${item.hides.length ? ` (closed, it would be asked ${item.hides.map((kind) => ASK_WORDS[kind] ?? CHECK_WORDS[kind] ?? kind).join("; ")})` : ""}`)]
         : []),
       ...(reading.threads.length
-        ? ["threads (the writer's strings through the story; a loose end is asked about below):", ...reading.threads.map((thread) => `  - "${thread.name}": ${thread.ids.length ? thread.ids.map((id) => `"${state.notes.find((note) => note.id === id)?.headline ?? id}"`).join(" → ") : "no card yet"}${thread.startOpen ? " — starts nowhere yet" : ""}${thread.endOpen ? " — ends nowhere yet" : ""}`)]
+        ? ["threads (the writer's strings through the story; a loose end is asked about below):", ...reading.threads.map((thread) => `  - "${thread.name}": ${thread.ids.length ? thread.ids.map((id) => `"${state.notes.find((note) => note.id === id)?.headline ?? id}"`).join(" → ") : "no card yet"}${thread.startOpen ? " — starts nowhere yet" : ""}${thread.endOpen ? " — ends nowhere yet" : ""}${!thread.startOpen && !thread.endOpen && thread.ids.length >= 2 ? ` — both ends tied, about ${formatPages(thread.apart)} pages apart` : ""}`)]
         : []),
       "questions the wall raises (each stands on every reading until the wall changes to answer it, or the writer leaves it — leave_question, with their reason):",
       ...(reading.findings.length
@@ -2024,11 +2039,15 @@ server.registerTool(
   async () => {
     const { project } = await readProject();
     const own = project.structures ?? [];
+    // Pages beside the percentages, against the open board's target, so the two readings agree without arithmetic (round twenty, entry 57).
+    const { state } = await readBoard();
+    const target = state?.targetEighths ?? DEFAULT_TARGET_EIGHTHS;
+    const at = (beat) => `${beat.name} at ${Math.round(beat.at * 100)}% (p. ${Math.floor((beat.at * target) / EIGHTHS_PER_PAGE) + 1})`;
     const lines = [
       `the writer's own: ${own.length}`,
-      ...own.map((structure) => `  - ${structure.id} — "${structure.name}" (${structure.beats.length} beats: ${structure.beats.map((beat) => `${beat.name} at ${Math.round(beat.at * 100)}%`).join(", ")})`),
+      ...own.map((structure) => `  - ${structure.id} — "${structure.name}" (${structure.beats.length} beats: ${structure.beats.map(at).join(", ")})`),
       `built in: ${TEMPLATES.length}`,
-      ...TEMPLATES.map((template) => `  - ${template.id} — "${template.name}" (${template.beats.length} beats: ${template.beats.map((beat) => `${beat.name} at ${Math.round(beat.at * 100)}%`).join(", ")})`),
+      ...TEMPLATES.map((template) => `  - ${template.id} — "${template.name}" (${template.beats.length} beats: ${template.beats.map(at).join(", ")})`),
       "compare_structure sets one of these beside this wall's beats, page by page, and lays nothing",
     ];
     return ok(lines.join("\n"), { builtIn: TEMPLATES.map((template) => ({ id: template.id, name: template.name, beats: template.beats })), own });
@@ -2057,10 +2076,11 @@ server.registerTool(
     const allMeasured = state.notes.length > 0 && state.notes.every((note) => isMeasured(note));
     const short = state.targetEighths > 0 && boardEighths(state) * 2 < state.targetEighths;
     const lines = [
-      `"${chosen.name}" beside this wall's ${beats} beat${beats === 1 ? "" : "s"}, of ${formatPages(state.targetEighths)} pages (the story so far runs to p. ${comparison.soFar}, the page its last card ends on — read_wall counts the same cards as about ${formatPages(boardEighths(state))} pages${allMeasured ? ", measured" : ", an estimate: unsized cards read as a page each"}); a match is the nearest of the wall's beats within ${MATCH_PAGES} pages, one to one and in order:`,
+      `"${chosen.name}" beside this wall's ${beats} beat${beats === 1 ? "" : "s"}, of ${formatPages(state.targetEighths)} pages (the story so far runs to p. ${comparison.soFar}, the page its last card ends on — read_wall counts the same cards as about ${formatPages(boardEighths(state))} pages, and page_count the script so far${allMeasured ? ", measured" : ", an estimate: unsized cards read as a page each"}); a match is the nearest of the wall's beats within ${MATCH_PAGES} pages, one to one and in order:`,
       // On a wall under half its target the pairing is arithmetic; say so before the rows, not after them (round eighteen, entry 52).
       ...(short ? [`the wall runs to less than half its target, so its beats sit early and the ${MATCH_PAGES}-page window pairs them with the structure's first beats by arithmetic; the pairing says more once the cards are sized or written, and whether a turn is missing is the writer's call, not this reading's`] : []),
-      ...describeComparison(comparison).map((line) => `  - ${line}`),
+      // On a thin wall a match is arithmetic, and the row says so where it says "here" (round twenty, entry 54).
+      ...describeComparison(comparison).map((line) => `  - ${short ? line.replace(/\bhere\b/, "here, by arithmetic") : line}`),
       comparison.unmatched.length
         ? `beats of the wall no beat of the structure answers: ${comparison.unmatched.map((beat) => `"${beat.headline}" (p. ${beat.page})`).join(", ")}`
         : "every beat of the wall answers one of the structure's",
@@ -2726,7 +2746,7 @@ server.registerTool(
   {
     title: "Set when scenes happen",
     description:
-      "When one or more scenes happen, as the writer would say it — \"night\", \"day four, dawn\", \"the next morning\" — on the card beside its place, and printed after the place on every scene heading: THE PIER AT FENIT - NIGHT. Free text, the writer's phrase; an empty string clears it. Or leave the when open: pass open with the writer's words for why it is not decided — \"after the break-in; which day\" — and the reading lists it under open, by the writer's word, while the card's other questions still stand; a when decides it, open \"\" leaves it blank. This is where a scene's day and time live, not the headline, so the duplicate check never reads a day as a scene's words. create_note and update_note take when too; list_board shows it as when: …",
+      "When one or more scenes happen, as the writer would say it — \"night\", \"day four, dawn\", \"the next morning\" — on the card beside its place, and printed after the place on every scene heading: THE PIER AT FENIT - NIGHT. Free text, the writer's phrase; an empty string clears it. Or leave the when open: pass open with the writer's words for why it is not decided — \"after the party; which night\" — and the reading lists it under open, by the writer's word, while the card's other questions still stand; a when decides it, open \"\" leaves it blank. This is where a scene's day and time live, not the headline, so the duplicate check never reads a day as a scene's words. create_note and update_note take when too; list_board shows it as when: …",
     inputSchema: { ids: z.array(z.string()).min(1), when: z.string().optional(), open: z.string().optional() },
   },
   async (args) => {
@@ -2995,7 +3015,10 @@ server.registerTool(
     const lines = [
       `PlotCoder cast (${door(live, base)})`,
       `${person.name} (${person.id}) — on ${total} card${total === 1 ? "" : "s"} across ${project.boards.length} board${project.boards.length === 1 ? "" : "s"} of the project`,
-      ...CHARACTER_FIELDS.map((field) => `  ${field}: ${(person[field] ?? "").trim() || "(empty)"}`),
+      // Four empty lines say the same thing four times (round twenty, entry 56): once is enough, and it says what empty means.
+      ...(CHARACTER_FIELDS.every((field) => !(person[field] ?? "").trim())
+        ? [`  ${CHARACTER_FIELDS.join(", ")}: (empty — nothing given yet, nothing invented; update_character fills a line)`]
+        : CHARACTER_FIELDS.map((field) => `  ${field}: ${(person[field] ?? "").trim() || "(empty)"}`)),
       ...parts.flatMap((part) =>
         part.on.length
           ? [`  "${part.meta.name}", ${part.on.length} card${part.on.length === 1 ? "" : "s"} in story order:`, ...part.on.map((note, index) => `    ${index + 1}. "${note.headline}"${where_(note) ? ` (${where_(note)})` : ""}`)]
@@ -3191,7 +3214,8 @@ function foldLine(state, fold, thread) {
   const head = (id) => `"${state.notes.find((note) => note.id === id)?.headline ?? id}"`;
   if (fold.kept) return ` ${head(fold.firstId)} is folded for ${fold.what}, so "${thread.name}" stays a thread and no arrow is drawn: a card has one fold.`;
   const did = [fold.folded ? `folded ${head(fold.firstId)}` : null, fold.named ? `named its fold "${thread.name}"` : null, fold.arrow ? `drew the setup arrow to ${head(fold.lastId)}` : null].filter(Boolean);
-  return did.length ? ` Tied at both ends, so it is the fold's now: ${did.join(", ")}.` : "";
+  const adjacent = fold.adjacent ? ` No setup arrow: a follows arrow already runs from ${head(fold.firstId)} to ${head(fold.lastId)}, so the payoff is the very next scene and the fold says so on its own.` : "";
+  return did.length ? ` Tied at both ends, so it is the fold's now: ${did.join(", ")}.${adjacent}` : adjacent;
 }
 
 function threadLine(state, thread) {
@@ -3508,7 +3532,7 @@ server.registerTool(
   {
     title: "Set the project's premise",
     description:
-      "Set the project's premise: the line above every board's logline, held by the project whatever its board count — what a series is about, or what is true before a film starts ('the winter the shop closes'). An empty string clears it. Or leave it open: pass open with the writer's words for why there is no premise yet — \"the buyer: housing, or a supermarket\" — and the reading lists it under open, by the writer's word; a premise decides it, open \"\" leaves it blank. Boards keep their own loglines.",
+      "Set the project's premise: the line above every board's logline, held by the project whatever its board count — what a series is about, or what is true before a film starts ('the winter the shop closes'). An empty string clears it. Or leave it open: pass open with the writer's words for why there is no premise yet — \"the buyer: a sale, or a lease\" — and the reading lists it under open, by the writer's word; a premise decides it, open \"\" leaves it blank. Boards keep their own loglines.",
     inputSchema: { premise: z.string().optional(), open: z.string().optional() },
   },
   async (args) => {
@@ -3716,7 +3740,7 @@ server.registerTool(
   {
     title: "Start a project",
     description:
-      "Through the account door: start a new project of the writer's with this name — one empty board, nothing on it — and work it from now on. The writer sees it under Projects on every device. board names the first board; boardOpen leaves its name open in the writer's words instead (\"the title, or Feature\"), so a board born from a maybe is not silently \"Board 1\".",
+      "Through the account door: start a new project of the writer's with this name — one empty board, nothing on it — and work it from now on. The writer sees it under Projects on every device. board names the first board; boardOpen leaves its name open in the writer's words instead (\"the pilot, or the film\"), so a board born from a maybe is not silently \"Board 1\".",
     inputSchema: { name: z.string().min(1), board: z.string().optional(), boardOpen: z.string().optional(), pages: pagesSchema.optional(), minutes: z.number().positive().optional() },
   },
   async (args) => {
@@ -3837,7 +3861,7 @@ server.registerTool(
   {
     title: "Save the project as a file",
     description:
-      `The project the server is working, as the file Save project writes and Open project takes: the record, every board with its cards, the reminders and the writer's structures. Pass path to write it (a .json) — an absolute path, since a relative one resolves from the folder the server was started in, which is ${process.cwd()}, not yours; without a path, the reply's JSON is the file. Pictures and takes on the account are not in the file. Works through every door.`,
+      `The project the server is working, as the file Save project writes and Open project takes: the record, every board with its cards, the reminders and the writer's structures. Pass path to write it (a .json) — an absolute path, since a relative one resolves from the folder the server was started in, which is ${process.cwd()} — this session's own folder when the server was started from it, and somewhere else when it was not; without a path, the reply's JSON is the file. Pictures and takes on the account are not in the file. Works through every door.`,
     inputSchema: { path: z.string().optional() },
   },
   async (args) => {
@@ -3957,7 +3981,7 @@ server.registerTool(
   "rename_board",
   {
     title: "Rename board",
-    description: "Rename a board of the project by id, name, or number. Or leave its name open: pass open with the writer's words for why it is not decided — \"the title, or Feature\" — and the name stands as it is (every reply still calls it that) while the reading lists the words; a name decides it, open \"\" takes the words back.",
+    description: "Rename a board of the project by id, name, or number. Or leave its name open: pass open with the writer's words for why it is not decided — \"the pilot, or the film\" — and the name stands as it is (every reply still calls it that) while the reading lists the words; a name decides it, open \"\" takes the words back.",
     inputSchema: { board: z.union([z.string().min(1), z.number()]), name: z.string().min(1).optional(), open: z.string().optional() },
   },
   async (args) => {

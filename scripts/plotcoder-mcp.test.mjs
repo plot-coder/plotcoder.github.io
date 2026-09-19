@@ -1021,6 +1021,15 @@ describe("open fields (R61): the logline, the premise, a when and a board's name
     expect(await client.callTool("set_logline", { open: "" })).toContain("unchanged");
   });
 
+  it("lists whens left open in the same words as one line (round twenty, entry 22)", async () => {
+    const ids = (await client.callToolData("list_board")).notes.map((note) => note.id);
+    await client.callTool("set_when", { ids, open: "not decided yet" });
+    const read = await client.callTool("read_wall");
+    expect(read).toContain(`  - when, on ${ids.length} cards (every card) — not decided yet`);
+    expect(read).not.toContain('"Maya finds the letter" — when: not decided yet');
+    await client.callTool("set_when", { ids, open: "" });
+  });
+
   it("leaves a card's when open while the card is still asked about the rest", async () => {
     expect(await client.callTool("set_when", { ids: ["maya-letter"] })).toContain("Say which");
     const left = await client.callTool("set_when", { ids: ["maya-letter"], open: "after the break-in; which day" });
@@ -1087,6 +1096,23 @@ describe("round nineteen: create_note with after on a wall with no follows arrow
     expect(order.indexOf("Maya finds the letter")).toBeLessThan(order.indexOf("The stairs"));
     const before = await client.callTool("create_note", { headline: "The door", change: "It sticks.", before: "The stairs" });
     expect(before).toContain('Wired before "The stairs" in the story (1 follows arrow removed, 2 drawn)');
+  });
+
+  it("says what a fold plants, in the writer's words, on the card and in the reading (R62)", async () => {
+    const born = await client.callTool("create_note", { headline: "The key changes hands", change: "Ruth has the only key.", plantsWhat: "the key" });
+    expect(born).toContain("corner folded — plants the key");
+    const named = await client.callTool("set_plant", { ids: ["maya-letter"], what: "the wrong tools" });
+    expect(named).toContain('now plant "the wrong tools"');
+    expect(named).toContain("read_wall asks where the wrong tools come back");
+    expect(await client.callTool("list_board")).toContain("plants: the wrong tools");
+    expect(await client.callTool("read_wall")).toContain('"Maya finds the letter" plants the wrong tools, and no arrow pays it off. Where do the wrong tools come back?');
+    expect(await client.callTool("set_plant", { ids: ["maya-letter"] })).toContain("Say which");
+    // The tie rule: a thread through a card folded for something else stays a thread; through a free fold it becomes the fold and the arrow.
+    const kept = await client.callTool("create_thread", { name: "the key", cards: ["Maya finds the letter", "The key changes hands"] });
+    expect(kept).toContain('"Maya finds the letter" is folded for the wrong tools, so "the key" stays a thread and no arrow is drawn');
+    const free = await client.callTool("create_thread", { name: "the letter", cards: ["Tom lies about the job", "The key changes hands"] });
+    expect(free).toContain('Tied at both ends, so it is the fold\'s now: folded "Tom lies about the job", named its fold "the letter", drew the setup arrow to "The key changes hands"');
+    expect(await client.callTool("list_board")).toContain("plants: the letter");
   });
 
   it("update_note names a near-matching place as set_location does (entry 36)", async () => {
@@ -1382,7 +1408,7 @@ describe("round sixteen", () => {
     expect(read).toContain("open, by the writer's word");
     expect(read).toContain('"Declan wants Con to move to Naas" — where, and whether Ruth is there (closed, it would be asked ');
     // As questions, not as the checks' clean forms (round nineteen, entry 31).
-    expect(read).toMatch(/\(closed, it would be asked [^)]*who is in it\)/);
+    expect(read).toContain("who is in it (cast)");
     expect(read).not.toContain("would be asked, closed: no card");
     expect(read).toContain("1 card open by the writer's word, not asked");
     expect(read).toMatch(/\(except 1 open card, not asked\)/);
@@ -2288,7 +2314,7 @@ describe("round seven's replies", () => {
     expect(workflows).toContain("How long is it? An hour, a half-hour, a feature — or a page count, if you have one. → set_target");
     // A new card lands after the last in reading order, so Fiona follows the cash.
     expect(read).toContain('"The ledger" → "The cash arrives": about 0 pages, 0 cards');
-    expect(read).toMatch(/After "The cash arrives": about \d+ pages, \d+ cards?(, [a-z0-9 ]+)? — .*"Fiona at the launderette"/);
+    expect(read).toMatch(/After "The cash arrives": about \d+ pages?, \d+ cards?(, [a-z0-9 ]+)? — .*"Fiona at the launderette"/);
   });
 });
 

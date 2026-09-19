@@ -51,7 +51,7 @@ An agent should call the tools, never fake mouse drags. The skill in `.cursor/sk
 A **blind run** is a fresh agent given the on-ramp and a treatment and nothing
 else, asked to build a wall and to keep a log of everything that made the job
 harder than it should have been. The friction log is the product; the wall is
-just what produces it. Nineteen rounds have been run, the first three through a
+just what produces it. Twenty rounds have been run, the first three through a
 repo checkout and the rest through the account door; every finding from the
 first seventeen is fixed or decided. Round seventeen, the first to start from
 a page of notes instead of a treatment, found the wall has no way to hold a
@@ -59,7 +59,8 @@ maybe — the open card, R59, built from it; round eighteen confirmed that a
 thread is not a fold — the thread, R60, built from it, a named string through
 cards with either end open until the writer ties it; round nineteen measured
 the thread and found the fold beside it cannot say which of two things a
-scene plants. [`blind-runs/`](blind-runs/) holds the rules that keep a round honest,
+scene plants — the open field, R61, and the fold's words, R62, built from it,
+and round twenty measured both. [`blind-runs/`](blind-runs/) holds the rules that keep a round honest,
 the table of rounds, and the next round's prompt with the test account filled in.
 
 A round works a **test account** — a throwaway marked on its writer row, and the
@@ -104,4 +105,4 @@ next round into a test of `claim_account` instead of the door it meant to test.
 
 ## Status
 
-Version 0.1.32. A project of boards; sign in with your email and a password from the PlotCoder mark and your projects follow you to every device, share one with another writer by email and write it together live, or stay signed out and work on this device as before. Pages sit beside the wall: a scene's text lives on its card, measures it, paginates to the industry's rules, prints, goes out and comes in as Fountain or Final Draft, and goes out as Markdown or plain text for a collaborator in Google Docs. It installs as a progressive web app and opens offline; plotcoder.com serves over HTTPS. The wall, beats, card length, groups, arrows, pan and zoom, save and open, and the agent surface are in use.
+Version 0.1.33. A project of boards; sign in with your email and a password from the PlotCoder mark and your projects follow you to every device, share one with another writer by email and write it together live, or stay signed out and work on this device as before. Pages sit beside the wall: a scene's text lives on its card, measures it, paginates to the industry's rules, prints, goes out and comes in as Fountain or Final Draft, and goes out as Markdown or plain text for a collaborator in Google Docs. It installs as a progressive web app and opens offline; plotcoder.com serves over HTTPS. The wall, beats, card length, groups, arrows, pan and zoom, save and open, and the agent surface are in use.

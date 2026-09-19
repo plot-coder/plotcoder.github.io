@@ -20,7 +20,7 @@ describe("workflows (R27)", () => {
       expect(workflow.tools.length).toBeGreaterThan(0);
       expect(workflow.then).toBeTruthy();
       if (workflow.id === "break-a-treatment") {
-        expect(workflow.needs?.length).toBe(11);
+        expect(workflow.needs?.length).toBe(12);
         for (const need of workflow.needs ?? []) {
           expect(need.question.endsWith("?")).toBe(true);
           expect(need.hint).toBeTruthy();

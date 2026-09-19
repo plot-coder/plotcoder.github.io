@@ -74,7 +74,7 @@ export type WallReading = {
   /** Fields left open by the writer's word (R61): the board's logline, and each card's when, in story order. Listed, not asked. */
   openFields: Array<{ field: "logline"; words: string } | { field: "when"; id: string; words: string }>;
   /** Threads (R60): each named string with its cards in story order and which ends are open. */
-  threads: Array<{ id: string; name: string; ids: string[]; startOpen: boolean; endOpen: boolean }>;
+  threads: Array<{ id: string; name: string; ids: string[]; startOpen: boolean; endOpen: boolean; /** Eighths from the first card's start to the last card's start; 0 with fewer than two cards. */ apart: number }>;
   /** Cards here that pay off a fold of another board (R58), composed by the door from the project. */
   paidBy: Array<{ id: string; fromBoardId: string; fromBoardName: string; fromNoteId: string; fromHeadline: string; fromColor: string }>;
   /** The questions the wall asks now. A left one (R53) is not here while its words hold. */

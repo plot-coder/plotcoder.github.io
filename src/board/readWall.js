@@ -17,7 +17,11 @@
 // before any tidy — the arrows are the writer's claim about the order, and
 // where they say nothing the positions decide.
 
-import { isMeasured, boardEighths, EIGHTHS_PER_PAGE, formatPages, NOTE_HEIGHT, noteEighths } from "./reducer.js";
+import { isMeasured, boardEighths, EIGHTHS_PER_PAGE, formatPages, noteEighths, readingOrder, storyOrder } from "./reducer.js";
+
+// The two orders live in the kernel (R62: a thread's cards are held in story
+// order), and every reader still imports them from here.
+export { readingOrder, storyOrder };
 
 /** What create_note writes before a person has. */
 export const PLACEHOLDER_HEADLINE = "New beat";
@@ -29,7 +33,6 @@ const SAG_RATIO = 2;
 // Longer than this and a group is probably two sequences wearing one frame.
 const SEQUENCE_MAX_EIGHTHS = 20 * EIGHTHS_PER_PAGE;
 // Two cards whose tops are within half a card of each other share a row.
-const ROW_TOLERANCE = NOTE_HEIGHT / 2;
 // A character gone for more than this share of the story is worth asking about.
 const ABSENCE_FRACTION = 1 / 3;
 // ...and at least this long, so a short wall of one-page estimates does not
@@ -45,64 +48,12 @@ const FILLER = new Set([
   "about", "into", "from", "by", "his", "her", "hers", "its", "their", "is", "it",
 ]);
 
-/**
- * Cards in reading order: banded into rows by y, then left to right. A free
- * wall has no rows, so this is the order a person's eye takes across it.
- */
-/**
- * Story order: reading order, with each follows arrow pulling its source in
- * front of its target; a pair pointing both ways is a tie and reading order
- * keeps it. The order organize lays the wall out in, and the order every
- * reading, numbering and page uses (R56). Returns the notes.
- */
-export function storyOrder(state, ids) {
-  const scope = ids ? new Set(ids) : null;
-  const notes = state.notes.filter((note) => !scope || scope.has(note.id));
-  const reading = readingOrder(notes);
-  const byId = new Map(reading.map((note) => [note.id, note]));
-  const rank = new Map(reading.map((note, index) => [note.id, index]));
-  const preds = new Map(reading.map((note) => [note.id, []]));
-  for (const arrow of state.arrows ?? []) {
-    if (arrow.kind === "setup") continue;
-    if (!rank.has(arrow.from) || !rank.has(arrow.to)) continue;
-    preds.get(arrow.to).push(arrow.from);
-  }
-  for (const list of preds.values()) list.sort((a, b) => rank.get(a) - rank.get(b));
-  const placed = new Set();
-  const visiting = new Set();
-  const order = [];
-  function visit(id) {
-    if (placed.has(id) || visiting.has(id)) return;
-    visiting.add(id);
-    for (const from of preds.get(id)) {
-      if (preds.get(from).includes(id)) continue;
-      visit(from);
-    }
-    visiting.delete(id);
-    placed.add(id);
-    order.push(byId.get(id));
-  }
-  for (const note of reading) visit(note.id);
-  return order;
-}
+
 
 /** The leading "Day three, night." of a headline, the convention the guide asks for until a card has a when: not a scene's words. */
 const DAY_PREFIX = /^\s*day\s+[\w-]+(?:\s*,\s*[\w\s-]+?)?\s*[.:]\s*/i;
 
-export function readingOrder(notes) {
-  const byTop = [...notes].sort((a, b) => a.y - b.y || a.x - b.x);
-  const rows = [];
-  let row = null;
-  for (const note of byTop) {
-    if (row && note.y - row.top <= ROW_TOLERANCE) {
-      row.notes.push(note);
-    } else {
-      row = { top: note.y, notes: [note] };
-      rows.push(row);
-    }
-  }
-  return rows.flatMap((band) => band.notes.sort((a, b) => a.x - b.x || a.y - b.y));
-}
+
 
 function words(text) {
   return (text ?? "")
@@ -112,9 +63,9 @@ function words(text) {
     .filter((word) => word && !FILLER.has(word));
 }
 
-function sameScene(a, b) {
-  const wa = words(a);
-  const wb = words(b);
+function sameScene(a, b, ignore = new Set()) {
+  const wa = words(a).filter((word) => !ignore.has(word));
+  const wb = words(b).filter((word) => !ignore.has(word));
   if (wa.length === 0 || wb.length === 0) return false;
   if (wa.join(" ") === wb.join(" ")) return true;
   if (wa.length < 2 || wb.length < 2) return false;
@@ -265,7 +216,7 @@ export function readWall(state, options = {}) {
   // On a wall where most runs hold nothing, the turns are back to back by
   // construction, and the question stands until scenes go in; say so rather
   // than ask it as if it were a choice (round eighteen, entry 29).
-  const thin = between.length >= 2 && between.filter((run) => run.cards === 0).length * 2 > between.length ? " Most runs hold nothing yet, so this stands until scenes go in." : "";
+  const thin = between.length >= 2 && between.filter((run) => run.cards === 0).length * 2 > between.length ? " Most runs hold nothing yet, so this stands until scenes go in, or until the writer leaves it as the pace." : "";
   const askChain = () => {
     if (chain.length === 0) return;
     const ids = [chain[0].from, ...chain.map((run) => run.to)];
@@ -275,8 +226,8 @@ export function readWall(state, options = {}) {
       ids,
       text:
         ids.length === 2
-          ? `Nothing runs between ${names[0]} and ${names[1]}: two turns back to back. Are they one beat, or is a scene missing?${thin}`
-          : `Nothing runs between ${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}: ${countWord(ids.length)} turns back to back. Are some of them one beat, or are scenes missing between them?${thin}`,
+          ? `Nothing runs between ${names[0]} and ${names[1]}: two turns back to back. Are they one beat, is a scene missing, or is that the pace?${thin}`
+          : `Nothing runs between ${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}: ${countWord(ids.length)} turns back to back. Are some of them one beat, are scenes missing between them, or is that the pace?${thin}`,
     });
     chain = [];
   };
@@ -323,8 +274,12 @@ export function readWall(state, options = {}) {
   }
 
   // Only once the wall uses arrows does a card without one mean anything.
+  // A setup arrow is a claim, not a place in the story (round twenty, entry
+  // 25): a card touched only by one still has no order, so only follows
+  // arrows link a card.
   const linked = new Set();
   for (const arrow of state.arrows) {
+    if (arrow.kind === "setup") continue;
     linked.add(arrow.from);
     linked.add(arrow.to);
   }
@@ -339,14 +294,17 @@ export function readWall(state, options = {}) {
     }
   }
 
-  // Two cards doing the same job.
+  // Two cards doing the same job. The cast's names are not the scene's words
+  // (round twenty, entry 15): "Con gives Ruth the key" and "Con gives Ruth
+  // his tools" share their people, not their job.
+  const nameWords = new Set((state.characters ?? []).flatMap((person) => words(person.name ?? "")));
   for (let i = 0; i < order.length; i += 1) {
     for (let j = i + 1; j < order.length; j += 1) {
       const a = order[i];
       const b = order[j];
       // A leading "Day three." is the guide's convention for when a scene
       // happens, not the scene's words (round fourteen, entry 13).
-      if (sameScene(a.headline.replace(DAY_PREFIX, ""), b.headline.replace(DAY_PREFIX, ""))) {
+      if (sameScene(a.headline.replace(DAY_PREFIX, ""), b.headline.replace(DAY_PREFIX, ""), nameWords)) {
         findings.push({
           kind: "duplicate",
           ids: [a.id, b.id],
@@ -505,13 +463,12 @@ export function readWall(state, options = {}) {
   // Threads (R60): a named string through cards, in story order, either end
   // open until the writer ties it. The reading asks about each loose end from
   // that end — the question a fold cannot ask, where a thing is first seen.
-  const threads = (state.threads ?? []).map((thread) => ({
-    id: thread.id,
-    name: thread.name,
-    ids: order.filter((note) => thread.noteIds.includes(note.id)).map((note) => note.id),
-    startOpen: thread.startOpen === true,
-    endOpen: thread.endOpen === true,
-  }));
+  const threads = (state.threads ?? []).map((thread) => {
+    const ids = order.filter((note) => thread.noteIds.includes(note.id)).map((note) => note.id);
+    // How far the string runs, in the same estimated pages a setup's distance uses (round twenty, entry 44).
+    const apart = ids.length >= 2 ? (startAt.get(ids[ids.length - 1]) ?? 0) - (startAt.get(ids[0]) ?? 0) : 0;
+    return { id: thread.id, name: thread.name, ids, startOpen: thread.startOpen === true, endOpen: thread.endOpen === true, apart };
+  });
   for (const thread of threads) {
     const first = thread.ids.length ? byId.get(thread.ids[0]) : null;
     const last = thread.ids.length ? byId.get(thread.ids[thread.ids.length - 1]) : null;
@@ -635,6 +592,7 @@ export function describeRuns(reading, state) {
     // from written text, or the cards' guess, or some of each.
     const written = (run.ids ?? []).filter((id) => isMeasured(byId.get(id) ?? {})).length;
     const whose = !run.cards ? "" : written === run.cards ? ", measured" : written ? `, ${written} of ${run.cards} measured` : ", estimated";
-    return `${span}: about ${pages(run.eighths)} pages, ${count}${whose}`;
+    const amount = pages(run.eighths);
+    return `${span}: about ${amount} ${amount === "1" ? "page" : "pages"}, ${count}${whose}`;
   });
 }

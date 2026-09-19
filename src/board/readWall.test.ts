@@ -107,7 +107,7 @@ describe("runs between beats", () => {
       { id: "b2", rank: "beat", headline: "Read aloud" },
     );
     expect(describeRuns(readWall(state), state)).toEqual([
-      'Before "The letter": about 1 pages, 1 card, estimated',
+      'Before "The letter": about 1 page, 1 card, estimated',
       '"The letter" → "Read aloud": about 1 4/8 pages, 1 card, estimated',
     ]);
   });
@@ -491,6 +491,31 @@ describe("findings", () => {
   });
 });
 
+describe("round twenty: the cast's names are not a scene's words, and a setup arrow does not link a card", () => {
+  it("does not read two scenes with the same people as one scene (entry 15)", () => {
+    const state = run(
+      wall({ id: "a", headline: "Con gives Ruth the only key to the shed" }, { id: "b", headline: "Con gives Ruth his tools" }),
+      { type: "add_character", id: "con", name: "Con Brady" },
+      { type: "add_character", id: "ruth", name: "Ruth Kane" },
+    );
+    expect(readWall(state).findings.filter((finding) => finding.kind === "duplicate")).toEqual([]);
+    // Without a cast the names are words like any other, and the check still fires on two headlines alike.
+    const nameless = wall({ id: "a", headline: "Con gives Ruth the key" }, { id: "b", headline: "Con gives Ruth the key" });
+    expect(readWall(nameless).findings.some((finding) => finding.kind === "duplicate")).toBe(true);
+  });
+
+  it("asks what comes before and after a card touched only by a setup arrow (entry 25)", () => {
+    const state = run(
+      wall({ id: "a", headline: "A" }, { id: "b", headline: "B" }, { id: "c", headline: "C" }, { id: "d", headline: "D" }),
+      { type: "create_arrow", from: "a", to: "b", kind: "follows" },
+      { type: "create_arrow", from: "b", to: "c", kind: "follows" },
+      { type: "create_arrow", from: "a", to: "d", kind: "setup" },
+    );
+    const unlinked = readWall(state).findings.find((finding) => finding.kind === "unlinked");
+    expect(unlinked?.ids).toEqual(["d"]);
+  });
+});
+
 describe("what the fold plants (R62): the question and the setup in the writer's words", () => {
   it("asks where the named thing comes back, and names it on the setup line", () => {
     const state = run(
@@ -545,10 +570,10 @@ describe("threads (R60): a loose end is asked about from that end", () => {
     );
     const reading = readWall(state);
     expect(reading.threads).toEqual([
-      { id: "bucket", name: "the bucket", ids: ["c"], startOpen: true, endOpen: false },
-      { id: "declan", name: "Declan", ids: ["a", "b"], startOpen: false, endOpen: true },
-      { id: "key", name: "the key", ids: [], startOpen: false, endOpen: false },
-      { id: "tools", name: "the tools", ids: ["a", "c"], startOpen: false, endOpen: false },
+      { id: "bucket", name: "the bucket", ids: ["c"], startOpen: true, endOpen: false, apart: 0 },
+      { id: "declan", name: "Declan", ids: ["a", "b"], startOpen: false, endOpen: true, apart: 8 },
+      { id: "key", name: "the key", ids: [], startOpen: false, endOpen: false, apart: 0 },
+      { id: "tools", name: "the tools", ids: ["a", "c"], startOpen: false, endOpen: false, apart: 16 },
     ]);
     expect(reading.findings.filter((finding) => finding.kind === "loose")).toEqual([
       { kind: "loose", ids: ["bucket", "c"], text: '"the bucket" starts nowhere yet: it runs to "The last harvest". Where is it first seen?' },

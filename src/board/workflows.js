@@ -25,6 +25,7 @@ export const WORKFLOWS = [
     needs: [
       { question: "How long is it?", hint: "An hour, a half-hour, a feature — or a page count, if you have one.", tool: "set_target" },
       { question: "What is the central question, in one sentence?", hint: "And if this is one episode of something, what is the series about? Not decided: either takes open with the writer's words, and the reading lists it.", tool: "set_logline, set_premise" },
+      { question: "In what order do the scenes come?", hint: "The follows arrows are the order, and the wall reads, numbers and prints by them: create_note with after wires each card as it lands, create_arrow draws one, move_scene moves a scene. Not decided for a card: leave it unwired and say so; the reading asks what comes before and after it.", tool: "create_note, create_arrow, move_scene" },
       { question: "Which scenes are the turns?", hint: "Name them, say \"propose them and I will strike\", or say \"mark none yet\" — every card stays a scene and the reading asks once for a beat until you do.", tool: "set_rank" },
       { question: "Does it have acts?", hint: "If so, where does each break fall?", tool: "create_group" },
       { question: "Where does each scene happen?", hint: "In your own words. A scene that moves through one location is still one place.", tool: "set_location" },

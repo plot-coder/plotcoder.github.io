@@ -11,15 +11,27 @@ is only the queue.
 
 ## Next, in order (2026-09-19, after R61 and R62 shipped)
 
-**Now:** round twenty is cued — `blind-runs/prompt.md` — the same notes
-with the open field (R61) and the fold's words (R62) in hand, against
-0.1.32. It measures whether a stranger leaves the logline, the premise's
-undecided fact and a when open through the fields' own `open`, whether it
-says what the fold plants, whether the key's decision lands as one record
-(the rule in the kernel) and whether the known payoff with no scene becomes
-an open card at the payoff end. Run it as nineteen was run: Robert opens
-the session, this side relays, fixes while it runs, files the report under
-a head, records the round, releases. After it, the calls table below.
+**Now:** round twenty has run (2026-09-19) — `blind-runs/round-twenty-report.md`,
+fifty-seven entries, twenty-two fixed the same morning, the four
+measurements answered in its head: the fields left open through their own
+`open`, the fold named, the known payoff on an open card with its arrow,
+and the key's decision finding a bug in the tie rule (the thread's list
+order), fixed. **Next, in order:**
+
+1. **R61's edge: a place and a project's name that can be open** (twenty 6,
+   16). The same drawing as the when's — the place line reads "at · Open
+   words", the project's name in the panel — so no new mockup: `locationOpen`
+   on the card and `nameOpen` on the project, `set_location` and
+   `rename_project` with `open`, `new_project` with `open` for its name,
+   the reading's open head, the place line's offer. Ask in writing first
+   whether the drawing carries, then build.
+2. **Round twenty-one**, once that ships: the same notes, the place open,
+   the tie rule right — or a new page of notes, since four rounds have run
+   on this one and the recurrence table says what kept coming back.
+3. Robert's calls (section 3) and the smaller things (section 4). New in
+   twenty: a placeless card's heading on the pages, said by three rounds
+   (18:46, 19:44, 20:48) — decide; "Con does not die in this film" and the
+   span have no home but the premise and a person's notes (20:9, 20:20).
 
 **Done this stretch, in order:**
 
@@ -241,8 +253,7 @@ it; the two share the words "open, by the writer's word".
 ## 5. How to pick this up
 
 1. Read `blind-runs/README.md`'s recurrence table, then the head of
-   `blind-runs/round-nineteen-report.md` and its sections 3 to 6.
-2. Run round twenty from `blind-runs/prompt.md`: the same notes, the open
-   field and the fold's words in hand. Check the wiring line first; both
-   doors must carry 0.1.32.
+   `blind-runs/round-twenty-report.md` and its sections 3 to 6.
+2. Build R61's edge — the place and the project's name open — as the queue
+   above says, then cue round twenty-one.
 3. Then Robert's calls (section 3), and the smaller things (section 4).

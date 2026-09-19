@@ -530,6 +530,20 @@ describe("what the fold plants (R62): the question and the setup in the writer's
   });
 });
 
+describe("open fields (R61's edge): a card's place, listed and not asked", () => {
+  it("lists an open place and leaves that card out of the unplaced question", () => {
+    const state = run(
+      wall({ id: "a", headline: "The first morning" }, { id: "b", headline: "She tells him" }, { id: "c", headline: "The key" }),
+      { type: "set_location", ids: ["a"], location: "the allotments" },
+      { type: "set_location", ids: ["b"], open: "where it happens" },
+    );
+    const reading = readWall(state);
+    expect(reading.openFields).toEqual([{ field: "location", id: "b", words: "where it happens" }]);
+    const unplaced = reading.findings.find((finding) => finding.kind === "unplaced");
+    expect(unplaced?.ids).toEqual(["c"]);
+  });
+});
+
 describe("open fields (R61): the logline and a card's when, in the writer's words", () => {
   it("lists them in story order and asks nothing about them", () => {
     const state = run(

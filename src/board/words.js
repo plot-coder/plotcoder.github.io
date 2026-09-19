@@ -66,7 +66,7 @@ export const WORD_GROUPS = [
       {
         id: "open",
         name: "Open",
-        sentence: "A card the writer has not decided, in their words on its edge: the reading lists it and asks nothing else of it until the words are cleared. A field can be open the same way — the logline, the premise, a card's when, a board's name — the words where the value would be, listed and not asked.",
+        sentence: "A card the writer has not decided, in their words on its edge: the reading lists it and asks nothing else of it until the words are cleared. A field can be open the same way — the logline, the premise, a card's place or when, a board's or the project's name — the words where the value would be, listed and not asked.",
       },
       {
         id: "thread",

@@ -71,6 +71,7 @@ import {
   setPremise,
   setPremiseOpen,
   setBoardNameOpen,
+  setProjectNameOpen,
   structureBeats,
   reidentifyProject,
   renameProject,
@@ -1065,7 +1066,7 @@ function summarize(state) {
       const pays = paidByHere.filter((item) => item.id === note.id).map((item) => `, pays off "${item.fromHeadline}" from "${item.fromBoardName}" (${episodeLabel(lastHeld.project, lastHeld.boards, item.fromBoardId, item.fromNoteId)})`).join("");
       const snap = state.revision?.snapshot?.[note.id];
       const revised = snap && (snap.headline !== note.headline || snap.change !== note.change || (snap.text ?? "") !== (note.text ?? "") || (snap.location ?? "") !== (note.location ?? "")) ? `, changed in ${state.revision.color}` : "";
-      const place = note.location ? `, at: ${note.location}` : "";
+      const place = note.location ? `, at: ${note.location}` : note.locationOpen ? `, at: open, by the writer's word — "${note.locationOpen}"` : "";
       const when = note.when ? `, when: ${note.when}` : note.whenOpen ? `, when: open, by the writer's word — "${note.whenOpen}"` : "";
       const openWord = note.open ? `, open (the writer's words): "${note.open}"` : "";
       const count = formatPages(noteEighths(note));
@@ -1576,9 +1577,11 @@ server.registerTool(
     const beatEighths = reading.beats.reduce((sum, beat) => sum + noteEighths(state.notes.find((note) => note.id === beat.id) ?? {}), 0);
     // Fields left open by the writer's word (R61): the logline and the whens are the reading's; the premise and the board's name are the project's.
     const openFieldLines = [
+      ...(projectForRead.nameOpen ? [`  - the project's name — ${projectForRead.nameOpen}`] : []),
       ...reading.openFields.filter((field) => field.field === "logline").map((field) => `  - the logline — ${field.words}`),
       ...(projectForRead.premiseOpen ? [`  - the premise — ${projectForRead.premiseOpen}`] : []),
       ...(readBoardMeta?.nameOpen ? [`  - this board's name — ${readBoardMeta.nameOpen}`] : []),
+      ...reading.openFields.filter((field) => field.field === "location").map((field) => `  - "${state.notes.find((note) => note.id === field.id)?.headline ?? field.id}" — where: ${field.words}`),
       // Whens left open in the same words are one line, not one per card (round twenty, entry 22).
       ...(() => {
         const byWords = new Map();
@@ -1599,6 +1602,7 @@ server.registerTool(
       `PlotCoder wall (${door(live, base)})`,
       ...(state.lock ? [`numbers: locked since ${String(state.lock.at).slice(0, 10)}; read_pages shows each scene's number`] : []),
       `board: "${readBoardMeta?.name ?? "?"}"${readBoardMeta?.nameOpen ? ` — its name is open, by the writer's word: "${readBoardMeta.nameOpen}"` : ""}${projectForRead.boards.length > 1 ? ` — board ${projectForRead.boards.findIndex((meta) => meta.id === readBoardMeta?.id) + 1} of ${projectForRead.boards.length} in the project "${projectForRead.name}"; open_board reads another` : ""}`,
+      ...(projectForRead.nameOpen ? [`project: "${projectForRead.name}" — its name is open, by the writer's word: "${projectForRead.nameOpen}"`] : []),
       ...(projectForRead.premiseOpen ? [`premise: open, by the writer's word — "${projectForRead.premiseOpen}"`] : []),
       `logline: ${state.loglineOpen ? `open, by the writer's word — "${state.loglineOpen}"` : state.logline ? `"${state.logline}"` : "(none yet)"}`,
       "the cast and the places are list_board's, not the reading's",
@@ -3010,7 +3014,7 @@ server.registerTool(
     });
     const total = parts.reduce((sum, part) => sum + part.on.length, 0);
     // An open card reads as open on a person's page too (round eighteen, entry 53).
-    const where_ = (note) => [note.location ? `at ${note.location}` : "", note.when ? note.when : note.whenOpen ? `when open: "${note.whenOpen}"` : "", note.rank === "beat" ? "beat" : "", note.open ? `open: "${note.open}"` : ""].filter(Boolean).join(" · ");
+    const where_ = (note) => [note.location ? `at ${note.location}` : note.locationOpen ? `where open: "${note.locationOpen}"` : "", note.when ? note.when : note.whenOpen ? `when open: "${note.whenOpen}"` : "", note.rank === "beat" ? "beat" : "", note.open ? `open: "${note.open}"` : ""].filter(Boolean).join(" · ");
     // A read opens with the door it came through, like every reading (round sixteen, entry 28); one scene a line (29).
     const lines = [
       `PlotCoder cast (${door(live, base)})`,
@@ -3087,14 +3091,16 @@ server.registerTool(
   {
     title: "Set where scenes happen",
     description:
-      "Set the place of one or more cards: where the scene happens, as the writer would say it ('the piano shop', 'the flat, kitchen') — a phrase, not a slugline. The same phrase on several cards is one place in the Cast panel; an empty string clears it. list_board shows each card's place as 'at: …'.",
-    inputSchema: { ids: z.array(z.string()).min(1), location: z.string() },
+      "Set the place of one or more cards: where the scene happens, as the writer would say it ('the piano shop', 'the flat, kitchen') — a phrase, not a slugline. The same phrase on several cards is one place in the Cast panel; an empty string clears it. Or leave the place open: pass open with the writer's words for why it is not decided — \"where it happens\" — and the reading lists it under open, by the writer's word, and stops asking where, while the card's other questions stand; a place decides it, open \"\" leaves it blank. list_board shows each card's place as 'at: …'.",
+    inputSchema: { ids: z.array(z.string()).min(1), location: z.string().optional(), open: z.string().optional() },
   },
   async (args) => {
+    if (args.location === undefined && args.open === undefined) return ok("Say which: location (the place, or \"\" to clear it), or open (the writer's words for why it is not decided).");
     const { state, changed, result, live } = await commit({
       type: "set_location",
       ids: args.ids,
-      location: args.location,
+      ...(args.location !== undefined ? { location: args.location } : {}),
+      ...(args.open !== undefined ? { open: args.open } : {}),
     });
     if (!changed) {
       const known = args.ids.filter((id) => state.notes.some((note) => note.id === id));
@@ -3102,6 +3108,10 @@ server.registerTool(
       return ok("No place changed: those cards already read that way.");
     }
     const place = result[0].location;
+    const placeOpen = result[0].locationOpen ?? "";
+    if (placeOpen) {
+      return ok(`${result.length} card(s) have their place left open, by the writer's word: "${placeOpen}"${where(live)}. The reading lists it and stops asking where; the heading prints the headline in its stead; set_location with a place decides it, open "" leaves it blank. The card is still asked about everything else.${stillOpen(result)}`, result);
+    }
     return ok(
       `${result.length} card(s) now ${place ? `at ${place}` : "nowhere"}${where(live)}.${nearPlaces(state, place)}${stillOpen(result)}`,
       result,
@@ -3507,7 +3517,7 @@ server.registerTool(
     const { project, boards, live, base, changedAt } = await readProject();
     return ok(
       [
-        `Project "${project.name}" (${door(live, base)})`,
+        `Project "${project.name}"${project.nameOpen ? ` — its name is open, by the writer's word: "${project.nameOpen}"` : ""} (${door(live, base)})`,
         `premise: ${project.premiseOpen ? `open, by the writer's word — "${project.premiseOpen}"` : project.premise ? `"${project.premise}"` : "(not set)"}`,
         `boards: ${project.boards.length}`,
         describeBoards(project, boards, changedAt),
@@ -3550,11 +3560,18 @@ server.registerTool(
   "rename_project",
   {
     title: "Rename the project",
-    description: "Rename the project — the name at the top of the wall, over every board.",
-    inputSchema: { name: z.string().min(1) },
+    description: "Rename the project — the name at the top of the wall, over every board. Or leave its name open: pass open with the writer's words for why the title is not decided — \"The Allotments, or Plot 14\" — and the name stands as it is while the reading lists the words; a name decides it, open \"\" takes the words back.",
+    inputSchema: { name: z.string().min(1).optional(), open: z.string().optional() },
   },
   async (args) => {
+    if (args.name === undefined && args.open === undefined) return ok("Say which: name, or open (the writer's words for why the title is not decided).");
     const { project, boards, rev, base, live } = await readProject();
+    if (args.name === undefined) {
+      const opened = setProjectNameOpen(project, args.open);
+      if (opened === project) return ok("Project name unchanged: it already reads that way.");
+      await writeProject(opened, boards, rev, base);
+      return ok(opened.nameOpen ? `The project keeps its name, "${opened.name}", and its name is left open, by the writer's word: "${opened.nameOpen}"${where(live)}. The reading lists it; rename_project with a name decides it.` : `The project's name, "${opened.name}", is no longer open${where(live)}.`, { name: opened.name, nameOpen: opened.nameOpen });
+    }
     const next = renameProject(project, args.name);
     if (next === project) return ok("Project name unchanged.");
     await writeProject(next, boards, rev, base);
@@ -3562,7 +3579,7 @@ server.registerTool(
     // follow the rename (round fifteen, entry 40).
     if (accountDoor) workingProject(next.id, next.name);
     const several = (next.boards ?? []).length > 1;
-    return ok(`Project renamed to "${next.name}"${where(live)}. It shows at the head of every reply, in list_boards and read_wall, and as the title of every script out${several ? `, where each board follows it as an episode line (Episode 1 of ${next.boards.length} · ${next.boards[0].name})` : ""}. The boards keep their names.`, next);
+    return ok(`Project renamed to "${next.name}"${where(live)}.${project.nameOpen ? " Its name is decided; the open words are gone." : ""} It shows at the head of every reply, in list_boards and read_wall, and as the title of every script out${several ? `, where each board follows it as an episode line (Episode 1 of ${next.boards.length} · ${next.boards[0].name})` : ""}. The boards keep their names.`, next);
   },
 );
 
@@ -3740,13 +3757,17 @@ server.registerTool(
   {
     title: "Start a project",
     description:
-      "Through the account door: start a new project of the writer's with this name — one empty board, nothing on it — and work it from now on. The writer sees it under Projects on every device. board names the first board; boardOpen leaves its name open in the writer's words instead (\"the pilot, or the film\"), so a board born from a maybe is not silently \"Board 1\".",
-    inputSchema: { name: z.string().min(1), board: z.string().optional(), boardOpen: z.string().optional(), pages: pagesSchema.optional(), minutes: z.number().positive().optional() },
+      "Through the account door: start a new project of the writer's with this name — one empty board, nothing on it — and work it from now on. The writer sees it under Projects on every device. A title not decided: open with the writer's words (\"The Allotments, or Plot 14\") instead of a name, and the project starts as Untitled project with those words beside it. board names the first board; boardOpen leaves its name open in the writer's words instead (\"the pilot, or the film\"), so a board born from a maybe is not silently \"Board 1\".",
+    inputSchema: { name: z.string().min(1).optional(), open: z.string().optional(), board: z.string().optional(), boardOpen: z.string().optional(), pages: pagesSchema.optional(), minutes: z.number().positive().optional() },
   },
   async (args) => {
     const account = await findAccount();
     if (!account) return shut("No account door: there is one project here, the open one. Set PLOTCODER_EMAIL and PLOTCODER_PASSWORD to start another on the writer's account.");
-    let record = renameProject(emptyProject(), args.name.trim());
+    if (!args.name?.trim() && !args.open?.trim()) return ok("Say which: name (the title), or open (the writer's words for why the title is not decided — the project starts as \"Untitled project\" with those words beside it).");
+    let record = emptyProject();
+    if (args.name?.trim()) record = renameProject(record, args.name.trim());
+    // A project born from a maybe is born open on its name (R61's edge): open holds the writer's words.
+    if (args.open?.trim()) record = setProjectNameOpen(record, args.open);
     if (args.board?.trim()) record = renameBoard(record, record.activeBoardId, args.board.trim());
     // A board born from a maybe is born open on its name (R61): boardOpen holds the writer's words.
     if (args.boardOpen?.trim()) record = setBoardNameOpen(record, record.activeBoardId, args.boardOpen);
@@ -3760,7 +3781,7 @@ server.registerTool(
     joinPresence(record.id);
     const targetLine = target === undefined ? ` Its target is ${formatPages(state.targetEighths)} pages, the default for a feature; set_target for a pilot or a half-hour, or pass pages or minutes here.` : ` Its target is ${formatPages(state.targetEighths)} pages.`;
     const first = record.boards[0];
-    const nameOpenLine = first.nameOpen ? ` The board's name is left open, by the writer's word: "${first.nameOpen}"; rename_board decides it.` : "";
+    const nameOpenLine = `${record.nameOpen ? ` The project's name is left open, by the writer's word: "${record.nameOpen}"; rename_project decides it.` : ""}${first.nameOpen ? ` The board's name is left open, by the writer's word: "${first.nameOpen}"; rename_board decides it.` : ""}`;
     return ok(`Started "${record.name}" (${record.id}) with its first board "${first.name}" (${first.id}), and working it now, as ${account.email}.${targetLine}${nameOpenLine}${oneCallHint(record)}`, { id: record.id, name: record.name, boardId: first.id, boardName: first.name, boardNameOpen: first.nameOpen ?? "", targetEighths: state.targetEighths });
   },
 );

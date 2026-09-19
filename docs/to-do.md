@@ -31,6 +31,13 @@ order), fixed. Merged as pull request #104 and released as 0.1.34.
    `rename_project` with `open`, `new_project` with `open` for its name,
    the reading's open head, the place line's offer. Ask in writing first
    whether the drawing carries, then build.
+1. ~~**R61's edge: a place and a project's name that can be open**~~
+   **Built 2026-09-19** (twenty 6, 16), on the R61 drawing, the question
+   asked and answered in writing in R61's entry: `locationOpen` on the card,
+   `nameOpen` on the project, `set_location` and `rename_project` with
+   `open`, `new_project` with `open` in place of a name, the reading's
+   open head, the place line's offer before the dot, the panel. Merged as
+   pull request #106 and released as 0.1.35. Not yet run blind.
 2. **Round twenty-one**, once that ships: the same notes, the place open,
    the tie rule right — or a new page of notes, since four rounds have run
    on this one and the recurrence table says what kept coming back.
@@ -122,7 +129,7 @@ that way, one pull request per fix or per round.
 (a hook rewrites the README's "Version x.y.z." line), `git push`,
 `git push --tags`; the tag runs the "Publish to npm" workflow, and the
 registry lags a few minutes (`npm view plotcoder-board dist-tags.latest
---prefer-online`). Then a pull request for the version commit. 0.1.34 is the
+--prefer-online`). Then a pull request for the version commit. 0.1.35 is the
 latest (0.1.33 was cut from `main` between #103 and #104 by another
 session, before the round's fixes).
 
@@ -248,8 +255,9 @@ it; the two share the words "open, by the writer's word".
 - **The reply tails** end "pages.." when a change note precedes a full stop;
   cosmetic, in `changeNote`.
 - **Port 5173** is held by another project on Robert's Mac; the launch entry
-  `plotcoder-dev-5180` is the one to use. The MCP bridge probe does not scan
-  5180.
+  `plotcoder-dev-5180` is the one to use, and `plotcoder-dev-5181` when a
+  second worktree's session already holds 5180. The MCP bridge probe scans
+  neither.
 - **`~/.claude.json` lost the `plotcoder-board` entry** before round
   fifteen; check it before every round (a memory records the shape).
 - **Playwright's chromium is not installed** on this Mac, so the e2e suite

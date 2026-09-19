@@ -93,6 +93,8 @@ export type BoardNote = {
   when: string;
   /** The writer's words for why the when is not decided (R61), or empty; while they stand the when is blank and the reading lists them. */
   whenOpen: string;
+  /** The writer's words for why the place is not decided (R61's edge), or empty; while they stand the place is blank, listed, and not asked. */
+  locationOpen: string;
   /** The scene's text in Fountain (R23 b): action, cues, dialogue; empty until written. */
   text: string;
   createdAt: string;
@@ -186,6 +188,7 @@ export type Command =
       location?: string;
       when?: string;
       whenOpen?: string;
+      locationOpen?: string;
       open?: string;
       text?: string;
     }
@@ -216,7 +219,7 @@ export type Command =
   | { type: "set_plant"; ids: string[]; plants?: boolean; what?: string }
   | { type: "set_open"; ids: string[]; open: string }
   | { type: "set_payoff_board"; ids: string[]; boardId: string | null; noteId?: string | null }
-  | { type: "set_location"; ids: string[]; location: string }
+  | { type: "set_location"; ids: string[]; location?: string; open?: string }
   | { type: "set_when"; ids: string[]; when?: string; open?: string }
   | { type: "apply_template"; template: string; beats?: Array<{ name: string; prompt: string; at: number }> }
   | { type: "set_text"; id: string; text: string }

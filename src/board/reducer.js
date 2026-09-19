@@ -247,6 +247,8 @@ export function seedState(now = nowIso()) {
     lengthEighths: null,
     characterIds,
     location: "",
+    // The writer's words for why the place is not decided (R61), or nothing.
+    locationOpen: "",
     when: "",
     // The writer's words for why the when is not decided (R61), or nothing.
     whenOpen: "",
@@ -368,6 +370,8 @@ export function normalizeState(value) {
     const open = typeof note?.open === "string" ? note.open : "";
     // Cards written before R37 have no place; a scene is nowhere until it is.
     const location = typeof note?.location === "string" ? note.location : "";
+    // Cards written before R61's edge have no open place; a place is decided or blank until the writer says otherwise.
+    const locationOpen = typeof note?.locationOpen === "string" ? note.locationOpen : "";
     // Cards written before R55 have no when; a scene is at no time until it is.
     const when = typeof note?.when === "string" ? note.when : "";
     // Cards written before R61 have no open when; a when is decided or blank until the writer says otherwise.
@@ -386,6 +390,7 @@ export function normalizeState(value) {
       note.payoffNoteId === payoffNoteId &&
       note.open === open &&
       note.location === location &&
+      note.locationOpen === locationOpen &&
       note.when === when &&
       note.whenOpen === whenOpen &&
       note.text === text
@@ -393,7 +398,7 @@ export function normalizeState(value) {
       return note;
     }
     patched = true;
-    return { ...note, rank, lengthEighths, characterIds, plants, plantsWhat, payoffBoardId, payoffNoteId, open, location, when, whenOpen, text };
+    return { ...note, rank, lengthEighths, characterIds, plants, plantsWhat, payoffBoardId, payoffNoteId, open, location, locationOpen, when, whenOpen, text };
   });
 
   // Boards written before the production half (Roadmap 2, item 8) have no
@@ -636,7 +641,8 @@ export function applyCommand(state, command, now = nowIso()) {
         payoffBoardId: null,
         payoffNoteId: null,
         open: cleanOpen(command.open),
-        location: cleanPlace(command.location),
+        location: cleanOpen(command.locationOpen) ? "" : cleanPlace(command.location),
+        locationOpen: cleanOpen(command.locationOpen),
         when: cleanOpen(command.whenOpen) ? "" : cleanWhen(command.when),
         whenOpen: cleanOpen(command.whenOpen),
         text: typeof command.text === "string" ? command.text : "",
@@ -1165,6 +1171,7 @@ export function applyCommand(state, command, now = nowIso()) {
         payoffNoteId: null,
         open: "",
         location: "",
+        locationOpen: "",
         when: "",
         whenOpen: "",
         text: "",
@@ -1256,11 +1263,21 @@ export function applyCommand(state, command, now = nowIso()) {
     case "set_location": {
       const ids = new Set(command.ids);
       if (ids.size === 0) return { state, changed: false };
-      const location = cleanPlace(command.location);
+      // The place, or the writer's words for why there is none yet (R61's
+      // edge, round twenty entry 16): words clear the place, a place clears
+      // the words, open "" with a place does both in one command.
+      const hasOpen = typeof command.open === "string";
+      const locationOpen = hasOpen ? cleanOpen(command.open) : null;
+      const location = hasOpen ? (locationOpen ? "" : typeof command.location === "string" ? cleanPlace(command.location) : null) : cleanPlace(command.location);
       const touched = [];
       const notes = state.notes.map((note) => {
-        if (!ids.has(note.id) || note.location === location) return note;
-        const next = bump(note, { location }, now);
+        if (!ids.has(note.id)) return note;
+        const patch = {
+          location: location === null ? (note.location ?? "") : location,
+          locationOpen: locationOpen === null ? (location ? "" : (note.locationOpen ?? "")) : locationOpen,
+        };
+        if (patch.location === (note.location ?? "") && patch.locationOpen === (note.locationOpen ?? "")) return note;
+        const next = bump(note, patch, now);
         touched.push(next);
         return next;
       });

@@ -33,6 +33,7 @@ import {
   setPremise as setPremiseOn,
   setPremiseOpen as setPremiseOpenOn,
   setBoardNameOpen as setBoardNameOpenOn,
+  setProjectNameOpen as setProjectNameOpenOn,
   structureBeats,
   liftCast,
   sameRoster,
@@ -479,6 +480,11 @@ class BoardStore {
     this.setProject(setBoardNameOpenOn(this.project, id, words));
   };
 
+  /** The writer's words for why the project's name is not decided (R61's edge); the name stands. */
+  setProjectNameOpen = (words: string): void => {
+    this.setProject(setProjectNameOpenOn(this.project, words));
+  };
+
   // --- the account mirror (R4) --------------------------------------------
 
   /** The state of any board of the project: the open one live, the rest from storage, each with the project's cast. */
@@ -874,7 +880,10 @@ export type PlotCoderWindowApi = {
   /** The logline, or with `open` the writer's words for why there is none yet (R61). */
   setLogline: (logline: string, open?: string) => unknown;
   setTarget: (targetEighths: number) => unknown;
-  setLocation: (ids: string[], location: string) => unknown;
+  /** A place, or with `open` the writer's words for why it is not decided (R61's edge). */
+  setLocation: (ids: string[], location: string, open?: string) => unknown;
+  /** The writer's words for why the project's name is not decided (R61's edge). */
+  setProjectNameOpen: (words: string) => unknown;
   /** A when, or with `open` the writer's words for why it is not decided (R61). */
   setWhen: (ids: string[], when: string, open?: string) => unknown;
   /** The writer's words for why there is no premise yet (R61); "" takes them back. */
@@ -931,7 +940,8 @@ export function installWindowApi(): void {
     setLength: (id, lengthEighths) => boardStore.dispatch({ type: "set_length", ids: [id], lengthEighths }),
     setLogline: (logline, open) => boardStore.dispatch({ type: "set_logline", logline, ...(open !== undefined ? { open } : {}) }),
     setTarget: (targetEighths) => boardStore.dispatch({ type: "set_target", targetEighths }),
-    setLocation: (ids, location) => boardStore.dispatch({ type: "set_location", ids, location }),
+    setLocation: (ids, location, open) => boardStore.dispatch({ type: "set_location", ids, location, ...(open !== undefined ? { open } : {}) }),
+    setProjectNameOpen: (words) => boardStore.setProjectNameOpen(words),
     setWhen: (ids, when, open) => boardStore.dispatch({ type: "set_when", ids, when, ...(open !== undefined ? { open } : {}) }),
     setPremiseOpen: (words) => boardStore.setPremiseOpen(words),
     setBoardNameOpen: (id, words) => boardStore.setBoardNameOpen(id, words),

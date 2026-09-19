@@ -27,6 +27,7 @@ import {
   scriptTitles,
   setPremiseOpen,
   setBoardNameOpen,
+  setProjectNameOpen,
 } from "./project";
 
 const NOW = "2026-01-01T00:00:00.000Z";
@@ -87,6 +88,20 @@ describe("open fields on the project (R61)", () => {
     const fixed = normalizeProject(old, NOW);
     expect(fixed.premiseOpen).toBe("");
     expect(fixed.boards[0].nameOpen).toBe("");
+  });
+
+  it("leaves the project's name open while the name stands, and a rename decides it", () => {
+    const project = emptyProject(NOW);
+    const open = setProjectNameOpen(project, " The Allotments, or  Plot 14 ", LATER);
+    expect(open.name).toBe("Untitled project");
+    expect(open.nameOpen).toBe("The Allotments, or Plot 14");
+    expect(setProjectNameOpen(open, "The Allotments, or Plot 14", LATER)).toBe(open);
+    const named = renameProject(open, "Plot 14", LATER);
+    expect(named.nameOpen).toBe("");
+    expect(renameProject(open, "Untitled project", LATER).nameOpen).toBe("");
+    const old = JSON.parse(JSON.stringify(project));
+    delete old.nameOpen;
+    expect(normalizeProject(old, NOW).nameOpen).toBe("");
   });
 
   it("leaves a board's name open while the name stands, and a rename decides it", () => {
@@ -252,7 +267,7 @@ describe("one cast for the project (R51)", () => {
   const NOW = "2026-09-14T00:00:00.000Z";
   const person = (id: string, name: string, notes = "") => ({ id, name, looks: "", voice: "", wants: "", needs: "", notes, createdAt: NOW, updatedAt: NOW });
   const card = (id: string, characterIds: string[]) => ({
-    id, headline: id, change: "Turns.", color: "yellow" as const, x: 0, y: 0, rotate: 0, z: 1, rank: "scene" as const, lengthEighths: null, characterIds, plants: false, plantsWhat: "", payoffBoardId: null, payoffNoteId: null, open: "", location: "", when: "", whenOpen: "", text: "", createdAt: NOW, updatedAt: NOW,
+    id, headline: id, change: "Turns.", color: "yellow" as const, x: 0, y: 0, rotate: 0, z: 1, rank: "scene" as const, lengthEighths: null, characterIds, plants: false, plantsWhat: "", payoffBoardId: null, payoffNoteId: null, open: "", location: "", locationOpen: "", when: "", whenOpen: "", text: "", createdAt: NOW, updatedAt: NOW,
   });
 
   it("lifts the boards' rosters onto a record written before it, merging by name and recasting folded ids", () => {

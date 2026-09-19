@@ -1,30 +1,32 @@
-# The blind-run prompt — round twenty: the same notes, with the open field and the fold's words in hand
+# Round nineteen — the prompt as it ran (2026-09-18)
+
+The notes it carried, "The Allotments", are `round-seventeen-idea.md`: one
+treatment, one file. `prompt.md` is now round twenty's.
 
 Paste everything below the line into a fresh agent session. The credentials are
 already in the server's wiring: the test account is `test@test.com`, password
 `test`, a throwaway that holds nothing of anyone's. The agent checks and
-empties it itself at the start of the round, in case round nineteen left
+empties it itself at the start of the round, in case round eighteen left
 something.
 
-Round twenty runs the same page of notes as seventeen, eighteen and nineteen
-— `round-seventeen-idea.md`, "The Allotments" — against the package that
-carries what nineteen produced: a field that can say "not decided" (R61: the
-logline, the premise, a card's when, a board's name take `open` beside the
-value), a fold that says what it plants (R62), the tie rule in the kernel
-(a thread tied at both ends becomes the fold and the arrow when the fold is
-free, and stays a thread when the fold is another thing's), and nineteen's
-eighteen fixes. The on-ramp's rules name the open card, the open field and
-the thread in one sentence; the guide says the rest. It measures four
-things. Whether a stranger, told "leave it open" of the logline and of a
-card's when, leaves the field open rather than the whole card or nothing.
-Whether it says what the fold plants when it folds the first morning.
-Whether the key's decision lands as one record — the thread tied, the
-reply's sentence read, one thing said about the key on the wall. And
-whether the known payoff with no scene — Con gives her his tools, which
-scene undecided — becomes an open card at the payoff end with the arrow
-landed, as the guide says. Beside those, unmeasured but worth reading for:
-whether the board's name is born open or "Board 1", and what it does with
-Declan's subplot. Nothing here tells the agent what any of these are.
+Round nineteen runs the same page of notes as seventeen and eighteen —
+`round-seventeen-idea.md`, "The Allotments" — against the package that
+carries what eighteen produced: the thread (R60), a record of its own with
+either end open and asked about from the loose end; the reading naming
+beside each open card what it would be asked if closed; the runtime's
+breakdown in the reading. Since eighteen the on-ramp's rules also name the
+open card and the thread in one sentence, so the agent arrives with that
+sentence and the guide's bullet, and nothing else. It measures three
+things. Whether a stranger, told of a thing whose payoff the writer knows
+and whose first sighting they do not, reaches for `create_thread` on the
+strength of that sentence, without the direction naming it. Whether the
+loose-end question then lands where the writer wanted it — asked from the
+payoff end, on every reading, until the writer decides. And whether the
+thread and the fold ever contradict each other on one wall once the writer
+decides where the key is first seen, which is the combine log's rule for
+two records of one idea. Beside those, unmeasured but worth reading for:
+what it does with Declan's subplot, which eighteen found no home for.
+Nothing here tells the agent what a thread is.
 
 Before you paste:
 
@@ -37,13 +39,12 @@ Before you paste:
    If it says not wired, put the entry back by hand — top-level `mcpServers`,
    `"plotcoder-board": { "type": "stdio", "command": "npx", "args": ["-y",
    "plotcoder-board@latest"], "env": { "PLOTCODER_EMAIL": "test@test.com",
-   "PLOTCODER_PASSWORD": "test" } }` — and start the session after. It has
-   vanished before three rounds now.
+   "PLOTCODER_PASSWORD": "test" } }` — and start the session after. It was
+   gone again on 2026-09-18, before this round, and was put back.
 2. **Land the fixes where the round will find them.** Both plotcoder.com and
-   `npx -y plotcoder-board@latest` carry 0.1.32, which has everything round
-   nineteen produced, the open field and the fold's words; if code has
-   changed since, merge to `main`, wait for the Pages deploy, and release
-   from a current `main`:
+   `npx -y plotcoder-board@latest` carry 0.1.29, which has everything round
+   eighteen produced and the thread; if code has changed since, merge to
+   `main`, wait for the Pages deploy, and release from a current `main`:
 
    ```bash
    npm version patch && git push && git push --tags
@@ -52,9 +53,9 @@ Before you paste:
 3. Start the session with no folder (the app's "No folder" scratch workspace
    is right). Inside a repo worktree the harness puts `CLAUDE.md` in the
    agent's context, and the run is not blind.
-4. **The writer's answers.** The same as rounds seventeen to nineteen, so
-   the walls are comparable. Answer only what the agent asks; where it does
-   not ask, do not volunteer:
+4. **The writer's answers.** The same as rounds seventeen and eighteen, so
+   the walls are comparable, with one change for the key and the bucket.
+   Answer only what the agent asks; where it does not ask, do not volunteer:
    - It is a feature, ninety pages. The title is "Plot 14".
    - It is the third year. Con's wife, Bridie, died two years ago; he has
      been on the plot alone since. The crowns were planted the spring before
@@ -78,33 +79,32 @@ Before you paste:
    - **The key and the bucket**, asked where either is first seen, which
      scene plants it, how the wall should hold it, or anything else about
      it: **"I know where it pays off, not where it is first seen"**, in
-     those words, every time, and nothing more.
-   - **The logline**, and the board's name: **"I don't know yet — leave it
-     open"**, in those words. Whether the agent leaves the field open, opens
-     something else, or leaves it blank, is the measurement.
+     those words, every time, and nothing more. Do not say "leave it open"
+     for these two, and do not say how. Whether the agent names a thread
+     for each unprompted, or files them as eighteen did — an open card at
+     the payoff end, a sentence on Con's page — is the measurement.
    - Anything else the notes do not say: **"I don't know yet — leave it
      open"**, in those words, every time. Do not say how.
 5. The agent stops after its first calls with the first friction entries and
    waits for you to say "go on". Then it asks; answer as above. When it has
    built and read the wall, stay, and direct, one at a time:
    - give the order, and have it propose the turns and mark them;
-   - "what is still open on this wall, and what would close each one" — ask
-     it to answer from the wall, not from memory; see whether the fields
-     come back with the cards;
+   - "which cards are still open, and what would close each one" — ask it
+     to answer from the wall, not from memory;
    - "I have decided about Declan's scene: it is at Con's house, in the
      kitchen, and Ruth is not there" — and see what closes;
    - "add the teaching scene between the first morning and the letter: Con
      shows her the asparagus bed and tells her three years. That is all I
      know about it";
-   - "the wrong tools: I know Con gives her his. I do not know which scene.
-     Put that on the wall" — and see whether it reaches for an open card at
-     the payoff end and the arrow, and what the fold's question does;
+   - "the key and the bucket: I still do not know where either is first
+     seen. What does the wall say about them, and will it keep asking me
+     until I decide?" — from the wall, not from memory; see what it says
+     the wall holds, and what it reaches for if the wall holds nothing;
    - "I have decided about the key: it is first seen on the first morning.
      Con unlocks the shed while she stands there with the wrong tools. Put
-     that on the wall" — and see what one call does now, what the reply
-     says, and whether the reading says one thing about the key or two;
-   - "the bucket: I still do not know where it is first seen. What does the
-     wall say, and will it keep asking me?" — from the wall;
+     that on the wall" — and see what it draws: the thread tied, the corner
+     folded, the setup arrow, or all three, and whether the reading then
+     says one thing about the key or two;
    - write the first morning;
    - how long is it, and what is missing to reach ninety;
    - anything else a writer would ask on day one.
@@ -236,47 +236,3 @@ Be blunt. A polite log is a useless log. I am going to act on this, and
 anything you smooth over is something I will not fix.
 
 ---
-
-
-## The notes
-
-Something about the allotments behind the railway in a midlands town. Con
-Brady, seventies, has had plot 14 for forty years. The council is selling
-the land — to whom? A supermarket, or housing. Decide.
-
-A younger woman gets the plot next to his. Ruth. Thirties. She is just out
-of something — prison, or hospital, or a marriage — and does not say which.
-She turns up the first morning with the wrong tools.
-
-He teaches her to grow something. Beans, potatoes — no, something slow.
-Asparagus: three years before you cut it. That is the point: three years,
-and they have one season. Or is it the third year already? If it takes
-three years there is no crop the first season, so maybe it is the third
-year and he has been on his own for two.
-
-Ending: I don't know. Either they lose the plots and she keeps the crowns in
-a bucket on a balcony, or he dies and she plants them somewhere. Not both.
-
-Scenes I know:
-- the first morning, the wrong tools
-- the council letter (pinned to the shed door? or posted to the house?)
-- a meeting in the parish hall where Con says nothing
-- the night the shed is broken into — by whom? kids, or the developer's
-  people, or Con himself for the insurance. Probably kids.
-- the day she tells him where she was
-- the last harvest
-- Declan, the son, wants him to sell the house and move to Naas. That is a
-  subplot, or it is the plot.
-- something with the key to the shed. He has the only one.
-
-Time: one growing season, March to October. Or the third year, see above.
-
-Half-hour? Feature? A feature, I think, but I only have eight scenes.
-
-Names: Con Brady. Ruth — surname? Declan Brady. The council man, no name.
-Ruth's sister rings her; we never see the sister.
-
-Things that should pay off: the wrong tools (she buys the right ones with
-her first wages, or he gives her his). The key. The bucket.
-
-Title: The Allotments, or Plot 14.

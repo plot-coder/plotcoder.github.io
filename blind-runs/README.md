@@ -108,16 +108,17 @@ published package, wired before the session, and were the first to reach the
 directions phase. Each round's findings are itemised in `REQUIREMENTS.md`,
 "The blind run".
 
-- `prompt.md` — round nineteen, as it ran: the same notes as seventeen and
-  eighteen against the package that carries the thread, the writer answering as
-  before and, for the key and the bucket, only "I know where it pays off,
-  not where it is first seen", to see whether a stranger names a thread for
-  each with only the on-ramp's sentence and the guide to go on, whether
-  the loose-end question lands where the writer
-  wanted it, and whether the thread and the fold contradict each other once
-  the key's first sighting is decided. The writer's private answers sit
-  above the divider. Its first step checks the wiring. Paste everything
-  below its divider.
+- `prompt.md` — round twenty: the same notes as seventeen to nineteen
+  against the package that carries the open field (R61) and the fold's
+  words (R62), the writer answering as before and "leave it open" of the
+  logline and the board's name, to see whether a stranger leaves a field
+  open through the field's own `open`, says what the fold plants, lands the
+  key's decision as one record, and puts the known payoff with no scene on
+  an open card at the payoff end. The writer's private answers sit above
+  the divider. Its first step checks the wiring. Paste everything below its
+  divider.
+- `round-nineteen-prompt.md` — round nineteen's own instructions, as they
+  ran, without their copy of the notes.
 - `round-nineteen-report.md` — the agent's report from round nineteen,
   verbatim, under a head saying what was fixed from it the same night and
   what waits. The next session on the agent surface starts here.

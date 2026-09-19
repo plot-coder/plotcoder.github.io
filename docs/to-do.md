@@ -9,7 +9,19 @@ is only the queue.
 
 ---
 
-## Next, in order (Robert's word, 2026-09-18, after the thread shipped)
+## Next, in order (2026-09-19, after R61 and R62 shipped)
+
+**Now:** round twenty is cued — `blind-runs/prompt.md` — the same notes
+with the open field (R61) and the fold's words (R62) in hand, against
+0.1.32. It measures whether a stranger leaves the logline, the premise's
+undecided fact and a when open through the fields' own `open`, whether it
+says what the fold plants, whether the key's decision lands as one record
+(the rule in the kernel) and whether the known payoff with no scene becomes
+an open card at the payoff end. Run it as nineteen was run: Robert opens
+the session, this side relays, fixes while it runs, files the report under
+a head, records the round, releases. After it, the calls table below.
+
+**Done this stretch, in order:**
 
 1. ~~**Write the prompt for round nineteen**~~ **Done 2026-09-18:**
    `blind-runs/prompt.md` is round nineteen's; eighteen's is archived as
@@ -51,12 +63,11 @@ is only the queue.
    Robert's "Build A": the fold says what it plants, in the writer's words;
    the tie rule runs in the kernel, both halves; a known payoff with no
    scene is an open card at the payoff end, said by the guide. Merged as
-   pull request #101 and released as 0.1.32. Not yet run blind. Left for a wall to need: several named plants on one card (B).
-   What it answers: **a fold is one flag per card and cannot say which of
-   two things a scene plants** (nineteen 42); **a payoff the writer knows
-   without a scene has no home** (nineteen 21). Whether the fold learns
-   what it plants or the thread absorbs it was the question, and A answers
-   it with the    fold; mock before building. The earlier edges:   fields — mock before building. The earlier edges:
+   pull request #101 and released as 0.1.32. Not yet run blind. Left for a
+   wall to need: several named plants on one card (B). What it answers:
+   **a fold is one flag per card and cannot say which of two things a
+   scene plants** (nineteen 42); **a payoff the writer knows without a
+   scene has no home** (nineteen 21). The earlier edges, still not decided:
    a thread's name can be typed only when it is started on the wall (the
    tag on the string is not editable; `update_thread` renames it); a thread
    is one board's, so a strand across episodes is still R50's fold; a
@@ -230,8 +241,8 @@ it; the two share the words "open, by the writer's word".
 ## 5. How to pick this up
 
 1. Read `blind-runs/README.md`'s recurrence table, then the head of
-   `blind-runs/round-eighteen-report.md` and its sections 3 to 6.
-2. Cue round nineteen: the same notes, the thread in hand — does a
-   stranger name one for the key and the bucket unprompted, and does the
-   loose-end question land where the writer wanted it.
-3. The open fields (item 2) are the mockup after that.
+   `blind-runs/round-nineteen-report.md` and its sections 3 to 6.
+2. Run round twenty from `blind-runs/prompt.md`: the same notes, the open
+   field and the fold's words in hand. Check the wiring line first; both
+   doors must carry 0.1.32.
+3. Then Robert's calls (section 3), and the smaller things (section 4).

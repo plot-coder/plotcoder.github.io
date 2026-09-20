@@ -1524,6 +1524,10 @@ describe("round sixteen", () => {
     const closed = await six.callTool("set_open", { ids: [id], open: "" });
     expect(closed).toContain("1 card(s) closed");
     expect(await six.callTool("set_open", { ids: [id], open: "the buyer" })).toContain('1 card(s) open: "the buyer"');
+    // New words replace the old whole, and the reply shows what they replaced (round twenty-two, entry 39).
+    const reworded = await six.callTool("set_open", { ids: [id], open: "the buyer, and the price" });
+    expect(reworded).toContain('before: "the buyer"');
+    await six.callTool("set_open", { ids: [id], open: "the buyer" });
     // A write on an open card does not close it, and says so (round eighteen, entry 31).
     expect(await six.callTool("set_location", { ids: [id], location: "the kitchen" })).toContain('is still open (the buyer): the words stay until set_open "" clears them');
     // Round eighteen, entry 46: an open card without a place is named as such on the pages, not read as a slugline.
@@ -1978,6 +1982,9 @@ describe("after the blind run", () => {
     const hostedTail = await run({ PLOTCODER_HOSTED: "1" });
     expect(hostedTail).not.toContain("since your last read_wall");
     expect(hostedTail).toContain("the wall now asks");
+    // Advice said once a session is not said at all where there is no session (entry 26).
+    expect(hostedTail).not.toContain("organize lays the wall out");
+    expect(hostedTail).not.toContain("pass color to choose");
   });
 
   it("drops the JSON tail when PLOTCODER_JSON=0", async () => {

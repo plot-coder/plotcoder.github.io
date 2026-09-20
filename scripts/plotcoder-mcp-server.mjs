@@ -861,6 +861,10 @@ function changeNote() {
 /** Said once per session, so a reply does not repeat its advice eighteen times (round thirteen, entry 10). */
 const saidOnce = new Set();
 function once(key, text) {
+  // The hosted door is one server per request: "once" there would be every
+  // time, nine nudges in a nine-card build (round twenty-two, entry 26). The
+  // tool's description and the guide carry the advice; the reply stays quiet.
+  if (hosted()) return "";
   if (saidOnce.has(key)) return "";
   saidOnce.add(key);
   return text;
@@ -915,7 +919,7 @@ async function commit(command) {
   noteChange(state, next, boardId);
   if (trail.length > TRAIL_CAP) trail.shift();
   undone.length = 0;
-  return { state: next, changed, result, live };
+  return { state: next, changed, result, live, before: state };
 }
 
 /**
@@ -2955,15 +2959,18 @@ server.registerTool(
     inputSchema: { ids: z.array(z.string()).min(1), open: z.string() },
   },
   async (args) => {
-    const { state, changed, result, live } = await commit({ type: "set_open", ids: args.ids, open: args.open });
+    const { state, changed, result, live, before } = await commit({ type: "set_open", ids: args.ids, open: args.open });
     if (!changed) {
       const missing = args.ids.filter((id) => !state.notes.some((note) => note.id === id));
       return ok(missing.length ? `No card with id ${missing.join(", ")}. Call list_board for the real ids.` : `Nothing changed: ${args.ids.length === 1 ? "the card already says that" : "those cards already say that"}.`);
     }
     const words = result[0]?.open ?? "";
+    // New words replace the old whole, so the reply shows what they replaced: a slip in retyping the writer's words is seen (round twenty-two, entry 39).
+    const was = [...new Set(result.map((note) => (before?.notes.find((item) => item.id === note.id)?.open ?? "").trim()).filter((old) => old && old !== words.trim()))];
+    const replaced = words && was.length ? ` The words replace what stood there whole — before: ${was.map((old) => `"${old}"`).join("; ")}.` : "";
     return ok(
       words
-        ? `${result.length} card(s) open: "${words}"${where(live)}. The reading lists ${result.length === 1 ? "it" : "them"} under "open, by the writer's word" and asks nothing else of ${result.length === 1 ? "it" : "them"} while the words stand; the card wears the words on its edge. set_open with "" closes it.`
+        ? `${result.length} card(s) open: "${words}"${where(live)}.${replaced} The reading lists ${result.length === 1 ? "it" : "them"} under "open, by the writer's word" and asks nothing else of ${result.length === 1 ? "it" : "them"} while the words stand; the card wears the words on its edge. set_open with "" closes it.`
         : `${result.length} card(s) closed${where(live)}: decided, so the wall's questions about ${result.length === 1 ? "it" : "them"} come back on their own.`,
       result,
     );

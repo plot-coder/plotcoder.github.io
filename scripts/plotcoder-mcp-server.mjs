@@ -51,6 +51,7 @@ import { paginate } from "../src/board/paginate.js";
 import { readingOrder, storyOrder } from "../src/board/readWall.js";
 import { REVISION_COLORS, revisionMarks, sceneNumbers } from "../src/board/numbering.js";
 import { sceneHeading, standInFor } from "../src/board/fountain.js";
+import { describePresence } from "../src/board/presence.js";
 import { segmentBrief, WORKFLOWS } from "../src/board/workflows.js";
 import { DEFAULT_REMINDERS, titleFromBody } from "../src/board/reminders.js";
 import crypto from "node:crypto";
@@ -437,6 +438,11 @@ function joinPresence(projectId) {
   try {
     if (accountDoor.channel) void accountDoor.client.removeChannel(accountDoor.channel);
     const channel = accountDoor.client.channel(`project:${projectId}`, { config: { presence: { key: `${accountDoor.user.id}-agent` } } });
+    // Whether presence has arrived: until it has, an empty list is not "nobody" (round twenty-two, entries 93 to 95).
+    accountDoor.presenceSynced = false;
+    channel.on("presence", { event: "sync" }, () => {
+      accountDoor.presenceSynced = true;
+    });
     channel.subscribe((status) => {
       if (status === "SUBSCRIBED") void channel.track({ name: `an agent, as ${accountDoor.email}` });
     });
@@ -4037,10 +4043,40 @@ server.registerTool(
     return ok(
       [
         `projects: ${projects.length} (as ${account.email})${projects.length === 0 ? ` — ${noProjectYet()}` : ""}`,
-        ...projects.map((row) => `  - ${row.id} — "${row.record.name}"${row.id === account.projectId ? " (working)" : ""}: ${row.record.boards.length} board(s) · ${(row.people ?? []).join(", ")}${row.id === account.projectId ? (() => { const people = presentPeople(); return people.length ? ` · open now on ${people.length} screen${people.length === 1 ? "" : "s"}: ${people.join(", ")}` : hosted() ? " · who has a wall open is not something this door can see: it answers before presence arrives (the app's People sheet shows it)" : " · no wall open right now"; })() : ""}`),
+        ...projects.map((row) => `  - ${row.id} — "${row.record.name}"${row.id === account.projectId ? " (working)" : ""}: ${row.record.boards.length} board(s) · ${(row.people ?? []).join(", ")}${row.id === account.projectId ? (() => { const people = presentPeople(); return people.length ? ` · open now on ${people.length} screen${people.length === 1 ? "" : "s"}: ${people.join(", ")}` : hosted() ? " · who has a wall open: who_is_here waits for presence and says" : " · no wall open right now"; })() : ""}`),
       ].join("\n"),
       projects.map((row) => ({ id: row.id, name: row.record.name, boards: row.record.boards.length, people: row.people })),
     );
+  },
+);
+
+server.registerTool(
+  "who_is_here",
+  {
+    title: "Who has this wall open",
+    description:
+      "Who has a wall of the working project open on a screen right now, and whether this session shows beside them. People are named as the app's People sheet names them; an agent session shows as \"an agent, as <the writer's email>\". Waits a moment for presence to arrive, so it is the one call that can say \"nobody\" and mean it; when presence does not arrive in time it says it could not see, never \"nobody\". Presence lags a second or two: this is now, not \"seen by\". Through a folder on this machine there is no account and nobody else to see.",
+    inputSchema: {},
+  },
+  async () => {
+    const account = await findAccount();
+    if (!account) {
+      if (accountRefusal) return ok(accountRefusal);
+      const { project, live } = await readProject();
+      return ok(`"${project.name}" is a wall ${live ? "open in the app on this machine" : "in a folder on this machine, with no app running"}: there is no account behind it, so nobody else can have it open.`);
+    }
+    // Reading the project opens the door on it and joins its channel.
+    let name = "";
+    try {
+      name = (await readProject()).project.name;
+    } catch (error) {
+      if (!(error instanceof DoorReply)) throw error;
+      return ok(error.message);
+    }
+    const until = Date.now() + 1500;
+    while (!accountDoor?.presenceSynced && Date.now() < until) await new Promise((resolve) => setTimeout(resolve, 100));
+    const state = accountDoor?.channel?.presenceState?.() ?? {};
+    return ok(describePresence(state, { synced: Boolean(accountDoor?.presenceSynced), project: name }));
   },
 );
 

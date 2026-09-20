@@ -586,9 +586,12 @@ than a dictionary's, so the app and you never explain a word two ways.
   now", or "no wall open right now — it shows the moment one opens", read
   from the presence the server already follows; `list_projects` says the
   same of the working project. Never "seen by": presence lags a second or
-  two. The hosted door (`mcp.plotcoder.com`) answers each call before
-  presence arrives, so it says only where the write landed, and
-  `list_projects` there says it cannot see who has a wall open.
+  two. **"Who has this open?" is `who_is_here`:** it waits a moment for
+  presence, names the people as the app's People sheet does, says this
+  session beside them ("an agent, as …"), and says "could not see in time"
+  rather than "nobody" when presence does not arrive. The hosted door
+  (`mcp.plotcoder.com`) answers each write before presence arrives, so its
+  write tails say only where the write landed.
 - **A sketch:** a written scene measured under the page it was read as is
   named one — on `write_scene`'s reply, on the card's line in `list_board`,
   and on the runtime line, which carries the second number: "about 11 pages

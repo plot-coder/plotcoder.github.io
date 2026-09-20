@@ -226,6 +226,7 @@ describe("plotcoder MCP server", () => {
       "update_character",
       "update_note",
       "update_thread",
+      "who_is_here",
       "write_scene",
     ].sort();
 
@@ -2082,6 +2083,18 @@ describe("after the blind run", () => {
     // Advice said once a session is not said at all where there is no session (entry 26).
     expect(hostedTail).not.toContain("organize lays the wall out");
     expect(hostedTail).not.toContain("pass color to choose");
+  });
+
+  it("answers who has the wall open: on a folder, nobody else can (round twenty-two, entry 93)", async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-here-"));
+    const door = new McpClient(root);
+    await door.start();
+    try {
+      expect(await door.callTool("who_is_here")).toContain("there is no account behind it, so nobody else can have it open");
+    } finally {
+      door.stop();
+      fs.rmSync(root, { recursive: true, force: true });
+    }
   });
 
   it("says when a write leaves the wall's questions as they were (round twenty-two, entries 66, 92)", async () => {

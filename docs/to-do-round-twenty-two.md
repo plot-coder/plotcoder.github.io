@@ -69,7 +69,7 @@ patches are honest; they are not the answer.
   building: it adds a table and a secret to the function.**
   *Test:* `plotcoder-http.test.mjs`, two requests with one session id — the
   first write counts, a `read_wall`, the next write quotes; advice said once.
-- [ ] **B2 · "Who has this wall open?" through the hosted door** (93, 94).
+- [x] **B2 · "Who has this wall open?" through the hosted door** *(built 2026-09-20 as `who_is_here`, ninety-two tools: waits up to a second and a half for presence; the wording is `src/board/presence.js`, pure and tested; checked live after the next deploy)* (93, 94).
   *Plan:* in `list_projects` only, when hosted, join the channel and wait for
   presence to sync (up to about a second and a half) before answering; say
   the agent's own entry apart ("and you, as an agent, as Robert"). Writes

@@ -58,7 +58,8 @@ export function envFor(headers, base = process.env) {
     PLOTCODER_HOSTED: "1",
     PLOTCODER_NO_BRIDGE: "1",
     PLOTCODER_ROOT: SCRATCH,
-    PLOTCODER_JSON: base.PLOTCODER_JSON ?? "1",
+    // Off, as on every door (the on-ramp says so; round twenty-two, entry 4): a program sets PLOTCODER_JSON=1 on the host.
+    PLOTCODER_JSON: base.PLOTCODER_JSON ?? "0",
     PLOTCODER_EMAIL: creds.email,
     PLOTCODER_PASSWORD: creds.password,
     PLOTCODER_PROJECT: typeof headers["x-plotcoder-project"] === "string" ? headers["x-plotcoder-project"] : "",

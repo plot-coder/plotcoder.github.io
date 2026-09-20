@@ -1965,6 +1965,10 @@ describe("after the blind run", () => {
       const text = await terse.callTool("list_board");
       expect(text).toContain("cards (in story order");
       expect(text).not.toContain('"notes": [');
+      // An export with no path is the file itself, tail or no tail (round twenty-two, entry 4).
+      const file = await terse.callTool("export_project");
+      expect(file).toContain("The JSON below is the file");
+      expect(JSON.parse(file.slice(file.indexOf("\n\n{"))).app).toBe("plotcoder");
     } finally {
       terse.stop();
       fs.rmSync(terseRoot, { recursive: true, force: true });

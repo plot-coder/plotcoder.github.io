@@ -51,7 +51,8 @@ function envFor(headers: Headers): Record<string, string> | null {
     PLOTCODER_HOSTED: "1",
     PLOTCODER_NO_BRIDGE: "1",
     PLOTCODER_ROOT: "/tmp/plotcoder-hosted",
-    PLOTCODER_JSON: Deno.env.get("PLOTCODER_JSON") ?? "1",
+    // Off, as on every door (the on-ramp says so; round twenty-two, entry 4).
+    PLOTCODER_JSON: Deno.env.get("PLOTCODER_JSON") ?? "0",
     PLOTCODER_EMAIL: creds.email,
     PLOTCODER_PASSWORD: creds.password,
     PLOTCODER_PROJECT: headers.get("x-plotcoder-project") ?? "",

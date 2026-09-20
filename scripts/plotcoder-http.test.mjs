@@ -37,6 +37,9 @@ describe("the hosted door", () => {
     expect(credentialsFrom({})).toBeNull();
     const env = envFor({ authorization: auth, "x-plotcoder-project": "Low Season" }, {});
     expect(env).toMatchObject({ PLOTCODER_HOSTED: "1", PLOTCODER_NO_BRIDGE: "1", PLOTCODER_EMAIL: "test@test.com", PLOTCODER_PROJECT: "Low Season" });
+    // The JSON tail is off at the hosted door as at every other, unless the host asks for it (round twenty-two, entry 4).
+    expect(env.PLOTCODER_JSON).toBe("0");
+    expect(envFor({ authorization: auth }, { PLOTCODER_JSON: "1" }).PLOTCODER_JSON).toBe("1");
   });
 
   it("says what it is at the root, and refuses a request with no sign-in", async () => {

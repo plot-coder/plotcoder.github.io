@@ -4154,7 +4154,8 @@ server.registerTool(
       fs.writeFileSync(args.path, JSON.stringify(file, null, 2));
       return ok(`Saved ${what}. Written to ${path.resolve(args.path)}: Open project in the app takes it, import_project brings it onto an account.`, { path: path.resolve(args.path), boards: project.boards.length, cards });
     }
-    return ok(`The project as a file — ${what}. The JSON below is the file; write it to a .json for Open project or import_project.`, file);
+    // The file is the reply's payload, not a tail: it comes whether or not PLOTCODER_JSON is on (round twenty-two, entry 4).
+    return { content: [{ type: "text", text: `The project as a file — ${what}. The JSON below is the file; write it to a .json for Open project or import_project.\n\n${JSON.stringify(file, null, 2)}` }] };
   },
 );
 

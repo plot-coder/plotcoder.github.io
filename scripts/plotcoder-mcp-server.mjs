@@ -54,6 +54,7 @@ import { readingOrder, storyOrder } from "../src/board/readWall.js";
 import { REVISION_COLORS, revisionMarks, sceneNumbers } from "../src/board/numbering.js";
 import { sceneHeading, standInFor } from "../src/board/fountain.js";
 import { describePresence, presenceTail } from "../src/board/presence.js";
+import { accountSessionStore, isSessionId, normalizeMemory } from "../src/board/agentSession.js";
 import { segmentBrief, WORKFLOWS } from "../src/board/workflows.js";
 import { DEFAULT_REMINDERS, titleFromBody } from "../src/board/reminders.js";
 import crypto from "node:crypto";
@@ -95,8 +96,9 @@ import {
  * makes one for the process (serveStdio), the hosted door makes one per
  * request with the writer's sign-in from the request (plotcoder-http.mjs).
  * Nothing lives at module level, so two writers never share a door.
+ * options.sessionStore stands in for the account's own (src/board/agentSession.js).
  */
-export function createPlotcoderServer(env = process.env) {
+export function createPlotcoderServer(env = process.env, options = {}) {
 
 const colorSchema = z.enum(NOTE_COLORS);
 const rankSchema = z.enum(NOTE_RANKS);
@@ -872,9 +874,10 @@ function changeNote() {
   // twelve writes whose quoted questions the next write answers (round
   // fifteen 9, eighteen 20). After it, a change is to something read, and
   // the tail quotes it.
-  // The hosted door is one server per request and remembers no reading, so it
-  // could only ever count; there the tail quotes (round twenty-two, entry 25).
-  if (!readOnce && !hosted() && (change.gone.length || change.came.length)) {
+  // The hosted door is one server per request: with no session to remember a
+  // reading by it could only ever count, so there the tail quotes (round
+  // twenty-two, entry 25).
+  if (!readOnce && remembers() && (change.gone.length || change.came.length)) {
     parts.push(`the wall's questions have changed since your last read_wall: ${change.asks} now${change.came.length ? `, ${change.came.length} of them new` : ""} — read_wall lists them`);
   } else if (change.gone.length || change.came.length) {
     parts.push(
@@ -894,13 +897,80 @@ function changeNote() {
 /** Said once per session, so a reply does not repeat its advice eighteen times (round thirteen, entry 10). */
 const saidOnce = new Set();
 function once(key, text) {
-  // The hosted door is one server per request: "once" there would be every
-  // time, nine nudges in a nine-card build (round twenty-two, entry 26). The
-  // tool's description and the guide carry the advice; the reply stays quiet.
-  if (hosted()) return "";
+  // The hosted door is one server per request: with no session, "once" there
+  // would be every time, nine nudges in a nine-card build (round twenty-two,
+  // entry 26). The tool's description and the guide carry the advice; the
+  // reply stays quiet.
+  if (!remembers()) return "";
   if (saidOnce.has(key)) return "";
   saidOnce.add(key);
   return text;
+}
+
+// --- A session for the hosted door (the to-do's B1) -------------------------
+//
+// The stdio door is one process and the variables above are its memory. The
+// hosted door makes a server per request, so there the memory rides a row of
+// the writer's own on the account, keyed by the MCP session id the door
+// issued on initialize (PLOTCODER_SESSION_ID): read before a tool runs, kept
+// after it when it has changed. No id, no account, no table: the door
+// remembers nothing and says only what is true without a memory, as before.
+// The undo trail is not carried: it holds whole walls.
+
+let sessionStore = null;
+let sessionTried = false;
+let sessionFresh = false;
+let sessionWas = "";
+
+/** Whether what this server remembers is the session's, not just this request's. */
+function remembers() {
+  return !hosted() || sessionStore !== null;
+}
+
+function sessionMemory() {
+  return normalizeMemory({ readOnce, said: [...saidOnce], lastReading, sinceRead });
+}
+
+async function recallSession() {
+  if (!hosted() || sessionTried) return;
+  sessionTried = true;
+  const id = env.PLOTCODER_SESSION_ID ?? "";
+  if (!isSessionId(id)) return;
+  try {
+    let store = options.sessionStore ?? null;
+    if (!store) {
+      const account = await findAccount();
+      if (!account) return;
+      store = accountSessionStore(account.client, account.user.id);
+    }
+    const held = await store.load(id);
+    if (!held) return;
+    readOnce = held.memory.readOnce;
+    for (const key of held.memory.said) saidOnce.add(key);
+    lastReading = held.memory.lastReading;
+    sinceRead.splice(0, sinceRead.length, ...held.memory.sinceRead);
+    sessionFresh = held.fresh;
+    sessionWas = JSON.stringify(sessionMemory());
+    sessionStore = store;
+  } catch (error) {
+    log("session:", error instanceof Error ? error.message : String(error));
+  }
+}
+
+async function keepSession() {
+  if (!sessionStore) return;
+  try {
+    const memory = sessionMemory();
+    const now = JSON.stringify(memory);
+    // A session that has nothing to remember yet needs no row.
+    if (now === sessionWas) return;
+    if (await sessionStore.save(env.PLOTCODER_SESSION_ID, memory, sessionFresh)) {
+      sessionWas = now;
+      sessionFresh = false;
+    }
+  } catch (error) {
+    log("session:", error instanceof Error ? error.message : String(error));
+  }
 }
 
 function describeCommand(command) {
@@ -1425,12 +1495,17 @@ const registerTool = server.registerTool.bind(server);
 let lane = Promise.resolve();
 server.registerTool = (name, config, handler) =>
   registerTool(name, config, (...args) => {
-    const turn = lane.then(() =>
-      handler(...args).catch((error) => {
-        if (error instanceof DoorReply) return ok(error.message);
-        throw error;
-      }),
-    );
+    const turn = lane.then(async () => {
+      await recallSession();
+      try {
+        return await handler(...args).catch((error) => {
+          if (error instanceof DoorReply) return ok(error.message);
+          throw error;
+        });
+      } finally {
+        await keepSession();
+      }
+    });
     lane = turn.catch(() => undefined);
     return turn;
   });
@@ -3047,6 +3122,8 @@ server.registerTool(
   },
   async () => {
     const last = trail[trail.length - 1];
+    // The hosted door's session carries what was read and said, not the trail, which holds whole walls: "nothing of mine" there would be false after a build.
+    if (!last && hosted()) return ok("Nothing to undo through this door: it is a fresh server on every call and keeps no trail of its changes. The writer can take any change back from the wall with ⌘Z; to take one back yourself, make the opposite change.");
     if (!last) return ok(oneCall() ? "Nothing to undo here: through plotcoder-call every call is a fresh server, so undo works only from an MCP session. The writer can take any change back from the wall with ⌘Z." : "Nothing of mine to undo in this session.");
     const { state, rev, base } = await readBoard();
     if (canon(state) !== last.after) {

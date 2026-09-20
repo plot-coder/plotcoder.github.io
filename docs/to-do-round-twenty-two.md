@@ -53,7 +53,7 @@ Patched the night of the round — there the tail quotes from the first
 write, once-a-session advice is not said, presence is not claimed. The
 patches are honest; they are not the answer.
 
-- [~] **B1 · A session for the hosted door.** *(planned and asked; waiting on Robert's word: it adds a table and a secret to the function)*
+- [x] **B1 · A session for the hosted door.** *(built and tested 2026-09-20, changed at the asking: **one table and no secret.** The row is the writer's own — the door already signs in as the writer on every request, so row-level security by user is the wall and the function needs no service key. The memory carries the last reading and the changes since as well as `readOnce` and `once()`, so a `leave_question` that misses says what the agent last read. The SDK's stateful mode keeps the session in the transport, which here dies with the request, so the door sets `Mcp-Session-Id` itself. An id with no row is a new session; no id, no account or no table is the patched behaviour. Not carried: the undo trail — `undo` through the door now says so — and presence in the tail. `src/board/agentSession.js`, R48's "A session". **Still to do, and not from a session: apply `20260920210000_agent_sessions.sql`, release, bump the pin, redeploy the function (the Worker forwards every header both ways and needs nothing); then one check that the desktop connector sends the id back.**)*
   *Plan:* MCP's Streamable HTTP has a session id (`Mcp-Session-Id`). The
   function issues one on `initialize` and keeps a small row per session — has
   it read the wall, which advice it has said — in a table behind the service

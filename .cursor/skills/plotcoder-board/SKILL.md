@@ -418,6 +418,11 @@ card of another board is not asked about as uncast here.
   whatever its board count: a series' line, or what is true before a film
   starts — "the winter the shop closes" — so a
   one-board film's standing facts have a home that is not a person's notes.
+  What is true of the whole film and of no one scene — when it runs from
+  and to, what never happens in it — goes in the premise, a sentence each;
+  `read_wall` prints it above the logline and `read_pages` at the head of
+  the script, so whoever writes a scene sees it. A fact about one scene
+  ("the cut is announced here") belongs on that scene's card.
   Not decided — "a sale, or a lease" — `set_premise` with `open` and
   the writer's words leaves it open; a line decides it. A title not decided
   — "The Allotments, or Plot 14" — `rename_project` with `open` leaves the

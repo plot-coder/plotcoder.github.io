@@ -1194,6 +1194,11 @@ describe("open fields (R61): the logline, the premise, a when and a board's name
     const born = await client.callTool("new_board", { open: "an episode, or the film" });
     expect(born).toContain('its name left open, by the writer\'s word: "an episode, or the film"');
     expect(await client.callTool("read_wall")).toContain("  - this board's name — an episode, or the film");
+    // A set premise is read back with the wall and heads the pages: it is where a fact about the whole film lives (round twenty-two, entries 13, 74).
+    await client.callTool("set_premise", { premise: "A bus route in its last year. September to New Year." });
+    expect(await client.callTool("read_wall")).toContain('premise: "A bus route in its last year. September to New Year."');
+    expect((await client.callTool("read_pages")).split("\n")[0]).toBe('the film (the premise, true of every scene): "A bus route in its last year. September to New Year."');
+    await client.callTool("set_premise", { premise: "" });
   });
 });
 

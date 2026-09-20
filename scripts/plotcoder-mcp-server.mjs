@@ -1739,7 +1739,8 @@ server.registerTool(
       ...(state.lock ? [`numbers: locked since ${String(state.lock.at).slice(0, 10)}; read_pages shows each scene's number`] : []),
       `board: "${readBoardMeta?.name ?? "?"}"${readBoardMeta?.nameOpen ? ` — its name is open, by the writer's word: "${readBoardMeta.nameOpen}"` : ""}${projectForRead.boards.length > 1 ? ` — board ${projectForRead.boards.findIndex((meta) => meta.id === readBoardMeta?.id) + 1} of ${projectForRead.boards.length} in the project "${projectForRead.name}"; open_board reads another` : ""}`,
       ...(projectForRead.nameOpen ? [`project: "${projectForRead.name}" — its name is open, by the writer's word: "${projectForRead.nameOpen}"`] : []),
-      ...(projectForRead.premiseOpen ? [`premise: open, by the writer's word — "${projectForRead.premiseOpen}"`] : []),
+      // A set premise is read back with the wall: it is where a fact about the whole film lives (rounds twenty 9, 20; twenty-two 13, 74).
+      ...(projectForRead.premiseOpen ? [`premise: open, by the writer's word — "${projectForRead.premiseOpen}"`] : (projectForRead.premise ?? "").trim() ? [`premise: "${projectForRead.premise.trim()}"`] : []),
       `logline: ${state.loglineOpen ? `open, by the writer's word — "${state.loglineOpen}"` : state.logline ? `"${state.logline}"` : "(none yet)"}`,
       "the cast and the places are list_board's, not the reading's",
       state.targetOpen
@@ -2451,7 +2452,9 @@ server.registerTool(
         lines.push(`${line}${changedTexts.has(line) ? "    *" : ""}${verbs ? `    ◂ ${verbs.join(", ")}` : ""}`);
       }
     }
-    return ok(lines.join("\n"));
+    // The film's own facts at the head, for whoever writes a scene from these pages: a card cannot show what is true of the whole film (round twenty-two, entry 74).
+    const film = (project.premise ?? "").trim() ? [`the film (the premise, true of every scene): "${project.premise.trim()}"`] : [];
+    return ok([...film, ...lines].join("\n"));
   },
 );
 
@@ -3810,7 +3813,7 @@ server.registerTool(
   {
     title: "Set the project's premise",
     description:
-      "Set the project's premise: the line above every board's logline, held by the project whatever its board count — what a series is about, or what is true before a film starts ('the winter the shop closes'). An empty string clears it. Or leave it open: pass open with the writer's words for why there is no premise yet — \"the buyer: a sale, or a lease\" — and the reading lists it under open, by the writer's word; a premise decides it, open \"\" leaves it blank. Boards keep their own loglines.",
+      "Set the project's premise: the line above every board's logline, held by the project whatever its board count — what a series is about, or what is true before a film starts ('the winter the shop closes'). An empty string clears it. Or leave it open: pass open with the writer's words for why there is no premise yet — \"the buyer: a sale, or a lease\" — and the reading lists it under open, by the writer's word; a premise decides it, open \"\" leaves it blank. Boards keep their own loglines. The premise is also where a fact about the whole film goes when no card holds it: its span (\"September to New Year\"), a rule it keeps (\"Con does not die in this film\") — a sentence each. read_wall prints it above the logline and read_pages at the head of the script, so whoever writes a scene sees it; a fact about one scene belongs on that scene's card.",
     inputSchema: { premise: z.string().optional(), open: z.string().optional() },
   },
   async (args) => {

@@ -2440,7 +2440,7 @@ server.registerTool(
         // The lines the camera cannot see (the handover's call 6): marked on the page, never asked on the wall.
         const camera = note ? cameraLines(note.text ?? "") : [];
         cameraByText = new Map(camera.map((item) => [item.line, item.verbs]));
-        const cameraNote = camera.length ? ` · camera: ${camera.length} line${camera.length === 1 ? "" : "s"} it cannot see (${cameraVerbs(camera).join(", ")})` : "";
+        const cameraNote = camera.length ? ` · camera: ${camera.length} line${camera.length === 1 ? "" : "s"} it cannot see (${cameraVerbs(camera).join(", ")}) — a mark, not a question: nothing is owed for it` : "";
         lines.push(`${line}    [[id: ${note?.id ?? "?"} · ${note && isMeasured(note) ? "measured" : "estimated"} ${formatPages(note ? noteEighths(note) : 0)}pp${standIn}${numbered}${revised}${cameraNote}]]`);
       } else {
         const verbs = cameraByText.get(line.trim());

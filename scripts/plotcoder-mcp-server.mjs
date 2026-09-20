@@ -830,6 +830,7 @@ function noteChange(before, after, boardId = null) {
     eighthsBefore: boardEighths(before),
     eighthsAfter: boardEighths(after),
     target: after.targetEighths,
+    targetOpen: Boolean((after.targetOpen ?? "").trim()),
   };
 }
 function changeNote() {
@@ -841,7 +842,9 @@ function changeNote() {
   // twelve writes whose quoted questions the next write answers (round
   // fifteen 9, eighteen 20). After it, a change is to something read, and
   // the tail quotes it.
-  if (!readOnce && (change.gone.length || change.came.length)) {
+  // The hosted door is one server per request and remembers no reading, so it
+  // could only ever count; there the tail quotes (round twenty-two, entry 25).
+  if (!readOnce && !hosted() && (change.gone.length || change.came.length)) {
     parts.push(`the wall's questions have changed since your last read_wall: ${change.asks} now${change.came.length ? `, ${change.came.length} of them new` : ""} — read_wall lists them`);
   } else if (change.gone.length || change.came.length) {
     parts.push(
@@ -849,7 +852,9 @@ function changeNote() {
     );
   }
   if (change.leftAfter !== change.leftBefore) parts.push(`left, for now: ${change.leftAfter} (was ${change.leftBefore})`);
-  if (change.eighthsAfter !== change.eighthsBefore) parts.push(`runtime now about ${formatPages(change.eighthsAfter)} of ${formatPages(change.target)} pages`);
+  // An open target is not 120: the tail says the pages and that the target is open, as the reading does (round twenty-two, entry 19).
+  if (change.eighthsAfter !== change.eighthsBefore)
+    parts.push(change.targetOpen ? `runtime now about ${formatPages(change.eighthsAfter)} pages, the target open` : `runtime now about ${formatPages(change.eighthsAfter)} of ${formatPages(change.target)} pages`);
   // No full stop of its own: the reply it rides on ends the sentence (round sixteen, entry 11).
   return parts.length ? `; ${parts.join("; ")}` : "";
 }

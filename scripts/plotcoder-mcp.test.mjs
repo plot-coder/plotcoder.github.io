@@ -1071,6 +1071,11 @@ describe("open fields (R61): the logline, the premise, a when and a board's name
     const read = await client.callTool("read_wall");
     expect(read).toContain('target open, by the writer\'s word — "half-hour or feature"');
     expect(read).toContain("  - the target — half-hour or feature");
+    // A write's tail does not read the runtime against 120 while the target is open (round twenty-two, entry 19).
+    const sizedOpen = await client.callTool("set_length", { ids: ["tom-lies"], pages: 2 });
+    expect(sizedOpen).toMatch(/runtime now about [\d /]+ pages, the target open/);
+    expect(sizedOpen).not.toContain("of 120 pages");
+    await client.callTool("undo");
     expect(await client.callTool("set_target", { pages: 90 })).toContain("Target is 90 pages");
     expect(await client.callTool("read_wall")).not.toContain("the target —");
     // A three-line scene on an unsized card is a sketch, and the reading carries the second number.
@@ -1955,6 +1960,24 @@ describe("after the blind run", () => {
     await blind.callTool("create_note", { headline: "The gun", change: "Dana moves it to her jacket.", rank: "beat", x: 600, y: 0 });
     const read = await blind.callTool("read_wall");
     expect(read).toMatch(/\[empty\] Nothing runs between "The gate" and "The gun"/);
+  });
+
+  it("counts the wall's questions until the first reading, and quotes from the first write through the hosted door (round twenty-two, entry 25)", async () => {
+    const run = async (extra) => {
+      const root = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-tail-"));
+      const door = new McpClient(root, extra);
+      await door.start();
+      try {
+        return await door.callTool("create_note", { headline: "A card on its own", change: "Something is different.", x: 2000, y: 2000 });
+      } finally {
+        door.stop();
+        fs.rmSync(root, { recursive: true, force: true });
+      }
+    };
+    expect(await run({})).toContain("the wall's questions have changed since your last read_wall");
+    const hostedTail = await run({ PLOTCODER_HOSTED: "1" });
+    expect(hostedTail).not.toContain("since your last read_wall");
+    expect(hostedTail).toContain("the wall now asks");
   });
 
   it("drops the JSON tail when PLOTCODER_JSON=0", async () => {

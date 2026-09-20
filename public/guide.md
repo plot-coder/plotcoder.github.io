@@ -544,7 +544,9 @@ than a dictionary's, so the app and you never explain a word two ways.
   session's first `read_wall` it counts and points — "the wall's questions
   have changed since your last read_wall: 4 now, 2 of them new" — because a
   build is a run of writes whose quoted questions the next write answers;
-  after the first reading it quotes them.
+  after the first reading it quotes them. Through the hosted door
+  (`mcp.plotcoder.com`) it quotes from the first write: that door keeps no
+  session, so it cannot know what you have read.
 - **The account tail** says what the wall shows: "open on Robert's screen
   now", or "no wall open right now — it shows the moment one opens", read
   from the presence the server already follows; `list_projects` says the

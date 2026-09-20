@@ -38,9 +38,13 @@ tail, the presence tail, and the door's name as the wiring.
    session that, with `SUPABASE_SERVICE_ROLE_KEY` in the server's
    environment, calls `list_questions`, writes each answer into
    `public/writers.html` in the section it names, opens one pull request,
-   and calls `answer_question` for each with the section. Confirm first
-   that `20260919190000_questions_anyone.sql` is applied on the plotcoder
-   project; the other session's note asks and does not answer.
+   and calls `answer_question` for each with the section.
+   `20260919190000_questions_anyone.sql` is applied — confirmed on the
+   plotcoder project 2026-09-19: the `anon` insert policy, the one-paragraph
+   check and the nullable `user_id` and `email` are all there. Neither
+   questions migration shows in the migration history, because both went in
+   through the Management API as SQL; read the table, not the history. Three
+   questions on the list, all answered, none waiting.
 4. Robert's calls that remain (section 3, all struck; the table stays as
    the record) and the smaller things (section 4). Decide: a placeless
    card's heading on the pages, said by three rounds (18:46, 19:44, 20:48);
@@ -298,9 +302,9 @@ word on each is the word to build it.
   2026-09-19 on Robert's word; `npm run test:e2e` passes locally, ten of
   ten, on its own port.
 - ~~**R64's `questions` table** needs its migration applied~~ Applied
-  2026-09-19 by the other session through the Management API. Whether
-  `20260919190000_questions_anyone.sql` is applied too is not recorded;
-  confirm before the weekly agent is set up.
+  2026-09-19 by the other session through the Management API, and
+  `20260919190000_questions_anyone.sql` with it — confirmed from the
+  table's policies and constraints the same night (queue item 3).
 - **wrangler wants Node 22**, and this Mac's default is 20; the Homebrew
   `node@22` at `/usr/local/opt/node@22/bin` is x64 while npx's cache had an
   arm64 wrangler. `cloudflare/mcp-door/README.md` says how to get round it.

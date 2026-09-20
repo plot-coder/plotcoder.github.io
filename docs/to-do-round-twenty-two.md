@@ -257,6 +257,91 @@ could be, a recommendation, what a yes means.
   writer's own words being in two places. One clause, said once. *Test:*
   server test.
 
+## H. From the agent's own issues file (read 2026-09-20)
+
+After its report the round's agent wrote `plotcoder-issues.md`: forty-four
+issues with steps, the reply quoted, what it expected and a "done when". It
+is kept verbatim as `blind-runs/round-twenty-two-issues.md`. It was written
+against 0.1.42, so most of it was already done when it was read — and it is
+the better-written list, so the next round's to-do should start from a file
+like it. **Its issue A8 guessed the hosted door's cause correctly** ("one
+server per request?") from the outside.
+
+**Already done, by its numbers:** A1, A2, A3, A4, A5, A6, A7, A8 (patched; B1
+here is the real answer), A9, A11, A12 (differently: the mark and the
+headline, not the mark alone — every heading stays its own), A13 · B1 (as
+set aside, R66), B2 (R67) · C2 (`read_wall` with `only: "questions"`), C3,
+C4 (no tool tidies on its own), C5 (`kind`), C6, C7's tool, C8 · D2, D3 (the
+three counts, and each card once), D4, D6 · E2, E3, E5 · E1 (a reading map,
+not a second file) · E4 (the rules it lists were fixed instead of
+documented, all but the camera's verbs, which the reply now states).
+
+**Decided against, with the reason** (drawn in the two mockup pages unless
+said): B3, open items as a list — it turns the writer's sentence into a
+form, and R67 removes most of the reason a card carries three clauses; B5,
+a version slot — Robert chose the words, and a version that steps forward
+now inherits its threads and fold, so "either way" is said once; B6, words
+on an arrow — how a plant pays off is that scene's change line; B8's ledger
+and "decided, not told" — a person's open line is built, the span is the
+premise's, and what a writer has not told their agent is not the wall's;
+B9, an open gap — the question now offers "not that far yet" and
+`leave_question` takes it; B10, a link from an open item to a note — the
+write's reply says when both exist. A14's fractions: eighths are the
+industry's unit.
+
+**What it caught that this to-do had missed** (H1 to H7 built and tested 2026-09-20; H8 to H10 are Robert's to see):
+
+- [x] **H1 · A requirement number in a parameter's description** (its A14):
+  `create_note`'s `locationOpen` says "(R61's edge)". The test that keeps
+  ticket numbers out reads tool descriptions and not parameters. *Plan:*
+  remove it, and widen the test to every parameter's description. *Best?*
+  Yes: the test is the fix. *Test:* the widened test.
+- [x] **H2 · `export_project`'s description has a blank where a path goes**
+  (A14), on the hosted door, which has no folder. *Plan:* when hosted, the
+  description says there is no disk and the reply's JSON is the file.
+  *Best?* Yes. *Test:* the description under `PLOTCODER_HOSTED=1`.
+- [x] **H3 · `set_logline` and `set_premise` do not say what they replaced**
+  (D1). `set_open`, `set_plant` and `set_target` now do. *Plan:* the same
+  "before:" clause. *Best?* Yes; one rule for every write that replaces the
+  writer's words. *Test:* server test.
+- [x] **H4 · `set_rank` says "organize lays a row per beat" every time**
+  (D7), to an agent told to leave the layout alone. *Plan:* once a session,
+  and not at all through the hosted door, as the other advice is. *Test:*
+  server test.
+- [x] **H5 · A new card can land on a card that is already there** (A10).
+  `nextPlace` looks only at the last card of the story, so it can put a
+  card on top of one set aside (or any card off the chain). *Plan:* step
+  along the row until the spot is free of every card the wall draws at its
+  own place. *Best?* Yes; a version behind another is not drawn at its own
+  x,y, so it is ignored. *Test:* server test with a card set aside in the
+  way.
+- [x] **H6 · What is open on a card set aside is in no reading** (C1).
+  `describeUndecided` walks the story's order. *Plan:* cards set aside are
+  listed after the film's, marked "(set aside)". *Best?* Yes: the view is
+  "everything undecided", and a card kept for later is exactly where
+  undecided things sit. *Test:* `readWall.test.ts`.
+- [x] **H7 · The local door says "no wall open right now" on every write**
+  (C7). The hosted door now says nothing. *Plan:* the tail mentions presence
+  only when it differs from what the last reply said; `who_is_here` is the
+  question's tool. *Best?* Yes. *Test:* two writes, the second silent.
+- [~] **H8 · The camera's mark is not in the words** (D5). It is in the app's
+  Pages now, so the words sheet should say what it is. *A person sees the
+  words sheet: the sentence, for Robert's word* — "**The camera's mark.** A
+  small ◂ in the margin of Pages beside a line that says what someone knows,
+  feels, thinks or wants, which a camera cannot see. A mark, not a question:
+  keep the line or show it. It never prints."
+- [~] **H9 · A person who may or may not be in a scene** (B4). "Whether Tomás
+  is there: I don't know yet" went into a card's open words; the cast
+  counts and the "gone for a third of the story" check cannot see a maybe.
+  *To draw:* "Tomás?" on the card's cast line, listed under open, counted
+  neither way. R61's shape once more, on the cast line.
+- [~] **H10 · A note on a card, for what is also true of the scene** (B7).
+  "The cut is announced in this scene" had no home on the card. The premise
+  now heads `read_pages`; a fact about one scene still has only the change
+  line, the text, or open words. *To draw, with a recommendation against
+  unless a second round asks:* a card has two lines by design (D-rule: what
+  changes), and a notes field is where a wall turns into a document.
+
 ---
 
 ## Every entry, accounted for

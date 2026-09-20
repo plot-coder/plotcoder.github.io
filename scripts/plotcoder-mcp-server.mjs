@@ -53,7 +53,7 @@ import { paginate } from "../src/board/paginate.js";
 import { readingOrder, storyOrder } from "../src/board/readWall.js";
 import { REVISION_COLORS, revisionMarks, sceneNumbers } from "../src/board/numbering.js";
 import { sceneHeading, standInFor } from "../src/board/fountain.js";
-import { describePresence } from "../src/board/presence.js";
+import { describePresence, presenceTail } from "../src/board/presence.js";
 import { segmentBrief, WORKFLOWS } from "../src/board/workflows.js";
 import { DEFAULT_REMINDERS, titleFromBody } from "../src/board/reminders.js";
 import crypto from "node:crypto";
@@ -1009,9 +1009,17 @@ function nextPlace(state) {
   const last = order[order.length - 1];
   if (!last) return { x: 140, y: 140 };
   const originX = Math.min(...state.notes.map((note) => note.x));
-  const x = last.x + NOTE_WIDTH + GAP;
-  if (x + NOTE_WIDTH > originX + ROW_WIDTH) return { x: originX, y: last.y + NOTE_HEIGHT + GAP };
-  return { x, y: last.y };
+  // Every card the wall draws at its own x,y is in the way — a card set aside too, which is on the wall and off
+  // the story; a version behind another is drawn behind its sibling, so its own x,y is nobody's (the issues file, A10).
+  const drawn = state.notes.filter((note) => !note.alternativeOf);
+  const taken = (spot) => drawn.some((note) => Math.abs(note.x - spot.x) < NOTE_WIDTH * 0.7 && Math.abs(note.y - spot.y) < NOTE_HEIGHT * 0.7);
+  let spot = { x: last.x + NOTE_WIDTH + GAP, y: last.y };
+  for (let tries = 0; tries < 200; tries += 1) {
+    if (spot.x + NOTE_WIDTH > originX + ROW_WIDTH) spot = { x: originX, y: spot.y + NOTE_HEIGHT + GAP };
+    if (!taken(spot)) return spot;
+    spot = { x: spot.x + NOTE_WIDTH + GAP, y: spot.y };
+  }
+  return spot;
 }
 
 /** Which door a read came through, for the head of a reply: the account as whom, the open app, or the file at which path. */
@@ -1043,13 +1051,14 @@ function presentPeople() {
   }
 }
 
+/** What the last account tail said about presence, so the next says it again only when it has changed. */
+let lastPresenceSaid = null;
+
 /** The account tail says what the wall shows: open on whose screen, or no wall open, never a bare "live". */
 function accountTail() {
-  const people = presentPeople();
-  // The hosted door is a server per request: it joins the channel and answers before presence has synced, so
-  // an empty list there is not "nobody". It says where the write landed and claims nothing (round twenty-two, entries 93 to 95).
-  if (!people.length) return hosted() ? " (saved to the account; it shows on any open wall the moment it lands)" : " (saved to the account; no wall open right now — it shows the moment one opens)";
-  return ` (saved to the account; open on ${people.length === 1 ? `${people[0]}'s screen` : `${people.length} screens: ${people.join(", ")}`} now)`;
+  const said = presenceTail(presentPeople(), lastPresenceSaid, hosted());
+  lastPresenceSaid = said.key;
+  return said.text;
 }
 
 function where(live) {
@@ -1210,6 +1219,14 @@ function storyRunsLine(state, aroundIds) {
   const from = Math.max(0, at - 1);
   const slice = order.slice(from, from + 4);
   return ` The story now runs, around it: ${from > 0 ? "… → " : ""}${slice.map(quote).join(" → ")}${from + 4 < order.length ? " → …" : ""} (${order.length} cards in all).`;
+}
+
+/** " Before: "…"." — the words a write replaced, a value or the open words beside it; nothing when nothing stood there or nothing changed. */
+function replacedWords(before, after) {
+  const was = before.map((words) => (words ?? "").trim()).filter(Boolean);
+  const now = new Set(after.map((words) => (words ?? "").trim()).filter(Boolean));
+  const gone = was.filter((words) => !now.has(words));
+  return gone.length ? ` Before: ${gone.map((words) => `"${words}"`).join("; ")}.` : "";
 }
 
 /** "about 7 of 120 pages", or "about 7 pages, the target open": an open target is not 120 in any reply (round twenty-two, entries 19, 44). */
@@ -1453,15 +1470,17 @@ server.registerTool(
   },
   async (args) => {
     if (args.logline === undefined && args.open === undefined) return ok("Say which: logline (the sentence, or \"\" to clear it), or open (the writer's words for why there is none yet).");
-    const { state, changed, live } = await commit({ type: "set_logline", ...(args.logline !== undefined ? { logline: args.logline } : {}), ...(args.open !== undefined ? { open: args.open } : {}) });
+    const { state, changed, live, before } = await commit({ type: "set_logline", ...(args.logline !== undefined ? { logline: args.logline } : {}), ...(args.open !== undefined ? { open: args.open } : {}) });
+    // Every write that replaces the writer's words says what stood there (round twenty-two's issues file, D1).
+    const wasLogline = replacedWords([before?.logline, before?.loglineOpen], [state.logline, state.loglineOpen]);
     if (!changed) return ok(args.logline === "" && !state.loglineOpen ? "Logline cleared." : "Logline unchanged: it already read that way.");
     if (state.loglineOpen) {
-      return ok(`Logline left open, by the writer's word: "${state.loglineOpen}"${where(live)}. The reading lists it and asks nothing; set_logline with text decides it, open "" leaves it blank.`, { logline: state.logline, loglineOpen: state.loglineOpen });
+      return ok(`Logline left open, by the writer's word: "${state.loglineOpen}"${where(live)}. The reading lists it and asks nothing; set_logline with text decides it, open "" leaves it blank.${wasLogline}`, { logline: state.logline, loglineOpen: state.loglineOpen });
     }
     return ok(
       state.logline
-        ? `Logline set: "${state.logline}"${where(live)}.`
-        : `Logline cleared${where(live)}.`,
+        ? `Logline set: "${state.logline}"${where(live)}.${wasLogline}`
+        : `Logline cleared${where(live)}.${wasLogline}`,
       { logline: state.logline, loglineOpen: state.loglineOpen },
     );
   },
@@ -1486,7 +1505,7 @@ server.registerTool(
     });
     const { beats, scenes } = countRanks(state);
     return ok(
-      `${result?.length ?? 0} card(s) are now ${args.rank}${where(live)}. The board holds ${beats} beats and ${scenes} scenes. The rows are as they were; organize lays a row per beat.`,
+      `${result?.length ?? 0} card(s) are now ${args.rank}${where(live)}. The board holds ${beats} beats and ${scenes} scenes. The rows are as they were.${once("rank-rows", " organize lays a row per beat, when the writer wants the wall laid out.")}`,
       result,
     );
   },
@@ -1580,7 +1599,7 @@ server.registerTool(
       before: z.string().optional().describe("Or before this card (id or headline)."),
       location: z.string().optional(),
       when: z.string().optional().describe('When the scene happens, as the writer says it — "night", "day four, dawn" — printed after the place on the scene heading.'),
-      locationOpen: z.string().optional().describe("The writer's words for why the place is not decided (R61's edge): the card is born with its place open, listed and not asked where, while its other questions stand."),
+      locationOpen: z.string().optional().describe("The writer's words for why the place is not decided: the card is born with its place open, listed and not asked where, while its other questions stand."),
       whenOpen: z.string().optional().describe("The writer's words for why the when is not decided: the card is born with its when open, listed and not asked."),
       open: z.string().optional().describe("The writer's words for what is not decided about this card — \"whether Tom knows\" — so the card is born open: the reading lists it and asks nothing else of it until the words are cleared."),
       characters: z.array(z.string().min(1)).optional(),
@@ -4048,8 +4067,9 @@ server.registerTool(
     const next = args.open !== undefined ? setPremiseOpen(project, args.open) : setPremise(project, args.premise);
     if (next === project) return ok("Premise unchanged.");
     await writeProject(next, boards, rev, base);
-    if (next.premiseOpen) return ok(`Premise left open, by the writer's word: "${next.premiseOpen}"${where(live)}. The reading lists it and asks nothing; set_premise with a line decides it, open "" leaves it blank.`, next);
-    return ok(`Premise ${next.premise ? `set to "${next.premise}"` : "cleared"}${where(live)}.`, next);
+    const wasPremise = replacedWords([project.premise, project.premiseOpen], [next.premise, next.premiseOpen]);
+    if (next.premiseOpen) return ok(`Premise left open, by the writer's word: "${next.premiseOpen}"${where(live)}.${wasPremise} The reading lists it and asks nothing; set_premise with a line decides it, open "" leaves it blank.`, next);
+    return ok(`Premise ${next.premise ? `set to "${next.premise}"` : "cleared"}${where(live)}.${wasPremise}`, next);
   },
 );
 
@@ -4485,7 +4505,7 @@ server.registerTool(
   {
     title: "Save the project as a file",
     description:
-      `The project the server is working, as the file Save project writes and Open project takes: the record, every board with its cards, the reminders and the writer's structures. Pass path to write it (a .json) — an absolute path, since a relative one resolves from the folder the server was started in, which is ${process.cwd()} — this session's own folder when the server was started from it, and somewhere else when it was not; without a path, the reply's JSON is the file. Pictures and takes on the account are not in the file. Works through every door.`,
+      `The project the server is working, as the file Save project writes and Open project takes: the record, every board with its cards, the reminders and the writer's structures. ${hosted() ? "This door has no disk: call it without a path and the reply's JSON is the file, to write wherever you keep files." : `Pass path to write it (a .json) — an absolute path, since a relative one resolves from the folder the server was started in, which is ${process.cwd()} — this session's own folder when the server was started from it, and somewhere else when it was not; without a path, the reply's JSON is the file.`} Pictures and takes on the account are not in the file. Works through every door.`,
     inputSchema: { path: z.string().optional() },
   },
   async (args) => {

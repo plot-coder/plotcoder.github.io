@@ -20,6 +20,22 @@ export function readPresence(state) {
 }
 
 /**
+ * What a write's tail says about presence, and the key to remember it by.
+ * "No wall open right now" rode on forty writes and stopped being read, so a
+ * change to it would have been missed (round twenty-two, entry 95): it is said
+ * when it changes, and otherwise the tail says only where the write landed.
+ * The hosted door is a server per request and answers before presence
+ * arrives, so an empty list there is not "nobody" and it claims nothing.
+ */
+export function presenceTail(people, lastKey, hosted) {
+  const key = [...people].sort().join("|");
+  if (people.length === 0 && hosted) return { key, text: " (saved to the account; it shows on any open wall the moment it lands)" };
+  if (key === lastKey) return { key, text: " (saved to the account)" };
+  if (people.length === 0) return { key, text: " (saved to the account; no wall open right now — it shows the moment one opens)" };
+  return { key, text: ` (saved to the account; open on ${people.length === 1 ? `${people[0]}'s screen` : `${people.length} screens: ${people.join(", ")}`} now)` };
+}
+
+/**
  * The answer to "who has this wall open right now?", as a sentence or two.
  * `synced` is whether presence arrived before the door had to answer: when it
  * did not, the door says it could not see, never "nobody".

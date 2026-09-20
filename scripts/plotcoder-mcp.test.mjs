@@ -2221,6 +2221,12 @@ describe("after the blind run", () => {
       expect(ordered).toContain("No card moved");
       const last = await where();
       for (const id of Object.keys(before)) expect(last[id]).toBe(before[id]);
+      // A new card never lands on a card the wall draws there — one set aside is on the wall and off the story (the issues file, A10).
+      const parked = await door.callToolData("create_note", { headline: "A scene for later", change: "Something." });
+      await door.callTool("set_aside", { ids: [parked.id] });
+      const next = await door.callToolData("create_note", { headline: "The one after", change: "Something else." });
+      const near = Math.abs(next.x - parked.x) < 100 && Math.abs(next.y - parked.y) < 100;
+      expect(near).toBe(false);
       // organize is still there, and still the way to lay the wall out.
       expect(await door.callTool("organize")).toMatch(/Organized \d+ card/);
     } finally {
@@ -2249,6 +2255,34 @@ describe("after the blind run", () => {
     } finally {
       door.stop();
       fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("says what a logline and a premise replaced, and tells a door with no disk how to export (the issues file, D1, A14)", async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-before-"));
+    const door = new McpClient(root);
+    await door.start();
+    try {
+      await door.callTool("set_logline", { logline: "Can a lie be a kindness?" });
+      expect(await door.callTool("set_logline", { logline: "Can Maya forgive a useful lie?" })).toContain('Before: "Can a lie be a kindness?".');
+      expect(await door.callTool("set_logline", { open: "two questions, not chosen" })).toContain('Before: "Can Maya forgive a useful lie?".');
+      await door.callTool("set_premise", { premise: "A season about a lie." });
+      expect(await door.callTool("set_premise", { premise: "A season about a lie. September to New Year." })).toContain('Before: "A season about a lie.".');
+    } finally {
+      door.stop();
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+    const hostedRoot = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-nodisk-"));
+    const hosted = new McpClient(hostedRoot, { PLOTCODER_HOSTED: "1" });
+    await hosted.start();
+    try {
+      const { tools } = await hosted.request("tools/list", {});
+      const description = tools.find((tool) => tool.name === "export_project").description;
+      expect(description).toContain("This door has no disk");
+      expect(description).not.toMatch(/which is\s+—/);
+    } finally {
+      hosted.stop();
+      fs.rmSync(hostedRoot, { recursive: true, force: true });
     }
   });
 
@@ -2316,6 +2350,12 @@ describe("after the blind run", () => {
   it("keeps ticket numbers out of every tool description", async () => {
     const { tools } = await blind.request("tools/list", {});
     for (const tool of tools) expect(tool.description).not.toMatch(/\b[RD]\d\d\b|question \d+/);
+    // And out of every parameter's description: an agent reads those too (round twenty-two's issues file, A14).
+    for (const tool of tools) {
+      for (const [name, schema] of Object.entries(tool.inputSchema?.properties ?? {})) {
+        expect(`${tool.name}.${name}: ${schema.description ?? ""}`).not.toMatch(/\b[RD]\d\d\b|question \d+/);
+      }
+    }
   });
 });
 
@@ -2943,7 +2983,10 @@ describe("round eleven's directions", () => {
   it("says the rows are as they were, that a length is the writer's, and where a rename left the page", async () => {
     const board = await eleven.callToolData("list_board");
     const ids = board.notes.map((note) => note.id);
-    expect(await eleven.callTool("set_rank", { ids: [ids[0]], rank: "beat" })).toContain("The rows are as they were; organize lays a row per beat");
+    // Said once a session, not on every marking (round twenty-two's issues file, D7).
+    expect(await eleven.callTool("set_rank", { ids: [ids[0]], rank: "beat" })).toContain("The rows are as they were. organize lays a row per beat");
+    expect(await eleven.callTool("set_rank", { ids: [ids[0]], rank: "scene" })).not.toContain("organize lays a row per beat");
+    await eleven.callTool("set_rank", { ids: [ids[0]], rank: "beat" });
     expect(await eleven.callTool("set_length", { ids: [ids[0]], pages: 3 })).toContain("3 page(s), the writer's estimate");
     await eleven.callTool("update_character", { name: "Maya", notes: "Maya has no surname in the treatment." });
     const renamed = await eleven.callTool("rename_character", { id: "maya", name: "Maya Boyd" });

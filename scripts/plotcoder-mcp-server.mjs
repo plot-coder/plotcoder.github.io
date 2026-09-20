@@ -3796,7 +3796,8 @@ server.registerTool(
       const house = currentReminders(null);
       return ok(
         [
-          `reminders (${error.message.replace(/\.$/, "")}): ${house.length} — the house principles the app starts every project with; the writer's own will live on the project`,
+          `${error.message.replace(/\.$/, "")}.`,
+          `reminders: ${house.length}, all the house's — the principles the app starts every project with; the writer's own will live on the project`,
           ...house.map((item) => `  - ${item.id} (built in) — ${item.title}: ${item.body}`),
         ].join("\n"),
         house,

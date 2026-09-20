@@ -208,7 +208,7 @@ only when the server is started with `PLOTCODER_JSON=1`.
   card's other questions stand (unlike `set_open` on the whole card); a
   place decides it, `open: ""` leaves it blank; `create_note` takes
   `locationOpen`.
-- `set_alternative` / `choose_version` — **two versions of one scene** (R65):
+- `set_alternative` / `choose_version` — **two versions of one scene**:
   set a card behind another as its other version, by id or headline, and it
   leaves the story — out of the order, the count, the pages and every
   export, its follows arrows dropped — and waits there; the wall draws it

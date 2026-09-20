@@ -10,6 +10,12 @@ done and merged, what is left, and the order I would take it in.
 
 ## Next, in order (2026-09-20, after round twenty-two)
 
+**The working list is `docs/to-do-round-twenty-two.md`:** every one of the
+round's ninety-five entries accounted for, and each material open one an
+item worked in Robert's order — plan, ask whether it is the best we can do,
+build, test. #131 (the round's fixes, R66, R67, the heading, the premise) is
+merged; nothing in it is released yet, which is that list's first item.
+
 **Now:** round twenty-two has run, on "The Last Bus" through
 `https://mcp.plotcoder.com` at 0.1.42: ninety-five entries in
 `blind-runs/round-twenty-two-report.md`, verbatim under a head, and that

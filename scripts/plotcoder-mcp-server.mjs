@@ -1166,6 +1166,21 @@ function cameraReply(text) {
     : " — the camera check read the action lines and marked none (it looks for a short list of interior verbs — knows, feels, thinks, remembers and the like — so it can miss a line and mark a fair one; it never asks)";
 }
 
+/**
+ * What the story now runs, after an arrow changed it (round twenty-two, entry 33): no arrow reply stated the
+ * resulting order, and only a reading confirmed it. Short chains whole; long ones as the cards around the change.
+ */
+function storyRunsLine(state, aroundIds) {
+  const order = storyOrder(state);
+  if (order.length < 2) return "";
+  const quote = (note) => `"${note.headline}"`;
+  if (order.length <= 8) return ` The story now runs: ${order.map(quote).join(" → ")}.`;
+  const at = order.findIndex((note) => aroundIds.includes(note.id));
+  const from = Math.max(0, at - 1);
+  const slice = order.slice(from, from + 4);
+  return ` The story now runs, around it: ${from > 0 ? "… → " : ""}${slice.map(quote).join(" → ")}${from + 4 < order.length ? " → …" : ""} (${order.length} cards in all).`;
+}
+
 /** "about 7 of 120 pages", or "about 7 pages, the target open": an open target is not 120 in any reply (round twenty-two, entries 19, 44). */
 function pagesOfTarget(state) {
   return (state.targetOpen ?? "").trim() ? `about ${formatPages(boardEighths(state))} pages, the target open` : `about ${formatPages(boardEighths(state))} of ${formatPages(state.targetEighths)} pages`;
@@ -3831,7 +3846,7 @@ server.registerTool(
     return ok(
       result.kind === "setup"
         ? `Drew ${name(args.from)} → ${name(args.to)} as a setup: the first plants what the second pays off${where(live)}.${paidOff}`
-        : `Drew ${name(args.from)} → ${name(args.to)}: the second follows the first${where(live)}.`,
+        : `Drew ${name(args.from)} → ${name(args.to)}: the second follows the first${where(live)}.${storyRunsLine(state, [args.from, args.to])}`,
       result,
     );
   },

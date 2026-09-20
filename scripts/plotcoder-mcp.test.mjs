@@ -2130,6 +2130,10 @@ describe("after the blind run", () => {
       const moved = await door.callTool("move_scene", { id: "letter-aloud", after: "maya-letter" });
       expect(moved).toContain("The wall had no follows arrows, so the order was drawn from the rows first");
       expect(moved).toContain('Moved "The letter is read aloud" to after "Maya finds the letter"');
+      // An arrow's reply says what the story now runs (entry 33).
+      const first = (await door.callToolData("list_board")).arrows.find((arrow) => arrow.from === "maya-letter" && arrow.to === "letter-aloud");
+      await door.callTool("delete_arrow", { id: first.id });
+      expect(await door.callTool("create_arrow", { from: "maya-letter", to: "letter-aloud" })).toMatch(/The story now runs: [^\n]*"Maya finds the letter" → "The letter is read aloud"/);
       // The order as a writer says it, by headline, one call.
       const set = await door.callTool("set_order", { cards: ["Tom lies about the job", "Maya finds the letter", "The letter is read aloud"] });
       expect(set).toContain('The story now runs: "Tom lies about the job" → "Maya finds the letter" → "The letter is read aloud"');

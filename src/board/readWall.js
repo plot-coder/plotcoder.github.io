@@ -660,7 +660,9 @@ export function describeSetups(reading, state) {
           ? "in the same place on the wall"
           : `about ${pages(-setup.eighths)} pages earlier`;
     const what = byId.get(setup.from)?.plantsWhat ?? "";
-    return `"${name(setup.from)}" sets up "${name(setup.to)}"${what ? ` — ${what}` : ""}, ${distance}`;
+    // With no follows arrows the order is only the rows', and so is the distance (round twenty-two, entry 30).
+    const byRows = setup.eighths !== null && setup.eighths !== undefined && !state.arrows.some((arrow) => arrow.kind !== "setup") ? ", by the rows: the story order is not set" : "";
+    return `"${name(setup.from)}" sets up "${name(setup.to)}"${what ? ` — ${what}` : ""}, ${distance}${byRows}`;
   });
 }
 

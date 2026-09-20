@@ -96,6 +96,18 @@ describe("everything undecided in one place (round twenty-two, entries 41, 43, 6
   });
 });
 
+describe("a setup's distance on a wall with no order (round twenty-two, entry 30)", () => {
+  it("says the distance is by the rows until a follows arrow sets the order", () => {
+    const at = "2026-09-20T00:00:00.000Z";
+    let state = applyCommand(seedState(), { type: "set_plant", ids: ["maya-letter"], plants: true }, at).state;
+    state = { ...state, arrows: [] };
+    state = applyCommand(state, { type: "create_arrow", from: "maya-letter", to: "letter-aloud", kind: "setup" }, at).state;
+    expect(describeSetups(readWall(state), state)[0]).toMatch(/pages later, by the rows: the story order is not set$/);
+    state = applyCommand(state, { type: "create_arrow", from: "maya-letter", to: "tom-lies", kind: "follows" }, at).state;
+    expect(describeSetups(readWall(state), state)[0]).not.toContain("by the rows");
+  });
+});
+
 describe("how much of the film is wired (round twenty-two, entry 20)", () => {
   it("counts follows arrows and the film's cards, not setup arrows or cards set aside", () => {
     const at = "2026-09-20T00:00:00.000Z";

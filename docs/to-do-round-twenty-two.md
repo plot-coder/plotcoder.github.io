@@ -163,11 +163,11 @@ patches are honest; they are not the answer.
   what a writer says, and there should be a tool shaped like the sentence
   (D24). Both. *Test:* kernel test for the chain and the undo; server test
   for the reply naming the order.
-- [ ] **E2 · An arrow's reply says what the story now runs** (33).
+- [x] **E2 · An arrow's reply says what the story now runs** *(built and tested 2026-09-20)* (33).
   *Plan:* `create_arrow` (follows) ends "the story now runs: A → B → C" when
   the chain is short, or the three cards around the new arrow when long.
   *Best?* Yes; it is what `move_scene` already does. *Test:* server test.
-- [ ] **E3 · A setup's distance on a wall with no order** (30).
+- [x] **E3 · A setup's distance on a wall with no order** *(built and tested 2026-09-20)* (30).
   *Plan:* the line says "about 6 pages later, by the rows: the story order
   is not set". *Best?* Yes. *Test:* `describeSetups` with no follows arrows.
 - [ ] **E4 · Wiring a scene in tidies the whole wall** (63). Described now;

@@ -288,7 +288,8 @@ export function readWall(state, options = {}) {
     linked.add(arrow.from);
     linked.add(arrow.to);
   }
-  if (state.notes.length > 0 && linked.size * 2 >= state.notes.length) {
+  // Half the cards in the film, not half the cards on the wall: a version behind another and a card set aside are wired to nothing by design.
+  if (order.length > 0 && linked.size * 2 >= order.length) {
     const loose = order.filter((note) => askable(note) && !linked.has(note.id));
     if (loose.length > 0) {
       findings.push({
@@ -522,6 +523,8 @@ export function readWall(state, options = {}) {
     openFields: describeOpenFields(state, order),
     // Two versions of one scene (R65): the front card and the one behind it, in story order; listed, never asked.
     versions: order.filter((note) => state.notes.some((item) => item.alternativeOf === note.id)).map((note) => ({ id: note.id, alternatives: state.notes.filter((item) => item.alternativeOf === note.id).map((item) => item.id) })),
+    // Set aside (R66): on the wall and not in the film. Listed, never asked.
+    aside: state.notes.filter((note) => note.aside === true).map((note) => note.id),
     threads,
     findings: asked,
     left,
@@ -576,7 +579,11 @@ export function describeSetups(reading, state) {
   return reading.setups.map((setup) => {
     const distance =
       setup.eighths === null || setup.eighths === undefined
-        ? `no distance yet: ${byId.get(setup.from)?.alternativeOf ? "its first card" : "its payoff"} is behind another card as its other version, out of the story until it is chosen`
+        ? (() => {
+            const outside = [byId.get(setup.from), byId.get(setup.to)].find((note) => note && (note.alternativeOf || note.aside));
+            const which = outside?.id === setup.from ? "its first card" : "its payoff";
+            return outside?.aside ? `no distance: ${which} is set aside, not in the film` : `no distance yet: ${which} is behind another card as its other version, out of the story until it is chosen`;
+          })()
         : setup.eighths > 0
         ? `about ${pages(setup.eighths)} pages later`
         : setup.eighths === 0

@@ -14,7 +14,8 @@ done and merged, what is left, and the order I would take it in.
 `https://mcp.plotcoder.com` at 0.1.42: ninety-five entries in
 `blind-runs/round-twenty-two-report.md`, verbatim under a head, and that
 report is the open queue. What it found was fixed on the branch the same
-night (603 unit tests); **not yet merged, released or deployed** — the fixes
+night, and Robert's four calls from it built the next day (610 unit
+tests, ninety-one tools); **not yet merged, released or deployed** — the fixes
 touch the hosted function (`supabase/functions/mcp/index.ts`, the JSON tail)
 and the Worker's root text (`cloudflare/mcp-door/worker.mjs`), so after the
 release bump the pin, redeploy the function, and redeploy the Worker.
@@ -30,23 +31,22 @@ release bump the pin, redeploy the function, and redeploy the Worker.
    `~/.claude/backups/claude.json.before-round-22`. The desktop connector is
    signed in as the test account and is on in every session: turn it off
    outside a round.
-3. **Robert's to draw, from twenty-two, in this order:** (a) **a card on the
-   wall and not in the film** — a kept version is back in the count, the
-   pages and the order (47, 50, 51, 64, 85); R65's card behind another with
-   the pair marked decided is the nearest shape; (b) **the all-or-nothing
-   open card** — a wall of honest "I don't know"s asks almost nothing, and
-   the change line has no open of its own (15, 17, 23, 28, 42, 86); (c) **an
-   open place's words as a slugline**, "PLACE NOT DECIDED: I DON'T KNOW YET"
-   (70). **Drawn 2026-09-20:** `docs/mockups/round-twenty-two-calls.html`,
-   each as it ships beside one or two ways it could be, with a
-   recommendation and what a yes means; the premise (item 4) is its fourth
-   section. Robert's word on each builds it.
-4. **The premise**, the handover's second decision, now answered by the
-   round (13, 24, 74): the agent put the span in the premise unprompted,
-   said it "isn't what a premise is", and a scene's writer could not see a
-   premise-level fact from the card. `docs/mockups/the-card-with-no-place.html`
-   draws it: the sentence in `set_premise` and both guides, and `read_wall`
-   printing a set premise. Robert's word builds it.
+3. ~~**Robert's to draw, from twenty-two**~~ **Drawn, decided and built
+   2026-09-20:** `docs/mockups/round-twenty-two-calls.html`. Robert: set
+   aside over kept-behind (1 B), "A and B together" (2), build A (3), build A
+   (4). **R66**, set aside — a card on the wall and not in the film, one
+   predicate (`inStory`) with R65, the corner's gesture, `set_aside`, and
+   `choose_version` with `keep` setting the version not chosen aside.
+   **R67**, the change line's own open (`changeOpen`) and the reading's
+   three counts at its head. A place left open heads its scene PLACE NOT
+   DECIDED: and the headline, the writer's words in the note beneath.
+4. ~~**The premise**~~ **Built 2026-09-20:** `set_premise` and both guides
+   say it holds what is true of the whole film; `read_wall` prints a set
+   premise; `read_pages` opens with it.
+   **None of this has been run blind.** The next round should hand an agent
+   a writer who cuts a scene and keeps it, and a page of "I don't know what
+   changes", and see whether it reaches `set_aside` and `changeOpen` rather
+   than `set_open`.
 5. **The connector, measured alone.** Twenty-two's agent worked the
    fallback; whether a stranger holding only the desktop connector is in
    from the first message is still unmeasured. The next round wires the

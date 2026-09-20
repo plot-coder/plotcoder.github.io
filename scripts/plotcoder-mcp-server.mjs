@@ -1154,15 +1154,16 @@ function behindOpenWords(note) {
 /** What kinds of number a runtime folds together: measured from text, set by the writer, or the default page (round fifteen, entry 39). */
 function runtimeKinds(state) {
   // A card behind another is out of the count, so it is out of this breakdown too (round twenty-two, entry 20).
-  const inStory = state.notes.filter((note) => !note.alternativeOf);
-  const behind = state.notes.length - inStory.length;
+  const inStory = state.notes.filter((note) => !note.alternativeOf && !note.aside);
+  const behind = state.notes.filter((note) => note.alternativeOf).length;
+  const asideCount = state.notes.filter((note) => note.aside).length;
   const measured = inStory.filter((note) => isMeasured(note));
   const sized = inStory.filter((note) => !isMeasured(note) && note.lengthEighths !== null);
   const unsized = inStory.filter((note) => !isMeasured(note) && note.lengthEighths === null);
   if (!state.notes.length) return "";
   const sum = (notes) => formatPages(notes.reduce((total, note) => total + noteEighths(note), 0));
   // Pages per kind, not only cards (round sixteen, entry 43).
-  return `; of its ${inStory.length} cards${behind ? ` (${behind} more behind as other versions, not counted)` : ""}, ${measured.length} measured from written text (${sum(measured)} pages), ${sized.length} sized by the writer (${sum(sized)}), ${unsized.length} unsized and read as a page each (${sum(unsized)})`;
+  return `; of its ${inStory.length} cards${behind || asideCount ? ` (${[behind ? `${behind} more behind as other versions` : "", asideCount ? `${asideCount} set aside` : ""].filter(Boolean).join(", ")}, not counted)` : ""}, ${measured.length} measured from written text (${sum(measured)} pages), ${sized.length} sized by the writer (${sum(sized)}), ${unsized.length} unsized and read as a page each (${sum(unsized)})`;
 }
 
 function summarize(state) {
@@ -1196,15 +1197,15 @@ function summarize(state) {
   const cast = state.characters
     .map((character) => {
       // Cards in the story; a version behind another is said apart, since it is not in the film until chosen (round twenty-two, entry 68).
-      const on = state.notes.filter((note) => !note.alternativeOf && note.characterIds.includes(character.id)).length;
-      const onBehind = state.notes.filter((note) => note.alternativeOf && note.characterIds.includes(character.id)).length;
+      const on = state.notes.filter((note) => !note.alternativeOf && !note.aside && note.characterIds.includes(character.id)).length;
+      const onBehind = state.notes.filter((note) => (note.alternativeOf || note.aside) && note.characterIds.includes(character.id)).length;
       // Which lines of their page are written, so an agent can see who is a
       // brief and who is still a name.
       const page = filledCharacterFields(character);
       const brief = page.length ? ` · page: ${page.join(", ")}` : " · page: empty";
       // On this board, and on the others (R51): a per-board count beside a project-wide check read as a contradiction (round sixteen, entry 18).
       const away = lastHeld?.project ? (castElsewhere(lastHeld.project, lastHeld.boards, lastHeld.project.activeBoardId)[character.id] ?? []).reduce((sum, item) => sum + item.cards, 0) : 0;
-      return `  - ${character.id} — "${character.name}" on ${on} card${on === 1 ? "" : "s"} of this board${onBehind ? ` (and ${onBehind} behind as ${onBehind === 1 ? "another version" : "other versions"}, not counted)` : ""}${away ? ` and ${away} of other boards` : ""}${brief}`;
+      return `  - ${character.id} — "${character.name}" on ${on} card${on === 1 ? "" : "s"} of this board${onBehind ? ` (and ${onBehind} not in the film — behind as another version, or set aside — not counted)` : ""}${away ? ` and ${away} of other boards` : ""}${brief}`;
     })
     .join("\n");
   const placeCounts = new Map();
@@ -1254,7 +1255,7 @@ function summarize(state) {
     if (row && note.y - row.top <= NOTE_HEIGHT / 2) row.notes.push(note);
     else rows.push({ top: note.y, notes: [note] });
   }
-  const rowLines = rows.map((row, index) => `  ${index + 1}: ${row.notes.map((note) => `${note.rank === "beat" ? "★ " : ""}"${note.headline}"`).join(" · ")}`);
+  const rowLines = rows.map((row, index) => `  ${index + 1}: ${row.notes.map((note) => `${note.rank === "beat" ? "★ " : ""}"${note.headline}"${note.aside ? " (aside)" : ""}`).join(" · ")}`);
   const leftCount = (state.left ?? []).length;
   return [
     ...(isSampleWall(state) ? [SAMPLE_NOTE] : []),
@@ -1262,7 +1263,7 @@ function summarize(state) {
     `logline: ${state.loglineOpen ? `open, by the writer's word — "${state.loglineOpen}"` : state.logline ? `"${state.logline}"` : "(not set)"}`,
     ...production,
     `left, for now: ${leftCount ? `${leftCount} question(s) the writer left; read_wall lists them` : "none"}`,
-    `beats: ${beats}, scenes: ${scenes}${state.notes.some((note) => note.alternativeOf) ? ` — and ${state.notes.filter((note) => note.alternativeOf).length} behind as other versions, out of the count` : ""}`,
+    `beats: ${beats}, scenes: ${scenes}${state.notes.some((note) => note.alternativeOf) ? ` — and ${state.notes.filter((note) => note.alternativeOf).length} behind as other versions, out of the count` : ""}${state.notes.some((note) => note.aside) ? ` — and ${state.notes.filter((note) => note.aside).length} set aside, not in the film` : ""}`,
     state.targetOpen
       ? `runtime: about ${formatPages(runtime)} pages (an estimate from the cards; a page runs about a minute); target open, by the writer's word — "${state.targetOpen}" (against 30 it would be ${againstWord(state, 30 * EIGHTHS_PER_PAGE)}; against 120, ${againstWord(state, 120 * EIGHTHS_PER_PAGE)}; set_target decides it)${runtimeKinds(state)}${sketchLine(state)}`
       : state.targetEighths === DEFAULT_TARGET_EIGHTHS
@@ -1274,7 +1275,10 @@ function summarize(state) {
     ...(state.notes.some((note) => note.alternativeOf)
       ? ["versions, not chosen (behind their front cards; out of the order, the count and the pages; choose_version decides):", ...state.notes.filter((note) => note.alternativeOf).map((note) => `  - ${note.id} — "${note.headline}", a version of "${state.notes.find((item) => item.id === note.alternativeOf)?.headline ?? note.alternativeOf}"`)]
       : []),
-    "rows on the wall (top to bottom, left to right; ★ a beat):",
+    ...(state.notes.some((note) => note.aside)
+      ? ["set aside (on the wall and not in the film: out of the order, the count, the pages and every export; set_aside with aside false brings one back):", ...state.notes.filter((note) => note.aside).map((note) => `  - ${note.id} — "${note.headline}"${note.change && note.change !== "What changes?" ? ` — ${note.change}` : ""} at ${Math.round(note.x)},${Math.round(note.y)}`)]
+      : []),
+    "rows on the wall (top to bottom, left to right; ★ a beat; (aside) a card set aside):",
     ...(rowLines.length ? rowLines : ["  (no cards)"]),
     "cast (the project's; every board of it casts from here; read_character reads a person's whole page, update_character writes it):",
     cast || "  (no one yet — add_character to start the roster)",
@@ -1823,6 +1827,9 @@ server.registerTool(
       ...(reading.open.length || openFieldLines.length
         ? ["open, by the writer's word (listed, not asked about while the words stand; set_open with \"\" closes a card, the field's own tool with open \"\" a field):", ...openFieldLines, ...reading.open.map((item) => `  - "${state.notes.find((note) => note.id === item.id)?.headline ?? item.id}" — ${item.words}${item.hides.length ? ` (closed, it would be asked ${item.hides.map((kind) => ASK_WORDS[kind] ?? CHECK_WORDS[kind] ?? kind).join("; ")})` : ""}`)]
         : []),
+      ...(reading.aside.length
+        ? ["set aside, not in the film (on the wall; out of the order, the count, the pages and every export; never asked; set_aside with aside false brings one back):", ...reading.aside.map((id) => `  - "${state.notes.find((note) => note.id === id)?.headline ?? id}"`)]
+        : []),
       ...(reading.versions.length
         ? ["two versions, not chosen (the front card is in the story; choose_version decides):", ...reading.versions.map((pair) => `  - "${state.notes.find((note) => note.id === pair.id)?.headline ?? pair.id}" or ${pair.alternatives.map((id) => `"${state.notes.find((note) => note.id === id)?.headline ?? id}"${behindOpenWords(state.notes.find((note) => note.id === id))}`).join(" or ")}`)]
         : []),
@@ -2188,10 +2195,12 @@ server.registerTool(
       : `${rows} row(s) five cards wide — no beats yet, so nothing sets the rows; set_rank the turns and organize again for a row per beat`;
     // Nothing moved says what already stands (round fifteen, entry 20): after a rank change the agent asked whether a beat row still held.
     if (!changed) return ok(`Nothing moved: the ${poses.length} card(s) already lie along the arrows in ${shape}.`, poses);
+    const asideLeft = state.notes.filter((note) => note.aside).length;
     const behindCount = state.notes.filter((note) => note.alternativeOf).length;
     // A version behind a card goes where its card goes: the wall draws it there, whatever x,y its record keeps for the day it is chosen (round twenty-two, entry 32).
     const behindLine = behindCount ? ` ${behindCount} card(s) behind as other versions went with the cards they stand behind: the wall draws a version behind its sibling wherever that is, and its own x,y waits until it is chosen.` : "";
-    return ok(`Organized ${poses.length} card(s) along the arrows into ${shape}${where(live)}.${behindLine}`, poses);
+    const asideLine = asideLeft ? ` ${asideLeft} card(s) set aside stayed where the writer put them: they are not in the film, so the tidy does not move them.` : "";
+    return ok(`Organized ${poses.length} card(s) along the arrows into ${shape}${where(live)}.${behindLine}${asideLine}`, poses);
   },
 );
 
@@ -3010,11 +3019,36 @@ server.registerTool(
 );
 
 server.registerTool(
+  "set_aside",
+  {
+    title: "Set a card aside, or bring it back",
+    description:
+      "Set cards aside, by id or headline: on the wall where the writer can see them, and not in the film. A card set aside keeps its words, its cast, its fold and its place on the wall, and leaves the order, the count, the pages and every export; its follows arrows go and the story closes over it where it stood between two cards (setup arrows stay); a beat set aside is a scene. read_wall lists what is set aside and asks nothing of it; organize leaves it where it is. For a scene the writer cuts and will not throw away, an idea with no place in the story yet, the version not chosen that they may come back to (choose_version with keep does this itself). aside false brings a card back as a plain unwired card, and the wall asks where it goes. Only on the writer's word: cutting a scene is theirs.",
+    inputSchema: { ids: z.array(z.string()).min(1), aside: z.boolean().optional() },
+  },
+  async (args) => {
+    const current = (await readBoard()).state;
+    const refs = cardsByRef(current, args.ids);
+    if (refs.missing.length) return ok(`Nothing changed: not on the board — ${refs.missing.map((ref) => `"${ref}"`).join(", ")}. Call list_board for the ids or the exact headlines.`);
+    const behind = refs.found.map((id) => current.notes.find((note) => note.id === id)).filter((note) => note?.alternativeOf);
+    if (behind.length && args.aside !== false) return ok(`Nothing changed: ${behind.map((note) => `"${note.headline}"`).join(", ")} ${behind.length === 1 ? "is" : "are"} already out of the film, behind another card as its other version. choose_version with keep sets the one not chosen aside.`);
+    const { changed, result, live } = await commit({ type: "set_aside", ids: refs.found, aside: args.aside !== false });
+    if (!changed) return ok(`Nothing changed: ${args.aside === false ? "those cards are not set aside" : "those cards are already set aside"}.`);
+    const names = result.ids.map((id) => `"${current.notes.find((note) => note.id === id)?.headline ?? id}"`).join(", ");
+    if (!result.aside) return ok(`Brought back ${names}${where(live)}: in the film again, as ${result.ids.length === 1 ? "a plain unwired card" : "plain unwired cards"} — in the count and the pages, and the wall will ask what comes before and after ${result.ids.length === 1 ? "it" : "them"}; create_arrow or move_scene says.`, result);
+    return ok(
+      `Set aside ${names}${where(live)}: on the wall and not in the film — out of the order, the count, the pages and every export${result.arrowsDropped ? `; ${result.arrowsDropped} follows arrow${result.arrowsDropped === 1 ? "" : "s"} dropped${result.closedOver ? `, and the story closed over ${result.closedOver === 1 ? "it" : "them"} (${result.closedOver} arrow${result.closedOver === 1 ? "" : "s"} drawn between the cards on either side)` : ""}` : ""}. The reading lists ${result.ids.length === 1 ? "it" : "them"} under "set aside" and asks nothing; set_aside with aside false brings ${result.ids.length === 1 ? "it" : "them"} back.`,
+      result,
+    );
+  },
+);
+
+server.registerTool(
   "choose_version",
   {
     title: "Choose a version",
     description:
-      "Choose one of two versions of a scene, by id or headline: the chosen card is the scene, in the front card's place — its arrows, its rank, its group; the other goes, or with keep true stands beside it as a plain unwired card. A kept card is back in the story like any plain card — in the count, the pages and the exports, a scene and no longer a beat, its place in the order read from where it sits until an arrow says — because the wall has no way to hold a card that is on the wall and not in the film; the reply says so. Only on the writer's word.",
+      "Choose one of two versions of a scene, by id or headline: the chosen card is the scene, in the front card's place — its arrows, its rank, its group; the other goes, or with keep true is set aside beside it: on the wall where the writer can see it, and not in the film — out of the order, the count, the pages and every export, a scene and no longer a beat. set_aside with aside false brings it back as a plain card. Only on the writer's word.",
     inputSchema: { id: z.string(), keep: z.boolean().optional() },
   },
   async (args) => {
@@ -3025,7 +3059,7 @@ server.registerTool(
     if (!other) return ok(`"${card.headline}" has no other version; nothing to choose.`);
     const { changed, result, live } = await commit({ type: "choose_version", id: card.id, keep: args.keep === true });
     if (!changed) return ok("Nothing chosen.");
-    return ok(`Chose "${card.headline}"${result.steppedForward ? ` — it steps forward into "${other.headline}"'s place, with its arrows, rank and group` : ""}${where(live)}. "${other.headline}" ${result.kept ? "stands beside it as a plain card, unwired: a scene, not a beat, and back in the story — in the count, the pages and the exports, its place in the order read from where it sits. The wall cannot hold a card that is on it and not in the film; if that is what the writer means, say so to them" : "is gone"}.`, result);
+    return ok(`Chose "${card.headline}"${result.steppedForward ? ` — it steps forward into "${other.headline}"'s place, with its arrows, rank and group` : ""}${where(live)}. "${other.headline}" ${result.kept ? "is kept, set aside beside it: on the wall and not in the film — out of the order, the count, the pages and every export; the reading lists it and asks nothing of it. set_aside with aside false brings it back as a plain card" : "is gone"}.`, result);
   },
 );
 
@@ -3549,10 +3583,10 @@ server.registerTool(
     const missing = [...add.missing, ...remove.missing];
     if (missing.length) return ok(`Nothing changed: not on the board — ${missing.map((ref) => `"${ref}"`).join(", ")}. Call list_board for the ids or the exact headlines.`);
     // A thread runs through the story, and a card behind another is not in it: say so, instead of "already reads that way" (round twenty-two, entry 58).
-    const behind = add.found.map((id) => current.state.notes.find((note) => note.id === id)).filter((note) => note?.alternativeOf);
+    const behind = add.found.map((id) => current.state.notes.find((note) => note.id === id)).filter((note) => note?.alternativeOf || note?.aside);
     if (behind.length)
       return ok(
-        `Nothing changed: ${behind.map((note) => `"${note.headline}"`).join(", ")} ${behind.length === 1 ? "is" : "are"} behind another card as its other version, out of the story until chosen, and a thread runs through the story. Tie the thread to the front card; for a thing true of either version, fold the version behind with set_plant and draw its own setup arrow, which stays with it if it is chosen.`,
+        `Nothing changed: ${behind.map((note) => `"${note.headline}"`).join(", ")} ${behind.length === 1 ? "is" : "are"} not in the film — behind another card as its other version, or set aside — and a thread runs through the story. Tie the thread to the front card; for a thing true of either version, fold the version behind with set_plant and draw its own setup arrow, which stays with it if it is chosen.`,
       );
     const { state, changed, result, live } = await commit({
       type: "update_thread",
@@ -3716,7 +3750,12 @@ server.registerTool(
             ? missing(args.from)
             : !onBoard(args.to)
               ? missing(args.to)
-              : "that arrow already exists";
+              : (() => {
+                  const outside = state.notes.find((note) => (note.id === args.from || note.id === args.to) && (note.alternativeOf || note.aside));
+                  return outside && args.kind !== "setup"
+                    ? `"${outside.headline}" is not in the film (${outside.aside ? "set aside: set_aside with aside false brings it back" : "behind another card as its other version: choose_version decides"}), and a follows arrow is a place in the story; a setup arrow, a claim, it can carry`
+                    : "that arrow already exists";
+                })();
       return ok(`No arrow drawn: ${why}. Call list_board to check.`);
     }
     const name = (id) => `"${state.notes.find((note) => note.id === id)?.headline ?? id}"`;

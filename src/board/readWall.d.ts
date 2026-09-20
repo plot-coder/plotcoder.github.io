@@ -76,6 +76,8 @@ export type WallReading = {
   openFields: Array<{ field: "logline"; words: string } | { field: "location"; id: string; words: string } | { field: "when"; id: string; words: string } | { field: "change"; id: string; words: string }>;
   /** Two versions of one scene (R65): each front card with the versions behind it, in story order; listed, never asked. */
   versions: Array<{ id: string; alternatives: string[] }>;
+  /** The cards set aside (R66): on the wall and not in the film; listed, never asked. */
+  aside: string[];
   /** Threads (R60): each named string with its cards in story order and which ends are open. */
   threads: Array<{ id: string; name: string; ids: string[]; startOpen: boolean; endOpen: boolean; /** Eighths from the first card's start to the last card's start; 0 with fewer than two cards. */ apart: number }>;
   /** Cards here that pay off a fold of another board (R58), composed by the door from the project. */

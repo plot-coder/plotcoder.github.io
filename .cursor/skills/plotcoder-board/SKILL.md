@@ -223,9 +223,24 @@ only when the server is started with `PLOTCODER_JSON=1`.
   tucked behind its sibling and `read_wall` lists the pair under "two
   versions, not chosen", asking nothing of it. `choose_version` decides: the
   chosen card is the scene, in the front card's place with its arrows, rank
-  and group; the other goes, or stands beside it as a plain card with
-  `keep`. `of: ""` takes a card out from behind. Only on the writer's word:
+  and group; the other goes, or with `keep` is **set aside** beside it — on
+  the wall where the writer can see it, and not in the film. "Keep the
+  other, I may come back to it" is `keep`. `of: ""` takes a card out from
+  behind. Only on the writer's word:
   two versions the notes hold, never two the agent could not choose between.
+- `set_aside` — a card **on the wall and not in the film**: a scene the
+  writer cuts and will not throw away, an idea with no place in the story
+  yet, the version not chosen. By id or headline. It keeps its words, its
+  cast, its fold and its place on the wall, and leaves the order, the
+  count, the pages and every export; its follows arrows go, and where it
+  stood between two cards the story closes over it (setup arrows, being
+  claims, stay); a beat set aside is a scene. `read_wall` lists it under
+  "set aside" and asks nothing of it, `list_board` lists it apart from the
+  cards in story order, `organize` leaves it where the writer put it, and
+  it takes no follows arrow and no thread while it is aside. `aside: false`
+  brings it back as a plain unwired card, and the wall asks where it goes.
+  Only on the writer's word — cutting a scene is theirs — and not a way to
+  quiet a question: a card the writer is unsure of is `set_open`.
 - `set_open` — leave a card **open**, with the writer's words for what is
   not decided: "whether Tom knows", "who sent the letter". The reading
   lists open cards under their own head and asks nothing of the card itself

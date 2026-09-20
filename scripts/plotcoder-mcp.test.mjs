@@ -206,6 +206,7 @@ describe("plotcoder MCP server", () => {
       "rename_project",
       "save_structure",
       "segment_brief",
+      "set_aside",
       "set_arrow_kind",
       "set_length",
       "set_location",
@@ -1169,6 +1170,39 @@ describe("open fields (R61): the logline, the premise, a when and a board's name
     expect(named).toContain('Project renamed to "Plot 14"');
     expect(named).toContain("the open words are gone");
     expect(await client.callTool("read_wall")).not.toContain("the project's name —");
+  });
+
+  it("sets a card aside — on the wall, not in the film — and keeps the version not chosen that way (R66)", async () => {
+    const a = await client.callToolData("create_note", { headline: "The depot", change: "She says nothing." });
+    const b = await client.callToolData("create_note", { headline: "They sit it out till morning", change: "He talks.", after: a.id, rank: "beat" });
+    const c = await client.callToolData("create_note", { headline: "The morning after", change: "He is not at his stop.", after: b.id });
+    const before = await client.callToolData("list_board");
+    const aside = await client.callTool("set_aside", { ids: ["They sit it out till morning"] });
+    expect(aside).toContain('Set aside "They sit it out till morning"');
+    expect(aside).toContain("2 follows arrows dropped, and the story closed over it");
+    const listed = await client.callTool("list_board");
+    expect(listed).toContain("1 set aside, not in the film");
+    expect(listed).toMatch(/set aside \(on the wall and not in the film[^\n]*\n  - [^\n]*"They sit it out till morning"/);
+    expect(listed).toContain('"They sit it out till morning" (aside)');
+    const read = await client.callTool("read_wall");
+    expect(read).toMatch(/set aside, not in the film[^\n]*\n  - "They sit it out till morning"/);
+    expect(read).not.toMatch(/\[[a-z]+\][^\n]*They sit it out till morning/);
+    const after = await client.callToolData("list_board");
+    expect(after.arrows.some((arrow) => arrow.from === a.id && arrow.to === c.id && arrow.kind === "follows")).toBe(true);
+    expect(after.notes.find((note) => note.id === b.id)).toMatchObject({ aside: true, rank: "scene" });
+    // Not in the pages, and organize leaves it where it is.
+    expect(await client.callTool("read_pages")).not.toContain("THEY SIT IT OUT TILL MORNING");
+    expect(await client.callTool("organize")).toMatch(/1 card\(s\) set aside stayed where the writer put them|Nothing moved/);
+    // Back: a plain unwired card, in the film again.
+    const back = await client.callTool("set_aside", { ids: [b.id], aside: false });
+    expect(back).toContain("in the film again, as a plain unwired card");
+    // choose_version with keep sets the one not chosen aside, and says so.
+    await client.callTool("set_alternative", { id: b.id, of: a.id });
+    const chosen = await client.callTool("choose_version", { id: a.id, keep: true });
+    expect(chosen).toContain('"They sit it out till morning" is kept, set aside beside it: on the wall and not in the film');
+    expect((await client.callToolData("list_board")).notes.find((note) => note.id === b.id).aside).toBe(true);
+    for (const id of [a.id, b.id, c.id]) await client.callTool("delete_note", { id });
+    expect(before.notes.length).toBeGreaterThan(0);
   });
 
   it("leaves a change line open while the card's other questions stand, and leads the reading with what is open (R67)", async () => {

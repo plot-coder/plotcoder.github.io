@@ -167,7 +167,7 @@ export function isMeasured(note) {
 }
 
 export function boardEighths(state) {
-  return state.notes.reduce((total, note) => total + (note.alternativeOf ? 0 : noteEighths(note)), 0);
+  return state.notes.reduce((total, note) => total + (inStory(note) ? noteEighths(note) : 0), 0);
 }
 
 /**
@@ -494,10 +494,10 @@ export function normalizeState(value) {
 export function countRanks(state) {
   // A card behind another as its other version (R65) is out of the story, so
   // out of this count: nine cards with two behind are seven (round twenty-two, entry 20).
-  const inStory = state.notes.filter((note) => !note.alternativeOf);
+  const counted = state.notes.filter((note) => inStory(note));
   let beats = 0;
-  for (const note of inStory) if (note.rank === "beat") beats += 1;
-  return { beats, scenes: inStory.length - beats };
+  for (const note of counted) if (note.rank === "beat") beats += 1;
+  return { beats, scenes: counted.length - beats };
 }
 
 function maxZ(notes) {
@@ -525,9 +525,13 @@ function cleanOpen(value) {
 /** Cards within half a card's height of each other sit on one row. */
 const ROW_TOLERANCE = NOTE_HEIGHT / 2;
 
-/** A card that is another version of a card is not in the story (R65): not in the order, the count or the pages, until chosen. */
+/**
+ * In the film: not another version behind a card (R65), and not set aside
+ * (R66). Everything that reads the story — the order, the count, the pages,
+ * the exports, organize, the reading — asks this and nothing else.
+ */
 export function inStory(note) {
-  return !note.alternativeOf;
+  return !note.alternativeOf && note.aside !== true;
 }
 
 export function readingOrder(notes) {
@@ -946,7 +950,7 @@ export function applyCommand(state, command, now = nowIso()) {
       if (note.alternativeOf === of) return { state, changed: false };
       // Out of the story: its follows arrows go with it; setup arrows are claims and stay.
       const arrows = state.arrows.filter((arrow) => arrow.kind === "setup" || (arrow.from !== command.id && arrow.to !== command.id));
-      const notes = state.notes.map((item) => (item.id === command.id ? bump(item, { alternativeOf: of }, now) : item));
+      const notes = state.notes.map((item) => (item.id === command.id ? bump(item, { alternativeOf: of, aside: false }, now) : item));
       return { state: { ...state, notes, arrows }, changed: true, result: { id: command.id, of, arrowsDropped: state.arrows.length - arrows.length } };
     }
 
@@ -970,8 +974,9 @@ export function applyCommand(state, command, now = nowIso()) {
       }
       const keep = command.keep === true;
       if (keep) {
-        // The turn went forward with the chosen card: the kept one is a plain scene, not a second beat beside it (round twenty-two, entry 48).
-        notes = notes.map((item) => (item.id === other.id ? bump(item, { alternativeOf: null, x: item.x + 40, y: item.y + 40, ...(chosen.alternativeOf ? { rank: "scene" } : {}) }, now) : item));
+        // Kept is set aside (R66): on the wall where the writer can see it, and not in the film. The turn went
+        // forward with the chosen card, so the kept one is a scene, not a second beat (round twenty-two, entries 47 to 50).
+        notes = notes.map((item) => (item.id === other.id ? bump(item, { alternativeOf: null, aside: true, rank: "scene", x: item.x + 40, y: item.y + 40 }, now) : item));
         if (chosen.alternativeOf) {
           arrows = arrows.filter((arrow) => arrow.kind === "setup" || (arrow.from !== other.id && arrow.to !== other.id));
           groups = groups.map((group) => (group.noteIds.includes(other.id) ? { ...group, noteIds: group.noteIds.filter((id) => id !== other.id) } : group));
@@ -982,6 +987,49 @@ export function applyCommand(state, command, now = nowIso()) {
         groups = pruneGroups(groups.map((group) => ({ ...group, noteIds: group.noteIds.filter((id) => id !== other.id) })));
       }
       return { state: { ...state, notes, arrows, groups }, changed: true, result: { chosen: chosen.id, other: other.id, kept: keep, steppedForward: Boolean(chosen.alternativeOf) } };
+    }
+
+    // Set aside (R66): on the wall and not in the film. The card keeps its
+    // place on the wall, its words, its cast and its fold; it leaves the order,
+    // the count, the pages and every export. Its follows arrows go, and where
+    // it stood between two cards the story closes over it, so setting a scene
+    // aside never breaks the chain; setup arrows are claims and stay. A beat
+    // set aside is a scene: a turn that is not in the film is not a turn.
+    // Brought back, it is a plain unwired card, and the wall asks where it goes.
+    case "set_aside": {
+      const ids = new Set((command.ids ?? []).filter((id) => state.notes.some((note) => note.id === id)));
+      const aside = command.aside !== false;
+      const moving = state.notes.filter((note) => ids.has(note.id) && (note.aside === true) !== aside && !(aside && note.alternativeOf));
+      if (moving.length === 0) return { state, changed: false };
+      const movingIds = new Set(moving.map((note) => note.id));
+      let arrows = state.arrows;
+      let closed = 0;
+      let dropped = 0;
+      if (aside) {
+        for (const id of movingIds) {
+          const ins = arrows.filter((arrow) => arrow.kind !== "setup" && arrow.to === id);
+          const outs = arrows.filter((arrow) => arrow.kind !== "setup" && arrow.from === id);
+          dropped += ins.length + outs.length;
+          arrows = arrows.filter((arrow) => arrow.kind === "setup" || (arrow.from !== id && arrow.to !== id));
+          if (ins.length === 1 && outs.length === 1 && ins[0].from !== outs[0].to && !arrows.some((arrow) => arrow.from === ins[0].from && arrow.to === outs[0].to)) {
+            arrows = [...arrows, { id: newId(), from: ins[0].from, to: outs[0].to, kind: "follows" }];
+            closed += 1;
+          }
+        }
+      }
+      // A card with versions behind it cannot go aside and leave them fronting nothing: they stand as plain cards.
+      const notes = state.notes.map((note) => {
+        if (movingIds.has(note.id)) return bump(note, aside ? { aside: true, rank: "scene" } : { aside: false }, now);
+        if (aside && note.alternativeOf && movingIds.has(note.alternativeOf)) return bump(note, { alternativeOf: null }, now);
+        return note;
+      });
+      const groups = aside ? pruneGroups(state.groups.map((group) => ({ ...group, noteIds: group.noteIds.filter((id) => !movingIds.has(id)) }))) : state.groups;
+      const threads = aside ? (state.threads ?? []).map((thread) => (thread.noteIds.some((id) => movingIds.has(id)) ? { ...thread, noteIds: thread.noteIds.filter((id) => !movingIds.has(id)) } : thread)) : state.threads;
+      return {
+        state: { ...state, notes, arrows, groups, threads },
+        changed: true,
+        result: { ids: [...movingIds], aside, arrowsDropped: dropped, closedOver: closed },
+      };
     }
 
     // A thread (R60): a named string through cards, either end open until the
@@ -1118,6 +1166,10 @@ export function applyCommand(state, command, now = nowIso()) {
       const knownFrom = state.notes.some((note) => note.id === command.from);
       const knownTo = state.notes.some((note) => note.id === command.to);
       if (!knownFrom || !knownTo) return { state, changed: false };
+      // A follows arrow is a place in the story, and a card that is not in the film has none (R65, R66): a
+      // version behind another, or a card set aside. A setup arrow is a claim, and either may carry one.
+      const kindWanted = ARROW_KINDS.includes(command.kind) ? command.kind : "follows";
+      if (kindWanted !== "setup" && state.notes.some((note) => (note.id === command.from || note.id === command.to) && !inStory(note))) return { state, changed: false };
       if (state.arrows.some((arrow) => arrow.from === command.from && arrow.to === command.to)) {
         return { state, changed: false };
       }

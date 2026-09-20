@@ -69,6 +69,11 @@ export const WORD_GROUPS = [
         sentence: "A card the writer has not decided, in their words on its edge: the reading lists it and asks nothing else of it until the words are cleared. A field can be open the same way — the logline, the premise, a card's place or when, a board's or the project's name — the words where the value would be, listed and not asked.",
       },
       {
+        id: "aside",
+        name: "Set aside",
+        sentence: "A card that is on the wall and not in the film: a scene you cut and will not throw away, the version you did not choose, an idea with no place in the story yet. It fades, loses its number, and leaves the order, the count, the pages and every export; the wall lists it and asks nothing of it. The card's corner sets it aside and brings it back.",
+      },
+      {
         id: "thread",
         name: "A thread",
         sentence: "A named string through the cards a thing runs through — the letter, the key, a subplot — with either end open until the writer ties it. Drawn on the wall as a dashed string, a ring where an end is loose; the reading asks where a loose thread is first seen, or where it comes out.",

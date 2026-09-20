@@ -69,7 +69,9 @@ type NoteCardProps = {
   versions: Array<{ id: string; headline: string }>;
   candidates: Array<{ id: string; headline: string }>;
   onSetAlternative: (id: string, of: string | null) => void;
-  onChooseVersion: (id: string) => void;
+  onChooseVersion: (id: string, keep?: boolean) => void;
+  /** Set the card aside, or bring it back (R66): on the wall and not in the film. */
+  onSetAside: (id: string, aside: boolean) => void;
   onTieThread: (id: string, threadId: string, how: "start" | "end" | "through" | "off") => void;
   onEdit: (id: string, patch: { headline?: string; change?: string; changeOpen?: string }) => void;
 };
@@ -113,6 +115,7 @@ export function NoteCard({
   versions,
   candidates,
   onSetAlternative,
+  onSetAside,
   onChooseVersion,
   onEdit,
 }: NoteCardProps) {
@@ -213,7 +216,7 @@ export function NoteCard({
 
   return (
     <article
-      className={`note note--${note.color} ${isBeat ? "is-beat" : ""} ${sized ? "is-sized" : ""} ${active ? "is-active" : ""} ${selected ? "is-selected" : ""} ${linking ? "is-linking" : ""} ${dropTarget ? "is-drop-target" : ""} ${picking || sizing || cornering ? "is-picking" : ""} ${dimmed ? "is-dim" : ""} ${note.plants ? "is-planted" : ""} ${paysOff ? "is-paying" : ""} ${isOpen ? "is-open" : ""} ${revised ? `is-revised rev--${revised}` : ""} ${versionOf ? "is-version" : ""}`}
+      className={`note note--${note.color} ${isBeat ? "is-beat" : ""} ${sized ? "is-sized" : ""} ${active ? "is-active" : ""} ${selected ? "is-selected" : ""} ${linking ? "is-linking" : ""} ${dropTarget ? "is-drop-target" : ""} ${picking || sizing || cornering ? "is-picking" : ""} ${dimmed ? "is-dim" : ""} ${note.aside ? "is-aside" : ""} ${note.plants ? "is-planted" : ""} ${paysOff ? "is-paying" : ""} ${isOpen ? "is-open" : ""} ${revised ? `is-revised rev--${revised}` : ""} ${versionOf ? "is-version" : ""}`}
       style={{
         left: note.x,
         top: note.y,
@@ -281,6 +284,18 @@ export function NoteCard({
           >
             {isOpen ? "Close it: it is decided" : "Leave it open: not decided yet"}
           </button>
+          {versionOf ? null : (
+            <button
+              type="button"
+              className="note__length-option note__corner-option"
+              onClick={() => {
+                onSetAside(note.id, !note.aside);
+                setCornering(false);
+              }}
+            >
+              {note.aside ? "Bring it back into the film" : "Set it aside: not in the film"}
+            </button>
+          )}
           {versionOf ? (
             <>
               <button
@@ -292,6 +307,16 @@ export function NoteCard({
                 }}
               >
                 Choose this version: it is the scene
+              </button>
+              <button
+                type="button"
+                className="note__length-option note__corner-option"
+                onClick={() => {
+                  onChooseVersion(note.id, true);
+                  setCornering(false);
+                }}
+              >
+                Choose it, and set the other aside
               </button>
               <button
                 type="button"
@@ -329,6 +354,16 @@ export function NoteCard({
                   Choose the other: "{version.headline}"
                 </button>
               ))}
+              <button
+                type="button"
+                className="note__length-option note__corner-option"
+                onClick={() => {
+                  onChooseVersion(note.id, true);
+                  setCornering(false);
+                }}
+              >
+                Choose this one, and set the other aside
+              </button>
             </>
           ) : choosingVersion ? (
             <>
@@ -484,7 +519,7 @@ export function NoteCard({
           />
         </span>
       ) : null}
-      {!editingOpen && !editingThread && !editingPlant && (sceneNumber || note.plants || paysOff || isOpen || versionOf) ? (
+      {!editingOpen && !editingThread && !editingPlant && (sceneNumber || note.plants || paysOff || isOpen || versionOf || note.aside) ? (
         <span className="note__edge">
           {sceneNumber ? (
             <button
@@ -529,6 +564,12 @@ export function NoteCard({
             <span className="note__plant" aria-label={`Pays off a fold from another board: ${paysOff.label}`}>
               {sceneNumber || note.plants ? <span aria-hidden="true">· </span> : null}
               Pays off · <b>{paysOff.label}</b>
+            </span>
+          ) : null}
+          {note.aside ? (
+            <span className="note__plant note__aside" aria-label="Set aside: on the wall, not in the film">
+              {note.plants || paysOff ? <span aria-hidden="true">· </span> : null}
+              Aside · <b>not in the film</b>
             </span>
           ) : null}
           {versionOf ? (

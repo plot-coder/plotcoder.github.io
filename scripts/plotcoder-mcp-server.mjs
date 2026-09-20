@@ -1128,6 +1128,32 @@ function sketchLine(state) {
 }
 
 /**
+ * The runtime, one labelled line per number, the one to use first (round
+ * twenty-two, entries 84, 87): it was one sentence carrying two totals, three
+ * kinds of count and two targets, none labelled. The same block in list_board
+ * and read_wall, so the two cannot tell it differently.
+ */
+function runtimeBlock(state) {
+  const total = boardEighths(state);
+  const over = total - state.targetEighths;
+  const made = runtimeKinds(state).replace(/^; /, "");
+  const found = sketches(state);
+  const ifRan = total + found.reduce((sum, note) => sum + ((note.lengthEighths ?? DEFAULT_NOTE_EIGHTHS) - noteEighths(note)), 0);
+  const target = state.targetOpen
+    ? `target open, by the writer's word — "${state.targetOpen}": against 30 it would be ${againstWord(state, 30 * EIGHTHS_PER_PAGE)}; against 120, ${againstWord(state, 120 * EIGHTHS_PER_PAGE)}; set_target decides it`
+    : state.targetEighths === DEFAULT_TARGET_EIGHTHS
+      ? `no target set — set_target for a pilot (60) or a half-hour (30); against the feature default of 120 it would be ${formatPages(-over)} under`
+      : `against the ${formatPages(state.targetEighths)}-page target the writer set (set_target changes it): ${over > 0 ? `${formatPages(over)} over` : over < 0 ? `${formatPages(-over)} under` : "on it"}`;
+  return [
+    `runtime: about ${formatPages(total)} pages — the number to use: the cards' estimate, a page about a minute, counted in eighths as a production does`,
+    ...(made ? [`  made of: ${made}`] : []),
+    `  ${target}`,
+    ...(found.length ? [`  if ${found.length === 1 ? "the sketch" : `the ${found.length} sketches`} ran to the page ${found.length === 1 ? "it was" : "they were"} read as: about ${formatPages(ifRan)} pages — a written scene measured under its page is a sketch, and this is a guess about a guess`] : []),
+    "  the script so far, paginated, is page_count's number, not this one",
+  ];
+}
+
+/**
  * What a write says about the camera (the handover's call 6): the lines marked,
  * or that the check ran and marked none, so silence is never "did it run?"
  * (round twenty-two, entries 72, 75). It matches a short list of interior verbs
@@ -1273,11 +1299,7 @@ function summarize(state) {
     ...production,
     `left, for now: ${leftCount ? `${leftCount} question(s) the writer left; read_wall lists them` : "none"}`,
     `beats: ${beats}, scenes: ${scenes}${state.notes.some((note) => note.alternativeOf) ? ` — and ${state.notes.filter((note) => note.alternativeOf).length} behind as other versions, out of the count` : ""}${state.notes.some((note) => note.aside) ? ` — and ${state.notes.filter((note) => note.aside).length} set aside, not in the film` : ""}`,
-    state.targetOpen
-      ? `runtime: about ${formatPages(runtime)} pages (an estimate from the cards; a page runs about a minute); target open, by the writer's word — "${state.targetOpen}" (against 30 it would be ${againstWord(state, 30 * EIGHTHS_PER_PAGE)}; against 120, ${againstWord(state, 120 * EIGHTHS_PER_PAGE)}; set_target decides it)${runtimeKinds(state)}${sketchLine(state)}`
-      : state.targetEighths === DEFAULT_TARGET_EIGHTHS
-      ? `runtime: about ${formatPages(runtime)} pages (an estimate from the cards; a page runs about a minute); no target set — set_target for a pilot (60) or a half-hour (30); against the feature default of 120 it would be ${formatPages(-over)} under${runtimeKinds(state)}${sketchLine(state)}`
-      : `runtime: about ${formatPages(runtime)} pages of the ${formatPages(state.targetEighths)}-page target the writer set (set_target changes it) — ${over > 0 ? `${formatPages(over)} over` : over < 0 ? `${formatPages(-over)} under` : "on it"} (an estimate from the cards; a page runs about a minute; page_count is the script so far)${runtimeKinds(state)}${sketchLine(state)}`,
+    ...runtimeBlock(state),
     `notes: ${state.notes.length}, groups: ${state.groups.length}, arrows: ${state.arrows.length}, cast: ${state.characters.length}`,
     "cards (in story order — the follows arrows over the rows; each with its id):",
     notes || "  (no cards)",
@@ -1803,11 +1825,7 @@ server.registerTool(
           `places: ${places.length ? places.map((item) => `${item.place} (${item.on})`).join(", ") : "(none yet)"}`,
         ];
       })(),
-      state.targetOpen
-        ? `runtime: about ${formatPages(boardEighths(state))} pages (${whose || "no cards"}); target open, by the writer's word — "${state.targetOpen}" (against 30 it would be ${againstWord(state, 30 * EIGHTHS_PER_PAGE)}; against 120, ${againstWord(state, 120 * EIGHTHS_PER_PAGE)})${sketchLine(state)}`
-        : state.targetEighths === DEFAULT_TARGET_EIGHTHS
-        ? `runtime: about ${formatPages(boardEighths(state))} pages (${whose || "no cards"}); no target set (set_target)${sketchLine(state)}`
-        : `runtime: about ${formatPages(boardEighths(state))} pages of the ${formatPages(state.targetEighths)}-page target the writer set (set_target changes it) — ${boardEighths(state) > state.targetEighths ? `${formatPages(boardEighths(state) - state.targetEighths)} over` : boardEighths(state) < state.targetEighths ? `${formatPages(state.targetEighths - boardEighths(state))} under` : "on it"} (${whose || "no cards"}; page_count is the script so far)${sketchLine(state)}`,
+      ...runtimeBlock(state),
       `groups: ${
         state.groups.length
           ? state.groups

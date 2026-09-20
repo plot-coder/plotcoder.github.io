@@ -1095,7 +1095,7 @@ describe("open fields (R61): the logline, the premise, a when and a board's name
     await client.callTool("undo");
     const listed = await client.callTool("list_board");
     expect(listed).toContain("written (a sketch: under the page it was read as)");
-    expect(listed).toMatch(/1 written scene is a sketch, measured under the page it was read as: about [\d /]+ pages if it ran to that/);
+    expect(listed).toMatch(/\n  if the sketch ran to the page it was read as: about [\d /]+ pages — a written scene measured under its page is a sketch/);
     const pages = await client.callTool("read_pages");
     expect(pages).toContain("camera: 2 lines it cannot see (knows, feels)");
     expect(pages).toContain("◂ knows");
@@ -2037,7 +2037,7 @@ describe("after the blind run", () => {
 
   it("says over or under in words, and what page_count counts", async () => {
     expect(await blind.callTool("set_target", { pages: 2 })).toMatch(/— [0-9 /]+ (over|under)\./);
-    expect(await blind.callTool("list_board")).toMatch(/runtime: about .* — .* (over|under) \(an estimate/);
+    expect(await blind.callTool("list_board")).toMatch(/runtime: about [\d /]+ pages — the number to use[^\n]*\n(  made of: [^\n]*\n)?  against the 2-page target the writer set \(set_target changes it\): [\d /]+ (over|under)\n/);
     const written = await blind.callToolData("list_board");
     await blind.callTool("write_scene", { id: written.notes[0].id, text: "INT. KITCHEN - NIGHT\n\nMaya reads it twice." });
     const pages = await blind.callTool("page_count");
@@ -2629,10 +2629,10 @@ describe("round ten's replies", () => {
     const tidy = await ten.callTool("organize");
     expect(tidy).toContain("five cards wide — no beats yet");
     const board = await ten.callTool("list_board");
-    expect(board).toMatch(/runtime: about \d+ pages \(an estimate[^)]*\); no target set — set_target/);
+    expect(board).toMatch(/runtime: about \d+ pages — the number to use[^\n]*\n  made of: [^\n]*\n  no target set — set_target/);
     expect(board).not.toContain("-page target");
     await ten.callTool("set_target", { pages: 60 });
-    expect(await ten.callTool("list_board")).toContain("of the 60-page target the writer set");
+    expect(await ten.callTool("list_board")).toContain("against the 60-page target the writer set");
   });
 
   it("reads the wall with its runtime and its groups, and counts the opening row", async () => {
@@ -2642,7 +2642,8 @@ describe("round ten's replies", () => {
     await ten.callTool("create_group", { noteIds: [ids[0], ids[1]], title: "Act one" });
     const read = await ten.callTool("read_wall");
     expect(read).toContain("runtime: about");
-    expect(read).toMatch(/\(of its \d+ cards, 0 measured from written text \(0 pages\), \d+ sized by the writer \([0-9/ ]+\), \d+ unsized and read as a page each \([0-9/ ]+\); page_count is the script so far\)/);
+    expect(read).toMatch(/\n  made of: of its \d+ cards, 0 measured from written text \(0 pages\), \d+ sized by the writer \([0-9/ ]+\), \d+ unsized and read as a page each \([0-9/ ]+\)\n/);
+    expect(read).toContain("  the script so far, paginated, is page_count's number, not this one");
     expect(read).toMatch(/a beat's own pages are in no run — the 1 beat holds? about [0-9/ ]+ pages between them/);
     expect(read).toContain('groups: "Act one" — 2 card(s), about 2 pages, read as an act');
     const tidy = await ten.callTool("organize");
@@ -2652,7 +2653,7 @@ describe("round ten's replies", () => {
     expect(wrote).toMatch(/\d+ line\(s\) as they print .*measured at [0-9/ ]+ of a 55-line page/);
     // Round eighteen, entries 43 and 45: the write says how far the runtime moved, and the reading says whose number the runtime is.
     expect(wrote).toMatch(/the page an unsized card is read as, so the runtime moved [0-9/ ]+ down\)/);
-    expect(await ten.callTool("read_wall")).toMatch(/\(of its \d+ cards, 1 measured from written text \([0-9/ ]+ pages\), .*; page_count is the script so far\)/);
+    expect(await ten.callTool("read_wall")).toMatch(/\n  made of: of its \d+ cards, 1 measured from written text \([0-9/ ]+ pages\), /);
     const count = await ten.callTool("page_count");
     expect(count).toContain("this is the script so far, not the runtime");
     expect(count).toMatch(/1 of \d+ measured and the rest estimated/);

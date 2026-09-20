@@ -131,7 +131,7 @@ patches are honest; they are not the answer.
   do it (B3 does, for one write). This is for "is there anything I owe?",
   which cost three hundred lines to answer "no". Yes. *Test:* the reply is
   under fifteen lines on the seed wall and carries every question.
-- [ ] **D4 · The runtime sentence** (84, 87, 73).
+- [x] **D4 · The runtime sentence** *(built 2026-09-20: `runtimeBlock`, one labelled line per number, the one to use first, shared by `list_board` and `read_wall`; tested)* (84, 87, 73).
   *Plan:* one line per number, each labelled: the estimate; what it is made
   of; against the target; and the sketch's second number as "if the sketch
   ran to the page it was read as". *Best?* Yes — it is the same facts, set

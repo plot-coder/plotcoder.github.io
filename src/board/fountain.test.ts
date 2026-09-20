@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fromFountain, mergeFountain, sceneHeading, splitHeading, titlePage, toFountain, unmark } from "./fountain";
+import { fromFountain, mergeFountain, sceneHeading, splitHeading, standInFor, titlePage, toFountain, unmark } from "./fountain";
 import { applyCommand, emptyState, isMeasured, measuredEighths, noteEighths, seedState } from "./reducer";
 
 const NOW = "2026-01-01T00:00:00.000Z";
@@ -55,6 +55,16 @@ describe("a card with no place on the heading (rounds eighteen 46, nineteen 44, 
     // A card with a place does not answer to its headline as a heading.
     const placed = applyCommand(seed, { type: "set_location", ids: ["maya-letter"], location: "the piano shop" }, NOW).state;
     expect(mergeFountain(placed, fromFountain(".MAYA FINDS THE LETTER\n\nRain.\n")).matched[0].created).toBe(true);
+  });
+});
+
+describe("an unwritten scene whose change line is the app's placeholder (round twenty-two, entries 18, 69)", () => {
+  it("prints the mark alone, or an open card's words as the writer's, never the app's question", () => {
+    expect(standInFor({ change: "What changes?" } as never)).toBe("[Unwritten]");
+    expect(standInFor({ change: "What changes?", open: "that is all I know about it" } as never)).toBe("[Unwritten] Open, by the writer's word: that is all I know about it");
+    expect(standInFor({ change: "She decides not to tell Tom.", open: "whether Tom knows" } as never)).toBe("[Unwritten] She decides not to tell Tom.");
+    const back = mergeFountain(emptyState(), fromFountain(".THE BOG ROAD\n= The morning after\n\n[Unwritten] Open, by the writer's word: that is all I know about it\n")).commands[0] as { open?: string; change: string; text: string };
+    expect(back).toMatchObject({ open: "that is all I know about it", change: "What changes?", text: "" });
   });
 });
 

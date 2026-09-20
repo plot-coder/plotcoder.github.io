@@ -13,7 +13,7 @@
 // except the heading and the action.
 
 import { formatPages, boardEighths } from "./reducer.js";
-import { storyOrder } from "./readWall.js";
+import { PLACEHOLDER_CHANGE, storyOrder } from "./readWall.js";
 import { revisionLine, revisionMarks } from "./numbering.js";
 
 function upper(text) {
@@ -77,9 +77,20 @@ export function splitHeading(heading) {
 export const UNWRITTEN_MARK = "[Unwritten]";
 
 /** What stands in for an unwritten scene's body: the mark, then the change line. */
+/** What an open card's words print after, in an unwritten scene's body; read back as open words, not a change line. */
+export const OPEN_STAND_IN = "Open, by the writer's word:";
+
 export function standInFor(note) {
   const change = (note.change ?? "").trim();
-  return change ? `${UNWRITTEN_MARK} ${change}` : UNWRITTEN_MARK;
+  // The app's own placeholder is a question to the writer, not the scene's
+  // change: a script whose scenes each say "What changes?" reads as the
+  // film asking (round twenty-two, entries 18, 69). An open card's words
+  // stand in instead, said as the writer's; otherwise the mark alone.
+  if (!change || change === PLACEHOLDER_CHANGE) {
+    const open = (note.open ?? "").trim();
+    return open ? `${UNWRITTEN_MARK} ${OPEN_STAND_IN} ${open}` : UNWRITTEN_MARK;
+  }
+  return `${UNWRITTEN_MARK} ${change}`;
 }
 
 /** A body without its mark, and whether it carried one. */
@@ -310,11 +321,14 @@ export function mergeFountain(state, parsed) {
     const id = `scene-${Math.random().toString(36).slice(2, 8)}`;
     // A marked body is an unwritten scene: its words are the change line, not a page.
     const body = unmark(scene.text);
+    // An open card's stand-in comes back as its open words, the change line still waiting.
+    const openWords = body.marked && body.text.startsWith(OPEN_STAND_IN) ? body.text.slice(OPEN_STAND_IN.length).trim() : "";
     commands.push({
       type: "create_note",
       id,
       headline,
-      change: body.marked ? body.text || "What changes?" : scene.text ? firstSentence(scene.text) : "What changes?",
+      ...(openWords ? { open: openWords } : {}),
+      change: openWords ? PLACEHOLDER_CHANGE : body.marked ? body.text || PLACEHOLDER_CHANGE : scene.text ? firstSentence(scene.text) : PLACEHOLDER_CHANGE,
       location: isPlace && !openPlace ? titleCase(parts.place) : "",
       locationOpen: isPlace && openPlace ? openPlace : "",
       when: isPlace || (noPlace && !dashIsHeadline) ? parts.when.toLowerCase() : "",

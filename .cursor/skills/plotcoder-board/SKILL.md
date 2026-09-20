@@ -341,7 +341,9 @@ card of another board is not asked about as uncast here.
 
 - `export_fountain` — the open board as a Fountain screenplay in story order
   (beats as sections, one scene per card, the scene's text or — marked
-  `[Unwritten]` — its change line as the body, the cast and the fold as
+  `[Unwritten]` — its change line as the body (the mark alone when the
+  change line still waits, or an open card's words after "Open, by the
+  writer's word:"; never the app's own "What changes?"), the cast and the fold as
   notes, a changed scene noted under a revision). Pass `path` to write a
   `.fountain` file.
 - `read_pages` — the same script with each card's id beside its heading and

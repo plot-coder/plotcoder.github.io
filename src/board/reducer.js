@@ -482,9 +482,12 @@ export function normalizeState(value) {
 
 /** Beats vs scenes. The app shows this number and passes no judgement (D21). */
 export function countRanks(state) {
+  // A card behind another as its other version (R65) is out of the story, so
+  // out of this count: nine cards with two behind are seven (round twenty-two, entry 20).
+  const inStory = state.notes.filter((note) => !note.alternativeOf);
   let beats = 0;
-  for (const note of state.notes) if (note.rank === "beat") beats += 1;
-  return { beats, scenes: state.notes.length - beats };
+  for (const note of inStory) if (note.rank === "beat") beats += 1;
+  return { beats, scenes: inStory.length - beats };
 }
 
 function maxZ(notes) {

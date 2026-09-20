@@ -1091,15 +1091,33 @@ function sketchLine(state) {
   return `; ${found.length} written scene${found.length === 1 ? " is a sketch" : "s are sketches"}, measured under the page ${found.length === 1 ? "it was" : "they were"} read as: about ${formatPages(ifRan)} pages if ${found.length === 1 ? "it" : "they"} ran to that`;
 }
 
+/**
+ * What a card behind another leaves open, said beside it: it is out of the
+ * order, so the reading's open lists never reach it, and its words were only
+ * in list_board's records (round twenty-two, entry 21).
+ */
+function behindOpenWords(note) {
+  if (!note) return "";
+  const parts = [
+    (note.open ?? "").trim() ? `open: ${note.open.trim()}` : "",
+    (note.locationOpen ?? "").trim() ? `where: ${note.locationOpen.trim()}` : "",
+    (note.whenOpen ?? "").trim() ? `when: ${note.whenOpen.trim()}` : "",
+  ].filter(Boolean);
+  return parts.length ? ` (left open on it, by the writer's word — ${parts.join("; ")})` : "";
+}
+
 /** What kinds of number a runtime folds together: measured from text, set by the writer, or the default page (round fifteen, entry 39). */
 function runtimeKinds(state) {
-  const measured = state.notes.filter((note) => isMeasured(note));
-  const sized = state.notes.filter((note) => !isMeasured(note) && note.lengthEighths !== null);
-  const unsized = state.notes.filter((note) => !isMeasured(note) && note.lengthEighths === null);
+  // A card behind another is out of the count, so it is out of this breakdown too (round twenty-two, entry 20).
+  const inStory = state.notes.filter((note) => !note.alternativeOf);
+  const behind = state.notes.length - inStory.length;
+  const measured = inStory.filter((note) => isMeasured(note));
+  const sized = inStory.filter((note) => !isMeasured(note) && note.lengthEighths !== null);
+  const unsized = inStory.filter((note) => !isMeasured(note) && note.lengthEighths === null);
   if (!state.notes.length) return "";
   const sum = (notes) => formatPages(notes.reduce((total, note) => total + noteEighths(note), 0));
   // Pages per kind, not only cards (round sixteen, entry 43).
-  return `; of its ${state.notes.length} cards, ${measured.length} measured from written text (${sum(measured)} pages), ${sized.length} sized by the writer (${sum(sized)}), ${unsized.length} unsized and read as a page each (${sum(unsized)})`;
+  return `; of its ${inStory.length} cards${behind ? ` (${behind} more behind as other versions, not counted)` : ""}, ${measured.length} measured from written text (${sum(measured)} pages), ${sized.length} sized by the writer (${sum(sized)}), ${unsized.length} unsized and read as a page each (${sum(unsized)})`;
 }
 
 function summarize(state) {
@@ -1183,7 +1201,8 @@ function summarize(state) {
   const over = runtime - state.targetEighths;
   // The wall as rows, the nearest thing to a look at it without the app (round fourteen, entry 15).
   const rows = [];
-  for (const note of readingOrder(state.notes)) {
+  // A card behind another is drawn behind it, not at its own x,y, so it is no row's neighbour (round twenty-two, entry 22).
+  for (const note of readingOrder(state.notes.filter((item) => !item.alternativeOf))) {
     const row = rows[rows.length - 1];
     if (row && note.y - row.top <= NOTE_HEIGHT / 2) row.notes.push(note);
     else rows.push({ top: note.y, notes: [note] });
@@ -1195,7 +1214,7 @@ function summarize(state) {
     `logline: ${state.loglineOpen ? `open, by the writer's word — "${state.loglineOpen}"` : state.logline ? `"${state.logline}"` : "(not set)"}`,
     ...production,
     `left, for now: ${leftCount ? `${leftCount} question(s) the writer left; read_wall lists them` : "none"}`,
-    `beats: ${beats}, scenes: ${scenes}`,
+    `beats: ${beats}, scenes: ${scenes}${state.notes.some((note) => note.alternativeOf) ? ` — and ${state.notes.filter((note) => note.alternativeOf).length} behind as other versions, out of the count` : ""}`,
     state.targetOpen
       ? `runtime: about ${formatPages(runtime)} pages (an estimate from the cards; a page runs about a minute); target open, by the writer's word — "${state.targetOpen}" (against 30 it would be ${againstWord(state, 30 * EIGHTHS_PER_PAGE)}; against 120, ${againstWord(state, 120 * EIGHTHS_PER_PAGE)}; set_target decides it)${runtimeKinds(state)}${sketchLine(state)}`
       : state.targetEighths === DEFAULT_TARGET_EIGHTHS
@@ -1724,7 +1743,7 @@ server.registerTool(
         ? ["open, by the writer's word (listed, not asked about while the words stand; set_open with \"\" closes a card, the field's own tool with open \"\" a field):", ...openFieldLines, ...reading.open.map((item) => `  - "${state.notes.find((note) => note.id === item.id)?.headline ?? item.id}" — ${item.words}${item.hides.length ? ` (closed, it would be asked ${item.hides.map((kind) => ASK_WORDS[kind] ?? CHECK_WORDS[kind] ?? kind).join("; ")})` : ""}`)]
         : []),
       ...(reading.versions.length
-        ? ["two versions, not chosen (the front card is in the story; choose_version decides):", ...reading.versions.map((pair) => `  - "${state.notes.find((note) => note.id === pair.id)?.headline ?? pair.id}" or ${pair.alternatives.map((id) => `"${state.notes.find((note) => note.id === id)?.headline ?? id}"`).join(" or ")}`)]
+        ? ["two versions, not chosen (the front card is in the story; choose_version decides):", ...reading.versions.map((pair) => `  - "${state.notes.find((note) => note.id === pair.id)?.headline ?? pair.id}" or ${pair.alternatives.map((id) => `"${state.notes.find((note) => note.id === id)?.headline ?? id}"${behindOpenWords(state.notes.find((note) => note.id === id))}`).join(" or ")}`)]
         : []),
       ...(reading.threads.length
         ? ["threads (the writer's strings through the story; a loose end is asked about below):", ...reading.threads.map((thread) => `  - "${thread.name}": ${thread.ids.length ? thread.ids.map((id) => `"${state.notes.find((note) => note.id === id)?.headline ?? id}"`).join(" → ") : "no card yet"}${thread.startOpen ? " — starts nowhere yet" : ""}${thread.endOpen ? " — ends nowhere yet" : ""}${!thread.startOpen && !thread.endOpen && thread.ids.length >= 2 ? ` — both ends tied, about ${formatPages(thread.apart)} pages apart` : ""}`)]
@@ -2088,7 +2107,10 @@ server.registerTool(
       : `${rows} row(s) five cards wide — no beats yet, so nothing sets the rows; set_rank the turns and organize again for a row per beat`;
     // Nothing moved says what already stands (round fifteen, entry 20): after a rank change the agent asked whether a beat row still held.
     if (!changed) return ok(`Nothing moved: the ${poses.length} card(s) already lie along the arrows in ${shape}.`, poses);
-    return ok(`Organized ${poses.length} card(s) along the arrows into ${shape}${where(live)}.`, poses);
+    const behindCount = state.notes.filter((note) => note.alternativeOf).length;
+    // A version behind a card goes where its card goes: the wall draws it there, whatever x,y its record keeps for the day it is chosen (round twenty-two, entry 32).
+    const behindLine = behindCount ? ` ${behindCount} card(s) behind as other versions went with the cards they stand behind: the wall draws a version behind its sibling wherever that is, and its own x,y waits until it is chosen.` : "";
+    return ok(`Organized ${poses.length} card(s) along the arrows into ${shape}${where(live)}.${behindLine}`, poses);
   },
 );
 
@@ -2900,7 +2922,7 @@ server.registerTool(
     const { state, changed, result, live } = await commit({ type: "set_alternative", id: card.id, of: front ? front.id : null });
     if (!changed) return ok(front ? `"${card.headline}" already stands behind "${front.headline}".` : `"${card.headline}" is not a version of another card.`);
     if (!front) return ok(`"${card.headline}" stands as a plain card again, unwired${where(live)}: create_arrow or move_scene puts it in the order.`, result);
-    return ok(`"${card.headline}" is now the other version of "${front.headline}"${where(live)}: out of the order, the count and the pages${result.arrowsDropped ? `, ${result.arrowsDropped} follows arrow${result.arrowsDropped === 1 ? "" : "s"} dropped` : ""}. The reading lists the pair as two versions, not chosen, and asks nothing of it; choose_version decides. The wall draws it tucked behind its sibling.`, result);
+    return ok(`"${card.headline}" is now the other version of "${front.headline}"${where(live)}: out of the order, the count and the pages${result.arrowsDropped ? `, ${result.arrowsDropped} follows arrow${result.arrowsDropped === 1 ? "" : "s"} dropped` : ""}. The reading lists the pair as two versions, not chosen, and asks nothing of it; choose_version decides. The wall draws it tucked behind its sibling, wherever the sibling goes; the x,y on its record is where it will stand if it is chosen, not where it is drawn.`, result);
   },
 );
 

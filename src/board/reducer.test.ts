@@ -622,6 +622,9 @@ describe("countRanks", () => {
 
   it("is zero on an empty board", () => {
     expect(countRanks(emptyState())).toEqual({ beats: 0, scenes: 0 });
+    // A card behind another as its other version is out of the story, and out of the count.
+    const two = applyCommand(seedState(), { type: "set_alternative", id: "tom-lies", of: "maya-letter" }, "2026-09-20T00:00:00.000Z").state;
+    expect(countRanks(two).beats + countRanks(two).scenes).toBe(seedState().notes.length - 1);
   });
 });
 

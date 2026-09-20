@@ -1773,7 +1773,23 @@ server.registerTool(
       // A set premise is read back with the wall: it is where a fact about the whole film lives (rounds twenty 9, 20; twenty-two 13, 74).
       ...(projectForRead.premiseOpen ? [`premise: open, by the writer's word — "${projectForRead.premiseOpen}"`] : (projectForRead.premise ?? "").trim() ? [`premise: "${projectForRead.premise.trim()}"`] : []),
       `logline: ${state.loglineOpen ? `open, by the writer's word — "${state.loglineOpen}"` : state.logline ? `"${state.logline}"` : "(none yet)"}`,
-      "the cast and the places are list_board's, not the reading's",
+      // Who is in the film and where it happens, so "read it back to me" is one call (round twenty-two, entry 29). list_board has each person's page and every card's cast.
+      ...(() => {
+        const film = state.notes.filter((note) => !note.alternativeOf && !note.aside);
+        const cast = (state.characters ?? []).map((person) => ({ name: person.name, on: film.filter((note) => (note.characterIds ?? []).includes(person.id)).length })).sort((a, b) => b.on - a.on);
+        const byPlace = new Map();
+        for (const note of film) {
+          const place = (note.location ?? "").trim();
+          if (!place) continue;
+          const key = place.toLowerCase();
+          byPlace.set(key, { place, on: (byPlace.get(key)?.on ?? 0) + 1 });
+        }
+        const places = [...byPlace.values()].sort((a, b) => b.on - a.on);
+        return [
+          `cast: ${cast.length ? cast.map((person) => `${person.name} (${person.on === 0 ? "on no card" : `${person.on} scene${person.on === 1 ? "" : "s"}`})`).join(", ") : "(nobody yet)"}`,
+          `places: ${places.length ? places.map((item) => `${item.place} (${item.on})`).join(", ") : "(none yet)"}`,
+        ];
+      })(),
       state.targetOpen
         ? `runtime: about ${formatPages(boardEighths(state))} pages (${whose || "no cards"}); target open, by the writer's word — "${state.targetOpen}" (against 30 it would be ${againstWord(state, 30 * EIGHTHS_PER_PAGE)}; against 120, ${againstWord(state, 120 * EIGHTHS_PER_PAGE)})${sketchLine(state)}`
         : state.targetEighths === DEFAULT_TARGET_EIGHTHS

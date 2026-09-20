@@ -119,7 +119,7 @@ patches are honest; they are not the answer.
   blanks under their own head, "not said yet", never under "open, by the
   writer's word". *Test:* `readWall.test.ts` for the grouping;
   `plotcoder-mcp.test.mjs` for the text, with a card that has one of each.
-- [ ] **D2 · The cast and the places in the reading** (29).
+- [x] **D2 · The cast and the places in the reading** *(built 2026-09-20: two lines, the film's cards only; tested)* (29).
   *Plan:* `read_wall` ends with two compact lines — who is in the film and on
   how many scenes, where it happens and how often — and drops "the cast and
   the places are list_board's". *Best?* It lengthens a long reply. But

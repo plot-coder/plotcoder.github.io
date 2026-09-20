@@ -2097,6 +2097,22 @@ describe("after the blind run", () => {
     }
   });
 
+  it("reads the cast and the places back with the wall, in one call (round twenty-two, entry 29)", async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-readback-"));
+    const door = new McpClient(root);
+    await door.start();
+    try {
+      await door.callTool("set_location", { ids: ["maya-letter", "letter-aloud"], location: "the piano shop" });
+      const read = await door.callTool("read_wall");
+      expect(read).toMatch(/\ncast: [^\n]*Maya \(\d+ scenes?\)/);
+      expect(read).toContain("places: the piano shop (2)");
+      expect(read).not.toContain("the cast and the places are list_board's");
+    } finally {
+      door.stop();
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("says when a write leaves the wall's questions as they were (round twenty-two, entries 66, 92)", async () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-still-"));
     const door = new McpClient(root);

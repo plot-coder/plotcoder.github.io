@@ -32,6 +32,7 @@ import {
   NOTE_HEIGHT,
   NOTE_WIDTH,
   DEFAULT_TARGET_EIGHTHS,
+  targetWords,
   DEFAULT_NOTE_EIGHTHS,
   normalizeState,
   newId,
@@ -1156,7 +1157,9 @@ function runtimeBlock(state) {
   const ifRan = total + found.reduce((sum, note) => sum + ((note.lengthEighths ?? DEFAULT_NOTE_EIGHTHS) - noteEighths(note)), 0);
   const target = state.targetOpen
     ? `target open, by the writer's word — "${state.targetOpen}": against 30 it would be ${againstWord(state, 30 * EIGHTHS_PER_PAGE)}; against 120, ${againstWord(state, 120 * EIGHTHS_PER_PAGE)}; set_target decides it`
-    : state.targetEighths === DEFAULT_TARGET_EIGHTHS
+    : targetWords(state)
+      ? `against ${targetWords(state)}, read as ${formatPages(state.targetEighths)} pages (the writer said "${targetWords(state)}", not a number; set_target with pages says one): ${over > 0 ? `${formatPages(over)} over` : over < 0 ? `${formatPages(-over)} under` : "on it"}`
+      : state.targetEighths === DEFAULT_TARGET_EIGHTHS
       ? `no target set — set_target for a pilot (60) or a half-hour (30); against the feature default of 120 it would be ${formatPages(-over)} under`
       : `against the ${formatPages(state.targetEighths)}-page target the writer set (set_target changes it): ${over > 0 ? `${formatPages(over)} over` : over < 0 ? `${formatPages(-over)} under` : "on it"}`;
   return [
@@ -1209,7 +1212,8 @@ function storyRunsLine(state, aroundIds) {
 
 /** "about 7 of 120 pages", or "about 7 pages, the target open": an open target is not 120 in any reply (round twenty-two, entries 19, 44). */
 function pagesOfTarget(state) {
-  return (state.targetOpen ?? "").trim() ? `about ${formatPages(boardEighths(state))} pages, the target open` : `about ${formatPages(boardEighths(state))} of ${formatPages(state.targetEighths)} pages`;
+  if ((state.targetOpen ?? "").trim()) return `about ${formatPages(boardEighths(state))} pages, the target open`;
+  return `about ${formatPages(boardEighths(state))} of ${formatPages(state.targetEighths)} pages${targetWords(state) ? ` (${targetWords(state)})` : ""}`;
 }
 
 /**
@@ -1530,14 +1534,15 @@ server.registerTool(
   {
     title: "Set target length",
     description:
-      "Set the board's target script length, in pages or in minutes (a page runs about a minute): 120 for a feature, 30 for a half-hour, 60 for an hour drama. This is what the runtime estimate is measured against. Or leave the target open: pass open with the writer's words for why it is not decided — \"half-hour or feature\" — and the reading lists it under open, by the writer's word, and reads the runtime against both defaults while the words stand; a number decides it, open \"\" takes the words back.",
-    inputSchema: { pages: pagesSchema.optional(), minutes: z.number().positive().optional(), open: z.string().optional() },
+      "Set the board's target script length. When the writer says a kind and not a number — \"it is a feature\" — pass kind (feature, hour, half-hour): the target keeps their word and is read as 120, 60 or 30 pages, and the app never says they chose a number they did not. When they give a number, pass pages, or minutes (a page runs about a minute); a number replaces the word. This is what the runtime estimate is measured against. Or leave the target open: pass open with the writer's words for why it is not decided — \"half-hour or feature\" — and the reading lists it under open, by the writer's word, and reads the runtime against both defaults while the words stand; a number decides it, open \"\" takes the words back.",
+    inputSchema: { pages: pagesSchema.optional(), minutes: z.number().positive().optional(), kind: z.enum(["feature", "hour", "half-hour"]).optional(), open: z.string().optional() },
   },
   async (args) => {
-    if (args.pages === undefined && args.minutes === undefined && args.open === undefined) return ok("Say the target in pages or in minutes, or open with the writer's words for why it is not decided.");
+    if (args.pages === undefined && args.minutes === undefined && args.open === undefined && args.kind === undefined) return ok("Say the target as a kind (feature, hour, half-hour) when that is the writer's word, in pages or in minutes when they gave a number, or open with their words for why it is not decided.");
     const { state, changed, live, before } = await commit({
       type: "set_target",
       ...(args.pages !== undefined || args.minutes !== undefined ? { targetEighths: toEighths(args.pages ?? args.minutes) } : {}),
+      ...(args.kind !== undefined && args.pages === undefined && args.minutes === undefined ? { kind: args.kind } : {}),
       ...(args.open !== undefined ? { open: args.open } : {}),
     });
     if (!changed) return ok("Target unchanged: it already read that way.");
@@ -1546,8 +1551,9 @@ server.registerTool(
     }
     // A number decides an open target, and the reply says the words went (round twenty-two, entry 90).
     const decided = (before?.targetOpen ?? "").trim() ? ` Decided: the writer's words, "${before.targetOpen.trim()}", are cleared, and the reading stops listing the target as open.` : "";
+    const said = targetWords(state);
     return ok(
-      `Target is ${formatPages(state.targetEighths)} pages${where(live)}.${decided} The cards add up to about ${formatPages(boardEighths(state))} — ${boardEighths(state) > state.targetEighths ? `${formatPages(boardEighths(state) - state.targetEighths)} over` : `${formatPages(state.targetEighths - boardEighths(state))} under`}.`,
+      `${said ? `Target is ${said}, read as ${formatPages(state.targetEighths)} pages: the writer's word, not a page count (set_target with pages says a number)` : `Target is ${formatPages(state.targetEighths)} pages`}${where(live)}.${decided} The cards add up to about ${formatPages(boardEighths(state))} — ${boardEighths(state) > state.targetEighths ? `${formatPages(boardEighths(state) - state.targetEighths)} over` : `${formatPages(state.targetEighths - boardEighths(state))} under`}.`,
       { targetEighths: state.targetEighths },
     );
   },
@@ -4278,7 +4284,7 @@ server.registerTool(
     title: "Start a project",
     description:
       "Through the account door: start a new project of the writer's with this name — one empty board, nothing on it — and work it from now on. The writer sees it under Projects on every device. A title not decided: open with the writer's words (\"The Allotments, or Plot 14\") instead of a name, and the project starts as Untitled project with those words beside it. A film is one board and goes out under the project's name: leave board alone and do not ask the writer to name it. For a series, board names the first episode; boardOpen leaves that name open in the writer's words instead (\"the pilot, or the film\").",
-    inputSchema: { name: z.string().min(1).optional(), open: z.string().optional(), board: z.string().optional(), boardOpen: z.string().optional(), pages: pagesSchema.optional(), minutes: z.number().positive().optional(), targetOpen: z.string().optional().describe("The writer's words for why the length is not decided — \"half-hour or feature\" — so the target is born open instead of the feature default standing unsaid.") },
+    inputSchema: { name: z.string().min(1).optional(), open: z.string().optional(), board: z.string().optional(), boardOpen: z.string().optional(), pages: pagesSchema.optional(), minutes: z.number().positive().optional(), targetOpen: z.string().optional(), kind: z.enum(["feature", "hour", "half-hour"]).optional().describe("The writer's words for why the length is not decided — \"half-hour or feature\" — so the target is born open instead of the feature default standing unsaid.") },
   },
   async (args) => {
     const account = await findAccount();
@@ -4294,7 +4300,9 @@ server.registerTool(
     const inserted = await account.client.from("projects").insert({ id: record.id, record, reminders: null, rev: 1 });
     if (inserted.error) return ok(`Could not start the project: ${inserted.error.message}`);
     const target = args.pages ?? args.minutes;
-    const state = { ...emptyState(), ...(target === undefined ? {} : { targetEighths: toEighths(target) }), ...(args.targetOpen?.trim() && target === undefined ? { targetOpen: args.targetOpen.trim().replace(/\s+/g, " ") } : {}) };
+    // A kind is the writer's word for the target, kept beside the pages it is read as (round twenty-two, entry 91).
+    const kindState = target === undefined && !args.targetOpen?.trim() && args.kind ? applyCommand(emptyState(), { type: "set_target", kind: args.kind }, new Date().toISOString()).state : null;
+    const state = { ...(kindState ?? emptyState()), ...(target === undefined ? {} : { targetEighths: toEighths(target) }), ...(args.targetOpen?.trim() && target === undefined ? { targetOpen: args.targetOpen.trim().replace(/\s+/g, " ") } : {}) };
     const board = await account.client.from("boards").insert({ id: record.activeBoardId, project_id: record.id, state, rev: 1, updated_by: null });
     if (board.error) return ok(`Started "${record.name}" but could not make its first board: ${board.error.message}`);
     workingProject(record.id, record.name, (account.projectCount ?? 0) + 1);

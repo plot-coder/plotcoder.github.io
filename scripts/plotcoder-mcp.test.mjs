@@ -1082,6 +1082,16 @@ describe("open fields (R61): the logline, the premise, a when and a board's name
     expect(await client.callTool("list_boards")).toMatch(/about [\d /]+ pages, the target open/);
     expect(await client.callTool("read_project")).toMatch(/about [\d /]+ pages, the target open/);
     await client.callTool("undo");
+    // "It is a feature" is a word, not a number: kept, read as 120, and never "no target set" (round twenty-two, entry 91).
+    const feature = await client.callTool("set_target", { kind: "feature" });
+    expect(feature).toContain("Target is a feature, read as 120 pages: the writer's word, not a page count");
+    expect(feature).toContain('Decided: the writer\'s words, "half-hour or feature", are cleared');
+    const featureRead = await client.callTool("read_wall");
+    expect(featureRead).toContain('against a feature, read as 120 pages (the writer said "a feature", not a number');
+    expect(featureRead).not.toContain("no target set");
+    expect(await client.callTool("list_boards")).toContain("of 120 pages (a feature)");
+    expect(await client.callTool("export_fountain", {})).toContain("of 120 pages (a feature).");
+    await client.callTool("set_target", { open: "half-hour or feature" });
     const decidedTarget = await client.callTool("set_target", { pages: 90 });
     expect(decidedTarget).toContain("Target is 90 pages");
     expect(decidedTarget).toContain('Decided: the writer\'s words, "half-hour or feature", are cleared');

@@ -23,6 +23,7 @@ import {
   type Command,
   type BoardThread,
   storyOrder,
+  targetWords,
 } from "./reducer";
 
 const NOW = "2026-01-01T00:00:00.000Z";
@@ -648,6 +649,26 @@ describe("choosing the version behind inherits what was tied to the scene (round
     const kept = applyCommand(state, { type: "choose_version", id: "behind", keep: true }, at).state;
     expect(kept.threads[0].noteIds).toEqual(["behind", "last"]);
     expect(kept.notes.find((note) => note.id === "front")?.aside).toBe(true);
+  });
+});
+
+describe("a target said as a kind keeps the writer's word (round twenty-two, entry 91)", () => {
+  const at = "2026-09-20T00:00:00.000Z";
+  it("is read as pages and keeps the word; a number clears it, and so do open words", () => {
+    const feature = applyCommand(emptyState(), { type: "set_target", kind: "feature" }, at).state;
+    expect(feature).toMatchObject({ targetKind: "feature", targetEighths: 960, targetOpen: "" });
+    expect(targetWords(feature)).toBe("a feature");
+    const half = applyCommand(feature, { type: "set_target", kind: "half-hour" }, at).state;
+    expect(half).toMatchObject({ targetKind: "half-hour", targetEighths: 240 });
+    expect(applyCommand(half, { type: "set_target", targetEighths: 800 }, at).state).toMatchObject({ targetKind: "", targetEighths: 800 });
+    expect(applyCommand(half, { type: "set_target", open: "half an hour or a feature" }, at).state).toMatchObject({ targetKind: "", targetOpen: "half an hour or a feature" });
+    // Saying "a feature" on a wall at the default is a change: the word is new, though the number is not.
+    expect(applyCommand(emptyState(), { type: "set_target", kind: "feature" }, at).changed).toBe(true);
+    // A board written before this claims no word.
+    const old = JSON.parse(JSON.stringify(feature));
+    delete old.targetKind;
+    expect(normalizeState(old).targetKind).toBe("");
+    expect(targetWords(normalizeState(old))).toBe("");
   });
 });
 

@@ -12,7 +12,7 @@
 // `= ` synopsis; `[[ ]]` note. All of them are invisible on the printed page
 // except the heading and the action.
 
-import { formatPages, boardEighths } from "./reducer.js";
+import { formatPages, boardEighths, targetWords } from "./reducer.js";
 import { PLACEHOLDER_CHANGE, storyOrder } from "./readWall.js";
 import { revisionLine, revisionMarks } from "./numbering.js";
 
@@ -141,7 +141,7 @@ export function toFountain(state, options = {}) {
   if (state.logline) notes.push(`Logline: ${state.logline}`);
   if (state.revision) notes.push(`Revision: ${revisionLine(state)}; a changed scene carries a [[changed in the revision]] note.`);
   notes.push(
-    `From the wall: ${order.length} card${order.length === 1 ? "" : "s"}, ${beats} beat${beats === 1 ? "" : "s"}, about ${formatPages(boardEighths(state))}${(state.targetOpen ?? "").trim() ? ` pages, the target open (${state.targetOpen.trim()})` : ` of ${formatPages(state.targetEighths)} pages`}.`,
+    `From the wall: ${order.length} card${order.length === 1 ? "" : "s"}, ${beats} beat${beats === 1 ? "" : "s"}, about ${formatPages(boardEighths(state))}${(state.targetOpen ?? "").trim() ? ` pages, the target open (${state.targetOpen.trim()})` : ` of ${formatPages(state.targetEighths)} pages${targetWords(state) ? ` (${targetWords(state)})` : ""}`}.`,
   );
 
   const head = titlePage({

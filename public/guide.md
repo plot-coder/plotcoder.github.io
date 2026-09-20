@@ -266,6 +266,11 @@ only when the server is started with `PLOTCODER_JSON=1`.
   brings it back as a plain unwired card, and the wall asks where it goes.
   Only on the writer's word — cutting a scene is theirs — and not a way to
   quiet a question: a card the writer is unsure of is `set_open`.
+- `set_target` with **`kind`** — when the writer says a kind and not a
+  number ("it is a feature"), pass `kind: "feature"` (`hour`, `half-hour`):
+  the target keeps their word, is read as 120 (60, 30) pages, and the
+  readout and the reading say "a feature". Do not turn their word into a
+  page count they never gave; `pages` is for when they give a number.
 - `set_open` — leave a card **open**, with the writer's words for what is
   not decided: "whether Tom knows", "who sent the letter". The reading
   lists open cards under their own head and asks nothing of the card itself

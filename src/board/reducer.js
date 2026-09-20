@@ -134,6 +134,21 @@ function knownCast(ids, characters) {
 export const EIGHTHS_PER_PAGE = 8;
 export const DEFAULT_NOTE_EIGHTHS = EIGHTHS_PER_PAGE; // a scene is about a page
 export const DEFAULT_TARGET_EIGHTHS = 120 * EIGHTHS_PER_PAGE; // a feature
+
+/**
+ * A target said as a kind, in the writer's word, and the pages each is read as. "A feature" is a decision; 120
+ * is the app's reading of it, and a page count from the writer replaces both.
+ */
+export const TARGET_KINDS = {
+  feature: { words: "a feature", eighths: 120 * 8 },
+  hour: { words: "an hour", eighths: 60 * 8 },
+  "half-hour": { words: "a half-hour", eighths: 30 * 8 },
+};
+
+/** "a feature", or "" when the target is a number or nothing. */
+export function targetWords(state) {
+  return TARGET_KINDS[state?.targetKind]?.words ?? "";
+}
 const MAX_NOTE_EIGHTHS = 30 * EIGHTHS_PER_PAGE;
 const MAX_TARGET_EIGHTHS = 600 * EIGHTHS_PER_PAGE;
 
@@ -221,6 +236,8 @@ export function emptyState() {
     logline: "",
     targetEighths: DEFAULT_TARGET_EIGHTHS,
     targetOpen: "",
+    // The writer's word for the target when they gave a kind and not a number — "a feature" — or nothing (round twenty-two, entry 91).
+    targetKind: "",
     loglineOpen: "",
     characters: [],
     notes: [],
@@ -282,6 +299,8 @@ export function seedState(now = nowIso()) {
     logline: "",
     targetEighths: DEFAULT_TARGET_EIGHTHS,
     targetOpen: "",
+    // The writer's word for the target when they gave a kind and not a number — "a feature" — or nothing (round twenty-two, entry 91).
+    targetKind: "",
     loglineOpen: "",
     // Two people, cast on the cards, so a new writer sees what the roster is for.
     characters: [
@@ -459,11 +478,14 @@ export function normalizeState(value) {
   const loglineOpen = typeof value.loglineOpen === "string" ? value.loglineOpen : "";
   // A target left open in the writer's words (the handover's calls, 2026-09-19): the number stands as the default meanwhile.
   const targetOpen = typeof value.targetOpen === "string" ? value.targetOpen : "";
+  // Boards written before the target kept the writer's word have a number and no word: nothing is claimed.
+  const targetKind = TARGET_KINDS[value.targetKind] ? value.targetKind : "";
   if (
     value.logline === logline &&
     value.loglineOpen === loglineOpen &&
     value.targetEighths === targetEighths &&
     value.targetOpen === targetOpen &&
+    value.targetKind === targetKind &&
     !rosterPatched &&
     !arrowsPatched &&
     !patched &&
@@ -480,6 +502,7 @@ export function normalizeState(value) {
     loglineOpen,
     targetEighths,
     targetOpen,
+    targetKind,
     characters,
     notes: patched ? notes : value.notes,
     arrows: arrowsPatched ? arrows : value.arrows,
@@ -775,11 +798,17 @@ export function applyCommand(state, command, now = nowIso()) {
       // A number decides the target and clears the open words; open words
       // leave the number where it is (the default, or the last one set) and
       // say the writer has not decided; open "" takes the words back.
+      // A kind is the writer's word — "a feature" — kept beside the pages it is read as (round twenty-two, entry 91):
+      // the app does not put 120 in a writer's mouth, and a feature's writer no longer reads as "no target set".
+      // A number given later is a number: it clears the word. Open words clear it too.
       const hasOpen = typeof command.open === "string";
-      const targetOpen = hasOpen ? cleanOpen(command.open) : typeof command.targetEighths === "number" ? "" : (state.targetOpen ?? "");
-      const targetEighths = typeof command.targetEighths === "number" ? clampEighths(command.targetEighths, DEFAULT_TARGET_EIGHTHS, MAX_TARGET_EIGHTHS) : state.targetEighths;
-      if (targetEighths === state.targetEighths && targetOpen === (state.targetOpen ?? "")) return { state, changed: false };
-      return { state: { ...state, targetEighths, targetOpen }, changed: true, result: { targetEighths, targetOpen } };
+      const kind = TARGET_KINDS[command.kind] ? command.kind : "";
+      const asNumber = kind ? TARGET_KINDS[kind].eighths : typeof command.targetEighths === "number" ? command.targetEighths : null;
+      const targetOpen = hasOpen ? cleanOpen(command.open) : asNumber !== null ? "" : (state.targetOpen ?? "");
+      const targetEighths = asNumber !== null ? clampEighths(asNumber, DEFAULT_TARGET_EIGHTHS, MAX_TARGET_EIGHTHS) : state.targetEighths;
+      const targetKind = kind ? kind : asNumber !== null || (hasOpen && targetOpen) ? "" : (state.targetKind ?? "");
+      if (targetEighths === state.targetEighths && targetOpen === (state.targetOpen ?? "") && targetKind === (state.targetKind ?? "")) return { state, changed: false };
+      return { state: { ...state, targetEighths, targetOpen, targetKind }, changed: true, result: { targetEighths, targetOpen, targetKind } };
     }
 
     case "set_rank": {

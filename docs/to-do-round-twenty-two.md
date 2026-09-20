@@ -191,7 +191,7 @@ patches are honest; they are not the answer.
 - [x] **E7 · What a written scene's line count counts** *(checked true first — a note measures the same as none — then said in the reply; tested 2026-09-20)* (71). *Plan:* the
   reply says notes (`[[…]]`) neither print nor count. *Best?* Yes. *Test:*
   a scene with a note measures the same as without.
-- [~] **E8 · "A feature" is not a number** *(drawn 2026-09-20 in `docs/mockups/round-twenty-two-designs.html`; waiting on Robert's word)* (91). *Plan:* `set_target { kind:
+- [x] **E8 · "A feature" is not a number** *(drawn, Robert chose A, built 2026-09-20: `targetKind` on the board, `set_target` and `new_project` take `kind`, the strip's readout, the reading, `list_boards` and the title page say "a feature"; a feature's writer no longer reads as "no target set"; tested in the kernel and the server, and seen in the app)* (91). *Plan:* `set_target { kind:
   "feature" | "hour" | "half-hour" }` sets 120, 60 or 30 and keeps the
   writer's word, so the readout and the reading say "a feature (120)".
   *Best?* Alternative: leave it; the agent asked and the writer said fine.

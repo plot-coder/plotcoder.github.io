@@ -83,6 +83,8 @@ export function toMarkdown(state, options = {}) {
     // The headline as a synopsis line — not under a beat, whose heading is the headline
     // already, nor under a card with no place, whose marked heading carries it.
     if (note.rank !== "beat" && note.headline && !headlineHeadsScene(note)) out.push(`*${note.headline.trim()}*`, "");
+    // A place left open: the writer's words for why, beneath the heading, never in it (round twenty-two, entry 70).
+    if ((note.locationOpen ?? "").trim()) out.push(`*place open, by the writer's word: ${note.locationOpen.trim()}*`, "");
     if (note.text && note.text.trim()) out.push(...sceneMarkdown(note.text));
     // Unwritten: the change line stands in after the mark in bold, a plain
     // paragraph so it never reads as a second synopsis line (round fourteen, 30).

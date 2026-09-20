@@ -342,8 +342,10 @@ card of another board is not asked about as uncast here.
   A card with no place prints `NO PLACE YET:` and then its headline where
   the place would go, on every page and in every export, so a headline in
   capitals is never read as a place; a place left open prints `PLACE NOT
-  DECIDED:` and the writer's words. Neither is a place, and both come back
-  in as what they were.
+  DECIDED:` and then the headline the same way, with the writer's words for
+  why in the note beneath (`place open: …`), so words written for a card's
+  edge never stand where a slugline goes. Neither is a place, and both come
+  back in as what they were.
 - `write_scene` — a card's scene text in Fountain, by id; the card is then
   measured from its lines. Write only scenes the writer asked for. Under a
   revision the reply says the card is marked. The cues in the text (JOE,

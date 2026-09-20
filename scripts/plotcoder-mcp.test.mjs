@@ -1212,7 +1212,7 @@ describe("round nineteen: create_note with after on a wall with no follows arrow
     const order = await client.callTool("list_board");
     expect(order.indexOf("Maya finds the letter")).toBeLessThan(order.indexOf("The stairs"));
     const before = await client.callTool("create_note", { headline: "The door", change: "It sticks.", before: "The stairs" });
-    expect(before).toContain('Wired before "The stairs" in the story (1 follows arrow removed, 2 drawn)');
+    expect(before).toMatch(/Wired before "The stairs" in the story \(1 follows arrow removed — "[^"]+" → "The stairs", 2 drawn\)/);
   });
 
   it("says what a fold plants, in the writer's words, on the card and in the reading (R62)", async () => {

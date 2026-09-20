@@ -1159,14 +1159,16 @@ function summarize(state) {
     .join("\n");
   const cast = state.characters
     .map((character) => {
-      const on = state.notes.filter((note) => note.characterIds.includes(character.id)).length;
+      // Cards in the story; a version behind another is said apart, since it is not in the film until chosen (round twenty-two, entry 68).
+      const on = state.notes.filter((note) => !note.alternativeOf && note.characterIds.includes(character.id)).length;
+      const onBehind = state.notes.filter((note) => note.alternativeOf && note.characterIds.includes(character.id)).length;
       // Which lines of their page are written, so an agent can see who is a
       // brief and who is still a name.
       const page = filledCharacterFields(character);
       const brief = page.length ? ` · page: ${page.join(", ")}` : " · page: empty";
       // On this board, and on the others (R51): a per-board count beside a project-wide check read as a contradiction (round sixteen, entry 18).
       const away = lastHeld?.project ? (castElsewhere(lastHeld.project, lastHeld.boards, lastHeld.project.activeBoardId)[character.id] ?? []).reduce((sum, item) => sum + item.cards, 0) : 0;
-      return `  - ${character.id} — "${character.name}" on ${on} card${on === 1 ? "" : "s"} of this board${away ? ` and ${away} of other boards` : ""}${brief}`;
+      return `  - ${character.id} — "${character.name}" on ${on} card${on === 1 ? "" : "s"} of this board${onBehind ? ` (and ${onBehind} behind as ${onBehind === 1 ? "another version" : "other versions"}, not counted)` : ""}${away ? ` and ${away} of other boards` : ""}${brief}`;
     })
     .join("\n");
   const placeCounts = new Map();
@@ -1450,7 +1452,7 @@ server.registerTool(
       pages: pagesSchema.optional(),
       plants: z.boolean().optional(),
       plantsWhat: z.string().optional().describe("What the folded corner plants, in the writer's words; naming it folds the card."),
-      after: z.string().optional().describe("Wire the new scene into the story after this card (id or headline): one call, one number under a lock. On a wall with no follows arrows yet this draws the first, so a wall can be built in order from its second card."),
+      after: z.string().optional().describe("Wire the new scene into the story after this card (id or headline): one call, one number under a lock. On a wall with no follows arrows yet this draws the first, so a wall can be built in order from its second card. Wiring a scene in also tidies the whole wall along the arrows, as organize does, so every card may move; the reply says so, and one undo takes back the card and the tidy together."),
       before: z.string().optional().describe("Or before this card (id or headline)."),
       location: z.string().optional(),
       when: z.string().optional().describe('When the scene happens, as the writer says it — "night", "day four, dawn" — printed after the place on the scene heading.'),
@@ -1479,6 +1481,8 @@ server.registerTool(
     const wallHasFollows = state.arrows.some((arrow) => arrow.kind !== "setup");
     let joinedGroup = null;
     let removedArrows = 0;
+    // The arrow the wiring took out, by its cards, as delete_note names one (round twenty-two, entry 65).
+    const removedNames = [];
     let drawnArrows = 0;
     const { value: result, live, state: after } = await commitAll(`create_note "${args.headline}"`, (step, current) => {
       let made = step({
@@ -1524,8 +1528,13 @@ server.registerTool(
       if (beside && made?.id) {
         // Count the rewiring, so the reply can say it as move_scene does (round eighteen, entry 36).
         const run = (command) => {
+          const gone = command.type === "delete_arrow" ? current().arrows.find((arrow) => arrow.id === command.id) : null;
           const done = step(command);
-          if (done.changed && command.type === "delete_arrow") removedArrows += 1;
+          if (done.changed && command.type === "delete_arrow") {
+            removedArrows += 1;
+            const headline = (id) => current().notes.find((note) => note.id === id)?.headline ?? id;
+            if (gone) removedNames.push(`"${headline(gone.from)}" → "${headline(gone.to)}"`);
+          }
           if (done.changed && command.type === "create_arrow") drawnArrows += 1;
           return done;
         };
@@ -1547,7 +1556,7 @@ server.registerTool(
     ].filter(Boolean).join(", ");
     // Where it landed matters only until the tidy, so the reply says the rule once and never the coordinates (round fourteen, entry 11).
     const placed = beside
-      ? ` Wired ${args.after ? "after" : "before"} "${beside.headline}" in the story (${removedArrows} follows arrow${removedArrows === 1 ? "" : "s"} removed, ${drawnArrows} drawn${wallHasFollows ? "" : "; the wall's first, so the story order starts here"})${joinedGroup ? `, in "${joinedGroup}"` : ""}, and the wall tidied.`
+      ? ` Wired ${args.after ? "after" : "before"} "${beside.headline}" in the story (${removedArrows} follows arrow${removedArrows === 1 ? "" : "s"} removed${removedNames.length ? ` — ${removedNames.join(", ")}` : ""}, ${drawnArrows} drawn${wallHasFollows ? "" : "; the wall's first, so the story order starts here"})${joinedGroup ? `, in "${joinedGroup}"` : ""}, and the wall tidied.`
       : args.x === undefined && args.y === undefined ? ` Placed after the last card in story order.${once("placed", " organize lays the wall out along the arrows.")}` : "";
     // Under a lock a new scene has a letter, not a number: say it, since the board is the only other place to learn it (round fourteen, entry 44).
     const numbered = after?.lock && result?.id ? ` Numbered ${sceneNumbers(storyOrder(after), after.lock).get(result.id)} (the numbers are locked; a new scene's letter is its place between locked ones now, worked out again from where it sits if it moves; the locked numbers never move).` : "";

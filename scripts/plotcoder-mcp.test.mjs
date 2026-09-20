@@ -2373,6 +2373,9 @@ describe("the premise and reminders (roadmap item 6)", () => {
 
   it("lists the workflows and briefs a segment from the wall", async () => {
     const listed = await door.callTool("list_workflows");
+    // A film is one board: the treatment questions do not send an agent to ask for its name (round twenty-two, entry 16).
+    expect(listed).toContain("its board needs no name of its own");
+    expect(listed).not.toContain("What are the project and the board called?");
     expect(listed).toContain("break-a-treatment — Break a treatment into a wall");
     expect(listed).toContain("keep: Wait for the writer; propose, do not fix.");
     const brief = await door.callTool("segment_brief", { ids: ["maya-letter"] });

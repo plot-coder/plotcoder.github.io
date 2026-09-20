@@ -244,7 +244,7 @@ could be, a recommendation, what a yes means.
 
 ## G. Small words (16, 57, 78)
 
-- [ ] **G1 · A board's name on a one-board film** (16). `new_project` makes
+- [x] **G1 · A board's name on a one-board film** *(built 2026-09-20. Changed at the asking: not a board named after the project — two copies of one name drift on a rename. The agent asked because our own treatment question and `new_project`'s description told it to; those words are fixed, in a form that reads for the writer too, since the app shows the hint under Reminders. Tested through `list_workflows`.)* (16). `new_project` makes
   a "Board 1" whose name the agent must then ask about. *Plan:* a one-board
   project's board takes the project's name until a second board exists, and
   the reading does not list it as open. *Best?* Yes; the guide already says

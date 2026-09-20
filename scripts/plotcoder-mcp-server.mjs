@@ -4251,7 +4251,7 @@ server.registerTool(
   {
     title: "Start a project",
     description:
-      "Through the account door: start a new project of the writer's with this name — one empty board, nothing on it — and work it from now on. The writer sees it under Projects on every device. A title not decided: open with the writer's words (\"The Allotments, or Plot 14\") instead of a name, and the project starts as Untitled project with those words beside it. board names the first board; boardOpen leaves its name open in the writer's words instead (\"the pilot, or the film\"), so a board born from a maybe is not silently \"Board 1\".",
+      "Through the account door: start a new project of the writer's with this name — one empty board, nothing on it — and work it from now on. The writer sees it under Projects on every device. A title not decided: open with the writer's words (\"The Allotments, or Plot 14\") instead of a name, and the project starts as Untitled project with those words beside it. A film is one board and goes out under the project's name: leave board alone and do not ask the writer to name it. For a series, board names the first episode; boardOpen leaves that name open in the writer's words instead (\"the pilot, or the film\").",
     inputSchema: { name: z.string().min(1).optional(), open: z.string().optional(), board: z.string().optional(), boardOpen: z.string().optional(), pages: pagesSchema.optional(), minutes: z.number().positive().optional(), targetOpen: z.string().optional().describe("The writer's words for why the length is not decided — \"half-hour or feature\" — so the target is born open instead of the feature default standing unsaid.") },
   },
   async (args) => {
@@ -4276,7 +4276,9 @@ server.registerTool(
     const targetLine = state.targetOpen ? ` Its target is left open, by the writer's word: "${state.targetOpen}"; the reading reads the cards against a half-hour and a feature until set_target decides it.` : target === undefined ? ` Its target is ${formatPages(state.targetEighths)} pages, the default for a feature; set_target for a pilot or a half-hour, or pass pages or minutes here.` : ` Its target is ${formatPages(state.targetEighths)} pages.`;
     const first = record.boards[0];
     const nameOpenLine = `${record.nameOpen ? ` The project's name is left open, by the writer's word: "${record.nameOpen}"; rename_project decides it.` : ""}${first.nameOpen ? ` The board's name is left open, by the writer's word: "${first.nameOpen}"; rename_board decides it.` : ""}`;
-    return ok(`Started "${record.name}" (${record.id}) with its first board "${first.name}" (${first.id}), and working it now, as ${account.email}.${targetLine}${nameOpenLine}${oneCallHint(record)}`, { id: record.id, name: record.name, boardId: first.id, boardName: first.name, boardNameOpen: first.nameOpen ?? "", targetEighths: state.targetEighths });
+    // A film is one board and goes out under the project's name: nothing to ask the writer about "Board 1" (round twenty-two, entry 16).
+    const filmBoard = !args.board?.trim() && !args.boardOpen?.trim() ? " A film is one board and goes out under the project's name, so its board needs no name; a series names each board for its episode (rename_board)." : "";
+    return ok(`Started "${record.name}" (${record.id}) with its first board "${first.name}" (${first.id}), and working it now, as ${account.email}.${filmBoard}${targetLine}${nameOpenLine}${oneCallHint(record)}`, { id: record.id, name: record.name, boardId: first.id, boardName: first.name, boardNameOpen: first.nameOpen ?? "", targetEighths: state.targetEighths });
   },
 );
 

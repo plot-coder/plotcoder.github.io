@@ -3474,6 +3474,12 @@ server.registerTool(
     const remove = cardsByRef(current.state, args.remove);
     const missing = [...add.missing, ...remove.missing];
     if (missing.length) return ok(`Nothing changed: not on the board — ${missing.map((ref) => `"${ref}"`).join(", ")}. Call list_board for the ids or the exact headlines.`);
+    // A thread runs through the story, and a card behind another is not in it: say so, instead of "already reads that way" (round twenty-two, entry 58).
+    const behind = add.found.map((id) => current.state.notes.find((note) => note.id === id)).filter((note) => note?.alternativeOf);
+    if (behind.length)
+      return ok(
+        `Nothing changed: ${behind.map((note) => `"${note.headline}"`).join(", ")} ${behind.length === 1 ? "is" : "are"} behind another card as its other version, out of the story until chosen, and a thread runs through the story. Tie the thread to the front card; for a thing true of either version, fold the version behind with set_plant and draw its own setup arrow, which stays with it if it is chosen.`,
+      );
     const { state, changed, result, live } = await commit({
       type: "update_thread",
       id: thread.id,

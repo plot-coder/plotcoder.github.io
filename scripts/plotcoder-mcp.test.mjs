@@ -1104,6 +1104,23 @@ describe("open fields (R61): the logline, the premise, a when and a board's name
     expect(listed).toContain(`  - ${other.id} — "Con dies", a version of "They lose the plots"`);
     expect(await client.callTool("read_wall")).toContain('  - "They lose the plots" or "Con dies"');
     expect(await client.callTool("set_alternative", { id: ending.id, of: other.id })).toContain("is itself a version");
+    // Round twenty-two: what a version behind leaves open is said beside it (21); a thread will not run through it, and says why (58); a setup from it has no distance, never NaN (60).
+    await client.callTool("set_location", { ids: [other.id], open: "the ward, or the plot" });
+    expect(await client.callTool("read_wall")).toContain(`"Con dies" (left open on it, by the writer's word — where: the ward, or the plot)`);
+    const strand = await client.callTool("create_thread", { name: "the crowns", cards: ["They lose the plots"], startOpen: true });
+    expect(strand).toContain("the crowns");
+    const refused = await client.callTool("update_thread", { thread: "the crowns", add: [other.id] });
+    expect(refused).toContain("behind another card as its other version");
+    expect(refused).not.toContain("already reads that way");
+    await client.callTool("delete_thread", { thread: "the crowns" });
+    await client.callTool("set_plant", { ids: [other.id], what: "the crowns" });
+    await client.callTool("create_arrow", { from: other.id, to: ending.id, kind: "setup" });
+    const withSetup = await client.callTool("read_wall");
+    expect(withSetup).not.toContain("NaN");
+    expect(withSetup).toContain("no distance yet: its first card is behind another card as its other version");
+    await client.callTool("undo");
+    await client.callTool("undo");
+    await client.callTool("set_location", { ids: [other.id], open: "" });
     const chosen = await client.callTool("choose_version", { id: "Con dies" });
     expect(chosen).toContain('Chose "Con dies" — it steps forward');
     expect(chosen).toContain('"They lose the plots" is gone');

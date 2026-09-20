@@ -169,7 +169,9 @@ export function readWall(state, options = {}) {
       id: arrow.id,
       from: arrow.from,
       to: arrow.to,
-      eighths: startAt.get(arrow.to) - startAt.get(arrow.from),
+      // An end behind another card as its other version (R65) has no place in
+      // the story, so the setup has no distance: null, never NaN (round twenty-two, entry 60).
+      eighths: startAt.has(arrow.to) && startAt.has(arrow.from) ? startAt.get(arrow.to) - startAt.get(arrow.from) : null,
     }));
 
   // Step 2 has not been done, so step 4 cannot read runs. A fact, not a nudge.
@@ -570,7 +572,9 @@ export function describeSetups(reading, state) {
   const name = (id) => byId.get(id)?.headline ?? id;
   return reading.setups.map((setup) => {
     const distance =
-      setup.eighths > 0
+      setup.eighths === null || setup.eighths === undefined
+        ? `no distance yet: ${byId.get(setup.from)?.alternativeOf ? "its first card" : "its payoff"} is behind another card as its other version, out of the story until it is chosen`
+        : setup.eighths > 0
         ? `about ${pages(setup.eighths)} pages later`
         : setup.eighths === 0
           ? "in the same place on the wall"

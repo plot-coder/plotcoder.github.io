@@ -3,6 +3,7 @@ import {
   applyCommand,
   EIGHTHS_PER_PAGE,
   emptyState,
+  seedState,
   type BoardState,
   type Command,
 } from "./reducer";
@@ -45,6 +46,21 @@ function wall(...cards: Card[]) {
     emptyState(),
   );
 }
+
+describe("a setup from a card behind another (round twenty-two, entry 60)", () => {
+  it("has no distance, says why, and is never NaN", () => {
+    let state = seedState();
+    const at = "2026-09-20T00:00:00.000Z";
+    state = applyCommand(state, { type: "set_alternative", id: "tom-lies", of: "maya-letter" }, at).state;
+    state = applyCommand(state, { type: "set_plant", ids: ["tom-lies"], plants: true }, at).state;
+    state = applyCommand(state, { type: "create_arrow", from: "tom-lies", to: "letter-aloud", kind: "setup" }, at).state;
+    const reading = readWall(state);
+    expect(reading.setups.find((setup) => setup.from === "tom-lies")?.eighths).toBeNull();
+    const line = describeSetups(reading, state).join("\n");
+    expect(line).not.toContain("NaN");
+    expect(line).toContain("no distance yet: its first card is behind another card as its other version");
+  });
+});
 
 describe("readingOrder", () => {
   it("reads rows top to bottom and cards left to right within a row", () => {

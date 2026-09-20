@@ -56,7 +56,8 @@ export type Run = {
 };
 
 /** A setup arrow, with the distance from where it is planted to where it pays off. Negative means backwards. */
-export type Setup = { id: string; from: string; to: string; eighths: number };
+/** `eighths` is null when an end is behind another card as its other version: no place in the story, no distance. */
+export type Setup = { id: string; from: string; to: string; eighths: number | null };
 
 export type WallReading = {
   /** Every card id in reading order. */

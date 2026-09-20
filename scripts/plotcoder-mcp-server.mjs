@@ -3112,7 +3112,7 @@ server.registerTool(
   {
     title: "Another version of a scene",
     description:
-      "Set a card behind another as its other version — two endings, two ways a scene could go — by id or headline. The version leaves the story: out of the order, the count, the pages and every export; its follows arrows are dropped (setup arrows stay). The wall draws it tucked behind its sibling; read_wall lists the pair under \"two versions, not chosen\" and asks nothing of it; choose_version decides. of: \"\" takes a card out from behind and it stands as a plain card again. Only on the writer's word: two versions the notes hold, never two the agent could not choose between.",
+      "Set a card behind another as its other version — two endings, two ways a scene could go — by id or headline. Which card is in front decides nothing: it is only the one drawn on top and counted until the writer chooses, so put the way the writer named first in front, say so, and do not ask them to pick. The version leaves the story: out of the order, the count, the pages and every export; its follows arrows are dropped (setup arrows stay). The wall draws it tucked behind its sibling; read_wall lists the pair under \"two versions, not chosen\" and asks nothing of it; choose_version decides. of: \"\" takes a card out from behind and it stands as a plain card again. Only on the writer's word: two versions the notes hold, never two the agent could not choose between.",
     inputSchema: { id: z.string(), of: z.string() },
   },
   async (args) => {
@@ -3208,7 +3208,7 @@ server.registerTool(
   {
     title: "Fold the corner",
     description:
-      `Fold the corner of cards — mark them as planting something — or unfold them. ${wordSentence("corner")} The setup arrow is create_arrow with kind 'setup'. A fold that pays off in a later episode: pass later, another board of the project by name, id or number — a board that exists; new_board makes one — and, once you know it, at: the scene on that board that pays it off, by id or headline. A board alone is a promise: the reading lists the card under 'later' and, once that board holds cards, asks which scene until one claims it; with at, both boards' readings name the payoff and the paying-off card says so. later '' forgets the board; at '' keeps the board and forgets the scene. set_payoff makes the same claim from the other board. Folding never moves a card.`,
+      `Fold the corner of cards — mark them as planting something — or unfold them. ${wordSentence("corner")} what is a short label for the thing planted ("the jar of coins"), repeated wherever the fold is named: how it is first seen and how it pays off are what happens in those two scenes, so they go in those cards' change lines or text, never in the label. The setup arrow is create_arrow with kind 'setup'. A fold that pays off in a later episode: pass later, another board of the project by name, id or number — a board that exists; new_board makes one — and, once you know it, at: the scene on that board that pays it off, by id or headline. A board alone is a promise: the reading lists the card under 'later' and, once that board holds cards, asks which scene until one claims it; with at, both boards' readings name the payoff and the paying-off card says so. later '' forgets the board; at '' keeps the board and forgets the scene. set_payoff makes the same claim from the other board. Folding never moves a card.`,
     inputSchema: {
       ids: z.array(z.string()).min(1),
       plants: z.boolean().optional(),

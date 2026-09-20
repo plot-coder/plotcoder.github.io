@@ -202,8 +202,13 @@ only when the server is started with `PLOTCODER_JSON=1`.
   puts the words on its edge ("Plants · the letter"); `create_note`
   takes `plantsWhat`. `read_wall` then asks where the letter comes back,
   and the setup line names them; `what: ""` keeps the fold and drops the
-  words. A card has one fold: a second thing the same scene plants is a
-  thread. A payoff the writer knows without a scene for it — "he gives her
+  words. **The fold's words are a short label** — "the jar of coins" — and
+  are repeated wherever the fold is named. *How* a plant is first seen, and
+  *how* it pays off, are what happens in those two scenes, so they are those
+  cards' change lines, or their text: "he counts the fare out of a jar" is
+  the first morning's, "he empties it into her hand" is the last run's.
+  Never a sentence in the label, and never in a headline. A card has one
+  fold: a second thing the same scene plants is a thread. A payoff the writer knows without a scene for it — "he gives her
   his tools", which scene undecided — is a card born open at the payoff end
   with the setup arrow landed on it, not an unpaid fold. `read_wall` will
   ask where a fold pays off until a `setup` arrow leaves it — or until `later` names another
@@ -238,7 +243,13 @@ only when the server is started with `PLOTCODER_JSON=1`.
   place decides it, `open: ""` leaves it blank; `create_note` takes
   `locationOpen`.
 - `set_alternative` / `choose_version` — **two versions of one scene**:
-  set a card behind another as its other version, by id or headline, and it
+  **which card is in front decides nothing** — it is only the one drawn on
+  top, and the one counted until the writer chooses. Put the way the writer
+  named first in front, say so, and do not ask them to pick: "keep both"
+  is not a choice to be half-made. A version is one card: when one way of a
+  scene is two scenes, the version is the first of them, and the second is
+  a card set aside (`set_aside`), brought back if that way is chosen.
+  Set a card behind another as its other version, by id or headline, and it
   leaves the story — out of the order, the count, the pages and every
   export, its follows arrows dropped — and waits there; the wall draws it
   tucked behind its sibling and `read_wall` lists the pair under "two

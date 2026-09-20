@@ -228,8 +228,8 @@ export function readWall(state, options = {}) {
       ids,
       text:
         ids.length === 2
-          ? `Nothing runs between ${names[0]} and ${names[1]}: two turns back to back. Are they one beat, is a scene missing, or is that the pace?${thin}`
-          : `Nothing runs between ${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}: ${countWord(ids.length)} turns back to back. Are some of them one beat, are scenes missing between them, or is that the pace?${thin}`,
+          ? `Nothing runs between ${names[0]} and ${names[1]}: two turns back to back. Are they one beat, is a scene missing, is that the pace — or have you not got that far yet?${thin}`
+          : `Nothing runs between ${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}: ${countWord(ids.length)} turns back to back. Are some of them one beat, are scenes missing between them, is that the pace — or have you not got that far yet?${thin}`,
     });
     chain = [];
   };

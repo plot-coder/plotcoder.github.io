@@ -96,6 +96,17 @@ describe("everything undecided in one place (round twenty-two, entries 41, 43, 6
   });
 });
 
+describe("two turns back to back (round twenty-two, entry 40)", () => {
+  it("offers the answer a page of notes usually wants: not that far yet", () => {
+    const at = "2026-09-20T00:00:00.000Z";
+    let state = emptyState();
+    for (const id of ["a", "b"]) state = applyCommand(state, { type: "create_note", id, headline: id, change: "x", rank: "beat" }, at).state;
+    state = applyCommand(state, { type: "create_arrow", from: "a", to: "b", kind: "follows" }, at).state;
+    const asked = readWall(state).findings.find((finding) => finding.kind === "empty");
+    expect(asked?.text).toContain("is that the pace — or have you not got that far yet?");
+  });
+});
+
 describe("a setup's distance on a wall with no order (round twenty-two, entry 30)", () => {
   it("says the distance is by the rows until a follows arrow sets the order", () => {
     const at = "2026-09-20T00:00:00.000Z";

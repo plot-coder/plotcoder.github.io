@@ -2384,6 +2384,8 @@ describe("the premise and reminders (roadmap item 6)", () => {
     const listed = await door.callTool("list_workflows");
     // A film is one board: the treatment questions do not send an agent to ask for its name (round twenty-two, entry 16).
     expect(listed).toContain("its board needs no name of its own");
+    // "Propose them and I will strike" means name them first, mark after (round twenty-two, entry 36).
+    expect(listed).toContain("your agent names its candidates to you first, you strike, and only what is left is marked");
     expect(listed).not.toContain("What are the project and the board called?");
     expect(listed).toContain("break-a-treatment — Break a treatment into a wall");
     expect(listed).toContain("keep: Wait for the writer; propose, do not fix.");

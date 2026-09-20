@@ -169,7 +169,9 @@ export function readWall(state, options = {}) {
       id: arrow.id,
       from: arrow.from,
       to: arrow.to,
-      eighths: startAt.get(arrow.to) - startAt.get(arrow.from),
+      // An end behind another card as its other version (R65) has no place in
+      // the story, so the setup has no distance: null, never NaN (round twenty-two, entry 60).
+      eighths: startAt.has(arrow.to) && startAt.has(arrow.from) ? startAt.get(arrow.to) - startAt.get(arrow.from) : null,
     }));
 
   // Step 2 has not been done, so step 4 cannot read runs. A fact, not a nudge.
@@ -265,6 +267,8 @@ export function readWall(state, options = {}) {
         ids: [note.id],
         text: `A card still reads ${quote({ headline: title || PLACEHOLDER_HEADLINE })}. What scene is it?`,
       });
+    } else if ((note.changeOpen ?? "").trim()) {
+      // Left open by the writer's word (R67): listed under open fields, not asked; the card's other questions stand.
     } else if (change === "" || change === PLACEHOLDER_CHANGE) {
       findings.push({
         kind: "unwritten",
@@ -284,7 +288,8 @@ export function readWall(state, options = {}) {
     linked.add(arrow.from);
     linked.add(arrow.to);
   }
-  if (state.notes.length > 0 && linked.size * 2 >= state.notes.length) {
+  // Half the cards in the film, not half the cards on the wall: a version behind another and a card set aside are wired to nothing by design.
+  if (order.length > 0 && linked.size * 2 >= order.length) {
     const loose = order.filter((note) => askable(note) && !linked.has(note.id));
     if (loose.length > 0) {
       findings.push({
@@ -518,6 +523,8 @@ export function readWall(state, options = {}) {
     openFields: describeOpenFields(state, order),
     // Two versions of one scene (R65): the front card and the one behind it, in story order; listed, never asked.
     versions: order.filter((note) => state.notes.some((item) => item.alternativeOf === note.id)).map((note) => ({ id: note.id, alternatives: state.notes.filter((item) => item.alternativeOf === note.id).map((item) => item.id) })),
+    // Set aside (R66): on the wall and not in the film. Listed, never asked.
+    aside: state.notes.filter((note) => note.aside === true).map((note) => note.id),
     threads,
     findings: asked,
     left,
@@ -539,6 +546,7 @@ function describeOpenFields(state, order) {
   const fields = [];
   if ((state.loglineOpen ?? "").trim()) fields.push({ field: "logline", words: state.loglineOpen.trim() });
   for (const note of order) if ((note.locationOpen ?? "").trim()) fields.push({ field: "location", id: note.id, words: note.locationOpen.trim() });
+  for (const note of order) if ((note.changeOpen ?? "").trim()) fields.push({ field: "change", id: note.id, words: note.changeOpen.trim() });
   for (const note of order) if ((note.whenOpen ?? "").trim()) fields.push({ field: "when", id: note.id, words: note.whenOpen.trim() });
   return fields;
 }
@@ -570,7 +578,13 @@ export function describeSetups(reading, state) {
   const name = (id) => byId.get(id)?.headline ?? id;
   return reading.setups.map((setup) => {
     const distance =
-      setup.eighths > 0
+      setup.eighths === null || setup.eighths === undefined
+        ? (() => {
+            const outside = [byId.get(setup.from), byId.get(setup.to)].find((note) => note && (note.alternativeOf || note.aside));
+            const which = outside?.id === setup.from ? "its first card" : "its payoff";
+            return outside?.aside ? `no distance: ${which} is set aside, not in the film` : `no distance yet: ${which} is behind another card as its other version, out of the story until it is chosen`;
+          })()
+        : setup.eighths > 0
         ? `about ${pages(setup.eighths)} pages later`
         : setup.eighths === 0
           ? "in the same place on the wall"

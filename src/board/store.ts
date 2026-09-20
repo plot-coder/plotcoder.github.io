@@ -895,6 +895,8 @@ export type PlotCoderWindowApi = {
   /** Two versions of one scene (R65): a card behind another, and the choice. */
   setAlternative: (id: string, of: string | null) => unknown;
   chooseVersion: (id: string, keep?: boolean) => unknown;
+  /** Set cards aside, or bring them back (R66): on the wall and not in the film. */
+  setAside: (ids: string[], aside?: boolean) => unknown;
   /** A thread (R60): a named string through cards, either end open until tied. */
   createThread: (name: string, noteIds?: string[], startOpen?: boolean, endOpen?: boolean) => unknown;
   updateThread: (id: string, patch: { name?: string; add?: string[]; remove?: string[]; startOpen?: boolean; endOpen?: boolean }) => unknown;
@@ -951,6 +953,7 @@ export function installWindowApi(): void {
     setOpen: (ids, open) => boardStore.dispatch({ type: "set_open", ids, open }),
     setAlternative: (id, of) => boardStore.dispatch({ type: "set_alternative", id, of }),
     chooseVersion: (id, keep) => boardStore.dispatch({ type: "choose_version", id, keep }),
+    setAside: (ids, aside) => boardStore.dispatch({ type: "set_aside", ids, aside: aside !== false }),
     createThread: (name, noteIds = [], startOpen = false, endOpen = false) => boardStore.dispatch({ type: "create_thread", name, noteIds, startOpen, endOpen }),
     updateThread: (id, patch) => boardStore.dispatch({ type: "update_thread", id, ...patch }),
     deleteThread: (id) => boardStore.dispatch({ type: "delete_thread", id }),

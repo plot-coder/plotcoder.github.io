@@ -4622,6 +4622,39 @@ body {
   opacity: 1;
 }
 
+/* Set aside (R66): on the wall and not in the film. Faded, flat, a dashed edge; it comes forward under the hand so it can be read. */
+.note.is-aside {
+  /* Washed out, not see-through: cards beneath must not read through it. */
+  filter: grayscale(0.7) brightness(0.62);
+  box-shadow: none;
+  outline: 1.5px dashed rgba(40, 38, 24, 0.6);
+  outline-offset: -5px;
+  transition: filter 120ms ease;
+}
+
+.note.is-aside:hover,
+.note.is-aside.is-selected,
+.note.is-aside.is-picking,
+.note.is-aside:focus-within {
+  filter: grayscale(0.35) brightness(0.9);
+}
+
+/* The change line's offer (R67): only when the card is under the hand, so a wall of new cards is not a wall of buttons. */
+.note__change-offer {
+  display: block;
+  opacity: 0;
+}
+
+.note:hover .note__change-offer,
+.note.is-selected .note__change-offer,
+.note__change-offer:focus-visible {
+  opacity: 1;
+}
+
+.note__change-open {
+  display: flex;
+}
+
 .note__when.is-open-field {
   text-decoration-thickness: 1px;
 }

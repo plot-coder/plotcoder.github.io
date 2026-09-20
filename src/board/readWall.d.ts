@@ -56,7 +56,8 @@ export type Run = {
 };
 
 /** A setup arrow, with the distance from where it is planted to where it pays off. Negative means backwards. */
-export type Setup = { id: string; from: string; to: string; eighths: number };
+/** `eighths` is null when an end is behind another card as its other version: no place in the story, no distance. */
+export type Setup = { id: string; from: string; to: string; eighths: number | null };
 
 export type WallReading = {
   /** Every card id in reading order. */
@@ -72,9 +73,11 @@ export type WallReading = {
   /** Open cards (R59): the writer's words for what is not decided, in story order; not asked about while they stand. */
   open: Array<{ id: string; words: string; hides: FindingKind[] }>;
   /** Fields left open by the writer's word (R61): the board's logline, and each card's when, in story order. Listed, not asked. */
-  openFields: Array<{ field: "logline"; words: string } | { field: "location"; id: string; words: string } | { field: "when"; id: string; words: string }>;
+  openFields: Array<{ field: "logline"; words: string } | { field: "location"; id: string; words: string } | { field: "when"; id: string; words: string } | { field: "change"; id: string; words: string }>;
   /** Two versions of one scene (R65): each front card with the versions behind it, in story order; listed, never asked. */
   versions: Array<{ id: string; alternatives: string[] }>;
+  /** The cards set aside (R66): on the wall and not in the film; listed, never asked. */
+  aside: string[];
   /** Threads (R60): each named string with its cards in story order and which ends are open. */
   threads: Array<{ id: string; name: string; ids: string[]; startOpen: boolean; endOpen: boolean; /** Eighths from the first card's start to the last card's start; 0 with fewer than two cards. */ apart: number }>;
   /** Cards here that pay off a fold of another board (R58), composed by the door from the project. */

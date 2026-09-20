@@ -105,12 +105,13 @@ type NoteBoardProps = {
   onStartThread: (id: string, name: string, end: "start" | "end") => void;
   /** Two versions of one scene (R65): set a card behind another, or choose one. */
   onSetAlternative: (id: string, of: string | null) => void;
-  onChooseVersion: (id: string) => void;
+  onChooseVersion: (id: string, keep?: boolean) => void;
+  onSetAside: (id: string, aside: boolean) => void;
   /** Tie a thread to a card: as where it is first seen, where it comes out, a card along it, or off it. */
   onTieThread: (id: string, threadId: string, how: "start" | "end" | "through" | "off") => void;
   /** Leave a card open with the writer's words, or close it with "" (R59). */
   onSetOpen: (id: string, open: string) => void;
-  onEdit: (id: string, patch: { headline?: string; change?: string }) => void;
+  onEdit: (id: string, patch: { headline?: string; change?: string; changeOpen?: string }) => void;
   onCommit: () => void;
 };
 
@@ -209,6 +210,7 @@ export function NoteBoard({
   onTieThread,
   onSetAlternative,
   onChooseVersion,
+  onSetAside,
   onSetOpen,
   onEdit,
   onCommit,
@@ -630,6 +632,7 @@ export function NoteBoard({
           candidates={front ? [] : notes.filter((item) => item.id !== note.id && !item.alternativeOf && !notes.some((other) => other.alternativeOf === item.id)).map((item) => ({ id: item.id, headline: item.headline }))}
           onSetAlternative={onSetAlternative}
           onChooseVersion={onChooseVersion}
+          onSetAside={onSetAside}
           active={drag?.kind === "note" && drag.id === note.id}
           selected={selectedIds.includes(note.id)}
           linking={drag?.kind === "arrow" && drag.fromId === note.id}

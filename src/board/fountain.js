@@ -13,7 +13,7 @@
 // except the heading and the action.
 
 import { formatPages, boardEighths } from "./reducer.js";
-import { storyOrder } from "./readWall.js";
+import { PLACEHOLDER_CHANGE, storyOrder } from "./readWall.js";
 import { revisionLine, revisionMarks } from "./numbering.js";
 
 function upper(text) {
@@ -25,7 +25,13 @@ function upper(text) {
  * PIER AT FENIT - NIGHT (R55). A card with no place prints its headline
  * after a mark, so capitals where a slugline goes never read as a place.
  */
-/** The heading's mark for a place the writer has left open (R61's edge): the words print, and never read back as a place. */
+/**
+ * The heading's mark for a place the writer has left open (R61's edge). The
+ * headline follows it, as it follows NO PLACE YET, so every heading says
+ * which scene it is; the writer's words for why ride in the note beneath
+ * ("place open: …"), not where a slugline goes — "PLACE NOT DECIDED: I DON'T
+ * KNOW YET" headed a script's first scene (round twenty-two, entry 70).
+ */
 export const OPEN_PLACE_HEADING = "PLACE NOT DECIDED:";
 /**
  * The heading's mark for a card with no place and no word about one: the
@@ -38,9 +44,9 @@ export function sceneHeading(note) {
   const place = typeof note.location === "string" ? note.location.trim() : "";
   const placeOpen = typeof note.locationOpen === "string" ? note.locationOpen.trim() : "";
   const when = typeof note.when === "string" ? note.when.trim() : "";
-  // No place but the writer's words for why: the words head the scene, marked,
-  // so a reader never takes them for a place and the headline is not a slugline.
-  const words = place || (placeOpen ? `${OPEN_PLACE_HEADING} ${placeOpen}` : "") || `${NO_PLACE_HEADING} ${note.headline || "UNTITLED"}`;
+  // No place: a mark, then the headline. Which mark says whether the writer
+  // has left the place open or nobody has said; neither reads as a slugline.
+  const words = place || `${placeOpen ? OPEN_PLACE_HEADING : NO_PLACE_HEADING} ${note.headline || "UNTITLED"}`;
   return `.${upper(words)}${when ? ` - ${upper(when)}` : ""}`;
 }
 
@@ -49,15 +55,17 @@ export function sceneHeading(note) {
  * elsewhere, or exported before the mark, calls the scene. "" for a card
  * with a place or an open one.
  */
-/** Whether the card's headline heads its scene, behind the mark: no place, and no word that the place is open. */
+/** Whether the card's headline heads its scene, behind a mark: it has no place, open or not. */
 export function headlineHeadsScene(note) {
-  return !((note.location ?? "").trim() || (note.locationOpen ?? "").trim());
+  return !(note.location ?? "").trim();
 }
 
-function unmarkedHeading(note) {
-  if (!headlineHeadsScene(note)) return "";
-  const when = typeof note.when === "string" ? note.when.trim() : "";
-  return `${upper(note.headline || "UNTITLED")}${when ? ` - ${upper(when)}` : ""}`;
+/** The headings a placeless card also answers to: its bare headline, and, for an open place, the words after the mark as a script exported before round twenty-two wrote it. */
+function otherHeadings(note) {
+  if (!headlineHeadsScene(note)) return [];
+  const when = typeof note.when === "string" && note.when.trim() ? ` - ${upper(note.when)}` : "";
+  const placeOpen = (note.locationOpen ?? "").trim();
+  return [`${upper(note.headline || "UNTITLED")}${when}`, ...(placeOpen ? [`${OPEN_PLACE_HEADING} ${upper(placeOpen)}${when}`] : [])];
 }
 
 /** A heading split back into its place and its when: "THE PIER AT FENIT - NIGHT" → both. */
@@ -77,9 +85,20 @@ export function splitHeading(heading) {
 export const UNWRITTEN_MARK = "[Unwritten]";
 
 /** What stands in for an unwritten scene's body: the mark, then the change line. */
+/** What an open card's words print after, in an unwritten scene's body; read back as open words, not a change line. */
+export const OPEN_STAND_IN = "Open, by the writer's word:";
+
 export function standInFor(note) {
   const change = (note.change ?? "").trim();
-  return change ? `${UNWRITTEN_MARK} ${change}` : UNWRITTEN_MARK;
+  // The app's own placeholder is a question to the writer, not the scene's
+  // change: a script whose scenes each say "What changes?" reads as the
+  // film asking (round twenty-two, entries 18, 69). An open card's words
+  // stand in instead, said as the writer's; otherwise the mark alone.
+  if (!change || change === PLACEHOLDER_CHANGE) {
+    const open = (note.open ?? "").trim();
+    return open ? `${UNWRITTEN_MARK} ${OPEN_STAND_IN} ${open}` : UNWRITTEN_MARK;
+  }
+  return `${UNWRITTEN_MARK} ${change}`;
 }
 
 /** A body without its mark, and whether it carried one. */
@@ -122,7 +141,7 @@ export function toFountain(state, options = {}) {
   if (state.logline) notes.push(`Logline: ${state.logline}`);
   if (state.revision) notes.push(`Revision: ${revisionLine(state)}; a changed scene carries a [[changed in the revision]] note.`);
   notes.push(
-    `From the wall: ${order.length} card${order.length === 1 ? "" : "s"}, ${beats} beat${beats === 1 ? "" : "s"}, about ${formatPages(boardEighths(state))} of ${formatPages(state.targetEighths)} pages.`,
+    `From the wall: ${order.length} card${order.length === 1 ? "" : "s"}, ${beats} beat${beats === 1 ? "" : "s"}, about ${formatPages(boardEighths(state))}${(state.targetOpen ?? "").trim() ? ` pages, the target open (${state.targetOpen.trim()})` : ` of ${formatPages(state.targetEighths)} pages`}.`,
   );
 
   const head = titlePage({
@@ -274,7 +293,7 @@ export function mergeFountain(state, parsed) {
     // A placeless card answers to its marked heading and to the bare headline,
     // which is how a script from elsewhere, or from before the mark, names it.
     const sameHeading = (note) =>
-      sameWords(sceneHeading(note).slice(1), wanted) || (unmarkedHeading(note) !== "" && sameWords(unmarkedHeading(note), wanted));
+      sameWords(sceneHeading(note).slice(1), wanted) || otherHeadings(note).some((heading) => sameWords(heading, wanted));
     // First: the same heading at or after the cursor; then anywhere unused;
     // then a card whose headline is the synopsis.
     let found =
@@ -297,26 +316,33 @@ export function mergeFountain(state, parsed) {
     // A new card, after the last matched one on the wall.
     const anchor = order[cursor - 1] ?? order.at(-1);
     const parts = splitHeading(scene.heading);
-    // A heading that says the place is not decided comes back as an open place, not a place named that.
-    const openPlace = parts.place.toUpperCase().startsWith(OPEN_PLACE_HEADING) ? parts.place.slice(OPEN_PLACE_HEADING.length).trim().toLowerCase() : "";
+    // A heading that says the place is not decided comes back as an open place, not a place named that. The
+    // writer's words are in the note beneath ("place open: …"); a script from before that carried them after the mark.
+    const openMarked = parts.place.toUpperCase().startsWith(OPEN_PLACE_HEADING);
+    const openNote = (scene.notes ?? []).flatMap((line) => line.split(" · ")).find((part) => part.startsWith("place open:"));
+    const openPlace = openMarked ? (openNote ? openNote.slice("place open:".length).trim() : parts.place.slice(OPEN_PLACE_HEADING.length).trim().toLowerCase()) : "";
     // A heading marked as having no place comes back as a card with none: the
     // words after the mark were its headline, and the when after the dash is its when.
-    const noPlace = parts.place.toUpperCase().startsWith(NO_PLACE_HEADING);
-    const afterMark = noPlace ? parts.place.slice(NO_PLACE_HEADING.length).trim() : "";
+    const noPlace = parts.place.toUpperCase().startsWith(NO_PLACE_HEADING) || (openMarked && Boolean(openNote));
+    const markLength = openMarked ? OPEN_PLACE_HEADING.length : NO_PLACE_HEADING.length;
+    const afterMark = noPlace ? parts.place.slice(markLength).trim() : "";
     // A headline with a dash of its own ("Maya - alone") is not a headline and a when.
-    const dashIsHeadline = noPlace && Boolean(scene.synopsis) && sameWords(scene.heading.slice(NO_PLACE_HEADING.length), scene.synopsis);
+    const dashIsHeadline = noPlace && Boolean(scene.synopsis) && sameWords(scene.heading.slice(markLength), scene.synopsis);
     const headline = scene.synopsis || titleCase(noPlace ? afterMark || "Untitled" : scene.heading);
     const isPlace = scene.forced && Boolean(scene.synopsis) && !noPlace;
     const id = `scene-${Math.random().toString(36).slice(2, 8)}`;
     // A marked body is an unwritten scene: its words are the change line, not a page.
     const body = unmark(scene.text);
+    // An open card's stand-in comes back as its open words, the change line still waiting.
+    const openWords = body.marked && body.text.startsWith(OPEN_STAND_IN) ? body.text.slice(OPEN_STAND_IN.length).trim() : "";
     commands.push({
       type: "create_note",
       id,
       headline,
-      change: body.marked ? body.text || "What changes?" : scene.text ? firstSentence(scene.text) : "What changes?",
+      ...(openWords ? { open: openWords } : {}),
+      change: openWords ? PLACEHOLDER_CHANGE : body.marked ? body.text || PLACEHOLDER_CHANGE : scene.text ? firstSentence(scene.text) : PLACEHOLDER_CHANGE,
       location: isPlace && !openPlace ? titleCase(parts.place) : "",
-      locationOpen: isPlace && openPlace ? openPlace : "",
+      locationOpen: openPlace && (isPlace || noPlace) ? openPlace : "",
       when: isPlace || (noPlace && !dashIsHeadline) ? parts.when.toLowerCase() : "",
       text: body.marked ? "" : scene.text,
       x: anchor ? anchor.x + 40 : 140,

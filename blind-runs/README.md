@@ -54,6 +54,7 @@ into a story (Robert, 2026-09-17).
 | Nineteen | The published package, the same notes, the thread in hand, the on-ramp naming it | "Plot 14" (`round-seventeen-idea.md`) | Told only "I know where it pays off, not where it is first seen": both threads named at build; the loose end asked from the payoff end until tied; the key's start tied and the setup arrow declined because the first morning's one fold is the tools'; the asparagus bed, the first morning written, the length, what a writer would ask next | 52 (`round-nineteen-report.md`); 18 fixed the same night; a fold cannot say which of two things a scene plants — the thread's edges |
 | Twenty | The published package, the same notes, the open field and the fold's words in hand | "Plot 14" (`round-seventeen-idea.md`) | Told "leave it open" of the logline and the board's name: the fields left open through their own `open`, the fold named, the known payoff born open with its arrow; the key's decision folded the wrong card — the tie rule's bug, found and fixed; the bucket, the first morning written, the length, what a writer would ask next | 57 (`round-twenty-report.md`); 22 fixed the same morning; a place and a project's name cannot be open — R61's edge |
 | Twenty-one | The published package, the same notes, the open place and title in hand, the tie rule in story order | "Plot 14" (`round-seventeen-idea.md`) | Told "leave it open" of the title and the places: both left open through the fields' own `open`; the key on a taken fold stayed a thread, the bucket on a free fold made the fold and the arrow; the title decided, the first morning written, the length, what a writer would ask next | 42 (`round-twenty-one-report.md`); 8 fixed the same morning; a target, acts and lengths cannot be open |
+| Twenty-two | The hosted door's name, `https://mcp.plotcoder.com`, at 0.1.42, on new notes with two scenes the writer has two ways | "The Last Bus" (`round-twenty-two-idea.md`) | The add-connector screen says OAuth is detected on a door with none; told "keep both", `set_alternative` reached unprompted for both scenes; "keep the other" has no home — a kept card is back in the film; the keys' tie folded, named and drew in one call, and would not run through a version; the camera mark read as a mark; the tail never quoted, because the hosted door is a server per request | 95 (`round-twenty-two-report.md`); fixed the same night; a card on the wall and not in the film, and the all-or-nothing open card, are Robert's to draw |
 
 ## What the rounds keep finding
 
@@ -84,6 +85,9 @@ point into `REQUIREMENTS.md`, "The blind run".
 | A payoff whose plant has no card yet cannot be folded, drawn or asked about | Seventeen (8, 9, 12, 31); eighteen (11, 14, 15, 39, 41) | **R60**, the thread: mocked three ways, B chosen by Robert and built — a named string through cards with either end open, asked about from the loose end; named at build in nineteen, on the on-ramp's sentence; the tie into the fold (R62) found wrong in twenty and right both ways in twenty-one |
 | A fold is one flag per card: a scene that plants two things cannot say which, and a payoff the writer knows without a scene for it has no home | Eighteen (16, 39); nineteen (21, 42, 43) | Open: the thread's edges in the handover; whether the fold learns what it plants, or the thread absorbs it, is the next design question after the open fields |
 | Only a card can be open: the logline, a when, the premise cannot say "not decided", and an empty one cannot tell undecided from unconsidered | Eighteen (9, 22, 23, 32); nineteen (8, 10, 13, 25, 32); twenty (6, 16); twenty-one (7, 14, 15) | **R61**, the open field, mocked and built; the place and the project's name added as its edge after twenty; twenty-one used both and asked for a target, acts and lengths — a number, a group and unsized are their forms, and the reply says which is the default |
+| The hosted door is a server per request, so anything "once a session" is never or always: the tail that quotes after the first reading, advice said once, who has a wall open | Twenty-two (25, 26, 37, 52, 93 to 95) | Fixed the same night: the hosted tail quotes from the first write, says no once-a-session advice, and claims nothing about presence; a door with a session of its own is the larger answer, not drawn |
+| A card that is on the wall and not in the film has no state: a kept version is back in the count, the pages and the order | Twenty-two (47, 50, 51, 64, 85); eighteen (8) and twenty-one (9) asked for two versions, which became **R65** | Open: Robert's to draw — R65's card behind another with the pair marked decided is the nearest shape |
+| An open card is all or nothing, so a wall of honest "I don't know"s asks almost nothing | Eighteen to twenty-one in passing (twenty-one 13, 16); twenty-two (15, 17, 23, 28, 42, 86) | Open: the second thing to draw after twenty-two |
 | The reading and the records are two reads an agent merges by hand, and they tell the runtime with different honesty | Sixteen, seventeen (37, 39), eighteen (26, 45, 47, 50) | The reading now carries the runtime's breakdown and the beats' own pages; two reads by design, and the reading says so |
 
 Two things came back and were deliberately **not** built: a length for part of
@@ -113,14 +117,20 @@ directions phase. Each round's findings are itemised in `REQUIREMENTS.md`,
 
 - `round-twenty-one-report.md` — the agent's report from round twenty-one,
   verbatim, under a head saying what was fixed from it the same morning and
-  what waits. The next session on the agent surface starts here.
+  what waits.
 - `round-twenty-report.md` — the agent's report from round twenty,
   verbatim, under a head saying what was fixed from it the same morning and
   what waits.
-- `prompt.md` — round twenty-two, as it runs: a new page of notes, "The
+- `round-twenty-two-report.md` — **the open queue.** The agent's report from
+  round twenty-two, verbatim, under a head saying what the round measured,
+  what was fixed from it the same night, and what waits for Robert's word.
+  The next session on the agent surface starts here.
+- `prompt.md` — round twenty-two, as it ran (2026-09-20): a new page of notes, "The
   Last Bus" (`round-twenty-two-idea.md`), through the hosted door's name
   `https://mcp.plotcoder.com` wired as a desktop-app connector, against
-  0.1.41 with Robert's seven calls in it. It measures the wiring, whether a
+  0.1.42 with Robert's seven calls in it. On the Add custom connector
+  screen choose **No sign-in** before adding the header: the app reads the
+  door's 401 as OAuth and preselects "Sign in now". It measures the wiring, whether a
   stranger holds a scene two ways through `set_alternative`, the fold named
   in one call, the camera marks read as marks, and the tail before and after
   the first reading. The writer's private answers sit above the divider. Its

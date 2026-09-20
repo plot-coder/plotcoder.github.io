@@ -295,6 +295,8 @@ export function PagesPanel({
                 </span>
               </h3>
               {showSynopsis ? <p className="scene__synopsis">= {note.headline}</p> : null}
+              {/* A place left open: the writer's words for why, beneath the heading, never in it (round twenty-two, entry 70). */}
+              {(note.locationOpen ?? "").trim() ? <p className="scene__synopsis">place open, in your words: {note.locationOpen}</p> : null}
               <SceneText
                 note={note}
                 onCommit={(text) => onSetText(note.id, text)}

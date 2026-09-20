@@ -611,6 +611,70 @@ describe("set_rank", () => {
   });
 });
 
+describe("a card set aside (R66): on the wall and not in the film", () => {
+  const at = "2026-09-20T00:00:00.000Z";
+  const chain = () => {
+    let state = emptyState();
+    for (const id of ["a", "b", "c"]) state = applyCommand(state, { type: "create_note", id, headline: id.toUpperCase(), change: "x" }, at).state;
+    state = applyCommand(state, { type: "create_arrow", from: "a", to: "b", kind: "follows" }, at).state;
+    state = applyCommand(state, { type: "create_arrow", from: "b", to: "c", kind: "follows" }, at).state;
+    return state;
+  };
+
+  it("leaves the order, the count and the pages, and the story closes over it", () => {
+    const state = applyCommand(chain(), { type: "set_rank", ids: ["b"], rank: "beat" }, at).state;
+    const done = applyCommand(state, { type: "set_aside", ids: ["b"], aside: true }, at);
+    expect(done.result).toMatchObject({ ids: ["b"], aside: true, arrowsDropped: 2, closedOver: 1 });
+    const aside = done.state;
+    expect(aside.notes.find((note) => note.id === "b")).toMatchObject({ aside: true, rank: "scene" });
+    expect(storyOrder(aside).map((note) => note.id)).toEqual(["a", "c"]);
+    expect(aside.arrows.map((arrow) => `${arrow.from}>${arrow.to}`)).toEqual(["a>c"]);
+    expect(boardEighths(aside)).toBe(boardEighths(state) - 8);
+    expect(countRanks(aside)).toEqual({ beats: 0, scenes: 2 });
+    // Twice is nothing; a setup arrow is a claim and stays.
+    expect(applyCommand(aside, { type: "set_aside", ids: ["b"], aside: true }, at).changed).toBe(false);
+    const claimed = applyCommand(applyCommand(chain(), { type: "create_arrow", from: "b", to: "a", kind: "setup" }, at).state, { type: "set_aside", ids: ["b"], aside: true }, at).state;
+    expect(claimed.arrows.some((arrow) => arrow.kind === "setup" && arrow.from === "b")).toBe(true);
+  });
+
+  it("takes no follows arrow while it is aside, and may carry a setup arrow", () => {
+    const aside = applyCommand(chain(), { type: "set_aside", ids: ["b"], aside: true }, at).state;
+    expect(applyCommand(aside, { type: "create_arrow", from: "c", to: "b", kind: "follows" }, at).changed).toBe(false);
+    expect(applyCommand(aside, { type: "create_arrow", from: "b", to: "c", kind: "setup" }, at).changed).toBe(true);
+  });
+
+  it("comes back as a plain unwired card, and a version behind a card set aside stands on its own", () => {
+    const aside = applyCommand(chain(), { type: "set_aside", ids: ["b"], aside: true }, at).state;
+    const back = applyCommand(aside, { type: "set_aside", ids: ["b"], aside: false }, at).state;
+    expect(back.notes.find((note) => note.id === "b")?.aside).toBe(false);
+    expect(back.arrows.some((arrow) => arrow.from === "b" || arrow.to === "b")).toBe(false);
+    expect(boardEighths(back)).toBe(boardEighths(chain()));
+    const paired = applyCommand(chain(), { type: "set_alternative", id: "c", of: "b" }, at).state;
+    const gone = applyCommand(paired, { type: "set_aside", ids: ["b"], aside: true }, at).state;
+    expect(gone.notes.find((note) => note.id === "c")?.alternativeOf).toBeNull();
+    // A version behind a card is already out of the film: it is not set aside as well.
+    expect(applyCommand(paired, { type: "set_aside", ids: ["c"], aside: true }, at).changed).toBe(false);
+  });
+});
+
+describe("a change line left open by the writer's word (R67)", () => {
+  it("is born waiting with the words, is decided by a change line, and repairs on load", () => {
+    const at = "2026-09-20T00:00:00.000Z";
+    const born = applyCommand(emptyState(), { type: "create_note", id: "t", headline: "The timetable", changeOpen: "  I don't know yet " }, at).state;
+    expect(born.notes[0]).toMatchObject({ change: "What changes?", changeOpen: "I don't know yet", open: "" });
+    const decided = applyCommand(born, { type: "update_note", id: "t", change: "The route is hers on paper." }, at).state;
+    expect(decided.notes[0]).toMatchObject({ change: "The route is hers on paper.", changeOpen: "" });
+    const again = applyCommand(decided, { type: "update_note", id: "t", changeOpen: "two ways" }, at).state;
+    expect(again.notes[0]).toMatchObject({ change: "What changes?", changeOpen: "two ways" });
+    expect(applyCommand(again, { type: "update_note", id: "t", changeOpen: "" }, at).state.notes[0].changeOpen).toBe("");
+    // A card written before R67 claims nothing.
+    const old = JSON.parse(JSON.stringify(born));
+    delete old.notes[0].changeOpen;
+    delete old.notes[0].aside;
+    expect(normalizeState(old).notes[0]).toMatchObject({ changeOpen: "", aside: false });
+  });
+});
+
 describe("countRanks", () => {
   it("counts beats and scenes without judging the total", () => {
     const state = run(
@@ -622,6 +686,9 @@ describe("countRanks", () => {
 
   it("is zero on an empty board", () => {
     expect(countRanks(emptyState())).toEqual({ beats: 0, scenes: 0 });
+    // A card behind another as its other version is out of the story, and out of the count.
+    const two = applyCommand(seedState(), { type: "set_alternative", id: "tom-lies", of: "maya-letter" }, "2026-09-20T00:00:00.000Z").state;
+    expect(countRanks(two).beats + countRanks(two).scenes).toBe(seedState().notes.length - 1);
   });
 });
 
@@ -906,6 +973,14 @@ describe("two versions of one scene (R65)", () => {
     expect(kept.notes.map((note) => note.id).sort()).toEqual(["a", "b", "c"]);
     expect(kept.notes.find((note) => note.id === "b")?.alternativeOf).toBeNull();
     expect(kept.arrows.some((arrow) => arrow.to === "b" || arrow.from === "b")).toBe(false);
+    // The turn goes forward with the chosen card: a kept front is a scene, not a second beat (round twenty-two, entry 48).
+    const turn = run(run(paired, { type: "set_rank", ids: ["b"], rank: "beat" }), { type: "choose_version", id: "c", keep: true });
+    expect(turn.notes.find((note) => note.id === "c")?.rank).toBe("beat");
+    expect(turn.notes.find((note) => note.id === "b")?.rank).toBe("scene");
+    // Kept is set aside (R66): on the wall, and out of the order and the count.
+    expect(turn.notes.find((note) => note.id === "b")?.aside).toBe(true);
+    expect(storyOrder(turn).map((note) => note.id)).toEqual(["a", "c"]);
+    expect(boardEighths(turn)).toBe(boardEighths(paired));
     // Deleting the front leaves the version as a plain card; a load repairs a stale sibling.
     expect(run(paired, { type: "delete_note", id: "b" }).notes.find((note) => note.id === "c")?.alternativeOf).toBeNull();
     const old = JSON.parse(JSON.stringify(paired));

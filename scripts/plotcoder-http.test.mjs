@@ -4,6 +4,7 @@
 // words, which is what the test checks — the transport, the auth, and the
 // refusal, not Supabase.
 
+import fs from "node:fs";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createHostedDoor, credentialsFrom, envFor } from "./plotcoder-http.mjs";
 
@@ -36,6 +37,9 @@ describe("the hosted door", () => {
     expect(credentialsFrom({})).toBeNull();
     const env = envFor({ authorization: auth, "x-plotcoder-project": "Low Season" }, {});
     expect(env).toMatchObject({ PLOTCODER_HOSTED: "1", PLOTCODER_NO_BRIDGE: "1", PLOTCODER_EMAIL: "test@test.com", PLOTCODER_PROJECT: "Low Season" });
+    // The JSON tail is off at the hosted door as at every other, unless the host asks for it (round twenty-two, entry 4).
+    expect(env.PLOTCODER_JSON).toBe("0");
+    expect(envFor({ authorization: auth }, { PLOTCODER_JSON: "1" }).PLOTCODER_JSON).toBe("1");
   });
 
   it("says what it is at the root, and refuses a request with no sign-in", async () => {
@@ -51,6 +55,8 @@ describe("the hosted door", () => {
     const init = await rpc("initialize", { protocolVersion: "2024-11-05", capabilities: {}, clientInfo: { name: "test", version: "0" } });
     expect(init.status).toBe(200);
     expect(init.body.result.serverInfo.name).toBe("plotcoder-board");
+    // The door names the release it runs, not a constant.
+    expect(init.body.result.serverInfo.version).toBe(JSON.parse(fs.readFileSync(new URL("../package.json", import.meta.url), "utf8")).version);
     const listed = await rpc("tools/list", {}, 2);
     const names = listed.body.result.tools.map((tool) => tool.name);
     expect(names).toContain("read_wall");

@@ -643,8 +643,14 @@ export function App() {
     boardStore.dispatch({ type: "set_alternative", id, of });
   }
 
-  function chooseVersion(id: string) {
-    boardStore.dispatch({ type: "choose_version", id });
+  function chooseVersion(id: string, keep?: boolean) {
+    boardStore.dispatch({ type: "choose_version", id, ...(keep ? { keep: true } : {}) });
+  }
+
+  /** Set aside (R66): the card under the hand, or the whole selection when it is part of one. */
+  function setAside(id: string, aside: boolean) {
+    const ids = selectedIds.includes(id) && selectedIds.length >= 2 ? selectedIds : [id];
+    boardStore.dispatch({ type: "set_aside", ids, aside });
   }
 
   function setPlant(id: string, plants: boolean) {
@@ -665,7 +671,7 @@ export function App() {
     });
   }
 
-  function editNote(id: string, patch: { headline?: string; change?: string }) {
+  function editNote(id: string, patch: { headline?: string; change?: string; changeOpen?: string }) {
     boardStore.dispatch({ type: "update_note", id, ...patch });
   }
 
@@ -1063,6 +1069,7 @@ export function App() {
         onTieThread={tieThread}
         onSetAlternative={setAlternative}
         onChooseVersion={chooseVersion}
+        onSetAside={setAside}
         onSetOpen={setOpen}
         onEdit={editNote}
         onCommit={commitBoard}

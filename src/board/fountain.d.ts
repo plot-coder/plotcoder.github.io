@@ -11,7 +11,7 @@ export declare function headlineHeadsScene(note: BoardNote): boolean;
 export declare function splitHeading(heading: string): { place: string; when: string };
 /** The mark every export sets before an unwritten scene's change line. */
 export declare const UNWRITTEN_MARK: string;
-export declare function standInFor(note: Pick<BoardNote, "change">): string;
+export declare function standInFor(note: Pick<BoardNote, "change"> & Partial<Pick<BoardNote, "open">>): string;
 export declare function unmark(text: string | null | undefined): { text: string; marked: boolean };
 
 export declare function titlePage(titles: {

@@ -132,9 +132,17 @@ only when the server is started with `PLOTCODER_JSON=1`.
 ### Cards
 
 - `create_note` — add a card. Requires `headline` **and** `change` — unless
-  the card is born open with `open`, when the change line may wait for the
-  writer (the schema can only mark the headline required; this is the
-  rule). Optional `color` (yellow, pink, blue, green, orange), `rank`,
+  the writer has not decided what changes: then pass **`changeOpen`** with
+  their words ("I don't know yet") in place of `change`. The change line
+  waits, the reading lists it as open and does not ask for it, and the card
+  is otherwise an ordinary card: still asked about its place, its cast, its
+  arrows and its fold. That is the usual answer to "I don't know what
+  changes". `open` is a different and larger thing — the whole card is
+  undecided ("whether this scene exists") — and it silences every question
+  about the card, the change line among them; do not reach for it because a
+  change line is missing, or a wall of honest "I don't know"s asks nothing
+  (the schema can only mark the headline required; this is the rule).
+  `update_note` takes `changeOpen` too; a change line decides it. Optional `color` (yellow, pink, blue, green, orange), `rank`,
   `pages`, `plants` and `plantsWhat`, `location` or `locationOpen`, `when`
   or `whenOpen`, `open`, `characters` (names; a name not in the cast is
   added to it), and `x`/`y`. The reply names the card's id and what landed. Make cards
@@ -199,16 +207,31 @@ only when the server is started with `PLOTCODER_JSON=1`.
   card's other questions stand (unlike `set_open` on the whole card); a
   place decides it, `open: ""` leaves it blank; `create_note` takes
   `locationOpen`.
-- `set_alternative` / `choose_version` — **two versions of one scene** (R65):
+- `set_alternative` / `choose_version` — **two versions of one scene**:
   set a card behind another as its other version, by id or headline, and it
   leaves the story — out of the order, the count, the pages and every
   export, its follows arrows dropped — and waits there; the wall draws it
   tucked behind its sibling and `read_wall` lists the pair under "two
   versions, not chosen", asking nothing of it. `choose_version` decides: the
   chosen card is the scene, in the front card's place with its arrows, rank
-  and group; the other goes, or stands beside it as a plain card with
-  `keep`. `of: ""` takes a card out from behind. Only on the writer's word:
+  and group; the other goes, or with `keep` is **set aside** beside it — on
+  the wall where the writer can see it, and not in the film. "Keep the
+  other, I may come back to it" is `keep`. `of: ""` takes a card out from
+  behind. Only on the writer's word:
   two versions the notes hold, never two the agent could not choose between.
+- `set_aside` — a card **on the wall and not in the film**: a scene the
+  writer cuts and will not throw away, an idea with no place in the story
+  yet, the version not chosen. By id or headline. It keeps its words, its
+  cast, its fold and its place on the wall, and leaves the order, the
+  count, the pages and every export; its follows arrows go, and where it
+  stood between two cards the story closes over it (setup arrows, being
+  claims, stay); a beat set aside is a scene. `read_wall` lists it under
+  "set aside" and asks nothing of it, `list_board` lists it apart from the
+  cards in story order, `organize` leaves it where the writer put it, and
+  it takes no follows arrow and no thread while it is aside. `aside: false`
+  brings it back as a plain unwired card, and the wall asks where it goes.
+  Only on the writer's word — cutting a scene is theirs — and not a way to
+  quiet a question: a card the writer is unsure of is `set_open`.
 - `set_open` — leave a card **open**, with the writer's words for what is
   not decided: "whether Tom knows", "who sent the letter". The reading
   lists open cards under their own head and asks nothing of the card itself
@@ -218,7 +241,10 @@ only when the server is started with `PLOTCODER_JSON=1`.
   reading says beside each open card what it would be asked if closed. It
   is still counted, in the order, and a page. `open: ""`
   closes the card and its questions come back. `create_note` takes `open`
-  too, so a card born from a maybe is born open. Only on the writer's word:
+  too, so a card born from a maybe is born open. One undecided field is
+  not an open card: a place, a when and a change line each have an open of
+  their own (`locationOpen`, `whenOpen`, `changeOpen`), and the card's
+  other questions stand. Only on the writer's word:
   where the notes have two versions, ask; where the writer says "I don't
   know yet, leave it open", this is how, and invent nothing to fill it.
 - `create_thread` / `update_thread` / `delete_thread` — a **thread**: a
@@ -332,7 +358,9 @@ card of another board is not asked about as uncast here.
 
 - `export_fountain` — the open board as a Fountain screenplay in story order
   (beats as sections, one scene per card, the scene's text or — marked
-  `[Unwritten]` — its change line as the body, the cast and the fold as
+  `[Unwritten]` — its change line as the body (the mark alone when the
+  change line still waits, or an open card's words after "Open, by the
+  writer's word:"; never the app's own "What changes?"), the cast and the fold as
   notes, a changed scene noted under a revision). Pass `path` to write a
   `.fountain` file.
 - `read_pages` — the same script with each card's id beside its heading and
@@ -340,8 +368,10 @@ card of another board is not asked about as uncast here.
   A card with no place prints `NO PLACE YET:` and then its headline where
   the place would go, on every page and in every export, so a headline in
   capitals is never read as a place; a place left open prints `PLACE NOT
-  DECIDED:` and the writer's words. Neither is a place, and both come back
-  in as what they were.
+  DECIDED:` and then the headline the same way, with the writer's words for
+  why in the note beneath (`place open: …`), so words written for a card's
+  edge never stand where a slugline goes. Neither is a place, and both come
+  back in as what they were.
 - `write_scene` — a card's scene text in Fountain, by id; the card is then
   measured from its lines. Write only scenes the writer asked for. Under a
   revision the reply says the card is marked. The cues in the text (JOE,
@@ -407,6 +437,11 @@ card of another board is not asked about as uncast here.
   whatever its board count: a series' line, or what is true before a film
   starts — "the winter the shop closes" — so a
   one-board film's standing facts have a home that is not a person's notes.
+  What is true of the whole film and of no one scene — when it runs from
+  and to, what never happens in it — goes in the premise, a sentence each;
+  `read_wall` prints it above the logline and `read_pages` at the head of
+  the script, so whoever writes a scene sees it. A fact about one scene
+  ("the cut is announced here") belongs on that scene's card.
   Not decided — "a sale, or a lease" — `set_premise` with `open` and
   the writer's words leaves it open; a line decides it. A title not decided
   — "The Allotments, or Plot 14" — `rename_project` with `open` leaves the
@@ -544,12 +579,16 @@ than a dictionary's, so the app and you never explain a word two ways.
   session's first `read_wall` it counts and points — "the wall's questions
   have changed since your last read_wall: 4 now, 2 of them new" — because a
   build is a run of writes whose quoted questions the next write answers;
-  after the first reading it quotes them.
+  after the first reading it quotes them. Through the hosted door
+  (`mcp.plotcoder.com`) it quotes from the first write: that door keeps no
+  session, so it cannot know what you have read.
 - **The account tail** says what the wall shows: "open on Robert's screen
   now", or "no wall open right now — it shows the moment one opens", read
   from the presence the server already follows; `list_projects` says the
   same of the working project. Never "seen by": presence lags a second or
-  two.
+  two. The hosted door (`mcp.plotcoder.com`) answers each call before
+  presence arrives, so it says only where the write landed, and
+  `list_projects` there says it cannot see who has a wall open.
 - **A sketch:** a written scene measured under the page it was read as is
   named one — on `write_scene`'s reply, on the card's line in `list_board`,
   and on the runtime line, which carries the second number: "about 11 pages

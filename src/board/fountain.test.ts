@@ -1,14 +1,25 @@
 import { describe, expect, it } from "vitest";
-import { fromFountain, mergeFountain, sceneHeading, splitHeading, titlePage, toFountain, unmark } from "./fountain";
+import { fromFountain, mergeFountain, sceneHeading, splitHeading, standInFor, titlePage, toFountain, unmark } from "./fountain";
 import { applyCommand, emptyState, isMeasured, measuredEighths, noteEighths, seedState } from "./reducer";
 
 const NOW = "2026-01-01T00:00:00.000Z";
 
 describe("an open place on the heading (R61's edge, round twenty-one entry 25)", () => {
-  it("prints the writer's words marked as not a place, and reads them back as an open place", () => {
-    const heading = sceneHeading({ headline: "The day Ruth tells Con where she was", location: "", locationOpen: "where it happens", when: "night" } as never);
-    expect(heading).toBe(".PLACE NOT DECIDED: WHERE IT HAPPENS - NIGHT");
-    const parsed = fromFountain(`${heading}\n= The day Ruth tells Con where she was\n\nCon knows.\n`);
+  it("heads the scene with the mark and the headline, the writer's words in the note beneath, and reads them back as an open place (round twenty-two, entry 70)", () => {
+    const card = { headline: "The day Ruth tells Con where she was", location: "", locationOpen: "I don't know yet", when: "night" };
+    const heading = sceneHeading(card as never);
+    expect(heading).toBe(".PLACE NOT DECIDED: THE DAY RUTH TELLS CON WHERE SHE WAS - NIGHT");
+    const round = mergeFountain(emptyState(), fromFountain(`${heading}\n\n= The day Ruth tells Con where she was\n\n[[with Ruth · place open: I don't know yet]]\n\nCon knows.\n`));
+    expect(round.commands.find((command) => command.type === "create_note")).toMatchObject({ headline: "The day Ruth tells Con where she was", location: "", locationOpen: "I don't know yet", when: "night" });
+    // Out and back on a wall that has the card: nothing to write.
+    let wall = applyCommand(emptyState(), { type: "create_note", id: "day", headline: card.headline, change: "Con knows." }, NOW).state;
+    wall = applyCommand(wall, { type: "set_location", ids: ["day"], open: "I don't know yet" } as never, NOW).state;
+    expect(toFountain(wall, { title: "B" })).toContain(".PLACE NOT DECIDED: THE DAY RUTH TELLS CON WHERE SHE WAS\n\n= The day Ruth tells Con where she was\n\n[[place open: I don't know yet]]");
+    expect(mergeFountain(wall, fromFountain(toFountain(wall, { title: "B" }))).commands).toEqual([]);
+    // A script from before the change, the words after the mark: the same card, and the same open place on an empty wall.
+    expect(mergeFountain(wall, fromFountain(".PLACE NOT DECIDED: I DON'T KNOW YET\n\n= The day Ruth tells Con where she was\n\n[Unwritten] Con knows.\n")).matched[0].created).toBe(false);
+    const heading0 = ".PLACE NOT DECIDED: WHERE IT HAPPENS - NIGHT";
+    const parsed = fromFountain(`${heading0}\n= The day Ruth tells Con where she was\n\nCon knows.\n`);
     const back = mergeFountain(emptyState(), parsed);
     const created = back.commands.find((command) => command.type === "create_note") as { location: string; locationOpen: string; when: string } | undefined;
     expect(created?.location).toBe("");
@@ -55,6 +66,25 @@ describe("a card with no place on the heading (rounds eighteen 46, nineteen 44, 
     // A card with a place does not answer to its headline as a heading.
     const placed = applyCommand(seed, { type: "set_location", ids: ["maya-letter"], location: "the piano shop" }, NOW).state;
     expect(mergeFountain(placed, fromFountain(".MAYA FINDS THE LETTER\n\nRain.\n")).matched[0].created).toBe(true);
+  });
+});
+
+describe("an unwritten scene whose change line is the app's placeholder (round twenty-two, entries 18, 69)", () => {
+  it("prints the mark alone, or an open card's words as the writer's, never the app's question", () => {
+    expect(standInFor({ change: "What changes?" } as never)).toBe("[Unwritten]");
+    expect(standInFor({ change: "What changes?", open: "that is all I know about it" } as never)).toBe("[Unwritten] Open, by the writer's word: that is all I know about it");
+    expect(standInFor({ change: "She decides not to tell Tom.", open: "whether Tom knows" } as never)).toBe("[Unwritten] She decides not to tell Tom.");
+    const back = mergeFountain(emptyState(), fromFountain(".THE BOG ROAD\n= The morning after\n\n[Unwritten] Open, by the writer's word: that is all I know about it\n")).commands[0] as { open?: string; change: string; text: string };
+    expect(back).toMatchObject({ open: "that is all I know about it", change: "What changes?", text: "" });
+  });
+});
+
+describe("the title page with the target open (round twenty-two, entry 80)", () => {
+  it("does not read the cards against 120", () => {
+    const open = applyCommand(seedState(), { type: "set_target", open: "half an hour or a feature" } as never, NOW).state;
+    const out = toFountain(open, { title: "B" });
+    expect(out).toContain("pages, the target open (half an hour or a feature).");
+    expect(out).not.toContain("of 120 pages");
   });
 });
 

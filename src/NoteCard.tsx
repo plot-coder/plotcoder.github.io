@@ -69,9 +69,11 @@ type NoteCardProps = {
   versions: Array<{ id: string; headline: string }>;
   candidates: Array<{ id: string; headline: string }>;
   onSetAlternative: (id: string, of: string | null) => void;
-  onChooseVersion: (id: string) => void;
+  onChooseVersion: (id: string, keep?: boolean) => void;
+  /** Set the card aside, or bring it back (R66): on the wall and not in the film. */
+  onSetAside: (id: string, aside: boolean) => void;
   onTieThread: (id: string, threadId: string, how: "start" | "end" | "through" | "off") => void;
-  onEdit: (id: string, patch: { headline?: string; change?: string }) => void;
+  onEdit: (id: string, patch: { headline?: string; change?: string; changeOpen?: string }) => void;
 };
 
 export function NoteCard({
@@ -113,6 +115,7 @@ export function NoteCard({
   versions,
   candidates,
   onSetAlternative,
+  onSetAside,
   onChooseVersion,
   onEdit,
 }: NoteCardProps) {
@@ -122,6 +125,8 @@ export function NoteCard({
   // only part of the estimate worth reading at a glance (R25).
   const sized = note.lengthEighths !== null && note.lengthEighths !== DEFAULT_NOTE_EIGHTHS;
   const [picking, setPicking] = useState(false);
+  // The writer has just chosen to leave the change line open (R67): the caret waits for their words.
+  const [leavingChange, setLeavingChange] = useState(false);
   const [sizing, setSizing] = useState(false);
   // The corner's picker (R58, R59): fold it, leave it open, or pay off a fold waiting from another board.
   const [cornering, setCornering] = useState(false);
@@ -211,7 +216,7 @@ export function NoteCard({
 
   return (
     <article
-      className={`note note--${note.color} ${isBeat ? "is-beat" : ""} ${sized ? "is-sized" : ""} ${active ? "is-active" : ""} ${selected ? "is-selected" : ""} ${linking ? "is-linking" : ""} ${dropTarget ? "is-drop-target" : ""} ${picking || sizing || cornering ? "is-picking" : ""} ${dimmed ? "is-dim" : ""} ${note.plants ? "is-planted" : ""} ${paysOff ? "is-paying" : ""} ${isOpen ? "is-open" : ""} ${revised ? `is-revised rev--${revised}` : ""} ${versionOf ? "is-version" : ""}`}
+      className={`note note--${note.color} ${isBeat ? "is-beat" : ""} ${sized ? "is-sized" : ""} ${active ? "is-active" : ""} ${selected ? "is-selected" : ""} ${linking ? "is-linking" : ""} ${dropTarget ? "is-drop-target" : ""} ${picking || sizing || cornering ? "is-picking" : ""} ${dimmed ? "is-dim" : ""} ${note.aside ? "is-aside" : ""} ${note.plants ? "is-planted" : ""} ${paysOff ? "is-paying" : ""} ${isOpen ? "is-open" : ""} ${revised ? `is-revised rev--${revised}` : ""} ${versionOf ? "is-version" : ""}`}
       style={{
         left: note.x,
         top: note.y,
@@ -279,6 +284,18 @@ export function NoteCard({
           >
             {isOpen ? "Close it: it is decided" : "Leave it open: not decided yet"}
           </button>
+          {versionOf ? null : (
+            <button
+              type="button"
+              className="note__length-option note__corner-option"
+              onClick={() => {
+                onSetAside(note.id, !note.aside);
+                setCornering(false);
+              }}
+            >
+              {note.aside ? "Bring it back into the film" : "Set it aside: not in the film"}
+            </button>
+          )}
           {versionOf ? (
             <>
               <button
@@ -290,6 +307,16 @@ export function NoteCard({
                 }}
               >
                 Choose this version: it is the scene
+              </button>
+              <button
+                type="button"
+                className="note__length-option note__corner-option"
+                onClick={() => {
+                  onChooseVersion(note.id, true);
+                  setCornering(false);
+                }}
+              >
+                Choose it, and set the other aside
               </button>
               <button
                 type="button"
@@ -327,6 +354,16 @@ export function NoteCard({
                   Choose the other: "{version.headline}"
                 </button>
               ))}
+              <button
+                type="button"
+                className="note__length-option note__corner-option"
+                onClick={() => {
+                  onChooseVersion(note.id, true);
+                  setCornering(false);
+                }}
+              >
+                Choose this one, and set the other aside
+              </button>
             </>
           ) : choosingVersion ? (
             <>
@@ -482,7 +519,7 @@ export function NoteCard({
           />
         </span>
       ) : null}
-      {!editingOpen && !editingThread && !editingPlant && (sceneNumber || note.plants || paysOff || isOpen || versionOf) ? (
+      {!editingOpen && !editingThread && !editingPlant && (sceneNumber || note.plants || paysOff || isOpen || versionOf || note.aside) ? (
         <span className="note__edge">
           {sceneNumber ? (
             <button
@@ -529,6 +566,12 @@ export function NoteCard({
               Pays off · <b>{paysOff.label}</b>
             </span>
           ) : null}
+          {note.aside ? (
+            <span className="note__plant note__aside" aria-label="Set aside: on the wall, not in the film">
+              {note.plants || paysOff ? <span aria-hidden="true">· </span> : null}
+              Aside · <b>not in the film</b>
+            </span>
+          ) : null}
           {versionOf ? (
             <span className="note__plant is-unpaid" aria-label={`Another version of ${versionOf}; not in the story until chosen`}>
               {sceneNumber || note.plants || paysOff ? <span aria-hidden="true">· </span> : null}
@@ -561,14 +604,47 @@ export function NoteCard({
         ariaLabel="Card headline"
         placeholder="Headline"
       />
-      <EditableText
-        as="p"
-        className="note__change"
-        value={note.change}
-        onCommit={(text) => onEdit(note.id, { change: text })}
-        ariaLabel="What changes"
-        placeholder="What changes?"
-      />
+      {/* The change line, or the writer's words for why it waits (R67): open on its own, so the card's other questions stand. */}
+      {note.changeOpen || leavingChange ? (
+        <span className="open-field note__change-open">
+          <span className="open-mark" aria-hidden="true">
+            Open
+          </span>
+          <EditableText
+            as="p"
+            className="note__change is-open-field"
+            value={note.changeOpen}
+            onCommit={(words) => {
+              setLeavingChange(false);
+              if (words.trim() !== note.changeOpen) onEdit(note.id, { changeOpen: words });
+            }}
+            ariaLabel={`What changes in ${note.headline}, left open`}
+            placeholder="not decided: say why, in your words"
+            autoFocus={leavingChange}
+          />
+        </span>
+      ) : (
+        <>
+          <EditableText
+            as="p"
+            className="note__change"
+            value={note.change}
+            onCommit={(text) => onEdit(note.id, { change: text })}
+            ariaLabel="What changes"
+            placeholder="What changes?"
+          />
+          {!note.change.trim() || note.change.trim() === "What changes?" ? (
+            <button
+              type="button"
+              className="field-offer note__offer note__change-offer"
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={() => setLeavingChange(true)}
+            >
+              Not decided yet…
+            </button>
+          ) : null}
+        </>
+      )}
       <CastLine
         headline={note.headline}
         characterIds={note.characterIds}

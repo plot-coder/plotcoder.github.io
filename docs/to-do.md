@@ -8,7 +8,55 @@ done and merged, what is left, and the order I would take it in.
 
 ---
 
-## Next, in order (2026-09-19, night, after 0.1.41)
+## Next, in order (2026-09-20, after round twenty-two)
+
+**Now:** round twenty-two has run, on "The Last Bus" through
+`https://mcp.plotcoder.com` at 0.1.42: ninety-five entries in
+`blind-runs/round-twenty-two-report.md`, verbatim under a head, and that
+report is the open queue. What it found was fixed on the branch the same
+night, and Robert's four calls from it built the next day (610 unit
+tests, ninety-one tools); **not yet merged, released or deployed** — the fixes
+touch the hosted function (`supabase/functions/mcp/index.ts`, the JSON tail)
+and the Worker's root text (`cloudflare/mcp-door/worker.mjs`), so after the
+release bump the pin, redeploy the function, and redeploy the Worker.
+
+1. **Land round twenty-two's fixes:** merge, `npm version patch`, push the
+   tag, wait for npm, bump the door's pin, `supabase functions deploy mcp …`,
+   `npx -y wrangler@latest deploy` in `cloudflare/mcp-door`. Check the door
+   with one `initialize`: `serverInfo.version` is now the package's own.
+2. **Take the fallback out of `~/.claude.json`** on Robert's Mac: the cueing
+   session wrote an HTTP server named `plotcoder` there before the connector
+   screen was solved, and the round's agent used it instead of the connector
+   (the report's head says so). A backup from before the edit is
+   `~/.claude/backups/claude.json.before-round-22`. The desktop connector is
+   signed in as the test account and is on in every session: turn it off
+   outside a round.
+3. ~~**Robert's to draw, from twenty-two**~~ **Drawn, decided and built
+   2026-09-20:** `docs/mockups/round-twenty-two-calls.html`. Robert: set
+   aside over kept-behind (1 B), "A and B together" (2), build A (3), build A
+   (4). **R66**, set aside — a card on the wall and not in the film, one
+   predicate (`inStory`) with R65, the corner's gesture, `set_aside`, and
+   `choose_version` with `keep` setting the version not chosen aside.
+   **R67**, the change line's own open (`changeOpen`) and the reading's
+   three counts at its head. A place left open heads its scene PLACE NOT
+   DECIDED: and the headline, the writer's words in the note beneath.
+4. ~~**The premise**~~ **Built 2026-09-20:** `set_premise` and both guides
+   say it holds what is true of the whole film; `read_wall` prints a set
+   premise; `read_pages` opens with it.
+   **None of this has been run blind.** The next round should hand an agent
+   a writer who cuts a scene and keeps it, and a page of "I don't know what
+   changes", and see whether it reaches `set_aside` and `changeOpen` rather
+   than `set_open`.
+5. **The connector, measured alone.** Twenty-two's agent worked the
+   fallback; whether a stranger holding only the desktop connector is in
+   from the first message is still unmeasured. The next round wires the
+   connector and nothing else (choose **No sign-in** on the Authentication
+   screen; the prompt, the on-ramp and the door's root now say so).
+6. **R64's weekly agent**, as below (item 3 of the older queue): no
+   scheduled task exists; setting one up is a standing job and wants
+   Robert's yes and a day.
+
+## The queue before it (2026-09-19, night, after 0.1.41)
 
 **Now:** everything the last three rounds asked for and Robert decided is
 built, merged and released. 0.1.41 is on npm and plotcoder.com; the hosted
@@ -296,6 +344,7 @@ word on each is the word to build it.
   scene the notes move by hand (18:12). Design; a round has not asked twice.
 - ~~**The reply tails** end "pages.."~~ Done 2026-09-19: a finding's own
   full stop never doubles the reply's.
+- ~~**The door says it runs "0.1.0"** whatever it runs~~ Fixed 2026-09-19, after 0.1.42: `serverInfo.version` is the package's own, so a redeploy can be checked with one `initialize`. Goes out with round twenty-two's fixes; until then a `read_pages` that prints `NO PLACE YET:` is how to tell the door carries 0.1.42.
 - **Port 5173** is held by another project on Robert's Mac; the launch entry
   `plotcoder-dev-5180` is the one to use, and `plotcoder-dev-5181` when a
   second worktree's session already holds 5180. The MCP bridge probe scans

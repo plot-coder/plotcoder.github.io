@@ -2229,6 +2229,29 @@ describe("after the blind run", () => {
     }
   });
 
+  it("leaves something open about a person, in the writer's words: listed, never asked (round twenty-two, entries 12, 24)", async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-person-"));
+    const door = new McpClient(root);
+    await door.start();
+    try {
+      const before = (await door.callToolData("read_wall")).findings.length;
+      const set = await door.callTool("update_character", { name: "Tom", open: "  what he goes to the town for: a hospital visit, a music lesson, or the courthouse " });
+      expect(set).toContain('open: "what he goes to the town for: a hospital visit, a music lesson, or the courthouse"');
+      expect(set).toContain("listed by the reading");
+      const read = await door.callTool("read_wall");
+      expect(read).toContain("  - about Tom — what he goes to the town for: a hospital visit, a music lesson, or the courthouse");
+      expect((await door.callToolData("read_wall")).findings.length).toBe(before);
+      expect(await door.callTool("read_character", { name: "Tom" })).toContain("not decided yet, by the writer's word: what he goes to the town for");
+      // It is not a line of the page: the page's fill is unchanged.
+      expect(await door.callTool("list_board")).not.toMatch(/"Tom"[^\n]*page: [^\n]*open/);
+      expect(await door.callTool("update_character", { name: "Tom", open: "" })).toContain("Nothing is left open about Tom now");
+      expect(await door.callTool("read_wall")).not.toContain("about Tom —");
+    } finally {
+      door.stop();
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("says when a write leaves the wall's questions as they were (round twenty-two, entries 66, 92)", async () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-still-"));
     const door = new McpClient(root);

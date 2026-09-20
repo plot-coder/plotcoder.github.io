@@ -600,7 +600,7 @@ export function App() {
   }
 
   // The person's page (R36): any of its five lines.
-  function updateCharacter(id: string, patch: Partial<Record<CharacterField, string>>) {
+  function updateCharacter(id: string, patch: Partial<Record<CharacterField | "open", string>>) {
     boardStore.dispatch({ type: "update_character", id, ...patch });
   }
 

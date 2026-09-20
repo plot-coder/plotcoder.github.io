@@ -372,6 +372,15 @@ card of another board is not asked about as uncast here.
   or sounds.
 - **Under target** is reported as plainly as over — a number and "an
   estimate" — never as a verdict either way.
+- **Something not decided about a person** — "what he goes to the town
+  for: a hospital visit, a music lesson, or the courthouse" — is
+  `update_character` with `open` and the writer's words. The reading lists
+  it under "open, by the writer's word" as "about <name>", never asks,
+  and the person's page shows it under "Not decided yet". It is a fact
+  about a person, so it is not a card's open words and not an open place.
+  When the writer decides, `open: ""` and the answer goes where it
+  belongs — their notes, or the scene that shows it. What the writer has
+  decided and not yet told you is not the wall's: ask them.
 - **What a treatment should answer.** Eleven blind runs ended every build
   with the same questions to the writer. Before you build, check the
   treatment for them and ask for the ones it leaves open — invent none. The

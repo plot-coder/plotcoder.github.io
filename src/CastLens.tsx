@@ -38,7 +38,7 @@ type CastLensProps = {
   onHold: (id: string | null) => void;
   onAdd: (name: string) => void;
   onRename: (id: string, name: string) => void;
-  onUpdate: (id: string, patch: Partial<Record<CharacterField, string>>) => void;
+  onUpdate: (id: string, patch: Partial<Record<CharacterField | "open", string>>) => void;
   onRemove: (id: string) => void;
   onJump: (noteId: string) => void;
   /** Pictures on a person's page (Roadmap 2, item 5): null when signed out. */
@@ -143,6 +143,8 @@ export function CastLens({
   const [draft, setDraft] = useState("");
   // Which person's page is open, if any. The page holds them on the wall.
   const [pageId, setPageId] = useState<string | null>(null);
+  // The writer has just chosen to leave something open about this person: the caret waits for their words.
+  const [leavingOpen, setLeavingOpen] = useState<string | null>(null);
   const page = pageId ? characters.find((character) => character.id === pageId) ?? null : null;
 
   useEffect(() => {
@@ -276,6 +278,33 @@ export function CastLens({
                 />
               </div>
             ))}
+
+            {/* What is not decided about this person, in the writer's words (round twenty-two, entries 12, 24): listed by the reading, never asked. */}
+            {(page.open ?? "").trim() || leavingOpen === page.id ? (
+              <div className="cast-page__line">
+                <p className="cast-lens__kicker">Not decided yet</p>
+                <span className="open-field">
+                  <span className="open-mark" aria-hidden="true">
+                    Open
+                  </span>
+                  <EditableText
+                    className="cast-page__text is-open-field"
+                    value={page.open ?? ""}
+                    onCommit={(words) => {
+                      setLeavingOpen(null);
+                      if (words.trim() !== (page.open ?? "")) onUpdate(page.id, { open: words });
+                    }}
+                    ariaLabel={`What is not decided about ${page.name}`}
+                    placeholder="not decided: say what, in your words"
+                    autoFocus={leavingOpen === page.id}
+                  />
+                </span>
+              </div>
+            ) : (
+              <button type="button" className="field-offer cast-page__offer" onClick={() => setLeavingOpen(page.id)}>
+                Something not decided yet…
+              </button>
+            )}
 
             <PagePictures
               character={page}

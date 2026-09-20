@@ -4639,6 +4639,17 @@ body {
   filter: grayscale(0.35) brightness(0.9);
 }
 
+/* The offer on a person's page: something not decided about them. Shows with the page under the hand, as the logline's does. */
+.cast-page__offer {
+  display: block;
+  margin-top: 0.6rem;
+}
+
+.cast-page:hover .cast-page__offer,
+.cast-page__offer:focus-visible {
+  opacity: 1;
+}
+
 /* The change line's offer (R67): only when the card is under the hand, so a wall of new cards is not a wall of buttons. */
 .note__change-offer {
   display: block;

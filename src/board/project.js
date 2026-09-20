@@ -9,7 +9,7 @@
 // Plain ESM with a sibling .d.ts, like the kernel, so the browser store and the
 // MCP server share one idea of what a project is. Keep it free of `window`.
 
-import { CHARACTER_FIELDS, fillCharacter, isCharacter, newId, normalizeState, noteEighths, nowIso, sameName } from "./reducer.js";
+import { PERSON_TEXT_FIELDS, fillCharacter, isCharacter, newId, normalizeState, noteEighths, nowIso, sameName } from "./reducer.js";
 
 export const PROJECT_VERSION = 2;
 export const DEFAULT_PROJECT_NAME = "Untitled project";
@@ -129,7 +129,7 @@ export function sameRoster(a, b) {
   if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
   return a.every((character, index) => {
     const other = b[index];
-    return other && character.id === other.id && character.name === other.name && CHARACTER_FIELDS.every((field) => (character[field] ?? "") === (other[field] ?? ""));
+    return other && character.id === other.id && character.name === other.name && PERSON_TEXT_FIELDS.every((field) => (character[field] ?? "") === (other[field] ?? ""));
   });
 }
 
@@ -169,8 +169,8 @@ export function liftCast(project, boards, now = nowIso()) {
         continue;
       }
       map[character.id] = kept.id;
-      for (const field of CHARACTER_FIELDS) {
-        if (!kept[field].trim() && typeof character[field] === "string" && character[field].trim()) kept[field] = character[field];
+      for (const field of PERSON_TEXT_FIELDS) {
+        if (!(kept[field] ?? "").trim() && typeof character[field] === "string" && character[field].trim()) kept[field] = character[field];
       }
     }
     folded[boardId] = map;

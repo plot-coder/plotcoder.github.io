@@ -219,8 +219,8 @@ could be, a recommendation, what a yes means.
   11). One must stand in front; a version is one card. *Plan to draw:* the
   pair side by side under one bracket with neither in front, the reading
   counting the longer; and whether a version can be a group.
-- [~] **F4 · Undecided things about a person, and "decided, not yet on the
-  wall"** *(drawn 2026-09-20 in `docs/mockups/round-twenty-two-designs.html`; waiting on Robert's word)* (12, 24). What the boy goes to town for is a fact of a person, not
+- [x] **F4 · Undecided things about a person, and "decided, not yet on the
+  wall"** *(drawn, Robert chose A, built 2026-09-20: `open` on a person, carried with their page through `PERSON_TEXT_FIELDS`; `update_character` takes it; the reading lists "about <name>"; the person's page shows it under "Not decided yet" with the offer; tested, and seen in the app. "Decided, not told" stays between writer and agent; the guide says so.)* (12, 24). What the boy goes to town for is a fact of a person, not
   of a scene; and the writer had decided it and not said. *Plan to draw:* an
   open line on a person's page, as a field has one; and whether "decided,
   not told" is anything but the agent's note to the writer (likely not).

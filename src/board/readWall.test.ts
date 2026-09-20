@@ -230,7 +230,7 @@ describe("findings", () => {
 
   it("returns nothing at all for an empty board", () => {
     const reading = readWall(emptyState());
-    expect(reading).toEqual({ order: [], beats: [], runs: [], setups: [], payoffs: {}, later: [], paidBy: [], open: [], openFields: [], versions: [], wired: { linked: 0, of: 0 }, aside: [], threads: [], findings: [], left: [] });
+    expect(reading).toEqual({ order: [], beats: [], runs: [], setups: [], payoffs: {}, later: [], paidBy: [], open: [], openFields: [], versions: [], openPeople: [], wired: { linked: 0, of: 0 }, aside: [], threads: [], findings: [], left: [] });
   });
 
   it("notes that runs cannot be read until a beat is marked, and passes no judgement on the count", () => {

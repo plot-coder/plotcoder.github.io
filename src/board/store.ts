@@ -45,7 +45,7 @@ import {
 import {
   applyCommand,
   boardEighths,
-  CHARACTER_FIELDS,
+  PERSON_TEXT_FIELDS,
   DEFAULT_TARGET_EIGHTHS,
   emptyState,
   isBoardState,
@@ -111,7 +111,7 @@ function coalesceKey(command: Command): string | null {
     case "rename_character":
       return `rename_character:${command.id}`;
     case "update_character":
-      return `update_character:${command.id}:${CHARACTER_FIELDS.filter((field) => field in command).join(",")}`;
+      return `update_character:${command.id}:${PERSON_TEXT_FIELDS.filter((field) => field in command).join(",")}`;
     case "set_target":
       return "set_target";
     // One line on the card carries both (R37, R55): typed together, one step back.

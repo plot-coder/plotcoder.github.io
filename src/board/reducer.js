@@ -44,10 +44,20 @@ export function isCharacter(value) {
 // person (R18).
 export const CHARACTER_FIELDS = ["looks", "voice", "wants", "needs", "notes"];
 
+/**
+ * Every line of text a person carries: the five lines of their page, and
+ * `open` — the writer's words for what is not decided about them ("what he
+ * goes to the town for: a hospital visit, a music lesson, or the courthouse";
+ * round twenty-two, entries 12, 24). R61's shape on a person: listed by the
+ * reading, never asked. It is not a line of the page, so the page's "how
+ * filled" counts leave it out; it fills, updates, compares and merges with them.
+ */
+export const PERSON_TEXT_FIELDS = [...CHARACTER_FIELDS, "open"];
+
 /** A roster record with every page field present, so the page never reads undefined. */
 export function fillCharacter(character) {
   let filled = character;
-  for (const field of CHARACTER_FIELDS) {
+  for (const field of PERSON_TEXT_FIELDS) {
     if (typeof filled[field] !== "string") {
       if (filled === character) filled = { ...character };
       filled[field] = "";
@@ -1302,10 +1312,10 @@ export function applyCommand(state, command, now = nowIso()) {
       const current = state.characters.find((character) => character.id === command.id);
       if (!current) return { state, changed: false };
       const patch = {};
-      for (const field of CHARACTER_FIELDS) {
-        if (typeof command[field] === "string" && command[field] !== current[field]) {
-          patch[field] = command[field];
-        }
+      for (const field of PERSON_TEXT_FIELDS) {
+        // Open words are cleaned as every open field's are; the page's lines are the writer's, as typed.
+        const value = typeof command[field] === "string" ? (field === "open" ? cleanOpen(command[field]) : command[field]) : null;
+        if (value !== null && value !== current[field]) patch[field] = value;
       }
       if (Object.keys(patch).length === 0) return { state, changed: false, result: current };
       const updated = { ...current, ...patch, updatedAt: now };

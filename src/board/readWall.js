@@ -523,6 +523,8 @@ export function readWall(state, options = {}) {
     openFields: describeOpenFields(state, order),
     // Two versions of one scene (R65): the front card and the one behind it, in story order; listed, never asked.
     versions: order.filter((note) => state.notes.some((item) => item.alternativeOf === note.id)).map((note) => ({ id: note.id, alternatives: state.notes.filter((item) => item.alternativeOf === note.id).map((item) => item.id) })),
+    // People the writer has left something open about (round twenty-two, entries 12, 24): listed, never asked.
+    openPeople: (state.characters ?? []).filter((person) => (person.open ?? "").trim()).map((person) => ({ id: person.id, name: person.name, words: person.open.trim() })),
     // How much of the film is wired (follows arrows; a setup arrow is a claim, not a place): the unlinked
     // question waits for half. Returned so a door says the reading's numbers, never its own (round twenty-two, entry 20).
     wired: { linked: order.filter((note) => linked.has(note.id)).length, of: order.length },
@@ -595,6 +597,7 @@ export function describeUndecided(state, reading, extras = {}) {
   const FIELD = { change: "the change line", location: "where", when: "when" };
   const open = [];
   for (const item of extras.project ?? []) open.push(`  - ${item.label} — ${item.words}`);
+  for (const person of reading.openPeople ?? []) open.push(`  - about ${person.name} — ${person.words}`);
   for (const field of reading.openFields.filter((item) => item.field === "logline")) open.push(`  - the logline — ${field.words}`);
 
   // Words shared by three or more cards in one field are one line.

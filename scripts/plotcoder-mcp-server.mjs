@@ -24,6 +24,7 @@ import {
   countRanks,
   EIGHTHS_PER_PAGE,
   CHARACTER_FIELDS,
+  PERSON_TEXT_FIELDS,
   emptyState,
   filledCharacterFields,
   formatPages,
@@ -610,6 +611,7 @@ function atAGlance(state, reading, project = null, boardMeta = null) {
   const open =
     reading.open.length +
     reading.openFields.length +
+    (reading.openPeople?.length ?? 0) +
     (state.targetOpen ? 1 : 0) +
     (project?.nameOpen ? 1 : 0) +
     (project?.premiseOpen ? 1 : 0) +
@@ -3454,6 +3456,8 @@ server.registerTool(
       ...(CHARACTER_FIELDS.every((field) => !(person[field] ?? "").trim())
         ? [`  ${CHARACTER_FIELDS.join(", ")}: (empty — nothing given yet, nothing invented; update_character fills a line)`]
         : CHARACTER_FIELDS.map((field) => `  ${field}: ${(person[field] ?? "").trim() || "(empty)"}`)),
+      // What the writer has not decided about them, in their words (round twenty-two, entries 12, 24).
+      ...((person.open ?? "").trim() ? [`  not decided yet, by the writer's word: ${person.open.trim()}`] : []),
       ...parts.flatMap((part) =>
         part.on.length
           ? [`  "${part.meta.name}", ${part.on.length} card${part.on.length === 1 ? "" : "s"} in story order:`, ...part.on.map((note, index) => `    ${index + 1}. "${note.headline}"${where_(note) ? ` (${where_(note)})` : ""}`)]
@@ -3469,7 +3473,7 @@ server.registerTool(
   {
     title: "Update a person's page",
     description:
-      "Write any of the five lines of a person's page, by id or by name: looks (what a stranger would notice), voice (how they sound, and how it changes when they lie), wants (the clear want), needs (what they need and will not admit), notes (anything to pull up mid-scene). All text; pass only the lines you are setting; an empty string clears one. Ask the writer before inventing looks or a voice — the page is theirs.",
+      "Something the writer has not decided about a person — \"what he goes to the town for: a hospital visit, a music lesson, or the courthouse\" — is open, with their words: the reading lists it under open, by the writer's word, as \"about <name>\", and never asks; open \"\" takes the words back once it is decided and the answer has gone where it belongs (their notes, a scene). Not a line of the page. Otherwise: write any of the five lines of a person's page, by id or by name: looks (what a stranger would notice), voice (how they sound, and how it changes when they lie), wants (the clear want), needs (what they need and will not admit), notes (anything to pull up mid-scene). All text; pass only the lines you are setting; an empty string clears one. Ask the writer before inventing looks or a voice — the page is theirs.",
     inputSchema: {
       id: z.string().optional(),
       name: z.string().optional(),
@@ -3478,11 +3482,12 @@ server.registerTool(
       wants: z.string().optional(),
       needs: z.string().optional(),
       notes: z.string().optional(),
+      open: z.string().optional(),
     },
   },
   async (args) => {
     const patch = {};
-    for (const field of CHARACTER_FIELDS) {
+    for (const field of PERSON_TEXT_FIELDS) {
       if (typeof args[field] === "string") patch[field] = args[field];
     }
     const key = (args.id ?? args.name ?? "").trim();
@@ -3502,7 +3507,8 @@ server.registerTool(
       const now = (result[field] ?? "").trim();
       return `${field}${had && now ? " (replacing what was there)" : had && !now ? " (cleared)" : ""}: ${now ? `"${trim(now)}"` : "(empty)"}`;
     });
-    return ok(`Set ${lines.join("; ")} on ${result.name}'s page${where(live)}. A line set here replaces the old one.`, result);
+    const openLine = "open" in patch ? ((result.open ?? "").trim() ? ` What is open about ${result.name} is listed by the reading under "open, by the writer's word", and never asked.` : ` Nothing is left open about ${result.name} now.`) : "";
+    return ok(`Set ${lines.join("; ")} on ${result.name}'s page${where(live)}. A line set here replaces the old one.${openLine}`, result);
   },
 );
 

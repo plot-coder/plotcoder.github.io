@@ -43,6 +43,8 @@ export declare const NOTE_HEIGHT: number;
  */
 export type CharacterField = "looks" | "voice" | "wants" | "needs" | "notes";
 export declare const CHARACTER_FIELDS: readonly CharacterField[];
+/** The page's five lines and `open`: every line of text a person carries. */
+export declare const PERSON_TEXT_FIELDS: readonly (CharacterField | "open")[];
 
 export type BoardCharacter = {
   id: string;
@@ -53,6 +55,8 @@ export type BoardCharacter = {
   wants: string;
   needs: string;
   notes: string;
+  /** The writer's words for what is not decided about this person, or empty: listed by the reading, never asked. */
+  open: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -230,7 +234,7 @@ export type Command =
   | { type: "add_character"; name: string; id?: string }
   | { type: "rename_character"; id: string; name: string }
   | { type: "remove_character"; id: string }
-  | ({ type: "update_character"; id: string } & Partial<Record<CharacterField, string>>)
+  | ({ type: "update_character"; id: string } & Partial<Record<CharacterField | "open", string>>)
   | { type: "set_cast"; ids: string[]; characterIds: string[] }
   | { type: "set_plant"; ids: string[]; plants?: boolean; what?: string }
   | { type: "set_open"; ids: string[]; open: string }

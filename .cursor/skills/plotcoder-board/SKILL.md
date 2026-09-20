@@ -562,7 +562,9 @@ than a dictionary's, so the app and you never explain a word two ways.
   now", or "no wall open right now — it shows the moment one opens", read
   from the presence the server already follows; `list_projects` says the
   same of the working project. Never "seen by": presence lags a second or
-  two.
+  two. The hosted door (`mcp.plotcoder.com`) answers each call before
+  presence arrives, so it says only where the write landed, and
+  `list_projects` there says it cannot see who has a wall open.
 - **A sketch:** a written scene measured under the page it was read as is
   named one — on `write_scene`'s reply, on the card's line in `list_board`,
   and on the runtime line, which carries the second number: "about 11 pages

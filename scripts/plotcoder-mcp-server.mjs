@@ -998,7 +998,9 @@ function presentPeople() {
 /** The account tail says what the wall shows: open on whose screen, or no wall open, never a bare "live". */
 function accountTail() {
   const people = presentPeople();
-  if (!people.length) return " (saved to the account; no wall open right now — it shows the moment one opens)";
+  // The hosted door is a server per request: it joins the channel and answers before presence has synced, so
+  // an empty list there is not "nobody". It says where the write landed and claims nothing (round twenty-two, entries 93 to 95).
+  if (!people.length) return hosted() ? " (saved to the account; it shows on any open wall the moment it lands)" : " (saved to the account; no wall open right now — it shows the moment one opens)";
   return ` (saved to the account; open on ${people.length === 1 ? `${people[0]}'s screen` : `${people.length} screens: ${people.join(", ")}`} now)`;
 }
 
@@ -3947,7 +3949,7 @@ server.registerTool(
     return ok(
       [
         `projects: ${projects.length} (as ${account.email})${projects.length === 0 ? ` — ${noProjectYet()}` : ""}`,
-        ...projects.map((row) => `  - ${row.id} — "${row.record.name}"${row.id === account.projectId ? " (working)" : ""}: ${row.record.boards.length} board(s) · ${(row.people ?? []).join(", ")}${row.id === account.projectId ? (() => { const people = presentPeople(); return people.length ? ` · open now on ${people.length} screen${people.length === 1 ? "" : "s"}: ${people.join(", ")}` : " · no wall open right now"; })() : ""}`),
+        ...projects.map((row) => `  - ${row.id} — "${row.record.name}"${row.id === account.projectId ? " (working)" : ""}: ${row.record.boards.length} board(s) · ${(row.people ?? []).join(", ")}${row.id === account.projectId ? (() => { const people = presentPeople(); return people.length ? ` · open now on ${people.length} screen${people.length === 1 ? "" : "s"}: ${people.join(", ")}` : hosted() ? " · who has a wall open is not something this door can see: it answers before presence arrives (the app's People sheet shows it)" : " · no wall open right now"; })() : ""}`),
       ].join("\n"),
       projects.map((row) => ({ id: row.id, name: row.record.name, boards: row.record.boards.length, people: row.people })),
     );

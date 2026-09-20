@@ -12,6 +12,29 @@ description: >-
 This is the whole guide; the on-ramp at plotcoder.com/llms.txt is its first
 page, and where the two differ, this wins.
 
+**Holding the tools already — a connector, or a server someone wired? Read
+this much on day one, and leave the rest until the writer asks for it.**
+
+- **Read now:** this page down to the end of **Cast** — the method, the
+  first calls, **Reading**, **Cards** (open things, threads, two versions,
+  set aside) and **Cast** — then **What the tools will refuse**, **The
+  reply's tail**, and **Do not have opinions about beat count**. That is
+  the day's work: build a wall from a writer's notes, read it back, take
+  their directions.
+- **Before you ask the writer anything:** `list_workflows`. Its first
+  workflow, "break a treatment", carries **what a treatment should
+  answer** — the questions to put to the writer, and the tool each answer
+  lands in. It is the asking's checklist; do not write your own.
+- **Leave until the writer says the words:** **Pages** (they say "write
+  it", "how long", "export"); **The project** beyond one board (a series,
+  an episode, a second board); **Structure** (they name a structure to
+  compare with); **The production half** (locked numbers, a revision);
+  **Workflows** as a section (the tool lists them).
+- **Not for you at all:** wiring — **The account, the app, or the file**,
+  **The account door**, and the wiring paragraph under those heads — is for
+  whoever connects a server. If the tools are in front of you, you are
+  connected.
+
 PlotCoder serves one method, and its tools follow it:
 
 1. State the **logline**: the central question, what the story is arguing.
@@ -49,30 +72,17 @@ season's episodes, or a writer's stories) under one name and one premise.
 
 ## Use the MCP tools, not the mouse
 
-The server is an npm package, `plotcoder-board`: wire it once, from any
-folder, with `claude mcp add plotcoder-board -s user -- npx -y
-plotcoder-board@latest` (or the same as a config block), then start the
-session again — a server wired from inside a session connects only on the
-next one. Inside the repo, `.mcp.json` and `.cursor/mcp.json` wire the
-checkout's own server instead (run `npm ci` in it first). Drive the board
-through its tools. **Do not** open a browser and fake pointer drags — the
-tools and the human UI share one command kernel, so a tool call lands on the
-exact same board a person sees. No MCP where you are, or already inside a
-session? `npx -y plotcoder-board@latest call <tool> '{json}'` makes one call
-from a shell — one server per call, so `undo` and the project `new_project`
-or `open_project` chose do not carry to the next call; set `PLOTCODER_PROJECT`
-for the calls that need it, or run them as a batch (`call --batch <
-calls.jsonl`, one `{"tool", "arguments"}` per line) on one server. The
-sign-in is kept between calls in the folder's `.plotcoder`. Hosted, with
-nothing installed: `npx -y plotcoder-board@latest serve` puts the same server
-on a port, and an MCP client connects with `--transport http` and the
-writer's sign-in in a Basic header. `PLOTCODER_ROOT` points the server at the
-folder whose wall you mean.
+Drive the board through its tools. **Do not** open a browser and fake
+pointer drags — the tools and the human UI share one command kernel, so a
+tool call lands on the exact same board a person sees. (Wiring a server, the
+shell caller and the hosted door are under **The account, the app, or the
+file**, at the end; with the tools in front of you, skip them.)
 
 **Call these first, in any order:** `list_words` (the room's words), `read_wall`
 (what is here and what it asks — a fresh folder holds a sample wall, Maya and
 Tom and the letter, and says so; it is not the writer's), `list_workflows`
-(what a writer can ask for), `list_reminders` (the writer's principles),
+(what a writer can ask for — and, in its first workflow, what a treatment
+should answer: the questions to ask the writer before building), `list_reminders` (the writer's principles),
 `list_board` (the records and their ids) — and only then change anything.
 
 ### Reading
@@ -115,6 +125,17 @@ only when the server is started with `PLOTCODER_JSON=1`.
   setup with the distance to its payoff, and every thread with its cards. The tool's own description carries the same list,
   and a reply names each question's kind. Put the questions to the writer. Do
   not act on them unasked, and do not add an opinion about the number of beats.
+  `read_wall` with `only: "questions"` is the short read — the three counts,
+  what the wall asks, what the writer has left — for "do I owe the writer
+  anything?" after a write. **"What is still open?" is answered here, in one call.** The reading opens
+  with three counts — questions asked, things left open by the writer's word,
+  scenes unwritten — so a quiet wall is never taken for a finished one. Its
+  open section lists the project's open fields, one grouped line where the
+  same words sit on three or more cards, then each card once with everything
+  open on it. Under a separate head, "not said yet", it lists what is simply
+  blank — no place, no when, no length, nobody in it. Blank is not open: open
+  is the writer's word, blank is nobody's, so never tell the writer they left
+  something open that they only have not said.
 - `leave_question` / `ask_again` — the writer's word on a question: "leave
   it". Pass the kind as `read_wall` names it, and the ids when that kind is
   asked more than once. A leave is the open board's: to leave a question on
@@ -222,8 +243,10 @@ only when the server is started with `PLOTCODER_JSON=1`.
   export, its follows arrows dropped — and waits there; the wall draws it
   tucked behind its sibling and `read_wall` lists the pair under "two
   versions, not chosen", asking nothing of it. `choose_version` decides: the
-  chosen card is the scene, in the front card's place with its arrows, rank
-  and group; the other goes, or with `keep` is **set aside** beside it — on
+  chosen card is the scene, in the front card's place with its arrows, rank,
+  group and threads, and the front card's fold when it has none of its own —
+  so a thing true of the scene "either way of it" (a plant, a thread) is
+  said once, on the front card, and whichever version is chosen carries it; the other goes, or with `keep` is **set aside** beside it — on
   the wall where the writer can see it, and not in the film. "Keep the
   other, I may come back to it" is `keep`. `of: ""` takes a card out from
   behind. Only on the writer's word:
@@ -395,7 +418,10 @@ card of another board is not asked about as uncast here.
   measured from its lines and the wall reads that; the writer's estimate is
   kept underneath for when the text goes.
 - `edit_scene` — one line of a scene, by `find` and `replace`: the text must
-  occur once. For "change her last line", not a rewrite.
+  occur once. For "change her last line", not a rewrite. To **add** a line,
+  `insert` with `after` (or `before`) and the text of the paragraph it goes
+  beside: a new paragraph, the rest untouched. A `[[note]]` in a scene's
+  text neither prints nor counts toward its length.
 - `import_fountain` — a `.fountain` file or text onto the open board: scenes
   land on the cards with the same heading in order; unknown scenes become new
   cards; nothing is deleted. A card with no place answers to its marked
@@ -506,6 +532,13 @@ card of another board is not asked about as uncast here.
 - `set_arrow_kind` — change an arrow's kind by id. One arrow per direction, so
   change the kind rather than drawing it again.
 - `delete_arrow` — by arrow id. Removes that direction only.
+- `set_order` — **"the order is: A, B, C…"**: the story order from a list
+  of cards, by id or headline, in one step one undo takes back. The follows
+  arrows touching the cards named become one chain through them, and the
+  wall is tidied along it; setup arrows are untouched; a card in the film
+  that is not named may be left on no arrow, and the reply names it. This
+  is the tool for the writer giving the order; do not draw it arrow by
+  arrow.
 - `move_scene` — move a card to another place in the story: `after` one
   card's id, or `before` one; or to **another board** of the project with
   `board` (by name, id or number), landing `after` or `before` a card there,
@@ -595,9 +628,12 @@ than a dictionary's, so the app and you never explain a word two ways.
   now", or "no wall open right now — it shows the moment one opens", read
   from the presence the server already follows; `list_projects` says the
   same of the working project. Never "seen by": presence lags a second or
-  two. The hosted door (`mcp.plotcoder.com`) answers each call before
-  presence arrives, so it says only where the write landed, and
-  `list_projects` there says it cannot see who has a wall open.
+  two. **"Who has this open?" is `who_is_here`:** it waits a moment for
+  presence, names the people as the app's People sheet does, says this
+  session beside them ("an agent, as …"), and says "could not see in time"
+  rather than "nobody" when presence does not arrive. The hosted door
+  (`mcp.plotcoder.com`) answers each write before presence arrives, so its
+  write tails say only where the write landed.
 - **A sketch:** a written scene measured under the page it was read as is
   named one — on `write_scene`'s reply, on the card's line in `list_board`,
   and on the runtime line, which carries the second number: "about 11 pages
@@ -622,6 +658,26 @@ Say "about" when you report it. Never tell a writer their script is too long on
 the strength of it.
 
 ## The account, the app, or the file
+
+**Wiring, for whoever connects the server.** The server is an npm package, `plotcoder-board`: wire it once, from any
+folder, with `claude mcp add plotcoder-board -s user -- npx -y
+plotcoder-board@latest` (or the same as a config block), then start the
+session again — a server wired from inside a session connects only on the
+next one. Inside the repo, `.mcp.json` and `.cursor/mcp.json` wire the
+checkout's own server instead (run `npm ci` in it first). Drive the board
+through its tools. **Do not** open a browser and fake pointer drags — the
+tools and the human UI share one command kernel, so a tool call lands on the
+exact same board a person sees. No MCP where you are, or already inside a
+session? `npx -y plotcoder-board@latest call <tool> '{json}'` makes one call
+from a shell — one server per call, so `undo` and the project `new_project`
+or `open_project` chose do not carry to the next call; set `PLOTCODER_PROJECT`
+for the calls that need it, or run them as a batch (`call --batch <
+calls.jsonl`, one `{"tool", "arguments"}` per line) on one server. The
+sign-in is kept between calls in the folder's `.plotcoder`. Hosted, with
+nothing installed: `npx -y plotcoder-board@latest serve` puts the same server
+on a port, and an MCP client connects with `--transport http` and the
+writer's sign-in in a Basic header. `PLOTCODER_ROOT` points the server at the
+folder whose wall you mean.
 
 Every read of the wall or the project says which it read, on its first line.
 

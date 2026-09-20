@@ -213,6 +213,7 @@ describe("plotcoder MCP server", () => {
       "set_logline",
       "set_alternative",
       "set_open",
+      "set_order",
       "set_payoff",
       "set_plant",
       "set_premise",
@@ -226,6 +227,7 @@ describe("plotcoder MCP server", () => {
       "update_character",
       "update_note",
       "update_thread",
+      "who_is_here",
       "write_scene",
     ].sort();
 
@@ -1094,7 +1096,7 @@ describe("open fields (R61): the logline, the premise, a when and a board's name
     await client.callTool("undo");
     const listed = await client.callTool("list_board");
     expect(listed).toContain("written (a sketch: under the page it was read as)");
-    expect(listed).toMatch(/1 written scene is a sketch, measured under the page it was read as: about [\d /]+ pages if it ran to that/);
+    expect(listed).toMatch(/\n  if the sketch ran to the page it was read as: about [\d /]+ pages — a written scene measured under its page is a sketch/);
     const pages = await client.callTool("read_pages");
     expect(pages).toContain("camera: 2 lines it cannot see (knows, feels)");
     expect(pages).toContain("◂ knows");
@@ -1128,8 +1130,11 @@ describe("open fields (R61): the logline, the premise, a when and a board's name
     await client.callTool("undo");
     await client.callTool("undo");
     await client.callTool("set_location", { ids: [other.id], open: "" });
+    // The front card's fold comes with the scene when the chosen version has none of its own (round twenty-two, entry 59).
+    await client.callTool("set_plant", { ids: [ending.id], what: "the crowns" });
     const chosen = await client.callTool("choose_version", { id: "Con dies" });
     expect(chosen).toContain('Chose "Con dies" — it steps forward');
+    expect(chosen).toContain('with its arrows, rank, group and threads, and its fold ("the crowns")');
     expect(chosen).toContain('"They lose the plots" is gone');
     expect(await client.callTool("read_wall")).not.toContain("two versions");
     await client.callTool("delete_note", { id: other.id });
@@ -1141,8 +1146,8 @@ describe("open fields (R61): the logline, the premise, a when and a board's name
     expect(born).toContain('at: open, by the writer\'s word — "which hall"');
     expect(born).toContain('when: open, by the writer\'s word — "which evening"');
     const read = await client.callTool("read_wall");
-    expect(read).toContain('  - "The parish hall" — where: which hall');
-    expect(read).toContain('  - "The parish hall" — when: which evening');
+    // One line for the card, with everything open on it (round twenty-two, entry 43).
+    expect(read).toContain('  - "The parish hall" — where: which hall; when: which evening');
     // Decided, so the tests after this one start from a wall with nothing open.
     await client.callTool("set_location", { ids: [card.id], location: "the parish hall" });
     await client.callTool("set_when", { ids: [card.id], when: "evening" });
@@ -1299,7 +1304,8 @@ describe("round nineteen: create_note with after on a wall with no follows arrow
     const kept = await client.callTool("create_thread", { name: "the key", cards: ["Maya finds the letter", "The key changes hands"] });
     expect(kept).toContain('"Maya finds the letter" is folded for the wrong tools, so "the key" stays a thread and no arrow is drawn');
     const free = await client.callTool("create_thread", { name: "the letter", cards: ["Tom lies about the job", "The key changes hands"] });
-    expect(free).toContain('Tied at both ends, so it is the fold\'s now: folded "Tom lies about the job", named its fold "the letter", drew the setup arrow to "The key changes hands"');
+    // What the tie made is named by its ids: the card it folded, the arrow it drew (round twenty-two, entry 61).
+    expect(free).toMatch(/Tied at both ends, so it is the fold's now: folded "Tom lies about the job" \(tom-lies\), named its fold "the letter", drew the setup arrow to "The key changes hands" \(arrow [0-9a-f-]+\)/);
     expect(await client.callTool("list_board")).toContain("plants: the letter");
   });
 
@@ -1599,7 +1605,7 @@ describe("round sixteen", () => {
     const id = (await six.callToolData("list_board")).notes.find((note) => note.headline.startsWith("Declan")).id;
     const read = await six.callTool("read_wall");
     expect(read).toContain("open, by the writer's word");
-    expect(read).toContain('"Declan wants Con to move to Naas" — where, and whether Ruth is there (closed, it would be asked ');
+    expect(read).toContain('"Declan wants Con to move to Naas" — open: where, and whether Ruth is there (closed, it would be asked ');
     // As questions, not as the checks' clean forms (round nineteen, entry 31).
     expect(read).toContain("who is in it (cast)");
     expect(read).not.toContain("would be asked, closed: no card");
@@ -2036,7 +2042,7 @@ describe("after the blind run", () => {
 
   it("says over or under in words, and what page_count counts", async () => {
     expect(await blind.callTool("set_target", { pages: 2 })).toMatch(/— [0-9 /]+ (over|under)\./);
-    expect(await blind.callTool("list_board")).toMatch(/runtime: about .* — .* (over|under) \(an estimate/);
+    expect(await blind.callTool("list_board")).toMatch(/runtime: about [\d /]+ pages — the number to use[^\n]*\n(  made of: [^\n]*\n)?  against the 2-page target the writer set \(set_target changes it\): [\d /]+ (over|under)\n/);
     const written = await blind.callToolData("list_board");
     await blind.callTool("write_scene", { id: written.notes[0].id, text: "INT. KITCHEN - NIGHT\n\nMaya reads it twice." });
     const pages = await blind.callTool("page_count");
@@ -2082,6 +2088,121 @@ describe("after the blind run", () => {
     // Advice said once a session is not said at all where there is no session (entry 26).
     expect(hostedTail).not.toContain("organize lays the wall out");
     expect(hostedTail).not.toContain("pass color to choose");
+  });
+
+  it("answers who has the wall open: on a folder, nobody else can (round twenty-two, entry 93)", async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-here-"));
+    const door = new McpClient(root);
+    await door.start();
+    try {
+      expect(await door.callTool("who_is_here")).toContain("there is no account behind it, so nobody else can have it open");
+    } finally {
+      door.stop();
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("reads the cast and the places back with the wall, in one call (round twenty-two, entry 29)", async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-readback-"));
+    const door = new McpClient(root);
+    await door.start();
+    try {
+      await door.callTool("set_location", { ids: ["maya-letter", "letter-aloud"], location: "the piano shop" });
+      const read = await door.callTool("read_wall");
+      expect(read).toMatch(/\ncast: [^\n]*Maya \(\d+ scenes?\)/);
+      expect(read).toContain("places: the piano shop (2)");
+      expect(read).not.toContain("the cast and the places are list_board's");
+      // The short read: every question, and under fifteen lines (entry 83).
+      const brief = await door.callTool("read_wall", { only: "questions" });
+      const whole = await door.callToolData("read_wall");
+      expect(brief.split("\n\n")[0].split("\n").length).toBeLessThan(15);
+      expect(brief).toMatch(/^PlotCoder wall .* — the questions only/);
+      for (const finding of whole.findings ?? []) expect(brief).toContain(`[${finding.kind}]`);
+      expect(brief).not.toContain("runs between beats");
+    } finally {
+      door.stop();
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("sets the order from a list in one step, and moves a scene on a wall with no arrows by drawing the rows first (round twenty-two, entry 31)", async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-order-"));
+    const door = new McpClient(root);
+    await door.start();
+    try {
+      // No follows arrows yet: move_scene draws the chain from the rows, says so, and moves.
+      const moved = await door.callTool("move_scene", { id: "letter-aloud", after: "maya-letter" });
+      expect(moved).toContain("The wall had no follows arrows, so the order was drawn from the rows first");
+      expect(moved).toContain('Moved "The letter is read aloud" to after "Maya finds the letter"');
+      // An arrow's reply says what the story now runs (entry 33).
+      const first = (await door.callToolData("list_board")).arrows.find((arrow) => arrow.from === "maya-letter" && arrow.to === "letter-aloud");
+      await door.callTool("delete_arrow", { id: first.id });
+      expect(await door.callTool("create_arrow", { from: "maya-letter", to: "letter-aloud" })).toMatch(/The story now runs: [^\n]*"Maya finds the letter" → "The letter is read aloud"/);
+      // The order as a writer says it, by headline, one call.
+      const set = await door.callTool("set_order", { cards: ["Tom lies about the job", "Maya finds the letter", "The letter is read aloud"] });
+      expect(set).toContain('The story now runs: "Tom lies about the job" → "Maya finds the letter" → "The letter is read aloud"');
+      const { arrows } = await door.callToolData("list_board");
+      expect(arrows.filter((arrow) => arrow.kind !== "setup").map((arrow) => `${arrow.from}>${arrow.to}`)).toEqual(["tom-lies>maya-letter", "maya-letter>letter-aloud"]);
+      // One undo takes the whole order back.
+      await door.callTool("undo");
+      expect((await door.callToolData("list_board")).arrows.some((arrow) => arrow.from === "tom-lies" && arrow.to === "maya-letter")).toBe(false);
+      // Refusals in words: a card named twice, a card not in the film.
+      expect(await door.callTool("set_order", { cards: ["maya-letter", "maya-letter"] })).toContain("named twice");
+      await door.callTool("set_aside", { ids: ["tom-lies"] });
+      expect(await door.callTool("set_order", { cards: ["tom-lies", "maya-letter"] })).toContain("not in the film (set aside)");
+    } finally {
+      door.stop();
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("inserts a paragraph into a scene beside the one named, and a note neither prints nor counts (round twenty-two, entries 71, 77)", async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-insert-"));
+    const door = new McpClient(root);
+    await door.start();
+    try {
+      const wrote = await door.callTool("write_scene", { id: "tom-lies", text: "The bus stops. TOMÁS gets on.\n\nHe counts the fare out of a jar." });
+      expect(wrote).toContain("a [[note]] neither prints nor counts");
+      const lines = Number(/Wrote "[^"]+": (\d+) line/.exec(wrote)[1]);
+      const inserted = await door.callTool("edit_scene", { id: "tom-lies", insert: "She knows every passenger by their stop. She does not know him.", after: "TOMÁS gets on" });
+      expect(inserted).toContain('Inserted a paragraph after "The bus stops. TOMÁS gets on."');
+      expect(inserted).toContain("1 line the camera cannot see (knows)");
+      const { notes } = await door.callToolData("list_board");
+      expect(notes.find((note) => note.id === "tom-lies").text).toBe("The bus stops. TOMÁS gets on.\n\nShe knows every passenger by their stop. She does not know him.\n\nHe counts the fare out of a jar.");
+      // The anchor must occur once, and the tool says which of its two uses it wants.
+      expect(await door.callTool("edit_scene", { id: "tom-lies", insert: "X", after: "e" })).toMatch(/occurs \d+ times/);
+      expect(await door.callTool("edit_scene", { id: "tom-lies" })).toContain("Say which");
+      // A note in the text measures the same as none.
+      await door.callTool("write_scene", { id: "tom-lies", text: "The bus stops. TOMÁS gets on.\n\nHe counts the fare out of a jar." });
+      const noted = await door.callTool("write_scene", { id: "tom-lies", text: "The bus stops. TOMÁS gets on.\n\nHe counts the fare out of a jar.\n\n[[how the cut is announced: not decided]]" });
+      expect(Number(/Wrote "[^"]+": (\d+) line/.exec(noted)[1])).toBe(lines);
+      // The same undecided thing in two homes: said when the text has a note and the card has open words, never otherwise (entry 78).
+      expect(noted).not.toContain("two places");
+      await door.callTool("update_note", { id: "tom-lies", changeOpen: "how the cut is announced" });
+      const both = await door.callTool("write_scene", { id: "tom-lies", text: "The bus stops.\n\n[[how the cut is announced: not decided]]" });
+      expect(both).toContain('the card has open words ("how the cut is announced")');
+      expect(both).toContain("deciding it means clearing both");
+    } finally {
+      door.stop();
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("says when a write leaves the wall's questions as they were (round twenty-two, entries 66, 92)", async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-still-"));
+    const door = new McpClient(root);
+    await door.start();
+    try {
+      // A headline reworded changes no question; the tail says so, with the count.
+      const still = await door.callTool("update_note", { id: "maya-letter", headline: "Maya finds the letter on the mat" });
+      expect(still).toMatch(/the wall's questions unchanged \(\d+\)/);
+      // A write that does change them says what changed, not "unchanged".
+      const moved = await door.callTool("create_note", { headline: "A card on its own", change: "Something is different.", x: 2000, y: 2000 });
+      expect(moved).not.toContain("questions unchanged");
+    } finally {
+      door.stop();
+      fs.rmSync(root, { recursive: true, force: true });
+    }
   });
 
   it("drops the JSON tail when PLOTCODER_JSON=0", async () => {
@@ -2261,6 +2382,9 @@ describe("the premise and reminders (roadmap item 6)", () => {
 
   it("lists the workflows and briefs a segment from the wall", async () => {
     const listed = await door.callTool("list_workflows");
+    // A film is one board: the treatment questions do not send an agent to ask for its name (round twenty-two, entry 16).
+    expect(listed).toContain("its board needs no name of its own");
+    expect(listed).not.toContain("What are the project and the board called?");
     expect(listed).toContain("break-a-treatment — Break a treatment into a wall");
     expect(listed).toContain("keep: Wait for the writer; propose, do not fix.");
     const brief = await door.callTool("segment_brief", { ids: ["maya-letter"] });
@@ -2576,10 +2700,10 @@ describe("round ten's replies", () => {
     const tidy = await ten.callTool("organize");
     expect(tidy).toContain("five cards wide — no beats yet");
     const board = await ten.callTool("list_board");
-    expect(board).toMatch(/runtime: about \d+ pages \(an estimate[^)]*\); no target set — set_target/);
+    expect(board).toMatch(/runtime: about \d+ pages — the number to use[^\n]*\n  made of: [^\n]*\n  no target set — set_target/);
     expect(board).not.toContain("-page target");
     await ten.callTool("set_target", { pages: 60 });
-    expect(await ten.callTool("list_board")).toContain("of the 60-page target the writer set");
+    expect(await ten.callTool("list_board")).toContain("against the 60-page target the writer set");
   });
 
   it("reads the wall with its runtime and its groups, and counts the opening row", async () => {
@@ -2589,7 +2713,8 @@ describe("round ten's replies", () => {
     await ten.callTool("create_group", { noteIds: [ids[0], ids[1]], title: "Act one" });
     const read = await ten.callTool("read_wall");
     expect(read).toContain("runtime: about");
-    expect(read).toMatch(/\(of its \d+ cards, 0 measured from written text \(0 pages\), \d+ sized by the writer \([0-9/ ]+\), \d+ unsized and read as a page each \([0-9/ ]+\); page_count is the script so far\)/);
+    expect(read).toMatch(/\n  made of: of its \d+ cards, 0 measured from written text \(0 pages\), \d+ sized by the writer \([0-9/ ]+\), \d+ unsized and read as a page each \([0-9/ ]+\)\n/);
+    expect(read).toContain("  the script so far, paginated, is page_count's number, not this one");
     expect(read).toMatch(/a beat's own pages are in no run — the 1 beat holds? about [0-9/ ]+ pages between them/);
     expect(read).toContain('groups: "Act one" — 2 card(s), about 2 pages, read as an act');
     const tidy = await ten.callTool("organize");
@@ -2599,7 +2724,7 @@ describe("round ten's replies", () => {
     expect(wrote).toMatch(/\d+ line\(s\) as they print .*measured at [0-9/ ]+ of a 55-line page/);
     // Round eighteen, entries 43 and 45: the write says how far the runtime moved, and the reading says whose number the runtime is.
     expect(wrote).toMatch(/the page an unsized card is read as, so the runtime moved [0-9/ ]+ down\)/);
-    expect(await ten.callTool("read_wall")).toMatch(/\(of its \d+ cards, 1 measured from written text \([0-9/ ]+ pages\), .*; page_count is the script so far\)/);
+    expect(await ten.callTool("read_wall")).toMatch(/\n  made of: of its \d+ cards, 1 measured from written text \([0-9/ ]+ pages\), /);
     const count = await ten.callTool("page_count");
     expect(count).toContain("this is the script so far, not the runtime");
     expect(count).toMatch(/1 of \d+ measured and the rest estimated/);

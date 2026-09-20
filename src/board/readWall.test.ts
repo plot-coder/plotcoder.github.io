@@ -7,7 +7,7 @@ import {
   type BoardState,
   type Command,
 } from "./reducer";
-import { describeRuns, describeSetups, readingOrder, readWall, storyOrder } from "./readWall";
+import { describeRuns, describeSetups, describeUndecided, readingOrder, readWall, storyOrder } from "./readWall";
 
 const NOW = "2026-01-01T00:00:00.000Z";
 
@@ -56,6 +56,55 @@ describe("a change line left open (R67)", () => {
     expect(reading.openFields).toContainEqual({ field: "change", id: "t", words: "I don't know yet" });
     expect(reading.findings.some((finding) => finding.text.includes("has no change line"))).toBe(false);
     expect(reading.findings.some((finding) => finding.kind === "unpaid")).toBe(true);
+  });
+});
+
+describe("everything undecided in one place (round twenty-two, entries 41, 43, 67, 86, 89)", () => {
+  const at = "2026-09-20T00:00:00.000Z";
+  const wall = () => {
+    let state = emptyState();
+    for (const id of ["a", "b", "c", "d"]) state = applyCommand(state, { type: "create_note", id, headline: id.toUpperCase(), changeOpen: "I don't know yet" }, at).state;
+    state = applyCommand(state, { type: "set_location", ids: ["a"], open: "the shelter, or her kitchen" } as never, at).state;
+    state = applyCommand(state, { type: "set_when", ids: ["a"], open: "which winter" } as never, at).state;
+    state = applyCommand(state, { type: "set_open", ids: ["b"], open: "whether Tom is there" }, at).state;
+    state = applyCommand(state, { type: "set_location", ids: ["c"], location: "the bog road" }, at).state;
+    state = applyCommand(state, { type: "set_length", ids: ["c"], lengthEighths: 16 }, at).state;
+    return state;
+  };
+
+  it("groups words shared by three cards, then lists each card once with everything open on it", () => {
+    const state = wall();
+    const { open } = describeUndecided(state, readWall(state), { project: [{ label: "the target", words: "half an hour or a feature" }] });
+    expect(open[0]).toBe("  - the target — half an hour or a feature");
+    expect(open[1]).toBe("  - the change line, on 4 cards (every card) — I don't know yet");
+    expect(open).toContain('  - "A" — where: the shelter, or her kitchen; when: which winter');
+    expect(open).toContain('  - "B" — open: whether Tom is there');
+    // No card twice, and a card with nothing particular is not listed at all.
+    expect(open.filter((line) => line.includes('"A"')).length).toBe(1);
+    expect(open.some((line) => line.startsWith('  - "C"'))).toBe(false);
+  });
+
+  it("lists what is simply not said under its own head, never as open", () => {
+    const state = wall();
+    const { open, blank } = describeUndecided(state, readWall(state));
+    expect(blank).toContain('  - no place: "B", "D"');
+    expect(blank).toContain('  - no when: "B", "C", "D"');
+    expect(blank).toContain('  - no length (read as a page each): "A", "B", "D"');
+    expect(open.join("\n")).not.toContain("no place");
+    // Nobody in it is only a blank once the wall has a cast.
+    expect(blank.some((line) => line.includes("nobody in it"))).toBe(false);
+  });
+});
+
+describe("a setup's distance on a wall with no order (round twenty-two, entry 30)", () => {
+  it("says the distance is by the rows until a follows arrow sets the order", () => {
+    const at = "2026-09-20T00:00:00.000Z";
+    let state = applyCommand(seedState(), { type: "set_plant", ids: ["maya-letter"], plants: true }, at).state;
+    state = { ...state, arrows: [] };
+    state = applyCommand(state, { type: "create_arrow", from: "maya-letter", to: "letter-aloud", kind: "setup" }, at).state;
+    expect(describeSetups(readWall(state), state)[0]).toMatch(/pages later, by the rows: the story order is not set$/);
+    state = applyCommand(state, { type: "create_arrow", from: "maya-letter", to: "tom-lies", kind: "follows" }, at).state;
+    expect(describeSetups(readWall(state), state)[0]).not.toContain("by the rows");
   });
 });
 

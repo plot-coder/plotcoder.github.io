@@ -25,7 +25,7 @@ Status marks: `[ ]` open · `[~]` planned and asked, waiting on Robert ·
 
 ## A. Land what is built (not design; do first)
 
-- [ ] **A1 · Release and redeploy.** #131 is merged; nothing is released.
+- [x] **A1 · Release and redeploy.** Released as **0.1.44** 2026-09-20 (#133; 0.1.43 was already taken); the function and the Worker redeployed the same hour. Tested: `initialize` answers `"version":"0.1.44"`, ninety-one tools with `set_aside`, and the root says to choose No sign-in.
   *Plan:* `npm version patch` from a current `main`, push the tag, wait for
   npm, bump the pin in `supabase/functions/mcp/index.ts`, redeploy the
   function, redeploy the Worker in `cloudflare/mcp-door` (its root text
@@ -34,7 +34,7 @@ Status marks: `[ ]` open · `[~]` planned and asked, waiting on Robert ·
   *Test:* one `initialize` against `https://mcp.plotcoder.com` —
   `serverInfo.version` is now the package's own — and `curl` of the root for
   the "No sign-in" sentence.
-- [ ] **A2 · Take the fallback out of `~/.claude.json`, and turn the
+- [~] **A2 · Take the fallback out of `~/.claude.json`** *(done 2026-09-20; backup `~/.claude/backups/claude.json.before-removing-fallback`)* **, and turn the
   test-account connector off outside a round** (entry 1). The cueing
   session's mistake; the backup is `~/.claude/backups/claude.json.before-round-22`.
   *Test:* a fresh session lists one PlotCoder server, or none.
@@ -53,7 +53,7 @@ Patched the night of the round — there the tail quotes from the first
 write, once-a-session advice is not said, presence is not claimed. The
 patches are honest; they are not the answer.
 
-- [ ] **B1 · A session for the hosted door.**
+- [~] **B1 · A session for the hosted door.** *(planned and asked; waiting on Robert's word: it adds a table and a secret to the function)*
   *Plan:* MCP's Streamable HTTP has a session id (`Mcp-Session-Id`). The
   function issues one on `initialize` and keeps a small row per session — has
   it read the wall, which advice it has said — in a table behind the service
@@ -69,7 +69,7 @@ patches are honest; they are not the answer.
   building: it adds a table and a secret to the function.**
   *Test:* `plotcoder-http.test.mjs`, two requests with one session id — the
   first write counts, a `read_wall`, the next write quotes; advice said once.
-- [ ] **B2 · "Who has this wall open?" through the hosted door** (93, 94).
+- [x] **B2 · "Who has this wall open?" through the hosted door** *(built 2026-09-20 as `who_is_here`, ninety-two tools: waits up to a second and a half for presence; the wording is `src/board/presence.js`, pure and tested; checked live after the next deploy)* (93, 94).
   *Plan:* in `list_projects` only, when hosted, join the channel and wait for
   presence to sync (up to about a second and a half) before answering; say
   the agent's own entry apart ("and you, as an agent, as Robert"). Writes
@@ -79,17 +79,18 @@ patches are honest; they are not the answer.
   guide (93) — and it keeps `list_projects` fast. **Take the tool.** *Test:* a
   unit test with a faked channel: synced with one person, synced with
   nobody, never synced ("could not see in time").
-- [ ] **B3 · A silent tail reads as "unchanged" or "not computed"** (66, 92).
+- [x] **B3 · A silent tail reads as "unchanged" or "not computed"** (66, 92).
   *Plan:* when a write leaves the wall's questions as they were, the tail
   says so in four words: "; the wall's questions unchanged (1)". *Best?* The
   risk is noise on every reply, which round thirteen complained of. It is
   one clause, it carries a number an agent uses (62: "1 now" was enough to
   work out the rest), and it ends a recurring doubt. Yes. *Test:* a write
   that changes no finding carries the clause; one that does, does not.
+  *(Built 2026-09-20: "; the wall's questions unchanged (N)"; tested. Note for a later pass: `recolor_note` and a few other writes carry no tail at all.)*
 
 ## C. The connector screen (the round's first finding)
 
-- [ ] **C1 · The desktop app says OAuth is "Detected" on a door with none.**
+- [~] **C1 · The desktop app says OAuth is "Detected" on a door with none.** *(the probe needs Robert at the connector screen; the OAuth proposal is still to write)*
   The words are fixed (the on-ramp, the door's root, the prompt say "choose
   No sign-in"). *Plan:* find out what makes the app say "Detected" and stop
   sending it: try the unsigned reply without `WWW-Authenticate`, then as
@@ -105,7 +106,7 @@ patches are honest; they are not the answer.
 
 ## D. What the agent reads (6, 8, 29, 41, 43, 83, 84, 86, 87, 89, S3)
 
-- [ ] **D1 · One view of everything undecided** (41, 43, 67, 86, 89, 24).
+- [x] **D1 · One view of everything undecided** *(built 2026-09-20: `describeUndecided` in the reading module, pure and tested — project fields, words shared by three cards grouped, then each card once; blanks by field under "not said yet". Changed at the asking: blanks are listed by field, not per card — they have no words, and four lines read shorter than forty.)* (41, 43, 67, 86, 89, 24).
   "What is still open?" took three calls and a merge, and the blank things —
   no when, no length, a blank place beside an open one — are nowhere.
   *Plan:* the reading's open section is regrouped **per card** (its open
@@ -118,26 +119,26 @@ patches are honest; they are not the answer.
   blanks under their own head, "not said yet", never under "open, by the
   writer's word". *Test:* `readWall.test.ts` for the grouping;
   `plotcoder-mcp.test.mjs` for the text, with a card that has one of each.
-- [ ] **D2 · The cast and the places in the reading** (29).
+- [x] **D2 · The cast and the places in the reading** *(built 2026-09-20: two lines, the film's cards only; tested)* (29).
   *Plan:* `read_wall` ends with two compact lines — who is in the film and on
   how many scenes, where it happens and how often — and drops "the cast and
   the places are list_board's". *Best?* It lengthens a long reply. But
   "read the wall back to me" is the most common thing a writer asks, and it
   should be one call. Yes, compact. *Test:* the two lines, on the seed wall.
-- [ ] **D3 · A short read: only what the wall asks** (83).
+- [x] **D3 · A short read: only what the wall asks** *(built 2026-09-20: `read_wall { only: "questions" }`; tested under fifteen lines with every question in it)* (83).
   *Plan:* `read_wall { only: "questions" }` — the three counts, the
   questions, what is left, nothing else. *Best?* Alternative: make the tail
   do it (B3 does, for one write). This is for "is there anything I owe?",
   which cost three hundred lines to answer "no". Yes. *Test:* the reply is
   under fifteen lines on the seed wall and carries every question.
-- [ ] **D4 · The runtime sentence** (84, 87, 73).
+- [x] **D4 · The runtime sentence** *(built 2026-09-20: `runtimeBlock`, one labelled line per number, the one to use first, shared by `list_board` and `read_wall`; tested)* (84, 87, 73).
   *Plan:* one line per number, each labelled: the estimate; what it is made
   of; against the target; and the sketch's second number as "if the sketch
   ran to the page it was read as". *Best?* Yes — it is the same facts, set
   so that the one to use comes first. (Eighths stay unreduced, 88: the
   industry's unit, and the words sheet says so.) *Test:* snapshot of the
   block with a sketch and an open target.
-- [ ] **D5 · The guide, for someone holding a connector** (6, 8, S3).
+- [x] **D5 · The guide, for someone holding a connector** *(built 2026-09-20. Changed at the asking: not a reshuffle of 46 KB — a reading map at the top (read now / before you ask / leave until the writer says the words / not for you), the wiring paragraph moved under "The account, the app, or the file", and the treatment questions named where the first calls are, in the guide and the on-ramp. Nothing cut. Its test is the next blind run's section 3.)* (6, 8, S3).
   A third of what the agent read did not apply: wiring, the dev app, the
   file, locks, revisions, series, video, import.
   *Plan:* the guide opens with **day one** — the cards, the cast, open
@@ -152,7 +153,7 @@ patches are honest; they are not the answer.
 
 ## E. Orders, arrows and scenes (30, 31, 33, 61, 63, 71, 77, 91)
 
-- [ ] **E1 · Set the order from a list** (31). One swap took seven calls,
+- [x] **E1 · Set the order from a list** *(built 2026-09-20: `set_order`, ninety-three tools, one undo; `move_scene` on a wall with no arrows draws the chain from the rows and says so; both tested. Built at the server from the arrow commands, as `move_scene` is — no new kernel command.)* (31). One swap took seven calls,
   and `move_scene` refuses a wall with no follows arrows.
   *Plan:* `set_order { ids: [...] }` — draws the follows chain through the
   cards named, in one step one undo takes back; cards not named keep their
@@ -162,14 +163,14 @@ patches are honest; they are not the answer.
   what a writer says, and there should be a tool shaped like the sentence
   (D24). Both. *Test:* kernel test for the chain and the undo; server test
   for the reply naming the order.
-- [ ] **E2 · An arrow's reply says what the story now runs** (33).
+- [x] **E2 · An arrow's reply says what the story now runs** *(built and tested 2026-09-20)* (33).
   *Plan:* `create_arrow` (follows) ends "the story now runs: A → B → C" when
   the chain is short, or the three cards around the new arrow when long.
   *Best?* Yes; it is what `move_scene` already does. *Test:* server test.
-- [ ] **E3 · A setup's distance on a wall with no order** (30).
+- [x] **E3 · A setup's distance on a wall with no order** *(built and tested 2026-09-20)* (30).
   *Plan:* the line says "about 6 pages later, by the rows: the story order
   is not set". *Best?* Yes. *Test:* `describeSetups` with no follows arrows.
-- [ ] **E4 · Wiring a scene in tidies the whole wall** (63). Described now;
+- [~] **E4 · Wiring a scene in tidies the whole wall** *(drawn 2026-09-20 in `docs/mockups/round-twenty-two-designs.html`; waiting on Robert's word)* (63). Described now;
   still nine cards moved for one added.
   *Plan:* **decide, do not build yet.** Options: (a) as it is; (b) tidy only
   the row the card lands in; (c) no tidy — the card lands beside its
@@ -177,20 +178,20 @@ patches are honest; they are not the answer.
   person arranged by hand, and costs an untidy wall after an agent's build.
   Rounds fourteen and sixteen asked for the tidy. **Mock the three on one
   wall and ask Robert.**
-- [ ] **E5 · A tie's reply carries what it made** (61). Tying a thread can
+- [x] **E5 · A tie's reply carries what it made** *(built and tested 2026-09-20: the folded card's id and the arrow's)* (61). Tying a thread can
   fold a card, name the fold and draw an arrow; the reply is prose and the
   arrow's id is not in it. *Plan:* the ids in the reply's text. *Best?* Yes.
   *Test:* server test on the tie that makes a fold.
-- [ ] **E6 · Insert a line into a scene** (77). "Add a line after X" is only
+- [x] **E6 · Insert a line into a scene** *(built and tested 2026-09-20: `edit_scene { insert, after | before }`)* (77). "Add a line after X" is only
   "replace X with X plus the line". *Plan:* `edit_scene { after: "…",
   insert: "…" }` (and `before`), the text found once, the new paragraph set
   off by a blank line. *Best?* Yes; the reply says "inserted", not "changed
   one line". *Test:* server test, and the refusal when the anchor occurs
   twice.
-- [ ] **E7 · What a written scene's line count counts** (71). *Plan:* the
+- [x] **E7 · What a written scene's line count counts** *(checked true first — a note measures the same as none — then said in the reply; tested 2026-09-20)* (71). *Plan:* the
   reply says notes (`[[…]]`) neither print nor count. *Best?* Yes. *Test:*
   a scene with a note measures the same as without.
-- [ ] **E8 · "A feature" is not a number** (91). *Plan:* `set_target { kind:
+- [~] **E8 · "A feature" is not a number** *(drawn 2026-09-20 in `docs/mockups/round-twenty-two-designs.html`; waiting on Robert's word)* (91). *Plan:* `set_target { kind:
   "feature" | "hour" | "half-hour" }` sets 120, 60 or 30 and keeps the
   writer's word, so the readout and the reading say "a feature (120)".
   *Best?* Alternative: leave it; the agent asked and the writer said fine.
@@ -203,35 +204,35 @@ patches are honest; they are not the answer.
 One page of mockups for these, as for the last four: what ships beside what
 could be, a recommendation, what a yes means.
 
-- [ ] **F1 · How a plant pays off, as against where** (14, 35, 54, S6). The
+- [~] **F1 · How a plant pays off, as against where** *(drawn 2026-09-20 in `docs/mockups/round-twenty-two-designs.html`; waiting on Robert's word)* (14, 35, 54, S6). The
   jar "he empties into her hand" went into a headline; its first sighting
   went, a whole sentence, into the fold's label and then repeated on every
   setup line. *Plan to draw:* words on the setup arrow — what happens when
   it pays off — beside the fold's words for what is planted.
-- [ ] **F2 · A fact true of either version** (59). "The keys are first seen
+- [x] **F2 · A fact true of either version** *(2026-09-20. The test came first and found two bugs: a thread kept the id of a front card that was gone, and two arrows were left between one pair of cards. Fixed in the kernel: a version stepping forward inherits the threads through the scene and the front card's fold when it has none, and arrows on one pair collapse to one, follows over setup. With that, "either way of it" is said once, on the front card — no drawing needed; the guide and the replies say so. Tested in `reducer.test.ts`.)* (59). "The keys are first seen
   in the depot, either way of it" was written twice, by a thread on the
   front card and a fold by hand on the one behind, unlinked. **First, a
   test, not a drawing:** what `choose_version` does to the two folds and two
   arrows when the card behind is chosen. Then draw: a fold or a thread tied
   to the front card is inherited by whichever version is chosen.
-- [ ] **F3 · Two versions as equals, and a version that is two scenes** (10,
+- [~] **F3 · Two versions as equals, and a version that is two scenes** *(drawn 2026-09-20 in `docs/mockups/round-twenty-two-designs.html`; waiting on Robert's word)* (10,
   11). One must stand in front; a version is one card. *Plan to draw:* the
   pair side by side under one bracket with neither in front, the reading
   counting the longer; and whether a version can be a group.
-- [ ] **F4 · Undecided things about a person, and "decided, not yet on the
-  wall"** (12, 24). What the boy goes to town for is a fact of a person, not
+- [~] **F4 · Undecided things about a person, and "decided, not yet on the
+  wall"** *(drawn 2026-09-20 in `docs/mockups/round-twenty-two-designs.html`; waiting on Robert's word)* (12, 24). What the boy goes to town for is a fact of a person, not
   of a scene; and the writer had decided it and not said. *Plan to draw:* an
   open line on a person's page, as a field has one; and whether "decided,
   not told" is anything but the agent's note to the writer (likely not).
-- [ ] **F5 · A proposed turn** (36). The app has no "proposed" between a
+- [~] **F5 · A proposed turn** *(drawn 2026-09-20 in `docs/mockups/round-twenty-two-designs.html`; waiting on Robert's word)* (36). The app has no "proposed" between a
   scene and a beat, and its own phrase "propose them and I will strike" is
   filed under marking. *Plan:* first the words (the guide and `set_rank`'s
   description say propose in the chat, mark on the writer's word). Then ask
   whether a proposed state is wanted at all; probably not.
-- [ ] **F6 · A stretch the writer has not reached** ([empty], 40). *Plan:*
+- [~] **F6 · A stretch the writer has not reached** *(drawn 2026-09-20 in `docs/mockups/round-twenty-two-designs.html`; waiting on Robert's word)* ([empty], 40). *Plan:*
   words only — the question's own text offers the fourth answer, "not
   written yet: leave it", and `leave_question` takes it. No new state.
-- [ ] **F7 · The camera mark, for the writer** (81, 82). The agent sees the
+- [~] **F7 · The camera mark, for the writer** *(drawn 2026-09-20 in `docs/mockups/round-twenty-two-designs.html`; waiting on Robert's word)* (81, 82). The agent sees the
   marks in `read_pages`; **the app's own Pages do not show them at all**, so
   a writer never sees what their agent is told. And a mark can never be
   acknowledged. *Plan to draw:* the mark in the app's page margin, and a
@@ -243,13 +244,13 @@ could be, a recommendation, what a yes means.
 
 ## G. Small words (16, 57, 78)
 
-- [ ] **G1 · A board's name on a one-board film** (16). `new_project` makes
+- [x] **G1 · A board's name on a one-board film** *(built 2026-09-20. Changed at the asking: not a board named after the project — two copies of one name drift on a rename. The agent asked because our own treatment question and `new_project`'s description told it to; those words are fixed, in a form that reads for the writer too, since the app shows the hint under Reminders. Tested through `list_workflows`.)* (16). `new_project` makes
   a "Board 1" whose name the agent must then ask about. *Plan:* a one-board
   project's board takes the project's name until a second board exists, and
   the reading does not list it as open. *Best?* Yes; the guide already says
   a one-board film goes out under its own name. *Test:* `new_project` with a
   name and no board; the reading has no board-name line.
-- [ ] **G2 · One undecided thing in two homes** (78): a card's open words and
+- [x] **G2 · One undecided thing in two homes** *(built and tested 2026-09-20: said only when the text has a note and the card has open words)* (78): a card's open words and
   a Fountain note inside its text. *Plan:* `write_scene`'s reply, when the
   text holds a `[[…]]` note and the card has open words, says both exist.
   *Best?* It is a nudge, and we do not like nudges; but it is about the

@@ -1203,7 +1203,7 @@ describe("round nineteen: create_note with after on a wall with no follows arrow
     expect(born).toContain("corner folded — plants the key");
     const named = await client.callTool("set_plant", { ids: ["maya-letter"], what: "the wrong tools" });
     expect(named).toContain('now plant "the wrong tools"');
-    expect(named).toContain("read_wall asks where the wrong tools come back");
+    expect(named).toContain("read_wall asks where it comes back until a setup arrow pays it off");
     expect(await client.callTool("list_board")).toContain("plants: the wrong tools");
     expect(await client.callTool("read_wall")).toContain('"Maya finds the letter" plants the wrong tools, and no arrow pays it off. Where do the wrong tools come back?');
     expect(await client.callTool("set_plant", { ids: ["maya-letter"] })).toContain("Say which");
@@ -1597,6 +1597,12 @@ describe("set_plant", () => {
     expect(text).not.toContain("[unpaid]");
     const { notes } = await fold.callToolData("list_board");
     expect(notes.find((note) => note.id === "maya-letter").plants).toBe(true);
+    // Naming a fold an arrow already pays off: the reply says the arrow stands, and quotes the words it replaced (round twenty-two, entries 55, 56).
+    await fold.callTool("set_plant", { ids: ["maya-letter"], what: "the letter" });
+    const renamed = await fold.callTool("set_plant", { ids: ["maya-letter"], what: "the letter, in her father's hand" });
+    expect(renamed).toContain('before: "the letter"');
+    expect(renamed).toContain('Its setup arrow to "The letter is read aloud" still pays it off, so read_wall asks nothing about it');
+    expect(renamed).not.toContain("until a setup arrow pays it off");
   });
 
   it("is a no-op the second time and says so", async () => {

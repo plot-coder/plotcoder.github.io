@@ -3030,7 +3030,7 @@ server.registerTool(
     // The fold and the board it pays off on land as one change: one ⌘Z on the wall.
     const { value, live, changed } = await commitAll("set_plant", (step, current) => {
       // What the folds claimed before, so the reply can say what a new claim replaced (round sixteen, entry 26).
-      const before = new Map(current().notes.filter((note) => args.ids.includes(note.id)).map((note) => [note.id, { plants: note.plants, boardId: note.payoffBoardId, noteId: note.payoffNoteId }]));
+      const before = new Map(current().notes.filter((note) => args.ids.includes(note.id)).map((note) => [note.id, { plants: note.plants, boardId: note.payoffBoardId, noteId: note.payoffNoteId, what: (note.plantsWhat ?? "").trim() }]));
       const alreadyFolded = args.plants && args.ids.every((id) => before.get(id)?.plants);
       let { result } = step({ type: "set_plant", ids: args.ids, ...(args.plants !== undefined ? { plants: args.plants } : {}), ...(args.what !== undefined ? { what: args.what } : {}) });
       let laterLine = alreadyFolded ? " (already folded)" : "";
@@ -3055,15 +3055,23 @@ server.registerTool(
             ? ` ${here.length} fold(s) pay off later, on "${target.name}", and no scene there is claimed: read_wall asks which once that board holds cards.`
             : ` ${here.length} fold(s) pay off later, on "${target.name}": the card says so, and read_wall asks which scene once that board holds cards — set_plant with at, or set_payoff from that board, names it.`}${replacedLine}`;
       }
-      return { result, laterLine };
+      // What the reply needs to be true of this wall (round twenty-two, entries 55, 56): the setup arrows that already pay these folds off, and the words the new ones replaced.
+      const after = current();
+      const paidAt = after.arrows.filter((arrow) => arrow.kind === "setup" && args.ids.includes(arrow.from)).map((arrow) => after.notes.find((note) => note.id === arrow.to)?.headline).filter(Boolean);
+      const wasWords = [...new Set([...before.values()].map((was) => was.what).filter(Boolean))];
+      return { result, laterLine, paidAt, wasWords };
     });
-    const { result, laterLine } = value;
+    const { result, laterLine, paidAt = [], wasWords = [] } = value;
     const count = result?.length ?? 0;
     if (!changed || count === 0) return ok("No change: those cards were already that way, or the ids are not on the board.");
     const what = result?.[0]?.plantsWhat ?? "";
     return ok(
       args.plants !== false
-        ? `${count} card(s) now plant ${what ? `"${what}"` : "something"}${where(live)}.${what ? ` The card says "Plants · ${what}", and read_wall asks where ${what} come${/s$/i.test(what) ? "" : "s"} back` : " read_wall will ask about each"}${laterLine || " until a setup arrow pays it off, or later names the board it pays off on."}${args.what === "" ? " The fold keeps no words now." : ""}`
+        ? `${count} card(s) now plant ${what ? `"${what}"` : "something"}${where(live)}.${what && wasWords.length && !wasWords.includes(what) ? ` The words replace what the fold said — before: ${wasWords.map((old) => `"${old}"`).join("; ")}.` : ""}${
+            paidAt.length && !laterLine.trim().replace("(already folded)", "")
+              ? `${what ? ` The card says "Plants · ${what}".` : ""} Its setup arrow to ${paidAt.map((headline) => `"${headline}"`).join(", ")} still pays it off, so read_wall asks nothing about it.`
+              : `${what ? ` The card says "Plants · ${what}", and read_wall asks where it comes back` : " read_wall will ask about each"}${laterLine || " until a setup arrow pays it off, or later names the board it pays off on."}`
+          }${args.what === "" ? " The fold keeps no words now." : ""}`
         : `${count} card(s) no longer marked as planting${where(live)}.${result?.some((note) => !note.plantsWhat) && args.ids.length ? "" : ""}`,
       result,
     );

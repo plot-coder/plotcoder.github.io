@@ -209,7 +209,7 @@ door pins the package version in `supabase/functions/mcp/index.ts`; bump
 it and redeploy (`supabase functions deploy mcp --no-verify-jwt --use-api
 --project-ref kmpahjsggbleygsnuwug`) when the door should carry the
 release. The name in front of it, `cloudflare/mcp-door`, changes only if
-the function's address does. 0.1.43 is the latest (round twenty-two's fixes, R66, R67).
+the function's address does. 0.1.44 is the latest (round twenty-two's fixes, R66, R67; 0.1.43 was tagged just after #130 with 0.1.42's code and is on npm).
 
 **Drive a blind run:** Robert opens a fresh session with
 `blind-runs/prompt.md`; this side relays the writer's answers and the
@@ -292,7 +292,7 @@ none of it in the repo:
 - **The suites pass on `main`:** `npm test` 30 files, 595 tests;
   `npm run build` clean; `npm run test:e2e` ten of ten. Ninety tools;
   fifteen checks.
-- **Released as 0.1.43** (2026-09-20: round twenty-two's fixes, set aside, the change line's own open; 611 unit tests, ninety-one tools).
+- **Released as 0.1.44** (2026-09-20: round twenty-two's fixes, set aside, the change line's own open; 611 unit tests, ninety-one tools).
 
 ---
 

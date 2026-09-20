@@ -1212,6 +1212,14 @@ function storyRunsLine(state, aroundIds) {
   return ` The story now runs, around it: ${from > 0 ? "… → " : ""}${slice.map(quote).join(" → ")}${from + 4 < order.length ? " → …" : ""} (${order.length} cards in all).`;
 }
 
+/** " Before: "…"." — the words a write replaced, a value or the open words beside it; nothing when nothing stood there or nothing changed. */
+function replacedWords(before, after) {
+  const was = before.map((words) => (words ?? "").trim()).filter(Boolean);
+  const now = new Set(after.map((words) => (words ?? "").trim()).filter(Boolean));
+  const gone = was.filter((words) => !now.has(words));
+  return gone.length ? ` Before: ${gone.map((words) => `"${words}"`).join("; ")}.` : "";
+}
+
 /** "about 7 of 120 pages", or "about 7 pages, the target open": an open target is not 120 in any reply (round twenty-two, entries 19, 44). */
 function pagesOfTarget(state) {
   if ((state.targetOpen ?? "").trim()) return `about ${formatPages(boardEighths(state))} pages, the target open`;
@@ -1453,15 +1461,17 @@ server.registerTool(
   },
   async (args) => {
     if (args.logline === undefined && args.open === undefined) return ok("Say which: logline (the sentence, or \"\" to clear it), or open (the writer's words for why there is none yet).");
-    const { state, changed, live } = await commit({ type: "set_logline", ...(args.logline !== undefined ? { logline: args.logline } : {}), ...(args.open !== undefined ? { open: args.open } : {}) });
+    const { state, changed, live, before } = await commit({ type: "set_logline", ...(args.logline !== undefined ? { logline: args.logline } : {}), ...(args.open !== undefined ? { open: args.open } : {}) });
+    // Every write that replaces the writer's words says what stood there (round twenty-two's issues file, D1).
+    const wasLogline = replacedWords([before?.logline, before?.loglineOpen], [state.logline, state.loglineOpen]);
     if (!changed) return ok(args.logline === "" && !state.loglineOpen ? "Logline cleared." : "Logline unchanged: it already read that way.");
     if (state.loglineOpen) {
-      return ok(`Logline left open, by the writer's word: "${state.loglineOpen}"${where(live)}. The reading lists it and asks nothing; set_logline with text decides it, open "" leaves it blank.`, { logline: state.logline, loglineOpen: state.loglineOpen });
+      return ok(`Logline left open, by the writer's word: "${state.loglineOpen}"${where(live)}. The reading lists it and asks nothing; set_logline with text decides it, open "" leaves it blank.${wasLogline}`, { logline: state.logline, loglineOpen: state.loglineOpen });
     }
     return ok(
       state.logline
-        ? `Logline set: "${state.logline}"${where(live)}.`
-        : `Logline cleared${where(live)}.`,
+        ? `Logline set: "${state.logline}"${where(live)}.${wasLogline}`
+        : `Logline cleared${where(live)}.${wasLogline}`,
       { logline: state.logline, loglineOpen: state.loglineOpen },
     );
   },
@@ -1486,7 +1496,7 @@ server.registerTool(
     });
     const { beats, scenes } = countRanks(state);
     return ok(
-      `${result?.length ?? 0} card(s) are now ${args.rank}${where(live)}. The board holds ${beats} beats and ${scenes} scenes. The rows are as they were; organize lays a row per beat.`,
+      `${result?.length ?? 0} card(s) are now ${args.rank}${where(live)}. The board holds ${beats} beats and ${scenes} scenes. The rows are as they were.${once("rank-rows", " organize lays a row per beat, when the writer wants the wall laid out.")}`,
       result,
     );
   },
@@ -1580,7 +1590,7 @@ server.registerTool(
       before: z.string().optional().describe("Or before this card (id or headline)."),
       location: z.string().optional(),
       when: z.string().optional().describe('When the scene happens, as the writer says it — "night", "day four, dawn" — printed after the place on the scene heading.'),
-      locationOpen: z.string().optional().describe("The writer's words for why the place is not decided (R61's edge): the card is born with its place open, listed and not asked where, while its other questions stand."),
+      locationOpen: z.string().optional().describe("The writer's words for why the place is not decided: the card is born with its place open, listed and not asked where, while its other questions stand."),
       whenOpen: z.string().optional().describe("The writer's words for why the when is not decided: the card is born with its when open, listed and not asked."),
       open: z.string().optional().describe("The writer's words for what is not decided about this card — \"whether Tom knows\" — so the card is born open: the reading lists it and asks nothing else of it until the words are cleared."),
       characters: z.array(z.string().min(1)).optional(),
@@ -4048,8 +4058,9 @@ server.registerTool(
     const next = args.open !== undefined ? setPremiseOpen(project, args.open) : setPremise(project, args.premise);
     if (next === project) return ok("Premise unchanged.");
     await writeProject(next, boards, rev, base);
-    if (next.premiseOpen) return ok(`Premise left open, by the writer's word: "${next.premiseOpen}"${where(live)}. The reading lists it and asks nothing; set_premise with a line decides it, open "" leaves it blank.`, next);
-    return ok(`Premise ${next.premise ? `set to "${next.premise}"` : "cleared"}${where(live)}.`, next);
+    const wasPremise = replacedWords([project.premise, project.premiseOpen], [next.premise, next.premiseOpen]);
+    if (next.premiseOpen) return ok(`Premise left open, by the writer's word: "${next.premiseOpen}"${where(live)}.${wasPremise} The reading lists it and asks nothing; set_premise with a line decides it, open "" leaves it blank.`, next);
+    return ok(`Premise ${next.premise ? `set to "${next.premise}"` : "cleared"}${where(live)}.${wasPremise}`, next);
   },
 );
 
@@ -4485,7 +4496,7 @@ server.registerTool(
   {
     title: "Save the project as a file",
     description:
-      `The project the server is working, as the file Save project writes and Open project takes: the record, every board with its cards, the reminders and the writer's structures. Pass path to write it (a .json) — an absolute path, since a relative one resolves from the folder the server was started in, which is ${process.cwd()} — this session's own folder when the server was started from it, and somewhere else when it was not; without a path, the reply's JSON is the file. Pictures and takes on the account are not in the file. Works through every door.`,
+      `The project the server is working, as the file Save project writes and Open project takes: the record, every board with its cards, the reminders and the writer's structures. ${hosted() ? "This door has no disk: call it without a path and the reply's JSON is the file, to write wherever you keep files." : `Pass path to write it (a .json) — an absolute path, since a relative one resolves from the folder the server was started in, which is ${process.cwd()} — this session's own folder when the server was started from it, and somewhere else when it was not; without a path, the reply's JSON is the file.`} Pictures and takes on the account are not in the file. Works through every door.`,
     inputSchema: { path: z.string().optional() },
   },
   async (args) => {

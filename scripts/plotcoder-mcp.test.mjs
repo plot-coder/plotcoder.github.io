@@ -1553,7 +1553,7 @@ describe("round sixteen", () => {
   it("says the story order is unset on a wall with cards and no follows arrows (round seventeen, entries 10, 11)", async () => {
     const read = await six.callTool("read_wall");
     expect(read).toContain("story order: unset — no follows arrows, so the rows stand in for it");
-    expect(read).toContain("not asked until half the cards are wired");
+    expect(read).toContain("not asked until half the film's cards are wired");
   });
 
   it("paginates an unwritten board as the guide says it prints (entry 37)", async () => {

@@ -38,7 +38,7 @@ Status marks: `[ ]` open · `[~]` planned and asked, waiting on Robert ·
   test-account connector off outside a round** (entry 1). The cueing
   session's mistake; the backup is `~/.claude/backups/claude.json.before-round-22`.
   *Test:* a fresh session lists one PlotCoder server, or none.
-- [ ] **A3 · The clean line's "wired" count is still wrong** (entry 20, the
+- [x] **A3 · The clean line's "wired" count is still wrong** *(built 2026-09-20: the reading returns `wired`, the server prints it; tested in `readWall.test.ts`)* (entry 20, the
   last of it). `read_wall`'s "not asked until half the cards are wired: 2 of
   9 are" counts the ends of setup arrows and every card on the wall; the
   reading itself excludes setup arrows and now counts the film's cards.

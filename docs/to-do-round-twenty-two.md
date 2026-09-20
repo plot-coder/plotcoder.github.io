@@ -170,7 +170,7 @@ patches are honest; they are not the answer.
 - [x] **E3 · A setup's distance on a wall with no order** *(built and tested 2026-09-20)* (30).
   *Plan:* the line says "about 6 pages later, by the rows: the story order
   is not set". *Best?* Yes. *Test:* `describeSetups` with no follows arrows.
-- [~] **E4 · Wiring a scene in tidies the whole wall** *(drawn 2026-09-20 in `docs/mockups/round-twenty-two-designs.html`; waiting on Robert's word)* (63). Described now;
+- [x] **E4 · Wiring a scene in tidies the whole wall** *(drawn, Robert chose A, built 2026-09-20: `create_note` with `after`, `move_scene`, the move across boards and `set_order` no longer tidy; the card lands beside the one it follows; tested that no other card moves)* (63). Described now;
   still nine cards moved for one added.
   *Plan:* **decide, do not build yet.** Options: (a) as it is; (b) tidy only
   the row the card lands in; (c) no tidy — the card lands beside its
@@ -191,7 +191,7 @@ patches are honest; they are not the answer.
 - [x] **E7 · What a written scene's line count counts** *(checked true first — a note measures the same as none — then said in the reply; tested 2026-09-20)* (71). *Plan:* the
   reply says notes (`[[…]]`) neither print nor count. *Best?* Yes. *Test:*
   a scene with a note measures the same as without.
-- [~] **E8 · "A feature" is not a number** *(drawn 2026-09-20 in `docs/mockups/round-twenty-two-designs.html`; waiting on Robert's word)* (91). *Plan:* `set_target { kind:
+- [x] **E8 · "A feature" is not a number** *(drawn, Robert chose A, built 2026-09-20: `targetKind` on the board, `set_target` and `new_project` take `kind`, the strip's readout, the reading, `list_boards` and the title page say "a feature"; a feature's writer no longer reads as "no target set"; tested in the kernel and the server, and seen in the app)* (91). *Plan:* `set_target { kind:
   "feature" | "hour" | "half-hour" }` sets 120, 60 or 30 and keeps the
   writer's word, so the readout and the reading say "a feature (120)".
   *Best?* Alternative: leave it; the agent asked and the writer said fine.
@@ -204,7 +204,7 @@ patches are honest; they are not the answer.
 One page of mockups for these, as for the last four: what ships beside what
 could be, a recommendation, what a yes means.
 
-- [~] **F1 · How a plant pays off, as against where** *(drawn 2026-09-20 in `docs/mockups/round-twenty-two-designs.html`; waiting on Robert's word)* (14, 35, 54, S6). The
+- [x] **F1 · How a plant pays off, as against where** *(drawn, Robert chose B — no field; the guide and `set_plant` say how is the two scenes' change lines, and the fold's words a short label; 2026-09-20)* (14, 35, 54, S6). The
   jar "he empties into her hand" went into a headline; its first sighting
   went, a whole sentence, into the fold's label and then repeated on every
   setup line. *Plan to draw:* words on the setup arrow — what happens when
@@ -215,24 +215,24 @@ could be, a recommendation, what a yes means.
   test, not a drawing:** what `choose_version` does to the two folds and two
   arrows when the card behind is chosen. Then draw: a fold or a thread tied
   to the front card is inherited by whichever version is chosen.
-- [~] **F3 · Two versions as equals, and a version that is two scenes** *(drawn 2026-09-20 in `docs/mockups/round-twenty-two-designs.html`; waiting on Robert's word)* (10,
+- [x] **F3 · Two versions as equals, and a version that is two scenes** *(drawn, Robert chose B — the drawing stays; the guide and `set_alternative` say which card is in front decides nothing, put the first-named in front and do not ask; 2026-09-20)* (10,
   11). One must stand in front; a version is one card. *Plan to draw:* the
   pair side by side under one bracket with neither in front, the reading
   counting the longer; and whether a version can be a group.
-- [~] **F4 · Undecided things about a person, and "decided, not yet on the
-  wall"** *(drawn 2026-09-20 in `docs/mockups/round-twenty-two-designs.html`; waiting on Robert's word)* (12, 24). What the boy goes to town for is a fact of a person, not
+- [x] **F4 · Undecided things about a person, and "decided, not yet on the
+  wall"** *(drawn, Robert chose A, built 2026-09-20: `open` on a person, carried with their page through `PERSON_TEXT_FIELDS`; `update_character` takes it; the reading lists "about <name>"; the person's page shows it under "Not decided yet" with the offer; tested, and seen in the app. "Decided, not told" stays between writer and agent; the guide says so.)* (12, 24). What the boy goes to town for is a fact of a person, not
   of a scene; and the writer had decided it and not said. *Plan to draw:* an
   open line on a person's page, as a field has one; and whether "decided,
   not told" is anything but the agent's note to the writer (likely not).
-- [~] **F5 · A proposed turn** *(drawn 2026-09-20 in `docs/mockups/round-twenty-two-designs.html`; waiting on Robert's word)* (36). The app has no "proposed" between a
+- [x] **F5 · A proposed turn** *(words, as drawn and approved: the hint says name first, mark after; tested through `list_workflows`; 2026-09-20)* (36). The app has no "proposed" between a
   scene and a beat, and its own phrase "propose them and I will strike" is
   filed under marking. *Plan:* first the words (the guide and `set_rank`'s
   description say propose in the chat, mark on the writer's word). Then ask
   whether a proposed state is wanted at all; probably not.
-- [~] **F6 · A stretch the writer has not reached** *(drawn 2026-09-20 in `docs/mockups/round-twenty-two-designs.html`; waiting on Robert's word)* ([empty], 40). *Plan:*
+- [x] **F6 · A stretch the writer has not reached** *(words, as drawn and approved: the question offers "have you not got that far yet?"; tested; 2026-09-20)* ([empty], 40). *Plan:*
   words only — the question's own text offers the fourth answer, "not
   written yet: leave it", and `leave_question` takes it. No new state.
-- [~] **F7 · The camera mark, for the writer** *(drawn 2026-09-20 in `docs/mockups/round-twenty-two-designs.html`; waiting on Robert's word)* (81, 82). The agent sees the
+- [x] **F7 · The camera mark, for the writer** *(drawn, Robert chose A, built 2026-09-20: the mark and its hover in the app's Pages, painted on the line like a revision's star, never in print; seen in the app. B, a click that keeps the line, waits for a round or Robert to ask.)* (81, 82). The agent sees the
   marks in `read_pages`; **the app's own Pages do not show them at all**, so
   a writer never sees what their agent is told. And a mark can never be
   acknowledged. *Plan to draw:* the mark in the app's page margin, and a

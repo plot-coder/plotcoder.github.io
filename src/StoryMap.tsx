@@ -12,7 +12,7 @@
 // pans to the card; nothing on the wall moves.
 
 import { useEffect, useRef, useState } from "react";
-import { EIGHTHS_PER_PAGE, formatPages, type BoardState } from "./board/reducer";
+import { EIGHTHS_PER_PAGE, formatPages, targetWords, type BoardState } from "./board/reducer";
 import type { WallReading } from "./board/readWall";
 import { beatLabels, pageTicks, storyMapLayout, xFor } from "./storyMapLayout";
 import type { TemplateBeat } from "./board/templates";
@@ -122,6 +122,8 @@ export function StoryMap({
           ) : (
             <>
               ≈{formatPages(layout.totalEighths)} of {formatPages(layout.targetEighths)} pages
+              {/* The target in the writer's word, when they gave a kind and not a number (round twenty-two, entry 91). */}
+              {targetWords(board) ? ` · ${targetWords(board)}` : ""}
             </>
           )}
           {over > 0 ? ` · ${formatPages(over)} over` : ""}
@@ -294,7 +296,7 @@ export function StoryMap({
               x={x(layout.spanEighths)}
               y={axisY + 15}
             >
-              target {formatPages(layout.targetEighths)} →
+              {targetWords(board) ? `${targetWords(board)} · ` : "target "}{formatPages(layout.targetEighths)} →
             </text>
           ) : null}
 

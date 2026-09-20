@@ -16,6 +16,10 @@ export type ArrowKind = (typeof ARROW_KINDS)[number];
 export declare const EIGHTHS_PER_PAGE: number;
 export declare const DEFAULT_NOTE_EIGHTHS: number;
 export declare const DEFAULT_TARGET_EIGHTHS: number;
+/** A target said as a kind, in the writer's word, and the pages it is read as. */
+export declare const TARGET_KINDS: Record<"feature" | "hour" | "half-hour", { words: string; eighths: number }>;
+/** "a feature", or "" when the target is a number or nothing. */
+export declare function targetWords(state: Pick<BoardState, "targetKind"> | null | undefined): string;
 /** Total estimated length of the board, in eighths. */
 export declare const LINES_PER_PAGE: number;
 /** Eighths the scene's text runs to; 0 when there is no text. */
@@ -39,6 +43,8 @@ export declare const NOTE_HEIGHT: number;
  */
 export type CharacterField = "looks" | "voice" | "wants" | "needs" | "notes";
 export declare const CHARACTER_FIELDS: readonly CharacterField[];
+/** The page's five lines and `open`: every line of text a person carries. */
+export declare const PERSON_TEXT_FIELDS: readonly (CharacterField | "open")[];
 
 export type BoardCharacter = {
   id: string;
@@ -49,6 +55,8 @@ export type BoardCharacter = {
   wants: string;
   needs: string;
   notes: string;
+  /** The writer's words for what is not decided about this person, or empty: listed by the reading, never asked. */
+  open: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -128,6 +136,8 @@ export type BoardState = {
   loglineOpen: string;
   /** The writer's words for why the target is not decided, or empty; the number stands as the default meanwhile. */
   targetOpen: string;
+  /** The writer's word for the target when they gave a kind and not a number — "feature", "hour", "half-hour" — or empty: the pages are the app's reading of it. */
+  targetKind: "" | "feature" | "hour" | "half-hour";
   /** Target script length in eighths of a page; 120 pages for a feature (R25). */
   targetEighths: number;
   /** The roster: every person in the story, whether or not they are on a card yet (R29). */
@@ -177,7 +187,7 @@ export type Command =
   | { type: "set_logline"; logline?: string; open?: string }
   | { type: "set_rank"; ids: string[]; rank: NoteRank }
   | { type: "set_length"; ids: string[]; lengthEighths: number | null }
-  | { type: "set_target"; targetEighths?: number; open?: string }
+  | { type: "set_target"; targetEighths?: number; open?: string; kind?: "feature" | "hour" | "half-hour" }
   | {
       type: "create_note";
       id?: string;
@@ -224,7 +234,7 @@ export type Command =
   | { type: "add_character"; name: string; id?: string }
   | { type: "rename_character"; id: string; name: string }
   | { type: "remove_character"; id: string }
-  | ({ type: "update_character"; id: string } & Partial<Record<CharacterField, string>>)
+  | ({ type: "update_character"; id: string } & Partial<Record<CharacterField | "open", string>>)
   | { type: "set_cast"; ids: string[]; characterIds: string[] }
   | { type: "set_plant"; ids: string[]; plants?: boolean; what?: string }
   | { type: "set_open"; ids: string[]; open: string }

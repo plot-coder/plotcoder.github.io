@@ -193,8 +193,13 @@ only when the server is started with `PLOTCODER_JSON=1`.
   puts the words on its edge ("Plants · the letter"); `create_note`
   takes `plantsWhat`. `read_wall` then asks where the letter comes back,
   and the setup line names them; `what: ""` keeps the fold and drops the
-  words. A card has one fold: a second thing the same scene plants is a
-  thread. A payoff the writer knows without a scene for it — "he gives her
+  words. **The fold's words are a short label** — "the jar of coins" — and
+  are repeated wherever the fold is named. *How* a plant is first seen, and
+  *how* it pays off, are what happens in those two scenes, so they are those
+  cards' change lines, or their text: "he counts the fare out of a jar" is
+  the first morning's, "he empties it into her hand" is the last run's.
+  Never a sentence in the label, and never in a headline. A card has one
+  fold: a second thing the same scene plants is a thread. A payoff the writer knows without a scene for it — "he gives her
   his tools", which scene undecided — is a card born open at the payoff end
   with the setup arrow landed on it, not an unpaid fold. `read_wall` will
   ask where a fold pays off until a `setup` arrow leaves it — or until `later` names another
@@ -229,7 +234,13 @@ only when the server is started with `PLOTCODER_JSON=1`.
   place decides it, `open: ""` leaves it blank; `create_note` takes
   `locationOpen`.
 - `set_alternative` / `choose_version` — **two versions of one scene**:
-  set a card behind another as its other version, by id or headline, and it
+  **which card is in front decides nothing** — it is only the one drawn on
+  top, and the one counted until the writer chooses. Put the way the writer
+  named first in front, say so, and do not ask them to pick: "keep both"
+  is not a choice to be half-made. A version is one card: when one way of a
+  scene is two scenes, the version is the first of them, and the second is
+  a card set aside (`set_aside`), brought back if that way is chosen.
+  Set a card behind another as its other version, by id or headline, and it
   leaves the story — out of the order, the count, the pages and every
   export, its follows arrows dropped — and waits there; the wall draws it
   tucked behind its sibling and `read_wall` lists the pair under "two
@@ -255,6 +266,11 @@ only when the server is started with `PLOTCODER_JSON=1`.
   brings it back as a plain unwired card, and the wall asks where it goes.
   Only on the writer's word — cutting a scene is theirs — and not a way to
   quiet a question: a card the writer is unsure of is `set_open`.
+- `set_target` with **`kind`** — when the writer says a kind and not a
+  number ("it is a feature"), pass `kind: "feature"` (`hour`, `half-hour`):
+  the target keeps their word, is read as 120 (60, 30) pages, and the
+  readout and the reading say "a feature". Do not turn their word into a
+  page count they never gave; `pages` is for when they give a number.
 - `set_open` — leave a card **open**, with the writer's words for what is
   not decided: "whether Tom knows", "who sent the letter". The reading
   lists open cards under their own head and asks nothing of the card itself
@@ -356,6 +372,15 @@ card of another board is not asked about as uncast here.
   or sounds.
 - **Under target** is reported as plainly as over — a number and "an
   estimate" — never as a verdict either way.
+- **Something not decided about a person** — "what he goes to the town
+  for: a hospital visit, a music lesson, or the courthouse" — is
+  `update_character` with `open` and the writer's words. The reading lists
+  it under "open, by the writer's word" as "about <name>", never asks,
+  and the person's page shows it under "Not decided yet". It is a fact
+  about a person, so it is not a card's open words and not an open place.
+  When the writer decides, `open: ""` and the answer goes where it
+  belongs — their notes, or the scene that shows it. What the writer has
+  decided and not yet told you is not the wall's: ask them.
 - **What a treatment should answer.** Eleven blind runs ended every build
   with the same questions to the writer. Before you build, check the
   treatment for them and ask for the ones it leaves open — invent none. The
@@ -525,8 +550,8 @@ card of another board is not asked about as uncast here.
 - `delete_arrow` — by arrow id. Removes that direction only.
 - `set_order` — **"the order is: A, B, C…"**: the story order from a list
   of cards, by id or headline, in one step one undo takes back. The follows
-  arrows touching the cards named become one chain through them, and the
-  wall is tidied along it; setup arrows are untouched; a card in the film
+  arrows touching the cards named become one chain through them — no card
+  moves — and setup arrows are untouched; a card in the film
   that is not named may be left on no arrow, and the reply names it. This
   is the tool for the writer giving the order; do not draw it arrow by
   arrow.
@@ -539,10 +564,14 @@ card of another board is not asked about as uncast here.
   on the new board), and the new board is then the open one. Undo is per
   board: one step there, and one on the board it left. Within a board, it rewires the follows arrows (what pointed at
   the card points at what it pointed at; the card lands between the target
-  and what followed it) and tidies the wall, as one step `undo` takes back
-  whole. A scene that lands beside a card of an act joins that act, so the
-  tidy keeps it with the act and the reading and the numbers agree with the
-  arrows. A person does this by dragging in the outline.
+  and what followed it), as one step `undo` takes back whole; the card lands
+  beside the one it now follows and nothing else moves. A scene that lands
+  beside a card of an act joins that act, so the reading and the numbers
+  agree with the arrows. **No tool tidies the wall on its own**: the order
+  is the arrows, and where cards sit is the writer's. Wiring a scene in
+  with `after`, moving one, and `set_order` all leave every other card where
+  it was; after building a wall, call `organize` once, and otherwise only
+  when the writer asks for a tidy. A person does this by dragging in the outline.
 - `organize` — tidy the wall along the arrows: story order from the `follows`
   arrows, a row per beat with the scenes that follow it, groups kept together.
   Pass `noteIds` to tidy only those. Prefer it to moving cards one by one, and
@@ -625,6 +654,10 @@ than a dictionary's, so the app and you never explain a word two ways.
   rather than "nobody" when presence does not arrive. The hosted door
   (`mcp.plotcoder.com`) answers each write before presence arrives, so its
   write tails say only where the write landed.
+- **The camera's marks are on the writer's page too.** The app's Pages
+  show the same `◂ knows` in the margin that `read_pages` shows you, with a
+  hover saying it is a mark and not a question. So say "the line is marked
+  on your page", not "the app flagged a problem"; nothing is owed for it.
 - **A sketch:** a written scene measured under the page it was read as is
   named one — on `write_scene`'s reply, on the card's line in `list_board`,
   and on the runtime line, which carries the second number: "about 11 pages

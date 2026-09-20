@@ -24,6 +24,7 @@ import {
   countRanks,
   EIGHTHS_PER_PAGE,
   CHARACTER_FIELDS,
+  PERSON_TEXT_FIELDS,
   emptyState,
   filledCharacterFields,
   formatPages,
@@ -32,6 +33,7 @@ import {
   NOTE_HEIGHT,
   NOTE_WIDTH,
   DEFAULT_TARGET_EIGHTHS,
+  targetWords,
   DEFAULT_NOTE_EIGHTHS,
   normalizeState,
   newId,
@@ -609,6 +611,7 @@ function atAGlance(state, reading, project = null, boardMeta = null) {
   const open =
     reading.open.length +
     reading.openFields.length +
+    (reading.openPeople?.length ?? 0) +
     (state.targetOpen ? 1 : 0) +
     (project?.nameOpen ? 1 : 0) +
     (project?.premiseOpen ? 1 : 0) +
@@ -984,6 +987,21 @@ async function commitAll(what, build) {
   return { state: current, changed: true, value, live };
 }
 
+/**
+ * Where a card lands when it is wired in beside another (round twenty-two, entry 63): next to that card, on the
+ * side it follows from, and nothing else on the wall moves. The order is the arrows (R56); where cards sit is
+ * the writer's, and a tool that re-laid nine cards to add one took that from them. If the spot is taken, the
+ * card sits overlapping its neighbour, offset so both are seen; organize tidies when the writer wants that.
+ */
+function besidePlace(state, cardId, target, after) {
+  const wanted = { x: target.x + (after ? NOTE_WIDTH + GAP : -(NOTE_WIDTH + GAP)), y: target.y };
+  const taken = state.notes.some((note) => note.id !== cardId && note.id !== target.id && Math.abs(note.x - wanted.x) < NOTE_WIDTH * 0.7 && Math.abs(note.y - wanted.y) < NOTE_HEIGHT * 0.7);
+  return taken ? { x: target.x + (after ? 48 : -48), y: target.y + 56 } : wanted;
+}
+
+/** What a wiring reply says now that it does not tidy. */
+const NOT_TIDIED = "It sits beside the card it follows and nothing else moved: the order is the arrows, and where cards sit is the writer's. organize tidies the wall along them when that is wanted.";
+
 /** Said once per session: that cards stack until organize (round seven, finding 11). */
 /** Where a new card lands when the agent gives no position: after the last card in reading order, wrapping five wide, so cards never stack (round eleven, finding 14). */
 function nextPlace(state) {
@@ -1141,7 +1159,9 @@ function runtimeBlock(state) {
   const ifRan = total + found.reduce((sum, note) => sum + ((note.lengthEighths ?? DEFAULT_NOTE_EIGHTHS) - noteEighths(note)), 0);
   const target = state.targetOpen
     ? `target open, by the writer's word — "${state.targetOpen}": against 30 it would be ${againstWord(state, 30 * EIGHTHS_PER_PAGE)}; against 120, ${againstWord(state, 120 * EIGHTHS_PER_PAGE)}; set_target decides it`
-    : state.targetEighths === DEFAULT_TARGET_EIGHTHS
+    : targetWords(state)
+      ? `against ${targetWords(state)}, read as ${formatPages(state.targetEighths)} pages (the writer said "${targetWords(state)}", not a number; set_target with pages says one): ${over > 0 ? `${formatPages(over)} over` : over < 0 ? `${formatPages(-over)} under` : "on it"}`
+      : state.targetEighths === DEFAULT_TARGET_EIGHTHS
       ? `no target set — set_target for a pilot (60) or a half-hour (30); against the feature default of 120 it would be ${formatPages(-over)} under`
       : `against the ${formatPages(state.targetEighths)}-page target the writer set (set_target changes it): ${over > 0 ? `${formatPages(over)} over` : over < 0 ? `${formatPages(-over)} under` : "on it"}`;
   return [
@@ -1194,7 +1214,8 @@ function storyRunsLine(state, aroundIds) {
 
 /** "about 7 of 120 pages", or "about 7 pages, the target open": an open target is not 120 in any reply (round twenty-two, entries 19, 44). */
 function pagesOfTarget(state) {
-  return (state.targetOpen ?? "").trim() ? `about ${formatPages(boardEighths(state))} pages, the target open` : `about ${formatPages(boardEighths(state))} of ${formatPages(state.targetEighths)} pages`;
+  if ((state.targetOpen ?? "").trim()) return `about ${formatPages(boardEighths(state))} pages, the target open`;
+  return `about ${formatPages(boardEighths(state))} of ${formatPages(state.targetEighths)} pages${targetWords(state) ? ` (${targetWords(state)})` : ""}`;
 }
 
 /**
@@ -1515,14 +1536,15 @@ server.registerTool(
   {
     title: "Set target length",
     description:
-      "Set the board's target script length, in pages or in minutes (a page runs about a minute): 120 for a feature, 30 for a half-hour, 60 for an hour drama. This is what the runtime estimate is measured against. Or leave the target open: pass open with the writer's words for why it is not decided — \"half-hour or feature\" — and the reading lists it under open, by the writer's word, and reads the runtime against both defaults while the words stand; a number decides it, open \"\" takes the words back.",
-    inputSchema: { pages: pagesSchema.optional(), minutes: z.number().positive().optional(), open: z.string().optional() },
+      "Set the board's target script length. When the writer says a kind and not a number — \"it is a feature\" — pass kind (feature, hour, half-hour): the target keeps their word and is read as 120, 60 or 30 pages, and the app never says they chose a number they did not. When they give a number, pass pages, or minutes (a page runs about a minute); a number replaces the word. This is what the runtime estimate is measured against. Or leave the target open: pass open with the writer's words for why it is not decided — \"half-hour or feature\" — and the reading lists it under open, by the writer's word, and reads the runtime against both defaults while the words stand; a number decides it, open \"\" takes the words back.",
+    inputSchema: { pages: pagesSchema.optional(), minutes: z.number().positive().optional(), kind: z.enum(["feature", "hour", "half-hour"]).optional(), open: z.string().optional() },
   },
   async (args) => {
-    if (args.pages === undefined && args.minutes === undefined && args.open === undefined) return ok("Say the target in pages or in minutes, or open with the writer's words for why it is not decided.");
+    if (args.pages === undefined && args.minutes === undefined && args.open === undefined && args.kind === undefined) return ok("Say the target as a kind (feature, hour, half-hour) when that is the writer's word, in pages or in minutes when they gave a number, or open with their words for why it is not decided.");
     const { state, changed, live, before } = await commit({
       type: "set_target",
       ...(args.pages !== undefined || args.minutes !== undefined ? { targetEighths: toEighths(args.pages ?? args.minutes) } : {}),
+      ...(args.kind !== undefined && args.pages === undefined && args.minutes === undefined ? { kind: args.kind } : {}),
       ...(args.open !== undefined ? { open: args.open } : {}),
     });
     if (!changed) return ok("Target unchanged: it already read that way.");
@@ -1531,8 +1553,9 @@ server.registerTool(
     }
     // A number decides an open target, and the reply says the words went (round twenty-two, entry 90).
     const decided = (before?.targetOpen ?? "").trim() ? ` Decided: the writer's words, "${before.targetOpen.trim()}", are cleared, and the reading stops listing the target as open.` : "";
+    const said = targetWords(state);
     return ok(
-      `Target is ${formatPages(state.targetEighths)} pages${where(live)}.${decided} The cards add up to about ${formatPages(boardEighths(state))} — ${boardEighths(state) > state.targetEighths ? `${formatPages(boardEighths(state) - state.targetEighths)} over` : `${formatPages(state.targetEighths - boardEighths(state))} under`}.`,
+      `${said ? `Target is ${said}, read as ${formatPages(state.targetEighths)} pages: the writer's word, not a page count (set_target with pages says a number)` : `Target is ${formatPages(state.targetEighths)} pages`}${where(live)}.${decided} The cards add up to about ${formatPages(boardEighths(state))} — ${boardEighths(state) > state.targetEighths ? `${formatPages(boardEighths(state) - state.targetEighths)} over` : `${formatPages(state.targetEighths - boardEighths(state))} under`}.`,
       { targetEighths: state.targetEighths },
     );
   },
@@ -1553,7 +1576,7 @@ server.registerTool(
       pages: pagesSchema.optional(),
       plants: z.boolean().optional(),
       plantsWhat: z.string().optional().describe("What the folded corner plants, in the writer's words; naming it folds the card."),
-      after: z.string().optional().describe("Wire the new scene into the story after this card (id or headline): one call, one number under a lock. On a wall with no follows arrows yet this draws the first, so a wall can be built in order from its second card. Wiring a scene in also tidies the whole wall along the arrows, as organize does, so every card may move; the reply says so, and one undo takes back the card and the tidy together."),
+      after: z.string().optional().describe("Wire the new scene into the story after this card (id or headline): one call, one number under a lock. On a wall with no follows arrows yet this draws the first, so a wall can be built in order from its second card. The new card lands beside that card and nothing else on the wall moves; organize tidies the wall along the arrows when the writer wants that."),
       before: z.string().optional().describe("Or before this card (id or headline)."),
       location: z.string().optional(),
       when: z.string().optional().describe('When the scene happens, as the writer says it — "night", "day four, dawn" — printed after the place on the scene heading.'),
@@ -1642,7 +1665,8 @@ server.registerTool(
           return done;
         };
         joinedGroup = landBeside(run, current, made.id, beside, Boolean(args.after));
-        step({ type: "apply_poses", poses: organizePoses(current(), {}) });
+        // Beside its neighbour, unless the caller said where (round twenty-two, entry 63: one card in, nine moved).
+        if (args.x === undefined && args.y === undefined) step({ type: "move_note", id: made.id, ...besidePlace(current(), made.id, current().notes.find((note) => note.id === beside.id) ?? beside, Boolean(args.after)) });
         made = current().notes.find((note) => note.id === made.id) ?? made;
       }
       return made;
@@ -1660,7 +1684,7 @@ server.registerTool(
     ].filter(Boolean).join(", ");
     // Where it landed matters only until the tidy, so the reply says the rule once and never the coordinates (round fourteen, entry 11).
     const placed = beside
-      ? ` Wired ${args.after ? "after" : "before"} "${beside.headline}" in the story (${removedArrows} follows arrow${removedArrows === 1 ? "" : "s"} removed${removedNames.length ? ` — ${removedNames.join(", ")}` : ""}, ${drawnArrows} drawn${wallHasFollows ? "" : "; the wall's first, so the story order starts here"})${joinedGroup ? `, in "${joinedGroup}"` : ""}, and the wall tidied.`
+      ? ` Wired ${args.after ? "after" : "before"} "${beside.headline}" in the story (${removedArrows} follows arrow${removedArrows === 1 ? "" : "s"} removed${removedNames.length ? ` — ${removedNames.join(", ")}` : ""}, ${drawnArrows} drawn${wallHasFollows ? "" : "; the wall's first, so the story order starts here"})${joinedGroup ? `, in "${joinedGroup}"` : ""}. ${NOT_TIDIED}`
       : args.x === undefined && args.y === undefined ? ` Placed after the last card in story order.${once("placed", " organize lays the wall out along the arrows.")}` : "";
     // Under a lock a new scene has a letter, not a number: say it, since the board is the only other place to learn it (round fourteen, entry 44).
     const numbered = after?.lock && result?.id ? ` Numbered ${sceneNumbers(storyOrder(after), after.lock).get(result.id)} (the numbers are locked; a new scene's letter is its place between locked ones now, worked out again from where it sits if it moves; the locked numbers never move).` : "";
@@ -2131,7 +2155,7 @@ async function moveAcrossBoards(args, target, open, held) {
         headOf = head.headline;
       }
     }
-    step({ type: "apply_poses", poses: organizePoses(current(), {}) });
+    if (anchor) step({ type: "move_note", id: landedId, ...besidePlace(current(), landedId, current().notes.find((note) => note.id === anchor.id) ?? anchor, Boolean(args.after)) });
   });
   const order = storyOrder(final);
   // "Left behind" read as "kept" (round sixteen, entry 22): the arrows are dropped, and the reply says so.
@@ -2154,7 +2178,7 @@ server.registerTool(
   {
     title: "Move a scene in the story",
     description:
-      "Move a card to another place in the story order — after one card, or before one — by rewiring its follows arrows and tidying the wall along them, as one step that undo takes back whole. The story order is the follows arrows: the card leaves its place (what pointed at it now points at what it pointed at) and lands between the target and what followed it. A person does this by dragging in the outline. On a wall with no follows arrows yet, the order is drawn from the rows first and the reply says so; set_order sets a whole order from a list. To another board of the project: pass board (name, id or number from list_boards) and, optionally, after or before a card there; with neither the card lands at the head of that board's story. Across boards the card keeps its cast, place, when, rank, length, text and fold; its arrows stay behind, and that board is then the open one. Undo is per board: one step there, one on the board it left.",
+      "Move a card to another place in the story order — after one card, or before one — by rewiring its follows arrows, as one step that undo takes back whole; the card lands beside the one it now follows and nothing else on the wall moves (organize tidies the wall along the arrows when the writer wants that). The story order is the follows arrows: the card leaves its place (what pointed at it now points at what it pointed at) and lands between the target and what followed it. A person does this by dragging in the outline. On a wall with no follows arrows yet, the order is drawn from the rows first and the reply says so; set_order sets a whole order from a list. To another board of the project: pass board (name, id or number from list_boards) and, optionally, after or before a card there; with neither the card lands at the head of that board's story. Across boards the card keeps its cast, place, when, rank, length, text and fold; its arrows stay behind, and that board is then the open one. Undo is per board: one step there, one on the board it left.",
     inputSchema: { id: z.string(), after: z.string().optional(), before: z.string().optional(), board: z.union([z.string().min(1), z.number()]).optional() },
   },
   async (args) => {
@@ -2203,17 +2227,17 @@ server.registerTool(
       // Land: between the target and what followed it (or what led to it), and
       // into the act it lands beside (round fourteen, entry 38).
       joinedGroup = landBeside(run, current, card.id, target, Boolean(args.after));
-      run({ type: "apply_poses", poses: organizePoses(current(), {}) });
+      run({ type: "move_note", id: card.id, ...besidePlace(current(), card.id, current().notes.find((note) => note.id === target.id) ?? target, Boolean(args.after)) });
     });
     const order = storyOrder(final);
     // Under a lock the letter is worked out again from where the scene landed (round sixteen, entry 35).
     const lockedNow = final.lock ? ` Under the lock it is now ${sceneNumbers(order, final.lock).get(card.id)}; the locked numbers never move, and an added scene's letter is worked out from where it sits.` : "";
     const group = final.groups.find((item) => item.noteIds.includes(card.id));
     const groupLine = joinedGroup
-      ? ` It joined "${joinedGroup}", the group it landed in, so the tidy keeps it with the act.`
+      ? ` It joined "${joinedGroup}", the group it landed in, so an organize keeps it with the act.`
       : group ? ` It is still in "${group.title || "an untitled group"}"; a frame does not follow a move, so say if the act or sequence should change.` : "";
     return ok(
-      `${chainedFromRows ? "The wall had no follows arrows, so the order was drawn from the rows first, as the wall read it; then: " : ""}Moved "${card.headline}" to ${args.after ? "after" : "before"} "${target.headline}": ${removed} follows arrow(s) removed, ${drawn} drawn${final.arrows.some((arrow) => arrow.kind === "setup") ? ", setup arrows untouched" : ""}, the wall tidied along them${where(live)}. Story order now: ${order.map((note, index) => `${index + 1}. ${note.headline}`).join(", ")}.${groupLine}${lockedNow} One undo takes the whole move back.`,
+      `${chainedFromRows ? "The wall had no follows arrows, so the order was drawn from the rows first, as the wall read it; then: " : ""}Moved "${card.headline}" to ${args.after ? "after" : "before"} "${target.headline}": ${removed} follows arrow(s) removed, ${drawn} drawn${final.arrows.some((arrow) => arrow.kind === "setup") ? ", setup arrows untouched" : ""}${where(live)}. ${NOT_TIDIED} Story order now: ${order.map((note, index) => `${index + 1}. ${note.headline}`).join(", ")}.${groupLine}${lockedNow} One undo takes the whole move back.`,
       { order: order.map((note) => note.id) },
     );
   },
@@ -2224,7 +2248,7 @@ server.registerTool(
   {
     title: "Set the story order from a list",
     description:
-      "\"The order is: the first morning, the timetable, the depot…\" — set the story order from a list of cards, by id or headline, in one step one undo takes back. The follows arrows touching the cards named are replaced by one chain through them in the order given, and the wall is tidied along it; setup arrows, being claims, are untouched. A card in the film that is not named keeps its arrows to other cards not named and loses any to a card that is: the reply names the cards left unwired, and the wall asks where they go. Cards set aside, and versions behind another card, are not in the film and are refused by name. For one card's place, move_scene; for one arrow, create_arrow.",
+      "\"The order is: the first morning, the timetable, the depot…\" — set the story order from a list of cards, by id or headline, in one step one undo takes back. The follows arrows touching the cards named are replaced by one chain through them in the order given — no card moves; organize lays the wall out along it when the writer wants that — and setup arrows, being claims, are untouched. A card in the film that is not named keeps its arrows to other cards not named and loses any to a card that is: the reply names the cards left unwired, and the wall asks where they go. Cards set aside, and versions behind another card, are not in the film and are refused by name. For one card's place, move_scene; for one arrow, create_arrow.",
     inputSchema: { cards: z.array(z.string()).min(2) },
   },
   async (args) => {
@@ -2241,13 +2265,12 @@ server.registerTool(
     const { state: final, live } = await commitAll(`set_order (${ids.length} cards)`, (step, current) => {
       for (const arrow of current().arrows.filter((item) => item.kind !== "setup" && (named.has(item.from) || named.has(item.to)))) if (step({ type: "delete_arrow", id: arrow.id }).changed) removed += 1;
       for (let index = 1; index < ids.length; index += 1) if (step({ type: "create_arrow", from: ids[index - 1], to: ids[index], kind: "follows" }).changed) drawn += 1;
-      step({ type: "apply_poses", poses: organizePoses(current(), {}) });
     });
     const order = storyOrder(final);
     const wired = new Set(final.arrows.filter((arrow) => arrow.kind !== "setup").flatMap((arrow) => [arrow.from, arrow.to]));
     const loose = order.filter((note) => !wired.has(note.id));
     return ok(
-      `The story now runs: ${order.filter((note) => named.has(note.id)).map((note) => `"${note.headline}"`).join(" → ")}${where(live)}. ${removed} follows arrow(s) removed, ${drawn} drawn${final.arrows.some((arrow) => arrow.kind === "setup") ? ", setup arrows untouched" : ""}, and the wall tidied along them; one undo takes it all back.${loose.length ? ` Not named, and now on no follows arrow: ${loose.map((note) => `"${note.headline}"`).join(", ")} — the wall asks where ${loose.length === 1 ? "it goes" : "they go"}.` : ""}`,
+      `The story now runs: ${order.filter((note) => named.has(note.id)).map((note) => `"${note.headline}"`).join(" → ")}${where(live)}. ${removed} follows arrow(s) removed, ${drawn} drawn${final.arrows.some((arrow) => arrow.kind === "setup") ? ", setup arrows untouched" : ""}; one undo takes it all back. No card moved: the order is the arrows, and where cards sit is the writer's — organize lays the wall out along the new order when that is wanted.${loose.length ? ` Not named, and now on no follows arrow: ${loose.map((note) => `"${note.headline}"`).join(", ")} — the wall asks where ${loose.length === 1 ? "it goes" : "they go"}.` : ""}`,
       { order: order.map((note) => note.id) },
     );
   },
@@ -3112,7 +3135,7 @@ server.registerTool(
   {
     title: "Another version of a scene",
     description:
-      "Set a card behind another as its other version — two endings, two ways a scene could go — by id or headline. The version leaves the story: out of the order, the count, the pages and every export; its follows arrows are dropped (setup arrows stay). The wall draws it tucked behind its sibling; read_wall lists the pair under \"two versions, not chosen\" and asks nothing of it; choose_version decides. of: \"\" takes a card out from behind and it stands as a plain card again. Only on the writer's word: two versions the notes hold, never two the agent could not choose between.",
+      "Set a card behind another as its other version — two endings, two ways a scene could go — by id or headline. Which card is in front decides nothing: it is only the one drawn on top and counted until the writer chooses, so put the way the writer named first in front, say so, and do not ask them to pick. The version leaves the story: out of the order, the count, the pages and every export; its follows arrows are dropped (setup arrows stay). The wall draws it tucked behind its sibling; read_wall lists the pair under \"two versions, not chosen\" and asks nothing of it; choose_version decides. of: \"\" takes a card out from behind and it stands as a plain card again. Only on the writer's word: two versions the notes hold, never two the agent could not choose between.",
     inputSchema: { id: z.string(), of: z.string() },
   },
   async (args) => {
@@ -3208,7 +3231,7 @@ server.registerTool(
   {
     title: "Fold the corner",
     description:
-      `Fold the corner of cards — mark them as planting something — or unfold them. ${wordSentence("corner")} The setup arrow is create_arrow with kind 'setup'. A fold that pays off in a later episode: pass later, another board of the project by name, id or number — a board that exists; new_board makes one — and, once you know it, at: the scene on that board that pays it off, by id or headline. A board alone is a promise: the reading lists the card under 'later' and, once that board holds cards, asks which scene until one claims it; with at, both boards' readings name the payoff and the paying-off card says so. later '' forgets the board; at '' keeps the board and forgets the scene. set_payoff makes the same claim from the other board. Folding never moves a card.`,
+      `Fold the corner of cards — mark them as planting something — or unfold them. ${wordSentence("corner")} what is a short label for the thing planted ("the jar of coins"), repeated wherever the fold is named: how it is first seen and how it pays off are what happens in those two scenes, so they go in those cards' change lines or text, never in the label. The setup arrow is create_arrow with kind 'setup'. A fold that pays off in a later episode: pass later, another board of the project by name, id or number — a board that exists; new_board makes one — and, once you know it, at: the scene on that board that pays it off, by id or headline. A board alone is a promise: the reading lists the card under 'later' and, once that board holds cards, asks which scene until one claims it; with at, both boards' readings name the payoff and the paying-off card says so. later '' forgets the board; at '' keeps the board and forgets the scene. set_payoff makes the same claim from the other board. Folding never moves a card.`,
     inputSchema: {
       ids: z.array(z.string()).min(1),
       plants: z.boolean().optional(),
@@ -3433,6 +3456,8 @@ server.registerTool(
       ...(CHARACTER_FIELDS.every((field) => !(person[field] ?? "").trim())
         ? [`  ${CHARACTER_FIELDS.join(", ")}: (empty — nothing given yet, nothing invented; update_character fills a line)`]
         : CHARACTER_FIELDS.map((field) => `  ${field}: ${(person[field] ?? "").trim() || "(empty)"}`)),
+      // What the writer has not decided about them, in their words (round twenty-two, entries 12, 24).
+      ...((person.open ?? "").trim() ? [`  not decided yet, by the writer's word: ${person.open.trim()}`] : []),
       ...parts.flatMap((part) =>
         part.on.length
           ? [`  "${part.meta.name}", ${part.on.length} card${part.on.length === 1 ? "" : "s"} in story order:`, ...part.on.map((note, index) => `    ${index + 1}. "${note.headline}"${where_(note) ? ` (${where_(note)})` : ""}`)]
@@ -3448,7 +3473,7 @@ server.registerTool(
   {
     title: "Update a person's page",
     description:
-      "Write any of the five lines of a person's page, by id or by name: looks (what a stranger would notice), voice (how they sound, and how it changes when they lie), wants (the clear want), needs (what they need and will not admit), notes (anything to pull up mid-scene). All text; pass only the lines you are setting; an empty string clears one. Ask the writer before inventing looks or a voice — the page is theirs.",
+      "Something the writer has not decided about a person — \"what he goes to the town for: a hospital visit, a music lesson, or the courthouse\" — is open, with their words: the reading lists it under open, by the writer's word, as \"about <name>\", and never asks; open \"\" takes the words back once it is decided and the answer has gone where it belongs (their notes, a scene). Not a line of the page. Otherwise: write any of the five lines of a person's page, by id or by name: looks (what a stranger would notice), voice (how they sound, and how it changes when they lie), wants (the clear want), needs (what they need and will not admit), notes (anything to pull up mid-scene). All text; pass only the lines you are setting; an empty string clears one. Ask the writer before inventing looks or a voice — the page is theirs.",
     inputSchema: {
       id: z.string().optional(),
       name: z.string().optional(),
@@ -3457,11 +3482,12 @@ server.registerTool(
       wants: z.string().optional(),
       needs: z.string().optional(),
       notes: z.string().optional(),
+      open: z.string().optional(),
     },
   },
   async (args) => {
     const patch = {};
-    for (const field of CHARACTER_FIELDS) {
+    for (const field of PERSON_TEXT_FIELDS) {
       if (typeof args[field] === "string") patch[field] = args[field];
     }
     const key = (args.id ?? args.name ?? "").trim();
@@ -3481,7 +3507,8 @@ server.registerTool(
       const now = (result[field] ?? "").trim();
       return `${field}${had && now ? " (replacing what was there)" : had && !now ? " (cleared)" : ""}: ${now ? `"${trim(now)}"` : "(empty)"}`;
     });
-    return ok(`Set ${lines.join("; ")} on ${result.name}'s page${where(live)}. A line set here replaces the old one.`, result);
+    const openLine = "open" in patch ? ((result.open ?? "").trim() ? ` What is open about ${result.name} is listed by the reading under "open, by the writer's word", and never asked.` : ` Nothing is left open about ${result.name} now.`) : "";
+    return ok(`Set ${lines.join("; ")} on ${result.name}'s page${where(live)}. A line set here replaces the old one.${openLine}`, result);
   },
 );
 
@@ -4263,7 +4290,7 @@ server.registerTool(
     title: "Start a project",
     description:
       "Through the account door: start a new project of the writer's with this name — one empty board, nothing on it — and work it from now on. The writer sees it under Projects on every device. A title not decided: open with the writer's words (\"The Allotments, or Plot 14\") instead of a name, and the project starts as Untitled project with those words beside it. A film is one board and goes out under the project's name: leave board alone and do not ask the writer to name it. For a series, board names the first episode; boardOpen leaves that name open in the writer's words instead (\"the pilot, or the film\").",
-    inputSchema: { name: z.string().min(1).optional(), open: z.string().optional(), board: z.string().optional(), boardOpen: z.string().optional(), pages: pagesSchema.optional(), minutes: z.number().positive().optional(), targetOpen: z.string().optional().describe("The writer's words for why the length is not decided — \"half-hour or feature\" — so the target is born open instead of the feature default standing unsaid.") },
+    inputSchema: { name: z.string().min(1).optional(), open: z.string().optional(), board: z.string().optional(), boardOpen: z.string().optional(), pages: pagesSchema.optional(), minutes: z.number().positive().optional(), targetOpen: z.string().optional(), kind: z.enum(["feature", "hour", "half-hour"]).optional().describe("The writer's words for why the length is not decided — \"half-hour or feature\" — so the target is born open instead of the feature default standing unsaid.") },
   },
   async (args) => {
     const account = await findAccount();
@@ -4279,7 +4306,9 @@ server.registerTool(
     const inserted = await account.client.from("projects").insert({ id: record.id, record, reminders: null, rev: 1 });
     if (inserted.error) return ok(`Could not start the project: ${inserted.error.message}`);
     const target = args.pages ?? args.minutes;
-    const state = { ...emptyState(), ...(target === undefined ? {} : { targetEighths: toEighths(target) }), ...(args.targetOpen?.trim() && target === undefined ? { targetOpen: args.targetOpen.trim().replace(/\s+/g, " ") } : {}) };
+    // A kind is the writer's word for the target, kept beside the pages it is read as (round twenty-two, entry 91).
+    const kindState = target === undefined && !args.targetOpen?.trim() && args.kind ? applyCommand(emptyState(), { type: "set_target", kind: args.kind }, new Date().toISOString()).state : null;
+    const state = { ...(kindState ?? emptyState()), ...(target === undefined ? {} : { targetEighths: toEighths(target) }), ...(args.targetOpen?.trim() && target === undefined ? { targetOpen: args.targetOpen.trim().replace(/\s+/g, " ") } : {}) };
     const board = await account.client.from("boards").insert({ id: record.activeBoardId, project_id: record.id, state, rev: 1, updated_by: null });
     if (board.error) return ok(`Started "${record.name}" but could not make its first board: ${board.error.message}`);
     workingProject(record.id, record.name, (account.projectCount ?? 0) + 1);

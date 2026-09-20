@@ -11,6 +11,7 @@ const person = (id: string, name: string): BoardCharacter => ({
   wants: "",
   needs: "",
   notes: "",
+  open: "",
   createdAt: NOW,
   updatedAt: NOW,
 });

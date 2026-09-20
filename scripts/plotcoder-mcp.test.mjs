@@ -1082,6 +1082,16 @@ describe("open fields (R61): the logline, the premise, a when and a board's name
     expect(await client.callTool("list_boards")).toMatch(/about [\d /]+ pages, the target open/);
     expect(await client.callTool("read_project")).toMatch(/about [\d /]+ pages, the target open/);
     await client.callTool("undo");
+    // "It is a feature" is a word, not a number: kept, read as 120, and never "no target set" (round twenty-two, entry 91).
+    const feature = await client.callTool("set_target", { kind: "feature" });
+    expect(feature).toContain("Target is a feature, read as 120 pages: the writer's word, not a page count");
+    expect(feature).toContain('Decided: the writer\'s words, "half-hour or feature", are cleared');
+    const featureRead = await client.callTool("read_wall");
+    expect(featureRead).toContain('against a feature, read as 120 pages (the writer said "a feature", not a number');
+    expect(featureRead).not.toContain("no target set");
+    expect(await client.callTool("list_boards")).toContain("of 120 pages (a feature)");
+    expect(await client.callTool("export_fountain", {})).toContain("of 120 pages (a feature).");
+    await client.callTool("set_target", { open: "half-hour or feature" });
     const decidedTarget = await client.callTool("set_target", { pages: 90 });
     expect(decidedTarget).toContain("Target is 90 pages");
     expect(decidedTarget).toContain('Decided: the writer\'s words, "half-hour or feature", are cleared');
@@ -2188,6 +2198,60 @@ describe("after the blind run", () => {
     }
   });
 
+  it("wires a scene in, moves one and sets the order without moving any other card (round twenty-two, entry 63)", async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-still-wall-"));
+    const door = new McpClient(root);
+    await door.start();
+    try {
+      const where = async () => Object.fromEntries((await door.callToolData("list_board")).notes.map((note) => [note.id, `${note.x},${note.y}`]));
+      const before = await where();
+      const made = await door.callToolData("create_note", { headline: "The morning after", change: "He is not at his stop.", after: "maya-letter" });
+      const after = await where();
+      for (const id of Object.keys(before)) expect(after[id]).toBe(before[id]);
+      // Beside the card it follows: to its right on the same row, or offset over it when that spot is taken.
+      const [mx, my] = before["maya-letter"].split(",").map(Number);
+      const [nx, ny] = after[made.id].split(",").map(Number);
+      expect(nx).toBeGreaterThan(mx);
+      expect(Math.abs(ny - my)).toBeLessThan(80);
+      const reply = await door.callTool("move_scene", { id: made.id, after: "letter-aloud" });
+      expect(reply).toContain("nothing else moved");
+      const moved = await where();
+      for (const id of Object.keys(before)) expect(moved[id]).toBe(before[id]);
+      const ordered = await door.callTool("set_order", { cards: ["tom-lies", "maya-letter", "letter-aloud"] });
+      expect(ordered).toContain("No card moved");
+      const last = await where();
+      for (const id of Object.keys(before)) expect(last[id]).toBe(before[id]);
+      // organize is still there, and still the way to lay the wall out.
+      expect(await door.callTool("organize")).toMatch(/Organized \d+ card/);
+    } finally {
+      door.stop();
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("leaves something open about a person, in the writer's words: listed, never asked (round twenty-two, entries 12, 24)", async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-person-"));
+    const door = new McpClient(root);
+    await door.start();
+    try {
+      const before = (await door.callToolData("read_wall")).findings.length;
+      const set = await door.callTool("update_character", { name: "Tom", open: "  what he goes to the town for: a hospital visit, a music lesson, or the courthouse " });
+      expect(set).toContain('open: "what he goes to the town for: a hospital visit, a music lesson, or the courthouse"');
+      expect(set).toContain("listed by the reading");
+      const read = await door.callTool("read_wall");
+      expect(read).toContain("  - about Tom — what he goes to the town for: a hospital visit, a music lesson, or the courthouse");
+      expect((await door.callToolData("read_wall")).findings.length).toBe(before);
+      expect(await door.callTool("read_character", { name: "Tom" })).toContain("not decided yet, by the writer's word: what he goes to the town for");
+      // It is not a line of the page: the page's fill is unchanged.
+      expect(await door.callTool("list_board")).not.toMatch(/"Tom"[^\n]*page: [^\n]*open/);
+      expect(await door.callTool("update_character", { name: "Tom", open: "" })).toContain("Nothing is left open about Tom now");
+      expect(await door.callTool("read_wall")).not.toContain("about Tom —");
+    } finally {
+      door.stop();
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("says when a write leaves the wall's questions as they were (round twenty-two, entries 66, 92)", async () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-still-"));
     const door = new McpClient(root);
@@ -2384,6 +2448,8 @@ describe("the premise and reminders (roadmap item 6)", () => {
     const listed = await door.callTool("list_workflows");
     // A film is one board: the treatment questions do not send an agent to ask for its name (round twenty-two, entry 16).
     expect(listed).toContain("its board needs no name of its own");
+    // "Propose them and I will strike" means name them first, mark after (round twenty-two, entry 36).
+    expect(listed).toContain("your agent names its candidates to you first, you strike, and only what is left is marked");
     expect(listed).not.toContain("What are the project and the board called?");
     expect(listed).toContain("break-a-treatment — Break a treatment into a wall");
     expect(listed).toContain("keep: Wait for the writer; propose, do not fix.");

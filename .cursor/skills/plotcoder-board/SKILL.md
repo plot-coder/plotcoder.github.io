@@ -545,8 +545,8 @@ card of another board is not asked about as uncast here.
 - `delete_arrow` — by arrow id. Removes that direction only.
 - `set_order` — **"the order is: A, B, C…"**: the story order from a list
   of cards, by id or headline, in one step one undo takes back. The follows
-  arrows touching the cards named become one chain through them, and the
-  wall is tidied along it; setup arrows are untouched; a card in the film
+  arrows touching the cards named become one chain through them — no card
+  moves — and setup arrows are untouched; a card in the film
   that is not named may be left on no arrow, and the reply names it. This
   is the tool for the writer giving the order; do not draw it arrow by
   arrow.
@@ -559,10 +559,14 @@ card of another board is not asked about as uncast here.
   on the new board), and the new board is then the open one. Undo is per
   board: one step there, and one on the board it left. Within a board, it rewires the follows arrows (what pointed at
   the card points at what it pointed at; the card lands between the target
-  and what followed it) and tidies the wall, as one step `undo` takes back
-  whole. A scene that lands beside a card of an act joins that act, so the
-  tidy keeps it with the act and the reading and the numbers agree with the
-  arrows. A person does this by dragging in the outline.
+  and what followed it), as one step `undo` takes back whole; the card lands
+  beside the one it now follows and nothing else moves. A scene that lands
+  beside a card of an act joins that act, so the reading and the numbers
+  agree with the arrows. **No tool tidies the wall on its own**: the order
+  is the arrows, and where cards sit is the writer's. Wiring a scene in
+  with `after`, moving one, and `set_order` all leave every other card where
+  it was; after building a wall, call `organize` once, and otherwise only
+  when the writer asks for a tidy. A person does this by dragging in the outline.
 - `organize` — tidy the wall along the arrows: story order from the `follows`
   arrows, a row per beat with the scenes that follow it, groups kept together.
   Pass `noteIds` to tidy only those. Prefer it to moving cards one by one, and

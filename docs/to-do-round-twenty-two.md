@@ -170,7 +170,7 @@ patches are honest; they are not the answer.
 - [x] **E3 · A setup's distance on a wall with no order** *(built and tested 2026-09-20)* (30).
   *Plan:* the line says "about 6 pages later, by the rows: the story order
   is not set". *Best?* Yes. *Test:* `describeSetups` with no follows arrows.
-- [~] **E4 · Wiring a scene in tidies the whole wall** *(drawn 2026-09-20 in `docs/mockups/round-twenty-two-designs.html`; waiting on Robert's word)* (63). Described now;
+- [x] **E4 · Wiring a scene in tidies the whole wall** *(drawn, Robert chose A, built 2026-09-20: `create_note` with `after`, `move_scene`, the move across boards and `set_order` no longer tidy; the card lands beside the one it follows; tested that no other card moves)* (63). Described now;
   still nine cards moved for one added.
   *Plan:* **decide, do not build yet.** Options: (a) as it is; (b) tidy only
   the row the card lands in; (c) no tidy — the card lands beside its

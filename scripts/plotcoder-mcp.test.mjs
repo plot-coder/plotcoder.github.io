@@ -2188,6 +2188,37 @@ describe("after the blind run", () => {
     }
   });
 
+  it("wires a scene in, moves one and sets the order without moving any other card (round twenty-two, entry 63)", async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-still-wall-"));
+    const door = new McpClient(root);
+    await door.start();
+    try {
+      const where = async () => Object.fromEntries((await door.callToolData("list_board")).notes.map((note) => [note.id, `${note.x},${note.y}`]));
+      const before = await where();
+      const made = await door.callToolData("create_note", { headline: "The morning after", change: "He is not at his stop.", after: "maya-letter" });
+      const after = await where();
+      for (const id of Object.keys(before)) expect(after[id]).toBe(before[id]);
+      // Beside the card it follows: to its right on the same row, or offset over it when that spot is taken.
+      const [mx, my] = before["maya-letter"].split(",").map(Number);
+      const [nx, ny] = after[made.id].split(",").map(Number);
+      expect(nx).toBeGreaterThan(mx);
+      expect(Math.abs(ny - my)).toBeLessThan(80);
+      const reply = await door.callTool("move_scene", { id: made.id, after: "letter-aloud" });
+      expect(reply).toContain("nothing else moved");
+      const moved = await where();
+      for (const id of Object.keys(before)) expect(moved[id]).toBe(before[id]);
+      const ordered = await door.callTool("set_order", { cards: ["tom-lies", "maya-letter", "letter-aloud"] });
+      expect(ordered).toContain("No card moved");
+      const last = await where();
+      for (const id of Object.keys(before)) expect(last[id]).toBe(before[id]);
+      // organize is still there, and still the way to lay the wall out.
+      expect(await door.callTool("organize")).toMatch(/Organized \d+ card/);
+    } finally {
+      door.stop();
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("says when a write leaves the wall's questions as they were (round twenty-two, entries 66, 92)", async () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-still-"));
     const door = new McpClient(root);

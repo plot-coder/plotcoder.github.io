@@ -984,6 +984,21 @@ async function commitAll(what, build) {
   return { state: current, changed: true, value, live };
 }
 
+/**
+ * Where a card lands when it is wired in beside another (round twenty-two, entry 63): next to that card, on the
+ * side it follows from, and nothing else on the wall moves. The order is the arrows (R56); where cards sit is
+ * the writer's, and a tool that re-laid nine cards to add one took that from them. If the spot is taken, the
+ * card sits overlapping its neighbour, offset so both are seen; organize tidies when the writer wants that.
+ */
+function besidePlace(state, cardId, target, after) {
+  const wanted = { x: target.x + (after ? NOTE_WIDTH + GAP : -(NOTE_WIDTH + GAP)), y: target.y };
+  const taken = state.notes.some((note) => note.id !== cardId && note.id !== target.id && Math.abs(note.x - wanted.x) < NOTE_WIDTH * 0.7 && Math.abs(note.y - wanted.y) < NOTE_HEIGHT * 0.7);
+  return taken ? { x: target.x + (after ? 48 : -48), y: target.y + 56 } : wanted;
+}
+
+/** What a wiring reply says now that it does not tidy. */
+const NOT_TIDIED = "It sits beside the card it follows and nothing else moved: the order is the arrows, and where cards sit is the writer's. organize tidies the wall along them when that is wanted.";
+
 /** Said once per session: that cards stack until organize (round seven, finding 11). */
 /** Where a new card lands when the agent gives no position: after the last card in reading order, wrapping five wide, so cards never stack (round eleven, finding 14). */
 function nextPlace(state) {
@@ -1553,7 +1568,7 @@ server.registerTool(
       pages: pagesSchema.optional(),
       plants: z.boolean().optional(),
       plantsWhat: z.string().optional().describe("What the folded corner plants, in the writer's words; naming it folds the card."),
-      after: z.string().optional().describe("Wire the new scene into the story after this card (id or headline): one call, one number under a lock. On a wall with no follows arrows yet this draws the first, so a wall can be built in order from its second card. Wiring a scene in also tidies the whole wall along the arrows, as organize does, so every card may move; the reply says so, and one undo takes back the card and the tidy together."),
+      after: z.string().optional().describe("Wire the new scene into the story after this card (id or headline): one call, one number under a lock. On a wall with no follows arrows yet this draws the first, so a wall can be built in order from its second card. The new card lands beside that card and nothing else on the wall moves; organize tidies the wall along the arrows when the writer wants that."),
       before: z.string().optional().describe("Or before this card (id or headline)."),
       location: z.string().optional(),
       when: z.string().optional().describe('When the scene happens, as the writer says it — "night", "day four, dawn" — printed after the place on the scene heading.'),
@@ -1642,7 +1657,8 @@ server.registerTool(
           return done;
         };
         joinedGroup = landBeside(run, current, made.id, beside, Boolean(args.after));
-        step({ type: "apply_poses", poses: organizePoses(current(), {}) });
+        // Beside its neighbour, unless the caller said where (round twenty-two, entry 63: one card in, nine moved).
+        if (args.x === undefined && args.y === undefined) step({ type: "move_note", id: made.id, ...besidePlace(current(), made.id, current().notes.find((note) => note.id === beside.id) ?? beside, Boolean(args.after)) });
         made = current().notes.find((note) => note.id === made.id) ?? made;
       }
       return made;
@@ -1660,7 +1676,7 @@ server.registerTool(
     ].filter(Boolean).join(", ");
     // Where it landed matters only until the tidy, so the reply says the rule once and never the coordinates (round fourteen, entry 11).
     const placed = beside
-      ? ` Wired ${args.after ? "after" : "before"} "${beside.headline}" in the story (${removedArrows} follows arrow${removedArrows === 1 ? "" : "s"} removed${removedNames.length ? ` — ${removedNames.join(", ")}` : ""}, ${drawnArrows} drawn${wallHasFollows ? "" : "; the wall's first, so the story order starts here"})${joinedGroup ? `, in "${joinedGroup}"` : ""}, and the wall tidied.`
+      ? ` Wired ${args.after ? "after" : "before"} "${beside.headline}" in the story (${removedArrows} follows arrow${removedArrows === 1 ? "" : "s"} removed${removedNames.length ? ` — ${removedNames.join(", ")}` : ""}, ${drawnArrows} drawn${wallHasFollows ? "" : "; the wall's first, so the story order starts here"})${joinedGroup ? `, in "${joinedGroup}"` : ""}. ${NOT_TIDIED}`
       : args.x === undefined && args.y === undefined ? ` Placed after the last card in story order.${once("placed", " organize lays the wall out along the arrows.")}` : "";
     // Under a lock a new scene has a letter, not a number: say it, since the board is the only other place to learn it (round fourteen, entry 44).
     const numbered = after?.lock && result?.id ? ` Numbered ${sceneNumbers(storyOrder(after), after.lock).get(result.id)} (the numbers are locked; a new scene's letter is its place between locked ones now, worked out again from where it sits if it moves; the locked numbers never move).` : "";
@@ -2131,7 +2147,7 @@ async function moveAcrossBoards(args, target, open, held) {
         headOf = head.headline;
       }
     }
-    step({ type: "apply_poses", poses: organizePoses(current(), {}) });
+    if (anchor) step({ type: "move_note", id: landedId, ...besidePlace(current(), landedId, current().notes.find((note) => note.id === anchor.id) ?? anchor, Boolean(args.after)) });
   });
   const order = storyOrder(final);
   // "Left behind" read as "kept" (round sixteen, entry 22): the arrows are dropped, and the reply says so.
@@ -2154,7 +2170,7 @@ server.registerTool(
   {
     title: "Move a scene in the story",
     description:
-      "Move a card to another place in the story order — after one card, or before one — by rewiring its follows arrows and tidying the wall along them, as one step that undo takes back whole. The story order is the follows arrows: the card leaves its place (what pointed at it now points at what it pointed at) and lands between the target and what followed it. A person does this by dragging in the outline. On a wall with no follows arrows yet, the order is drawn from the rows first and the reply says so; set_order sets a whole order from a list. To another board of the project: pass board (name, id or number from list_boards) and, optionally, after or before a card there; with neither the card lands at the head of that board's story. Across boards the card keeps its cast, place, when, rank, length, text and fold; its arrows stay behind, and that board is then the open one. Undo is per board: one step there, one on the board it left.",
+      "Move a card to another place in the story order — after one card, or before one — by rewiring its follows arrows, as one step that undo takes back whole; the card lands beside the one it now follows and nothing else on the wall moves (organize tidies the wall along the arrows when the writer wants that). The story order is the follows arrows: the card leaves its place (what pointed at it now points at what it pointed at) and lands between the target and what followed it. A person does this by dragging in the outline. On a wall with no follows arrows yet, the order is drawn from the rows first and the reply says so; set_order sets a whole order from a list. To another board of the project: pass board (name, id or number from list_boards) and, optionally, after or before a card there; with neither the card lands at the head of that board's story. Across boards the card keeps its cast, place, when, rank, length, text and fold; its arrows stay behind, and that board is then the open one. Undo is per board: one step there, one on the board it left.",
     inputSchema: { id: z.string(), after: z.string().optional(), before: z.string().optional(), board: z.union([z.string().min(1), z.number()]).optional() },
   },
   async (args) => {
@@ -2203,17 +2219,17 @@ server.registerTool(
       // Land: between the target and what followed it (or what led to it), and
       // into the act it lands beside (round fourteen, entry 38).
       joinedGroup = landBeside(run, current, card.id, target, Boolean(args.after));
-      run({ type: "apply_poses", poses: organizePoses(current(), {}) });
+      run({ type: "move_note", id: card.id, ...besidePlace(current(), card.id, current().notes.find((note) => note.id === target.id) ?? target, Boolean(args.after)) });
     });
     const order = storyOrder(final);
     // Under a lock the letter is worked out again from where the scene landed (round sixteen, entry 35).
     const lockedNow = final.lock ? ` Under the lock it is now ${sceneNumbers(order, final.lock).get(card.id)}; the locked numbers never move, and an added scene's letter is worked out from where it sits.` : "";
     const group = final.groups.find((item) => item.noteIds.includes(card.id));
     const groupLine = joinedGroup
-      ? ` It joined "${joinedGroup}", the group it landed in, so the tidy keeps it with the act.`
+      ? ` It joined "${joinedGroup}", the group it landed in, so an organize keeps it with the act.`
       : group ? ` It is still in "${group.title || "an untitled group"}"; a frame does not follow a move, so say if the act or sequence should change.` : "";
     return ok(
-      `${chainedFromRows ? "The wall had no follows arrows, so the order was drawn from the rows first, as the wall read it; then: " : ""}Moved "${card.headline}" to ${args.after ? "after" : "before"} "${target.headline}": ${removed} follows arrow(s) removed, ${drawn} drawn${final.arrows.some((arrow) => arrow.kind === "setup") ? ", setup arrows untouched" : ""}, the wall tidied along them${where(live)}. Story order now: ${order.map((note, index) => `${index + 1}. ${note.headline}`).join(", ")}.${groupLine}${lockedNow} One undo takes the whole move back.`,
+      `${chainedFromRows ? "The wall had no follows arrows, so the order was drawn from the rows first, as the wall read it; then: " : ""}Moved "${card.headline}" to ${args.after ? "after" : "before"} "${target.headline}": ${removed} follows arrow(s) removed, ${drawn} drawn${final.arrows.some((arrow) => arrow.kind === "setup") ? ", setup arrows untouched" : ""}${where(live)}. ${NOT_TIDIED} Story order now: ${order.map((note, index) => `${index + 1}. ${note.headline}`).join(", ")}.${groupLine}${lockedNow} One undo takes the whole move back.`,
       { order: order.map((note) => note.id) },
     );
   },
@@ -2224,7 +2240,7 @@ server.registerTool(
   {
     title: "Set the story order from a list",
     description:
-      "\"The order is: the first morning, the timetable, the depot…\" — set the story order from a list of cards, by id or headline, in one step one undo takes back. The follows arrows touching the cards named are replaced by one chain through them in the order given, and the wall is tidied along it; setup arrows, being claims, are untouched. A card in the film that is not named keeps its arrows to other cards not named and loses any to a card that is: the reply names the cards left unwired, and the wall asks where they go. Cards set aside, and versions behind another card, are not in the film and are refused by name. For one card's place, move_scene; for one arrow, create_arrow.",
+      "\"The order is: the first morning, the timetable, the depot…\" — set the story order from a list of cards, by id or headline, in one step one undo takes back. The follows arrows touching the cards named are replaced by one chain through them in the order given — no card moves; organize lays the wall out along it when the writer wants that — and setup arrows, being claims, are untouched. A card in the film that is not named keeps its arrows to other cards not named and loses any to a card that is: the reply names the cards left unwired, and the wall asks where they go. Cards set aside, and versions behind another card, are not in the film and are refused by name. For one card's place, move_scene; for one arrow, create_arrow.",
     inputSchema: { cards: z.array(z.string()).min(2) },
   },
   async (args) => {
@@ -2241,13 +2257,12 @@ server.registerTool(
     const { state: final, live } = await commitAll(`set_order (${ids.length} cards)`, (step, current) => {
       for (const arrow of current().arrows.filter((item) => item.kind !== "setup" && (named.has(item.from) || named.has(item.to)))) if (step({ type: "delete_arrow", id: arrow.id }).changed) removed += 1;
       for (let index = 1; index < ids.length; index += 1) if (step({ type: "create_arrow", from: ids[index - 1], to: ids[index], kind: "follows" }).changed) drawn += 1;
-      step({ type: "apply_poses", poses: organizePoses(current(), {}) });
     });
     const order = storyOrder(final);
     const wired = new Set(final.arrows.filter((arrow) => arrow.kind !== "setup").flatMap((arrow) => [arrow.from, arrow.to]));
     const loose = order.filter((note) => !wired.has(note.id));
     return ok(
-      `The story now runs: ${order.filter((note) => named.has(note.id)).map((note) => `"${note.headline}"`).join(" → ")}${where(live)}. ${removed} follows arrow(s) removed, ${drawn} drawn${final.arrows.some((arrow) => arrow.kind === "setup") ? ", setup arrows untouched" : ""}, and the wall tidied along them; one undo takes it all back.${loose.length ? ` Not named, and now on no follows arrow: ${loose.map((note) => `"${note.headline}"`).join(", ")} — the wall asks where ${loose.length === 1 ? "it goes" : "they go"}.` : ""}`,
+      `The story now runs: ${order.filter((note) => named.has(note.id)).map((note) => `"${note.headline}"`).join(" → ")}${where(live)}. ${removed} follows arrow(s) removed, ${drawn} drawn${final.arrows.some((arrow) => arrow.kind === "setup") ? ", setup arrows untouched" : ""}; one undo takes it all back. No card moved: the order is the arrows, and where cards sit is the writer's — organize lays the wall out along the new order when that is wanted.${loose.length ? ` Not named, and now on no follows arrow: ${loose.map((note) => `"${note.headline}"`).join(", ")} — the wall asks where ${loose.length === 1 ? "it goes" : "they go"}.` : ""}`,
       { order: order.map((note) => note.id) },
     );
   },

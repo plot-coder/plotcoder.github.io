@@ -155,7 +155,7 @@ door pins the package version in `supabase/functions/mcp/index.ts`; bump
 it and redeploy (`supabase functions deploy mcp --no-verify-jwt --use-api
 --project-ref kmpahjsggbleygsnuwug`) when the door should carry the
 release. The name in front of it, `cloudflare/mcp-door`, changes only if
-the function's address does. 0.1.41 is the latest.
+the function's address does. 0.1.42 is the latest (the card with no place).
 
 **Drive a blind run:** Robert opens a fresh session with
 `blind-runs/prompt.md`; this side relays the writer's answers and the
@@ -238,7 +238,7 @@ none of it in the repo:
 - **The suites pass on `main`:** `npm test` 30 files, 595 tests;
   `npm run build` clean; `npm run test:e2e` ten of ten. Ninety tools;
   fifteen checks.
-- **Released as 0.1.41.**
+- **Released as 0.1.42** (2026-09-19, the card with no place; 599 unit tests).
 
 ---
 

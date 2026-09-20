@@ -53,7 +53,7 @@ import { paginate } from "../src/board/paginate.js";
 import { readingOrder, storyOrder } from "../src/board/readWall.js";
 import { REVISION_COLORS, revisionMarks, sceneNumbers } from "../src/board/numbering.js";
 import { sceneHeading, standInFor } from "../src/board/fountain.js";
-import { describePresence } from "../src/board/presence.js";
+import { describePresence, presenceTail } from "../src/board/presence.js";
 import { segmentBrief, WORKFLOWS } from "../src/board/workflows.js";
 import { DEFAULT_REMINDERS, titleFromBody } from "../src/board/reminders.js";
 import crypto from "node:crypto";
@@ -1009,9 +1009,17 @@ function nextPlace(state) {
   const last = order[order.length - 1];
   if (!last) return { x: 140, y: 140 };
   const originX = Math.min(...state.notes.map((note) => note.x));
-  const x = last.x + NOTE_WIDTH + GAP;
-  if (x + NOTE_WIDTH > originX + ROW_WIDTH) return { x: originX, y: last.y + NOTE_HEIGHT + GAP };
-  return { x, y: last.y };
+  // Every card the wall draws at its own x,y is in the way — a card set aside too, which is on the wall and off
+  // the story; a version behind another is drawn behind its sibling, so its own x,y is nobody's (the issues file, A10).
+  const drawn = state.notes.filter((note) => !note.alternativeOf);
+  const taken = (spot) => drawn.some((note) => Math.abs(note.x - spot.x) < NOTE_WIDTH * 0.7 && Math.abs(note.y - spot.y) < NOTE_HEIGHT * 0.7);
+  let spot = { x: last.x + NOTE_WIDTH + GAP, y: last.y };
+  for (let tries = 0; tries < 200; tries += 1) {
+    if (spot.x + NOTE_WIDTH > originX + ROW_WIDTH) spot = { x: originX, y: spot.y + NOTE_HEIGHT + GAP };
+    if (!taken(spot)) return spot;
+    spot = { x: spot.x + NOTE_WIDTH + GAP, y: spot.y };
+  }
+  return spot;
 }
 
 /** Which door a read came through, for the head of a reply: the account as whom, the open app, or the file at which path. */
@@ -1043,13 +1051,14 @@ function presentPeople() {
   }
 }
 
+/** What the last account tail said about presence, so the next says it again only when it has changed. */
+let lastPresenceSaid = null;
+
 /** The account tail says what the wall shows: open on whose screen, or no wall open, never a bare "live". */
 function accountTail() {
-  const people = presentPeople();
-  // The hosted door is a server per request: it joins the channel and answers before presence has synced, so
-  // an empty list there is not "nobody". It says where the write landed and claims nothing (round twenty-two, entries 93 to 95).
-  if (!people.length) return hosted() ? " (saved to the account; it shows on any open wall the moment it lands)" : " (saved to the account; no wall open right now — it shows the moment one opens)";
-  return ` (saved to the account; open on ${people.length === 1 ? `${people[0]}'s screen` : `${people.length} screens: ${people.join(", ")}`} now)`;
+  const said = presenceTail(presentPeople(), lastPresenceSaid, hosted());
+  lastPresenceSaid = said.key;
+  return said.text;
 }
 
 function where(live) {

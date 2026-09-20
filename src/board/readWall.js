@@ -630,6 +630,17 @@ export function describeUndecided(state, reading, extras = {}) {
     if (parts.length) open.push(`  - ${name(id)} — ${parts.join("; ")}`);
   }
 
+  // A card set aside keeps what was open on it, and that is where undecided things sit: listed after the film's, marked.
+  for (const note of state.notes.filter((item) => item.aside === true)) {
+    const parts = [
+      (note.open ?? "").trim() ? `open: ${note.open.trim()}` : "",
+      (note.changeOpen ?? "").trim() ? `${FIELD.change}: ${note.changeOpen.trim()}` : "",
+      (note.locationOpen ?? "").trim() ? `${FIELD.location}: ${note.locationOpen.trim()}` : "",
+      (note.whenOpen ?? "").trim() ? `${FIELD.when}: ${note.whenOpen.trim()}` : "",
+    ].filter(Boolean);
+    if (parts.length) open.push(`  - ${name(note.id)} (set aside) — ${parts.join("; ")}`);
+  }
+
   // Not said yet: blank, and nobody has said why.
   const cards = reading.order.map((id) => byId.get(id)).filter(Boolean);
   const list = (notes) => (notes.length === cards.length && cards.length > 1 ? `every card (${notes.length})` : notes.length > 6 ? `${notes.length} of ${cards.length} cards` : notes.map((note) => name(note.id)).join(", "));

@@ -289,38 +289,38 @@ B9, an open gap — the question now offers "not that far yet" and
 write's reply says when both exist. A14's fractions: eighths are the
 industry's unit.
 
-**What it caught that this to-do had missed:**
+**What it caught that this to-do had missed** (H1 to H7 built and tested 2026-09-20; H8 to H10 are Robert's to see):
 
-- [ ] **H1 · A requirement number in a parameter's description** (its A14):
+- [x] **H1 · A requirement number in a parameter's description** (its A14):
   `create_note`'s `locationOpen` says "(R61's edge)". The test that keeps
   ticket numbers out reads tool descriptions and not parameters. *Plan:*
   remove it, and widen the test to every parameter's description. *Best?*
   Yes: the test is the fix. *Test:* the widened test.
-- [ ] **H2 · `export_project`'s description has a blank where a path goes**
+- [x] **H2 · `export_project`'s description has a blank where a path goes**
   (A14), on the hosted door, which has no folder. *Plan:* when hosted, the
   description says there is no disk and the reply's JSON is the file.
   *Best?* Yes. *Test:* the description under `PLOTCODER_HOSTED=1`.
-- [ ] **H3 · `set_logline` and `set_premise` do not say what they replaced**
+- [x] **H3 · `set_logline` and `set_premise` do not say what they replaced**
   (D1). `set_open`, `set_plant` and `set_target` now do. *Plan:* the same
   "before:" clause. *Best?* Yes; one rule for every write that replaces the
   writer's words. *Test:* server test.
-- [ ] **H4 · `set_rank` says "organize lays a row per beat" every time**
+- [x] **H4 · `set_rank` says "organize lays a row per beat" every time**
   (D7), to an agent told to leave the layout alone. *Plan:* once a session,
   and not at all through the hosted door, as the other advice is. *Test:*
   server test.
-- [ ] **H5 · A new card can land on a card that is already there** (A10).
+- [x] **H5 · A new card can land on a card that is already there** (A10).
   `nextPlace` looks only at the last card of the story, so it can put a
   card on top of one set aside (or any card off the chain). *Plan:* step
   along the row until the spot is free of every card the wall draws at its
   own place. *Best?* Yes; a version behind another is not drawn at its own
   x,y, so it is ignored. *Test:* server test with a card set aside in the
   way.
-- [ ] **H6 · What is open on a card set aside is in no reading** (C1).
+- [x] **H6 · What is open on a card set aside is in no reading** (C1).
   `describeUndecided` walks the story's order. *Plan:* cards set aside are
   listed after the film's, marked "(set aside)". *Best?* Yes: the view is
   "everything undecided", and a card kept for later is exactly where
   undecided things sit. *Test:* `readWall.test.ts`.
-- [ ] **H7 · The local door says "no wall open right now" on every write**
+- [x] **H7 · The local door says "no wall open right now" on every write**
   (C7). The hosted door now says nothing. *Plan:* the tail mentions presence
   only when it differs from what the last reply said; `who_is_here` is the
   question's tool. *Best?* Yes. *Test:* two writes, the second silent.

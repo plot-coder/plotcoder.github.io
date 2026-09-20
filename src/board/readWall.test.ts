@@ -84,6 +84,12 @@ describe("everything undecided in one place (round twenty-two, entries 41, 43, 6
     expect(open.some((line) => line.startsWith('  - "C"'))).toBe(false);
   });
 
+  it("lists what is open on a card set aside, after the film's, marked (the issues file, C1)", () => {
+    const state = applyCommand(wall(), { type: "set_aside", ids: ["b"], aside: true }, at).state;
+    const { open } = describeUndecided(state, readWall(state));
+    expect(open.at(-1)).toBe('  - "B" (set aside) — open: whether Tom is there; the change line: I don\'t know yet');
+  });
+
   it("lists what is simply not said under its own head, never as open", () => {
     const state = wall();
     const { open, blank } = describeUndecided(state, readWall(state));

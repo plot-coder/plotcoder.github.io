@@ -653,7 +653,9 @@ than a dictionary's, so the app and you never explain a word two ways.
   after the first reading it quotes them. Through the hosted door
   (`mcp.plotcoder.com`) it quotes from the first write: that door keeps no
   session, so it cannot know what you have read.
-- **The account tail** says what the wall shows: "open on Robert's screen
+- **The account tail** says presence only when it has changed since the
+  last reply — otherwise just "saved to the account" — so a change is
+  noticed. It says what the wall shows: "open on Robert's screen
   now", or "no wall open right now — it shows the moment one opens", read
   from the presence the server already follows; `list_projects` says the
   same of the working project. Never "seen by": presence lags a second or

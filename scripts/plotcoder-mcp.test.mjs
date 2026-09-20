@@ -2221,6 +2221,12 @@ describe("after the blind run", () => {
       expect(ordered).toContain("No card moved");
       const last = await where();
       for (const id of Object.keys(before)) expect(last[id]).toBe(before[id]);
+      // A new card never lands on a card the wall draws there — one set aside is on the wall and off the story (the issues file, A10).
+      const parked = await door.callToolData("create_note", { headline: "A scene for later", change: "Something." });
+      await door.callTool("set_aside", { ids: [parked.id] });
+      const next = await door.callToolData("create_note", { headline: "The one after", change: "Something else." });
+      const near = Math.abs(next.x - parked.x) < 100 && Math.abs(next.y - parked.y) < 100;
+      expect(near).toBe(false);
       // organize is still there, and still the way to lay the wall out.
       expect(await door.callTool("organize")).toMatch(/Organized \d+ card/);
     } finally {

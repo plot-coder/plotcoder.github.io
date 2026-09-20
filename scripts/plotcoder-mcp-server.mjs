@@ -1229,7 +1229,19 @@ function ok(text, data) {
 
 // --- Server ----------------------------------------------------------------
 
-const server = new McpServer({ name: "plotcoder-board", version: "0.1.0" });
+// The version the door says it runs is the package's own, so a client, or a
+// person checking a deploy, can tell which release answered. It said "0.1.0"
+// through forty-two releases.
+function packageVersion() {
+  try {
+    const file = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "package.json");
+    return JSON.parse(fs.readFileSync(file, "utf8")).version || "0.0.0";
+  } catch {
+    return "0.0.0";
+  }
+}
+
+const server = new McpServer({ name: "plotcoder-board", version: packageVersion() });
 
 // A door's answer is a reply, not an error: a shut account door, or an
 // account with no project yet, says so in words from every tool alike.

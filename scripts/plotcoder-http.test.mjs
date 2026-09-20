@@ -4,6 +4,7 @@
 // words, which is what the test checks — the transport, the auth, and the
 // refusal, not Supabase.
 
+import fs from "node:fs";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createHostedDoor, credentialsFrom, envFor } from "./plotcoder-http.mjs";
 
@@ -51,6 +52,8 @@ describe("the hosted door", () => {
     const init = await rpc("initialize", { protocolVersion: "2024-11-05", capabilities: {}, clientInfo: { name: "test", version: "0" } });
     expect(init.status).toBe(200);
     expect(init.body.result.serverInfo.name).toBe("plotcoder-board");
+    // The door names the release it runs, not a constant.
+    expect(init.body.result.serverInfo.version).toBe(JSON.parse(fs.readFileSync(new URL("../package.json", import.meta.url), "utf8")).version);
     const listed = await rpc("tools/list", {}, 2);
     const names = listed.body.result.tools.map((tool) => tool.name);
     expect(names).toContain("read_wall");

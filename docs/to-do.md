@@ -296,6 +296,7 @@ word on each is the word to build it.
   scene the notes move by hand (18:12). Design; a round has not asked twice.
 - ~~**The reply tails** end "pages.."~~ Done 2026-09-19: a finding's own
   full stop never doubles the reply's.
+- ~~**The door says it runs "0.1.0"** whatever it runs~~ Fixed 2026-09-19, after 0.1.42: `serverInfo.version` is the package's own, so a redeploy can be checked with one `initialize`. Goes out with round twenty-two's fixes; until then a `read_pages` that prints `NO PLACE YET:` is how to tell the door carries 0.1.42.
 - **Port 5173** is held by another project on Robert's Mac; the launch entry
   `plotcoder-dev-5180` is the one to use, and `plotcoder-dev-5181` when a
   second worktree's session already holds 5180. The MCP bridge probe scans

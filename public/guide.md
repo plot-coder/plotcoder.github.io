@@ -234,8 +234,10 @@ only when the server is started with `PLOTCODER_JSON=1`.
   export, its follows arrows dropped — and waits there; the wall draws it
   tucked behind its sibling and `read_wall` lists the pair under "two
   versions, not chosen", asking nothing of it. `choose_version` decides: the
-  chosen card is the scene, in the front card's place with its arrows, rank
-  and group; the other goes, or with `keep` is **set aside** beside it — on
+  chosen card is the scene, in the front card's place with its arrows, rank,
+  group and threads, and the front card's fold when it has none of its own —
+  so a thing true of the scene "either way of it" (a plant, a thread) is
+  said once, on the front card, and whichever version is chosen carries it; the other goes, or with `keep` is **set aside** beside it — on
   the wall where the writer can see it, and not in the film. "Keep the
   other, I may come back to it" is `keep`. `of: ""` takes a card out from
   behind. Only on the writer's word:

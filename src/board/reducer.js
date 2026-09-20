@@ -966,11 +966,33 @@ export function applyCommand(state, command, now = nowIso()) {
       let notes = state.notes;
       let arrows = state.arrows;
       let groups = state.groups;
+      let threads = state.threads ?? [];
       if (chosen.alternativeOf) {
         // The alternative steps forward: the front's arrows, place in the order, rank and group are its now.
         arrows = arrows.map((arrow) => ({ ...arrow, from: arrow.from === frontId ? chosen.id : arrow.from, to: arrow.to === frontId ? chosen.id : arrow.to })).filter((arrow) => arrow.from !== arrow.to);
         groups = groups.map((group) => (group.noteIds.includes(frontId) ? { ...group, noteIds: group.noteIds.map((id) => (id === frontId ? chosen.id : id)) } : group));
-        notes = notes.map((item) => (item.id === chosen.id ? bump(item, { alternativeOf: null, x: other.x, y: other.y, rank: other.rank, z: other.z }, now) : item));
+        // What was tied to the scene comes with it, not only what was tied to the card (round twenty-two, entry 59:
+        // "the keys are first seen in the depot, either way of it"). The front card's fold, when the chosen one has none of
+        // its own; and every thread through the front card, which would otherwise hold the id of a card that is gone.
+        const inheritsFold = !chosen.plants && other.plants;
+        notes = notes.map((item) =>
+          item.id === chosen.id
+            ? bump(item, { alternativeOf: null, x: other.x, y: other.y, rank: other.rank, z: other.z, ...(inheritsFold ? { plants: true, plantsWhat: other.plantsWhat ?? "" } : {}) }, now)
+            : item,
+        );
+        threads = threads.map((thread) =>
+          thread.noteIds.includes(frontId) ? { ...thread, noteIds: [...new Set(thread.noteIds.map((id) => (id === frontId ? chosen.id : id)))] } : thread,
+        );
+        // Both versions may have carried an arrow to the same card: one pair of cards, one arrow, as create_arrow
+        // holds. A follows arrow wins over a setup between the same two — the payoff is the very next scene, and the
+        // fold says so on its own (R62's adjacent rule).
+        const seen = new Map();
+        for (const arrow of arrows) {
+          const key = `${arrow.from}>${arrow.to}`;
+          const held = seen.get(key);
+          if (!held || (held.kind === "setup" && arrow.kind !== "setup")) seen.set(key, arrow);
+        }
+        arrows = arrows.filter((arrow) => seen.get(`${arrow.from}>${arrow.to}`) === arrow);
       }
       const keep = command.keep === true;
       if (keep) {
@@ -986,7 +1008,9 @@ export function applyCommand(state, command, now = nowIso()) {
         arrows = arrows.filter((arrow) => arrow.from !== other.id && arrow.to !== other.id);
         groups = pruneGroups(groups.map((group) => ({ ...group, noteIds: group.noteIds.filter((id) => id !== other.id) })));
       }
-      return { state: { ...state, notes, arrows, groups }, changed: true, result: { chosen: chosen.id, other: other.id, kept: keep, steppedForward: Boolean(chosen.alternativeOf) } };
+      // A card that is gone is on no thread; a kept one, set aside, is not in the film and leaves them too.
+      threads = threads.map((thread) => (thread.noteIds.includes(other.id) ? { ...thread, noteIds: thread.noteIds.filter((id) => id !== other.id) } : thread));
+      return { state: { ...state, notes, arrows, groups, threads }, changed: true, result: { chosen: chosen.id, other: other.id, kept: keep, steppedForward: Boolean(chosen.alternativeOf) } };
     }
 
     // Set aside (R66): on the wall and not in the film. The card keeps its

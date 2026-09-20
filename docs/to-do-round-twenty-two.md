@@ -209,7 +209,7 @@ could be, a recommendation, what a yes means.
   went, a whole sentence, into the fold's label and then repeated on every
   setup line. *Plan to draw:* words on the setup arrow — what happens when
   it pays off — beside the fold's words for what is planted.
-- [ ] **F2 · A fact true of either version** (59). "The keys are first seen
+- [x] **F2 · A fact true of either version** *(2026-09-20. The test came first and found two bugs: a thread kept the id of a front card that was gone, and two arrows were left between one pair of cards. Fixed in the kernel: a version stepping forward inherits the threads through the scene and the front card's fold when it has none, and arrows on one pair collapse to one, follows over setup. With that, "either way of it" is said once, on the front card — no drawing needed; the guide and the replies say so. Tested in `reducer.test.ts`.)* (59). "The keys are first seen
   in the depot, either way of it" was written twice, by a thread on the
   front card and a fold by hand on the one behind, unlinked. **First, a
   test, not a drawing:** what `choose_version` does to the two folds and two

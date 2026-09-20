@@ -1130,8 +1130,11 @@ describe("open fields (R61): the logline, the premise, a when and a board's name
     await client.callTool("undo");
     await client.callTool("undo");
     await client.callTool("set_location", { ids: [other.id], open: "" });
+    // The front card's fold comes with the scene when the chosen version has none of its own (round twenty-two, entry 59).
+    await client.callTool("set_plant", { ids: [ending.id], what: "the crowns" });
     const chosen = await client.callTool("choose_version", { id: "Con dies" });
     expect(chosen).toContain('Chose "Con dies" — it steps forward');
+    expect(chosen).toContain('with its arrows, rank, group and threads, and its fold ("the crowns")');
     expect(chosen).toContain('"They lose the plots" is gone');
     expect(await client.callTool("read_wall")).not.toContain("two versions");
     await client.callTool("delete_note", { id: other.id });

@@ -611,6 +611,46 @@ describe("set_rank", () => {
   });
 });
 
+describe("choosing the version behind inherits what was tied to the scene (round twenty-two, entry 59)", () => {
+  const at = "2026-09-20T00:00:00.000Z";
+  const wall = () => {
+    let state = emptyState();
+    for (const id of ["first", "front", "behind", "last"]) state = applyCommand(state, { type: "create_note", id, headline: id, change: "x" }, at).state;
+    state = applyCommand(state, { type: "create_arrow", from: "first", to: "front", kind: "follows" }, at).state;
+    state = applyCommand(state, { type: "create_arrow", from: "front", to: "last", kind: "follows" }, at).state;
+    return applyCommand(state, { type: "set_alternative", id: "behind", of: "front" }, at).state;
+  };
+
+  it("re-points a thread at the chosen card, and takes the front card's fold when it has none", () => {
+    let state = applyCommand(wall(), { type: "set_plant", ids: ["front"], plants: true, what: "the keys" } as never, at).state;
+    state = applyCommand(state, { type: "create_thread", name: "the keys", noteIds: ["front", "last"] } as never, at).state;
+    const chosen = applyCommand(state, { type: "choose_version", id: "behind" }, at).state;
+    expect(chosen.threads[0].noteIds).toEqual(["behind", "last"]);
+    expect(chosen.notes.find((note) => note.id === "behind")).toMatchObject({ plants: true, plantsWhat: "the keys" });
+    expect(chosen.notes.some((note) => note.id === "front")).toBe(false);
+  });
+
+  it("keeps its own fold, and never leaves two arrows between one pair of cards", () => {
+    let state = applyCommand(wall(), { type: "set_plant", ids: ["front"], plants: true, what: "the keys" } as never, at).state;
+    state = applyCommand(state, { type: "set_plant", ids: ["behind"], plants: true, what: "the keys, in his hand" } as never, at).state;
+    state = applyCommand(state, { type: "create_arrow", from: "first", to: "behind", kind: "setup" }, at).state;
+    state = applyCommand(state, { type: "create_arrow", from: "behind", to: "last", kind: "setup" }, at).state;
+    const chosen = applyCommand(state, { type: "choose_version", id: "behind" }, at).state;
+    expect(chosen.notes.find((note) => note.id === "behind")?.plantsWhat).toBe("the keys, in his hand");
+    const pairs = chosen.arrows.map((arrow) => `${arrow.from}>${arrow.to}`);
+    expect(new Set(pairs).size).toBe(pairs.length);
+    // The order survives: where a follows and a setup meet on one pair, the follows arrow stays.
+    expect(chosen.arrows.filter((arrow) => arrow.kind !== "setup").map((arrow) => `${arrow.from}>${arrow.to}`)).toEqual(["first>behind", "behind>last"]);
+  });
+
+  it("takes a kept card off the threads it was on, since it is set aside", () => {
+    let state = applyCommand(wall(), { type: "create_thread", name: "the keys", noteIds: ["front", "last"] } as never, at).state;
+    const kept = applyCommand(state, { type: "choose_version", id: "behind", keep: true }, at).state;
+    expect(kept.threads[0].noteIds).toEqual(["behind", "last"]);
+    expect(kept.notes.find((note) => note.id === "front")?.aside).toBe(true);
+  });
+});
+
 describe("a card set aside (R66): on the wall and not in the film", () => {
   const at = "2026-09-20T00:00:00.000Z";
   const chain = () => {

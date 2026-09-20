@@ -3161,7 +3161,7 @@ server.registerTool(
   {
     title: "Choose a version",
     description:
-      "Choose one of two versions of a scene, by id or headline: the chosen card is the scene, in the front card's place — its arrows, its rank, its group; the other goes, or with keep true is set aside beside it: on the wall where the writer can see it, and not in the film — out of the order, the count, the pages and every export, a scene and no longer a beat. set_aside with aside false brings it back as a plain card. Only on the writer's word.",
+      "Choose one of two versions of a scene, by id or headline: the chosen card is the scene, in the front card's place — its arrows, its rank, its group, the threads that ran through it, and its fold when the chosen card has none of its own, so what was true of the scene \"either way of it\" needs saying once, on the front card; the other goes, or with keep true is set aside beside it: on the wall where the writer can see it, and not in the film — out of the order, the count, the pages and every export, a scene and no longer a beat. set_aside with aside false brings it back as a plain card. Only on the writer's word.",
     inputSchema: { id: z.string(), keep: z.boolean().optional() },
   },
   async (args) => {
@@ -3172,7 +3172,7 @@ server.registerTool(
     if (!other) return ok(`"${card.headline}" has no other version; nothing to choose.`);
     const { changed, result, live } = await commit({ type: "choose_version", id: card.id, keep: args.keep === true });
     if (!changed) return ok("Nothing chosen.");
-    return ok(`Chose "${card.headline}"${result.steppedForward ? ` — it steps forward into "${other.headline}"'s place, with its arrows, rank and group` : ""}${where(live)}. "${other.headline}" ${result.kept ? "is kept, set aside beside it: on the wall and not in the film — out of the order, the count, the pages and every export; the reading lists it and asks nothing of it. set_aside with aside false brings it back as a plain card" : "is gone"}.`, result);
+    return ok(`Chose "${card.headline}"${result.steppedForward ? ` — it steps forward into "${other.headline}"'s place, with its arrows, rank, group and threads${!card.plants && other.plants ? `, and its fold${other.plantsWhat ? ` ("${other.plantsWhat}")` : ""}` : ""}` : ""}${where(live)}. "${other.headline}" ${result.kept ? "is kept, set aside beside it: on the wall and not in the film — out of the order, the count, the pages and every export; the reading lists it and asks nothing of it. set_aside with aside false brings it back as a plain card" : "is gone"}.`, result);
   },
 );
 
@@ -3701,7 +3701,7 @@ server.registerTool(
     const behind = add.found.map((id) => current.state.notes.find((note) => note.id === id)).filter((note) => note?.alternativeOf || note?.aside);
     if (behind.length)
       return ok(
-        `Nothing changed: ${behind.map((note) => `"${note.headline}"`).join(", ")} ${behind.length === 1 ? "is" : "are"} not in the film — behind another card as its other version, or set aside — and a thread runs through the story. Tie the thread to the front card; for a thing true of either version, fold the version behind with set_plant and draw its own setup arrow, which stays with it if it is chosen.`,
+        `Nothing changed: ${behind.map((note) => `"${note.headline}"`).join(", ")} ${behind.length === 1 ? "is" : "are"} not in the film — behind another card as its other version, or set aside — and a thread runs through the story. Tie the thread to the front card: whichever version is chosen inherits the threads through the scene, and its fold when it has none of its own, so a thing true of the scene \"either way of it\" is said once, there.`,
       );
     const { state, changed, result, live } = await commit({
       type: "update_thread",

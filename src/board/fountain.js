@@ -133,7 +133,7 @@ export function toFountain(state, options = {}) {
   if (state.logline) notes.push(`Logline: ${state.logline}`);
   if (state.revision) notes.push(`Revision: ${revisionLine(state)}; a changed scene carries a [[changed in the revision]] note.`);
   notes.push(
-    `From the wall: ${order.length} card${order.length === 1 ? "" : "s"}, ${beats} beat${beats === 1 ? "" : "s"}, about ${formatPages(boardEighths(state))} of ${formatPages(state.targetEighths)} pages.`,
+    `From the wall: ${order.length} card${order.length === 1 ? "" : "s"}, ${beats} beat${beats === 1 ? "" : "s"}, about ${formatPages(boardEighths(state))}${(state.targetOpen ?? "").trim() ? ` pages, the target open (${state.targetOpen.trim()})` : ` of ${formatPages(state.targetEighths)} pages`}.`,
   );
 
   const head = titlePage({

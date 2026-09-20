@@ -68,6 +68,15 @@ describe("an unwritten scene whose change line is the app's placeholder (round t
   });
 });
 
+describe("the title page with the target open (round twenty-two, entry 80)", () => {
+  it("does not read the cards against 120", () => {
+    const open = applyCommand(seedState(), { type: "set_target", open: "half an hour or a feature" } as never, NOW).state;
+    const out = toFountain(open, { title: "B" });
+    expect(out).toContain("pages, the target open (half an hour or a feature).");
+    expect(out).not.toContain("of 120 pages");
+  });
+});
+
 describe("Fountain out (R23, slice a)", () => {
   it("forces a scene heading from the place, or the marked headline when there is none", () => {
     const seed = seedState();

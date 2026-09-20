@@ -1085,6 +1085,10 @@ describe("open fields (R61): the logline, the premise, a when and a board's name
     const wrote = await client.callTool("write_scene", { id: "maya-letter", text: "Maya finds the letter on the mat. She knows what it is.\n\nShe feels the cold." });
     expect(wrote).toContain("a sketch: shorter than the page it was read as");
     expect(wrote).toContain("2 lines the camera cannot see (knows, feels)");
+    // An edit says it too, and a write with nothing marked says the check ran (round twenty-two, entries 72, 75).
+    const editedCamera = await client.callTool("edit_scene", { id: "maya-letter", find: "She feels the cold.", replace: "She shivers." });
+    expect(editedCamera).toContain("1 line the camera cannot see (knows)");
+    await client.callTool("undo");
     const listed = await client.callTool("list_board");
     expect(listed).toContain("written (a sketch: under the page it was read as)");
     expect(listed).toMatch(/1 written scene is a sketch, measured under the page it was read as: about [\d /]+ pages if it ran to that/);

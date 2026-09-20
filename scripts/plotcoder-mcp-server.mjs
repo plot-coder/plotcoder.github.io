@@ -1095,6 +1095,19 @@ function sketchLine(state) {
   return `; ${found.length} written scene${found.length === 1 ? " is a sketch" : "s are sketches"}, measured under the page ${found.length === 1 ? "it was" : "they were"} read as: about ${formatPages(ifRan)} pages if ${found.length === 1 ? "it" : "they"} ran to that`;
 }
 
+/**
+ * What a write says about the camera (the handover's call 6): the lines marked,
+ * or that the check ran and marked none, so silence is never "did it run?"
+ * (round twenty-two, entries 72, 75). It matches a short list of interior verbs
+ * in action lines, and says so: a mark, never a question.
+ */
+function cameraReply(text) {
+  const found = cameraLines(text ?? "");
+  return found.length
+    ? ` — ${found.length} line${found.length === 1 ? "" : "s"} the camera cannot see (${cameraVerbs(found).join(", ")}): the reminder "Write for the camera" is the house's; show it or cut it, on the writer's word — a mark on the page, not a question on the wall`
+    : " — the camera check read the action lines and marked none (it looks for a short list of interior verbs — knows, feels, thinks, remembers and the like — so it can miss a line and mark a fair one; it never asks)";
+}
+
 /** "about 7 of 120 pages", or "about 7 pages, the target open": an open target is not 120 in any reply (round twenty-two, entries 19, 44). */
 function pagesOfTarget(state) {
   return (state.targetOpen ?? "").trim() ? `about ${formatPages(boardEighths(state))} pages, the target open` : `about ${formatPages(boardEighths(state))} of ${formatPages(state.targetEighths)} pages`;
@@ -2346,7 +2359,7 @@ server.registerTool(
     }
     const printed = sceneLineCount(args.text);
     return ok(
-      `Wrote "${result.headline}": ${printed} line(s) as they print (headings, blank lines and wrapped dialogue counted), measured at ${formatPages(noteEighths(result))} of a 55-line page, rounded to the nearest eighth and never below one eighth${noteEighths(result) < (result.lengthEighths ?? DEFAULT_NOTE_EIGHTHS) ? " — a sketch: shorter than the page it was read as; the wall counts the measure and says so" : ""}${(() => { const found = cameraLines(result.text); return found.length ? ` — ${found.length} line${found.length === 1 ? "" : "s"} the camera cannot see (${cameraVerbs(found).join(", ")}): the reminder "Write for the camera" is the house's; show it or cut it, on the writer's word` : ""; })()}${where(live)}.${revisionMark(state, result.id)}${once("heading-from-place", " The heading comes from the card's place and when, so the text starts with the action.")} While the text stands the wall reads the measure, not the estimate${(() => {
+      `Wrote "${result.headline}": ${printed} line(s) as they print (headings, blank lines and wrapped dialogue counted), measured at ${formatPages(noteEighths(result))} of a 55-line page, rounded to the nearest eighth and never below one eighth${noteEighths(result) < (result.lengthEighths ?? DEFAULT_NOTE_EIGHTHS) ? " — a sketch: shorter than the page it was read as; the wall counts the measure and says so" : ""}${cameraReply(result.text)}${where(live)}.${revisionMark(state, result.id)}${once("heading-from-place", " The heading comes from the card's place and when, so the text starts with the action.")} While the text stands the wall reads the measure, not the estimate${(() => {
         // How far the measure sits from what the card was read as before (round eighteen, entry 43): the writer's estimate, or the page an unsized card is read as.
         const before = result.lengthEighths !== null ? result.lengthEighths : 8;
         const label = result.lengthEighths !== null ? `the writer's ${formatPages(result.lengthEighths)} pages` : "the page an unsized card is read as";
@@ -2386,7 +2399,7 @@ server.registerTool(
     const { state, result, live } = await commit({ type: "set_text", id: note.id, text: text.replace(args.find, args.replace) });
     const linesAfter = sceneLineCount(result.text);
     return ok(
-      `Changed one line of "${result.headline}": "${args.find}" → "${args.replace}"${where(live)}. Now ${linesAfter} line(s) as they print${linesAfter !== linesBefore ? ` (was ${linesBefore}: a line wraps differently now)` : ""}, measured at ${formatPages(noteEighths(result))} of a page.${revisionMark(state, result.id)}${cueReport(state, result.text)}`,
+      `Changed one line of "${result.headline}": "${args.find}" → "${args.replace}"${where(live)}. Now ${linesAfter} line(s) as they print${linesAfter !== linesBefore ? ` (was ${linesBefore}; blank lines and wrapped lines count)` : ""}, measured at ${formatPages(noteEighths(result))} of a page${cameraReply(result.text)}.${revisionMark(state, result.id)}${cueReport(state, result.text)}`,
       { ...result, eighths: noteEighths(result), measured: true },
     );
   },

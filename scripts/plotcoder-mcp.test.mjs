@@ -2084,6 +2084,23 @@ describe("after the blind run", () => {
     expect(hostedTail).not.toContain("pass color to choose");
   });
 
+  it("says when a write leaves the wall's questions as they were (round twenty-two, entries 66, 92)", async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-still-"));
+    const door = new McpClient(root);
+    await door.start();
+    try {
+      // A headline reworded changes no question; the tail says so, with the count.
+      const still = await door.callTool("update_note", { id: "maya-letter", headline: "Maya finds the letter on the mat" });
+      expect(still).toMatch(/the wall's questions unchanged \(\d+\)/);
+      // A write that does change them says what changed, not "unchanged".
+      const moved = await door.callTool("create_note", { headline: "A card on its own", change: "Something is different.", x: 2000, y: 2000 });
+      expect(moved).not.toContain("questions unchanged");
+    } finally {
+      door.stop();
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("drops the JSON tail when PLOTCODER_JSON=0", async () => {
     const terseRoot = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-terse-"));
     const terse = new McpClient(terseRoot, { PLOTCODER_JSON: "0" });

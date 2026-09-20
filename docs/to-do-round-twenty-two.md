@@ -25,7 +25,7 @@ Status marks: `[ ]` open · `[~]` planned and asked, waiting on Robert ·
 
 ## A. Land what is built (not design; do first)
 
-- [ ] **A1 · Release and redeploy.** #131 is merged; nothing is released.
+- [~] **A1 · Release and redeploy.** Released as **0.1.44** 2026-09-20 (#133; 0.1.43 was already taken); the door's pin is bumped. **Waiting on Robert: the function and the Worker redeploys.**
   *Plan:* `npm version patch` from a current `main`, push the tag, wait for
   npm, bump the pin in `supabase/functions/mcp/index.ts`, redeploy the
   function, redeploy the Worker in `cloudflare/mcp-door` (its root text
@@ -34,7 +34,7 @@ Status marks: `[ ]` open · `[~]` planned and asked, waiting on Robert ·
   *Test:* one `initialize` against `https://mcp.plotcoder.com` —
   `serverInfo.version` is now the package's own — and `curl` of the root for
   the "No sign-in" sentence.
-- [ ] **A2 · Take the fallback out of `~/.claude.json`, and turn the
+- [~] **A2 · Take the fallback out of `~/.claude.json`** *(done 2026-09-20; backup `~/.claude/backups/claude.json.before-removing-fallback`)* **, and turn the
   test-account connector off outside a round** (entry 1). The cueing
   session's mistake; the backup is `~/.claude/backups/claude.json.before-round-22`.
   *Test:* a fresh session lists one PlotCoder server, or none.
@@ -79,13 +79,14 @@ patches are honest; they are not the answer.
   guide (93) — and it keeps `list_projects` fast. **Take the tool.** *Test:* a
   unit test with a faked channel: synced with one person, synced with
   nobody, never synced ("could not see in time").
-- [ ] **B3 · A silent tail reads as "unchanged" or "not computed"** (66, 92).
+- [x] **B3 · A silent tail reads as "unchanged" or "not computed"** (66, 92).
   *Plan:* when a write leaves the wall's questions as they were, the tail
   says so in four words: "; the wall's questions unchanged (1)". *Best?* The
   risk is noise on every reply, which round thirteen complained of. It is
   one clause, it carries a number an agent uses (62: "1 now" was enough to
   work out the rest), and it ends a recurring doubt. Yes. *Test:* a write
   that changes no finding carries the clause; one that does, does not.
+  *(Built 2026-09-20: "; the wall's questions unchanged (N)"; tested. Note for a later pass: `recolor_note` and a few other writes carry no tail at all.)*
 
 ## C. The connector screen (the round's first finding)
 

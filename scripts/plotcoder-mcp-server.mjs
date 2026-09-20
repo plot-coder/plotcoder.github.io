@@ -871,6 +871,9 @@ function changeNote() {
     parts.push(
       `the wall now asks ${change.asks} question${change.asks === 1 ? "" : "s"}${change.gone.length ? ` (gone: ${change.gone.map((finding) => `[${finding.kind}] ${finding.text.replace(/\.$/, "")}`).join(" ")})` : ""}${change.came.length ? ` (new: ${change.came.map((finding) => `[${finding.kind}] ${finding.text.replace(/\.$/, "")}`).join(" ")})` : ""}`,
     );
+  } else {
+    // Silence read as "unchanged" or "not computed" (round twenty-two, entries 66, 92): say which, with the count an agent can use.
+    parts.push(`the wall's questions unchanged (${change.asks})`);
   }
   if (change.leftAfter !== change.leftBefore) parts.push(`left, for now: ${change.leftAfter} (was ${change.leftBefore})`);
   // An open target is not 120: the tail says the pages and that the target is open, as the reading does (round twenty-two, entry 19).

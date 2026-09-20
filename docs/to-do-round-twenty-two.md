@@ -178,17 +178,17 @@ patches are honest; they are not the answer.
   person arranged by hand, and costs an untidy wall after an agent's build.
   Rounds fourteen and sixteen asked for the tidy. **Mock the three on one
   wall and ask Robert.**
-- [ ] **E5 · A tie's reply carries what it made** (61). Tying a thread can
+- [x] **E5 · A tie's reply carries what it made** *(built and tested 2026-09-20: the folded card's id and the arrow's)* (61). Tying a thread can
   fold a card, name the fold and draw an arrow; the reply is prose and the
   arrow's id is not in it. *Plan:* the ids in the reply's text. *Best?* Yes.
   *Test:* server test on the tie that makes a fold.
-- [ ] **E6 · Insert a line into a scene** (77). "Add a line after X" is only
+- [x] **E6 · Insert a line into a scene** *(built and tested 2026-09-20: `edit_scene { insert, after | before }`)* (77). "Add a line after X" is only
   "replace X with X plus the line". *Plan:* `edit_scene { after: "…",
   insert: "…" }` (and `before`), the text found once, the new paragraph set
   off by a blank line. *Best?* Yes; the reply says "inserted", not "changed
   one line". *Test:* server test, and the refusal when the anchor occurs
   twice.
-- [ ] **E7 · What a written scene's line count counts** (71). *Plan:* the
+- [x] **E7 · What a written scene's line count counts** *(checked true first — a note measures the same as none — then said in the reply; tested 2026-09-20)* (71). *Plan:* the
   reply says notes (`[[…]]`) neither print nor count. *Best?* Yes. *Test:*
   a scene with a note measures the same as without.
 - [ ] **E8 · "A feature" is not a number** (91). *Plan:* `set_target { kind:

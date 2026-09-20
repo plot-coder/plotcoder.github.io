@@ -2501,7 +2501,7 @@ server.registerTool(
     }
     const printed = sceneLineCount(args.text);
     return ok(
-      `Wrote "${result.headline}": ${printed} line(s) as they print (headings, blank lines and wrapped dialogue counted), measured at ${formatPages(noteEighths(result))} of a 55-line page, rounded to the nearest eighth and never below one eighth${noteEighths(result) < (result.lengthEighths ?? DEFAULT_NOTE_EIGHTHS) ? " — a sketch: shorter than the page it was read as; the wall counts the measure and says so" : ""}${cameraReply(result.text)}${where(live)}.${revisionMark(state, result.id)}${once("heading-from-place", " The heading comes from the card's place and when, so the text starts with the action.")} While the text stands the wall reads the measure, not the estimate${(() => {
+      `Wrote "${result.headline}": ${printed} line(s) as they print (headings, blank lines and wrapped dialogue counted; a [[note]] neither prints nor counts), measured at ${formatPages(noteEighths(result))} of a 55-line page, rounded to the nearest eighth and never below one eighth${noteEighths(result) < (result.lengthEighths ?? DEFAULT_NOTE_EIGHTHS) ? " — a sketch: shorter than the page it was read as; the wall counts the measure and says so" : ""}${cameraReply(result.text)}${where(live)}.${revisionMark(state, result.id)}${once("heading-from-place", " The heading comes from the card's place and when, so the text starts with the action.")} While the text stands the wall reads the measure, not the estimate${(() => {
         // How far the measure sits from what the card was read as before (round eighteen, entry 43): the writer's estimate, or the page an unsized card is read as.
         const before = result.lengthEighths !== null ? result.lengthEighths : 8;
         const label = result.lengthEighths !== null ? `the writer's ${formatPages(result.lengthEighths)} pages` : "the page an unsized card is read as";
@@ -2525,8 +2525,8 @@ server.registerTool(
   {
     title: "Change a line of a scene",
     description:
-      "Change one line of a card's scene text without resending the scene: the exact text to find, and what replaces it. The text must occur once in the scene. The card is measured again and, under a revision, the changed line is marked. For a new scene or a rewrite, write_scene.",
-    inputSchema: { id: z.string(), find: z.string().min(1), replace: z.string() },
+      "Change one line of a card's scene text without resending the scene: the exact text to find, and what replaces it. Or add to it: insert with after (or before) puts a new paragraph after (or before) the paragraph that holds that text, set off by a blank line, leaving the rest as it stands — \"add a line after he gets on\". The text to find, or the anchor, must occur once in the scene. The card is measured again and, under a revision, the changed line is marked. For a new scene or a rewrite, write_scene.",
+    inputSchema: { id: z.string(), find: z.string().min(1).optional(), replace: z.string().optional(), insert: z.string().min(1).optional(), after: z.string().min(1).optional(), before: z.string().min(1).optional() },
   },
   async (args) => {
     const { state: before } = await readBoard();
@@ -2534,6 +2534,25 @@ server.registerTool(
     if (!note) return ok(`No card with id ${args.id}. Call list_board.`);
     const text = note.text ?? "";
     if (!text.trim()) return ok(`"${note.headline}" is unwritten; write_scene it first.`);
+    // Insert a paragraph beside the one that holds the anchor (round twenty-two, entry 77): "add a line after X" was only "replace X with X plus the line".
+    if (args.insert !== undefined) {
+      const anchor = args.after ?? args.before;
+      if (!anchor || (args.after && args.before)) return ok("Say where: insert with after, or with before — the text of the paragraph it goes beside.");
+      const hits = text.split(anchor).length - 1;
+      if (hits === 0) return ok(`"${anchor}" is not in "${note.headline}"'s text. read_pages shows the scene as it stands.`);
+      if (hits > 1) return ok(`"${anchor}" occurs ${hits} times in "${note.headline}"; give more of the line so it occurs once.`);
+      const paragraphs = text.split(/\n{2,}/);
+      const at = paragraphs.findIndex((paragraph) => paragraph.includes(anchor));
+      paragraphs.splice(args.after ? at + 1 : at, 0, args.insert.trim());
+      const linesWere = sceneLineCount(text);
+      const done = await commit({ type: "set_text", id: note.id, text: paragraphs.join("\n\n") });
+      const linesNow = sceneLineCount(done.result.text);
+      return ok(
+        `Inserted a paragraph ${args.after ? "after" : "before"} "${paragraphs[args.after ? at : at + 1].split("\n")[0].slice(0, 60)}" in "${done.result.headline}": "${args.insert.trim()}"${where(done.live)}. Now ${linesNow} line(s) as they print (was ${linesWere}; blank lines and wrapped lines count), measured at ${formatPages(noteEighths(done.result))} of a page${cameraReply(done.result.text)}.${revisionMark(done.state, done.result.id)}${cueReport(done.state, done.result.text)}`,
+        { ...done.result, eighths: noteEighths(done.result), measured: true },
+      );
+    }
+    if (!args.find || args.replace === undefined) return ok("Say which: find and replace, to change a line; or insert with after or before, to add one.");
     const count = text.split(args.find).length - 1;
     if (count === 0) return ok(`"${args.find}" is not in "${note.headline}"'s text. read_pages shows the scene as it stands.`);
     if (count > 1) return ok(`"${args.find}" occurs ${count} times in "${note.headline}"; give more of the line so it occurs once.`);
@@ -3603,7 +3622,9 @@ function foldLine(state, fold, thread) {
   if (!fold) return "";
   const head = (id) => `"${state.notes.find((note) => note.id === id)?.headline ?? id}"`;
   if (fold.kept) return ` ${head(fold.firstId)} is folded for ${fold.what}, so "${thread.name}" stays a thread and no arrow is drawn: a card has one fold.`;
-  const did = [fold.folded ? `folded ${head(fold.firstId)}` : null, fold.named ? `named its fold "${thread.name}"` : null, fold.arrow ? `drew the setup arrow to ${head(fold.lastId)}` : null].filter(Boolean);
+  // The arrow it drew is named by its id, as any arrow a tool makes is: the next call may need it (round twenty-two, entry 61).
+  const drew = fold.arrow ? state.arrows.find((arrow) => arrow.kind === "setup" && arrow.from === fold.firstId && arrow.to === fold.lastId) : null;
+  const did = [fold.folded ? `folded ${head(fold.firstId)} (${fold.firstId})` : null, fold.named ? `named its fold "${thread.name}"` : null, fold.arrow ? `drew the setup arrow to ${head(fold.lastId)}${drew ? ` (arrow ${drew.id})` : ""}` : null].filter(Boolean);
   const adjacent = fold.adjacent ? ` No setup arrow: a follows arrow already runs from ${head(fold.firstId)} to ${head(fold.lastId)}, so the payoff is the very next scene and the fold says so on its own.` : "";
   return did.length ? ` Tied at both ends, so it is the fold's now: ${did.join(", ")}.${adjacent}` : adjacent;
 }

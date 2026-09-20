@@ -1301,7 +1301,8 @@ describe("round nineteen: create_note with after on a wall with no follows arrow
     const kept = await client.callTool("create_thread", { name: "the key", cards: ["Maya finds the letter", "The key changes hands"] });
     expect(kept).toContain('"Maya finds the letter" is folded for the wrong tools, so "the key" stays a thread and no arrow is drawn');
     const free = await client.callTool("create_thread", { name: "the letter", cards: ["Tom lies about the job", "The key changes hands"] });
-    expect(free).toContain('Tied at both ends, so it is the fold\'s now: folded "Tom lies about the job", named its fold "the letter", drew the setup arrow to "The key changes hands"');
+    // What the tie made is named by its ids: the card it folded, the arrow it drew (round twenty-two, entry 61).
+    expect(free).toMatch(/Tied at both ends, so it is the fold's now: folded "Tom lies about the job" \(tom-lies\), named its fold "the letter", drew the setup arrow to "The key changes hands" \(arrow [0-9a-f-]+\)/);
     expect(await client.callTool("list_board")).toContain("plants: the letter");
   });
 
@@ -2146,6 +2147,32 @@ describe("after the blind run", () => {
       expect(await door.callTool("set_order", { cards: ["maya-letter", "maya-letter"] })).toContain("named twice");
       await door.callTool("set_aside", { ids: ["tom-lies"] });
       expect(await door.callTool("set_order", { cards: ["tom-lies", "maya-letter"] })).toContain("not in the film (set aside)");
+    } finally {
+      door.stop();
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("inserts a paragraph into a scene beside the one named, and a note neither prints nor counts (round twenty-two, entries 71, 77)", async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-insert-"));
+    const door = new McpClient(root);
+    await door.start();
+    try {
+      const wrote = await door.callTool("write_scene", { id: "tom-lies", text: "The bus stops. TOMÁS gets on.\n\nHe counts the fare out of a jar." });
+      expect(wrote).toContain("a [[note]] neither prints nor counts");
+      const lines = Number(/Wrote "[^"]+": (\d+) line/.exec(wrote)[1]);
+      const inserted = await door.callTool("edit_scene", { id: "tom-lies", insert: "She knows every passenger by their stop. She does not know him.", after: "TOMÁS gets on" });
+      expect(inserted).toContain('Inserted a paragraph after "The bus stops. TOMÁS gets on."');
+      expect(inserted).toContain("1 line the camera cannot see (knows)");
+      const { notes } = await door.callToolData("list_board");
+      expect(notes.find((note) => note.id === "tom-lies").text).toBe("The bus stops. TOMÁS gets on.\n\nShe knows every passenger by their stop. She does not know him.\n\nHe counts the fare out of a jar.");
+      // The anchor must occur once, and the tool says which of its two uses it wants.
+      expect(await door.callTool("edit_scene", { id: "tom-lies", insert: "X", after: "e" })).toMatch(/occurs \d+ times/);
+      expect(await door.callTool("edit_scene", { id: "tom-lies" })).toContain("Say which");
+      // A note in the text measures the same as none.
+      await door.callTool("write_scene", { id: "tom-lies", text: "The bus stops. TOMÁS gets on.\n\nHe counts the fare out of a jar." });
+      const noted = await door.callTool("write_scene", { id: "tom-lies", text: "The bus stops. TOMÁS gets on.\n\nHe counts the fare out of a jar.\n\n[[how the cut is announced: not decided]]" });
+      expect(Number(/Wrote "[^"]+": (\d+) line/.exec(noted)[1])).toBe(lines);
     } finally {
       door.stop();
       fs.rmSync(root, { recursive: true, force: true });

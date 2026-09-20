@@ -407,7 +407,10 @@ card of another board is not asked about as uncast here.
   measured from its lines and the wall reads that; the writer's estimate is
   kept underneath for when the text goes.
 - `edit_scene` — one line of a scene, by `find` and `replace`: the text must
-  occur once. For "change her last line", not a rewrite.
+  occur once. For "change her last line", not a rewrite. To **add** a line,
+  `insert` with `after` (or `before`) and the text of the paragraph it goes
+  beside: a new paragraph, the rest untouched. A `[[note]]` in a scene's
+  text neither prints nor counts toward its length.
 - `import_fountain` — a `.fountain` file or text onto the open board: scenes
   land on the cards with the same heading in order; unknown scenes become new
   cards; nothing is deleted. A card with no place answers to its marked

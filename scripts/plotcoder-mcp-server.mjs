@@ -4073,8 +4073,12 @@ server.registerTool(
       if (!(error instanceof DoorReply)) throw error;
       return ok(error.message);
     }
-    const until = Date.now() + 1500;
-    while (!accountDoor?.presenceSynced && Date.now() < until) await new Promise((resolve) => setTimeout(resolve, 100));
+    // Presence has arrived when it has synced and this session's own entry is on it: the first sync
+    // comes before our own track lands, and "is the agent counted?" was the round's question (entry 94).
+    const until = Date.now() + 2000;
+    const ownKey = `${accountDoor?.user?.id}-agent`;
+    const arrived = () => accountDoor?.presenceSynced && Boolean(accountDoor?.channel?.presenceState?.()?.[ownKey]);
+    while (!arrived() && Date.now() < until) await new Promise((resolve) => setTimeout(resolve, 100));
     const state = accountDoor?.channel?.presenceState?.() ?? {};
     return ok(describePresence(state, { synced: Boolean(accountDoor?.presenceSynced), project: name }));
   },

@@ -948,7 +948,8 @@ export function applyCommand(state, command, now = nowIso()) {
       }
       const keep = command.keep === true;
       if (keep) {
-        notes = notes.map((item) => (item.id === other.id ? bump(item, { alternativeOf: null, x: item.x + 40, y: item.y + 40 }, now) : item));
+        // The turn went forward with the chosen card: the kept one is a plain scene, not a second beat beside it (round twenty-two, entry 48).
+        notes = notes.map((item) => (item.id === other.id ? bump(item, { alternativeOf: null, x: item.x + 40, y: item.y + 40, ...(chosen.alternativeOf ? { rank: "scene" } : {}) }, now) : item));
         if (chosen.alternativeOf) {
           arrows = arrows.filter((arrow) => arrow.kind === "setup" || (arrow.from !== other.id && arrow.to !== other.id));
           groups = groups.map((group) => (group.noteIds.includes(other.id) ? { ...group, noteIds: group.noteIds.filter((id) => id !== other.id) } : group));

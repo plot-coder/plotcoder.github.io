@@ -909,6 +909,10 @@ describe("two versions of one scene (R65)", () => {
     expect(kept.notes.map((note) => note.id).sort()).toEqual(["a", "b", "c"]);
     expect(kept.notes.find((note) => note.id === "b")?.alternativeOf).toBeNull();
     expect(kept.arrows.some((arrow) => arrow.to === "b" || arrow.from === "b")).toBe(false);
+    // The turn goes forward with the chosen card: a kept front is a scene, not a second beat (round twenty-two, entry 48).
+    const turn = run(run(paired, { type: "set_rank", ids: ["b"], rank: "beat" }), { type: "choose_version", id: "c", keep: true });
+    expect(turn.notes.find((note) => note.id === "c")?.rank).toBe("beat");
+    expect(turn.notes.find((note) => note.id === "b")?.rank).toBe("scene");
     // Deleting the front leaves the version as a plain card; a load repairs a stale sibling.
     expect(run(paired, { type: "delete_note", id: "b" }).notes.find((note) => note.id === "c")?.alternativeOf).toBeNull();
     const old = JSON.parse(JSON.stringify(paired));

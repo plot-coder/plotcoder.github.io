@@ -2940,7 +2940,7 @@ server.registerTool(
   {
     title: "Choose a version",
     description:
-      "Choose one of two versions of a scene, by id or headline: the chosen card is the scene, in the front card's place — its arrows, its rank, its group; the other goes, or with keep true stands beside it as a plain unwired card. Only on the writer's word.",
+      "Choose one of two versions of a scene, by id or headline: the chosen card is the scene, in the front card's place — its arrows, its rank, its group; the other goes, or with keep true stands beside it as a plain unwired card. A kept card is back in the story like any plain card — in the count, the pages and the exports, a scene and no longer a beat, its place in the order read from where it sits until an arrow says — because the wall has no way to hold a card that is on the wall and not in the film; the reply says so. Only on the writer's word.",
     inputSchema: { id: z.string(), keep: z.boolean().optional() },
   },
   async (args) => {
@@ -2951,7 +2951,7 @@ server.registerTool(
     if (!other) return ok(`"${card.headline}" has no other version; nothing to choose.`);
     const { changed, result, live } = await commit({ type: "choose_version", id: card.id, keep: args.keep === true });
     if (!changed) return ok("Nothing chosen.");
-    return ok(`Chose "${card.headline}"${result.steppedForward ? ` — it steps forward into "${other.headline}"'s place, with its arrows, rank and group` : ""}${where(live)}. "${other.headline}" ${result.kept ? "stands beside it as a plain card, unwired" : "is gone"}.`, result);
+    return ok(`Chose "${card.headline}"${result.steppedForward ? ` — it steps forward into "${other.headline}"'s place, with its arrows, rank and group` : ""}${where(live)}. "${other.headline}" ${result.kept ? "stands beside it as a plain card, unwired: a scene, not a beat, and back in the story — in the count, the pages and the exports, its place in the order read from where it sits. The wall cannot hold a card that is on it and not in the film; if that is what the writer means, say so to them" : "is gone"}.`, result);
   },
 );
 

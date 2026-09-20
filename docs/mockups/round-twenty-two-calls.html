@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<title>Round twenty-two's four calls — before and after</title>
+<!-- The app's own paper: the source stylesheet, so the link never goes stale. -->
+<link rel="stylesheet" href="../../src/styles.css">
+<style>
+  body { margin: 0; padding: 2rem 2.5rem 4rem; font-family: ui-sans-serif, system-ui, sans-serif; }
+  h1 { font: 600 1.05rem/1.3 ui-serif, Georgia, serif; margin: 0 0 0.25rem; }
+  h2.sec { font: 600 0.95rem/1.3 ui-serif, Georgia, serif; margin: 3rem 0 0.2rem; padding-top: 1.2rem; border-top: 1px solid rgba(127,127,127,0.25); }
+  .lede { font-size: 0.85rem; opacity: 0.78; margin: 0 0 1.2rem; max-width: 70ch; line-height: 1.5; }
+  .said { font-size: 0.82rem; line-height: 1.5; margin: 0.4rem 0 1.3rem; max-width: 74ch; padding: 0.6rem 0.9rem; border-left: 3px solid var(--over); background: rgba(127,127,127,0.08); }
+  .said b { font-weight: 600; }
+  .row { display: flex; gap: 2.2rem; flex-wrap: wrap; align-items: flex-start; }
+  .opt { width: 500px; }
+  .opt h3 { font: 700 0.62rem/1.3 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; margin: 0 0 0.6rem; }
+  .opt h3 em { font-style: normal; color: var(--over); }
+  .opt p { font-size: 0.8rem; line-height: 1.45; opacity: 0.82; margin: 0.7rem 0 0; max-width: 56ch; }
+  pre.read { font: 0.68rem/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; background: rgba(127,127,127,0.12); padding: 0.75rem 0.95rem; border-radius: 6px; white-space: pre-wrap; margin: 0.7rem 0 0; }
+  pre.read b { color: var(--over); font-weight: 600; }
+  pre.read s { opacity: 0.5; }
+  .paper { position: relative; height: 222px; width: 500px; border-radius: 6px; background: var(--canvas); outline: 1px solid rgba(127,127,127,0.18); overflow: hidden; }
+  .paper .note { position: absolute; transform-origin: top left; min-height: 11rem; }
+  .p1 { transform: scale(0.78) rotate(-1deg); left: 14px; top: 22px; }
+  .p2 { transform: scale(0.78) rotate(1deg); left: 164px; top: 22px; }
+  .p3 { transform: scale(0.78) rotate(-0.5deg); left: 314px; top: 22px; }
+  .p2b { transform: scale(0.78) rotate(4deg); left: 212px; top: 40px; opacity: 0.85; filter: brightness(0.9); }
+  .tag { position: absolute; top: 5px; font-size: 0.5rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--over); }
+  /* Drawn for the mockup only: a card set aside. */
+  .note.is-aside { opacity: 0.5; outline: 1.5px dashed rgba(40,38,24,0.55); outline-offset: -5px; box-shadow: none; }
+  .ask { margin-top: 1.2rem; max-width: 76ch; font-size: 0.86rem; line-height: 1.55; }
+  .ask b { font-weight: 600; }
+  .yes { margin-top: 0.7rem; max-width: 76ch; font-size: 0.84rem; line-height: 1.5; padding: 0.6rem 0.9rem; border-radius: 6px; background: rgba(127,127,127,0.12); }
+  .opt .script { width: auto; font-size: 0.58rem; padding: 2em 2.2em 1.4em 4.4em; container-type: normal; }
+  .opt .script .pl__num--l { left: -3.1em; }
+  .opt .script .pl__num--r { right: -1.5em; }
+  .mark { color: #a4501c; }
+  .sub { font-size: 0.92em; opacity: 0.7; }
+</style>
+</head>
+<body>
+<h1>Round twenty-two's four calls, before and after</h1>
+<p class="lede">Four things the round on "The Last Bus" left for Robert (2026-09-20). Each is drawn the way the app behaves today, on the left, beside one or two ways it could behave, using the round's own wall. Under each: what it costs, what I would do, and what a yes means. Nothing here is built. They are in the order I would take them; each stands alone, so a yes to one commits to none of the others.</p>
+
+<!-- ───────────────────────── 1 ───────────────────────── -->
+<h2 class="sec">1 · A card that is on the wall and not in the film</h2>
+<div class="said"><b>What happened.</b> The writer had the breakdown two ways, chose the second, and said "keep the other; I may come back to it… it stays on the wall where I can see it, but it is not in the film." The app has two states for a card: in the story, or tucked behind another as "not chosen". So the kept card went back <b>into</b> the film: counted as a page, printed in the script as a scene, and — having no arrows — slotted into the middle of the story by where it happened to sit. The agent labelled it "not in the film" using the card's open words, which is a misuse. (Entries 47, 50, 51, 64, 85.)</div>
+<div class="row">
+  <div class="opt">
+    <h3>As it ships · the kept card is a scene again</h3>
+    <div class="paper">
+      <article class="note note--yellow is-beat p1">
+        <span class="note__edge"><span>4</span></span>
+        <div class="note__headline">She walks him the four miles home</div>
+        <div class="note__change">What changes?</div>
+        <button class="note__with">with Nuala, Tomás, Bríd</button>
+      </article>
+      <article class="note note--yellow is-open p2">
+        <span class="note__edge"><span>5</span><span>·</span><span class="note__plant is-unpaid">Open · <b>not in the film — kept</b></span></span>
+        <div class="note__headline">They sit it out till morning and he talks</div>
+        <div class="note__change">What changes?</div>
+        <button class="note__with">with Nuala, Tomás</button>
+      </article>
+      <article class="note note--yellow p3">
+        <span class="note__edge"><span>6</span></span>
+        <div class="note__headline">Nuala drives the route alone</div>
+        <div class="note__change">What changes?</div>
+        <button class="note__with">with Nuala</button>
+      </article>
+    </div>
+<pre class="read">read_wall: runtime: about <b>9 pages</b> (of its <b>10 cards</b> …)
+story order: … she walks him home → <b>they sit it out till morning</b> → the morning after → …
+read_pages: <b>5  THE BOG ROAD - NIGHT</b>   [Unwritten]   ← the cut scene, printed as scene 5</pre>
+    <p>The film's length, its order, the runs between turns, the distance from the jar to its payoff, and every export are all wrong by one scene, and stay wrong for as long as the card is kept.</p>
+  </div>
+
+  <div class="opt">
+    <h3>A · <em>kept behind</em> the chosen card: the pair is decided</h3>
+    <div class="paper">
+      <span class="tag" style="left:164px">decided · the other kept</span>
+      <article class="note note--yellow p1" style="left:14px">
+        <span class="note__edge"><span>3</span></span>
+        <div class="note__headline">The depot</div>
+        <div class="note__change">What changes?</div>
+      </article>
+      <article class="note note--yellow is-open p2b">
+        <div class="note__headline">They sit it out till morning and he talks</div>
+        <div class="note__change">What changes?</div>
+      </article>
+      <article class="note note--yellow is-beat p2">
+        <span class="note__edge"><span>4</span><span>·</span><span class="note__plant">kept: sit it out</span></span>
+        <div class="note__headline">She walks him the four miles home</div>
+        <div class="note__change">What changes?</div>
+        <button class="note__with">with Nuala, Tomás, Bríd</button>
+      </article>
+      <article class="note note--yellow p3" style="left:350px">
+        <span class="note__edge"><span>5</span></span>
+        <div class="note__headline">Nuala drives the route alone</div>
+        <div class="note__change">What changes?</div>
+      </article>
+    </div>
+<pre class="read">choose_version { id: "walks him home", keep: true }
+  Chose "She walks him…". "They sit it out…" is <b>kept behind it: decided, not in the film</b>; choose_version on it swaps them back.
+read_wall: runtime about <b>8 pages</b> (8 cards, <b>1 kept behind a chosen version</b>)
+  versions kept, decided: "She walks him home" <span class="sub">(kept: "They sit it out till morning")</span></pre>
+    <p>The smallest change. R65 already takes a card behind another out of the order, the count and the pages; this adds one word to the pair — <i>decided</i> — so the wall stops saying "not chosen". The kept card stays tucked where it was, and the writer swaps back with one call or one click.</p>
+  </div>
+
+  <div class="opt">
+    <h3>B · any card can be <em>set aside</em></h3>
+    <div class="paper">
+      <article class="note note--yellow is-beat p1">
+        <span class="note__edge"><span>4</span></span>
+        <div class="note__headline">She walks him the four miles home</div>
+        <div class="note__change">What changes?</div>
+        <button class="note__with">with Nuala, Tomás, Bríd</button>
+      </article>
+      <article class="note note--yellow p2" style="left:150px">
+        <span class="note__edge"><span>5</span></span>
+        <div class="note__headline">Nuala drives the route alone</div>
+        <div class="note__change">What changes?</div>
+      </article>
+      <article class="note note--yellow is-aside p3" style="left:322px; top:40px">
+        <span class="note__edge"><span class="note__plant">Aside · not in the film</span></span>
+        <div class="note__headline">They sit it out till morning and he talks</div>
+        <div class="note__change">What changes?</div>
+      </article>
+    </div>
+<pre class="read">set_aside { ids: ["sit it out"], aside: true }   <span class="sub">— and choose_version keep sets the kept card aside</span>
+read_wall: runtime about <b>8 pages</b> (8 cards in the film, <b>1 set aside</b>)
+  set aside, not in the film: "They sit it out till morning and he talks"</pre>
+    <p>A third state for any card, not only a version: a scene the writer cuts but will not throw away, an idea with nowhere to go yet. Faded, no number, anywhere on the wall, out of the order, the count, the pages and the exports; the reading lists it and asks nothing. <code>choose_version</code> with <code>keep</code> would set the kept card aside.</p>
+  </div>
+</div>
+<div class="ask"><b>What I would do: A now, and B when a round asks for it.</b> A answers exactly what the writer said, with a word added to a record that exists; it cannot clutter a wall, because a kept card is always behind the scene it was a version of. B is the truer picture of how writers work — every writer has a pile of cut scenes — but it is a new state every part of the app must learn, and only one round has asked, about a version. <b>What A cannot say:</b> a scene cut outright, with no chosen version to stand behind, still has to be deleted or left in the film. If you already know you want a cut pile, say B and skip A: B covers both.</div>
+<div class="yes"><b>A yes to A means:</b> <code>choose_version</code> with <code>keep</code> leaves the other card tucked behind, marked kept; the wall draws the pair with "decided" over it; the reading has a "versions kept" line; choosing the kept card swaps them. <b>A yes to B means:</b> a new "set aside" gesture on a card's menu and a <code>set_aside</code> tool, a faded card with no number, and a line in the reading.</div>
+
+<!-- ───────────────────────── 2 ───────────────────────── -->
+<h2 class="sec">2 · An open card is all or nothing, so an honest wall asks almost nothing</h2>
+<div class="said"><b>What happened.</b> The writer knew seven scenes and no change line for any of them: "I don't know yet — leave it open." A card will not be created without a change line unless the <b>whole card</b> is marked open, and a whole-card open switches off every question about that card: its place, its cast, its arrows, its fold. So every card on the wall was open, the wall asked <b>one</b> question, and its reading — "checked and clean", fourteen times over — made a nearly empty wall look nearly finished. The timetable's fold had no payoff and nothing asked. (Entries 15, 17, 23, 28, 42, 86.)</div>
+<div class="row">
+  <div class="opt">
+    <h3>As it ships · "what changes" open means the whole card is silent</h3>
+    <div class="paper">
+      <article class="note note--yellow is-open p1">
+        <button class="note__fold"><span class="note__fold-flap"></span></button>
+        <span class="note__edge"><span>2</span><span>·</span><span class="note__plant is-unpaid">Open · <b>what changes; one scene or two; where it pays off</b></span></span>
+        <div class="note__headline">The timetable she rewrites by hand</div>
+        <div class="note__change">What changes?</div>
+        <button class="note__with">with Nuala</button>
+      </article>
+    </div>
+<pre class="read">read_wall: asking <b>1 question</b>
+  checked and clean: no fold without a payoff <b>(except 1 open card, not asked)</b>; no card without a place <b>(except 7 open cards, not asked)</b>; …
+  open, by the writer's word: … 17 lines …</pre>
+    <p>One field's honesty silences the rest of the card. To take one clause out of the open words the agent retyped the others, twice.</p>
+  </div>
+
+  <div class="opt">
+    <h3>A · the change line gets an open <em>of its own</em></h3>
+    <div class="paper">
+      <article class="note note--yellow p1">
+        <button class="note__fold"><span class="note__fold-flap"></span></button>
+        <span class="note__edge"><span>2</span><span>·</span><span class="note__plant is-unpaid">Plants · the timetable</span></span>
+        <div class="note__headline">The timetable she rewrites by hand</div>
+        <div class="note__change" style="font-style:italic;opacity:0.65">What changes — not decided: "I don't know yet"</div>
+        <button class="note__with">with Nuala</button>
+      </article>
+    </div>
+<pre class="read">create_note { headline: "The timetable…", <b>changeOpen: "I don't know yet"</b>, plantsWhat: "the timetable" }
+read_wall: asking <b>3 questions</b>
+  [unpaid] "The timetable…" plants the timetable, and no arrow pays it off. Where does it come back?
+  [unplaced] 5 cards say no place. …
+  open, by the writer's word:
+    - <b>the change line, on 7 cards</b> — I don't know yet</pre>
+    <p>R61's shape on one more field, the way a place and a when already have it. "I don't know what changes" stops meaning "ask me nothing about this scene": the card is an ordinary card, asked about its fold, its place and its arrows, with one line in the reading for all seven. The whole-card open stays for what it was drawn for — "I do not know if this scene exists".</p>
+  </div>
+
+  <div class="opt">
+    <h3>B · and the reading <em>leads with what is open</em></h3>
+<pre class="read" style="margin-top:0">read_wall:
+  <b>this wall: 1 question asked · 17 things left open by the writer's word · 9 of 10 scenes unwritten</b>
+  board: "Board 1" — its name is open …</pre>
+    <p>One line at the head of the reading and of <code>list_board</code>, so nobody — agent or writer — takes a quiet wall for a finished one. It claims nothing (D21): three counts, no verdict. It can ship with A or without it.</p>
+    <p style="margin-top:1rem"><b>Not drawn, on purpose:</b> making the open words a list of separate things, each closed on its own. It would answer the retyping (39, 79) but it turns a sentence of the writer's into a form, and A removes most of the reason a card carries three clauses at once.</p>
+  </div>
+</div>
+<div class="ask"><b>What I would do: A and B together.</b> This is the finding I would fix first if I could only fix one: it is the difference between a wall that helps a writer with a half-formed idea and one that goes silent on them, and a half-formed idea is what the app is for. <b>What it costs:</b> a field, a word on <code>create_note</code> and <code>update_note</code>, a line in the reading, and an offer on the card's change line like the one on a place. <b>What it cannot say:</b> a card with a change line open and everything else blank will now be asked four questions at once, where today it is asked none; on a first pass that is loud. The reading already groups such questions ("5 cards say no place"), so it is a few lines, not thirty.</div>
+<div class="yes"><b>A yes means:</b> <code>changeOpen</code> on a card, by the writer's word; the card shows the words in the change line's place; <code>create_note</code> accepts it instead of a change line; the reading lists it in one grouped line and goes on asking the card's other questions; and the reading opens with the three counts.</div>
+
+<!-- ───────────────────────── 3 ───────────────────────── -->
+<h2 class="sec">3 · A place left open prints the writer's words as the scene heading</h2>
+<div class="said"><b>What happened.</b> The writer left the first morning's place open with the words "I don't know yet". The field is for the writer's words about <i>why</i> there is no place, and the heading prints them after the mark — so the script's first scene is headed <b>PLACE NOT DECIDED: I DON'T KNOW YET - SEPTEMBER, MORNING</b>. Words that read well on a card's edge read as nonsense where a slugline goes. (Entry 70.) Yesterday's change for a card with <i>no</i> place — NO PLACE YET and then the headline — already reads better than this.</div>
+<div class="row">
+  <div class="opt">
+    <h3>As it ships · the words head the scene</h3>
+    <div class="script">
+      <section class="script__scene">
+        <h3 class="sl sl--heading"><span class="pl__num pl__num--l">1</span>Place not decided: I don't know yet - September, morning<span class="pl__num pl__num--r">1</span></h3>
+        <p class="sl sl--action">The morning bus into the town. NUALA FEENEY, sixties, at the wheel.</p>
+      </section>
+      <section class="script__scene">
+        <h3 class="sl sl--heading"><span class="pl__num pl__num--l">2</span>Place not decided: I don't know yet<span class="pl__num pl__num--r">2</span></h3>
+        <p class="sl sl--action">[Unwritten]</p>
+      </section>
+    </div>
+    <p>Two scenes with the same words print the same heading, and neither says which scene it is.</p>
+  </div>
+  <div class="opt">
+    <h3>A · the mark, then <em>the headline</em>; the words ride beneath</h3>
+    <div class="script">
+      <section class="script__scene">
+        <h3 class="sl sl--heading"><span class="pl__num pl__num--l">1</span><span class="mark">Place not decided:</span> The first morning he gets on - September, morning<span class="pl__num pl__num--r">1</span></h3>
+        <p class="sl sl--action" style="opacity:0.6">[[place open, by the writer's word: I don't know yet]]</p>
+        <p class="sl sl--action">The morning bus into the town. NUALA FEENEY, sixties, at the wheel.</p>
+      </section>
+      <section class="script__scene">
+        <h3 class="sl sl--heading"><span class="pl__num pl__num--l">2</span><span class="mark">Place not decided:</span> The timetable she rewrites by hand<span class="pl__num pl__num--r">2</span></h3>
+        <p class="sl sl--action" style="opacity:0.6">[[place open, by the writer's word: the shelter, or her kitchen]]</p>
+        <p class="sl sl--action">[Unwritten]</p>
+      </section>
+    </div>
+    <p>The same shape as NO PLACE YET: the mark says why there is no slugline, the headline says which scene, every heading is its own. The writer's words go in a note under the heading — Fountain's own form for a note, which does not print in a finished script — and come back in as the open place's words.</p>
+  </div>
+</div>
+<div class="ask"><b>What I would do: A.</b> It is one function again, the one changed yesterday, and the import's reading of the note. <b>What it costs:</b> the writer's words leave the heading line; on the app's page they show as a grey note under it. <b>What it cannot say:</b> nothing new — it says the same two things as today, in places where each reads as what it is.</div>
+<div class="yes"><b>A yes means:</b> a scene whose place is open is headed PLACE NOT DECIDED: and its headline; the writer's words for why sit on the next line as a note, in the app, in print and in every export.</div>
+
+<!-- ───────────────────────── 4 ───────────────────────── -->
+<h2 class="sec">4 · A fact about the whole film — drawn before the round, now answered by it</h2>
+<div class="said"><b>What happened.</b> The notes say the film runs September to New Year and the cut is announced in the first scene. Nobody told the agent where such a thing goes. It put both in the premise, saying as it did that the premise "is the nearest, and it isn't what a premise is". Then, writing the first morning, it found the other half: the premise said the cut is announced in this scene and the scene's card said nothing, so "an agent writing only from the card would never know". And <code>read_wall</code> prints a premise only when it is <i>open</i>, never when it is set. (Entries 13, 24, 74; round twenty 9 and 20 before them.)</div>
+<div class="row">
+  <div class="opt">
+    <h3>As it ships · the agent guesses, and the reading does not read it back</h3>
+<pre class="read" style="margin-top:0">set_premise — "…what a series is about, or what is true before a film starts ('the winter the shop closes')."
+read_wall:
+  board: "Board 1" …
+  logline: open, by the writer's word — "I don't know yet"
+  <s>(no premise line: it is set, so it is not printed)</s>
+read_pages → write_scene "The first morning…":
+  <s>(nothing says the cut is announced in this scene)</s></pre>
+  </div>
+  <div class="opt">
+    <h3>A · say what the premise is for, and read it back <em>where a scene is written</em></h3>
+<pre class="read" style="margin-top:0">set_premise — "… <b>Also where a fact about the whole film goes when no card holds it: its span ("September to New Year"), a rule it keeps ("Con does not die in this film"). A fact about one scene belongs on its card.</b>"
+read_wall:
+  <b>premise: "A country bus route in the west… September to New Year; the cut is announced in September, in the first scene."</b>
+  logline: open …
+read_pages, at the head, above scene 1:
+  <b>the film (the premise): "… the cut is announced in September, in the first scene."</b></pre>
+    <p>The same sentence in the agent's guide and the writer's guide. No new field: a span worked out from the cards' whens would be the app making a claim, and a list of "rules" would be the premise under another name.</p>
+  </div>
+</div>
+<div class="ask"><b>What I would do: A</b>, which is yesterday's drawing plus the last line — the premise at the head of the pages, which the round showed is where a scene's writer needs it. <b>What it cannot say:</b> the premise is prose, so the wall cannot check a scene against "the cut is announced in the first scene"; that stays a reading for a person or an agent. A fact that belongs to <i>one</i> scene ("the cut is announced here") is still better on that scene's card, and the sentence says so.</div>
+<div class="yes"><b>A yes means:</b> three sentences of words, one line in <code>read_wall</code>, one line at the head of <code>read_pages</code>. Nothing a person sees in the app changes.</div>
+
+<h2 class="sec">If you want it in one line each</h2>
+<p class="lede" style="margin-top:0.6rem">1 — <b>A</b>: a kept version stays tucked behind the chosen one, marked decided (say <b>B</b> if you want a cut pile for any card). 2 — <b>A and B</b>: the change line can be open on its own, and the reading leads with what is open. 3 — <b>A</b>: PLACE NOT DECIDED: and the headline, the words beneath. 4 — <b>A</b>: say what the premise is for and read it back. If I could do only one, it would be 2.</p>
+</body>
+</html>

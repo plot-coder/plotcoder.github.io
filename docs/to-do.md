@@ -37,7 +37,10 @@ release bump the pin, redeploy the function, and redeploy the Worker.
    open card** — a wall of honest "I don't know"s asks almost nothing, and
    the change line has no open of its own (15, 17, 23, 28, 42, 86); (c) **an
    open place's words as a slugline**, "PLACE NOT DECIDED: I DON'T KNOW YET"
-   (70). Mock first, as always.
+   (70). **Drawn 2026-09-20:** `docs/mockups/round-twenty-two-calls.html`,
+   each as it ships beside one or two ways it could be, with a
+   recommendation and what a yes means; the premise (item 4) is its fourth
+   section. Robert's word on each builds it.
 4. **The premise**, the handover's second decision, now answered by the
    round (13, 24, 74): the agent put the span in the premise unprompted,
    said it "isn't what a premise is", and a scene's writer could not see a

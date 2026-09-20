@@ -153,7 +153,7 @@ patches are honest; they are not the answer.
 
 ## E. Orders, arrows and scenes (30, 31, 33, 61, 63, 71, 77, 91)
 
-- [ ] **E1 · Set the order from a list** (31). One swap took seven calls,
+- [x] **E1 · Set the order from a list** *(built 2026-09-20: `set_order`, ninety-three tools, one undo; `move_scene` on a wall with no arrows draws the chain from the rows and says so; both tested. Built at the server from the arrow commands, as `move_scene` is — no new kernel command.)* (31). One swap took seven calls,
   and `move_scene` refuses a wall with no follows arrows.
   *Plan:* `set_order { ids: [...] }` — draws the follows chain through the
   cards named, in one step one undo takes back; cards not named keep their

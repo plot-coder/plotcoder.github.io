@@ -527,6 +527,13 @@ card of another board is not asked about as uncast here.
 - `set_arrow_kind` — change an arrow's kind by id. One arrow per direction, so
   change the kind rather than drawing it again.
 - `delete_arrow` — by arrow id. Removes that direction only.
+- `set_order` — **"the order is: A, B, C…"**: the story order from a list
+  of cards, by id or headline, in one step one undo takes back. The follows
+  arrows touching the cards named become one chain through them, and the
+  wall is tidied along it; setup arrows are untouched; a card in the film
+  that is not named may be left on no arrow, and the reply names it. This
+  is the tool for the writer giving the order; do not draw it arrow by
+  arrow.
 - `move_scene` — move a card to another place in the story: `after` one
   card's id, or `before` one; or to **another board** of the project with
   `board` (by name, id or number), landing `after` or `before` a card there,

@@ -2128,7 +2128,7 @@ server.registerTool(
   {
     title: "Move a scene in the story",
     description:
-      "Move a card to another place in the story order — after one card, or before one — by rewiring its follows arrows and tidying the wall along them, as one step that undo takes back whole. The story order is the follows arrows: the card leaves its place (what pointed at it now points at what it pointed at) and lands between the target and what followed it. A person does this by dragging in the outline. Needs a wall with follows arrows; on a wall without any, create_arrow the sequence first, or move_note by position. To another board of the project: pass board (name, id or number from list_boards) and, optionally, after or before a card there; with neither the card lands at the head of that board's story. Across boards the card keeps its cast, place, when, rank, length, text and fold; its arrows stay behind, and that board is then the open one. Undo is per board: one step there, one on the board it left.",
+      "Move a card to another place in the story order — after one card, or before one — by rewiring its follows arrows and tidying the wall along them, as one step that undo takes back whole. The story order is the follows arrows: the card leaves its place (what pointed at it now points at what it pointed at) and lands between the target and what followed it. A person does this by dragging in the outline. On a wall with no follows arrows yet, the order is drawn from the rows first and the reply says so; set_order sets a whole order from a list. To another board of the project: pass board (name, id or number from list_boards) and, optionally, after or before a card there; with neither the card lands at the head of that board's story. Across boards the card keeps its cast, place, when, rank, length, text and fold; its arrows stay behind, and that board is then the open one. Undo is per board: one step there, one on the board it left.",
     inputSchema: { id: z.string(), after: z.string().optional(), before: z.string().optional(), board: z.union([z.string().min(1), z.number()]).optional() },
   },
   async (args) => {
@@ -2148,9 +2148,9 @@ server.registerTool(
     if (!target) return ok(`No card with id ${args.after ?? args.before}. Call list_board.`);
     if (card.id === target.id) return ok("A card cannot be moved next to itself.");
     const isFollows = (arrow) => arrow.kind !== "setup";
-    if (!state.arrows.some(isFollows)) {
-      return ok("The wall has no follows arrows, so there is no story order to move within: create_arrow the sequence first, or move_note the card by position.");
-    }
+    // A wall with no follows arrows has its order in its rows: draw that chain first, say so, and then move within it
+    // (round twenty-two, entry 31: the smallest direction needed the whole chain drawn by hand first).
+    const chainedFromRows = !state.arrows.some(isFollows);
     let removed = 0;
     let drawn = 0;
     let joinedGroup = null;
@@ -2165,9 +2165,13 @@ server.registerTool(
         }
         return done;
       };
+      if (chainedFromRows) {
+        const rows = storyOrder(state);
+        for (let index = 1; index < rows.length; index += 1) step({ type: "create_arrow", from: rows[index - 1].id, to: rows[index].id, kind: "follows" });
+      }
       // Leave: what pointed at the card points at what the card pointed at.
-      const ins = state.arrows.filter((arrow) => isFollows(arrow) && arrow.to === card.id);
-      const outs = state.arrows.filter((arrow) => isFollows(arrow) && arrow.from === card.id);
+      const ins = current().arrows.filter((arrow) => isFollows(arrow) && arrow.to === card.id);
+      const outs = current().arrows.filter((arrow) => isFollows(arrow) && arrow.from === card.id);
       for (const arrow of [...ins, ...outs]) run({ type: "delete_arrow", id: arrow.id });
       for (const before of ins) for (const after of outs) if (before.from !== after.to) run({ type: "create_arrow", from: before.from, to: after.to, kind: "follows" });
       // Land: between the target and what followed it (or what led to it), and
@@ -2183,7 +2187,41 @@ server.registerTool(
       ? ` It joined "${joinedGroup}", the group it landed in, so the tidy keeps it with the act.`
       : group ? ` It is still in "${group.title || "an untitled group"}"; a frame does not follow a move, so say if the act or sequence should change.` : "";
     return ok(
-      `Moved "${card.headline}" to ${args.after ? "after" : "before"} "${target.headline}": ${removed} follows arrow(s) removed, ${drawn} drawn${final.arrows.some((arrow) => arrow.kind === "setup") ? ", setup arrows untouched" : ""}, the wall tidied along them${where(live)}. Story order now: ${order.map((note, index) => `${index + 1}. ${note.headline}`).join(", ")}.${groupLine}${lockedNow} One undo takes the whole move back.`,
+      `${chainedFromRows ? "The wall had no follows arrows, so the order was drawn from the rows first, as the wall read it; then: " : ""}Moved "${card.headline}" to ${args.after ? "after" : "before"} "${target.headline}": ${removed} follows arrow(s) removed, ${drawn} drawn${final.arrows.some((arrow) => arrow.kind === "setup") ? ", setup arrows untouched" : ""}, the wall tidied along them${where(live)}. Story order now: ${order.map((note, index) => `${index + 1}. ${note.headline}`).join(", ")}.${groupLine}${lockedNow} One undo takes the whole move back.`,
+      { order: order.map((note) => note.id) },
+    );
+  },
+);
+
+server.registerTool(
+  "set_order",
+  {
+    title: "Set the story order from a list",
+    description:
+      "\"The order is: the first morning, the timetable, the depot…\" — set the story order from a list of cards, by id or headline, in one step one undo takes back. The follows arrows touching the cards named are replaced by one chain through them in the order given, and the wall is tidied along it; setup arrows, being claims, are untouched. A card in the film that is not named keeps its arrows to other cards not named and loses any to a card that is: the reply names the cards left unwired, and the wall asks where they go. Cards set aside, and versions behind another card, are not in the film and are refused by name. For one card's place, move_scene; for one arrow, create_arrow.",
+    inputSchema: { cards: z.array(z.string()).min(2) },
+  },
+  async (args) => {
+    const { state } = await readBoard();
+    const refs = cardsByRef(state, args.cards);
+    if (refs.missing.length) return ok(`Nothing changed: not on the board — ${refs.missing.map((ref) => `"${ref}"`).join(", ")}. Call list_board for the ids or the exact headlines.`);
+    const ids = refs.found;
+    if (new Set(ids).size !== ids.length) return ok("Nothing changed: a card is named twice, and a scene has one place in the order.");
+    const outside = ids.map((id) => state.notes.find((note) => note.id === id)).filter((note) => note.alternativeOf || note.aside);
+    if (outside.length) return ok(`Nothing changed: ${outside.map((note) => `"${note.headline}"`).join(", ")} ${outside.length === 1 ? "is" : "are"} not in the film (${outside.map((note) => (note.aside ? "set aside" : "a version behind another card")).join(", ")}), and the order is the film's.`);
+    const named = new Set(ids);
+    let removed = 0;
+    let drawn = 0;
+    const { state: final, live } = await commitAll(`set_order (${ids.length} cards)`, (step, current) => {
+      for (const arrow of current().arrows.filter((item) => item.kind !== "setup" && (named.has(item.from) || named.has(item.to)))) if (step({ type: "delete_arrow", id: arrow.id }).changed) removed += 1;
+      for (let index = 1; index < ids.length; index += 1) if (step({ type: "create_arrow", from: ids[index - 1], to: ids[index], kind: "follows" }).changed) drawn += 1;
+      step({ type: "apply_poses", poses: organizePoses(current(), {}) });
+    });
+    const order = storyOrder(final);
+    const wired = new Set(final.arrows.filter((arrow) => arrow.kind !== "setup").flatMap((arrow) => [arrow.from, arrow.to]));
+    const loose = order.filter((note) => !wired.has(note.id));
+    return ok(
+      `The story now runs: ${order.filter((note) => named.has(note.id)).map((note) => `"${note.headline}"`).join(" → ")}${where(live)}. ${removed} follows arrow(s) removed, ${drawn} drawn${final.arrows.some((arrow) => arrow.kind === "setup") ? ", setup arrows untouched" : ""}, and the wall tidied along them; one undo takes it all back.${loose.length ? ` Not named, and now on no follows arrow: ${loose.map((note) => `"${note.headline}"`).join(", ")} — the wall asks where ${loose.length === 1 ? "it goes" : "they go"}.` : ""}`,
       { order: order.map((note) => note.id) },
     );
   },

@@ -213,6 +213,7 @@ describe("plotcoder MCP server", () => {
       "set_logline",
       "set_alternative",
       "set_open",
+      "set_order",
       "set_payoff",
       "set_plant",
       "set_premise",
@@ -2114,6 +2115,33 @@ describe("after the blind run", () => {
       expect(brief).toMatch(/^PlotCoder wall .* — the questions only/);
       for (const finding of whole.findings ?? []) expect(brief).toContain(`[${finding.kind}]`);
       expect(brief).not.toContain("runs between beats");
+    } finally {
+      door.stop();
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("sets the order from a list in one step, and moves a scene on a wall with no arrows by drawing the rows first (round twenty-two, entry 31)", async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-order-"));
+    const door = new McpClient(root);
+    await door.start();
+    try {
+      // No follows arrows yet: move_scene draws the chain from the rows, says so, and moves.
+      const moved = await door.callTool("move_scene", { id: "letter-aloud", after: "maya-letter" });
+      expect(moved).toContain("The wall had no follows arrows, so the order was drawn from the rows first");
+      expect(moved).toContain('Moved "The letter is read aloud" to after "Maya finds the letter"');
+      // The order as a writer says it, by headline, one call.
+      const set = await door.callTool("set_order", { cards: ["Tom lies about the job", "Maya finds the letter", "The letter is read aloud"] });
+      expect(set).toContain('The story now runs: "Tom lies about the job" → "Maya finds the letter" → "The letter is read aloud"');
+      const { arrows } = await door.callToolData("list_board");
+      expect(arrows.filter((arrow) => arrow.kind !== "setup").map((arrow) => `${arrow.from}>${arrow.to}`)).toEqual(["tom-lies>maya-letter", "maya-letter>letter-aloud"]);
+      // One undo takes the whole order back.
+      await door.callTool("undo");
+      expect((await door.callToolData("list_board")).arrows.some((arrow) => arrow.from === "tom-lies" && arrow.to === "maya-letter")).toBe(false);
+      // Refusals in words: a card named twice, a card not in the film.
+      expect(await door.callTool("set_order", { cards: ["maya-letter", "maya-letter"] })).toContain("named twice");
+      await door.callTool("set_aside", { ids: ["tom-lies"] });
+      expect(await door.callTool("set_order", { cards: ["tom-lies", "maya-letter"] })).toContain("not in the film (set aside)");
     } finally {
       door.stop();
       fs.rmSync(root, { recursive: true, force: true });

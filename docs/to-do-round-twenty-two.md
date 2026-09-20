@@ -106,7 +106,7 @@ patches are honest; they are not the answer.
 
 ## D. What the agent reads (6, 8, 29, 41, 43, 83, 84, 86, 87, 89, S3)
 
-- [ ] **D1 · One view of everything undecided** (41, 43, 67, 86, 89, 24).
+- [x] **D1 · One view of everything undecided** *(built 2026-09-20: `describeUndecided` in the reading module, pure and tested — project fields, words shared by three cards grouped, then each card once; blanks by field under "not said yet". Changed at the asking: blanks are listed by field, not per card — they have no words, and four lines read shorter than forty.)* (41, 43, 67, 86, 89, 24).
   "What is still open?" took three calls and a merge, and the blank things —
   no when, no length, a blank place beside an open one — are nowhere.
   *Plan:* the reading's open section is regrouped **per card** (its open

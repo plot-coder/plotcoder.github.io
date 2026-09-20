@@ -115,6 +115,15 @@ only when the server is started with `PLOTCODER_JSON=1`.
   setup with the distance to its payoff, and every thread with its cards. The tool's own description carries the same list,
   and a reply names each question's kind. Put the questions to the writer. Do
   not act on them unasked, and do not add an opinion about the number of beats.
+  **"What is still open?" is answered here, in one call.** The reading opens
+  with three counts — questions asked, things left open by the writer's word,
+  scenes unwritten — so a quiet wall is never taken for a finished one. Its
+  open section lists the project's open fields, one grouped line where the
+  same words sit on three or more cards, then each card once with everything
+  open on it. Under a separate head, "not said yet", it lists what is simply
+  blank — no place, no when, no length, nobody in it. Blank is not open: open
+  is the writer's word, blank is nobody's, so never tell the writer they left
+  something open that they only have not said.
 - `leave_question` / `ask_again` — the writer's word on a question: "leave
   it". Pass the kind as `read_wall` names it, and the ids when that kind is
   asked more than once. A leave is the open board's: to leave a question on

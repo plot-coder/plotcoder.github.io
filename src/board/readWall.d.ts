@@ -107,3 +107,10 @@ export declare function readWall(
 ): WallReading;
 export declare function describeRuns(reading: WallReading, state: BoardState): string[];
 export declare function describeSetups(reading: WallReading, state: BoardState): string[];
+
+/** Everything undecided on the wall: the writer's open things (project fields, shared words grouped, then each card once) and what is simply not said, by field. */
+export declare function describeUndecided(
+  state: BoardState,
+  reading: WallReading,
+  extras?: { project?: Array<{ label: string; words: string }>; wouldAsk?: (item: { id: string; words: string; hides: string[] }) => string },
+): { open: string[]; blank: string[] };

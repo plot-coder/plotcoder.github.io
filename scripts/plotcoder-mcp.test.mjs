@@ -1142,8 +1142,8 @@ describe("open fields (R61): the logline, the premise, a when and a board's name
     expect(born).toContain('at: open, by the writer\'s word — "which hall"');
     expect(born).toContain('when: open, by the writer\'s word — "which evening"');
     const read = await client.callTool("read_wall");
-    expect(read).toContain('  - "The parish hall" — where: which hall');
-    expect(read).toContain('  - "The parish hall" — when: which evening');
+    // One line for the card, with everything open on it (round twenty-two, entry 43).
+    expect(read).toContain('  - "The parish hall" — where: which hall; when: which evening');
     // Decided, so the tests after this one start from a wall with nothing open.
     await client.callTool("set_location", { ids: [card.id], location: "the parish hall" });
     await client.callTool("set_when", { ids: [card.id], when: "evening" });
@@ -1600,7 +1600,7 @@ describe("round sixteen", () => {
     const id = (await six.callToolData("list_board")).notes.find((note) => note.headline.startsWith("Declan")).id;
     const read = await six.callTool("read_wall");
     expect(read).toContain("open, by the writer's word");
-    expect(read).toContain('"Declan wants Con to move to Naas" — where, and whether Ruth is there (closed, it would be asked ');
+    expect(read).toContain('"Declan wants Con to move to Naas" — open: where, and whether Ruth is there (closed, it would be asked ');
     // As questions, not as the checks' clean forms (round nineteen, entry 31).
     expect(read).toContain("who is in it (cast)");
     expect(read).not.toContain("would be asked, closed: no card");

@@ -55,7 +55,7 @@ import { describePresence } from "../src/board/presence.js";
 import { segmentBrief, WORKFLOWS } from "../src/board/workflows.js";
 import { DEFAULT_REMINDERS, titleFromBody } from "../src/board/reminders.js";
 import crypto from "node:crypto";
-import { describeRuns, describeSetups, readWall } from "../src/board/readWall.js";
+import { describeRuns, describeSetups, describeUndecided, readWall } from "../src/board/readWall.js";
 import { compareStructure, describeComparison, MATCH_PAGES } from "../src/board/compareStructure.js";
 import { GAP, ROW_WIDTH, organizePoses } from "../src/board/organize.js";
 import { parseScene, sceneLineCount } from "../src/board/paginate.js";
@@ -1752,45 +1752,18 @@ server.registerTool(
     // A beat's own pages are in no run (entry 48); say how many pages that is.
     const beatEighths = reading.beats.reduce((sum, beat) => sum + noteEighths(state.notes.find((note) => note.id === beat.id) ?? {}), 0);
     // Fields left open by the writer's word (R61): the logline and the whens are the reading's; the premise and the board's name are the project's.
-    const openFieldLines = [
-      ...(projectForRead.nameOpen ? [`  - the project's name — ${projectForRead.nameOpen}`] : []),
-      ...(state.targetOpen ? [`  - the target — ${state.targetOpen}`] : []),
-      ...reading.openFields.filter((field) => field.field === "logline").map((field) => `  - the logline — ${field.words}`),
-      ...(projectForRead.premiseOpen ? [`  - the premise — ${projectForRead.premiseOpen}`] : []),
-      ...(readBoardMeta?.nameOpen ? [`  - this board's name — ${readBoardMeta.nameOpen}`] : []),
-      ...reading.openFields.filter((field) => field.field === "location").map((field) => `  - "${state.notes.find((note) => note.id === field.id)?.headline ?? field.id}" — where: ${field.words}`),
-      // Change lines left open in the same words are one line too (R67): seven cards, one "I don't know yet".
-      ...(() => {
-        const byWords = new Map();
-        for (const field of reading.openFields.filter((item) => item.field === "change")) {
-          const key = field.words.toLowerCase();
-          if (!byWords.has(key)) byWords.set(key, { words: field.words, ids: [] });
-          byWords.get(key).ids.push(field.id);
-        }
-        const name = (id) => `"${state.notes.find((note) => note.id === id)?.headline ?? id}"`;
-        const inStoryCount = state.notes.filter((note) => !note.alternativeOf && !note.aside).length;
-        return [...byWords.values()].map((group) =>
-          group.ids.length === 1
-            ? `  - ${name(group.ids[0])} — the change line: ${group.words}`
-            : `  - the change line, on ${group.ids.length} cards${group.ids.length === inStoryCount ? " (every card)" : ""} — ${group.words}${group.ids.length === inStoryCount ? "" : `: ${group.ids.map(name).join(", ")}`}`,
-        );
-      })(),
-      // Whens left open in the same words are one line, not one per card (round twenty, entry 22).
-      ...(() => {
-        const byWords = new Map();
-        for (const field of reading.openFields.filter((item) => item.field === "when")) {
-          const key = field.words.toLowerCase();
-          if (!byWords.has(key)) byWords.set(key, { words: field.words, ids: [] });
-          byWords.get(key).ids.push(field.id);
-        }
-        const name = (id) => `"${state.notes.find((note) => note.id === id)?.headline ?? id}"`;
-        return [...byWords.values()].map((group) =>
-          group.ids.length === 1
-            ? `  - ${name(group.ids[0])} — when: ${group.words}`
-            : `  - when, on ${group.ids.length} cards${group.ids.length === state.notes.length ? " (every card)" : ""} — ${group.words}${group.ids.length === state.notes.length ? "" : `: ${group.ids.map(name).join(", ")}`}`,
-        );
-      })(),
-    ];
+    // Everything undecided, in one place: the writer's open things card by card, then what nobody has said (round twenty-two, entries 41, 43, 67, 86, 89).
+    const undecided = describeUndecided(state, reading, {
+      project: [
+        ...(projectForRead.nameOpen ? [{ label: "the project's name", words: projectForRead.nameOpen }] : []),
+        ...(state.targetOpen ? [{ label: "the target", words: state.targetOpen }] : []),
+        ...(projectForRead.premiseOpen ? [{ label: "the premise", words: projectForRead.premiseOpen }] : []),
+        ...(readBoardMeta?.nameOpen ? [{ label: "this board's name", words: readBoardMeta.nameOpen }] : []),
+      ],
+      wouldAsk: (item) => (item.hides.length ? ` (closed, it would be asked ${item.hides.map((kind) => ASK_WORDS[kind] ?? CHECK_WORDS[kind] ?? kind).join("; ")})` : ""),
+    });
+    // Fields, not lines: a card's line can carry three of them.
+    const openFieldCount = reading.openFields.length + (projectForRead.nameOpen ? 1 : 0) + (state.targetOpen ? 1 : 0) + (projectForRead.premiseOpen ? 1 : 0) + (readBoardMeta?.nameOpen ? 1 : 0);
     const lines = [
       `PlotCoder wall (${door(live, base)})`,
       atAGlance(state, reading, projectForRead, readBoardMeta),
@@ -1833,8 +1806,11 @@ server.registerTool(
         : [reading.paidBy.length ? "  (no setup arrow on this board; what pays off a fold of another board is listed below)" : "  (no arrow is marked as a setup)"]),
       ...reading.later.map((item) => `  - "${state.notes.find((note) => note.id === item.id)?.headline ?? item.id}" is folded and pays off later, on "${boardById(projectForRead, item.boardId)?.name ?? item.boardId}"${item.noteId ? `, at ${episodeLabel(projectForRead, boardsNow, item.boardId, item.noteId)} "${boardsNow[item.boardId]?.notes?.find((note) => note.id === item.noteId)?.headline ?? item.noteId}"` : " — no scene there claims it yet"}`),
       ...reading.paidBy.map((item) => `  - "${state.notes.find((note) => note.id === item.id)?.headline ?? item.id}" pays off "${item.fromHeadline}" from "${item.fromBoardName}" (${episodeLabel(projectForRead, boardsNow, item.fromBoardId, item.fromNoteId)}), one board earlier`),
-      ...(reading.open.length || openFieldLines.length
-        ? ["open, by the writer's word (listed, not asked about while the words stand; set_open with \"\" closes a card, the field's own tool with open \"\" a field):", ...openFieldLines, ...reading.open.map((item) => `  - "${state.notes.find((note) => note.id === item.id)?.headline ?? item.id}" — ${item.words}${item.hides.length ? ` (closed, it would be asked ${item.hides.map((kind) => ASK_WORDS[kind] ?? CHECK_WORDS[kind] ?? kind).join("; ")})` : ""}`)]
+      ...(undecided.open.length
+        ? ["open, by the writer's word (listed, not asked about while the words stand; each card once, with everything open on it; set_open with \"\" closes a card, the field's own tool with open \"\" a field):", ...undecided.open]
+        : []),
+      ...(undecided.blank.length
+        ? ["not said yet (blank, and nobody has said why — not the writer's word, so not open; the wall asks about some of these above, and says nothing of the rest):", ...undecided.blank]
         : []),
       ...(reading.aside.length
         ? ["set aside, not in the film (on the wall; out of the order, the count, the pages and every export; never asked; set_aside with aside false brings one back):", ...reading.aside.map((id) => `  - "${state.notes.find((note) => note.id === id)?.headline ?? id}"`)]
@@ -1862,7 +1838,7 @@ server.registerTool(
         const counts = new Map();
         for (const finding of asked) counts.set(finding.kind, (counts.get(finding.kind) ?? 0) + 1);
         return `asking ${asked.length} question${asked.length === 1 ? "" : "s"} of ${counts.size} kind${counts.size === 1 ? "" : "s"}: ${[...counts.entries()].map(([kind, n]) => (n > 1 ? `${kind} ×${n}` : kind)).join(", ")}${held}`;
-      })()}${reading.left.length ? `; left by the writer, so not clean: ${[...new Set(reading.left.map((finding) => finding.kind))].map((kind) => `[${kind}]`).join(" ")}` : ""}${reading.open.length || openFieldLines.length ? `; ${[reading.open.length ? `${reading.open.length} card${reading.open.length === 1 ? "" : "s"}` : "", openFieldLines.length ? `${openFieldLines.length} field${openFieldLines.length === 1 ? "" : "s"}` : ""].filter(Boolean).join(" and ")} open by the writer's word, not asked` : ""}; checked and clean: ${CHECKS.filter((kind) => !reading.findings.some((finding) => finding.kind === kind) && !reading.left.some((finding) => finding.kind === kind)).map((kind) => {
+      })()}${reading.left.length ? `; left by the writer, so not clean: ${[...new Set(reading.left.map((finding) => finding.kind))].map((kind) => `[${kind}]`).join(" ")}` : ""}${reading.open.length || openFieldCount ? `; ${[reading.open.length ? `${reading.open.length} card${reading.open.length === 1 ? "" : "s"}` : "", openFieldCount ? `${openFieldCount} field${openFieldCount === 1 ? "" : "s"}` : ""].filter(Boolean).join(" and ")} open by the writer's word, not asked` : ""}; checked and clean: ${CHECKS.filter((kind) => !reading.findings.some((finding) => finding.kind === kind) && !reading.left.some((finding) => finding.kind === kind)).map((kind) => {
         // The reading's own numbers: follows arrows and the film's cards, not setup arrows and the wall's (round twenty-two, entry 20).
         if (kind === "unlinked" && reading.wired.linked === 0) return "no card without a follows arrow (not asked until half the film's cards are wired: no follows arrows yet)";
         if (kind === "unlinked" && reading.wired.linked * 2 < reading.wired.of) return `no card without a follows arrow (not asked until half the film's cards are wired: ${reading.wired.linked} of ${reading.wired.of} are; a setup arrow is a claim, not a place in the story)`;

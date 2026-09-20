@@ -575,6 +575,73 @@ function sameList(a, b) {
   return a.length === b.length && a.every((id, index) => id === b[index]);
 }
 
+/**
+ * Everything undecided on the wall, in one place (round twenty-two, entries 41,
+ * 43, 67, 86, 89): what the writer has left open, and what nobody has said.
+ *
+ * `open`: the project's fields first; then one grouped line where the same
+ * words sit on three or more cards in one field (round twenty, entry 22);
+ * then one line per card carrying everything particular to it, so no card
+ * appears twice. `blank`: what is simply not said — no place, no when, no
+ * length, nobody in it — by field, because blanks have no words. Blank is
+ * never "open": open is the writer's word, and blank is nobody's (D21).
+ *
+ * @param extras.project lines for fields the project holds ({ label, words })
+ * @param extras.wouldAsk (openItem) => a suffix saying what a closed card would be asked
+ */
+export function describeUndecided(state, reading, extras = {}) {
+  const byId = new Map(state.notes.map((note) => [note.id, note]));
+  const name = (id) => `"${byId.get(id)?.headline ?? id}"`;
+  const FIELD = { change: "the change line", location: "where", when: "when" };
+  const open = [];
+  for (const item of extras.project ?? []) open.push(`  - ${item.label} — ${item.words}`);
+  for (const field of reading.openFields.filter((item) => item.field === "logline")) open.push(`  - the logline — ${field.words}`);
+
+  // Words shared by three or more cards in one field are one line.
+  const grouped = new Set();
+  for (const kind of ["change", "location", "when"]) {
+    const byWords = new Map();
+    for (const field of reading.openFields.filter((item) => item.field === kind)) {
+      const key = field.words.toLowerCase();
+      if (!byWords.has(key)) byWords.set(key, { words: field.words, ids: [] });
+      byWords.get(key).ids.push(field.id);
+    }
+    for (const group of byWords.values()) {
+      if (group.ids.length < 3) continue;
+      for (const id of group.ids) grouped.add(`${kind}:${id}`);
+      const every = group.ids.length === reading.order.length;
+      open.push(`  - ${FIELD[kind]}, on ${group.ids.length} cards${every ? " (every card)" : ""} — ${group.words}${every ? "" : `: ${group.ids.map(name).join(", ")}`}`);
+    }
+  }
+
+  // Then each card once, with everything particular to it.
+  const openById = new Map(reading.open.map((item) => [item.id, item]));
+  for (const id of reading.order) {
+    const parts = [];
+    const whole = openById.get(id);
+    if (whole) parts.push(`open: ${whole.words}${extras.wouldAsk ? extras.wouldAsk(whole) : ""}`);
+    for (const kind of ["change", "location", "when"]) {
+      const field = reading.openFields.find((item) => item.field === kind && item.id === id);
+      if (field && !grouped.has(`${kind}:${id}`)) parts.push(`${FIELD[kind]}: ${field.words}`);
+    }
+    if (parts.length) open.push(`  - ${name(id)} — ${parts.join("; ")}`);
+  }
+
+  // Not said yet: blank, and nobody has said why.
+  const cards = reading.order.map((id) => byId.get(id)).filter(Boolean);
+  const list = (notes) => (notes.length === cards.length && cards.length > 1 ? `every card (${notes.length})` : notes.length > 6 ? `${notes.length} of ${cards.length} cards` : notes.map((note) => name(note.id)).join(", "));
+  const blank = [];
+  const noPlace = cards.filter((note) => !(note.location ?? "").trim() && !(note.locationOpen ?? "").trim());
+  const noWhen = cards.filter((note) => !(note.when ?? "").trim() && !(note.whenOpen ?? "").trim());
+  const unsized = cards.filter((note) => note.lengthEighths === null && !(note.text ?? "").trim());
+  const nobody = (state.characters ?? []).length ? cards.filter((note) => !(note.characterIds ?? []).length) : [];
+  if (noPlace.length) blank.push(`  - no place: ${list(noPlace)}`);
+  if (noWhen.length) blank.push(`  - no when: ${list(noWhen)}`);
+  if (unsized.length) blank.push(`  - no length (read as a page each): ${list(unsized)}`);
+  if (nobody.length) blank.push(`  - nobody in it: ${list(nobody)}`);
+  return { open, blank };
+}
+
 /** The setups as prose lines: what plants what, and how far apart. */
 export function describeSetups(reading, state) {
   const byId = new Map(state.notes.map((note) => [note.id, note]));

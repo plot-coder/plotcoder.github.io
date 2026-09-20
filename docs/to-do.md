@@ -46,10 +46,17 @@ tail, the presence tail, and the door's name as the wiring.
    through the Management API as SQL; read the table, not the history. Three
    questions on the list, all answered, none waiting.
 4. Robert's calls that remain (section 3, all struck; the table stays as
-   the record) and the smaller things (section 4). Decide: a placeless
-   card's heading on the pages, said by three rounds (18:46, 19:44, 20:48);
-   "Con does not die in this film" and the span have no home but the
-   premise and a person's notes (20:9, 20:20).
+   the record) and the smaller things (section 4). ~~Decide: a placeless
+   card's heading on the pages (18:46, 19:44, 20:48)~~ **Built 2026-09-19,
+   before the round,** on Robert's "build your recommendations":
+   `docs/mockups/the-card-with-no-place.html`, A — `NO PLACE YET:` and then
+   the headline, through `sceneHeading`, every door; the changelog has the
+   rest. **Still to decide, after round twenty-two:** "Con does not die in
+   this film" and the span (20:9, 20:20). The same page draws the answer —
+   the premise, said in `set_premise` and both guides, and `read_wall`
+   printing a set premise, which it does not today — and the round's notes
+   have a span the agent is not told where to put; read where it puts it,
+   then build the sentences or something better.
 
 **Done today, in order:** round twenty run and fixed (#104, 0.1.34); R61's
 edge (#106, 0.1.35); the other session's R63 writer's guide and R64 Help

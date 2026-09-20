@@ -162,7 +162,7 @@ describe("revisions in Final Draft out (round fourteen, entry 45)", () => {
     expect(xml).toContain('<Revision Color="#5B8DEF" FullRevision="No" ID="1" Mark="*" Name="Blue" Style="" />');
     expect(xml).toContain('<Text RevisionID="1">Tom? On the bus.</Text>');
     expect(xml).not.toContain('<Text RevisionID="1">Rain.</Text>');
-    expect(xml).toContain('<Text RevisionID="1">TOM LIES ABOUT THE JOB</Text>');
+    expect(xml).toContain('<Text RevisionID="1">NO PLACE YET: TOM LIES ABOUT THE JOB</Text>');
     expect(xml).toContain("Blue revision · 2026-09-17; changed paragraphs are marked.");
     expect(fromFdx(xml).setAside.revisedParagraphs).toBe(2);
   });

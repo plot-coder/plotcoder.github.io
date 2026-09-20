@@ -1523,7 +1523,7 @@ describe("round sixteen", () => {
     expect(await six.callTool("set_location", { ids: [id], location: "the kitchen" })).toContain('is still open (the buyer): the words stay until set_open "" clears them');
     // Round eighteen, entry 46: an open card without a place is named as such on the pages, not read as a slugline.
     await six.callTool("set_location", { ids: [id], location: "" });
-    expect(await six.callTool("read_pages")).toContain("· open card · no place: the headline stands in for the heading, not a place");
+    expect(await six.callTool("read_pages")).toContain("· open card · no place: the headline heads the scene behind the mark, not a place");
     expect(await six.callTool("set_open", { ids: ["ghost"], open: "x" })).toContain("No card with id ghost");
   });
 
@@ -2032,11 +2032,11 @@ describe("the premise and reminders (roadmap item 6)", () => {
     const markdown = await door.callTool("export_markdown");
     expect(markdown).toContain("# The Letter");
     expect(markdown).not.toContain("Board 1");
-    expect(markdown).toContain("### 1 · MAYA FINDS THE LETTER");
+    expect(markdown).toContain("### 1 · NO PLACE YET: MAYA FINDS THE LETTER");
     expect(markdown).toContain("She decides not to tell Tom.");
     const text = await door.callTool("export_text");
     expect(text.split("\n")[0].trim()).toBe("THE LETTER");
-    expect(text).toContain(`1    ${"MAYA FINDS THE LETTER".padEnd(60)} 1`);
+    expect(text).toContain(`1    ${"NO PLACE YET: MAYA FINDS THE LETTER".padEnd(60)} 1`);
     expect(text).toContain("     [Unwritten] She decides not to tell Tom.");
     const target = path.join(doorRoot, "out", "board.md");
     expect(await door.callTool("export_markdown", { path: target })).toContain('lines of Markdown, titled "The Letter"');
@@ -2050,21 +2050,21 @@ describe("the premise and reminders (roadmap item 6)", () => {
     const text = await door.callTool("export_fountain");
     expect(text).toContain("Title: The Letter");
     expect(text).not.toContain("An episode of");
-    expect(text).toContain(".MAYA FINDS THE LETTER");
+    expect(text).toContain(".NO PLACE YET: MAYA FINDS THE LETTER");
     expect(text).toContain("[[with Maya]]");
     expect(text).toContain("[Unwritten] She decides not to tell Tom.");
     const target = path.join(doorRoot, "out", "board.fountain");
     expect(await door.callTool("export_fountain", { path: target })).toContain("lines of Fountain");
-    expect(fs.readFileSync(target, "utf8")).toContain(".TOM LIES ABOUT THE JOB");
+    expect(fs.readFileSync(target, "utf8")).toContain(".NO PLACE YET: TOM LIES ABOUT THE JOB");
   });
 
   it("sets when a scene happens, prints it on the heading, and changes one line of a scene (R55; round fourteen, entry 48)", async () => {
     const when = await door.callTool("set_when", { ids: ["maya-letter"], when: "night" });
     expect(when).toContain('1 card(s) now happen at "night"');
-    expect(when).toContain("The heading prints as MAYA FINDS THE LETTER - NIGHT");
+    expect(when).toContain("The heading prints as NO PLACE YET: MAYA FINDS THE LETTER - NIGHT");
     expect(await door.callTool("set_when", { ids: ["maya-letter"], when: "night" })).toContain("Nothing changed");
     expect(await door.callTool("list_board")).toContain("when: night");
-    expect(await door.callTool("read_pages")).toContain(".MAYA FINDS THE LETTER - NIGHT");
+    expect(await door.callTool("read_pages")).toContain(".NO PLACE YET: MAYA FINDS THE LETTER - NIGHT");
     expect(await door.callTool("set_when", { ids: ["maya-letter"], when: "" })).toContain("no longer say when");
     // edit_scene: one line, once, measured again.
     expect(await door.callTool("edit_scene", { id: "maya-letter", find: "Tom?", replace: "Tom? On the bus." })).toContain("is unwritten; write_scene it first");
@@ -2082,8 +2082,8 @@ describe("the premise and reminders (roadmap item 6)", () => {
     expect(wrote).toMatch(/Wrote "Maya finds the letter": \d+ line\(s\) as they print .*measured at 1\/8 of a 55-line page/);
     expect(await door.callTool("list_board")).toContain("[scene, 1/8 pages, written");
     const pages = await door.callTool("read_pages");
-    expect(pages).toContain(".MAYA FINDS THE LETTER    [[id: maya-letter · measured 1/8pp · no place: the headline stands in for the heading]]");
-    expect(pages).toContain(".TOM LIES ABOUT THE JOB    [[id: tom-lies · estimated 1pp · no place: the headline stands in for the heading]]");
+    expect(pages).toContain(".NO PLACE YET: MAYA FINDS THE LETTER    [[id: maya-letter · measured 1/8pp · no place: the headline heads the scene behind the mark, not a place]]");
+    expect(pages).toContain(".NO PLACE YET: TOM LIES ABOUT THE JOB    [[id: tom-lies · estimated 1pp · no place: the headline heads the scene behind the mark, not a place]]");
     const imported = await door.callTool("import_fountain", {
       text: ".TOM LIES ABOUT THE JOB\n\nHe says the job is fine.\n\n.THE BANK\n\nThere is no loan.\n",
     });

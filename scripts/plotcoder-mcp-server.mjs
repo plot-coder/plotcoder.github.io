@@ -2361,7 +2361,7 @@ server.registerTool(
       if (/^\.(?!\.)/.test(line) && index < ids.length) {
         const note = state.notes.find((item) => item.id === ids[index]);
         index += 1;
-        const standIn = note && !(note.location ?? "").trim() ? ((note.locationOpen ?? "").trim() ? ` · place open: the writer's words head the scene, marked, not a place` : `${note.open ? " · open card" : ""} · no place: the headline stands in for the heading${note.open ? ", not a place" : ""}`) : "";
+        const standIn = note && !(note.location ?? "").trim() ? ((note.locationOpen ?? "").trim() ? ` · place open: the writer's words head the scene, marked, not a place` : `${note.open ? " · open card" : ""} · no place: the headline heads the scene behind the mark, not a place`) : "";
         const numbered = note && pageNumbers?.get(note.id) ? ` · locked no. ${pageNumbers.get(note.id)}` : "";
         const mark = note ? marks.get(note.id) : null;
         const sourceLines = (note?.text ?? "").split("\n");

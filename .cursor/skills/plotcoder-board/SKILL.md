@@ -346,6 +346,11 @@ card of another board is not asked about as uncast here.
   `.fountain` file.
 - `read_pages` — the same script with each card's id beside its heading and
   whether it is measured (written) or estimated. Read it before writing.
+  A card with no place prints `NO PLACE YET:` and then its headline where
+  the place would go, on every page and in every export, so a headline in
+  capitals is never read as a place; a place left open prints `PLACE NOT
+  DECIDED:` and the writer's words. Neither is a place, and both come back
+  in as what they were.
 - `write_scene` — a card's scene text in Fountain, by id; the card is then
   measured from its lines. Write only scenes the writer asked for. Under a
   revision the reply says the card is marked. The cues in the text (JOE,
@@ -363,7 +368,9 @@ card of another board is not asked about as uncast here.
   occur once. For "change her last line", not a rewrite.
 - `import_fountain` — a `.fountain` file or text onto the open board: scenes
   land on the cards with the same heading in order; unknown scenes become new
-  cards; nothing is deleted.
+  cards; nothing is deleted. A card with no place answers to its marked
+  heading and to its bare headline (`.TOM LIES ABOUT THE JOB`), which is how
+  a script written elsewhere names it.
 - `page_count` — the board paginated as a script (Letter, Courier 12, 55
   lines, the industry's break rules) with the page each scene starts on, by
   the locked numbers when there is a lock. Unwritten scenes set their change

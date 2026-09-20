@@ -46,7 +46,7 @@ export const AGENTS = {
   first: [
     { tool: "list_words", why: "the room's words, the app's meaning." },
     { tool: "read_wall", why: "the reading: the beats, the runs, the setups, and what the wall asks. The records — every card, the cast, the places, the rows — are list_board's. A fresh folder holds a sample wall (Maya, Tom, the letter) and the reading says so only when it is the sample; it is not the writer's. An account can hold a wall from earlier work that is neither the sample nor what the writer means to work now: every reading names the project it read and list_projects names who is on it; ask the writer before touching it, and new_project starts theirs beside it." },
-    { tool: "list_workflows", why: "what a writer can ask you for." },
+    { tool: "list_workflows", why: "what a writer can ask you for — and, in its first workflow, what a treatment should answer: the questions to put to the writer before you build, each with the tool its answer lands in." },
     { tool: "list_reminders", why: "the house principles the app starts with, and the writer's own; read them before you change anything. Reminders live on the project and go with it." },
     { tool: "list_board", why: "the records — every card, the cast, the places, the rows — with their ids, which the reading does not carry and every write needs." },
   ],

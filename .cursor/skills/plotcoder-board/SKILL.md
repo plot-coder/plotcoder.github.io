@@ -12,6 +12,29 @@ description: >-
 This is the whole guide; the on-ramp at plotcoder.com/llms.txt is its first
 page, and where the two differ, this wins.
 
+**Holding the tools already — a connector, or a server someone wired? Read
+this much on day one, and leave the rest until the writer asks for it.**
+
+- **Read now:** this page down to the end of **Cast** — the method, the
+  first calls, **Reading**, **Cards** (open things, threads, two versions,
+  set aside) and **Cast** — then **What the tools will refuse**, **The
+  reply's tail**, and **Do not have opinions about beat count**. That is
+  the day's work: build a wall from a writer's notes, read it back, take
+  their directions.
+- **Before you ask the writer anything:** `list_workflows`. Its first
+  workflow, "break a treatment", carries **what a treatment should
+  answer** — the questions to put to the writer, and the tool each answer
+  lands in. It is the asking's checklist; do not write your own.
+- **Leave until the writer says the words:** **Pages** (they say "write
+  it", "how long", "export"); **The project** beyond one board (a series,
+  an episode, a second board); **Structure** (they name a structure to
+  compare with); **The production half** (locked numbers, a revision);
+  **Workflows** as a section (the tool lists them).
+- **Not for you at all:** wiring — **The account, the app, or the file**,
+  **The account door**, and the wiring paragraph under those heads — is for
+  whoever connects a server. If the tools are in front of you, you are
+  connected.
+
 PlotCoder serves one method, and its tools follow it:
 
 1. State the **logline**: the central question, what the story is arguing.
@@ -49,30 +72,17 @@ season's episodes, or a writer's stories) under one name and one premise.
 
 ## Use the MCP tools, not the mouse
 
-The server is an npm package, `plotcoder-board`: wire it once, from any
-folder, with `claude mcp add plotcoder-board -s user -- npx -y
-plotcoder-board@latest` (or the same as a config block), then start the
-session again — a server wired from inside a session connects only on the
-next one. Inside the repo, `.mcp.json` and `.cursor/mcp.json` wire the
-checkout's own server instead (run `npm ci` in it first). Drive the board
-through its tools. **Do not** open a browser and fake pointer drags — the
-tools and the human UI share one command kernel, so a tool call lands on the
-exact same board a person sees. No MCP where you are, or already inside a
-session? `npx -y plotcoder-board@latest call <tool> '{json}'` makes one call
-from a shell — one server per call, so `undo` and the project `new_project`
-or `open_project` chose do not carry to the next call; set `PLOTCODER_PROJECT`
-for the calls that need it, or run them as a batch (`call --batch <
-calls.jsonl`, one `{"tool", "arguments"}` per line) on one server. The
-sign-in is kept between calls in the folder's `.plotcoder`. Hosted, with
-nothing installed: `npx -y plotcoder-board@latest serve` puts the same server
-on a port, and an MCP client connects with `--transport http` and the
-writer's sign-in in a Basic header. `PLOTCODER_ROOT` points the server at the
-folder whose wall you mean.
+Drive the board through its tools. **Do not** open a browser and fake
+pointer drags — the tools and the human UI share one command kernel, so a
+tool call lands on the exact same board a person sees. (Wiring a server, the
+shell caller and the hosted door are under **The account, the app, or the
+file**, at the end; with the tools in front of you, skip them.)
 
 **Call these first, in any order:** `list_words` (the room's words), `read_wall`
 (what is here and what it asks — a fresh folder holds a sample wall, Maya and
 Tom and the letter, and says so; it is not the writer's), `list_workflows`
-(what a writer can ask for), `list_reminders` (the writer's principles),
+(what a writer can ask for — and, in its first workflow, what a treatment
+should answer: the questions to ask the writer before building), `list_reminders` (the writer's principles),
 `list_board` (the records and their ids) — and only then change anything.
 
 ### Reading
@@ -636,6 +646,26 @@ Say "about" when you report it. Never tell a writer their script is too long on
 the strength of it.
 
 ## The account, the app, or the file
+
+**Wiring, for whoever connects the server.** The server is an npm package, `plotcoder-board`: wire it once, from any
+folder, with `claude mcp add plotcoder-board -s user -- npx -y
+plotcoder-board@latest` (or the same as a config block), then start the
+session again — a server wired from inside a session connects only on the
+next one. Inside the repo, `.mcp.json` and `.cursor/mcp.json` wire the
+checkout's own server instead (run `npm ci` in it first). Drive the board
+through its tools. **Do not** open a browser and fake pointer drags — the
+tools and the human UI share one command kernel, so a tool call lands on the
+exact same board a person sees. No MCP where you are, or already inside a
+session? `npx -y plotcoder-board@latest call <tool> '{json}'` makes one call
+from a shell — one server per call, so `undo` and the project `new_project`
+or `open_project` chose do not carry to the next call; set `PLOTCODER_PROJECT`
+for the calls that need it, or run them as a batch (`call --batch <
+calls.jsonl`, one `{"tool", "arguments"}` per line) on one server. The
+sign-in is kept between calls in the folder's `.plotcoder`. Hosted, with
+nothing installed: `npx -y plotcoder-board@latest serve` puts the same server
+on a port, and an MCP client connects with `--transport http` and the
+writer's sign-in in a Basic header. `PLOTCODER_ROOT` points the server at the
+folder whose wall you mean.
 
 Every read of the wall or the project says which it read, on its first line.
 

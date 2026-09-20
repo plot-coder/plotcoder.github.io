@@ -138,7 +138,7 @@ patches are honest; they are not the answer.
   so that the one to use comes first. (Eighths stay unreduced, 88: the
   industry's unit, and the words sheet says so.) *Test:* snapshot of the
   block with a sketch and an open target.
-- [ ] **D5 · The guide, for someone holding a connector** (6, 8, S3).
+- [x] **D5 · The guide, for someone holding a connector** *(built 2026-09-20. Changed at the asking: not a reshuffle of 46 KB — a reading map at the top (read now / before you ask / leave until the writer says the words / not for you), the wiring paragraph moved under "The account, the app, or the file", and the treatment questions named where the first calls are, in the guide and the on-ramp. Nothing cut. Its test is the next blind run's section 3.)* (6, 8, S3).
   A third of what the agent read did not apply: wiring, the dev app, the
   file, locks, revisions, series, video, import.
   *Plan:* the guide opens with **day one** — the cards, the cast, open

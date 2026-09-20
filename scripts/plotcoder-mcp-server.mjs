@@ -591,6 +591,27 @@ function readOptions(boardId, state = null) {
   const boards = state ? { ...lastHeld.boards, [id]: state } : lastHeld.boards;
   return { elsewhere: elsewhereIds(id), laterBoards: laterBoards(lastHeld.project, boards), paidBy: landingsOn(lastHeld.project, boards, id).paid };
 }
+/**
+ * The wall at a glance, at the head of read_wall and list_board (R67): how many
+ * questions it asks, how much the writer has left open, how much is unwritten.
+ * Three counts and no verdict (D21), so a quiet wall is never taken for a
+ * finished one: round twenty-two's wall asked one question with seventeen
+ * things open.
+ */
+function atAGlance(state, reading, project = null, boardMeta = null) {
+  const inFilm = state.notes.filter((note) => !note.alternativeOf && !note.aside);
+  const open =
+    reading.open.length +
+    reading.openFields.length +
+    (state.targetOpen ? 1 : 0) +
+    (project?.nameOpen ? 1 : 0) +
+    (project?.premiseOpen ? 1 : 0) +
+    (boardMeta?.nameOpen ? 1 : 0);
+  const unwritten = inFilm.filter((note) => !(note.text ?? "").trim()).length;
+  const asked = reading.findings.length;
+  return `this wall: ${asked} question${asked === 1 ? "" : "s"} asked · ${open} thing${open === 1 ? "" : "s"} left open by the writer's word · ${unwritten} of ${inFilm.length} scene${inFilm.length === 1 ? "" : "s"} unwritten`;
+}
+
 /** A card's number as the reading prints it: the lock's when locked, else its place in story order. */
 function sceneLabel(state, noteId) {
   const numbers = state.lock ? sceneNumbers(storyOrder(state), state.lock) : null;
@@ -1163,7 +1184,7 @@ function summarize(state) {
       const revised = snap && (snap.headline !== note.headline || snap.change !== note.change || (snap.text ?? "") !== (note.text ?? "") || (snap.location ?? "") !== (note.location ?? "")) ? `, changed in ${state.revision.color}` : "";
       const place = note.location ? `, at: ${note.location}` : note.locationOpen ? `, at: open, by the writer's word — "${note.locationOpen}"` : "";
       const when = note.when ? `, when: ${note.when}` : note.whenOpen ? `, when: open, by the writer's word — "${note.whenOpen}"` : "";
-      const openWord = note.open ? `, open (the writer's words): "${note.open}"` : "";
+      const openWord = `${note.changeOpen ? `, change line: open, by the writer's word — "${note.changeOpen}"` : ""}${note.open ? `, open (the writer's words): "${note.open}"` : ""}${note.aside ? ", set aside: not in the film" : ""}`;
       const count = formatPages(noteEighths(note));
       // A written card's estimate is kept underneath for when the text goes; say it, or it is invisible (round sixteen, entry 44).
       const underneath = isMeasured(note) && note.lengthEighths !== null ? `; the writer's estimate underneath: ${formatPages(note.lengthEighths)}` : "";
@@ -1237,6 +1258,7 @@ function summarize(state) {
   const leftCount = (state.left ?? []).length;
   return [
     ...(isSampleWall(state) ? [SAMPLE_NOTE] : []),
+    atAGlance(state, readWall(state, readOptions(lastHeld?.project?.activeBoardId ?? null, state)), lastHeld?.project ?? null, lastHeld?.project?.boards?.find((meta) => meta.id === lastHeld.project.activeBoardId) ?? null),
     `logline: ${state.loglineOpen ? `open, by the writer's word — "${state.loglineOpen}"` : state.logline ? `"${state.logline}"` : "(not set)"}`,
     ...production,
     `left, for now: ${leftCount ? `${leftCount} question(s) the writer left; read_wall lists them` : "none"}`,
@@ -1463,7 +1485,8 @@ server.registerTool(
       "Add a card (post-it) to the board. A card is one scene: a headline plus the change it causes. Provide both headline and change. Optionally set color, x/y position, rank ('beat' for one of the major turns — a beat is a whole card, the scene where the turn happens), pages (how long it runs; leave it out and the card is taken to be about a page), plants (true if this scene sets something up that must pay off later), location (where it happens, as the writer would say it — 'the piano shop', not 'INT. PIANO SHOP'), and characters (who is in the scene, by name; a name not in the cast yet is added to it — name an unnamed person by their role, 'Dana's mother', rather than leaving them off). The reply names the card's id.",
     inputSchema: {
       headline: z.string().min(1),
-      change: z.string().optional().describe("What is different when the scene ends. Required, unless the card is born open — then it may wait, and the reading will not ask for it while the words stand."),
+      change: z.string().optional().describe("What is different when the scene ends. Required, unless the writer has not decided it: then pass changeOpen with their words, and the change line waits while every other question about the card stands. (A card born wholly open, with open, may also wait.)"),
+      changeOpen: z.string().optional().describe("The writer's words for why there is no change line yet — \"I don't know yet\" — in place of change: the card is an ordinary card, asked about its place, its cast, its arrows and its fold, and the reading lists the change line as open, by the writer's word, without asking for it. Not the same as open, which says the whole card is undecided and silences every question about it."),
       color: colorSchema.optional(),
       rank: rankSchema.optional(),
       pages: pagesSchema.optional(),
@@ -1490,7 +1513,8 @@ server.registerTool(
     // one ⌘Z on the wall takes back the whole call and not just the cast.
     if (args.after && args.before) return ok("Say where: after one card, or before one, not both.");
     // A card needs its change line — unless it is born open (round eighteen, entry 13): the writer had no consequence yet.
-    if (!(args.change ?? "").trim() && !(args.open ?? "").trim()) return ok("A card needs its change line: what is different when the scene ends. If the writer has not decided it, pass open with their words and the change line waits.");
+    if (!(args.change ?? "").trim() && !(args.open ?? "").trim() && !(args.changeOpen ?? "").trim())
+      return ok("A card needs its change line: what is different when the scene ends. If the writer has not decided it, pass changeOpen with their words: the change line waits and the wall still asks the card's other questions. (open, with their words, says the whole card is undecided and silences all of them.)");
     // The card beside which the new scene goes (round sixteen, entry 36): by id or headline, on this board.
     const besideKey = (args.after ?? args.before ?? "").trim();
     const beside = besideKey ? state.notes.find((note) => note.id === besideKey) ?? state.notes.find((note) => note.headline.trim().toLowerCase() === besideKey.toLowerCase()) ?? null : null;
@@ -1518,6 +1542,7 @@ server.registerTool(
         location: args.location,
         locationOpen: args.locationOpen,
         whenOpen: args.whenOpen,
+        changeOpen: (args.change ?? "").trim() ? undefined : args.changeOpen,
         when: args.when,
         open: args.open,
         x: landing.x,
@@ -1569,6 +1594,7 @@ server.registerTool(
       result?.plants ? `corner folded${result.plantsWhat ? ` — plants ${result.plantsWhat}` : ""}` : null,
       result?.location ? `at ${result.location}` : result?.locationOpen ? `place open: "${result.locationOpen}" (listed, not asked where)` : `no place yet${once("place", " (location here, or set_location)")}`,
       result?.when ? `when: ${result.when}` : result?.whenOpen ? `when open: "${result.whenOpen}" (listed, not asked)` : null,
+      result?.changeOpen ? `change line open: "${result.changeOpen}" (listed, not asked for; the card's other questions stand)` : null,
       result?.open ? `open: "${result.open}" (listed, not asked about)` : null,
     ].filter(Boolean).join(", ");
     // Where it landed matters only until the tidy, so the reply says the rule once and never the coordinates (round fourteen, entry 11).
@@ -1585,11 +1611,12 @@ server.registerTool(
   "update_note",
   {
     title: "Update note",
-    description: "Change the headline, change line, location and/or when of an existing card by id. The reply says which field changed, from what to what.",
+    description: "Change the headline, change line, location and/or when of an existing card by id. The reply says which field changed, from what to what. A change line the writer has not decided: pass changeOpen with their words — \"I don't know yet\" — and the line waits, listed by the reading and not asked for, while the card's other questions stand; a change line decides it and clears the words; changeOpen \"\" takes the words back.",
     inputSchema: {
       id: z.string(),
       headline: z.string().optional(),
       change: z.string().optional(),
+      changeOpen: z.string().optional(),
       location: z.string().optional(),
       when: z.string().optional(),
     },
@@ -1601,12 +1628,13 @@ server.registerTool(
       id: args.id,
       headline: args.headline,
       change: args.change,
+      changeOpen: args.changeOpen,
       location: args.location,
       when: args.when,
     });
     if (result === undefined) return ok(`No card with id ${args.id}.`);
-    const fields = [["headline", "headline"], ["change", "change line"], ["location", "place"], ["when", "when"]]
-      .filter(([field]) => args[field] !== undefined && (prior?.[field] ?? "") !== (result[field] ?? ""))
+    const fields = [["headline", "headline"], ["change", "change line"], ["changeOpen", "change line's open words"], ["location", "place"], ["when", "when"]]
+      .filter(([field]) => (args[field] !== undefined || field === "changeOpen") && (prior?.[field] ?? "") !== (result[field] ?? ""))
       .map(([field, word]) => `${word}: "${prior?.[field] ?? ""}" → "${result[field] ?? ""}"`);
     if (!changed || fields.length === 0) return ok(`Nothing changed on "${result.headline}": the card already read that way.`);
     const mark = state.revision && state.revision.snapshot?.[result.id] && (state.revision.snapshot[result.id].headline !== result.headline || state.revision.snapshot[result.id].change !== result.change) ? ` Marked changed in the ${state.revision.color} revision "${state.revision.name}".` : "";
@@ -1718,6 +1746,22 @@ server.registerTool(
       ...(projectForRead.premiseOpen ? [`  - the premise — ${projectForRead.premiseOpen}`] : []),
       ...(readBoardMeta?.nameOpen ? [`  - this board's name — ${readBoardMeta.nameOpen}`] : []),
       ...reading.openFields.filter((field) => field.field === "location").map((field) => `  - "${state.notes.find((note) => note.id === field.id)?.headline ?? field.id}" — where: ${field.words}`),
+      // Change lines left open in the same words are one line too (R67): seven cards, one "I don't know yet".
+      ...(() => {
+        const byWords = new Map();
+        for (const field of reading.openFields.filter((item) => item.field === "change")) {
+          const key = field.words.toLowerCase();
+          if (!byWords.has(key)) byWords.set(key, { words: field.words, ids: [] });
+          byWords.get(key).ids.push(field.id);
+        }
+        const name = (id) => `"${state.notes.find((note) => note.id === id)?.headline ?? id}"`;
+        const inStoryCount = state.notes.filter((note) => !note.alternativeOf && !note.aside).length;
+        return [...byWords.values()].map((group) =>
+          group.ids.length === 1
+            ? `  - ${name(group.ids[0])} — the change line: ${group.words}`
+            : `  - the change line, on ${group.ids.length} cards${group.ids.length === inStoryCount ? " (every card)" : ""} — ${group.words}${group.ids.length === inStoryCount ? "" : `: ${group.ids.map(name).join(", ")}`}`,
+        );
+      })(),
       // Whens left open in the same words are one line, not one per card (round twenty, entry 22).
       ...(() => {
         const byWords = new Map();
@@ -1736,6 +1780,7 @@ server.registerTool(
     ];
     const lines = [
       `PlotCoder wall (${door(live, base)})`,
+      atAGlance(state, reading, projectForRead, readBoardMeta),
       ...(state.lock ? [`numbers: locked since ${String(state.lock.at).slice(0, 10)}; read_pages shows each scene's number`] : []),
       `board: "${readBoardMeta?.name ?? "?"}"${readBoardMeta?.nameOpen ? ` — its name is open, by the writer's word: "${readBoardMeta.nameOpen}"` : ""}${projectForRead.boards.length > 1 ? ` — board ${projectForRead.boards.findIndex((meta) => meta.id === readBoardMeta?.id) + 1} of ${projectForRead.boards.length} in the project "${projectForRead.name}"; open_board reads another` : ""}`,
       ...(projectForRead.nameOpen ? [`project: "${projectForRead.name}" — its name is open, by the writer's word: "${projectForRead.nameOpen}"`] : []),

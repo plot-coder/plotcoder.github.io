@@ -267,6 +267,8 @@ export function readWall(state, options = {}) {
         ids: [note.id],
         text: `A card still reads ${quote({ headline: title || PLACEHOLDER_HEADLINE })}. What scene is it?`,
       });
+    } else if ((note.changeOpen ?? "").trim()) {
+      // Left open by the writer's word (R67): listed under open fields, not asked; the card's other questions stand.
     } else if (change === "" || change === PLACEHOLDER_CHANGE) {
       findings.push({
         kind: "unwritten",
@@ -541,6 +543,7 @@ function describeOpenFields(state, order) {
   const fields = [];
   if ((state.loglineOpen ?? "").trim()) fields.push({ field: "logline", words: state.loglineOpen.trim() });
   for (const note of order) if ((note.locationOpen ?? "").trim()) fields.push({ field: "location", id: note.id, words: note.locationOpen.trim() });
+  for (const note of order) if ((note.changeOpen ?? "").trim()) fields.push({ field: "change", id: note.id, words: note.changeOpen.trim() });
   for (const note of order) if ((note.whenOpen ?? "").trim()) fields.push({ field: "when", id: note.id, words: note.whenOpen.trim() });
   return fields;
 }

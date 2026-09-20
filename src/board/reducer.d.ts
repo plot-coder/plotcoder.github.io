@@ -97,6 +97,10 @@ export type BoardNote = {
   whenOpen: string;
   /** The writer's words for why the place is not decided (R61's edge), or empty; while they stand the place is blank, listed, and not asked. */
   locationOpen: string;
+  /** The writer's words for why the change line is not decided (R67), or empty; while they stand the change line waits, listed and not asked, and the card's other questions stand. */
+  changeOpen: string;
+  /** Set aside (R66): on the wall and not in the film — out of the order, the count, the pages and every export, listed by the reading and asked nothing. */
+  aside: boolean;
   /** The scene's text in Fountain (R23 b): action, cues, dialogue; empty until written. */
   text: string;
   createdAt: string;
@@ -193,10 +197,12 @@ export type Command =
       when?: string;
       whenOpen?: string;
       locationOpen?: string;
+      /** The writer's words for why there is no change line yet (R67), in place of one. */
+      changeOpen?: string;
       open?: string;
       text?: string;
     }
-  | { type: "update_note"; id: string; headline?: string; change?: string; location?: string; when?: string }
+  | { type: "update_note"; id: string; headline?: string; change?: string; changeOpen?: string; location?: string; when?: string }
   | { type: "move_note"; id: string; x: number; y: number }
   | { type: "nudge_notes"; ids: string[]; dx: number; dy: number }
   | { type: "recolor_notes"; ids: string[]; color: NoteColor }
@@ -223,6 +229,8 @@ export type Command =
   | { type: "set_plant"; ids: string[]; plants?: boolean; what?: string }
   | { type: "set_open"; ids: string[]; open: string }
   | { type: "set_alternative"; id: string; of: string | null }
+  /** Set cards aside, or bring them back (R66): aside is on the wall and not in the film. */
+  | { type: "set_aside"; ids: string[]; aside: boolean }
   | { type: "choose_version"; id: string; keep?: boolean }
   | { type: "set_payoff_board"; ids: string[]; boardId: string | null; noteId?: string | null }
   | { type: "set_location"; ids: string[]; location?: string; open?: string }

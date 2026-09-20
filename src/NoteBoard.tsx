@@ -110,7 +110,7 @@ type NoteBoardProps = {
   onTieThread: (id: string, threadId: string, how: "start" | "end" | "through" | "off") => void;
   /** Leave a card open with the writer's words, or close it with "" (R59). */
   onSetOpen: (id: string, open: string) => void;
-  onEdit: (id: string, patch: { headline?: string; change?: string }) => void;
+  onEdit: (id: string, patch: { headline?: string; change?: string; changeOpen?: string }) => void;
   onCommit: () => void;
 };
 

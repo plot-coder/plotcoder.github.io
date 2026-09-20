@@ -73,7 +73,7 @@ export type WallReading = {
   /** Open cards (R59): the writer's words for what is not decided, in story order; not asked about while they stand. */
   open: Array<{ id: string; words: string; hides: FindingKind[] }>;
   /** Fields left open by the writer's word (R61): the board's logline, and each card's when, in story order. Listed, not asked. */
-  openFields: Array<{ field: "logline"; words: string } | { field: "location"; id: string; words: string } | { field: "when"; id: string; words: string }>;
+  openFields: Array<{ field: "logline"; words: string } | { field: "location"; id: string; words: string } | { field: "when"; id: string; words: string } | { field: "change"; id: string; words: string }>;
   /** Two versions of one scene (R65): each front card with the versions behind it, in story order; listed, never asked. */
   versions: Array<{ id: string; alternatives: string[] }>;
   /** Threads (R60): each named string with its cards in story order and which ends are open. */

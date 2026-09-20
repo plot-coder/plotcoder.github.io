@@ -665,7 +665,7 @@ export function App() {
     });
   }
 
-  function editNote(id: string, patch: { headline?: string; change?: string }) {
+  function editNote(id: string, patch: { headline?: string; change?: string; changeOpen?: string }) {
     boardStore.dispatch({ type: "update_note", id, ...patch });
   }
 

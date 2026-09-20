@@ -4622,6 +4622,22 @@ body {
   opacity: 1;
 }
 
+/* The change line's offer (R67): only when the card is under the hand, so a wall of new cards is not a wall of buttons. */
+.note__change-offer {
+  display: block;
+  opacity: 0;
+}
+
+.note:hover .note__change-offer,
+.note.is-selected .note__change-offer,
+.note__change-offer:focus-visible {
+  opacity: 1;
+}
+
+.note__change-open {
+  display: flex;
+}
+
 .note__when.is-open-field {
   text-decoration-thickness: 1px;
 }

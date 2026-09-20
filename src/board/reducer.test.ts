@@ -611,6 +611,24 @@ describe("set_rank", () => {
   });
 });
 
+describe("a change line left open by the writer's word (R67)", () => {
+  it("is born waiting with the words, is decided by a change line, and repairs on load", () => {
+    const at = "2026-09-20T00:00:00.000Z";
+    const born = applyCommand(emptyState(), { type: "create_note", id: "t", headline: "The timetable", changeOpen: "  I don't know yet " }, at).state;
+    expect(born.notes[0]).toMatchObject({ change: "What changes?", changeOpen: "I don't know yet", open: "" });
+    const decided = applyCommand(born, { type: "update_note", id: "t", change: "The route is hers on paper." }, at).state;
+    expect(decided.notes[0]).toMatchObject({ change: "The route is hers on paper.", changeOpen: "" });
+    const again = applyCommand(decided, { type: "update_note", id: "t", changeOpen: "two ways" }, at).state;
+    expect(again.notes[0]).toMatchObject({ change: "What changes?", changeOpen: "two ways" });
+    expect(applyCommand(again, { type: "update_note", id: "t", changeOpen: "" }, at).state.notes[0].changeOpen).toBe("");
+    // A card written before R67 claims nothing.
+    const old = JSON.parse(JSON.stringify(born));
+    delete old.notes[0].changeOpen;
+    delete old.notes[0].aside;
+    expect(normalizeState(old).notes[0]).toMatchObject({ changeOpen: "", aside: false });
+  });
+});
+
 describe("countRanks", () => {
   it("counts beats and scenes without judging the total", () => {
     const state = run(

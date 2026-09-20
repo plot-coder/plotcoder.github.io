@@ -71,7 +71,7 @@ type NoteCardProps = {
   onSetAlternative: (id: string, of: string | null) => void;
   onChooseVersion: (id: string) => void;
   onTieThread: (id: string, threadId: string, how: "start" | "end" | "through" | "off") => void;
-  onEdit: (id: string, patch: { headline?: string; change?: string }) => void;
+  onEdit: (id: string, patch: { headline?: string; change?: string; changeOpen?: string }) => void;
 };
 
 export function NoteCard({
@@ -122,6 +122,8 @@ export function NoteCard({
   // only part of the estimate worth reading at a glance (R25).
   const sized = note.lengthEighths !== null && note.lengthEighths !== DEFAULT_NOTE_EIGHTHS;
   const [picking, setPicking] = useState(false);
+  // The writer has just chosen to leave the change line open (R67): the caret waits for their words.
+  const [leavingChange, setLeavingChange] = useState(false);
   const [sizing, setSizing] = useState(false);
   // The corner's picker (R58, R59): fold it, leave it open, or pay off a fold waiting from another board.
   const [cornering, setCornering] = useState(false);
@@ -561,14 +563,47 @@ export function NoteCard({
         ariaLabel="Card headline"
         placeholder="Headline"
       />
-      <EditableText
-        as="p"
-        className="note__change"
-        value={note.change}
-        onCommit={(text) => onEdit(note.id, { change: text })}
-        ariaLabel="What changes"
-        placeholder="What changes?"
-      />
+      {/* The change line, or the writer's words for why it waits (R67): open on its own, so the card's other questions stand. */}
+      {note.changeOpen || leavingChange ? (
+        <span className="open-field note__change-open">
+          <span className="open-mark" aria-hidden="true">
+            Open
+          </span>
+          <EditableText
+            as="p"
+            className="note__change is-open-field"
+            value={note.changeOpen}
+            onCommit={(words) => {
+              setLeavingChange(false);
+              if (words.trim() !== note.changeOpen) onEdit(note.id, { changeOpen: words });
+            }}
+            ariaLabel={`What changes in ${note.headline}, left open`}
+            placeholder="not decided: say why, in your words"
+            autoFocus={leavingChange}
+          />
+        </span>
+      ) : (
+        <>
+          <EditableText
+            as="p"
+            className="note__change"
+            value={note.change}
+            onCommit={(text) => onEdit(note.id, { change: text })}
+            ariaLabel="What changes"
+            placeholder="What changes?"
+          />
+          {!note.change.trim() || note.change.trim() === "What changes?" ? (
+            <button
+              type="button"
+              className="field-offer note__offer note__change-offer"
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={() => setLeavingChange(true)}
+            >
+              Not decided yet…
+            </button>
+          ) : null}
+        </>
+      )}
       <CastLine
         headline={note.headline}
         characterIds={note.characterIds}

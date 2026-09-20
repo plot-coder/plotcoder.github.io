@@ -47,6 +47,18 @@ function wall(...cards: Card[]) {
   );
 }
 
+describe("a change line left open (R67)", () => {
+  it("is listed under the open fields and not asked for, while the card's other questions stand", () => {
+    const at = "2026-09-20T00:00:00.000Z";
+    let state = applyCommand(emptyState(), { type: "create_note", id: "t", headline: "The timetable", changeOpen: "I don't know yet", plantsWhat: "the timetable" }, at).state;
+    state = applyCommand(state, { type: "set_rank", ids: ["t"], rank: "beat" }, at).state;
+    const reading = readWall(state);
+    expect(reading.openFields).toContainEqual({ field: "change", id: "t", words: "I don't know yet" });
+    expect(reading.findings.some((finding) => finding.text.includes("has no change line"))).toBe(false);
+    expect(reading.findings.some((finding) => finding.kind === "unpaid")).toBe(true);
+  });
+});
+
 describe("a setup from a card behind another (round twenty-two, entry 60)", () => {
   it("has no distance, says why, and is never NaN", () => {
     let state = seedState();

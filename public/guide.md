@@ -132,9 +132,17 @@ only when the server is started with `PLOTCODER_JSON=1`.
 ### Cards
 
 - `create_note` — add a card. Requires `headline` **and** `change` — unless
-  the card is born open with `open`, when the change line may wait for the
-  writer (the schema can only mark the headline required; this is the
-  rule). Optional `color` (yellow, pink, blue, green, orange), `rank`,
+  the writer has not decided what changes: then pass **`changeOpen`** with
+  their words ("I don't know yet") in place of `change`. The change line
+  waits, the reading lists it as open and does not ask for it, and the card
+  is otherwise an ordinary card: still asked about its place, its cast, its
+  arrows and its fold. That is the usual answer to "I don't know what
+  changes". `open` is a different and larger thing — the whole card is
+  undecided ("whether this scene exists") — and it silences every question
+  about the card, the change line among them; do not reach for it because a
+  change line is missing, or a wall of honest "I don't know"s asks nothing
+  (the schema can only mark the headline required; this is the rule).
+  `update_note` takes `changeOpen` too; a change line decides it. Optional `color` (yellow, pink, blue, green, orange), `rank`,
   `pages`, `plants` and `plantsWhat`, `location` or `locationOpen`, `when`
   or `whenOpen`, `open`, `characters` (names; a name not in the cast is
   added to it), and `x`/`y`. The reply names the card's id and what landed. Make cards
@@ -218,7 +226,10 @@ only when the server is started with `PLOTCODER_JSON=1`.
   reading says beside each open card what it would be asked if closed. It
   is still counted, in the order, and a page. `open: ""`
   closes the card and its questions come back. `create_note` takes `open`
-  too, so a card born from a maybe is born open. Only on the writer's word:
+  too, so a card born from a maybe is born open. One undecided field is
+  not an open card: a place, a when and a change line each have an open of
+  their own (`locationOpen`, `whenOpen`, `changeOpen`), and the card's
+  other questions stand. Only on the writer's word:
   where the notes have two versions, ask; where the writer says "I don't
   know yet, leave it open", this is how, and invent nothing to fill it.
 - `create_thread` / `update_thread` / `delete_thread` — a **thread**: a

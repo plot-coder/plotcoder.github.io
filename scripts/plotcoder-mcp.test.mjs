@@ -1171,6 +1171,32 @@ describe("open fields (R61): the logline, the premise, a when and a board's name
     expect(await client.callTool("read_wall")).not.toContain("the project's name —");
   });
 
+  it("leaves a change line open while the card's other questions stand, and leads the reading with what is open (R67)", async () => {
+    // A card needs a change line, or the writer's word that it waits.
+    expect(await client.callTool("create_note", { headline: "The timetable she rewrites by hand" })).toContain("pass changeOpen with their words");
+    const born = await client.callToolData("create_note", { headline: "The timetable she rewrites by hand", changeOpen: "I don't know yet", plantsWhat: "the timetable" });
+    const bornText = await client.callTool("list_board");
+    expect(born.changeOpen).toBe("I don't know yet");
+    expect(bornText).toContain('change line: open, by the writer\'s word — "I don\'t know yet"');
+    const read = await client.callTool("read_wall");
+    // Listed, not asked for; the fold with no payoff is still asked about.
+    expect(read).toContain("  - \"The timetable she rewrites by hand\" — the change line: I don't know yet");
+    expect(read).not.toContain('"The timetable she rewrites by hand" has no change line');
+    expect(read).toMatch(/\[unpaid\] "The timetable she rewrites by hand" plants the timetable/);
+    // The reading and list_board lead with three counts and no verdict.
+    expect(read.split("\n")[1]).toMatch(/^this wall: \d+ questions? asked · \d+ things? left open by the writer's word · \d+ of \d+ scenes? unwritten$/);
+    expect(bornText).toMatch(/this wall: \d+ questions? asked · \d+ things? left open/);
+    // A change line decides it and clears the words; the reply says both.
+    const decided = await client.callTool("update_note", { id: born.id, change: "The route is hers on paper." });
+    expect(decided).toContain('change line: "What changes?" → "The route is hers on paper."');
+    expect(decided).toContain('change line\'s open words: "I don\'t know yet" → ""');
+    expect(await client.callTool("read_wall")).not.toContain("— the change line:");
+    // And back: open words on an existing card put the line back to waiting.
+    const reopened = await client.callTool("update_note", { id: born.id, changeOpen: "two ways, not chosen" });
+    expect(reopened).toContain('change line\'s open words: "" → "two ways, not chosen"');
+    await client.callTool("delete_note", { id: born.id });
+  });
+
   it("leaves the premise and a board's name open, and a value decides each", async () => {
     expect(await client.callTool("set_premise", {})).toContain("Say which");
     expect(await client.callTool("set_premise", { open: "the buyer: housing, or a supermarket" })).toContain('Premise left open, by the writer\'s word: "the buyer: housing, or a supermarket"');

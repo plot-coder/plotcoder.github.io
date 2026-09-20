@@ -253,6 +253,10 @@ export function seedState(now = nowIso()) {
     when: "",
     // The writer's words for why the when is not decided (R61), or nothing.
     whenOpen: "",
+    // The writer's words for why the change line is not decided (R67), or nothing.
+    changeOpen: "",
+    // Set aside (R66): on the wall and not in the film.
+    aside: false,
     text: "",
     plants: false,
     // What the fold plants, in the writer's words (R62), or nothing.
@@ -383,6 +387,10 @@ export function normalizeState(value) {
     const when = typeof note?.when === "string" ? note.when : "";
     // Cards written before R61 have no open when; a when is decided or blank until the writer says otherwise.
     const whenOpen = typeof note?.whenOpen === "string" ? note.whenOpen : "";
+    // Cards written before R67 have no open change line; a change line is decided or waiting until the writer says why it waits.
+    const changeOpen = typeof note?.changeOpen === "string" ? note.changeOpen : "";
+    // Cards written before R66 are in the film; nothing is set aside until the writer sets it aside.
+    const aside = note?.aside === true;
     // Cards written before pages (R23 b) have no text; a scene is unwritten until it is.
     const text = typeof note?.text === "string" ? note.text : "";
     if (
@@ -401,12 +409,14 @@ export function normalizeState(value) {
       note.locationOpen === locationOpen &&
       note.when === when &&
       note.whenOpen === whenOpen &&
+      note.changeOpen === changeOpen &&
+      note.aside === aside &&
       note.text === text
     ) {
       return note;
     }
     patched = true;
-    return { ...note, rank, lengthEighths, characterIds, plants, plantsWhat, alternativeOf, payoffBoardId, payoffNoteId, open, location, locationOpen, when, whenOpen, text };
+    return { ...note, rank, lengthEighths, characterIds, plants, plantsWhat, alternativeOf, payoffBoardId, payoffNoteId, open, location, locationOpen, when, whenOpen, changeOpen, aside, text };
   });
   // A version of a version is a version of the front card, so the pair stays a pair.
   for (const [index, note] of notes.entries()) {
@@ -653,7 +663,10 @@ export function applyCommand(state, command, now = nowIso()) {
       const note = {
         id: command.id ?? newId(),
         headline: command.headline ?? "New beat",
-        change: command.change ?? "What changes?",
+        // The change line left open by the writer's word (R67): the placeholder stands, and the words say why.
+        change: cleanOpen(command.changeOpen) ? "What changes?" : (command.change ?? "What changes?"),
+        changeOpen: cleanOpen(command.changeOpen),
+        aside: false,
         color: command.color ?? NOTE_COLORS[n % NOTE_COLORS.length],
         x: command.x ?? 140 + (n % 5) * 28,
         y: command.y ?? 140 + (n % 4) * 24,
@@ -693,7 +706,16 @@ export function applyCommand(state, command, now = nowIso()) {
         if (note.id !== command.id) return note;
         const patch = {};
         if (command.headline !== undefined) patch.headline = command.headline;
-        if (command.change !== undefined) patch.change = command.change;
+        if (command.change !== undefined) {
+          patch.change = command.change;
+          // A change line decides it: the open words go, as a place's do (R67).
+          if (command.change.trim() && command.change.trim() !== "What changes?") patch.changeOpen = "";
+        }
+        // Open words say the change line is not decided: the line goes back to waiting, and "" takes the words back.
+        if (typeof command.changeOpen === "string") {
+          patch.changeOpen = cleanOpen(command.changeOpen);
+          if (patch.changeOpen) patch.change = "What changes?";
+        }
         if (command.location !== undefined) patch.location = cleanPlace(command.location);
         if (command.when !== undefined) patch.when = cleanWhen(command.when);
         updated = bump(note, patch, now);
@@ -1257,6 +1279,8 @@ export function applyCommand(state, command, now = nowIso()) {
         locationOpen: "",
         when: "",
         whenOpen: "",
+        changeOpen: "",
+        aside: false,
         text: "",
         createdAt: now,
         updatedAt: now,

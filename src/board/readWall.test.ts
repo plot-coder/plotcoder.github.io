@@ -59,6 +59,19 @@ describe("a change line left open (R67)", () => {
   });
 });
 
+describe("how much of the film is wired (round twenty-two, entry 20)", () => {
+  it("counts follows arrows and the film's cards, not setup arrows or cards set aside", () => {
+    const at = "2026-09-20T00:00:00.000Z";
+    let state = emptyState();
+    for (const id of ["a", "b", "c", "d"]) state = applyCommand(state, { type: "create_note", id, headline: id, change: "x" }, at).state;
+    state = applyCommand(state, { type: "create_arrow", from: "a", to: "d", kind: "setup" }, at).state;
+    expect(readWall(state).wired).toEqual({ linked: 0, of: 4 });
+    state = applyCommand(state, { type: "create_arrow", from: "a", to: "b", kind: "follows" }, at).state;
+    state = applyCommand(state, { type: "set_aside", ids: ["c"], aside: true }, at).state;
+    expect(readWall(state).wired).toEqual({ linked: 2, of: 3 });
+  });
+});
+
 describe("a setup from a card behind another (round twenty-two, entry 60)", () => {
   it("has no distance, says why, and is never NaN", () => {
     let state = seedState();
@@ -157,7 +170,7 @@ describe("findings", () => {
 
   it("returns nothing at all for an empty board", () => {
     const reading = readWall(emptyState());
-    expect(reading).toEqual({ order: [], beats: [], runs: [], setups: [], payoffs: {}, later: [], paidBy: [], open: [], openFields: [], versions: [], aside: [], threads: [], findings: [], left: [] });
+    expect(reading).toEqual({ order: [], beats: [], runs: [], setups: [], payoffs: {}, later: [], paidBy: [], open: [], openFields: [], versions: [], wired: { linked: 0, of: 0 }, aside: [], threads: [], findings: [], left: [] });
   });
 
   it("notes that runs cannot be read until a beat is marked, and passes no judgement on the count", () => {

@@ -1854,11 +1854,9 @@ server.registerTool(
         for (const finding of asked) counts.set(finding.kind, (counts.get(finding.kind) ?? 0) + 1);
         return `asking ${asked.length} question${asked.length === 1 ? "" : "s"} of ${counts.size} kind${counts.size === 1 ? "" : "s"}: ${[...counts.entries()].map(([kind, n]) => (n > 1 ? `${kind} ×${n}` : kind)).join(", ")}${held}`;
       })()}${reading.left.length ? `; left by the writer, so not clean: ${[...new Set(reading.left.map((finding) => finding.kind))].map((kind) => `[${kind}]`).join(" ")}` : ""}${reading.open.length || openFieldLines.length ? `; ${[reading.open.length ? `${reading.open.length} card${reading.open.length === 1 ? "" : "s"}` : "", openFieldLines.length ? `${openFieldLines.length} field${openFieldLines.length === 1 ? "" : "s"}` : ""].filter(Boolean).join(" and ")} open by the writer's word, not asked` : ""}; checked and clean: ${CHECKS.filter((kind) => !reading.findings.some((finding) => finding.kind === kind) && !reading.left.some((finding) => finding.kind === kind)).map((kind) => {
-        if (kind === "unlinked" && state.arrows.length === 0) return "no card without an arrow (not asked until half the cards are wired: no arrows yet)";
-        if (kind === "unlinked") {
-          const linked = new Set(state.arrows.flatMap((arrow) => [arrow.from, arrow.to]));
-          if (linked.size * 2 < state.notes.length) return `no card without an arrow (not asked until half the cards are wired: ${linked.size} of ${state.notes.length} are)`;
-        }
+        // The reading's own numbers: follows arrows and the film's cards, not setup arrows and the wall's (round twenty-two, entry 20).
+        if (kind === "unlinked" && reading.wired.linked === 0) return "no card without a follows arrow (not asked until half the film's cards are wired: no follows arrows yet)";
+        if (kind === "unlinked" && reading.wired.linked * 2 < reading.wired.of) return `no card without a follows arrow (not asked until half the film's cards are wired: ${reading.wired.linked} of ${reading.wired.of} are; a setup arrow is a claim, not a place in the story)`;
         if (kind === "unplaced" && !state.notes.some((note) => (note.location ?? "").trim())) return "no card without a place (not asked: no card placed yet)";
         if (kind === "sequence" && state.groups.length === 0) return "no group too long for one sequence (not asked: no groups)";
         // A kind clean only because an open card is not asked says so (round eighteen, entry 18).

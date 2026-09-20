@@ -523,6 +523,9 @@ export function readWall(state, options = {}) {
     openFields: describeOpenFields(state, order),
     // Two versions of one scene (R65): the front card and the one behind it, in story order; listed, never asked.
     versions: order.filter((note) => state.notes.some((item) => item.alternativeOf === note.id)).map((note) => ({ id: note.id, alternatives: state.notes.filter((item) => item.alternativeOf === note.id).map((item) => item.id) })),
+    // How much of the film is wired (follows arrows; a setup arrow is a claim, not a place): the unlinked
+    // question waits for half. Returned so a door says the reading's numbers, never its own (round twenty-two, entry 20).
+    wired: { linked: order.filter((note) => linked.has(note.id)).length, of: order.length },
     // Set aside (R66): on the wall and not in the film. Listed, never asked.
     aside: state.notes.filter((note) => note.aside === true).map((note) => note.id),
     threads,

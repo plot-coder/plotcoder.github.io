@@ -76,6 +76,8 @@ export type WallReading = {
   openFields: Array<{ field: "logline"; words: string } | { field: "location"; id: string; words: string } | { field: "when"; id: string; words: string } | { field: "change"; id: string; words: string }>;
   /** Two versions of one scene (R65): each front card with the versions behind it, in story order; listed, never asked. */
   versions: Array<{ id: string; alternatives: string[] }>;
+  /** The film's cards a follows arrow touches, of the film's cards: the unlinked question waits until half are wired. */
+  wired: { linked: number; of: number };
   /** The cards set aside (R66): on the wall and not in the film; listed, never asked. */
   aside: string[];
   /** Threads (R60): each named string with its cards in story order and which ends are open. */

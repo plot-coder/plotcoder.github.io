@@ -1435,7 +1435,7 @@ server.registerTool(
   },
   async (args) => {
     if (args.pages === undefined && args.minutes === undefined && args.open === undefined) return ok("Say the target in pages or in minutes, or open with the writer's words for why it is not decided.");
-    const { state, changed, live } = await commit({
+    const { state, changed, live, before } = await commit({
       type: "set_target",
       ...(args.pages !== undefined || args.minutes !== undefined ? { targetEighths: toEighths(args.pages ?? args.minutes) } : {}),
       ...(args.open !== undefined ? { open: args.open } : {}),
@@ -1444,8 +1444,10 @@ server.registerTool(
     if (state.targetOpen) {
       return ok(`Target left open, by the writer's word: "${state.targetOpen}"${where(live)}. The reading lists it and reads the cards against a half-hour and a feature meanwhile: about ${formatPages(boardEighths(state))} pages — against 30, ${againstWord(state, 30 * EIGHTHS_PER_PAGE)}; against 120, ${againstWord(state, 120 * EIGHTHS_PER_PAGE)}. set_target with pages or minutes decides it.`, { targetEighths: state.targetEighths, targetOpen: state.targetOpen });
     }
+    // A number decides an open target, and the reply says the words went (round twenty-two, entry 90).
+    const decided = (before?.targetOpen ?? "").trim() ? ` Decided: the writer's words, "${before.targetOpen.trim()}", are cleared, and the reading stops listing the target as open.` : "";
     return ok(
-      `Target is ${formatPages(state.targetEighths)} pages${where(live)}. The cards add up to about ${formatPages(boardEighths(state))} — ${boardEighths(state) > state.targetEighths ? `${formatPages(boardEighths(state) - state.targetEighths)} over` : `${formatPages(state.targetEighths - boardEighths(state))} under`}.`,
+      `Target is ${formatPages(state.targetEighths)} pages${where(live)}.${decided} The cards add up to about ${formatPages(boardEighths(state))} — ${boardEighths(state) > state.targetEighths ? `${formatPages(boardEighths(state) - state.targetEighths)} over` : `${formatPages(state.targetEighths - boardEighths(state))} under`}.`,
       { targetEighths: state.targetEighths },
     );
   },

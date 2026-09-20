@@ -1079,7 +1079,9 @@ describe("open fields (R61): the logline, the premise, a when and a board's name
     expect(await client.callTool("list_boards")).toMatch(/about [\d /]+ pages, the target open/);
     expect(await client.callTool("read_project")).toMatch(/about [\d /]+ pages, the target open/);
     await client.callTool("undo");
-    expect(await client.callTool("set_target", { pages: 90 })).toContain("Target is 90 pages");
+    const decidedTarget = await client.callTool("set_target", { pages: 90 });
+    expect(decidedTarget).toContain("Target is 90 pages");
+    expect(decidedTarget).toContain('Decided: the writer\'s words, "half-hour or feature", are cleared');
     expect(await client.callTool("read_wall")).not.toContain("the target —");
     // A three-line scene on an unsized card is a sketch, and the reading carries the second number.
     const wrote = await client.callTool("write_scene", { id: "maya-letter", text: "Maya finds the letter on the mat. She knows what it is.\n\nShe feels the cold." });

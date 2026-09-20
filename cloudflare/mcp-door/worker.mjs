@@ -10,7 +10,7 @@ const HELLO = `PlotCoder's hosted MCP door. An MCP client connects here over HTT
 
   claude mcp add plotcoder --transport http https://mcp.plotcoder.com --header "Authorization: Basic <base64 of email:password>"
 
-or, in the Claude desktop app, Settings > Connectors > add a custom connector with this address and that header. The on-ramp is https://plotcoder.com/llms.txt.
+or, in the Claude desktop app, Settings > Connectors > add a custom connector with this address and that header, choosing "No sign-in" under Authentication: the screen says OAuth is detected, but this door has none and the header is the sign-in. The on-ramp is https://plotcoder.com/llms.txt.
 `;
 
 export default {

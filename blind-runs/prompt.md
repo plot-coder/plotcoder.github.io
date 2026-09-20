@@ -32,7 +32,10 @@ Before you paste:
 
 1. **Wire the name.** In the Claude desktop app, Settings › Connectors ›
    Add custom connector: name **PlotCoder**, URL
-   `https://mcp.plotcoder.com`, and under Request headers one header,
+   `https://mcp.plotcoder.com`; under Authentication choose **No sign-in**
+   (the screen says OAuth is "Detected" and preselects "Sign in now": the
+   door has no OAuth, and the app reads its 401 as one — round twenty-two's
+   first finding); and under Request headers one header,
    `authorization`, with the value `Basic dGVzdEB0ZXN0LmNvbTp0ZXN0` (that is
    `test@test.com:test`, base64). Make sure the connector is enabled for
    the fresh session and not for any session of your own work: it is

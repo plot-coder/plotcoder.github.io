@@ -8,7 +8,52 @@ done and merged, what is left, and the order I would take it in.
 
 ---
 
-## Next, in order (2026-09-19, night, after 0.1.41)
+## Next, in order (2026-09-20, after round twenty-two)
+
+**Now:** round twenty-two has run, on "The Last Bus" through
+`https://mcp.plotcoder.com` at 0.1.42: ninety-five entries in
+`blind-runs/round-twenty-two-report.md`, verbatim under a head, and that
+report is the open queue. What it found was fixed on the branch the same
+night (603 unit tests); **not yet merged, released or deployed** — the fixes
+touch the hosted function (`supabase/functions/mcp/index.ts`, the JSON tail)
+and the Worker's root text (`cloudflare/mcp-door/worker.mjs`), so after the
+release bump the pin, redeploy the function, and redeploy the Worker.
+
+1. **Land round twenty-two's fixes:** merge, `npm version patch`, push the
+   tag, wait for npm, bump the door's pin, `supabase functions deploy mcp …`,
+   `npx -y wrangler@latest deploy` in `cloudflare/mcp-door`. Check the door
+   with one `initialize`: `serverInfo.version` is now the package's own.
+2. **Take the fallback out of `~/.claude.json`** on Robert's Mac: the cueing
+   session wrote an HTTP server named `plotcoder` there before the connector
+   screen was solved, and the round's agent used it instead of the connector
+   (the report's head says so). A backup from before the edit is
+   `~/.claude/backups/claude.json.before-round-22`. The desktop connector is
+   signed in as the test account and is on in every session: turn it off
+   outside a round.
+3. **Robert's to draw, from twenty-two, in this order:** (a) **a card on the
+   wall and not in the film** — a kept version is back in the count, the
+   pages and the order (47, 50, 51, 64, 85); R65's card behind another with
+   the pair marked decided is the nearest shape; (b) **the all-or-nothing
+   open card** — a wall of honest "I don't know"s asks almost nothing, and
+   the change line has no open of its own (15, 17, 23, 28, 42, 86); (c) **an
+   open place's words as a slugline**, "PLACE NOT DECIDED: I DON'T KNOW YET"
+   (70). Mock first, as always.
+4. **The premise**, the handover's second decision, now answered by the
+   round (13, 24, 74): the agent put the span in the premise unprompted,
+   said it "isn't what a premise is", and a scene's writer could not see a
+   premise-level fact from the card. `docs/mockups/the-card-with-no-place.html`
+   draws it: the sentence in `set_premise` and both guides, and `read_wall`
+   printing a set premise. Robert's word builds it.
+5. **The connector, measured alone.** Twenty-two's agent worked the
+   fallback; whether a stranger holding only the desktop connector is in
+   from the first message is still unmeasured. The next round wires the
+   connector and nothing else (choose **No sign-in** on the Authentication
+   screen; the prompt, the on-ramp and the door's root now say so).
+6. **R64's weekly agent**, as below (item 3 of the older queue): no
+   scheduled task exists; setting one up is a standing job and wants
+   Robert's yes and a day.
+
+## The queue before it (2026-09-19, night, after 0.1.41)
 
 **Now:** everything the last three rounds asked for and Robert decided is
 built, merged and released. 0.1.41 is on npm and plotcoder.com; the hosted

@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<title>Round twenty-two's design items — before and after</title>
+<!-- The app's own paper: the source stylesheet, so the link never goes stale. -->
+<link rel="stylesheet" href="../../src/styles.css">
+<style>
+  body { margin: 0; padding: 2rem 2.5rem 4rem; font-family: ui-sans-serif, system-ui, sans-serif; }
+  h1 { font: 600 1.05rem/1.3 ui-serif, Georgia, serif; margin: 0 0 0.25rem; }
+  h2.sec { font: 600 0.95rem/1.3 ui-serif, Georgia, serif; margin: 3rem 0 0.2rem; padding-top: 1.2rem; border-top: 1px solid rgba(127,127,127,0.25); }
+  .lede { font-size: 0.85rem; opacity: 0.78; margin: 0 0 1.2rem; max-width: 72ch; line-height: 1.5; }
+  .said { font-size: 0.82rem; line-height: 1.5; margin: 0.4rem 0 1.3rem; max-width: 76ch; padding: 0.6rem 0.9rem; border-left: 3px solid var(--over); background: rgba(127,127,127,0.08); }
+  .said b { font-weight: 600; }
+  .row { display: flex; gap: 2.2rem; flex-wrap: wrap; align-items: flex-start; }
+  .opt { width: 500px; }
+  .opt h3 { font: 700 0.62rem/1.3 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; margin: 0 0 0.6rem; }
+  .opt h3 em { font-style: normal; color: var(--over); }
+  .opt p { font-size: 0.8rem; line-height: 1.45; opacity: 0.82; margin: 0.7rem 0 0; max-width: 58ch; }
+  pre.read { font: 0.68rem/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; background: rgba(127,127,127,0.12); padding: 0.75rem 0.95rem; border-radius: 6px; white-space: pre-wrap; margin: 0.7rem 0 0; }
+  pre.read b { color: var(--over); font-weight: 600; }
+  pre.read s { opacity: 0.5; }
+  .paper { position: relative; height: 222px; width: 500px; border-radius: 6px; background: var(--canvas); outline: 1px solid rgba(127,127,127,0.18); overflow: hidden; }
+  .paper .note { position: absolute; transform-origin: top left; min-height: 11rem; }
+  .s { transform: scale(0.62); }
+  .tag { position: absolute; top: 5px; font-size: 0.5rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--over); }
+  .bracket { position: absolute; border: 1.5px dashed var(--over); border-bottom: none; border-radius: 6px 6px 0 0; height: 10px; opacity: 0.8; }
+  .ask { margin-top: 1.2rem; max-width: 78ch; font-size: 0.86rem; line-height: 1.55; }
+  .ask b { font-weight: 600; }
+  .yes { margin-top: 0.7rem; max-width: 78ch; font-size: 0.84rem; line-height: 1.5; padding: 0.6rem 0.9rem; border-radius: 6px; background: rgba(127,127,127,0.12); }
+  .readout-mock { font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); padding: 0.6rem 0.8rem; background: rgba(127,127,127,0.12); border-radius: 6px; display: inline-block; }
+  .readout-mock b { color: var(--over); font-weight: 700; }
+  .opt .script { width: auto; font-size: 0.58rem; padding: 2em 3.4em 1.4em 4.4em; container-type: normal; position: relative; }
+  .camera { position: absolute; right: 0.6em; color: #a4501c; font-size: 0.95em; }
+  .person { background: var(--canvas); outline: 1px solid rgba(127,127,127,0.18); border-radius: 6px; padding: 1rem 1.2rem; font-size: 0.8rem; line-height: 1.6; }
+  .person h4 { font: 600 1rem/1.2 ui-serif, Georgia, serif; margin: 0 0 0.5rem; }
+  .person .k { font: 700 0.55rem/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.6; display: block; margin-top: 0.7rem; }
+  .words { font-size: 0.82rem; line-height: 1.5; background: rgba(127,127,127,0.12); border-radius: 6px; padding: 0.7rem 0.95rem; }
+  .words s { opacity: 0.5; }
+  .words b { color: var(--over); font-weight: 600; }
+</style>
+</head>
+<body>
+<h1>Round twenty-two's design items, before and after</h1>
+<p class="lede">The items of <code>docs/to-do-round-twenty-two.md</code> that a person would see, or that change what the app is, drawn before anything is built (2026-09-20). Each: what happened, how it behaves today, what it could be, what I would do, and what a yes means. <b>For four of the eight my recommendation is to build nothing, or only words</b> — a finding is a reason to decide, not always a reason to build. Everything that needed no decision is already built and listed in the to-do. Each stands alone.</p>
+
+<!-- ───────────── 1 ───────────── -->
+<h2 class="sec">1 · Adding one scene re-lays the whole wall (E4 · entry 63)</h2>
+<div class="said"><b>What happened.</b> The writer said "add a scene between the breakdown and the mother coming to the stop". One card was added, and every card on the wall moved, because wiring a scene into the story (<code>create_note</code> with <code>after</code>, and <code>move_scene</code>) finishes by tidying the whole wall along the arrows. Rounds fourteen and sixteen asked for that tidy — back then a card's <i>position</i> was the story's order, so an untidy wall read wrong. Since then the order is the arrows (R56), and the tidy is only housekeeping. If you had arranged the wall by hand, it is gone.</div>
+<div class="row">
+  <div class="opt">
+    <h3>As it ships · one card in, every card moves</h3>
+    <div class="paper">
+      <article class="note note--yellow s" style="left:14px;top:96px;transform:scale(0.62) rotate(-2deg)"><div class="note__headline">The breakdown</div></article>
+      <article class="note note--blue s" style="left:150px;top:20px;transform:scale(0.62) rotate(2deg)"><div class="note__headline">The mother at the stop</div></article>
+      <article class="note note--green s" style="left:330px;top:84px;transform:scale(0.62) rotate(-1deg)"><div class="note__headline">The day she finds out</div></article>
+      <span class="tag" style="left:14px">before · as the writer left it</span>
+    </div>
+    <div class="paper" style="margin-top:0.6rem">
+      <article class="note note--yellow s" style="left:14px;top:40px;transform:scale(0.62)"><div class="note__headline">The breakdown</div></article>
+      <article class="note note--yellow s" style="left:136px;top:40px;transform:scale(0.62)"><div class="note__headline">The morning after</div></article>
+      <article class="note note--blue s" style="left:258px;top:40px;transform:scale(0.62)"><div class="note__headline">The mother at the stop</div></article>
+      <article class="note note--green s" style="left:380px;top:40px;transform:scale(0.62)"><div class="note__headline">The day she finds out</div></article>
+      <span class="tag" style="left:14px">after · tidied into a row</span>
+    </div>
+  </div>
+  <div class="opt">
+    <h3>A · the new card lands <em>beside the one it follows</em>; nothing else moves</h3>
+    <div class="paper">
+      <article class="note note--yellow s" style="left:14px;top:96px;transform:scale(0.62) rotate(-2deg)"><div class="note__headline">The breakdown</div></article>
+      <article class="note note--yellow s" style="left:60px;top:40px;transform:scale(0.62) rotate(1deg);outline:2px solid var(--over)"><div class="note__headline">The morning after</div></article>
+      <article class="note note--blue s" style="left:190px;top:20px;transform:scale(0.62) rotate(2deg)"><div class="note__headline">The mother at the stop</div></article>
+      <article class="note note--green s" style="left:330px;top:84px;transform:scale(0.62) rotate(-1deg)"><div class="note__headline">The day she finds out</div></article>
+    </div>
+<pre class="read">create_note { headline: "The morning after", after: "the breakdown" }
+  … Wired after "The breakdown" (1 follows arrow removed, 2 drawn). <b>It sits beside the card it follows; nothing else moved. organize tidies the wall along the arrows when the writer wants that.</b></pre>
+    <p>The story's order is already right the moment the arrows are drawn; where cards sit is the writer's. The same for <code>move_scene</code> and the new <code>set_order</code>. An agent building a whole wall calls <code>organize</code> once at the end, which is what the guide already tells it to do.</p>
+  </div>
+</div>
+<div class="ask"><b>What I would do: A.</b> The reason for the tidy went away with R56, and a tool that moves nine of your cards to add one is surprising in a way no reply can excuse. <b>What it costs:</b> a wall built card by card by an agent is untidy until <code>organize</code> runs, and a card dropped beside its neighbour can overlap another; the reply says so. <b>What a yes means:</b> wiring a scene in, moving one, and setting the order stop tidying; the reply offers <code>organize</code>; on the wall nothing changes for a person, who never had this tidy.</div>
+
+<!-- ───────────── 2 ───────────── -->
+<h2 class="sec">2 · "A feature" is not a number (E8 · entry 91)</h2>
+<div class="said"><b>What happened.</b> "The target: I have decided. It is a feature." The tool takes only pages or minutes, so the agent chose the app's 120 and told the writer it had. The record now says the writer chose 120, which they did not. And there is a quieter fault behind it: 120 is also the default, so a wall whose writer <i>has</i> said "a feature" reads back as <b>"no target set"</b>.</div>
+<div class="row">
+  <div class="opt">
+    <h3>As it ships</h3>
+    <div class="readout-mock">≈ 8 2/8 of 120 pages · target 120 →</div>
+<pre class="read">set_target { pages: 120 }
+read_wall:  runtime: about 8 2/8 pages …
+  <b>no target set</b> — set_target for a pilot (60) or a half-hour (30) …</pre>
+  </div>
+  <div class="opt">
+    <h3>A · the target keeps <em>the writer's word</em></h3>
+    <div class="readout-mock">≈ 8 2/8 of 120 pages · <b>a feature</b> →</div>
+<pre class="read">set_target { kind: "feature" }        <span style="opacity:.6">— "hour" is 60, "half-hour" is 30</span>
+  Target is a feature, read as 120 pages: the writer's word, not a page count. set_target with pages says a number.
+read_wall:  runtime: about 8 2/8 pages …
+  <b>against a feature, read as 120 pages (the writer said "a feature", not a number): 111 6/8 under</b></pre>
+    <p>One word on the board record — <code>targetKind</code> — claiming nothing when absent. The strip's readout shows the word where it shows "target 120". A page count given later replaces it.</p>
+  </div>
+</div>
+<div class="ask"><b>What I would do: A.</b> It is small, it fixes "no target set" for every writer of a feature, and it keeps the app from putting a number in the writer's mouth. <b>What it cannot say:</b> what <i>this</i> writer's feature runs to — 90, 100, 120 — which is why the reply says it is read as 120 and how to say otherwise. <b>What a yes means:</b> <code>set_target</code> and <code>new_project</code> take <code>kind</code>; the readout, the reading and the title page say the word.</div>
+
+<!-- ───────────── 3 ───────────── -->
+<h2 class="sec">3 · How a plant pays off, as against where (F1 · entries 14, 35, 54)</h2>
+<div class="said"><b>What happened.</b> The writer knew <i>how</i> the jar pays off — "he empties it into her hand" — and later how it is first seen — "he counts the fare out of it on the step of the bus". A setup arrow says <i>where</i> a plant pays off and the fold's words say <i>what</i> is planted; nothing says how. The first sentence went into the last scene's headline, the second into the fold's label, where it now repeats in full on every line that names the fold.</div>
+<div class="row">
+  <div class="opt">
+    <h3>As it ships · the sentence rides in the fold's label</h3>
+<pre class="read" style="margin-top:0">read_wall — setups:
+  "The first morning" sets up "The last run" — <b>the jar of coins — he counts the fare out of it on the step of the bus</b>, about 7 pages later</pre>
+  </div>
+  <div class="opt">
+    <h3>A · words <em>on the arrow</em></h3>
+<pre class="read" style="margin-top:0">create_arrow { from, to, kind: "setup", <b>how: "he empties it into her hand"</b> }
+read_wall — setups:
+  "The first morning" sets up "The last run" — the jar of coins; <b>pays off: he empties it into her hand</b>, about 7 pages later</pre>
+    <p>A field on the setup arrow, shown on the payoff card's edge as "Pays off · the jar — he empties it into her hand".</p>
+  </div>
+  <div class="opt">
+    <h3>B · no field: <em>say where "how" goes</em></h3>
+    <div class="words">The guide, under the fold: <b>How a plant is first seen, and how it pays off, are what happens in those two scenes — so they are those cards' change lines, or their text. The fold's words stay a short label ("the jar of coins"): it is repeated wherever the fold is named.</b></div>
+    <p>"He empties it into her hand" <i>is</i> what changes in the last run; "he counts the fare out of a jar" <i>is</i> the first morning. The wall already has a place for a sentence about what happens in a scene.</p>
+  </div>
+</div>
+<div class="ask"><b>What I would do: B, the words and no field.</b> A adds a second place to say what happens in a scene, and the app's method is that a card says what changes in it. The agent reached for the label because nothing told it where a sentence goes; with R67, a change line is also no longer something it has to avoid. <b>What B cannot say:</b> a last scene that pays off two plants has one change line for both — a sentence can hold that, and if a round shows it cannot, A is still there. <b>What a yes to B means:</b> two sentences in the guide and in <code>set_plant</code>'s description; nothing a person sees changes.</div>
+
+<!-- ───────────── 4 ───────────── -->
+<h2 class="sec">4 · Two versions as equals, and a version that is two scenes (F3 · entries 10, 11)</h2>
+<div class="said"><b>What happened.</b> "I have it two ways. Keep both on the wall until I decide." The app holds that — one card in front, one tucked behind — but one has to be in front, so the agent asked the writer "which goes in front?", a half-choice the writer had just refused to make. And the breakdown's second way was two places (the bog road, then his home): a version is one card.</div>
+<div class="row">
+  <div class="opt">
+    <h3>As it ships · one in front</h3>
+    <div class="paper">
+      <span class="tag" style="left:150px">two versions · not chosen</span>
+      <article class="note note--yellow is-open" style="left:196px;top:34px;transform:scale(0.78) rotate(4deg);filter:brightness(0.9)"><div class="note__headline">She walks him home and meets the mother</div></article>
+      <article class="note note--yellow" style="left:150px;top:22px;transform:scale(0.78) rotate(-1deg)"><span class="note__edge"><span>4</span><span>·</span><span class="note__plant is-unpaid">or: she walks him home</span></span><div class="note__headline">They sit it out till morning and he talks</div></article>
+    </div>
+  </div>
+  <div class="opt">
+    <h3>A · side by side <em>under one bracket</em>, neither in front</h3>
+    <div class="paper">
+      <span class="bracket" style="left:70px;top:16px;width:340px"></span>
+      <span class="tag" style="left:150px;top:2px">4 · two ways · not chosen</span>
+      <article class="note note--yellow" style="left:76px;top:32px;transform:scale(0.78) rotate(-1deg)"><div class="note__headline">They sit it out till morning and he talks</div></article>
+      <article class="note note--yellow" style="left:240px;top:32px;transform:scale(0.78) rotate(1deg)"><div class="note__headline">She walks him home and meets the mother</div></article>
+    </div>
+    <p>A new shape on the wall: a bracket holding two (or more) cards in one place in the story, counted as one scene — the longer of them — until one is chosen. It could also hold a version that is two cards. It is a second way of drawing R65, and every part of the app that reads the order would learn "a slot with several cards".</p>
+  </div>
+  <div class="opt">
+    <h3>B · keep the drawing, <em>fix the asking</em></h3>
+    <div class="words">The guide and <code>set_alternative</code>: <b>Which card is in front decides nothing: it is only the one drawn on top, and the one counted until the writer chooses. Put the way the writer named first in front, say so, and do not ask them to pick.</b> And: <b>a version is one card. When one way of a scene is two scenes, the version is the first of them; hold the second as a card set aside, and bring it back if that way is chosen.</b></div>
+  </div>
+</div>
+<div class="ask"><b>What I would do: B.</b> The writer's complaint was being <i>asked</i>, not how the cards were drawn; the pair already reads "two versions · not chosen" and nothing in the reading treats the front card as preferred. A is a handsome drawing and a large change — a third kind of place in the story — for one round's remark. <b>What B cannot say:</b> which way the count leans while undecided; it counts the front card, and says so. <b>What a yes to B means:</b> words in the guide and the tool; nothing a person sees changes.</div>
+
+<!-- ───────────── 5 ───────────── -->
+<h2 class="sec">5 · Something undecided about a person (F4 · entries 12, 24)</h2>
+<div class="said"><b>What happened.</b> "What is he going to the town for? A hospital visit, a music lesson, or the courthouse. I keep changing my mind." That is a fact about Tomás, not about a scene, and it had no home: the agent weighed opening a whole card (which silences it) or an open place (which it is not). Later the writer said it <i>was</i> decided, "but not yet on the wall" — a state the app cannot hold and, I think, should not: that is between the writer and their agent.</div>
+<div class="row">
+  <div class="opt">
+    <h3>As it ships · a person's page has no "not decided"</h3>
+    <div class="person">
+      <h4>Tomás Ó Ceallaigh</h4>
+      <span class="k">Notes</span>Fourteen. Pays in coins from a jar. Will not say what he goes to the town for. School is in the other direction.
+      <span class="k">Wants</span><span style="opacity:.45">…</span>
+    </div>
+  </div>
+  <div class="opt">
+    <h3>A · an <em>open line</em> on the person's page</h3>
+    <div class="person">
+      <h4>Tomás Ó Ceallaigh</h4>
+      <span class="k">Notes</span>Fourteen. Pays in coins from a jar. Will not say what he goes to the town for. School is in the other direction.
+      <span class="k">Not decided yet</span><span class="is-open-field"><span class="open-mark">Open</span>what he goes to the town for: a hospital visit, a music lesson, or the courthouse</span>
+      <span class="k">Wants</span><span style="opacity:.45">…</span>
+    </div>
+<pre class="read">update_character { name: "Tomás", <b>open: "what he goes to the town for: …"</b> }
+read_wall — open, by the writer's word:
+  - <b>about Tomás Ó Ceallaigh — what he goes to the town for: a hospital visit, a music lesson, or the courthouse</b></pre>
+    <p>R61's shape, once more, on a person: the writer's words, listed by the reading, never asked. One line per person, as a card has one.</p>
+  </div>
+</div>
+<div class="ask"><b>What I would do: A.</b> It is the same small thing that has worked five times — the logline, the premise, a place, a when, a change line — and "who is this person, I have not decided" is as common in a writer's notes as any of those. <b>What it cannot say:</b> "decided, but I have not told you", which stays a note between writer and agent. <b>What a yes means:</b> an "Open" line on the person's page in the app with the same "Not decided yet…" offer, <code>update_character</code> taking <code>open</code>, and a line in the reading.</div>
+
+<!-- ───────────── 6 ───────────── -->
+<h2 class="sec">6 · The camera mark, for the writer (F7 · entries 81, 82)</h2>
+<div class="said"><b>What happened.</b> The writer's own line — "She knows every passenger by their stop. She does not know him." — was marked: the camera cannot see "knows". The agent saw the mark in <code>read_pages</code>; the writer had to ask whether it was a question for them. It turns out <b>the app's own Pages never show the mark at all</b>: the agent is told something about the writer's page that the writer cannot see. And a mark can never be acknowledged — a line kept on purpose is marked for ever.</div>
+<div class="row">
+  <div class="opt">
+    <h3>As it ships · the app's page shows nothing</h3>
+    <div class="script">
+      <p class="sl sl--action">The bus stops. TOMÁS Ó CEALLAIGH, fourteen, gets on.</p><p class="sl sl--action">&nbsp;</p>
+      <p class="sl sl--action">She knows every passenger by their stop. She does not know him.</p>
+    </div>
+<pre class="read">read_pages (the agent's): … She does not know him.    <b>◂ knows</b></pre>
+  </div>
+  <div class="opt">
+    <h3>A · the mark <em>in the app's margin</em></h3>
+    <div class="script">
+      <p class="sl sl--action">The bus stops. TOMÁS Ó CEALLAIGH, fourteen, gets on.</p><p class="sl sl--action">&nbsp;</p>
+      <p class="sl sl--action">She knows every passenger by their stop. She does not know him.<span class="camera" title="The camera cannot see 'knows'. A mark, not a question: keep the line or show it.">◂ knows</span></p>
+    </div>
+    <p>The same mark the agent sees, in the page's right margin where a revision's star goes, with a one-second hover: "The camera cannot see <i>knows</i>. A mark, not a question." Writer and agent look at the same page.</p>
+  </div>
+  <div class="opt">
+    <h3>B · and a click <em>keeps the line</em></h3>
+    <div class="script">
+      <p class="sl sl--action">The bus stops. TOMÁS Ó CEALLAIGH, fourteen, gets on.</p><p class="sl sl--action">&nbsp;</p>
+      <p class="sl sl--action">She knows every passenger by their stop. She does not know him.<span class="camera" style="opacity:.4">◂ kept</span></p>
+    </div>
+    <p>Clicking the mark says "I know; it stays", remembered on the card for that line; the mark greys and the agent's page says "kept by the writer". A small record, and the first thing in the app that remembers a line of text.</p>
+  </div>
+</div>
+<div class="ask"><b>What I would do: A now, B only if a round or you ask for it.</b> A closes the real gap — that your agent is told something you cannot see. B is a nicety with a cost: remembering a line means deciding what happens when the line is edited. <b>What a yes to A means:</b> the mark and its hover in Pages (the Pages tab and print leave it out: it is a working mark, like the scene numbers' stars, not part of the script).</div>
+
+<!-- ───────────── 7, 8 ───────────── -->
+<h2 class="sec">7 · Two phrases a writer reads (F5, F6 · entries 36, 40)</h2>
+<div class="said"><b>What happened.</b> Two of the app's own sentences misled. "Propose them and I will strike" is in the list of questions a writer sees under Reminders, filed under marking turns — the agent read it as <i>mark first, then strike</i>; the writer meant <i>name them to me first</i>. And the wall's question about two turns with nothing between them offers three answers, none of which is "I have not got that far" — which, on a page of notes, is usually the truth.</div>
+<div class="row">
+  <div class="opt">
+    <h3>The turns · the hint under "Which scenes are the turns?"</h3>
+    <div class="words"><s>Name them, say "propose them and I will strike", or say "mark none yet" …</s><br><br>Name them; or say <b>"propose them and I will strike" — your agent names its candidates to you first, you strike, and only what is left is marked</b>; or say "mark none yet" — every card stays a scene and the reading asks once for a beat until you do.</div>
+  </div>
+  <div class="opt">
+    <h3>Two turns back to back · the wall's question</h3>
+    <div class="words">Nothing runs between "The day Nuala finds out" and "The last run": two turns back to back. Are they one beat, is a scene missing, <s>or is that the pace?</s> <b>is that the pace — or have you not got that far yet?</b></div>
+    <p>"Not that far yet" is answered by leaving the question, with those words as the reason, which the wall already does. No new state for a stretch of story.</p>
+  </div>
+</div>
+<div class="ask"><b>What I would do: both, as written.</b> They are words, and they are words you read, which is the only reason they are on this page. <b>What a yes means:</b> the two sentences change, in the app and for the agent alike.</div>
+
+<h2 class="sec">In one line each</h2>
+<p class="lede" style="margin-top:0.6rem">1 — <b>A</b>: adding a scene stops re-laying the wall. 2 — <b>A</b>: "a feature" is kept as your word. 3 — <b>B</b>: no new field; say where "how" goes. 4 — <b>B</b>: keep the drawing, stop asking which goes in front. 5 — <b>A</b>: an open line on a person's page. 6 — <b>A</b>: the camera mark shows in the app's Pages. 7 — <b>both</b> sentences. Left alone on purpose: acts and lengths "left open" (F8) — the reading now lists "no length" under "not said yet", and that may be enough.</p>
+</body>
+</html>

@@ -106,7 +106,9 @@ only when the server is started with `PLOTCODER_JSON=1`.
   setup with the distance to its payoff, and every thread with its cards. The tool's own description carries the same list,
   and a reply names each question's kind. Put the questions to the writer. Do
   not act on them unasked, and do not add an opinion about the number of beats.
-  **"What is still open?" is answered here, in one call.** The reading opens
+  `read_wall` with `only: "questions"` is the short read — the three counts,
+  what the wall asks, what the writer has left — for "do I owe the writer
+  anything?" after a write. **"What is still open?" is answered here, in one call.** The reading opens
   with three counts — questions asked, things left open by the writer's word,
   scenes unwritten — so a quiet wall is never taken for a finished one. Its
   open section lists the project's open fields, one grouped line where the

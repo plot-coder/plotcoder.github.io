@@ -125,7 +125,7 @@ patches are honest; they are not the answer.
   the places are list_board's". *Best?* It lengthens a long reply. But
   "read the wall back to me" is the most common thing a writer asks, and it
   should be one call. Yes, compact. *Test:* the two lines, on the seed wall.
-- [ ] **D3 · A short read: only what the wall asks** (83).
+- [x] **D3 · A short read: only what the wall asks** *(built 2026-09-20: `read_wall { only: "questions" }`; tested under fifteen lines with every question in it)* (83).
   *Plan:* `read_wall { only: "questions" }` — the three counts, the
   questions, what is left, nothing else. *Best?* Alternative: make the tail
   do it (B3 does, for one write). This is for "is there anything I owe?",

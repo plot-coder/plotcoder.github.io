@@ -2107,6 +2107,13 @@ describe("after the blind run", () => {
       expect(read).toMatch(/\ncast: [^\n]*Maya \(\d+ scenes?\)/);
       expect(read).toContain("places: the piano shop (2)");
       expect(read).not.toContain("the cast and the places are list_board's");
+      // The short read: every question, and under fifteen lines (entry 83).
+      const brief = await door.callTool("read_wall", { only: "questions" });
+      const whole = await door.callToolData("read_wall");
+      expect(brief.split("\n\n")[0].split("\n").length).toBeLessThan(15);
+      expect(brief).toMatch(/^PlotCoder wall .* — the questions only/);
+      for (const finding of whole.findings ?? []) expect(brief).toContain(`[${finding.kind}]`);
+      expect(brief).not.toContain("runs between beats");
     } finally {
       door.stop();
       fs.rmSync(root, { recursive: true, force: true });

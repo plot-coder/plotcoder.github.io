@@ -1725,9 +1725,9 @@ server.registerTool(
     title: "Read the wall",
     description:
       "Read the board back: the beats in wall order (rows top to bottom, cards left to right), the pages of scenes between consecutive beats with the cards in each, every setup with the distance to its payoff, and the questions the wall raises — no beat marked yet; a run out of proportion with the others; beats back to back with nothing between them (a chain of them is one question); a card with a placeholder headline or no change line; a card no arrow touches; two headlines that read like the same scene; a group too long to be one sequence; a person in the cast on no card; a person gone for more than a third of the story and ten pages; a payoff before its setup on the wall; a folded card no setup arrow pays off; a setup arrow leaving a card that is not folded; a card with nobody in it once the wall has a cast; cards that say no place once any card has one. These are questions, not fixes: put them to the writer and do not act on them unasked. A question the writer answers with \"leave it\" is left with leave_question and listed under \"left, for now\" instead, until it would read differently. It says nothing about how many beats there should be, and neither should you. The prose carries every id; PLOTCODER_JSON=1 in the server's environment adds the same reading as JSON after it, for a program.",
-    inputSchema: {},
+    inputSchema: { only: z.enum(["questions"]).optional().describe("\"questions\": the short read — the three counts, what the wall asks, and what the writer has left, and nothing else. For \"is there anything I owe the writer?\" and \"did that raise a question?\"; the full reading is for reading the wall back.") },
   },
-  async () => {
+  async (args = {}) => {
     const { state, live, base, boardId: readBoardId } = await readBoard();
     const { project: projectForRead } = await readProject();
     const readBoardMeta = boardById(projectForRead, readBoardId ?? projectForRead.activeBoardId);
@@ -1764,6 +1764,19 @@ server.registerTool(
     });
     // Fields, not lines: a card's line can carry three of them.
     const openFieldCount = reading.openFields.length + (projectForRead.nameOpen ? 1 : 0) + (state.targetOpen ? 1 : 0) + (projectForRead.premiseOpen ? 1 : 0) + (readBoardMeta?.nameOpen ? 1 : 0);
+    // The short read (round twenty-two, entry 83): confirming nothing was owed cost three hundred lines.
+    if (args?.only === "questions") {
+      return ok(
+        [
+          `PlotCoder wall (${door(live, base)}) — the questions only; read_wall without only is the whole reading`,
+          atAGlance(state, reading, projectForRead, readBoardMeta),
+          "questions the wall raises:",
+          ...(reading.findings.length ? reading.findings.map((finding) => `  - [${finding.kind}] ${finding.text}${finding.ids.length ? ` (ids: ${finding.ids.join(", ")})` : ""}`) : [reading.left.length ? "  (none the writer has not left)" : "  (none that this reading can see)"]),
+          ...(reading.left.length ? ["left, for now:", ...reading.left.map((finding) => `  - [${finding.kind}] ${finding.text}${finding.why ? ` ("${finding.why}")` : ""}`)] : []),
+        ].join("\n"),
+        { findings: reading.findings, left: reading.left },
+      );
+    }
     const lines = [
       `PlotCoder wall (${door(live, base)})`,
       atAGlance(state, reading, projectForRead, readBoardMeta),

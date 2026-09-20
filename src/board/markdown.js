@@ -18,7 +18,7 @@
 // monospaced.
 
 import { storyOrder } from "./readWall.js";
-import { sceneHeading, standInFor, UNWRITTEN_MARK } from "./fountain.js";
+import { headlineHeadsScene, sceneHeading, standInFor, UNWRITTEN_MARK } from "./fountain.js";
 import { paginate, parseScene, WIDTH } from "./paginate.js";
 import { revisionLine, revisionMarks, sceneNumbers } from "./numbering.js";
 
@@ -80,8 +80,9 @@ export function toMarkdown(state, options = {}) {
     const heading = sceneHeading(note).slice(1);
     const star = marks.get(note.id)?.revised ? " \\*" : "";
     out.push(`### ${numbers.get(note.id) ?? ""} · ${heading}${star}`.replace(/^###  · /, "### "), "");
-    // The headline as a synopsis line — not under a beat, whose heading is the headline already.
-    if (note.rank !== "beat" && note.headline && upper(note.headline) !== heading) out.push(`*${note.headline.trim()}*`, "");
+    // The headline as a synopsis line — not under a beat, whose heading is the headline
+    // already, nor under a card with no place, whose marked heading carries it.
+    if (note.rank !== "beat" && note.headline && !headlineHeadsScene(note)) out.push(`*${note.headline.trim()}*`, "");
     if (note.text && note.text.trim()) out.push(...sceneMarkdown(note.text));
     // Unwritten: the change line stands in after the mark in bold, a plain
     // paragraph so it never reads as a second synopsis line (round fourteen, 30).

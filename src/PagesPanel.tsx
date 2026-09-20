@@ -11,7 +11,7 @@
 
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { PanelHead } from "./PanelHead";
-import { sceneHeading } from "./board/fountain";
+import { headlineHeadsScene, sceneHeading } from "./board/fountain";
 import { paginateBoard } from "./pagesLayout";
 import { type Line } from "./board/paginate";
 import { SceneEditor } from "./SceneEditor";
@@ -277,7 +277,8 @@ export function PagesPanel({
         {order.map((note) => {
           const heading = sceneHeading(note).slice(1);
           const measured = isMeasured(note);
-          const showSynopsis = heading !== note.headline.trim().toUpperCase() && note.headline.trim();
+          // Not under a card with no place: its marked heading carries the headline already.
+          const showSynopsis = !headlineHeadsScene(note) && note.headline.trim();
           const section = note.rank === "beat" ? `${(beat += 1)}. ${note.headline || "Untitled beat"}` : null;
           return (
             <section

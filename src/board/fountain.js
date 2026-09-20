@@ -21,11 +21,18 @@ function upper(text) {
 }
 
 /**
- * A forced scene heading: the place, or the headline when the card has none,
- * and the card's when after a dash — THE PIER AT FENIT - NIGHT (R55).
+ * A forced scene heading: the place, and the card's when after a dash — THE
+ * PIER AT FENIT - NIGHT (R55). A card with no place prints its headline
+ * after a mark, so capitals where a slugline goes never read as a place.
  */
 /** The heading's mark for a place the writer has left open (R61's edge): the words print, and never read back as a place. */
 export const OPEN_PLACE_HEADING = "PLACE NOT DECIDED:";
+/**
+ * The heading's mark for a card with no place and no word about one: the
+ * headline stands in behind it (rounds eighteen 46, nineteen 44, twenty 48).
+ * "No place yet" is what create_note already calls it.
+ */
+export const NO_PLACE_HEADING = "NO PLACE YET:";
 
 export function sceneHeading(note) {
   const place = typeof note.location === "string" ? note.location.trim() : "";
@@ -33,8 +40,24 @@ export function sceneHeading(note) {
   const when = typeof note.when === "string" ? note.when.trim() : "";
   // No place but the writer's words for why: the words head the scene, marked,
   // so a reader never takes them for a place and the headline is not a slugline.
-  const words = place || (placeOpen ? `${OPEN_PLACE_HEADING} ${placeOpen}` : "") || note.headline || "UNTITLED";
+  const words = place || (placeOpen ? `${OPEN_PLACE_HEADING} ${placeOpen}` : "") || `${NO_PLACE_HEADING} ${note.headline || "UNTITLED"}`;
   return `.${upper(words)}${when ? ` - ${upper(when)}` : ""}`;
+}
+
+/**
+ * A placeless card's heading without its mark: what a script written
+ * elsewhere, or exported before the mark, calls the scene. "" for a card
+ * with a place or an open one.
+ */
+/** Whether the card's headline heads its scene, behind the mark: no place, and no word that the place is open. */
+export function headlineHeadsScene(note) {
+  return !((note.location ?? "").trim() || (note.locationOpen ?? "").trim());
+}
+
+function unmarkedHeading(note) {
+  if (!headlineHeadsScene(note)) return "";
+  const when = typeof note.when === "string" ? note.when.trim() : "";
+  return `${upper(note.headline || "UNTITLED")}${when ? ` - ${upper(when)}` : ""}`;
 }
 
 /** A heading split back into its place and its when: "THE PIER AT FENIT - NIGHT" → both. */
@@ -120,7 +143,8 @@ export function toFountain(state, options = {}) {
     }
     body.push(sceneHeading(note));
     body.push("");
-    if (note.headline && sceneHeading(note) !== `.${upper(note.headline)}`) {
+    // The headline under every heading, a marked one too: it comes back as typed, not in the heading's capitals.
+    if (note.headline) {
       body.push(`= ${note.headline}`);
       body.push("");
     }
@@ -246,13 +270,16 @@ export function mergeFountain(state, parsed) {
   let cursor = 0; // where in the wall's order the last match was
   const matched = [];
   for (const scene of parsed.scenes) {
-    const headingOf = (note) => sceneHeading(note).slice(1);
     const wanted = scene.heading.toUpperCase();
+    // A placeless card answers to its marked heading and to the bare headline,
+    // which is how a script from elsewhere, or from before the mark, names it.
+    const sameHeading = (note) =>
+      sameWords(sceneHeading(note).slice(1), wanted) || (unmarkedHeading(note) !== "" && sameWords(unmarkedHeading(note), wanted));
     // First: the same heading at or after the cursor; then anywhere unused;
     // then a card whose headline is the synopsis.
     let found =
-      order.slice(cursor).find((note) => !used.has(note.id) && sameWords(headingOf(note), wanted)) ??
-      order.find((note) => !used.has(note.id) && sameWords(headingOf(note), wanted)) ??
+      order.slice(cursor).find((note) => !used.has(note.id) && sameHeading(note)) ??
+      order.find((note) => !used.has(note.id) && sameHeading(note)) ??
       (scene.synopsis ? order.find((note) => !used.has(note.id) && sameWords(note.headline, scene.synopsis)) : undefined);
     if (found) {
       used.add(found.id);
@@ -269,11 +296,17 @@ export function mergeFountain(state, parsed) {
     }
     // A new card, after the last matched one on the wall.
     const anchor = order[cursor - 1] ?? order.at(-1);
-    const headline = scene.synopsis || titleCase(scene.heading);
-    const isPlace = scene.forced && Boolean(scene.synopsis);
     const parts = splitHeading(scene.heading);
     // A heading that says the place is not decided comes back as an open place, not a place named that.
     const openPlace = parts.place.toUpperCase().startsWith(OPEN_PLACE_HEADING) ? parts.place.slice(OPEN_PLACE_HEADING.length).trim().toLowerCase() : "";
+    // A heading marked as having no place comes back as a card with none: the
+    // words after the mark were its headline, and the when after the dash is its when.
+    const noPlace = parts.place.toUpperCase().startsWith(NO_PLACE_HEADING);
+    const afterMark = noPlace ? parts.place.slice(NO_PLACE_HEADING.length).trim() : "";
+    // A headline with a dash of its own ("Maya - alone") is not a headline and a when.
+    const dashIsHeadline = noPlace && Boolean(scene.synopsis) && sameWords(scene.heading.slice(NO_PLACE_HEADING.length), scene.synopsis);
+    const headline = scene.synopsis || titleCase(noPlace ? afterMark || "Untitled" : scene.heading);
+    const isPlace = scene.forced && Boolean(scene.synopsis) && !noPlace;
     const id = `scene-${Math.random().toString(36).slice(2, 8)}`;
     // A marked body is an unwritten scene: its words are the change line, not a page.
     const body = unmark(scene.text);
@@ -284,7 +317,7 @@ export function mergeFountain(state, parsed) {
       change: body.marked ? body.text || "What changes?" : scene.text ? firstSentence(scene.text) : "What changes?",
       location: isPlace && !openPlace ? titleCase(parts.place) : "",
       locationOpen: isPlace && openPlace ? openPlace : "",
-      when: isPlace ? parts.when.toLowerCase() : "",
+      when: isPlace || (noPlace && !dashIsHeadline) ? parts.when.toLowerCase() : "",
       text: body.marked ? "" : scene.text,
       x: anchor ? anchor.x + 40 : 140,
       y: anchor ? anchor.y + 40 : 140,

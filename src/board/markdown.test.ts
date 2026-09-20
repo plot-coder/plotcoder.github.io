@@ -36,11 +36,11 @@ describe("Markdown out (R54)", () => {
         "",
         "**DESSIE**  \n*(not looking up)*  \nYour father did his own books.",
         "",
-        "### 2 · TOM LIES ABOUT THE JOB",
+        "### 2 · NO PLACE YET: TOM LIES ABOUT THE JOB",
         "",
         "**[Unwritten]** Maya starts to doubt him.",
         "",
-        "### 3 · THE LETTER IS READ ALOUD",
+        "### 3 · NO PLACE YET: THE LETTER IS READ ALOUD",
         "",
         "**[Unwritten]** The plan dies in the room.",
         "",
@@ -56,7 +56,7 @@ describe("Markdown out (R54)", () => {
 
   it("uses the board's name alone for a one-board project, and no premise line when there is none", () => {
     const text = toMarkdown(seedState(), { title: "Board 1" });
-    expect(text.startsWith("# Board 1\n\n### 1 · MAYA FINDS THE LETTER\n")).toBe(true);
+    expect(text.startsWith("# Board 1\n\n### 1 · NO PLACE YET: MAYA FINDS THE LETTER\n")).toBe(true);
     expect(text).not.toContain("**Can");
   });
 
@@ -65,7 +65,7 @@ describe("Markdown out (R54)", () => {
     state = applyCommand(state, { type: "lock_numbers", order: ["maya-letter", "tom-lies", "letter-aloud"] }, NOW).state;
     state = applyCommand(state, { type: "create_note", id: "new", headline: "A new scene", change: "Something turns.", x: 320, y: 340 }, NOW).state;
     const text = toMarkdown(state, { title: "Pilot" });
-    expect(text).toMatch(/### \d+A · A NEW SCENE/);
+    expect(text).toMatch(/### \d+A · NO PLACE YET: A NEW SCENE/);
   });
 });
 
@@ -113,8 +113,8 @@ describe("revisions and the when reach the text forms (round fourteen, entries 2
     const text = toMarkdown(revised(), { title: "Pilot" });
     expect(text).toContain("*Blue revision · 2026-09-17 · a scene changed since it began has \\* after its heading*");
     expect(text).toContain("### 1 · THE PIANO SHOP - NIGHT \\*");
-    expect(text).toContain("### 2 · TOM LIES ABOUT THE JOB \\*");
-    expect(text).toContain("### 3 · THE LETTER IS READ ALOUD\n");
+    expect(text).toContain("### 2 · NO PLACE YET: TOM LIES ABOUT THE JOB \\*");
+    expect(text).toContain("### 3 · NO PLACE YET: THE LETTER IS READ ALOUD\n");
   });
 
   it("stars the changed lines in plain text's right margin, names the revision, and runs pages on with no gap", () => {
@@ -125,7 +125,7 @@ describe("revisions and the when reach the text forms (round fourteen, entries 2
     expect(text).toMatch(/Who paid this\? And when\? +\*\n/);
     expect(text).not.toMatch(/Her father kept the site's books by hand\. +\*/);
     // A card whose change line moved, still unwritten: its heading carries the star.
-    expect(text).toMatch(/2    TOM LIES ABOUT THE JOB +2 \*\n/);
+    expect(text).toMatch(/2    NO PLACE YET: TOM LIES ABOUT THE JOB +2 \*\n/);
     expect(setLine({ kind: "action", text: "She waits." }, true)).toBe(`${" ".repeat(GUTTER)}She waits.`.padEnd(GUTTER + 60 + 1) + " *");
   });
 

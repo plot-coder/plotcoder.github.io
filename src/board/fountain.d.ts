@@ -3,6 +3,10 @@
 import type { BoardNote, BoardState } from "./reducer";
 
 export declare function sceneHeading(note: BoardNote): string;
+/** The mark before the headline of a card with no place: "NO PLACE YET:". */
+export declare const NO_PLACE_HEADING: string;
+/** Whether the headline heads the scene behind that mark: no place, and no word that the place is open. */
+export declare function headlineHeadsScene(note: BoardNote): boolean;
 /** A heading split back into its place and its when. */
 export declare function splitHeading(heading: string): { place: string; when: string };
 /** The mark every export sets before an unwritten scene's change line. */

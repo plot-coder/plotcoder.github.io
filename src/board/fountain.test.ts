@@ -17,10 +17,51 @@ describe("an open place on the heading (R61's edge, round twenty-one entry 25)",
   });
 });
 
-describe("Fountain out (R23, slice a)", () => {
-  it("forces a scene heading from the place, or the headline when there is none", () => {
+describe("a card with no place on the heading (rounds eighteen 46, nineteen 44, twenty 48)", () => {
+  it("prints the headline after a mark, with the when after the dash", () => {
+    expect(sceneHeading({ headline: "Con gives Ruth the only key to the shed", location: "", when: "" } as never)).toBe(
+      ".NO PLACE YET: CON GIVES RUTH THE ONLY KEY TO THE SHED",
+    );
+    expect(sceneHeading({ headline: "Con gives Ruth the key", location: "", when: "night" } as never)).toBe(".NO PLACE YET: CON GIVES RUTH THE KEY - NIGHT");
+    expect(sceneHeading({ headline: "", location: "" } as never)).toBe(".NO PLACE YET: UNTITLED");
+  });
+
+  it("goes out with the headline under it and comes back as the same card, nothing to write", () => {
     const seed = seedState();
-    expect(sceneHeading(seed.notes[0])).toBe(".MAYA FINDS THE LETTER");
+    const out = toFountain(seed, { title: "B" });
+    expect(out).toContain(".NO PLACE YET: MAYA FINDS THE LETTER\n\n= Maya finds the letter");
+    expect(mergeFountain(seed, fromFountain(out)).commands).toEqual([]);
+  });
+
+  it("comes in on an empty wall as a card with no place, the headline as typed, the when its own", () => {
+    const parsed = fromFountain(".NO PLACE YET: CON GIVES RUTH THE KEY - NIGHT\n= Con gives Ruth the key\n\n[Unwritten] The shed is hers too.\n");
+    const created = mergeFountain(emptyState(), parsed).commands.find((command) => command.type === "create_note") as
+      | { headline: string; location: string; locationOpen: string; when: string }
+      | undefined;
+    expect(created).toMatchObject({ headline: "Con gives Ruth the key", location: "", locationOpen: "", when: "night" });
+    // Without the line under it, the words after the mark are the headline.
+    const bare = mergeFountain(emptyState(), fromFountain(".NO PLACE YET: THE KEY\n\nHe hands it over.\n")).commands[0] as { headline: string; location: string };
+    expect(bare).toMatchObject({ headline: "The Key", location: "" });
+    // A headline with a dash of its own is not a headline and a when.
+    const dashed = mergeFountain(emptyState(), fromFountain(".NO PLACE YET: MAYA - ALONE\n= Maya - alone\n\nShe waits.\n")).commands[0] as { headline: string; when: string };
+    expect(dashed).toMatchObject({ headline: "Maya - alone", when: "" });
+  });
+
+  it("still answers to the bare headline, as a script from elsewhere or from before the mark names it", () => {
+    const seed = seedState();
+    const { commands, matched } = mergeFountain(seed, fromFountain(".MAYA FINDS THE LETTER\n\nRain on the window.\n"));
+    expect(matched).toEqual([{ id: "maya-letter", heading: "MAYA FINDS THE LETTER", created: false }]);
+    expect(commands).toEqual([{ type: "set_text", id: "maya-letter", text: "Rain on the window." }]);
+    // A card with a place does not answer to its headline as a heading.
+    const placed = applyCommand(seed, { type: "set_location", ids: ["maya-letter"], location: "the piano shop" }, NOW).state;
+    expect(mergeFountain(placed, fromFountain(".MAYA FINDS THE LETTER\n\nRain.\n")).matched[0].created).toBe(true);
+  });
+});
+
+describe("Fountain out (R23, slice a)", () => {
+  it("forces a scene heading from the place, or the marked headline when there is none", () => {
+    const seed = seedState();
+    expect(sceneHeading(seed.notes[0])).toBe(".NO PLACE YET: MAYA FINDS THE LETTER");
     const placed = applyCommand(seed, { type: "set_location", ids: [seed.notes[0].id], location: "the piano shop" }, NOW).state;
     expect(sceneHeading(placed.notes[0])).toBe(".THE PIANO SHOP");
   });
@@ -59,7 +100,9 @@ describe("Fountain out (R23, slice a)", () => {
         "",
         "[Unwritten] She decides not to tell Tom.",
         "",
-        ".TOM LIES ABOUT THE JOB",
+        ".NO PLACE YET: TOM LIES ABOUT THE JOB",
+        "",
+        "= Tom lies about the job",
         "",
         "[[with Tom, Maya]]",
         "",

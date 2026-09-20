@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<title>A card with no place, on the pages — and a fact about the whole film</title>
+<!-- The app's own paper: the source stylesheet, so the link never goes stale. -->
+<link rel="stylesheet" href="../../src/styles.css">
+<style>
+  body { margin: 0; padding: 2rem 2.5rem 3rem; font-family: ui-sans-serif, system-ui, sans-serif; }
+  h1 { font: 600 1.05rem/1.3 ui-serif, Georgia, serif; margin: 0 0 0.25rem; }
+  h2.sec { font: 600 0.95rem/1.3 ui-serif, Georgia, serif; margin: 2.8rem 0 0.2rem; padding-top: 1.2rem; border-top: 1px solid rgba(127,127,127,0.25); }
+  .lede { font-size: 0.85rem; opacity: 0.75; margin: 0 0 1.4rem; max-width: 64ch; }
+  .row { display: flex; gap: 2.5rem; flex-wrap: wrap; align-items: flex-start; }
+  .opt { width: 440px; }
+  .opt h3 { font: 700 0.62rem/1.3 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; margin: 0 0 0.6rem; }
+  .opt p { font-size: 0.8rem; line-height: 1.45; opacity: 0.8; margin: 0.7rem 0 0; max-width: 54ch; }
+  pre.read { font: 0.7rem/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; background: rgba(127,127,127,0.12); padding: 0.8rem 1rem; border-radius: 6px; white-space: pre-wrap; margin: 0.8rem 0 0; max-width: 62ch; }
+  pre.read b { color: var(--over); font-weight: 600; }
+  .ask { margin-top: 1.1rem; max-width: 72ch; font-size: 0.86rem; line-height: 1.5; }
+  .ask b { font-weight: 600; }
+  /* The page, as the pages panel sets it, narrowed to fit three across. */
+  .opt .script { width: auto; font-size: 0.58rem; padding: 2.2em 2.4em 1.6em 4.6em; container-type: normal; }
+  .opt .script .pl__num--l { left: -3.2em; }
+  .opt .script .pl__num--r { right: -1.6em; }
+  .mark { color: #a4501c; }
+</style>
+</head>
+<body>
+<h1>A card with no place, on the pages — and a fact about the whole film</h1>
+<p class="lede">The two decisions left in the handover's queue (item 4), drawn 2026-09-19. The first is a thing a person sees, so it is drawn on the app's page as it ships beside two ways it could be. The second has nothing to draw: it is a sentence, and the words are here. Neither is built; Robert's word on each is the word to build it.</p>
+
+<h2 class="sec">1 · A card with no place prints its headline as the scene heading (18:46, 19:44, 20:48)</h2>
+<div class="row">
+  <div class="opt">
+    <h3>As it ships · the headline stands in</h3>
+    <div class="script">
+      <section class="script__scene">
+        <h3 class="sl sl--heading"><span class="pl__num pl__num--l">3</span>The allotments - the first morning<span class="pl__num pl__num--r">3</span></h3>
+        <p class="sl sl--action">[Unwritten] Ruth arrives with the wrong tools; Con lets her stay.</p>
+      </section>
+      <section class="script__scene">
+        <h3 class="sl sl--heading"><span class="pl__num pl__num--l">4</span>Con gives Ruth the only key to the shed<span class="pl__num pl__num--r">4</span></h3>
+        <p class="sl sl--action">[Unwritten] The shed is hers as much as his.</p>
+      </section>
+      <section class="script__scene">
+        <h3 class="sl sl--heading"><span class="pl__num pl__num--l">5</span>Place not decided: his kitchen or the hall<span class="pl__num pl__num--r">5</span></h3>
+        <p class="sl sl--action">[Unwritten] Declan tells him the council has voted.</p>
+      </section>
+    </div>
+<pre class="read">read_pages:
+4  CON GIVES RUTH THE ONLY KEY TO THE SHED — 1 page, unwritten <b>· no place: the headline stands in for the heading</b></pre>
+    <p>Scene 4 has no place and nobody has said its place is open, so its headline prints in capitals where a slugline goes. Three rounds running an agent read it as a place. The bracket in <code>read_pages</code> says what happened; the page itself, the print, the Fountain, the Final Draft file and the Markdown do not. Scene 5, whose place the writer left open, is already marked (twenty-one 25, 35). Coming back in from Fountain, scene 4's headline returns title-cased, "Con Gives Ruth The Only Key To The Shed", because the capitals were all that went out.</p>
+  </div>
+
+  <div class="opt">
+    <h3>A · marked, the headline after the mark</h3>
+    <div class="script">
+      <section class="script__scene">
+        <h3 class="sl sl--heading"><span class="pl__num pl__num--l">3</span>The allotments - the first morning<span class="pl__num pl__num--r">3</span></h3>
+        <p class="sl sl--action">[Unwritten] Ruth arrives with the wrong tools; Con lets her stay.</p>
+      </section>
+      <section class="script__scene">
+        <h3 class="sl sl--heading"><span class="pl__num pl__num--l">4</span><span class="mark">No place yet:</span> Con gives Ruth the only key to the shed<span class="pl__num pl__num--r">4</span></h3>
+        <p class="sl sl--action">[Unwritten] The shed is hers as much as his.</p>
+      </section>
+      <section class="script__scene">
+        <h3 class="sl sl--heading"><span class="pl__num pl__num--l">5</span>Place not decided: his kitchen or the hall<span class="pl__num pl__num--r">5</span></h3>
+        <p class="sl sl--action">[Unwritten] Declan tells him the council has voted.</p>
+      </section>
+    </div>
+<pre class="read">read_pages:
+4  <b>NO PLACE YET:</b> CON GIVES RUTH THE ONLY KEY TO THE SHED — 1 page, unwritten <b>· no place: marked, the headline after the mark</b>
+
+Fountain out:
+.NO PLACE YET: CON GIVES RUTH THE ONLY KEY TO THE SHED
+= Con gives Ruth the only key to the shed
+
+and back in: a card with no place, its headline as the writer typed it</pre>
+    <p>The same shape as the open place beside it: a mark in the app's own words ("no place yet" is what <code>create_note</code> already says), then the words. Every heading stays its own, so a Fountain file still finds its card by heading when two cards have no place. The mark makes the heading differ from the headline, so the export writes the synopsis line under it, and the headline comes back as typed instead of title-cased. One function, <code>sceneHeading</code>, and the import's reading of the mark; every door prints through it. The mark is drawn in colour here only to point at it; it prints in the page's ink.</p>
+  </div>
+
+  <div class="opt">
+    <h3>B · the mark alone as the heading</h3>
+    <div class="script">
+      <section class="script__scene">
+        <h3 class="sl sl--heading"><span class="pl__num pl__num--l">3</span>The allotments - the first morning<span class="pl__num pl__num--r">3</span></h3>
+        <p class="sl sl--action">[Unwritten] Ruth arrives with the wrong tools; Con lets her stay.</p>
+      </section>
+      <section class="script__scene">
+        <h3 class="sl sl--heading"><span class="pl__num pl__num--l">4</span><span class="mark">No place yet</span><span class="pl__num pl__num--r">4</span></h3>
+        <p class="sl sl--action">[Unwritten] The shed is hers as much as his.</p>
+      </section>
+      <section class="script__scene">
+        <h3 class="sl sl--heading"><span class="pl__num pl__num--l">5</span>Place not decided: his kitchen or the hall<span class="pl__num pl__num--r">5</span></h3>
+        <p class="sl sl--action">[Unwritten] Declan tells him the council has voted.</p>
+      </section>
+    </div>
+<pre class="read">read_pages:
+4  <b>NO PLACE YET</b> — "Con gives Ruth the only key to the shed", 1 page, unwritten</pre>
+    <p>Cleaner to look at, and nearer what a script says when a place is missing. But the page in the app shows no synopsis line, so a writer reading the pages cannot tell which scene this is until it is written; and three cards with no place print three identical headings, which is what a Fountain file coming back in matches on. It would need the headline printed under the heading on the page and a second way to match on the way in.</p>
+  </div>
+</div>
+<div class="ask"><b>Recommended: A.</b> It answers what the three rounds said — a headline in capitals reads as a place — with the mark the open place already taught, keeps every heading unique, and mends the title-casing on the way back in for nothing. <b>What it costs:</b> a wall with no places at all (a first pass, before the writer has thought about where) prints "NO PLACE YET:" on every scene, which is loud; it is also true, and the wall already asks the same question once per card. <b>What it cannot say:</b> whether the writer has not thought about the place or does not want one (a montage, a voice over black); the second is what the open place's words are for. A Fountain file exported before the change comes back in as today.</div>
+
+<h2 class="sec">2 · A fact about the whole film has no home but the premise (20:9, 20:20)</h2>
+<div class="row">
+  <div class="opt">
+    <h3>As it ships · the agent guesses where it goes</h3>
+<pre class="read">20:9   The notes give the film's span, March to October. The app has a when per card and nothing for the story's span. I offered you the premise for it; that was a guess at where it belongs.
+20:20  "Con does not die in this film" is in Con's notes because nothing else took it. It's a fact about the film, not about Con before it starts.</pre>
+    <p>Both agents found a home — the premise, a person's notes — and both said they were guessing. The premise is on the project record, prints in the title page's notes, and <code>list_boards</code> and <code>read_project</code> carry it; it is the one text that is about the film and not about a card. Nothing says so — and <code>read_wall</code>, the read an agent answers "what is on this wall" from, prints the premise only when it is open, never when it is set.</p>
+  </div>
+  <div class="opt">
+    <h3>After · the guide and the tool say what the premise is for</h3>
+<pre class="read">set_premise — the description, grown by a sentence:
+  … <b>The premise is also where a fact about the whole film goes when no card holds it: its span ("March to October"), a rule it keeps ("Con does not die in this film"). One or two sentences each; a fact about one scene belongs on its card.</b>
+
+The agent's guide, under the premise, and writers.html, in the same words for a person:
+  <b>What is true of the whole film and of no one scene — when it runs from and to, what never happens in it — goes in the premise.</b>
+
+read_wall, above the logline, when a premise is set:
+  <b>premise: "A widower and a stranger share an allotment, March to October. Con does not die in this film."</b></pre>
+    <p>No new field and no second model: a span derived from the cards' whens would be a claim the app makes, and the whens are mostly open on a young wall; a "rules" list would be the premise under another name. Two sentences, in the three places an agent or a writer looks, and one line in the reading so a fact put there is read back with the wall.</p>
+  </div>
+</div>
+<div class="ask"><b>Recommended:</b> the sentences, and nothing else, <b>after round twenty-two</b>. "The Last Bus" has a span too (September to New Year), and its agent has not been told where a span goes; if it reaches for the premise unprompted, the sentence is only a confirmation, and if it guesses somewhere else, the round says where an agent expects to find it, which is better evidence than twenty's alone. <b>What it cannot say:</b> the premise is prose, so the wall cannot check a scene against "Con does not die"; that is a reading for a person or an agent, and D21 would keep it that way.</div>
+</body>
+</html>

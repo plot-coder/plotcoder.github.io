@@ -663,6 +663,10 @@ than a dictionary's, so the app and you never explain a word two ways.
   rather than "nobody" when presence does not arrive. The hosted door
   (`mcp.plotcoder.com`) answers each write before presence arrives, so its
   write tails say only where the write landed.
+- **The camera's marks are on the writer's page too.** The app's Pages
+  show the same `◂ knows` in the margin that `read_pages` shows you, with a
+  hover saying it is a mark and not a question. So say "the line is marked
+  on your page", not "the app flagged a problem"; nothing is owed for it.
 - **A sketch:** a written scene measured under the page it was read as is
   named one — on `write_scene`'s reply, on the card's line in `list_board`,
   and on the runtime line, which carries the second number: "about 11 pages

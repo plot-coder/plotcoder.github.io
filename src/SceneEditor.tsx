@@ -12,6 +12,7 @@
 // caret is in them. The store's copy wins only when the caret is elsewhere.
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { cameraLines } from "./board/camera";
 import { classifyLines } from "./board/paginate";
 import type { BoardNote } from "./board/reducer";
 import type { PageTurn } from "./pagesLayout";
@@ -47,11 +48,26 @@ function readLines(root: HTMLElement): string[] {
 
 function paint(root: HTMLElement, lines: string[], starred: ReadonlySet<number> = new Set()): void {
   const kinds = classifyLines(lines.join("\n"));
+  // The lines the camera cannot see (round twenty-two, entries 81, 82): the mark the writer's agent is shown on
+  // read_pages, in the page's margin, so writer and agent look at the same page. A mark, never a question; it is
+  // painted as a class and an attribute on the line, like the revision's star, so the caret is never disturbed.
+  const camera = new Map<number, string[]>(cameraLines(lines.join("\n")).map((item: { at: number; verbs: string[] }) => [item.at, item.verbs]));
   const children = Array.from(root.children) as HTMLElement[];
   children.forEach((child, index) => {
     const kind = kinds[index] ?? "action";
-    const next = `sl sl--${kind}${starred.has(index) ? " is-starred" : ""}`;
+    const verbs = camera.get(index);
+    const next = `sl sl--${kind}${starred.has(index) ? " is-starred" : ""}${verbs ? " is-camera" : ""}`;
     if (child.className !== next) child.className = next;
+    const said = verbs ? verbs.join(", ") : "";
+    if ((child.dataset.camera ?? "") !== said) {
+      if (said) {
+        child.dataset.camera = said;
+        child.title = `The camera cannot see "${said}". A mark, not a question: keep the line, or show it.`;
+      } else {
+        delete child.dataset.camera;
+        child.removeAttribute("title");
+      }
+    }
   });
 }
 

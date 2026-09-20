@@ -3285,6 +3285,31 @@ body {
   color: var(--rev, #c0392b);
 }
 
+/* The camera's mark in the page's margin (round twenty-two, entries 81, 82): what the agent is shown, shown to the writer. Never in print: a working mark, not the script. */
+.sl.is-camera::before {
+  position: absolute;
+  left: calc(100% + 0.7em);
+  top: 0;
+  content: "◂ " attr(data-camera);
+  white-space: nowrap;
+  font-size: 0.82em;
+  color: #a4501c;
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+/* Beside a revision's star there is room for the arrow alone; the hover still says the verb. */
+.sl.is-starred.is-camera::before {
+  content: "◂";
+  left: calc(100% + 0.5em);
+}
+
+@media print {
+  .sl.is-camera::before {
+    content: none;
+  }
+}
+
 .sl.is-starred::after,
 .pl__star {
   position: absolute;

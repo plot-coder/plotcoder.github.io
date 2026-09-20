@@ -25,7 +25,7 @@ Status marks: `[ ]` open · `[~]` planned and asked, waiting on Robert ·
 
 ## A. Land what is built (not design; do first)
 
-- [~] **A1 · Release and redeploy.** Released as **0.1.44** 2026-09-20 (#133; 0.1.43 was already taken); the door's pin is bumped. **Waiting on Robert: the function and the Worker redeploys.**
+- [x] **A1 · Release and redeploy.** Released as **0.1.44** 2026-09-20 (#133; 0.1.43 was already taken); the function and the Worker redeployed the same hour. Tested: `initialize` answers `"version":"0.1.44"`, ninety-one tools with `set_aside`, and the root says to choose No sign-in.
   *Plan:* `npm version patch` from a current `main`, push the tag, wait for
   npm, bump the pin in `supabase/functions/mcp/index.ts`, redeploy the
   function, redeploy the Worker in `cloudflare/mcp-door` (its root text

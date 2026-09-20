@@ -1154,6 +1154,17 @@ function runtimeBlock(state) {
 }
 
 /**
+ * One undecided thing in two homes (round twenty-two, entry 78): a note inside the scene's text and the card's
+ * open words know nothing of each other, and deciding it means clearing both. Said when both exist, never otherwise.
+ */
+function twoHomes(note) {
+  const notes = ((note.text ?? "").match(/\[\[[^\]]+\]\]/g) ?? []).length;
+  const open = [note.open, note.changeOpen, note.locationOpen, note.whenOpen].map((words) => (words ?? "").trim()).filter(Boolean);
+  if (!notes || !open.length) return "";
+  return ` The text holds ${notes === 1 ? "a note" : `${notes} notes`} and the card has open words ("${open.join('"; "')}"): if they are the same undecided thing, it lives in two places, and deciding it means clearing both.`;
+}
+
+/**
  * What a write says about the camera (the handover's call 6): the lines marked,
  * or that the check ran and marked none, so silence is never "did it run?"
  * (round twenty-two, entries 72, 75). It matches a short list of interior verbs
@@ -2501,7 +2512,7 @@ server.registerTool(
     }
     const printed = sceneLineCount(args.text);
     return ok(
-      `Wrote "${result.headline}": ${printed} line(s) as they print (headings, blank lines and wrapped dialogue counted; a [[note]] neither prints nor counts), measured at ${formatPages(noteEighths(result))} of a 55-line page, rounded to the nearest eighth and never below one eighth${noteEighths(result) < (result.lengthEighths ?? DEFAULT_NOTE_EIGHTHS) ? " — a sketch: shorter than the page it was read as; the wall counts the measure and says so" : ""}${cameraReply(result.text)}${where(live)}.${revisionMark(state, result.id)}${once("heading-from-place", " The heading comes from the card's place and when, so the text starts with the action.")} While the text stands the wall reads the measure, not the estimate${(() => {
+      `Wrote "${result.headline}": ${printed} line(s) as they print (headings, blank lines and wrapped dialogue counted; a [[note]] neither prints nor counts), measured at ${formatPages(noteEighths(result))} of a 55-line page, rounded to the nearest eighth and never below one eighth${noteEighths(result) < (result.lengthEighths ?? DEFAULT_NOTE_EIGHTHS) ? " — a sketch: shorter than the page it was read as; the wall counts the measure and says so" : ""}${cameraReply(result.text)}${where(live)}.${twoHomes(result)}${revisionMark(state, result.id)}${once("heading-from-place", " The heading comes from the card's place and when, so the text starts with the action.")} While the text stands the wall reads the measure, not the estimate${(() => {
         // How far the measure sits from what the card was read as before (round eighteen, entry 43): the writer's estimate, or the page an unsized card is read as.
         const before = result.lengthEighths !== null ? result.lengthEighths : 8;
         const label = result.lengthEighths !== null ? `the writer's ${formatPages(result.lengthEighths)} pages` : "the page an unsized card is read as";

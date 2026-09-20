@@ -2173,6 +2173,12 @@ describe("after the blind run", () => {
       await door.callTool("write_scene", { id: "tom-lies", text: "The bus stops. TOMÁS gets on.\n\nHe counts the fare out of a jar." });
       const noted = await door.callTool("write_scene", { id: "tom-lies", text: "The bus stops. TOMÁS gets on.\n\nHe counts the fare out of a jar.\n\n[[how the cut is announced: not decided]]" });
       expect(Number(/Wrote "[^"]+": (\d+) line/.exec(noted)[1])).toBe(lines);
+      // The same undecided thing in two homes: said when the text has a note and the card has open words, never otherwise (entry 78).
+      expect(noted).not.toContain("two places");
+      await door.callTool("update_note", { id: "tom-lies", changeOpen: "how the cut is announced" });
+      const both = await door.callTool("write_scene", { id: "tom-lies", text: "The bus stops.\n\n[[how the cut is announced: not decided]]" });
+      expect(both).toContain('the card has open words ("how the cut is announced")');
+      expect(both).toContain("deciding it means clearing both");
     } finally {
       door.stop();
       fs.rmSync(root, { recursive: true, force: true });

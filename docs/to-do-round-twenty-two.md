@@ -250,7 +250,7 @@ could be, a recommendation, what a yes means.
   the reading does not list it as open. *Best?* Yes; the guide already says
   a one-board film goes out under its own name. *Test:* `new_project` with a
   name and no board; the reading has no board-name line.
-- [ ] **G2 · One undecided thing in two homes** (78): a card's open words and
+- [x] **G2 · One undecided thing in two homes** *(built and tested 2026-09-20: said only when the text has a note and the card has open words)* (78): a card's open words and
   a Fountain note inside its text. *Plan:* `write_scene`'s reply, when the
   text holds a `[[…]]` note and the card has open words, says both exist.
   *Best?* It is a nudge, and we do not like nudges; but it is about the

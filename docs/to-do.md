@@ -10,6 +10,8 @@ done and merged, what is left, and the order I would take it in.
 
 ## Next, in order (2026-09-20, night, after round twenty-three)
 
+**2026-09-21, checked on the live door at 0.1.50:** the handshake carries the day's rules (3 KB of `instructions`); `llms.txt`, `day-one.md` and `wiring.md` are live on plotcoder.com; `undo` with `preview` said what it would take back and a later request's `undo` took it, through the hosted door; the reading's blank list counts what the wall asks about above; `export_project` answered with a link that fetched, its checksum matching the reply. On a throwaway project of the test account, deleted after.
+
 **2026-09-21:** the whole of round twenty-three's working list is built — N1 to N7, then X1 to X4 on the owner's "build it all" (697 unit tests). **What is next is round twenty-four**, which should measure what no test can: whether a connector-holder reads less and knows more (X1: the handshake's instructions, `day-one.md`, the doors off the on-ramp), whether `undo` through the door is reached for and trusted (X2), and the four homes for "I don't know" (R69, R70, R71, and the checklist) on a new page of notes. Left on purpose: L1 to L3 of the working list. Carried: C1's OAuth proposal, R64's weekly agent.
 
 **The working list is `docs/to-do-round-twenty-three.md`:** every one of the round's seventy-two entries accounted for, and what is left sorted — **seven items now (N1 to N7), one small release after #142 lands; four next (X1 to X4), each with its own asking; three left until a second round asks; the rest decided against, with the reason.** N1 waits on a yes: it changes what "the session's first reading" means.
@@ -228,7 +230,7 @@ door pins the package version in `supabase/functions/mcp/index.ts`; bump
 it and redeploy (`supabase functions deploy mcp --no-verify-jwt --use-api
 --project-ref kmpahjsggbleygsnuwug`) when the door should carry the
 release. The name in front of it, `cloudflare/mcp-door`, changes only if
-the function's address does. 0.1.49 is the latest (2026-09-21: N1 to N7 of round twenty-three's working list; 689 unit tests), on npm, plotcoder.com and the door. 0.1.48 was R69, R70, R71, the checklist's five questions and undo said plainly. 0.1.47 was thirty of round twenty-three's entries. 0.1.46 was the rest of round twenty-two's to-do, a session for the hosted door and R68. 0.1.45 is the same code, tagged twelve seconds earlier — the session and the terminal both ran the release — and is on npm. 0.1.44 was round twenty-two's fixes, R66, R67; 0.1.43 was tagged just after #130 with 0.1.42's code and is on npm.
+the function's address does. 0.1.50 is the latest (2026-09-21: X1 to X4 of round twenty-three's working list; 697 unit tests), on npm, plotcoder.com and the door. 0.1.49 was N1 to N7. 0.1.48 was R69, R70, R71, the checklist's five questions and undo said plainly. 0.1.47 was thirty of round twenty-three's entries. 0.1.46 was the rest of round twenty-two's to-do, a session for the hosted door and R68. 0.1.45 is the same code, tagged twelve seconds earlier — the session and the terminal both ran the release — and is on npm. 0.1.44 was round twenty-two's fixes, R66, R67; 0.1.43 was tagged just after #130 with 0.1.42's code and is on npm.
 
 **Drive a blind run:** Robert opens a fresh session with
 `blind-runs/prompt.md`; this side relays the writer's answers and the

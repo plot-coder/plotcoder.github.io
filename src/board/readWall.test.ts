@@ -1063,3 +1063,18 @@ describe("what is not decided about the film itself (round twenty-three, entries
     expect(describeUndecided(state, reading).open[0]).toBe("  - about the film — Whether it has acts, and where they break.");
   });
 });
+
+describe("a beat marked on a wholly open card (round twenty-three, entry 33)", () => {
+  it("is an ordinary beat: it ends and starts runs, and the story around it is still asked about", () => {
+    const state = run(
+      wall({ id: "a", rank: "beat" }, { id: "s1" }, { id: "o", rank: "beat", headline: "She finds out" }, { id: "b", rank: "beat" }),
+      { type: "set_open", ids: ["o"], open: "that is all I know about it" },
+    );
+    const reading = readWall(state);
+    expect(reading.beats.map((beat) => beat.id)).toEqual(["a", "o", "b"]);
+    // Nothing runs between the open turn and the next: asked, open or not.
+    expect(reading.findings.some((f) => f.kind === "empty" && f.ids.includes("o") && f.ids.includes("b"))).toBe(true);
+    // And the card itself is asked nothing: listed under open.
+    expect(reading.open.map((item) => item.id)).toEqual(["o"]);
+  });
+});

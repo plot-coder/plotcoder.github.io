@@ -2549,9 +2549,12 @@ server.registerTool(
   },
   async (args) => {
     const { state } = await readBoard();
-    const poses = organizePoses(state, { onlyIds: args.noteIds });
+    const everyPose = organizePoses(state, { onlyIds: args.noteIds });
+    // The film's cards are what is laid out; a card set aside comes along only when the rows would run under it (round twenty-three, entry 22).
+    const poses = everyPose.filter((pose) => !pose.aside);
+    const clearedAside = everyPose.filter((pose) => pose.aside);
     if (poses.length === 0) return ok("Nothing to organize: no cards in scope.");
-    const { changed, live } = await commit({ type: "apply_poses", poses });
+    const { changed, live } = await commit({ type: "apply_poses", poses: everyPose });
     const rows = new Set(poses.map((pose) => pose.y)).size;
     const beats = state.notes.filter(
       (note) => note.rank === "beat" && poses.some((pose) => pose.id === note.id),
@@ -2579,7 +2582,9 @@ server.registerTool(
     const behindCount = state.notes.filter((note) => note.alternativeOf).length;
     // A version behind a card goes where its card goes: the wall draws it there, whatever x,y its record keeps for the day it is chosen (round twenty-two, entry 32).
     const behindLine = behindCount ? ` ${behindCount} card(s) behind as other versions went with the cards they stand behind: the wall draws a version behind its sibling wherever that is, and its own x,y waits until it is chosen.` : "";
-    const asideLine = asideLeft ? ` ${asideLeft} card(s) set aside stayed where the writer put them: they are not in the film, so the tidy does not move them.` : "";
+    const clearedNames = clearedAside.map((pose) => `"${state.notes.find((note) => note.id === pose.id)?.headline ?? pose.id}"`);
+    const stayed = asideLeft - clearedAside.length;
+    const asideLine = `${clearedAside.length ? ` ${clearedNames.join(", ")} — set aside, not in the film — would have been under the rows, so ${clearedAside.length === 1 ? "it was" : "they were"} moved to a row of ${clearedAside.length === 1 ? "its" : "their"} own beneath them.` : ""}${stayed > 0 ? ` ${stayed} card(s) set aside stayed where the writer put them: they are not in the film, so the tidy does not move them.` : ""}`;
     return ok(`Organized ${poses.length} card(s) along the arrows into ${shape}${where(live)}.${behindLine}${asideLine}`, poses);
   },
 );

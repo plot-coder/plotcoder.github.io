@@ -1,6 +1,6 @@
 # PlotCoder — for agents
 
-A storyline wall. Cards are scenes, beats are the big turns, arrows say what follows or pays off what. An agent driven by a person has every tool a person here has; the person directs, the agent operates. Call the tools; never fake a mouse. Already have PlotCoder's tools in front of you — list_words, read_wall and the rest, under whatever name your session gives the server or the connector (plotcoder-board, plotcoder, PlotCoder)? Then your way in is: read the guide, make the calls under Call these first, and skip the doors at the end — they are for wiring a server in.
+A storyline wall. Cards are scenes, beats are the big turns, arrows say what follows or pays off what. An agent driven by a person has every tool a person here has; the person directs, the agent operates. Call the tools; never fake a mouse. Already have PlotCoder's tools in front of you — list_words, read_wall and the rest, under whatever name your session gives the server or the connector (plotcoder-board, plotcoder, PlotCoder — or no name at all, only an id: know the server by its tools, list_words and read_wall)? Then your way in is: read the guide, make the calls under Call these first, and skip the doors at the end — they are for wiring a server in.
 
 The guide: https://plotcoder.com/guide.md. Read it once, before your first call if you can; it is the whole and this page is its first page, and where the two differ, the guide wins. Then Call these first, below.
 

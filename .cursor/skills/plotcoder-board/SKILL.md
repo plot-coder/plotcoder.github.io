@@ -216,7 +216,10 @@ only when the server is started with `PLOTCODER_JSON=1`.
   the runs and every question. Name your candidates to the writer by
   **headline, never by number**; on their word, keep is `rank: "beat"` and
   strike is `rank: "scene"`. Never mark a beat on your own word, and never
-  propose a number of turns.
+  propose a number of turns. **A beat marked on a wholly open card is an
+  ordinary beat:** it ends and starts runs like any other and the story
+  around it is still asked about — two turns back to back, a run out of
+  proportion — while the card itself, being open, is asked nothing.
 - `set_length` — how long cards run, in `pages`. Takes a list of ids. Fractions
   are fine (`0.5`); they are stored in eighths of a page. A card nobody has
   sized is **unsized** — `list_board` says so — and reads as about a page; a
@@ -236,7 +239,11 @@ only when the server is started with `PLOTCODER_JSON=1`.
   *how* it pays off, are what happens in those two scenes, so they are those
   cards' change lines, or their text: "he counts the fare out of a jar" is
   the first morning's, "he empties it into her hand" is the last run's.
-  Never a sentence in the label, and never in a headline. **When the change
+  Never a sentence in the label, and never in a headline. (What tells two
+  versions of one scene apart is not "how": "The pub, alone" and "The pub,
+  with Callum" are headlines, and when the writer does not yet know what
+  changes in either, the headline is the only place that difference can go.)
+  **When the change
   line is the writer's own words**, do not append to it: ask whether the line
   should say it, and meanwhile put it on the card as a note in the scene's
   text — `[[she gives the fork to Callum]]` with `write_scene`. A note neither

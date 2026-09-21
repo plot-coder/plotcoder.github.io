@@ -120,5 +120,26 @@ export function organizePoses(state, options = {}) {
   const originX = wanted ? Math.min(...scope.map((note) => note.x)) : ORIGIN_X;
   const originY = wanted ? Math.min(...scope.map((note) => note.y)) : ORIGIN_Y;
   const hasBeats = scope.some((note) => note.rank === "beat");
-  return hasBeats ? beatRows(order, byId, originX, originY) : wrapRows(order, originX, originY);
+  const laid = hasBeats ? beatRows(order, byId, originX, originY) : wrapRows(order, originX, originY);
+  return [...laid, ...clearAside(state, laid, originX)];
+}
+
+/**
+ * A card set aside is not in the film and the tidy leaves it where the writer
+ * put it — unless the rows just laid would run under it. Then nobody put it
+ * there: a card the app placed "after the last card" and the writer later cut
+ * sits inside the story (round twenty-three, entry 22). Those, and only those,
+ * go to a row of their own under the lowest laid card, left to right. Marked
+ * `aside` so a reply can name them.
+ */
+function clearAside(state, laid, originX) {
+  if (laid.length === 0) return [];
+  const laidIds = new Set(laid.map((pose) => pose.id));
+  const covers = (card, pose) => Math.abs(card.x - pose.x) < NOTE_WIDTH && Math.abs(card.y - pose.y) < NOTE_HEIGHT;
+  const inTheWay = state.notes.filter((note) => note.aside === true && !laidIds.has(note.id) && laid.some((pose) => covers(note, pose)));
+  if (inTheWay.length === 0) return [];
+  // Under everything the wall draws once the rows are laid, other cards set aside included.
+  const others = state.notes.filter((note) => !note.alternativeOf && !laidIds.has(note.id) && !inTheWay.includes(note));
+  const floor = Math.max(...laid.map((pose) => pose.y), ...others.map((note) => note.y));
+  return inTheWay.map((note, index) => ({ id: note.id, x: originX + index * STEP_X, y: floor + STEP_Y + GAP, rotate: note.rotate ?? 0, aside: true }));
 }

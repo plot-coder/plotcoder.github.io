@@ -16,9 +16,11 @@ export declare function arrowOrder(state: BoardState, ids?: ReadonlyArray<string
 /**
  * Poses for Organize. With beats in scope, a row per beat with long runs
  * wrapped under themselves; otherwise rows wrapped by width. Groups travel as
- * blocks. A selection is laid out from its own top-left.
+ * blocks. A selection is laid out from its own top-left. A card set aside is
+ * left alone unless the rows laid would run under it; then it is posed on a
+ * row of its own beneath them, marked `aside`.
  */
 export declare function organizePoses(
   state: BoardState,
   options?: { onlyIds?: ReadonlyArray<string> },
-): Pose[];
+): Array<Pose & { aside?: boolean }>;

@@ -4401,7 +4401,16 @@ server.registerTool(
     title: "Start a project",
     description:
       "Through the account door: start a new project of the writer's with this name — one empty board, nothing on it — and work it from now on. The writer sees it under Projects on every device. A title not decided: open with the writer's words (\"The Allotments, or Plot 14\") instead of a name, and the project starts as Untitled project with those words beside it. A film is one board and goes out under the project's name: leave board alone and do not ask the writer to name it. For a series, board names the first episode; boardOpen leaves that name open in the writer's words instead (\"the pilot, or the film\").",
-    inputSchema: { name: z.string().min(1).optional(), open: z.string().optional(), board: z.string().optional(), boardOpen: z.string().optional(), pages: pagesSchema.optional(), minutes: z.number().positive().optional(), targetOpen: z.string().optional(), kind: z.enum(["feature", "hour", "half-hour"]).optional().describe("The writer's words for why the length is not decided — \"half-hour or feature\" — so the target is born open instead of the feature default standing unsaid.") },
+    inputSchema: {
+      name: z.string().min(1).optional().describe("The title. Or leave it out and pass open."),
+      open: z.string().optional().describe("The writer's words for why the title is not decided — \"The Tuner, or Four Forty\" — in place of name: the project starts as Untitled project with those words beside it."),
+      board: z.string().optional().describe("A name for the first board. A film of one board needs none; an episode does."),
+      boardOpen: z.string().optional().describe("The writer's words for why the first board's name is not decided, in place of board."),
+      pages: pagesSchema.optional().describe("The target, when the writer gave a number of pages."),
+      minutes: z.number().positive().optional().describe("The target, when the writer gave a running time: a page a minute."),
+      kind: z.enum(["feature", "hour", "half-hour"]).optional().describe("The target as the writer said it — \"it is a feature\" — kept as their word and read as 120, 60 or 30 pages; not a page count. In place of pages or minutes."),
+      targetOpen: z.string().optional().describe("The writer's words for why the length is not decided — \"half-hour or feature\" — so the target is born open instead of the feature default standing unsaid."),
+    },
   },
   async (args) => {
     const account = await findAccount();
@@ -4424,7 +4433,7 @@ server.registerTool(
     if (board.error) return ok(`Started "${record.name}" but could not make its first board: ${board.error.message}`);
     workingProject(record.id, record.name, (account.projectCount ?? 0) + 1);
     joinPresence(record.id);
-    const targetLine = state.targetOpen ? ` Its target is left open, by the writer's word: "${state.targetOpen}"; the reading reads the cards against a half-hour and a feature until set_target decides it.` : target === undefined ? ` Its target is ${formatPages(state.targetEighths)} pages, the default for a feature; set_target for a pilot or a half-hour, or pass pages or minutes here.` : ` Its target is ${formatPages(state.targetEighths)} pages.`;
+    const targetLine = state.targetOpen ? ` Its target is left open, by the writer's word: "${state.targetOpen}"; the reading reads the cards against a half-hour and a feature until set_target decides it.` : targetWords(state) ? ` Its target is ${targetWords(state)}, read as ${formatPages(state.targetEighths)} pages: kept as the writer's word, not a page count (set_target with pages says a number).` : target === undefined ? ` Its target is ${formatPages(state.targetEighths)} pages, the default for a feature; set_target for a pilot or a half-hour, or pass pages or minutes here.` : ` Its target is ${formatPages(state.targetEighths)} pages.`;
     const first = record.boards[0];
     const nameOpenLine = `${record.nameOpen ? ` The project's name is left open, by the writer's word: "${record.nameOpen}"; rename_project decides it.` : ""}${first.nameOpen ? ` The board's name is left open, by the writer's word: "${first.nameOpen}"; rename_board decides it.` : ""}`;
     // A film is one board and goes out under the project's name: nothing to ask the writer about "Board 1" (round twenty-two, entry 16).

@@ -2357,6 +2357,15 @@ describe("after the blind run", () => {
       }
     }
   });
+
+  it("says each of new_project's parameters in its own words: a kind is the writer's word for the length, not why it is open (round twenty-three, entry 5)", async () => {
+    const { tools } = await blind.request("tools/list", {});
+    const fields = tools.find((tool) => tool.name === "new_project").inputSchema.properties;
+    for (const [name, schema] of Object.entries(fields)) expect(`${name}: ${schema.description ?? ""}`).toMatch(/: .{20,}/);
+    expect(fields.kind.description).toContain("it is a feature");
+    expect(fields.kind.description).not.toContain("not decided");
+    expect(fields.targetOpen.description).toContain("not decided");
+  });
 });
 
 describe("the premise and reminders (roadmap item 6)", () => {

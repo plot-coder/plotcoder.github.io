@@ -375,7 +375,9 @@ card of another board is not asked about as uncast here.
   reading lists "whether Tomás is in it" under open and never asks; the cast's
   counts say "3 scenes, and maybe 1 more"; and the check for someone gone a
   third of the story counts only scenes he is certainly in, naming the maybe
-  when it sits inside the gap. The name without the mark decides it; leaving
+  when it sits inside the gap. Someone whose only card is a maybe is **not**
+  asked about as "in the cast but on no card" — the writer has said where they
+  may be — and a card whose only person is a maybe is not asked who is in it. The name without the mark decides it; leaving
   the name off decides it the other way. Only on the writer's word — and not
   `set_open`, which says the whole card is undecided when one person is.
 - **Acts** are not a thing the app knows. The wall reads left to right and a

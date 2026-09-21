@@ -4793,11 +4793,11 @@ server.registerTool(
   {
     title: "Save the project as a file",
     description:
-      `The project the server is working, as the file Save project writes and Open project takes: the record, every board with its cards, the reminders and the writer's structures. ${hosted() ? "This door has no disk: call it without a path and the reply's JSON is the file, to write wherever you keep files." : `Pass path to write it (a .json) — an absolute path, since a relative one resolves from the folder the server was started in, which is ${process.cwd()} — this session's own folder when the server was started from it, and somewhere else when it was not; without a path, the reply's JSON is the file.`} Pictures and takes on the account are not in the file. Works through every door.`,
-    inputSchema: { path: z.string().optional() },
+      `The project the server is working, as the file Save project writes and Open project takes: the record, every board with its cards, the reminders and the writer's structures. ${hosted() ? "This door has no disk, so the file is kept with the project's files on the account and the reply is a link to it, good for an hour, with its size and checksum — nothing to retype; list_files shows it and remove_file takes it off. Pass inline: true to have the JSON in the reply instead." : `Pass path to write it (a .json) — an absolute path, since a relative one resolves from the folder the server was started in, which is ${process.cwd()} — this session's own folder when the server was started from it, and somewhere else when it was not; without a path, the reply's JSON is the file.`} Pictures and takes on the account are not in the file. Works through every door.`,
+    inputSchema: { path: z.string().optional(), inline: z.boolean().optional().describe("The JSON in the reply itself, rather than a link to the file. Through a door with a disk, no path already means this.") },
   },
   async (args) => {
-    if (args.path && hosted()) return ok("The hosted door has no disk to write to: call export_project without a path and the reply's JSON is the file.");
+    if (args.path && hosted()) return ok("The hosted door has no disk to write to: call export_project without a path and the reply is a link to the file, kept with the project's files; inline: true puts the JSON in the reply.");
     const { project, boards, reminders } = await readProject();
     const file = toProjectFile({ project, boards, reminders: reminders ?? null });
     const cards = countCards(boards);
@@ -4809,7 +4809,36 @@ server.registerTool(
       fs.writeFileSync(args.path, JSON.stringify(file, null, 2));
       return ok(`Saved ${what}. Written to ${path.resolve(args.path)}: Open project in the app takes it, import_project brings it onto an account.`, { path: path.resolve(args.path), boards: project.boards.length, cards });
     }
+    // Through the hosted door the file goes with the project's files and the reply is a link (round twenty-three: the agent
+    // retyped twenty kilobytes of escaped JSON by hand to keep a copy). Anything wrong with that and the JSON comes inline, saying why.
+    let whyInline = "";
+    if (hosted() && !args.inline) {
+      const account = await findAccount();
+      if (account?.projectId) {
+        try {
+          const body = JSON.stringify(file, null, 2);
+          const bytes = Buffer.from(body, "utf8");
+          const safe = (project.name || "project").replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "") || "project";
+          const name = `${safe}-${new Date().toISOString().replace(/[:.]/g, "-")}.json`;
+          const storagePath = `${account.projectId}/file/${crypto.randomUUID()}-${name}`;
+          const up = await account.client.storage.from("projects").upload(storagePath, bytes, { contentType: "application/json", upsert: false });
+          if (up.error) throw new Error(up.error.message);
+          const row = await account.client.from("assets").insert({ project_id: account.projectId, kind: "file", subject: "", path: storagePath, name, size: bytes.length, content_type: "application/json", note: "export_project" }).select("id").maybeSingle();
+          if (row.error) {
+            await account.client.storage.from("projects").remove([storagePath]);
+            throw new Error(row.error.message);
+          }
+          const signed = await account.client.storage.from("projects").createSignedUrl(storagePath, 3600, { download: name });
+          if (signed.error || !signed.data?.signedUrl) throw new Error(signed.error?.message ?? "no link came back");
+          const sha = crypto.createHash("sha256").update(bytes).digest("hex");
+          return ok(`Saved ${what}. Kept with the project's files as ${name} (${bytes.length} bytes, sha256 ${sha}). A link to it, good for an hour: ${signed.data.signedUrl} — fetch it to keep a copy; nothing to retype. list_files shows it and remove_file takes it off; deleting the project takes it too, so fetch first when the copy is the point. Open project in the app takes the file, and import_project brings it onto an account.`, { id: row.data?.id, name, size: bytes.length, sha256: sha, url: signed.data.signedUrl });
+        } catch (error) {
+          whyInline = ` (The file could not be kept with the project's files — ${error instanceof Error ? error.message : String(error)} — so it is here instead.)`;
+        }
+      }
+    }
     // The file is the reply's payload, not a tail: it comes whether or not PLOTCODER_JSON is on (round twenty-two, entry 4).
+    if (whyInline) return { content: [{ type: "text", text: `The project as a file — ${what}.${whyInline} The JSON below is the file; write it to a .json for Open project or import_project.\n\n${JSON.stringify(file, null, 2)}` }] };
     return { content: [{ type: "text", text: `The project as a file — ${what}. The JSON below is the file; write it to a .json for Open project or import_project.\n\n${JSON.stringify(file, null, 2)}` }] };
   },
 );

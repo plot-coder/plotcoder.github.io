@@ -3259,12 +3259,15 @@ describe("a person who may or may not be in a scene (round twenty-two, H9)", () 
 
     // The name without the mark decides it.
     const decided = await door.callTool("cast", { noteIds: [card.id], characters: ["Marta", "Tomás"] });
-    expect(decided).toContain("now cast Marta, Tomás:");
+    // The reply says the maybe was decided, and which way (round twenty-three, entry 58).
+    expect(decided).toContain("now cast Marta, Tomás (decided: Tomás is in it):");
     expect(await door.callTool("read_wall")).not.toContain("whether Tomás is in it");
 
     // And back, through cast: the reply says what the mark means.
     const again = await door.callTool("cast", { noteIds: [card.id], characters: ["Marta", "Tomás?"] });
     expect(again).toContain("now cast Marta, with Tomás not decided");
+    const alone = await door.callTool("cast", { noteIds: [card.id], characters: ["Marta"] });
+    expect(alone).toContain("decided: Tomás is not in it, so that is no longer open");
   });
 
   it("says the camera's mark in the words, and where a decided fact about one scene goes (H8, H10)", async () => {

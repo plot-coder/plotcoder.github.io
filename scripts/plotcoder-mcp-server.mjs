@@ -3720,6 +3720,8 @@ server.registerTool(
     // A name the cast does not have is added to it in the same frame, as
     // create_note does — two tools, one rule (round seventeen, entry 14).
     const added = [];
+    // Who was on the first card before, so the reply can say who came off and which maybe was decided (round twenty-three, entry 58).
+    const beforeCast = (await readBoard()).state.notes.find((note) => note.id === args.noteIds[0]);
     const { state, changed, value: result, live } = await commitAll(`cast ${args.noteIds.length} card(s)`, (step, current) => {
       const characterIds = [];
       const maybeCharacterIds = [];
@@ -3751,8 +3753,13 @@ server.registerTool(
       (id) => state.characters.find((character) => character.id === id)?.name ?? id,
     );
     const maybeNames = maybeIds.map((id) => state.characters.find((character) => character.id === id)?.name ?? id);
+    const nameOf = (id) => state.characters.find((character) => character.id === id)?.name ?? id;
+    const decidedIn = args.noteIds.length === 1 && beforeCast ? (beforeCast.maybeCharacterIds ?? []).filter((id) => characterIds.includes(id)).map(nameOf) : [];
+    const decidedOut = args.noteIds.length === 1 && beforeCast ? (beforeCast.maybeCharacterIds ?? []).filter((id) => !characterIds.includes(id) && !maybeIds.includes(id)).map(nameOf) : [];
+    const cameOff = args.noteIds.length === 1 && beforeCast ? (beforeCast.characterIds ?? []).filter((id) => !characterIds.includes(id) && !maybeIds.includes(id)).map(nameOf) : [];
+    const whatChanged = [decidedIn.length ? `decided: ${decidedIn.join(", ")} ${decidedIn.length === 1 ? "is" : "are"} in it` : "", decidedOut.length ? `decided: ${decidedOut.join(", ")} ${decidedOut.length === 1 ? "is" : "are"} not in it, so that is no longer open` : "", cameOff.length ? `off the card: ${cameOff.join(", ")}` : ""].filter(Boolean).join("; ");
     return ok(
-      `${result.length} card(s) now cast ${names.length ? names.join(", ") : "nobody"}${maybeNames.length ? `, with ${maybeNames.join(", ")} not decided (listed under open, counted neither way; the name without the mark decides it)` : ""}: ${result.map((note) => `"${note.headline}"`).join(", ")}${added.length ? ` (added to the cast: ${added.join(", ")})` : ""}${where(live)}.${stillOpen(result)}`,
+      `${result.length} card(s) now cast ${names.length ? names.join(", ") : "nobody"}${maybeNames.length ? `, with ${maybeNames.join(", ")} not decided (listed under open, counted neither way; the name without the mark decides it)` : ""}${whatChanged ? ` (${whatChanged})` : ""}: ${result.map((note) => `"${note.headline}"`).join(", ")}${added.length ? ` (added to the cast: ${added.join(", ")})` : ""}${where(live)}.${stillOpen(result)}`,
       result,
     );
   },

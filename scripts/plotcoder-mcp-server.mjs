@@ -276,6 +276,7 @@ async function deleteProjectRows(plan) {
 /** After a deletion took the working project: work the most recent one left, or nothing. */
 async function workWhatIsLeft(deletedIds) {
   if (!deletedIds.includes(accountDoor.projectId)) return "";
+  newWallInHand();
   if (accountDoor.channel) {
     void accountDoor.client.removeChannel(accountDoor.channel);
     accountDoor.channel = null;
@@ -703,6 +704,7 @@ async function writeProject(project, boards, rev, base, reminders = null) {
 
 /** Open a board everywhere: the record's open board, and the board channel with its id. */
 async function openBoardEverywhere(project, boards, projectRev, base, boardId) {
+  newWallInHand();
   const opened = setActiveBoard(project, boardId);
   const state = isBoardState(boards[boardId]) ? normalizeState(boards[boardId]) : emptyState();
   const live = await writeProject(opened, { ...boards, [boardId]: state }, projectRev, base);
@@ -846,6 +848,20 @@ let lastReading = null;
 const sinceRead = [];
 /** Whether this session has read a wall yet: until it has, a write's tail counts the questions and points at read_wall; after, it quotes them (the handover's call 2). */
 let readOnce = false;
+/**
+ * A different wall is in hand — a project started or opened, a board opened or
+ * made, the working project deleted: what this session had read was another
+ * wall, so "the session's first reading" is the first reading of THIS one
+ * (round twenty-three: the on-ramp's first calls read a stale wall, and the
+ * count-and-point tail never appeared for the build that followed). Held in
+ * the session's memory, so it is true through the hosted door too.
+ */
+function newWallInHand() {
+  readOnce = false;
+  lastReading = null;
+  sinceRead.length = 0;
+}
+
 /** What the last write did to the wall's questions and runtime, said once on that write's tail (round fourteen, entries 18, 19, 42). */
 let lastChange = null;
 // The same question in the same words is the same question, whatever order its names come in (round seventeen, entry 21).
@@ -4457,6 +4473,7 @@ server.registerTool(
     const found = projects.find((row) => row.id === args.project) ?? projects.find((row) => row.record.name.trim().toLowerCase() === wanted);
     if (!found) return ok(`No project called "${args.project}". Call list_projects.`);
     workingProject(found.id, found.record.name, projects.length);
+    newWallInHand();
     joinPresence(found.id);
     return ok(`Working "${found.record.name}" (${found.id}) now, as ${account.email}.${oneCallHint(found.record)}`, { id: found.id, name: found.record.name });
   },
@@ -4544,6 +4561,7 @@ server.registerTool(
     const board = await account.client.from("boards").insert({ id: record.activeBoardId, project_id: record.id, state, rev: 1, updated_by: null });
     if (board.error) return ok(`Started "${record.name}" but could not make its first board: ${board.error.message}`);
     workingProject(record.id, record.name, (account.projectCount ?? 0) + 1);
+    newWallInHand();
     joinPresence(record.id);
     const targetLine = state.targetOpen ? ` Its target is left open, by the writer's word: "${state.targetOpen}"; the reading reads the cards against a half-hour and a feature until set_target decides it.` : targetWords(state) ? ` Its target is ${targetWords(state)}, read as ${formatPages(state.targetEighths)} pages: kept as the writer's word, not a page count (set_target with pages says a number).` : target === undefined ? ` Its target is ${formatPages(state.targetEighths)} pages, the default for a feature; set_target for a pilot or a half-hour, or pass pages or minutes here.` : ` Its target is ${formatPages(state.targetEighths)} pages.`;
     const first = record.boards[0];
@@ -4773,6 +4791,7 @@ server.registerTool(
         if (board.error) return ok(`Imported "${record.name}" but could not make its board "${meta.name}": ${board.error.message}`);
       }
       workingProject(record.id, record.name, (account.projectCount ?? 0) + 1);
+      newWallInHand();
       joinPresence(record.id);
       return ok(
         `Imported "${record.name}" onto the account as a new project (${record.id}): ${record.boards.length} board(s), ${cards} card(s). Working it now, as ${account.email}; the writer sees it under Projects on every device.${oneCallHint(record)}`,

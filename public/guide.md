@@ -652,10 +652,13 @@ card of another board is not asked about as uncast here.
 
 ## Workflow
 
-1. **Start as the on-ramp says** — the five calls, in any order: `list_words`,
-   `read_wall`, `list_workflows`, `list_reminders`, `list_board` — and use
-   the real `id`s `list_board` returns before any move, edit, group, or
-   arrow. Never guess ids.
+1. **Start as the on-ramp says** — `list_words`, `list_workflows` and
+   `list_projects` first, which read no wall and say which one is in hand;
+   then `read_wall`, `list_reminders` and `list_board` of the wall you are to
+   work — after `new_project` or `open_project` when the wall in hand is not
+   that one, so your first reading is never of a wall you are about to
+   leave. Use the real `id`s `list_board` returns before any move, edit,
+   group, or arrow. Never guess ids.
 2. Give every card a real `headline` and `change` — not placeholders. A card
    whose change line is empty is a card that has not earned its place.
 3. To lay cards out, draw the arrows and call `organize`. A straight
@@ -694,7 +697,9 @@ than a dictionary's, so the app and you never explain a word two ways.
   session's first `read_wall` it counts and points — "the wall's questions
   have changed since your last read_wall: 4 now, 2 of them new" — because a
   build is a run of writes whose quoted questions the next write answers;
-  after the first reading it quotes them. The hosted door
+  after the first reading it quotes them. "First" is of **the wall in hand**:
+  starting or opening a project, or opening or making a board, begins the
+  count again, since what you had read was another wall. The hosted door
   (`mcp.plotcoder.com`) remembers the same things from one call to the next —
   what you have read, which advice it has said — by the session your client
   opened; a client that sends no session gets the quoting tail from the first

@@ -19,7 +19,7 @@
 // in a row of the writer's own (public.agent_sessions, row-level security by
 // user). The function holds no secret for it. The transport stays stateless:
 // no process here outlives a request. The server reads the id from
-// PLOTCODER_SESSION_ID from the release after 0.1.44; before it, the id is
+// PLOTCODER_SESSION_ID from 0.1.45 on; pinned to an older release, the id is
 // issued and ignored.
 //
 // The function's own key check is off (verify_jwt = false in config.toml):
@@ -27,7 +27,7 @@
 // refuses a wrong password from every tool.
 
 import { WebStandardStreamableHTTPServerTransport } from "npm:@modelcontextprotocol/sdk@1.30.0/server/webStandardStreamableHttp.js";
-import { createPlotcoderServer } from "npm:plotcoder-board@0.1.44/scripts/plotcoder-mcp-server.mjs";
+import { createPlotcoderServer } from "npm:plotcoder-board@0.1.46/scripts/plotcoder-mcp-server.mjs";
 
 const ABOUT = `PlotCoder's hosted MCP door.
 

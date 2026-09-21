@@ -1784,13 +1784,29 @@ server.registerTool(
       open: z.string().optional().describe("The writer's words for what is not decided about this card — \"whether Tom knows\" — so the card is born open: the reading lists it and asks nothing else of it until the words are cleared."),
       characters: z.array(z.string().min(1)).optional(),
       castOpen: z.string().optional().describe("The writer's words for why who is in the scene is not decided, when nobody can be named or beside the names given. Not the same as open, which says the whole card is undecided."),
+      of: z.string().optional().describe("Born as the other version of this card (id or headline): it stands behind that card from the first moment — out of the order, the count and the pages until choose_version — in one call and one step, so the wall never asks about it as a loose card. Not with after, before or aside."),
+      aside: z.boolean().optional().describe("Born set aside: a scene the writer has cut and wants kept. On the wall, clear of the story's rows, and not in the film. Not with after, before or of."),
       x: z.number().optional(),
       y: z.number().optional(),
     },
   },
   async (args) => {
     const { state } = await readBoard();
-    const landing = args.x === undefined && args.y === undefined ? nextPlace(state) : { x: args.x, y: args.y };
+    // A card born as a version, or born set aside (round twenty-three, entry 20): neither is in the order, so neither is wired.
+    if ((args.of || args.aside) && (args.after || args.before)) return ok("A version behind another card, or a card set aside, is not in the story's order, so it takes no after or before. Say one: where it goes in the order, or of, or aside.");
+    if (args.of && args.aside) return ok("Say one: of (another version of a scene, behind it until the writer chooses) or aside (cut and kept).");
+    const ofKey = (args.of ?? "").trim();
+    const front = ofKey ? state.notes.find((note) => note.id === ofKey) ?? state.notes.find((note) => note.headline.trim().toLowerCase() === ofKey.toLowerCase()) ?? null : null;
+    if (ofKey && !front) return ok(`No card with id or headline "${ofKey}" on this board. Call list_board.`);
+    if (front?.alternativeOf) return ok(`"${front.headline}" is itself a version behind another card; name the front card.`);
+    if (front && state.notes.some((note) => note.alternativeOf === front.id)) return ok(`"${front.headline}" has a version behind it already; choose_version there first.`);
+    // A card born aside lands under the wall's lowest card, never "after the last card", which is inside the story (entry 22).
+    const below = () => {
+      const drawn = state.notes.filter((note) => !note.alternativeOf);
+      if (!drawn.length) return { x: 140, y: 140 };
+      return { x: Math.min(...drawn.map((note) => note.x)), y: Math.max(...drawn.map((note) => note.y)) + NOTE_HEIGHT + GAP * 2 };
+    };
+    const landing = args.x !== undefined || args.y !== undefined ? { x: args.x, y: args.y } : front ? { x: front.x, y: front.y } : args.aside ? below() : nextPlace(state);
     const names = (args.characters ?? []).map((name) => name.trim()).filter(Boolean);
     const added = [];
     // The card, anyone new in its cast, and the casting land as one change, so
@@ -1855,6 +1871,15 @@ server.registerTool(
           made = cast.state.notes.find((note) => note.id === made.id) ?? made;
         }
       }
+      // Born behind another card, or born set aside, in the same frame: no loose card for the wall to ask about.
+      if (front && made?.id) {
+        const paired = step({ type: "set_alternative", id: made.id, of: front.id });
+        made = paired.state.notes.find((note) => note.id === made.id) ?? made;
+      }
+      if (args.aside && made?.id) {
+        const cut = step({ type: "set_aside", ids: [made.id], aside: true });
+        made = cut.state.notes.find((note) => note.id === made.id) ?? made;
+      }
       // Wired into the story where the writer said, in the same frame.
       // On a wall with no follows arrows yet, after or before draws the first one (round nineteen, entry 14).
       if (beside && made?.id) {
@@ -1891,7 +1916,11 @@ server.registerTool(
       result?.open ? `open: "${result.open}" (listed, not asked about)` : null,
     ].filter(Boolean).join(", ");
     // Where it landed matters only until the tidy, so the reply says the rule once and never the coordinates (round fourteen, entry 11).
-    const placed = beside
+    const placed = front
+      ? ` Born as the other version of "${front.headline}", behind it: out of the order, the count and the pages until choose_version decides. Which card is in front decides nothing.`
+      : args.aside
+      ? " Born set aside: on the wall under the story's rows, and not in the film — out of the order, the count, the pages and every export; set_aside with aside false brings it in."
+      : beside
       ? ` Wired ${args.after ? "after" : "before"} "${beside.headline}" in the story (${removedArrows} follows arrow${removedArrows === 1 ? "" : "s"} removed${removedNames.length ? ` — ${removedNames.join(", ")}` : ""}, ${drawnArrows} drawn${wallHasFollows ? "" : "; the wall's first, so the story order starts here"})${joinedGroup ? `, in "${joinedGroup}"` : ""}. ${notTidied()}`
       : args.x === undefined && args.y === undefined ? ` Placed after the last card in story order.${once("placed", " organize lays the wall out along the arrows.")}` : "";
     // Under a lock a new scene has a letter, not a number: say it, since the board is the only other place to learn it (round fourteen, entry 44).

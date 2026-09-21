@@ -301,3 +301,16 @@ describe("the when on a heading, out and back (R55)", () => {
     expect(out.split("[[with Maya]]").length).toBe(2);
   });
 });
+
+describe("the scene note says what is not decided about who is in it (round twenty-three, entry 54)", () => {
+  it("carries a maybe with its mark, the writer's words for an open cast, and an open change line", () => {
+    let state = applyCommand(seedState(NOW), { type: "set_cast", ids: ["maya-letter"], characterIds: ["maya"], maybeCharacterIds: ["tom"], open: "anyone else: I don't know" }, NOW).state;
+    state = applyCommand(state, { type: "update_note", id: "maya-letter", changeOpen: "I don't know what changes yet" }, NOW).state;
+    const text = toFountain(state, { title: "The Letter" });
+    expect(text).toContain("[[with Maya, Tom? (? — not decided whether they are in it) · who else is in it, not decided: anyone else: I don't know");
+    expect(text).toContain("change line open: I don't know what changes yet");
+    // A card with nobody named and the cast left open says so, and no "with".
+    const bare = applyCommand(state, { type: "set_cast", ids: ["maya-letter"], characterIds: [], maybeCharacterIds: [], open: "I don't know yet" }, NOW).state;
+    expect(toFountain(bare, { title: "The Letter" })).toContain("[[who is in it, not decided: I don't know yet");
+  });
+});

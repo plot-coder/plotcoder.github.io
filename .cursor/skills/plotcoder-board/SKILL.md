@@ -297,6 +297,12 @@ only when the server is started with `PLOTCODER_JSON=1`.
   other, I may come back to it" is `keep`. `of: ""` takes a card out from
   behind. Only on the writer's word:
   two versions the notes hold, never two the agent could not choose between.
+- **A card born as a version, or born set aside:** `create_note` with `of`
+  (the front card's id or headline) makes the new card the other version of
+  that scene in one call — no loose card for the wall to ask about in
+  between — and with `aside: true` makes a scene the writer has cut and wants
+  kept, placed under the story's rows. Neither takes `after` or `before`: it
+  is not in the order.
 - `set_aside` — a card **on the wall and not in the film**: a scene the
   writer cuts and will not throw away, an idea with no place in the story
   yet, the version not chosen. By id or headline. It keeps its words, its

@@ -169,10 +169,15 @@ export function toFountain(state, options = {}) {
     }
     const marks = [];
     const revisionMarksFor = (_list, card) => Boolean(revisionOf.get(card.id)?.revised);
+    // Who is in it as the wall types it back — a maybe with its mark, and the writer's words when who is in it is not decided — so
+    // someone writing the scene from these pages does not write it as though that were settled (round twenty-three, entry 54).
     const cast = (note.characterIds ?? []).map((id) => nameOf.get(id)).filter(Boolean);
-    if (cast.length) marks.push(`with ${cast.join(", ")}`);
+    const maybe = (note.maybeCharacterIds ?? []).map((id) => nameOf.get(id)).filter(Boolean).map((name) => `${name}?`);
+    if (cast.length || maybe.length) marks.push(`with ${[...cast, ...maybe].join(", ")}${maybe.length ? " (? — not decided whether they are in it)" : ""}`);
+    if ((note.castOpen ?? "").trim()) marks.push(`who ${cast.length || maybe.length ? "else " : ""}is in it, not decided: ${note.castOpen.trim()}`);
     if (note.plants) marks.push(note.plantsWhat ? `plants ${note.plantsWhat}` : "plants something to pay off later");
     if (note.open) marks.push(`open: ${note.open}`);
+    if (note.changeOpen) marks.push(`change line open: ${note.changeOpen}`);
     if (note.locationOpen) marks.push(`place open: ${note.locationOpen}`);
     if (note.whenOpen) marks.push(`when open: ${note.whenOpen}`);
     const onThreads = (state.threads ?? []).filter((thread) => thread.noteIds.includes(note.id)).map((thread) => thread.name);

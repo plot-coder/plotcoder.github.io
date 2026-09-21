@@ -3329,6 +3329,25 @@ describe("a person who may or may not be in a scene (round twenty-two, H9)", () 
     expect(await door.callTool("set_rank", { ids: [depot.id], rank: "proposed" })).toContain("Nothing changed");
   });
 
+  it("makes a card born as a version, or born set aside, in one call with no loose card in between (round twenty-three, entry 20)", async () => {
+    const version = await door.callTool("create_note", { headline: "The depot, after hours: she drives to the city", change: "She says too much.", of: "The depot, after hours" });
+    expect(version).toContain('Born as the other version of "The depot, after hours", behind it');
+    expect(version).not.toMatch(/\[unlinked\]|\[duplicate\]/);
+    const cut = await door.callTool("create_note", { headline: "At the audiologist's", change: "She asks how long.", aside: true });
+    expect(cut).toContain("Born set aside");
+    expect(cut).not.toMatch(/\[unlinked\]|\[uncast\]/);
+    const board = await door.callToolData("list_board");
+    const behind = board.notes.find((note) => note.headline.endsWith("she drives to the city"));
+    const front = board.notes.find((note) => note.headline === "The depot, after hours");
+    expect(behind.alternativeOf).toBe(front.id);
+    const aside = board.notes.find((note) => note.headline === "At the audiologist's");
+    expect(aside.aside).toBe(true);
+    // Clear of every card the wall draws.
+    for (const other of board.notes.filter((note) => note.id !== aside.id && !note.alternativeOf)) expect(Math.abs(other.x - aside.x) >= 192 || Math.abs(other.y - aside.y) >= 192).toBe(true);
+    expect(await door.callTool("create_note", { headline: "x", change: "y", of: "The depot, after hours", after: "The depot, after hours" })).toContain("takes no after or before");
+    expect(await door.callTool("create_note", { headline: "x", change: "y", of: "The depot, after hours" })).toContain("has a version behind it already");
+  });
+
   it("asks, in the treatment's checklist, the five things round twenty-three's notes needed (entry 9)", async () => {
     const listed = await door.callTool("list_workflows");
     for (const question of ["What changes in each scene?", "Is anyone in a scene only maybe?", "Is anything undecided about a person", "Is there a scene you have two ways?", "Is there a scene you have cut and want kept?"]) expect(listed).toContain(question);

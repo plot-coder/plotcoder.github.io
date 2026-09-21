@@ -1896,3 +1896,38 @@ describe("what is not decided about the film itself (round twenty-three, entries
     expect(normalizeState(messy).openLines).toEqual(["Acts.", "When."]);
   });
 });
+
+describe("a proposed turn (round twenty-three, entry 32)", () => {
+  const at = "2026-09-20T00:00:00.000Z";
+  const start = () => {
+    let state = emptyState();
+    for (const id of ["a", "b", "c"]) state = applyCommand(state, { type: "create_note", id, headline: id, change: "x" }, at).state;
+    state = applyCommand(state, { type: "set_rank", ids: ["c"], rank: "beat" }, at).state;
+    return applyCommand(state, { type: "propose_beat", ids: ["a", "b", "c"] }, at).state;
+  };
+  const card = (state: BoardState, id: string) => state.notes.find((note) => note.id === id)!;
+
+  it("is said on the card and changes no rank: a proposed card is a scene, and a beat is never proposed", () => {
+    const state = start();
+    expect(card(state, "a")).toMatchObject({ proposedBeat: true, rank: "scene" });
+    expect(card(state, "c")).toMatchObject({ proposedBeat: false, rank: "beat" });
+    expect(countRanks(state)).toMatchObject({ beats: 1 });
+  });
+
+  it("is kept by marking the beat and struck by taking the proposal off, and either is the end of it", () => {
+    const kept = applyCommand(start(), { type: "set_rank", ids: ["a"], rank: "beat" }, at).state;
+    expect(card(kept, "a")).toMatchObject({ proposedBeat: false, rank: "beat" });
+    const struck = applyCommand(start(), { type: "propose_beat", ids: ["b"], proposed: false }, at).state;
+    expect(card(struck, "b")).toMatchObject({ proposedBeat: false, rank: "scene" });
+    // The writer saying "a scene" of a proposed card strikes it too.
+    const scene = applyCommand(start(), { type: "set_rank", ids: ["b"], rank: "scene" }, at);
+    expect(scene.changed).toBe(true);
+    expect(card(scene.state, "b").proposedBeat).toBe(false);
+  });
+
+  it("is repaired on a card written before it existed, to not proposed", () => {
+    const old = start();
+    const before = { ...old, notes: old.notes.map(({ proposedBeat: _gone, ...note }) => note) } as unknown as BoardState;
+    expect(normalizeState(before).notes.every((note) => note.proposedBeat === false)).toBe(true);
+  });
+});

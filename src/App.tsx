@@ -944,6 +944,9 @@ export function App() {
           open={asksOpen}
           findings={reading.findings}
           left={reading.left}
+          proposed={reading.proposed.map((id) => ({ id, headline: board.notes.find((note) => note.id === id)?.headline ?? "" }))}
+          onKeep={(id) => boardStore.dispatch({ type: "set_rank", ids: [id], rank: "beat" })}
+          onStrike={(id) => boardStore.dispatch({ type: "set_rank", ids: [id], rank: "scene" })}
           onClose={() => setAsksOpen(false)}
           onShow={showCards}
           onLeave={(finding) => boardStore.dispatch({ type: "leave_question", kind: finding.kind, ids: finding.ids, text: finding.text })}

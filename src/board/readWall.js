@@ -536,6 +536,8 @@ export function readWall(state, options = {}) {
     // Two versions of one scene (R65): the front card and the one behind it, in story order; listed, never asked.
     versions: order.filter((note) => state.notes.some((item) => item.alternativeOf === note.id)).map((note) => ({ id: note.id, alternatives: state.notes.filter((item) => item.alternativeOf === note.id).map((item) => item.id) })),
     // People the writer has left something open about (round twenty-two, entries 12, 24): listed, never asked.
+    // Turns the agent has proposed and the writer has not kept or struck, in story order: scenes until kept, and never asked about.
+    proposed: order.filter((note) => note.proposedBeat === true).map((note) => note.id),
     // What is not decided about the film itself, in the writer's sentences: listed first, never asked.
     openLines: [...(state.openLines ?? [])],
     openPeople: (state.characters ?? []).filter((person) => (person.open ?? "").trim()).map((person) => ({ id: person.id, name: person.name, words: person.open.trim() })),

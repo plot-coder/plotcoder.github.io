@@ -4937,3 +4937,63 @@ body {
   padding: 0.1rem 0.2rem;
   outline: none;
 }
+
+/* A proposed turn (round twenty-three, entry 32): the beat's bar, dashed — the
+   agent's candidate, not the writer's turn until they keep it. */
+.note.is-proposed {
+  border-top: 14px dashed rgba(31, 24, 16, 0.5);
+}
+
+.note__proposed {
+  position: absolute;
+  top: -13px;
+  /* The word at the card's left edge; keep and strike appear to its right under the hand. */
+  left: 0.35rem;
+  right: auto;
+  width: max-content;
+  white-space: nowrap;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font: 700 0.5rem/1 ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(31, 24, 16, 0.85);
+}
+
+.note__proposed-word {
+  background: rgba(255, 255, 255, 0.6);
+  padding: 2px 5px;
+  border-radius: 2px;
+}
+
+.note__proposed-act {
+  border: 1px solid rgba(31, 24, 16, 0.45);
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.75);
+  padding: 1px 4px;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.note:hover .note__proposed-act,
+.note__proposed-act:focus-visible {
+  opacity: 1;
+}
+
+.asks__proposed {
+  margin: 0.4rem 0 0.9rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid rgba(127, 127, 127, 0.25);
+}
+
+.asks__list--proposed {
+  list-style: none;
+  padding-left: 0;
+}

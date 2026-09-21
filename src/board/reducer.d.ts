@@ -89,6 +89,8 @@ export type BoardNote = {
   maybeCharacterIds: string[];
   /** The writer's words for why who is in the scene is not decided — when nobody can be named, or beside the names ("anyone else: I don't know") — or empty. */
   castOpen: string;
+  /** A turn the agent has proposed and the writer has not yet kept or struck. A scene everywhere until kept; never true on a beat. */
+  proposedBeat: boolean;
   /** The corner is folded: this card plants something that must pay off (R31). */
   plants: boolean;
   /** What the fold plants, in the writer's words (R62), or empty; never set on an unfolded card. */
@@ -192,6 +194,7 @@ export declare function sameName(a: string, b: string): boolean;
 export type Command =
   | { type: "set_logline"; logline?: string; open?: string }
   | { type: "set_rank"; ids: string[]; rank: NoteRank }
+  | { type: "propose_beat"; ids: string[]; proposed?: boolean }
   | { type: "set_length"; ids: string[]; lengthEighths: number | null }
   | { type: "set_target"; targetEighths?: number; open?: string; kind?: "feature" | "hour" | "half-hour" }
   | {

@@ -1369,7 +1369,7 @@ function summarize(state) {
       const revised = snap && (snap.headline !== note.headline || snap.change !== note.change || (snap.text ?? "") !== (note.text ?? "") || (snap.location ?? "") !== (note.location ?? "")) ? `, changed in ${state.revision.color}` : "";
       const place = note.location ? `, at: ${note.location}` : note.locationOpen ? `, at: open, by the writer's word — "${note.locationOpen}"` : "";
       const when = note.when ? `, when: ${note.when}` : note.whenOpen ? `, when: open, by the writer's word — "${note.whenOpen}"` : "";
-      const openWord = `${note.changeOpen ? `, change line: open, by the writer's word — "${note.changeOpen}"` : ""}${note.open ? `, open (the writer's words): "${note.open}"` : ""}${note.aside ? ", set aside: not in the film" : ""}`;
+      const openWord = `${note.changeOpen ? `, change line: open, by the writer's word — "${note.changeOpen}"` : ""}${note.open ? `, open (the writer's words): "${note.open}"` : ""}${note.aside ? ", set aside: not in the film" : ""}${note.proposedBeat ? ", proposed as a turn (yours, not yet the writer's: set_rank beat keeps it, scene strikes it)" : ""}`;
       const count = formatPages(noteEighths(note));
       // A written card's estimate is kept underneath for when the text goes; say it, or it is invisible (round sixteen, entry 44).
       const underneath = isMeasured(note) && note.lengthEighths !== null ? `; the writer's estimate underneath: ${formatPages(note.lengthEighths)}` : "";
@@ -1637,13 +1637,22 @@ server.registerTool(
   {
     title: "Set card rank",
     description:
-      `Mark cards as beats or scenes. ${wordSentence("beat")} Rank is carried by the card, not by where it sits. Do not volunteer an opinion about how many beats there should be.`,
+      `Mark cards as beats or scenes. ${wordSentence("beat")} Rank is carried by the card, not by where it sits. Do not volunteer an opinion about how many beats there should be. When the writer says "propose the turns and I will strike", pass rank "proposed": each candidate wears a dashed bar and the words "proposed turn" on the wall, and is listed in the reading, so the proposal is on the wall and not only in the chat — and it is still a scene everywhere, in the count, the runs and the questions, until the writer keeps it. Keep is rank "beat"; strike is rank "scene". Never mark a beat on your own word.`,
     inputSchema: {
       ids: z.array(z.string()).min(1),
-      rank: rankSchema,
+      rank: z.enum([...NOTE_RANKS, "proposed"]).describe("beat or scene, on the writer's word; or proposed, your candidate for the writer to keep (beat) or strike (scene)."),
     },
   },
   async (args) => {
+    if (args.rank === "proposed") {
+      const proposal = await commit({ type: "propose_beat", ids: args.ids });
+      if (!proposal.changed) return ok("Nothing changed: those cards are beats already, or proposed already, or not on this board.");
+      const beatsAlready = args.ids.length - proposal.result.length;
+      return ok(
+        `Proposed as ${proposal.result.length === 1 ? "a turn" : "turns"}, for the writer to keep or strike: ${proposal.result.map((note) => `"${note.headline}"`).join(", ")}${where(proposal.live)}.${beatsAlready > 0 ? ` ${beatsAlready} of the cards named ${beatsAlready === 1 ? "was" : "were"} left as ${beatsAlready === 1 ? "it was" : "they were"}: a beat already, or proposed already.` : ""} Each wears a dashed bar and "proposed turn" on the wall, where the writer can keep or strike it; each is still a scene in the count, the runs and the questions. Keep: set_rank beat. Strike: set_rank scene. Name them to the writer by headline, never by number.`,
+        proposal.result,
+      );
+    }
     const { state, result, live } = await commit({
       type: "set_rank",
       ids: args.ids,
@@ -2025,6 +2034,7 @@ server.registerTool(
         [
           `PlotCoder wall (${door(live, base)}) — the questions only; read_wall without only is the whole reading`,
           atAGlance(state, reading, projectForRead, readBoardMeta),
+          ...((reading.proposed ?? []).length ? [`waiting on the writer: ${reading.proposed.length} turn${reading.proposed.length === 1 ? "" : "s"} you proposed, not yet kept or struck — ${reading.proposed.map((id) => `"${state.notes.find((note) => note.id === id)?.headline ?? id}"`).join(", ")}`] : []),
           "questions the wall raises:",
           ...(reading.findings.length ? reading.findings.map((finding) => `  - [${finding.kind}] ${finding.text}${finding.ids.length ? ` (ids: ${finding.ids.join(", ")})` : ""}`) : [reading.left.length ? "  (none the writer has not left)" : "  (none that this reading can see)"]),
           ...(reading.left.length ? ["left, for now:", ...reading.left.map((finding) => `  - [${finding.kind}] ${finding.text}${finding.why ? ` ("${finding.why}")` : ""}`)] : []),
@@ -2101,6 +2111,7 @@ server.registerTool(
       ...(reading.threads.length
         ? ["threads (the writer's strings through the story; a loose end is asked about below):", ...reading.threads.map((thread) => `  - "${thread.name}": ${thread.ids.length ? thread.ids.map((id) => `"${state.notes.find((note) => note.id === id)?.headline ?? id}"`).join(" → ") : "no card yet"}${thread.startOpen ? " — starts nowhere yet" : ""}${thread.endOpen ? " — ends nowhere yet" : ""}${!thread.startOpen && !thread.endOpen && thread.ids.length >= 2 ? ` — both ends tied, about ${formatPages(thread.apart)} pages apart` : ""}`)]
         : []),
+      ...((reading.proposed ?? []).length ? ["turns proposed and not yet kept or struck (yours, said on the wall; scenes until the writer keeps one — set_rank beat keeps, scene strikes):", ...reading.proposed.map((id) => `  - "${state.notes.find((note) => note.id === id)?.headline ?? id}" (${id})`)] : []),
       "questions the wall raises (each stands on every reading until the wall changes to answer it, or the writer leaves it — leave_question, with their reason):",
       ...(reading.findings.length
         ? reading.findings.map((finding) => `  - [${finding.kind}] ${finding.text}${finding.ids.length ? ` (ids: ${finding.ids.join(", ")})` : ""}`)

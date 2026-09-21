@@ -199,6 +199,15 @@ only when the server is started with `PLOTCODER_JSON=1`.
 - `move_note` — set a card's absolute `x`,`y` (top-left, pixels).
 - `recolor_note` — change a card's paper `color` by `id`.
 - `set_rank` — mark cards `beat` or `scene`. Takes a list of ids.
+  **"Propose the turns and I will strike":** `set_rank` with `rank:
+  "proposed"` puts your candidates on the wall — a dashed bar and "proposed
+  turn" on each card, a list in the reading, and in the wall's questions
+  sheet with keep and strike — so the proposal is where the writer can see it
+  and not only in the chat. A proposed card is still a scene in the count,
+  the runs and every question. Name your candidates to the writer by
+  **headline, never by number**; on their word, keep is `rank: "beat"` and
+  strike is `rank: "scene"`. Never mark a beat on your own word, and never
+  propose a number of turns.
 - `set_length` — how long cards run, in `pages`. Takes a list of ids. Fractions
   are fine (`0.5`); they are stored in eighths of a page. A card nobody has
   sized is **unsized** — `list_board` says so — and reads as about a page; a

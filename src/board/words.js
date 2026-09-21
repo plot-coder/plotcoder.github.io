@@ -46,6 +46,11 @@ export const WORD_GROUPS = [
         target: "beat",
       },
       {
+        id: "proposed",
+        name: "A proposed turn",
+        sentence: "A card your agent has put forward as a turn, when you said “propose them and I will strike”: a dashed bar where a beat’s solid one goes. Keep makes it a beat; strike takes the mark off. Until you keep it, it is a scene in every count.",
+      },
+      {
         id: "scene",
         name: "A scene",
         sentence: "Every card that is not a beat: what happens between the turns. One card, one scene.",

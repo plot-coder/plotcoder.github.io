@@ -3307,6 +3307,28 @@ describe("a person who may or may not be in a scene (round twenty-two, H9)", () 
     expect(await door.callTool("strike_open_line", { line: 1 })).toContain("Nothing struck");
   });
 
+  it("puts a proposed turn on the wall, a scene until the writer keeps it, and says what is waiting on them (round twenty-three, entry 32)", async () => {
+    const board = await door.callToolData("list_board");
+    const depot = board.notes.find((note) => note.headline === "The depot, after hours");
+    const job = board.notes.find((note) => note.headline === "The job centre sends Callum");
+    const proposed = await door.callTool("set_rank", { ids: [depot.id, job.id], rank: "proposed" });
+    expect(proposed).toContain('Proposed as turns, for the writer to keep or strike: "The depot, after hours", "The job centre sends Callum"');
+    expect(proposed).toContain("never by number");
+    const listed = await door.callTool("list_board");
+    expect(listed).toContain("proposed as a turn");
+    expect(listed).toMatch(/beats: 0/);
+    const read = await door.callTool("read_wall");
+    expect(read).toContain("turns proposed and not yet kept or struck");
+    expect(read).toContain("[unmarked] No card is marked as a beat");
+    expect(await door.callTool("read_wall", { only: "questions" })).toContain("waiting on the writer: 2 turns you proposed");
+    // Keep one, strike the other.
+    expect(await door.callTool("set_rank", { ids: [depot.id], rank: "beat" })).toContain('1 card(s) are now beat: "The depot, after hours"');
+    await door.callTool("set_rank", { ids: [job.id], rank: "scene" });
+    const after = await door.callTool("read_wall");
+    expect(after).not.toContain("turns proposed and not yet kept or struck");
+    expect(await door.callTool("set_rank", { ids: [depot.id], rank: "proposed" })).toContain("Nothing changed");
+  });
+
   it("asks, in the treatment's checklist, the five things round twenty-three's notes needed (entry 9)", async () => {
     const listed = await door.callTool("list_workflows");
     for (const question of ["What changes in each scene?", "Is anyone in a scene only maybe?", "Is anything undecided about a person", "Is there a scene you have two ways?", "Is there a scene you have cut and want kept?"]) expect(listed).toContain(question);

@@ -287,6 +287,7 @@ export function seedState(now = nowIso()) {
     characterIds,
     maybeCharacterIds: [],
     castOpen: "",
+    proposedBeat: false,
     location: "",
     // The writer's words for why the place is not decided (R61), or nothing.
     locationOpen: "",
@@ -413,6 +414,8 @@ export function normalizeState(value) {
     const characterIds = knownCast(note?.characterIds, characters);
     // Cards written before the maybe (round twenty-two, H9) have nobody who may be there; a person on the cast line is certainly in the scene, and certain wins.
     const maybeCharacterIds = knownCast(note?.maybeCharacterIds, characters).filter((id) => !characterIds.includes(id));
+    // Cards written before a turn could be proposed have none proposed: a proposal is the agent's, said on the card, and a beat is never also proposed.
+    const proposedBeat = note?.proposedBeat === true && rank !== "beat";
     // Cards written before the cast's own open (round twenty-three, entries 13, 14) have none: who is in a scene is said, or blank, until the writer says why it is not decided.
     const castOpen = typeof note?.castOpen === "string" ? note.castOpen : "";
     // Cards written before R31 have no fold; a plant is a claim you make.
@@ -450,6 +453,7 @@ export function normalizeState(value) {
       Array.isArray(note.maybeCharacterIds) &&
       sameIds(note.maybeCharacterIds, maybeCharacterIds) &&
       note.castOpen === castOpen &&
+      note.proposedBeat === proposedBeat &&
       note.plants === plants &&
       note.plantsWhat === plantsWhat &&
       note.alternativeOf === alternativeOf &&
@@ -467,7 +471,7 @@ export function normalizeState(value) {
       return note;
     }
     patched = true;
-    return { ...note, rank, lengthEighths, characterIds, maybeCharacterIds, castOpen, plants, plantsWhat, alternativeOf, payoffBoardId, payoffNoteId, open, location, locationOpen, when, whenOpen, changeOpen, aside, text };
+    return { ...note, rank, lengthEighths, characterIds, maybeCharacterIds, castOpen, proposedBeat, plants, plantsWhat, alternativeOf, payoffBoardId, payoffNoteId, open, location, locationOpen, when, whenOpen, changeOpen, aside, text };
   });
   // A version of a version is a version of the front card, so the pair stays a pair.
   for (const [index, note] of notes.entries()) {
@@ -779,6 +783,7 @@ export function applyCommand(state, command, now = nowIso()) {
         maybeCharacterIds: knownCast(command.maybeCharacterIds, state.characters ?? []).filter((id) => !knownCast(command.characterIds, state.characters ?? []).includes(id)),
         // Who is in it, left open by the writer's word when nobody can be named, or beside the names: "anyone else, I don't know".
         castOpen: cleanOpen(command.castOpen),
+        proposedBeat: false,
         alternativeOf: null,
         plants: command.plants === true || Boolean(cleanOpen(command.plantsWhat)),
         // What it plants, in the writer's words (R62): naming a plant folds the card.
@@ -892,8 +897,30 @@ export function applyCommand(state, command, now = nowIso()) {
       const rank = NOTE_RANKS.includes(command.rank) ? command.rank : "scene";
       const touched = [];
       const notes = state.notes.map((note) => {
-        if (!ids.has(note.id) || note.rank === rank) return note;
-        const next = bump(note, { rank }, now);
+        // The writer's word on a card's rank decides a proposal too: kept as a beat, or a scene and the proposal gone.
+        if (!ids.has(note.id) || (note.rank === rank && !note.proposedBeat)) return note;
+        const next = bump(note, { rank, proposedBeat: false }, now);
+        touched.push(next);
+        return next;
+      });
+      if (touched.length === 0) return { state, changed: false };
+      return { state: { ...state, notes }, changed: true, result: touched };
+    }
+
+    // A proposed turn (round twenty-three, entry 32; round twenty-two's F5):
+    // the agent's candidate, said on the card and not only in the chat, until
+    // the writer keeps it (set_rank beat) or strikes it (proposed false). A
+    // proposed card is a scene everywhere: the app still says nothing about
+    // how many turns there should be.
+    case "propose_beat": {
+      const ids = new Set(command.ids);
+      if (ids.size === 0) return { state, changed: false };
+      const proposed = command.proposed !== false;
+      const touched = [];
+      const notes = state.notes.map((note) => {
+        // A beat is the writer's already: there is nothing to propose.
+        if (!ids.has(note.id) || note.proposedBeat === proposed || (proposed && note.rank === "beat")) return note;
+        const next = bump(note, { proposedBeat: proposed }, now);
         touched.push(next);
         return next;
       });
@@ -1460,6 +1487,7 @@ export function applyCommand(state, command, now = nowIso()) {
         characterIds: [],
         maybeCharacterIds: [],
         castOpen: "",
+        proposedBeat: false,
         plants: false,
         plantsWhat: "",
         alternativeOf: null,

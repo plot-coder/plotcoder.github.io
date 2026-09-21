@@ -15,6 +15,7 @@ import {
   filledCharacterFields,
   formatPages,
   isBoardState,
+  isMeasured,
   NOTE_HEIGHT,
   NOTE_WIDTH,
   normalizeState,
@@ -1821,5 +1822,16 @@ describe("a person who may or may not be in a scene (round twenty-two, H9)", () 
     const old = start();
     const before = { ...old, notes: old.notes.map(({ maybeCharacterIds: _gone, ...note }) => note) } as unknown as BoardState;
     expect(card(normalizeState(before)).maybeCharacterIds).toEqual([]);
+  });
+});
+
+describe("a scene whose text is only notes (round twenty-three, entry 17)", () => {
+  it("is still unwritten and reads at its estimate: a note is a home for what the change line cannot say, not the writing of the scene", () => {
+    const at = "2026-09-20T00:00:00.000Z";
+    let state = applyCommand(emptyState(), { type: "create_note", id: "c", headline: "The concert", change: "Ada hands Callum the lever.", lengthEighths: 16 }, at).state;
+    state = applyCommand(state, { type: "set_text", id: "c", text: "[[she gives the fork to Callum]]\n\n[[and says nothing]]" }, at).state;
+    const card = state.notes.find((note) => note.id === "c")!;
+    expect(isMeasured(card)).toBe(false);
+    expect(noteEighths(card)).toBe(16);
   });
 });

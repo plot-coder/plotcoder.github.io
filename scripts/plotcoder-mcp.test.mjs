@@ -3270,6 +3270,13 @@ describe("a person who may or may not be in a scene (round twenty-two, H9)", () 
     expect(alone).toContain("decided: Tomás is not in it, so that is no longer open");
   });
 
+  it("asks, in the treatment's checklist, the five things round twenty-three's notes needed (entry 9)", async () => {
+    const listed = await door.callTool("list_workflows");
+    for (const question of ["What changes in each scene?", "Is anyone in a scene only maybe?", "Is anything undecided about a person", "Is there a scene you have two ways?", "Is there a scene you have cut and want kept?"]) expect(listed).toContain(question);
+    const tools = await door.request("tools/list", {});
+    expect(tools.tools.find((tool) => tool.name === "set_plant").description).toContain("a scene whose text is only notes is still unwritten");
+  });
+
   it("says the camera's mark in the words, and where a decided fact about one scene goes (H8, H10)", async () => {
     const words = await door.callTool("list_words");
     expect(words).toContain("The camera’s mark");

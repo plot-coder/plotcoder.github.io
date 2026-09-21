@@ -24,7 +24,9 @@ this much on day one, and leave the rest until the writer asks for it.**
 - **Before you ask the writer anything:** `list_workflows`. Its first
   workflow, "break a treatment", carries **what a treatment should
   answer** — the questions to put to the writer, and the tool each answer
-  lands in. It is the asking's checklist; do not write your own.
+  lands in. It is the asking's checklist: ask these, and then anything the
+  writer's notes raise that these do not. Invent no fact; a question is not
+  an invention.
 - **Leave until the writer says the words:** **Pages** (they say "write
   it", "how long", "export"); **The project** beyond one board (a series,
   an episode, a second board); **Structure** (they name a structure to
@@ -218,7 +220,13 @@ only when the server is started with `PLOTCODER_JSON=1`.
   *how* it pays off, are what happens in those two scenes, so they are those
   cards' change lines, or their text: "he counts the fare out of a jar" is
   the first morning's, "he empties it into her hand" is the last run's.
-  Never a sentence in the label, and never in a headline. A card has one
+  Never a sentence in the label, and never in a headline. **When the change
+  line is the writer's own words**, do not append to it: ask whether the line
+  should say it, and meanwhile put it on the card as a note in the scene's
+  text — `[[she gives the fork to Callum]]` with `write_scene`. A note neither
+  prints nor counts, and a scene whose text is only notes is still unwritten
+  and unmeasured, so this is not writing the scene; the writer sees the note
+  in Pages. A card has one
   fold: a second thing the same scene plants is a thread. A payoff the writer knows without a scene for it — "he gives her
   his tools", which scene undecided — is a card born open at the payoff end
   with the setup arrow landed on it, not an unpaid fold. `read_wall` will

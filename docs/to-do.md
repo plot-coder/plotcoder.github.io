@@ -228,7 +228,7 @@ door pins the package version in `supabase/functions/mcp/index.ts`; bump
 it and redeploy (`supabase functions deploy mcp --no-verify-jwt --use-api
 --project-ref kmpahjsggbleygsnuwug`) when the door should carry the
 release. The name in front of it, `cloudflare/mcp-door`, changes only if
-the function's address does. 0.1.48 is the latest (2026-09-20, night: R69, R70, R71, the checklist's five questions, undo said plainly; 677 unit tests), on npm, plotcoder.com and the door. 0.1.47 was thirty of round twenty-three's entries. 0.1.46 was the rest of round twenty-two's to-do, a session for the hosted door and R68. 0.1.45 is the same code, tagged twelve seconds earlier — the session and the terminal both ran the release — and is on npm. 0.1.44 was round twenty-two's fixes, R66, R67; 0.1.43 was tagged just after #130 with 0.1.42's code and is on npm.
+the function's address does. 0.1.49 is the latest (2026-09-21: N1 to N7 of round twenty-three's working list; 689 unit tests), on npm, plotcoder.com and the door. 0.1.48 was R69, R70, R71, the checklist's five questions and undo said plainly. 0.1.47 was thirty of round twenty-three's entries. 0.1.46 was the rest of round twenty-two's to-do, a session for the hosted door and R68. 0.1.45 is the same code, tagged twelve seconds earlier — the session and the terminal both ran the release — and is on npm. 0.1.44 was round twenty-two's fixes, R66, R67; 0.1.43 was tagged just after #130 with 0.1.42's code and is on npm.
 
 **Drive a blind run:** Robert opens a fresh session with
 `blind-runs/prompt.md`; this side relays the writer's answers and the

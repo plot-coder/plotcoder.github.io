@@ -38,7 +38,11 @@ deleted, all in the session's memory; the first calls are `list_words`,
 `list_workflows`, `list_projects`, then the three reads. **N3** — the note
 also carries an open change line. **N4** — `src/board/shape.js`, clauses on
 the write's tail; a card the write itself appended is not "the ending
-moved"; "nothing runs from A to B now" when a run is emptied. **N5** — the
+moved"; "nothing runs from A to B now" when a run is emptied. **Not built
+from N4's plan:** the clause saying a version behind a card went with it
+when the card was reordered (entry 31) — the wall draws a version behind its
+sibling wherever that is, so nothing is wrong, only unsaid; it stays open
+as a small item. **N5** — the
 lead is "how long it is: about N pages. Say this one to the writer", in
 `read_wall`, `list_board` and `page_count`. **N6** — in `organizePoses`, so
 the wall's own Organize does it too. **N7** — the beat on an open card was

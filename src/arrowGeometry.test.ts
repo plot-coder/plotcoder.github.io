@@ -15,6 +15,7 @@ function card(id: string, x: number, y: number, z = 1): MockNote {
     rank: "scene",
     lengthEighths: 8,
     characterIds: [],
+    maybeCharacterIds: [],
     plants: false,
     payoffBoardId: null,
   payoffNoteId: null,

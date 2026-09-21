@@ -106,7 +106,7 @@ export const WORD_GROUPS = [
       {
         id: "cast",
         name: "The cast on a card",
-        sentence: "Who is in the scene. Each person has a page: looks, voice, wants, needs.",
+        sentence: "Who is in the scene. Each person has a page: looks, voice, wants, needs. A name with a question mark — “Tomás?” — is someone who may or may not be in it: not decided, listed with what is open, and counted neither way.",
         target: "cast",
       },
       {
@@ -176,6 +176,11 @@ export const WORD_GROUPS = [
         id: "pages",
         name: "Pages",
         sentence: "The wall as a script: the scenes’ text in order, set as a screenplay, with page numbers. Type there and it lands on the card.",
+      },
+      {
+        id: "camera-mark",
+        name: "The camera’s mark",
+        sentence: "A small ◂ in the margin of Pages beside a line that says what someone knows, feels, thinks or wants, which a camera cannot see. A mark, not a question: keep the line or show it. It never prints.",
       },
       {
         id: "formats",

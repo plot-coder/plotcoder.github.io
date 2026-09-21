@@ -179,13 +179,19 @@ export function liftCast(project, boards, now = nowIso()) {
   const out = {};
   for (const [boardId, state] of Object.entries(boards)) {
     const map = folded[boardId] ?? {};
-    const notes = state.notes.map((note) => {
-      const ids = [...new Set(note.characterIds.map((id) => map[id] ?? id))];
-      return ids.length === note.characterIds.length && ids.every((id, index) => id === note.characterIds[index]) ? note : { ...note, characterIds: ids };
-    });
+    const notes = state.notes.map((note) => recastNote(note, map));
     out[boardId] = normalizeState({ ...state, notes, characters: roster });
   }
   return { project: lifted, boards: out, changed: true };
+}
+
+/** A card's people under a map of old ids to kept ones: the cast, and who may be there (a maybe follows its person, and certain wins). */
+function recastNote(note, map) {
+  const same = (a, b) => a.length === b.length && a.every((id, index) => id === b[index]);
+  const ids = [...new Set(note.characterIds.map((id) => map[id] ?? id))];
+  const was = note.maybeCharacterIds ?? [];
+  const maybe = [...new Set(was.map((id) => map[id] ?? id))].filter((id) => !ids.includes(id));
+  return same(ids, note.characterIds) && same(maybe, was) ? note : { ...note, characterIds: ids, maybeCharacterIds: maybe };
 }
 
 /**
@@ -211,10 +217,7 @@ export function mergeRoster(project, state, now = nowIso()) {
     grew = true;
   }
   const next = grew ? { ...project, characters: roster, updatedAt: now } : project;
-  const notes = state.notes.map((note) => {
-    const ids = [...new Set(note.characterIds.map((id) => map[id] ?? id))];
-    return ids.length === note.characterIds.length && ids.every((id, index) => id === note.characterIds[index]) ? note : { ...note, characterIds: ids };
-  });
+  const notes = state.notes.map((note) => recastNote(note, map));
   const recast = notes.some((note, index) => note !== state.notes[index]) ? { ...state, notes } : state;
   return { project: next, state: withRoster(recast, next) };
 }

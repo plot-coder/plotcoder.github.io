@@ -176,6 +176,11 @@ only when the server is started with `PLOTCODER_JSON=1`.
   "midpoint" spans two scenes, mark the card where the turn lands.
 - `update_note` — change a card's `headline`, `change`, `location` and/or
   `when` by `id`; the reply says which field changed, from what to what.
+  **A decided fact about one scene** — "the cut is announced in this scene" —
+  has three homes and no fourth: the change line when it *is* what changes;
+  a `[[note]]` in the scene's text when it is not, which neither prints nor
+  counts; the premise when it is true of the whole film. A card has two lines
+  on purpose: do not park a fact in the change line beside the change.
 - `move_note` — set a card's absolute `x`,`y` (top-left, pixels).
 - `recolor_note` — change a card's paper `color` by `id`.
 - `set_rank` — mark cards `beat` or `scene`. Takes a list of ids.
@@ -355,6 +360,15 @@ card of another board is not asked about as uncast here.
   An **unnamed** person in a treatment — "their mother", "the dispatcher" —
   is named by their role: `Dana's mother`, `The dispatcher`. A role is a name
   until the writer gives one; leaving them off the card is the error.
+  **Someone who may or may not be in a scene** — "whether Tomás is there, I
+  don't know yet" — is their name with a question mark, `Tomás?`, in `cast`'s
+  or `create_note`'s `characters`. The card holds it as not decided: the
+  reading lists "whether Tomás is in it" under open and never asks; the cast's
+  counts say "3 scenes, and maybe 1 more"; and the check for someone gone a
+  third of the story counts only scenes he is certainly in, naming the maybe
+  when it sits inside the gap. The name without the mark decides it; leaving
+  the name off decides it the other way. Only on the writer's word — and not
+  `set_open`, which says the whole card is undecided when one person is.
 - **Acts** are not a thing the app knows. The wall reads left to right and a
   structure's beats are the act breaks. When a treatment comes in acts, put each
   act's cards in a **group** titled for it (`create_group`, title "Act one"), so

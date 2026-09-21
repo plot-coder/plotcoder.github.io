@@ -85,6 +85,8 @@ export type BoardNote = {
   lengthEighths: number | null;
   /** Who is in the scene: ids from the roster, in the order they were cast (R29). */
   characterIds: string[];
+  /** Who may or may not be in the scene, by the writer's word: listed as open, counted neither way, never also in characterIds. */
+  maybeCharacterIds: string[];
   /** The corner is folded: this card plants something that must pay off (R31). */
   plants: boolean;
   /** What the fold plants, in the writer's words (R62), or empty; never set on an unfolded card. */
@@ -200,6 +202,7 @@ export type Command =
       rank?: NoteRank;
       lengthEighths?: number;
       characterIds?: string[];
+      maybeCharacterIds?: string[];
       plants?: boolean;
       /** What it plants, in the writer's words (R62); naming a plant folds the card. */
       plantsWhat?: string;
@@ -235,7 +238,7 @@ export type Command =
   | { type: "rename_character"; id: string; name: string }
   | { type: "remove_character"; id: string }
   | ({ type: "update_character"; id: string } & Partial<Record<CharacterField | "open", string>>)
-  | { type: "set_cast"; ids: string[]; characterIds: string[] }
+  | { type: "set_cast"; ids: string[]; characterIds: string[]; /** Given, it replaces the cards' maybes; not given, each card keeps its own. */ maybeCharacterIds?: string[] }
   | { type: "set_plant"; ids: string[]; plants?: boolean; what?: string }
   | { type: "set_open"; ids: string[]; open: string }
   | { type: "set_alternative"; id: string; of: string | null }

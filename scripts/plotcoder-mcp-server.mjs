@@ -55,6 +55,7 @@ import { REVISION_COLORS, revisionMarks, sceneNumbers } from "../src/board/numbe
 import { sceneHeading, standInFor } from "../src/board/fountain.js";
 import { describePresence, presenceTail } from "../src/board/presence.js";
 import { accountSessionStore, isSessionId, normalizeMemory } from "../src/board/agentSession.js";
+import { castLine, readMaybe } from "../src/board/castMaybe.js";
 import { segmentBrief, WORKFLOWS } from "../src/board/workflows.js";
 import { DEFAULT_REMINDERS, titleFromBody } from "../src/board/reminders.js";
 import crypto from "node:crypto";
@@ -1341,8 +1342,9 @@ function summarize(state) {
   const paidByHere = lastHeld?.project ? landingsOn(lastHeld.project, { ...lastHeld.boards, [lastHeld.project.activeBoardId]: state }, lastHeld.project.activeBoardId).paid : [];
   const notes = storyOrder(state)
     .map((note) => {
-      const cast = note.characterIds.map((id) => nameOf.get(id) ?? id);
-      const who = cast.length ? `, cast: ${cast.join(", ")}` : "";
+      // "Tomás?" is someone who may or may not be in it, by the writer's word (H9).
+      const cast = castLine(note.characterIds, note.maybeCharacterIds, state.characters);
+      const who = cast ? `, cast: ${cast}` : "";
       // The board it pays off on, named here as read_wall names it (round fifteen, entry 44).
       const laterName = note.payoffBoardId ? (lastHeld?.project?.boards?.find((meta) => meta.id === note.payoffBoardId)?.name ?? note.payoffBoardId) : null;
       const laterAt = note.payoffBoardId && note.payoffNoteId && lastHeld?.project ? ` at ${episodeLabel(lastHeld.project, lastHeld.boards, note.payoffBoardId, note.payoffNoteId)} "${lastHeld.boards[note.payoffBoardId]?.notes?.find((item) => item.id === note.payoffNoteId)?.headline ?? note.payoffNoteId}"` : "";
@@ -1368,13 +1370,14 @@ function summarize(state) {
       // Cards in the story; a version behind another is said apart, since it is not in the film until chosen (round twenty-two, entry 68).
       const on = state.notes.filter((note) => !note.alternativeOf && !note.aside && note.characterIds.includes(character.id)).length;
       const onBehind = state.notes.filter((note) => (note.alternativeOf || note.aside) && note.characterIds.includes(character.id)).length;
+      const maybeOn = state.notes.filter((note) => !note.alternativeOf && !note.aside && (note.maybeCharacterIds ?? []).includes(character.id)).length;
       // Which lines of their page are written, so an agent can see who is a
       // brief and who is still a name.
       const page = filledCharacterFields(character);
       const brief = page.length ? ` · page: ${page.join(", ")}` : " · page: empty";
       // On this board, and on the others (R51): a per-board count beside a project-wide check read as a contradiction (round sixteen, entry 18).
       const away = lastHeld?.project ? (castElsewhere(lastHeld.project, lastHeld.boards, lastHeld.project.activeBoardId)[character.id] ?? []).reduce((sum, item) => sum + item.cards, 0) : 0;
-      return `  - ${character.id} — "${character.name}" on ${on} card${on === 1 ? "" : "s"} of this board${onBehind ? ` (and ${onBehind} not in the film — behind as another version, or set aside — not counted)` : ""}${away ? ` and ${away} of other boards` : ""}${brief}`;
+      return `  - ${character.id} — "${character.name}" on ${on} card${on === 1 ? "" : "s"} of this board${maybeOn ? ` (and maybe ${maybeOn} more: not decided, counted neither way)` : ""}${onBehind ? ` (and ${onBehind} not in the film — behind as another version, or set aside — not counted)` : ""}${away ? ` and ${away} of other boards` : ""}${brief}`;
     })
     .join("\n");
   const placeCounts = new Map();
@@ -1660,7 +1663,7 @@ server.registerTool(
   {
     title: "Create note",
     description:
-      "Add a card (post-it) to the board. A card is one scene: a headline plus the change it causes. Provide both headline and change. Optionally set color, x/y position, rank ('beat' for one of the major turns — a beat is a whole card, the scene where the turn happens), pages (how long it runs; leave it out and the card is taken to be about a page), plants (true if this scene sets something up that must pay off later), location (where it happens, as the writer would say it — 'the piano shop', not 'INT. PIANO SHOP'), and characters (who is in the scene, by name; a name not in the cast yet is added to it — name an unnamed person by their role, 'Dana's mother', rather than leaving them off). The reply names the card's id.",
+      "Add a card (post-it) to the board. A card is one scene: a headline plus the change it causes. Provide both headline and change. Optionally set color, x/y position, rank ('beat' for one of the major turns — a beat is a whole card, the scene where the turn happens), pages (how long it runs; leave it out and the card is taken to be about a page), plants (true if this scene sets something up that must pay off later), location (where it happens, as the writer would say it — 'the piano shop', not 'INT. PIANO SHOP'), and characters (who is in the scene, by name; a name not in the cast yet is added to it — name an unnamed person by their role, 'Dana's mother', rather than leaving them off). When the writer does not know whether someone is in the scene, put a question mark after the name — 'Tomás?' — and the wall holds it as not decided: listed under open, never asked, and counted neither way by the cast's counts or the check for someone gone too long; the name without the mark decides it, and leaving the name off decides it the other way. Only on the writer's word. The reply names the card's id.",
     inputSchema: {
       headline: z.string().min(1),
       change: z.string().optional().describe("What is different when the scene ends. Required, unless the writer has not decided it: then pass changeOpen with their words, and the change line waits while every other question about the card stands. (A card born wholly open, with open, may also wait.)"),
@@ -1728,17 +1731,22 @@ server.registerTool(
       }).result;
       if (names.length && made?.id) {
         const ids = [];
-        for (const name of names) {
+        const maybeIds = [];
+        for (const typed of names) {
+          // "Tomás?" — someone who may or may not be in it (H9).
+          const { name, maybe } = readMaybe(typed);
+          if (!name) continue;
           const wanted = name.toLowerCase();
           let person = current().characters.find((item) => item.id === name) ?? current().characters.find((item) => item.name.trim().toLowerCase() === wanted);
           if (!person) {
             person = step({ type: "add_character", name }).result;
             if (person) added.push(`${person.name} (${person.id})`);
           }
-          if (person && !ids.includes(person.id)) ids.push(person.id);
+          const into = maybe ? maybeIds : ids;
+          if (person && !ids.includes(person.id) && !maybeIds.includes(person.id)) into.push(person.id);
         }
-        if (ids.length) {
-          const cast = step({ type: "set_cast", ids: [made.id], characterIds: ids });
+        if (ids.length || maybeIds.length) {
+          const cast = step({ type: "set_cast", ids: [made.id], characterIds: ids, maybeCharacterIds: maybeIds });
           // The card as it is now, cast and all, so the reply's JSON agrees with its prose.
           made = cast.state.notes.find((note) => note.id === made.id) ?? made;
         }
@@ -1765,7 +1773,7 @@ server.registerTool(
       }
       return made;
     });
-    const castLine = names.length && result?.id ? ` Cast: ${names.join(", ")}${added.length ? ` (added to the roster: ${added.join(", ")})` : ""}.` : "";
+    const castSaid = names.length && result?.id ? ` Cast: ${castLine(result.characterIds, result.maybeCharacterIds, after.characters)}${added.length ? ` (added to the roster: ${added.join(", ")})` : ""}${(result.maybeCharacterIds ?? []).length ? " — a name with ? is not decided: listed under open, counted neither way" : ""}.` : "";
     const landed = [
       result?.rank === "beat" ? "a beat" : "a scene",
       result?.lengthEighths === null ? "about a page (unsized: the writer's guess until set_length)" : `${formatPages(noteEighths(result))} ${formatPages(noteEighths(result)) === "1" ? "page" : "pages"}`,
@@ -1782,7 +1790,7 @@ server.registerTool(
       : args.x === undefined && args.y === undefined ? ` Placed after the last card in story order.${once("placed", " organize lays the wall out along the arrows.")}` : "";
     // Under a lock a new scene has a letter, not a number: say it, since the board is the only other place to learn it (round fourteen, entry 44).
     const numbered = after?.lock && result?.id ? ` Numbered ${sceneNumbers(storyOrder(after), after.lock).get(result.id)} (the numbers are locked; a new scene's letter is its place between locked ones now, worked out again from where it sits if it moves; the locked numbers never move).` : "";
-    return ok(`Created card ${result?.id ?? ""}: ${landed}${where(live)}.${castLine}${placed}${numbered}`, result);
+    return ok(`Created card ${result?.id ?? ""}: ${landed}${where(live)}.${castSaid}${placed}${numbered}`, result);
   },
 );
 
@@ -1790,7 +1798,7 @@ server.registerTool(
   "update_note",
   {
     title: "Update note",
-    description: "Change the headline, change line, location and/or when of an existing card by id. The reply says which field changed, from what to what. A change line the writer has not decided: pass changeOpen with their words — \"I don't know yet\" — and the line waits, listed by the reading and not asked for, while the card's other questions stand; a change line decides it and clears the words; changeOpen \"\" takes the words back.",
+    description: "Change the headline, change line, location and/or when of an existing card by id. The reply says which field changed, from what to what. A change line the writer has not decided: pass changeOpen with their words — \"I don't know yet\" — and the line waits, listed by the reading and not asked for, while the card's other questions stand; a change line decides it and clears the words; changeOpen \"\" takes the words back. A decided fact about one scene has three homes and no fourth: the change line when it is what changes (\"the cut is announced\" is what is different after the scene); a [[note]] in the scene's text when it is not, which neither prints nor counts; the premise when it is true of the whole film. A card has two lines on purpose: do not park a fact in the change line beside the change.",
     inputSchema: {
       id: z.string(),
       headline: z.string().optional(),
@@ -1955,7 +1963,7 @@ server.registerTool(
       // Who is in the film and where it happens, so "read it back to me" is one call (round twenty-two, entry 29). list_board has each person's page and every card's cast.
       ...(() => {
         const film = state.notes.filter((note) => !note.alternativeOf && !note.aside);
-        const cast = (state.characters ?? []).map((person) => ({ name: person.name, on: film.filter((note) => (note.characterIds ?? []).includes(person.id)).length })).sort((a, b) => b.on - a.on);
+        const cast = (state.characters ?? []).map((person) => ({ name: person.name, on: film.filter((note) => (note.characterIds ?? []).includes(person.id)).length, maybe: film.filter((note) => (note.maybeCharacterIds ?? []).includes(person.id)).length })).sort((a, b) => b.on - a.on);
         const byPlace = new Map();
         for (const note of film) {
           const place = (note.location ?? "").trim();
@@ -1965,7 +1973,7 @@ server.registerTool(
         }
         const places = [...byPlace.values()].sort((a, b) => b.on - a.on);
         return [
-          `cast: ${cast.length ? cast.map((person) => `${person.name} (${person.on === 0 ? "on no card" : `${person.on} scene${person.on === 1 ? "" : "s"}`})`).join(", ") : "(nobody yet)"}`,
+          `cast: ${cast.length ? cast.map((person) => `${person.name} (${person.on === 0 ? (person.maybe ? "on no card for certain" : "on no card") : `${person.on} scene${person.on === 1 ? "" : "s"}`}${person.maybe ? `, and maybe ${person.maybe} more` : ""})`).join(", ") : "(nobody yet)"}`,
           `places: ${places.length ? places.map((item) => `${item.place} (${item.on})`).join(", ") : "(none yet)"}`,
         ];
       })(),
@@ -3682,7 +3690,7 @@ server.registerTool(
   {
     title: "Cast a scene",
     description:
-      "Set who is in one or more cards of the open board (open_board first for another board's cards). Takes card ids and character names or ids; the list replaces the card's cast, so pass everyone who is in the scene. An empty list clears it. A name not yet in the cast is added to it, as create_note does, and the reply says so — the writer named them, so it is not inventing; a role is a name.",
+      "Set who is in one or more cards of the open board (open_board first for another board's cards). Takes card ids and character names or ids; the list replaces the card's cast, so pass everyone who is in the scene. An empty list clears it. A name not yet in the cast is added to it, as create_note does, and the reply says so — the writer named them, so it is not inventing; a role is a name. When the writer does not know whether someone is in the scene, put a question mark after the name — 'Tomás?' — and the wall holds it as not decided: listed under open, never asked, and counted neither way by the cast's counts or the check for someone gone too long; the name without the mark decides it, and leaving the name off decides it the other way. Only on the writer's word.",
     inputSchema: {
       noteIds: z.array(z.string()).min(1),
       characters: z.array(z.string()),
@@ -3694,18 +3702,23 @@ server.registerTool(
     const added = [];
     const { state, changed, value: result, live } = await commitAll(`cast ${args.noteIds.length} card(s)`, (step, current) => {
       const characterIds = [];
-      for (const who of args.characters) {
-        const wanted = who.trim().toLowerCase();
+      const maybeCharacterIds = [];
+      for (const typed of args.characters) {
+        // "Tomás?" — someone who may or may not be in it (H9). The list replaces the card's cast, its maybes with it.
+        const { name: who, maybe } = readMaybe(typed);
+        const wanted = who.toLowerCase();
         let person = current().characters.find((character) => character.id === who || character.name.trim().toLowerCase() === wanted);
         if (!person && wanted) {
-          person = step({ type: "add_character", name: who.trim() }).result;
+          person = step({ type: "add_character", name: who }).result;
           if (person) added.push(`${person.name} (${person.id})`);
         }
-        if (person && !characterIds.includes(person.id)) characterIds.push(person.id);
+        const into = maybe ? maybeCharacterIds : characterIds;
+        if (person && !characterIds.includes(person.id) && !maybeCharacterIds.includes(person.id)) into.push(person.id);
       }
-      return step({ type: "set_cast", ids: args.noteIds, characterIds }).result;
+      return step({ type: "set_cast", ids: args.noteIds, characterIds, maybeCharacterIds }).result;
     });
     const characterIds = (result ?? []).length ? result[0].characterIds : [];
+    const maybeIds = (result ?? []).length ? (result[0].maybeCharacterIds ?? []) : [];
     if (!changed) {
       const missing = args.noteIds.filter((id) => !state.notes.some((note) => note.id === id));
       return ok(
@@ -3717,8 +3730,9 @@ server.registerTool(
     const names = characterIds.map(
       (id) => state.characters.find((character) => character.id === id)?.name ?? id,
     );
+    const maybeNames = maybeIds.map((id) => state.characters.find((character) => character.id === id)?.name ?? id);
     return ok(
-      `${result.length} card(s) now cast ${names.length ? names.join(", ") : "nobody"}: ${result.map((note) => `"${note.headline}"`).join(", ")}${added.length ? ` (added to the cast: ${added.join(", ")})` : ""}${where(live)}.${stillOpen(result)}`,
+      `${result.length} card(s) now cast ${names.length ? names.join(", ") : "nobody"}${maybeNames.length ? `, with ${maybeNames.join(", ")} not decided (listed under open, counted neither way; the name without the mark decides it)` : ""}: ${result.map((note) => `"${note.headline}"`).join(", ")}${added.length ? ` (added to the cast: ${added.join(", ")})` : ""}${where(live)}.${stillOpen(result)}`,
       result,
     );
   },

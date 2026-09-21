@@ -1483,7 +1483,24 @@ function summarize(state) {
 // PLOTCODER_JSON=0 drops the JSON tail from every reply, for an agent that
 // reads the sentence and wants nothing more (a blind run found 400-line replies).
 const TEXT_ONLY = env.PLOTCODER_JSON !== "1";
-function ok(text, data) {
+/**
+ * Through the hosted door a reply never promises this server's undo: it is a
+ * fresh server on every call and keeps no trail, so "undo brings it back" is
+ * false there, and an agent cannot test it without risking the writer's work
+ * (round twenty-three, entry 71). The writer's ⌘Z on the wall is true at
+ * every door.
+ */
+function undoAsThisDoorHasIt(text) {
+  if (!hosted()) return text;
+  return text
+    .replace(/\bundo brings all of it back\b/g, "the writer's ⌘Z on the wall brings all of it back (this door keeps no undo of its own)")
+    .replace(/\b[Oo]ne undo takes (it all|the whole move) back\b/g, (_, what) => `one ⌘Z on the writer's wall takes ${what} back (this door keeps no undo of its own)`)
+    .replace(/\bundo takes back the leaving\b/g, "the writer's ⌘Z on the wall takes back the leaving")
+    .replace(/ One undo step\./g, " One ⌘Z step on the writer's wall.");
+}
+
+function ok(rawText, data) {
+  const text = undoAsThisDoorHasIt(rawText);
   const body = data === undefined || TEXT_ONLY ? text : `${text}\n\n${JSON.stringify(data, null, 2)}`;
   return { content: [{ type: "text", text: body }] };
 }
@@ -1514,7 +1531,8 @@ const server = new McpServer({ name: "plotcoder-board", version: packageVersion(
 const registerTool = server.registerTool.bind(server);
 let lane = Promise.resolve();
 server.registerTool = (name, config, handler) =>
-  registerTool(name, config, (...args) => {
+  // A tool's description promises what its reply does, so it says undo as this door has it too.
+  registerTool(name, { ...config, description: undoAsThisDoorHasIt(config.description ?? "") }, (...args) => {
     const turn = lane.then(async () => {
       await recallSession();
       try {

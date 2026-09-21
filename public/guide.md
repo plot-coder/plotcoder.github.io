@@ -123,10 +123,16 @@ only when the server is started with `PLOTCODER_JSON=1`.
   scenes unwritten — so a quiet wall is never taken for a finished one. Its
   open section lists the project's open fields, one grouped line where the
   same words sit on three or more cards, then each card once with everything
-  open on it. Under a separate head, "not said yet", it lists what is simply
-  blank — no place, no when, no length, nobody in it. Blank is not open: open
-  is the writer's word, blank is nobody's, so never tell the writer they left
-  something open that they only have not said.
+  open on it. Under a separate head, "blank on the wall", it lists what has
+  no value and no words of the writer's beside it — no place, no when, no
+  length, nobody in it. Blank is a fact about the wall, not about the writer:
+  never tell the writer they left something open that they only have not said,
+  and never tell them they have not said something they told you. A place, a
+  when, a change line and a named person each have an open of their own; a
+  length, the acts, and who is in a scene when nobody is named do not yet, so
+  a writer's "I don't know" about those lives with you until they decide, and
+  a question the wall asks about one of them is `leave_question`'s, with their
+  reason.
 - `leave_question` / `ask_again` — the writer's word on a question: "leave
   it". Pass the kind as `read_wall` names it, and the ids when that kind is
   asked more than once. A leave is the open board's: to leave a question on
@@ -366,7 +372,9 @@ card of another board is not asked about as uncast here.
   reading lists "whether Tomás is in it" under open and never asks; the cast's
   counts say "3 scenes, and maybe 1 more"; and the check for someone gone a
   third of the story counts only scenes he is certainly in, naming the maybe
-  when it sits inside the gap. The name without the mark decides it; leaving
+  when it sits inside the gap. Someone whose only card is a maybe is **not**
+  asked about as "in the cast but on no card" — the writer has said where they
+  may be — and a card whose only person is a maybe is not asked who is in it. The name without the mark decides it; leaving
   the name off decides it the other way. Only on the writer's word — and not
   `set_open`, which says the whole card is undecided when one person is.
 - **Acts** are not a thing the app knows. The wall reads left to right and a
@@ -655,9 +663,16 @@ than a dictionary's, so the app and you never explain a word two ways.
   session's first `read_wall` it counts and points — "the wall's questions
   have changed since your last read_wall: 4 now, 2 of them new" — because a
   build is a run of writes whose quoted questions the next write answers;
-  after the first reading it quotes them. Through the hosted door
-  (`mcp.plotcoder.com`) it quotes from the first write: that door keeps no
-  session, so it cannot know what you have read.
+  after the first reading it quotes them. The hosted door
+  (`mcp.plotcoder.com`) remembers the same things from one call to the next —
+  what you have read, which advice it has said — by the session your client
+  opened; a client that sends no session gets the quoting tail from the first
+  write and no once-a-session advice. **What that door does not keep is an
+  undo:** `undo` there says so, and its replies never promise one. The writer's
+  ⌘Z on the wall takes any change back; to take one back yourself, make the
+  opposite change — and "undo that scene" from a writer, when other changes
+  they want have landed since, is `delete_note` or `set_aside`, never a walk
+  back through the stack.
 - **The account tail** says presence only when it has changed since the
   last reply — otherwise just "saved to the account" — so a change is
   noticed. It says what the wall shows: "open on Robert's screen

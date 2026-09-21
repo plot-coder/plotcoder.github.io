@@ -672,9 +672,16 @@ than a dictionary's, so the app and you never explain a word two ways.
   session's first `read_wall` it counts and points — "the wall's questions
   have changed since your last read_wall: 4 now, 2 of them new" — because a
   build is a run of writes whose quoted questions the next write answers;
-  after the first reading it quotes them. Through the hosted door
-  (`mcp.plotcoder.com`) it quotes from the first write: that door keeps no
-  session, so it cannot know what you have read.
+  after the first reading it quotes them. The hosted door
+  (`mcp.plotcoder.com`) remembers the same things from one call to the next —
+  what you have read, which advice it has said — by the session your client
+  opened; a client that sends no session gets the quoting tail from the first
+  write and no once-a-session advice. **What that door does not keep is an
+  undo:** `undo` there says so, and its replies never promise one. The writer's
+  ⌘Z on the wall takes any change back; to take one back yourself, make the
+  opposite change — and "undo that scene" from a writer, when other changes
+  they want have landed since, is `delete_note` or `set_aside`, never a walk
+  back through the stack.
 - **The account tail** says presence only when it has changed since the
   last reply — otherwise just "saved to the account" — so a change is
   noticed. It says what the wall shows: "open on Robert's screen

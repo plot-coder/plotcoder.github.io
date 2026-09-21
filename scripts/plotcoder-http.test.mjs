@@ -182,6 +182,19 @@ describe("a session through the hosted door", () => {
       expect(broken).toContain("Created");
     });
 
+    it("never promises its own undo in a write's reply: the writer's ⌘Z is what is true here (round twenty-three, entry 71)", async () => {
+      const made = await request("create_note", { headline: "To be deleted", change: "Something.", x: 6000, y: 2000 });
+      const id = made.match(/Created card ([0-9a-f-]{36})/)?.[1];
+      const gone = await request("delete_note", { id });
+      expect(gone).toContain("Deleted");
+      expect(gone).not.toMatch(/\bundo brings\b/);
+      // The description is where the promise was read: through the door it says the writer's ⌘Z.
+      const listed = await rpc("tools/list", {}, 9);
+      const described = listed.body.result.tools.find((tool) => tool.name === "delete_note").description;
+      expect(described).not.toMatch(/\bundo brings\b/);
+      expect(described).toContain("⌘Z on the wall brings all of it back");
+    });
+
     it("says undo keeps no trail through this door, rather than that nothing was changed", async () => {
       const reply = await request("undo");
       expect(reply).toContain("keeps no trail");

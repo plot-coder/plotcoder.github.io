@@ -17,7 +17,7 @@
 // before any tidy — the arrows are the writer's claim about the order, and
 // where they say nothing the positions decide.
 
-import { isMeasured, boardEighths, EIGHTHS_PER_PAGE, formatPages, noteEighths, readingOrder, storyOrder } from "./reducer.js";
+import { isMeasured, boardEighths, EIGHTHS_PER_PAGE, formatPages, inStory, noteEighths, readingOrder, storyOrder } from "./reducer.js";
 
 // The two orders live in the kernel (R62: a thread's cards are held in story
 // order), and every reader still imports them from here.
@@ -433,6 +433,8 @@ export function readWall(state, options = {}) {
       if (elsewhere.has(character.id)) continue;
       // On no card for certain, and the writer has said where they may be: open, not a question.
       if (maybes.length) continue;
+      // Only on a card the writer set aside, or on a version behind another: they come in where that card does, if it ever comes back. Asking would be asking about a scene the writer cut (round twenty-three, entry 19).
+      if (state.notes.some((note) => !inStory(note) && (note.characterIds?.includes(character.id) || note.maybeCharacterIds?.includes(character.id)))) continue;
       findings.push({
         kind: "uncast",
         ids: [character.id],

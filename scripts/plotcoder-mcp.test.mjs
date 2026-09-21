@@ -511,7 +511,10 @@ describe("plotcoder MCP server", () => {
     const state = await client.callToolData("list_board");
     const id = state.notes.at(-1).id;
 
-    expect(await client.callTool("move_note", { id, x: 100, y: 200 })).toContain("Moved card.");
+    // Which card, from where, to where (round twenty-three, entry 23).
+    const moved = await client.callTool("move_note", { id, x: 100, y: 200 });
+    expect(moved).toMatch(/^Moved ".+" from 640,320 to 100,200/);
+    expect(await client.callTool("move_note", { id, x: 100, y: 200 })).toContain("is already at 100,200");
     expect(await client.callTool("recolor_note", { id, color: "pink" })).toContain("Recolored");
     expect(await client.callTool("update_note", { id, change: "Tom will never know." })).toContain(
       'Updated "',

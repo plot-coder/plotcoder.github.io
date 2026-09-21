@@ -995,3 +995,21 @@ describe("a person who may or may not be in a scene (round twenty-two, H9)", () 
     expect(reading.openFields).toContainEqual({ field: "cast", id: "b2", words: "whether Tom and Ngozi are in it" });
   });
 });
+
+describe("a person who is only in a scene the writer cut (round twenty-three, entry 19)", () => {
+  it("is not asked where they come in: the card set aside is where, if it ever comes back", () => {
+    let state = run(
+      wall({ id: "a", rank: "beat" }, { id: "cut", headline: "At the audiologist's" }),
+      { type: "add_character", id: "ada", name: "Ada" },
+      { type: "add_character", id: "aud", name: "The audiologist" },
+      { type: "set_cast", ids: ["a"], characterIds: ["ada"] },
+      { type: "set_cast", ids: ["cut"], characterIds: ["ada", "aud"] },
+    );
+    expect(readWall(state).findings.filter((f) => f.kind === "uncast")).toEqual([]);
+    state = run(state, { type: "set_aside", ids: ["cut"], aside: true });
+    expect(readWall(state).findings.filter((f) => f.kind === "uncast")).toEqual([]);
+    // Someone on no card at all is still asked about.
+    state = run(state, { type: "add_character", id: "n", name: "Ngozi" });
+    expect(readWall(state).findings.filter((f) => f.kind === "uncast").map((f) => f.ids)).toEqual([["n"]]);
+  });
+});

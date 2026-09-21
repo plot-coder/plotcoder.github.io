@@ -1839,9 +1839,13 @@ server.registerTool(
     inputSchema: { id: z.string(), x: z.number(), y: z.number() },
   },
   async (args) => {
-    const { result } = await commit({ type: "move_note", id: args.id, x: args.x, y: args.y });
+    const { state: before } = await readBoard();
+    const was = before.notes.find((note) => note.id === args.id);
+    const { result, changed, live } = await commit({ type: "move_note", id: args.id, x: args.x, y: args.y });
     if (result === undefined) return ok(`No card with id ${args.id}.`);
-    return ok("Moved card.", result);
+    // Which card, from where, to where, and where it was saved: every other write says (round twenty-three, entry 23).
+    if (!changed || (was && Math.round(was.x) === Math.round(result.x) && Math.round(was.y) === Math.round(result.y))) return ok(`"${result.headline}" is already at ${Math.round(result.x)},${Math.round(result.y)}.`, result);
+    return ok(`Moved "${result.headline}" from ${Math.round(was?.x ?? 0)},${Math.round(was?.y ?? 0)} to ${Math.round(result.x)},${Math.round(result.y)}${where(live)}. Position is where the card is drawn, never the story's order: the arrows are.`, result);
   },
 );
 
@@ -1937,6 +1941,8 @@ server.registerTool(
       wouldAsk: (item) => (item.hides.length ? ` (closed, it would be asked ${item.hides.map((kind) => ASK_WORDS[kind] ?? CHECK_WORDS[kind] ?? kind).join("; ")})` : ""),
     });
     // Fields, not lines: a card's line can carry three of them.
+    // What is open about a person is counted at the head, so it is counted here: the two lines must add up to one number (round twenty-three, entry 26).
+    const openPeopleCount = reading.openPeople?.length ?? 0;
     const openFieldCount = reading.openFields.length + (projectForRead.nameOpen ? 1 : 0) + (state.targetOpen ? 1 : 0) + (projectForRead.premiseOpen ? 1 : 0) + (readBoardMeta?.nameOpen ? 1 : 0);
     // The short read (round twenty-two, entry 83): confirming nothing was owed cost three hundred lines.
     if (args?.only === "questions") {
@@ -2037,7 +2043,7 @@ server.registerTool(
         const counts = new Map();
         for (const finding of asked) counts.set(finding.kind, (counts.get(finding.kind) ?? 0) + 1);
         return `asking ${asked.length} question${asked.length === 1 ? "" : "s"} of ${counts.size} kind${counts.size === 1 ? "" : "s"}: ${[...counts.entries()].map(([kind, n]) => (n > 1 ? `${kind} ×${n}` : kind)).join(", ")}${held}`;
-      })()}${reading.left.length ? `; left by the writer, so not clean: ${[...new Set(reading.left.map((finding) => finding.kind))].map((kind) => `[${kind}]`).join(" ")}` : ""}${reading.open.length || openFieldCount ? `; ${[reading.open.length ? `${reading.open.length} card${reading.open.length === 1 ? "" : "s"}` : "", openFieldCount ? `${openFieldCount} field${openFieldCount === 1 ? "" : "s"}` : ""].filter(Boolean).join(" and ")} open by the writer's word, not asked` : ""}; checked and clean: ${CHECKS.filter((kind) => !reading.findings.some((finding) => finding.kind === kind) && !reading.left.some((finding) => finding.kind === kind)).map((kind) => {
+      })()}${reading.left.length ? `; left by the writer, so not clean: ${[...new Set(reading.left.map((finding) => finding.kind))].map((kind) => `[${kind}]`).join(" ")}` : ""}${reading.open.length || openFieldCount || openPeopleCount ? `; ${[reading.open.length ? `${reading.open.length} card${reading.open.length === 1 ? "" : "s"}` : "", openFieldCount ? `${openFieldCount} field${openFieldCount === 1 ? "" : "s"}` : "", openPeopleCount ? `${openPeopleCount} thing${openPeopleCount === 1 ? "" : "s"} about a person` : ""].filter(Boolean).join(", ")} open by the writer's word, not asked (the ${reading.open.length + openFieldCount + openPeopleCount} at the head)` : ""}; checked and clean: ${CHECKS.filter((kind) => !reading.findings.some((finding) => finding.kind === kind) && !reading.left.some((finding) => finding.kind === kind)).map((kind) => {
         // The reading's own numbers: follows arrows and the film's cards, not setup arrows and the wall's (round twenty-two, entry 20).
         if (kind === "unlinked" && reading.wired.linked === 0) return "no card without a follows arrow (not asked until half the film's cards are wired: no follows arrows yet)";
         if (kind === "unlinked" && reading.wired.linked * 2 < reading.wired.of) return `no card without a follows arrow (not asked until half the film's cards are wired: ${reading.wired.linked} of ${reading.wired.of} are; a setup arrow is a claim, not a place in the story)`;

@@ -1940,7 +1940,9 @@ server.registerTool(
       return ids.length ? `${line} — ${ids.map((id) => `"${state.notes.find((note) => note.id === id)?.headline ?? id}"`).join(", ")}` : line;
     });
     // No blank lines: ok() splits prose from payload on the first one.
-    const written = state.notes.filter((note) => isMeasured(note)).length;
+    // The film's cards only: a card set aside or behind as a version is out of the count in every other line (round twenty-three, entry 65).
+    const filmCards = state.notes.filter((note) => !note.alternativeOf && !note.aside);
+    const written = filmCards.filter((note) => isMeasured(note)).length;
     // Whose number the runtime is (round eighteen, entries 45, 47, 50): once a
     // scene is written the total is part measure, part guess, part default,
     // and the reading says which, the same way list_board does.
@@ -2013,7 +2015,7 @@ server.registerTool(
               .join("; ")
           : "(none)"
       }`,
-      `pages: ${written === 0 ? "all estimates — no scene is written yet, so every card is the writer's guess" : written === state.notes.length ? "measured — every scene is written" : `estimates — ${written} of ${state.notes.length} cards are written${written <= 5 ? ` (${state.notes.filter((note) => isMeasured(note)).map((note) => `"${note.headline}"`).join(", ")})` : ""}, the rest are guesses`}`,
+      `pages: ${written === 0 ? "all estimates — no scene is written yet, so every card is the writer's guess" : written === filmCards.length ? "measured — every scene is written" : `estimates — ${written} of ${filmCards.length} cards are written${written <= 5 ? ` (${filmCards.filter((note) => isMeasured(note)).map((note) => `"${note.headline}"`).join(", ")})` : ""}, the rest are guesses`}`,
       // A wall with cards and no follows arrows has no story order yet; say so rather than read the rows as one (round seventeen, entries 10, 11).
       `story order: ${state.notes.length > 1 && !state.arrows.some((arrow) => arrow.kind !== "setup") ? "unset — no follows arrows, so the rows stand in for it; create_arrow the sequence and the reading, the numbers and every export follow the arrows" : "the follows arrows, and the rows where they say nothing"}`,
       `beats in wall order: ${

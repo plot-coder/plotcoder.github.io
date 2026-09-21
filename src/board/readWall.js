@@ -679,7 +679,8 @@ export function describeUndecided(state, reading, extras = {}) {
   }
 
   // Not said yet: blank, and nobody has said why.
-  const cards = reading.order.map((id) => byId.get(id)).filter(Boolean);
+  // A card wholly open by the writer's word is not blank in any field: "that is all I know about it" covers them all (round twenty-three, entry 66).
+  const cards = reading.order.map((id) => byId.get(id)).filter(Boolean).filter((note) => !(note.open ?? "").trim());
   const list = (notes) => (notes.length === cards.length && cards.length > 1 ? `every card (${notes.length})` : notes.length > 6 ? `${notes.length} of ${cards.length} cards` : notes.map((note) => name(note.id)).join(", "));
   const blank = [];
   const noPlace = cards.filter((note) => !(note.location ?? "").trim() && !(note.locationOpen ?? "").trim());

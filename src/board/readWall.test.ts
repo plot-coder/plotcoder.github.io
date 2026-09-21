@@ -93,9 +93,10 @@ describe("everything undecided in one place (round twenty-two, entries 41, 43, 6
   it("lists what is simply not said under its own head, never as open", () => {
     const state = wall();
     const { open, blank } = describeUndecided(state, readWall(state));
-    expect(blank).toContain('  - no place: "B", "D"');
-    expect(blank).toContain('  - no when: "B", "C", "D"');
-    expect(blank).toContain('  - no length (read as a page each): "A", "B", "D"');
+    // "B" is wholly open by the writer's word, so nothing on it is blank (round twenty-three, entry 66).
+    expect(blank).toContain('  - no place: "D"');
+    expect(blank).toContain('  - no when: "C", "D"');
+    expect(blank).toContain('  - no length (read as a page each): "A", "D"');
     expect(open.join("\n")).not.toContain("no place");
     // Nobody in it is only a blank once the wall has a cast.
     expect(blank.some((line) => line.includes("nobody in it"))).toBe(false);

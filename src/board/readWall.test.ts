@@ -237,7 +237,7 @@ describe("findings", () => {
 
   it("returns nothing at all for an empty board", () => {
     const reading = readWall(emptyState());
-    expect(reading).toEqual({ order: [], beats: [], runs: [], setups: [], payoffs: {}, later: [], paidBy: [], open: [], openFields: [], versions: [], openPeople: [], wired: { linked: 0, of: 0 }, aside: [], threads: [], findings: [], left: [] });
+    expect(reading).toEqual({ order: [], beats: [], runs: [], setups: [], payoffs: {}, later: [], paidBy: [], open: [], openLines: [], openFields: [], versions: [], openPeople: [], wired: { linked: 0, of: 0 }, aside: [], threads: [], findings: [], left: [] });
   });
 
   it("notes that runs cannot be read until a beat is marked, and passes no judgement on the count", () => {
@@ -1050,5 +1050,16 @@ describe("who is in a scene, left open by the writer's word (round twenty-three,
     // Without the words the card is asked, as before.
     const bare = run(state, { type: "set_cast", ids: ["j"], characterIds: [], open: "" });
     expect(readWall(bare).findings.filter((f) => f.kind === "nobody")).toHaveLength(1);
+  });
+});
+
+describe("what is not decided about the film itself (round twenty-three, entries 15, 16)", () => {
+  it("is listed with what is open, before any card, and asks nothing", () => {
+    const state = run(wall({ id: "a", rank: "beat" }), { type: "add_open_line", text: "Whether it has acts, and where they break." });
+    const before = readWall(wall({ id: "a", rank: "beat" }));
+    const reading = readWall(state);
+    expect(reading.openLines).toEqual(["Whether it has acts, and where they break."]);
+    expect(reading.findings).toEqual(before.findings);
+    expect(describeUndecided(state, reading).open[0]).toBe("  - about the film — Whether it has acts, and where they break.");
   });
 });

@@ -614,6 +614,7 @@ function atAGlance(state, reading, project = null, boardMeta = null) {
   const open =
     reading.open.length +
     reading.openFields.length +
+    (reading.openLines?.length ?? 0) +
     (reading.openPeople?.length ?? 0) +
     (state.targetOpen ? 1 : 0) +
     (project?.nameOpen ? 1 : 0) +
@@ -1454,6 +1455,7 @@ function summarize(state) {
     `left, for now: ${leftCount ? `${leftCount} question(s) the writer left; read_wall lists them` : "none"}`,
     `beats: ${beats}, scenes: ${scenes}${state.notes.some((note) => note.alternativeOf) ? ` — and ${state.notes.filter((note) => note.alternativeOf).length} behind as other versions, out of the count` : ""}${state.notes.some((note) => note.aside) ? ` — and ${state.notes.filter((note) => note.aside).length} set aside, not in the film` : ""}`,
     ...runtimeBlock(state),
+    ...((state.openLines ?? []).length ? ["not decided yet, about the film (the writer's sentences; listed, never asked; strike_open_line when one is decided):", ...state.openLines.map((line, index) => `  ${index + 1}. ${line}`)] : []),
     `notes: ${state.notes.length}, groups: ${state.groups.length}, arrows: ${state.arrows.length}, cast: ${state.characters.length}`,
     "cards (in story order — the follows arrows over the rows; each with its id):",
     notes || "  (no cards)",
@@ -1567,6 +1569,37 @@ server.registerTool(
       `PlotCoder ${which} (${door(live, base)})\n${summarize(state)}`,
       { ...state, revision: state.revision ? { name: state.revision.name, color: state.revision.color, since: state.revision.since } : null, notes: state.notes.map((note) => ({ ...note, eighths: noteEighths(note), measured: isMeasured(note) })) },
     );
+  },
+);
+
+server.registerTool(
+  "add_open_line",
+  {
+    title: "Not decided yet, about the film",
+    description:
+      "Hold something the writer has not decided about the film itself, in their own sentence, when it is true of no one card: when it happens (the season, the year), whether it has acts and where they break, what runs long or short, whether there are other plants, a place that may or may not be in it. One sentence a call. The wall shows the list under the logline and the reading lists it first under open and never asks about it. Not for a card's place, when, change line or cast, which have opens of their own, and never a sentence of yours: only what the writer said they do not know. strike_open_line when they decide.",
+    inputSchema: { text: z.string().min(1).describe("The writer's sentence, as they would read it back: \"Whether it has acts, and where they break.\"") },
+  },
+  async (args) => {
+    const { state, changed, result, live } = await commit({ type: "add_open_line", text: args.text });
+    if (!changed) return ok(`Nothing changed: the film's list already has that sentence${(state.openLines ?? []).length ? ` — ${state.openLines.map((line, index) => `${index + 1}. ${line}`).join(" ")}` : ""}.`);
+    return ok(`Held, about the film: "${result.line}"${where(live)}. ${result.openLines.length} not decided yet about the film; the reading lists them first under open and asks nothing. strike_open_line takes one off when the writer decides it.`, result);
+  },
+);
+
+server.registerTool(
+  "strike_open_line",
+  {
+    title: "Decided: strike a line about the film",
+    description:
+      "Take a sentence off the film's not-decided list, when the writer has decided it: by its number as list_board shows it, or by its words. What they decided goes where it belongs — the premise, a group for an act, a card's when — with that field's own tool; this only strikes the line.",
+    inputSchema: { line: z.union([z.number().int().positive(), z.string().min(1)]).describe("The line's number in list_board, from 1, or its words.") },
+  },
+  async (args) => {
+    const command = typeof args.line === "number" ? { type: "strike_open_line", index: args.line - 1 } : { type: "strike_open_line", text: args.line };
+    const { state, changed, result, live } = await commit(command);
+    if (!changed) return ok(`Nothing struck: no such line. ${(state.openLines ?? []).length ? `The film's list: ${state.openLines.map((line, index) => `${index + 1}. ${line}`).join(" ")}` : "Nothing is held as not decided about the film."}`);
+    return ok(`Struck, as decided: "${result.line}"${where(live)}. ${result.openLines.length} still not decided about the film. Where what they decided belongs is that field's own tool.`, result);
   },
 );
 
@@ -1985,7 +2018,7 @@ server.registerTool(
     // Fields, not lines: a card's line can carry three of them.
     // What is open about a person is counted at the head, so it is counted here: the two lines must add up to one number (round twenty-three, entry 26).
     const openPeopleCount = reading.openPeople?.length ?? 0;
-    const openFieldCount = reading.openFields.length + (projectForRead.nameOpen ? 1 : 0) + (state.targetOpen ? 1 : 0) + (projectForRead.premiseOpen ? 1 : 0) + (readBoardMeta?.nameOpen ? 1 : 0);
+    const openFieldCount = reading.openFields.length + (reading.openLines?.length ?? 0) + (projectForRead.nameOpen ? 1 : 0) + (state.targetOpen ? 1 : 0) + (projectForRead.premiseOpen ? 1 : 0) + (readBoardMeta?.nameOpen ? 1 : 0);
     // The short read (round twenty-two, entry 83): confirming nothing was owed cost three hundred lines.
     if (args?.only === "questions") {
       return ok(

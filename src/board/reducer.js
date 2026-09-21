@@ -258,6 +258,8 @@ export function emptyState() {
     // The writer's word for the target when they gave a kind and not a number — "a feature" — or nothing (round twenty-two, entry 91).
     targetKind: "",
     loglineOpen: "",
+    // What is not decided about the film itself, in the writer's sentences (round twenty-three, entries 15, 16): nothing until the writer says.
+    openLines: [],
     characters: [],
     notes: [],
     groups: [],
@@ -323,6 +325,8 @@ export function seedState(now = nowIso()) {
     // The writer's word for the target when they gave a kind and not a number — "a feature" — or nothing (round twenty-two, entry 91).
     targetKind: "",
     loglineOpen: "",
+    // What is not decided about the film itself, in the writer's sentences (round twenty-three, entries 15, 16): nothing until the writer says.
+    openLines: [],
     // Two people, cast on the cards, so a new writer sees what the roster is for.
     characters: [
       fillCharacter({ id: "maya", name: "Maya", createdAt: now, updatedAt: now }),
@@ -504,6 +508,9 @@ export function normalizeState(value) {
     .filter(Boolean);
   // Boards written before R61 have no open logline; a logline is decided or blank until the writer says otherwise.
   const loglineOpen = typeof value.loglineOpen === "string" ? value.loglineOpen : "";
+  // Boards written before the film's own open lines have none: a sentence is the writer's or it is not there.
+  const openLines = cleanOpenLines(value.openLines);
+  const openLinesSame = Array.isArray(value.openLines) && value.openLines.length === openLines.length && value.openLines.every((line, index) => line === openLines[index]);
   // A target left open in the writer's words (the handover's calls, 2026-09-19): the number stands as the default meanwhile.
   const targetOpen = typeof value.targetOpen === "string" ? value.targetOpen : "";
   // Boards written before the target kept the writer's word have a number and no word: nothing is claimed.
@@ -511,6 +518,7 @@ export function normalizeState(value) {
   if (
     value.logline === logline &&
     value.loglineOpen === loglineOpen &&
+    openLinesSame &&
     value.targetEighths === targetEighths &&
     value.targetOpen === targetOpen &&
     value.targetKind === targetKind &&
@@ -528,6 +536,7 @@ export function normalizeState(value) {
     ...value,
     logline,
     loglineOpen,
+    openLines,
     targetEighths,
     targetOpen,
     targetKind,
@@ -560,6 +569,20 @@ function bump(note, patch, now) {
 }
 
 /** The writer's words for what is open about a card, one line, spaces collapsed; empty closes it (R59). */
+/** The film's open lines as kept: the writer's sentences, trimmed, none empty, none twice (whatever the case). */
+function cleanOpenLines(value) {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set();
+  const lines = [];
+  for (const item of value) {
+    const line = cleanOpen(item);
+    if (!line || seen.has(line.toLowerCase())) continue;
+    seen.add(line.toLowerCase());
+    lines.push(line);
+  }
+  return lines;
+}
+
 function cleanOpen(value) {
   return typeof value === "string" ? value.trim().replace(/\s+/g, " ") : "";
 }
@@ -705,6 +728,26 @@ export function applyCommand(state, command, now = nowIso()) {
     // The logline, or the writer's words for why there is none yet (R61): a
     // value clears the open words, open words clear the value, and open ""
     // leaves the field blank.
+    // What is not decided about the film itself (round twenty-three, entries
+    // 15, 16): when it happens, whether it has acts, what runs long. The
+    // writer's sentences, added one at a time and struck when decided. The
+    // app never adds one.
+    case "add_open_line": {
+      const line = cleanOpen(command.text);
+      const lines = state.openLines ?? [];
+      if (!line || lines.some((item) => item.toLowerCase() === line.toLowerCase())) return { state, changed: false };
+      return { state: { ...state, openLines: [...lines, line] }, changed: true, result: { line, openLines: [...lines, line] } };
+    }
+
+    case "strike_open_line": {
+      const lines = state.openLines ?? [];
+      const wanted = cleanOpen(command.text).toLowerCase();
+      const at = typeof command.index === "number" ? command.index : lines.findIndex((item) => item.toLowerCase() === wanted);
+      if (!Number.isInteger(at) || at < 0 || at >= lines.length) return { state, changed: false };
+      const openLines = lines.filter((_, index) => index !== at);
+      return { state: { ...state, openLines }, changed: true, result: { line: lines[at], openLines } };
+    }
+
     case "set_logline": {
       const hasOpen = typeof command.open === "string";
       const logline = hasOpen && command.open.trim() ? "" : typeof command.logline === "string" ? command.logline.trim() : (state.logline ?? "");

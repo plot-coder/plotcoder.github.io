@@ -13,6 +13,7 @@
 
 import { useState } from "react";
 import { EditableText } from "./EditableText";
+import { OpenLines } from "./OpenLines";
 import { wordSentence } from "./board/words";
 
 type LoglineProps = {
@@ -26,6 +27,10 @@ type LoglineProps = {
   onSetLoglineOpen: (words: string) => void;
   onSetPremise: (text: string) => void;
   onSetPremiseOpen: (words: string) => void;
+  /** What is not decided about the film itself, in the writer's sentences. */
+  openLines: string[];
+  onAddOpenLine: (text: string) => void;
+  onStrikeOpenLine: (index: number) => void;
 };
 
 type OpenFieldProps = {
@@ -65,6 +70,9 @@ export function Logline({
   onSetLoglineOpen,
   onSetPremise,
   onSetPremiseOpen,
+  openLines,
+  onAddOpenLine,
+  onStrikeOpenLine,
 }: LoglineProps) {
   // A feature is one board and has no series above it, so the premise line only
   // appears once it holds something or you ask for it.
@@ -137,6 +145,8 @@ export function Logline({
           Not decided yet…
         </button>
       ) : null}
+
+      <OpenLines lines={openLines} onAdd={onAddOpenLine} onStrike={onStrikeOpenLine} />
 
       {showPremise ? null : (
         <button

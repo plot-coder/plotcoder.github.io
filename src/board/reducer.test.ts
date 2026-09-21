@@ -1866,3 +1866,33 @@ describe("who is in a scene, left open by the writer's word (round twenty-three,
     expect(card(normalizeState(before), "j").castOpen).toBe("");
   });
 });
+
+describe("what is not decided about the film itself (round twenty-three, entries 15, 16)", () => {
+  const at = "2026-09-20T00:00:00.000Z";
+
+  it("keeps the writer's sentences, one each, in the order they were said", () => {
+    let state = applyCommand(emptyState(), { type: "add_open_line", text: "  Whether it has acts,  and where they break. " }, at).state;
+    state = applyCommand(state, { type: "add_open_line", text: "When it happens: the season, the year." }, at).state;
+    expect(state.openLines).toEqual(["Whether it has acts, and where they break.", "When it happens: the season, the year."]);
+    // The same sentence twice, whatever the case, is one line; an empty one is nothing.
+    expect(applyCommand(state, { type: "add_open_line", text: "whether it has acts, and where they break." }, at).changed).toBe(false);
+    expect(applyCommand(state, { type: "add_open_line", text: "   " }, at).changed).toBe(false);
+  });
+
+  it("strikes a line by its words or its place, and says which", () => {
+    let state = applyCommand(emptyState(), { type: "add_open_line", text: "Acts." }, at).state;
+    state = applyCommand(state, { type: "add_open_line", text: "What runs long." }, at).state;
+    const byWords = applyCommand(state, { type: "strike_open_line", text: "acts." }, at);
+    expect(byWords.state.openLines).toEqual(["What runs long."]);
+    expect(byWords.result).toMatchObject({ line: "Acts." });
+    expect(applyCommand(state, { type: "strike_open_line", index: 1 }, at).state.openLines).toEqual(["Acts."]);
+    expect(applyCommand(state, { type: "strike_open_line", text: "not there" }, at).changed).toBe(false);
+  });
+
+  it("is repaired on a board written before it existed, to nothing, and cleaned when it is a mess", () => {
+    const { openLines: _gone, ...old } = emptyState();
+    expect(normalizeState(old as unknown as BoardState).openLines).toEqual([]);
+    const messy = { ...emptyState(), openLines: ["Acts.", 4, "  acts. ", "", "When."] } as unknown as BoardState;
+    expect(normalizeState(messy).openLines).toEqual(["Acts.", "When."]);
+  });
+});

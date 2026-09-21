@@ -131,7 +131,14 @@ only when the server is started with `PLOTCODER_JSON=1`.
   never tell the writer they left something open that they only have not said,
   and never tell them they have not said something they told you. A place, a
   when, a change line, a named person and who is in a scene each have an open
-  of their own; a length and the acts do not, so
+  of their own. **What is undecided about the film itself** — when it happens,
+  whether it has acts, what runs long or short, whether there are other
+  plants, a place that may or may not be in it — is true of no one card:
+  `add_open_line` holds it as the writer's own sentence, under the logline on
+  the wall and first under open in the reading, never asked;
+  `strike_open_line` takes it off when they decide. One sentence a call, only
+  what the writer said they do not know, never a sentence of yours. A card's
+  length stays unsized — that already claims nothing — so
   a writer's "I don't know" about those lives with you until they decide, and
   a question the wall asks about one of them is `leave_question`'s, with their
   reason.

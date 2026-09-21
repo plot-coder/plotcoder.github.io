@@ -859,6 +859,9 @@ export function App() {
         onSetLoglineOpen={setLoglineOpen}
         onSetPremise={savePremise}
         onSetPremiseOpen={savePremiseOpen}
+        openLines={board.openLines}
+        onAddOpenLine={(text) => boardStore.dispatch({ type: "add_open_line", text })}
+        onStrikeOpenLine={(index) => boardStore.dispatch({ type: "strike_open_line", index })}
       />
       <div className="top-actions">
         <button

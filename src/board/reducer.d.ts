@@ -138,6 +138,8 @@ export type BoardState = {
   logline: string;
   /** The writer's words for why there is no logline yet (R61), or empty. */
   loglineOpen: string;
+  /** What is not decided about the film itself, in the writer's sentences: when it happens, whether it has acts. Listed, never asked; the app never adds one. */
+  openLines: string[];
   /** The writer's words for why the target is not decided, or empty; the number stands as the default meanwhile. */
   targetOpen: string;
   /** The writer's word for the target when they gave a kind and not a number — "feature", "hour", "half-hour" — or empty: the pages are the app's reading of it. */
@@ -241,6 +243,8 @@ export type Command =
   | { type: "rename_character"; id: string; name: string }
   | { type: "remove_character"; id: string }
   | ({ type: "update_character"; id: string } & Partial<Record<CharacterField | "open", string>>)
+  | { type: "add_open_line"; text: string }
+  | { type: "strike_open_line"; text?: string; index?: number }
   | { type: "set_cast"; ids: string[]; characterIds: string[]; /** Given, it replaces the cards' maybes; not given, each card keeps its own. */ maybeCharacterIds?: string[]; /** Given, it replaces the cards' open words ("" clears them); not given, each card keeps its own. */ open?: string }
   | { type: "set_plant"; ids: string[]; plants?: boolean; what?: string }
   | { type: "set_open"; ids: string[]; open: string }

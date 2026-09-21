@@ -137,6 +137,7 @@ describe("plotcoder MCP server", () => {
 
   const SORTED_TOOLS = [
       "add_character",
+      "add_open_line",
       "add_reminder",
       "add_to_group",
       "add_picture",
@@ -221,6 +222,7 @@ describe("plotcoder MCP server", () => {
       "set_target",
       "set_when",
       "start_revision",
+      "strike_open_line",
       "undo",
       "ungroup",
       "unlock_numbers",
@@ -3286,6 +3288,23 @@ describe("a person who may or may not be in a scene (round twenty-two, H9)", () 
     expect(await door.callTool("list_board")).toContain("who else is in it: open");
     await door.callTool("cast", { noteIds: [depot.id], characters: ["Marta", "Tomás"], castOpen: "" });
     expect(await door.callTool("list_board")).not.toContain("who else is in it: open");
+  });
+
+  it("holds what is not decided about the film itself, in the writer's sentences, and strikes a line when it is decided (round twenty-three, entries 15, 16)", async () => {
+    const held = await door.callTool("add_open_line", { text: "Whether it has acts, and where they break." });
+    expect(held).toContain('Held, about the film: "Whether it has acts, and where they break."');
+    await door.callTool("add_open_line", { text: "When it happens: the season, the year." });
+    expect(await door.callTool("add_open_line", { text: "whether it has acts, and where they break." })).toContain("Nothing changed");
+    const listed = await door.callTool("list_board");
+    expect(listed).toContain("not decided yet, about the film");
+    expect(listed).toContain("  2. When it happens: the season, the year.");
+    const read = await door.callTool("read_wall");
+    expect(read).toContain("  - about the film — Whether it has acts, and where they break.");
+    expect(read).not.toMatch(/\[[a-z]+\][^\n]*acts/);
+    const struck = await door.callTool("strike_open_line", { line: 1 });
+    expect(struck).toContain('Struck, as decided: "Whether it has acts, and where they break."');
+    expect(await door.callTool("strike_open_line", { line: "When it happens: the season, the year." })).toContain("0 still not decided");
+    expect(await door.callTool("strike_open_line", { line: 1 })).toContain("Nothing struck");
   });
 
   it("asks, in the treatment's checklist, the five things round twenty-three's notes needed (entry 9)", async () => {

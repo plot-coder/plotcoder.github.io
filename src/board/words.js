@@ -66,7 +66,7 @@ export const WORD_GROUPS = [
       {
         id: "open",
         name: "Open",
-        sentence: "A card the writer has not decided, in their words on its edge: the reading lists it and asks nothing else of it until the words are cleared. A field can be open the same way — the logline, the premise, a card's place, when, change line or who is in it, a board's or the project's name — the words where the value would be, listed and not asked.",
+        sentence: "A card the writer has not decided, in their words on its edge: the reading lists it and asks nothing else of it until the words are cleared. A field can be open the same way — the logline, the premise, a card's place, when, change line or who is in it, a board's or the project's name — the words where the value would be, listed and not asked. And what is not decided about the film itself — when it happens, whether it has acts, what runs long — is a short list of your own sentences under the logline, struck one at a time as you decide.",
       },
       {
         id: "aside",

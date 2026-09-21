@@ -15,7 +15,9 @@ this much on day one, and leave the rest until the writer asks for it.**
 - **Before you ask the writer anything:** `list_workflows`. Its first
   workflow, "break a treatment", carries **what a treatment should
   answer** — the questions to put to the writer, and the tool each answer
-  lands in. It is the asking's checklist; do not write your own.
+  lands in. It is the asking's checklist: ask these, and then anything the
+  writer's notes raise that these do not. Invent no fact; a question is not
+  an invention.
 - **Leave until the writer says the words:** **Pages** (they say "write
   it", "how long", "export"); **The project** beyond one board (a series,
   an episode, a second board); **Structure** (they name a structure to
@@ -128,8 +130,8 @@ only when the server is started with `PLOTCODER_JSON=1`.
   length, nobody in it. Blank is a fact about the wall, not about the writer:
   never tell the writer they left something open that they only have not said,
   and never tell them they have not said something they told you. A place, a
-  when, a change line and a named person each have an open of their own; a
-  length, the acts, and who is in a scene when nobody is named do not yet, so
+  when, a change line, a named person and who is in a scene each have an open
+  of their own; a length and the acts do not, so
   a writer's "I don't know" about those lives with you until they decide, and
   a question the wall asks about one of them is `leave_question`'s, with their
   reason.
@@ -209,7 +211,13 @@ only when the server is started with `PLOTCODER_JSON=1`.
   *how* it pays off, are what happens in those two scenes, so they are those
   cards' change lines, or their text: "he counts the fare out of a jar" is
   the first morning's, "he empties it into her hand" is the last run's.
-  Never a sentence in the label, and never in a headline. A card has one
+  Never a sentence in the label, and never in a headline. **When the change
+  line is the writer's own words**, do not append to it: ask whether the line
+  should say it, and meanwhile put it on the card as a note in the scene's
+  text — `[[she gives the fork to Callum]]` with `write_scene`. A note neither
+  prints nor counts, and a scene whose text is only notes is still unwritten
+  and unmeasured, so this is not writing the scene; the writer sees the note
+  in Pages. A card has one
   fold: a second thing the same scene plants is a thread. A payoff the writer knows without a scene for it — "he gives her
   his tools", which scene undecided — is a card born open at the payoff end
   with the setup arrow landed on it, not an unpaid fold. `read_wall` will
@@ -377,6 +385,13 @@ card of another board is not asked about as uncast here.
   may be — and a card whose only person is a maybe is not asked who is in it. The name without the mark decides it; leaving
   the name off decides it the other way. Only on the writer's word — and not
   `set_open`, which says the whole card is undecided when one person is.
+  **When nobody can be named** — "who is in it: I don't know yet" — or the
+  writer knows some and not whether there is anyone else, that is the cast
+  line's own open: `castOpen` on `cast` or `create_note`, with their words.
+  The words stand beside any names ("Ada, Callum · anyone else: I don't
+  know"), the reading lists "who is in it" or "who else is in it" under open,
+  and the card is not asked who is in it. `castOpen: ""` clears them; naming
+  someone does not.
 - **Acts** are not a thing the app knows. The wall reads left to right and a
   structure's beats are the act breaks. When a treatment comes in acts, put each
   act's cards in a **group** titled for it (`create_group`, title "Act one"), so

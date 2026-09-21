@@ -3270,6 +3270,24 @@ describe("a person who may or may not be in a scene (round twenty-two, H9)", () 
     expect(alone).toContain("decided: Tomás is not in it, so that is no longer open");
   });
 
+  it("holds who is in a scene as open, in the writer's words, when nobody can be named or beside the names (round twenty-three, entries 13, 14)", async () => {
+    const made = await door.callTool("create_note", { headline: "The job centre sends Callum", change: "He is sent.", castOpen: "I don't know yet" });
+    expect(made).toContain('Who is in it: open, by the writer\'s word — "I don\'t know yet" (listed, not asked).');
+    const read = await door.callTool("read_wall");
+    expect(read).toContain('"The job centre sends Callum" — who is in it: I don\'t know yet');
+    expect(read).not.toMatch(/\[nobody\][^\n]*The job centre sends Callum/);
+    const board = await door.callToolData("list_board");
+    const depot = board.notes.find((note) => note.headline === "The depot, after hours");
+    const beside = await door.callTool("cast", { noteIds: [depot.id], characters: ["Marta"], castOpen: "anyone else: I don't know" });
+    expect(beside).toContain('who else is in it left open, by the writer\'s word: "anyone else: I don\'t know"');
+    expect(await door.callTool("list_board")).toContain('cast: Marta, who else is in it: open, by the writer\'s word — "anyone else: I don\'t know"');
+    // A recast that does not speak of it keeps the words; "" clears them.
+    await door.callTool("cast", { noteIds: [depot.id], characters: ["Marta", "Tomás"] });
+    expect(await door.callTool("list_board")).toContain("who else is in it: open");
+    await door.callTool("cast", { noteIds: [depot.id], characters: ["Marta", "Tomás"], castOpen: "" });
+    expect(await door.callTool("list_board")).not.toContain("who else is in it: open");
+  });
+
   it("asks, in the treatment's checklist, the five things round twenty-three's notes needed (entry 9)", async () => {
     const listed = await door.callTool("list_workflows");
     for (const question of ["What changes in each scene?", "Is anyone in a scene only maybe?", "Is anything undecided about a person", "Is there a scene you have two ways?", "Is there a scene you have cut and want kept?"]) expect(listed).toContain(question);

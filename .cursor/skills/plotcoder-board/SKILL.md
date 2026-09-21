@@ -139,8 +139,8 @@ only when the server is started with `PLOTCODER_JSON=1`.
   length, nobody in it. Blank is a fact about the wall, not about the writer:
   never tell the writer they left something open that they only have not said,
   and never tell them they have not said something they told you. A place, a
-  when, a change line and a named person each have an open of their own; a
-  length, the acts, and who is in a scene when nobody is named do not yet, so
+  when, a change line, a named person and who is in a scene each have an open
+  of their own; a length and the acts do not, so
   a writer's "I don't know" about those lives with you until they decide, and
   a question the wall asks about one of them is `leave_question`'s, with their
   reason.
@@ -394,6 +394,13 @@ card of another board is not asked about as uncast here.
   may be — and a card whose only person is a maybe is not asked who is in it. The name without the mark decides it; leaving
   the name off decides it the other way. Only on the writer's word — and not
   `set_open`, which says the whole card is undecided when one person is.
+  **When nobody can be named** — "who is in it: I don't know yet" — or the
+  writer knows some and not whether there is anyone else, that is the cast
+  line's own open: `castOpen` on `cast` or `create_note`, with their words.
+  The words stand beside any names ("Ada, Callum · anyone else: I don't
+  know"), the reading lists "who is in it" or "who else is in it" under open,
+  and the card is not asked who is in it. `castOpen: ""` clears them; naming
+  someone does not.
 - **Acts** are not a thing the app knows. The wall reads left to right and a
   structure's beats are the act breaks. When a treatment comes in acts, put each
   act's cards in a **group** titled for it (`create_group`, title "Act one"), so

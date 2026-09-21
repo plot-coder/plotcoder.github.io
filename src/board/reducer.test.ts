@@ -1835,3 +1835,34 @@ describe("a scene whose text is only notes (round twenty-three, entry 17)", () =
     expect(noteEighths(card)).toBe(16);
   });
 });
+
+describe("who is in a scene, left open by the writer's word (round twenty-three, entries 13, 14)", () => {
+  const at = "2026-09-20T00:00:00.000Z";
+  const start = () => {
+    let state = applyCommand(emptyState(), { type: "add_character", id: "a", name: "Ada" }, at).state;
+    state = applyCommand(state, { type: "create_note", id: "j", headline: "The job centre sends Callum", castOpen: "  I don't know yet " }, at).state;
+    return applyCommand(state, { type: "create_note", id: "s", headline: "The school hall", characterIds: ["a"] }, at).state;
+  };
+  const card = (state: BoardState, id: string) => state.notes.find((note) => note.id === id)!;
+
+  it("stands on the card in the writer's words, with nobody named or beside the names", () => {
+    expect(card(start(), "j").castOpen).toBe("I don't know yet");
+    const beside = applyCommand(start(), { type: "set_cast", ids: ["s"], characterIds: ["a"], open: "anyone else: I don't know" }, at).state;
+    expect(card(beside, "s").characterIds).toEqual(["a"]);
+    expect(card(beside, "s").castOpen).toBe("anyone else: I don't know");
+  });
+
+  it("is kept by a recast that does not speak of it, and cleared only by the writer's word", () => {
+    const named = applyCommand(start(), { type: "set_cast", ids: ["j"], characterIds: ["a"] }, at).state;
+    expect(card(named, "j").castOpen).toBe("I don't know yet");
+    const cleared = applyCommand(named, { type: "set_cast", ids: ["j"], characterIds: ["a"], open: "" }, at).state;
+    expect(card(cleared, "j").castOpen).toBe("");
+    expect(applyCommand(cleared, { type: "set_cast", ids: ["j"], characterIds: ["a"], open: "" }, at).changed).toBe(false);
+  });
+
+  it("is repaired on a card written before it existed, to nothing", () => {
+    const old = start();
+    const before = { ...old, notes: old.notes.map(({ castOpen: _gone, ...note }) => note) } as unknown as BoardState;
+    expect(card(normalizeState(before), "j").castOpen).toBe("");
+  });
+});

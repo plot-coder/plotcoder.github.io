@@ -1356,7 +1356,7 @@ function summarize(state) {
   const cardRow = (note) => {
       // "Tomás?" is someone who may or may not be in it, by the writer's word (H9).
       const cast = castLine(note.characterIds, note.maybeCharacterIds, state.characters);
-      const who = cast ? `, cast: ${cast}` : "";
+      const who = `${cast ? `, cast: ${cast}` : ""}${(note.castOpen ?? "").trim() ? `, who ${cast ? "else " : ""}is in it: open, by the writer's word — "${note.castOpen.trim()}"` : ""}`;
       // The board it pays off on, named here as read_wall names it (round fifteen, entry 44).
       const laterName = note.payoffBoardId ? (lastHeld?.project?.boards?.find((meta) => meta.id === note.payoffBoardId)?.name ?? note.payoffBoardId) : null;
       const laterAt = note.payoffBoardId && note.payoffNoteId && lastHeld?.project ? ` at ${episodeLabel(lastHeld.project, lastHeld.boards, note.payoffBoardId, note.payoffNoteId)} "${lastHeld.boards[note.payoffBoardId]?.notes?.find((item) => item.id === note.payoffNoteId)?.headline ?? note.payoffNoteId}"` : "";
@@ -1699,7 +1699,7 @@ server.registerTool(
   {
     title: "Create note",
     description:
-      "Add a card (post-it) to the board. A card is one scene: a headline plus the change it causes. Provide both headline and change. Optionally set color, x/y position, rank ('beat' for one of the major turns — a beat is a whole card, the scene where the turn happens), pages (how long it runs; leave it out and the card is taken to be about a page), plants (true if this scene sets something up that must pay off later), location (where it happens, as the writer would say it — 'the piano shop', not 'INT. PIANO SHOP'), and characters (who is in the scene, by name; a name not in the cast yet is added to it — name an unnamed person by their role, 'Dana's mother', rather than leaving them off). When the writer does not know whether someone is in the scene, put a question mark after the name — 'Tomás?' — and the wall holds it as not decided: listed under open, never asked, and counted neither way by the cast's counts or the check for someone gone too long; the name without the mark decides it, and leaving the name off decides it the other way. Only on the writer's word. The reply names the card's id.",
+      "Add a card (post-it) to the board. A card is one scene: a headline plus the change it causes. Provide both headline and change. Optionally set color, x/y position, rank ('beat' for one of the major turns — a beat is a whole card, the scene where the turn happens), pages (how long it runs; leave it out and the card is taken to be about a page), plants (true if this scene sets something up that must pay off later), location (where it happens, as the writer would say it — 'the piano shop', not 'INT. PIANO SHOP'), and characters (who is in the scene, by name; a name not in the cast yet is added to it — name an unnamed person by their role, 'Dana's mother', rather than leaving them off). When the writer does not know whether someone is in the scene, put a question mark after the name — 'Tomás?' — and the wall holds it as not decided: listed under open, never asked, and counted neither way by the cast's counts or the check for someone gone too long; the name without the mark decides it, and leaving the name off decides it the other way. Only on the writer's word. When the writer does not know who is in a scene and nobody can be named — or knows some and not whether there is anyone else — that is the cast's own open: pass castOpen with their words (\"I don't know yet\"; \"anyone else: I don't know\"), and the card is listed under open and not asked who is in it, while its other questions stand. The words stand beside names; castOpen \"\" clears them. Only on the writer's word. The reply names the card's id.",
     inputSchema: {
       headline: z.string().min(1),
       change: z.string().optional().describe("What is different when the scene ends. Required, unless the writer has not decided it: then pass changeOpen with their words, and the change line waits while every other question about the card stands. (A card born wholly open, with open, may also wait.)"),
@@ -1717,6 +1717,7 @@ server.registerTool(
       whenOpen: z.string().optional().describe("The writer's words for why the when is not decided: the card is born with its when open, listed and not asked."),
       open: z.string().optional().describe("The writer's words for what is not decided about this card — \"whether Tom knows\" — so the card is born open: the reading lists it and asks nothing else of it until the words are cleared."),
       characters: z.array(z.string().min(1)).optional(),
+      castOpen: z.string().optional().describe("The writer's words for why who is in the scene is not decided, when nobody can be named or beside the names given. Not the same as open, which says the whole card is undecided."),
       x: z.number().optional(),
       y: z.number().optional(),
     },
@@ -1760,6 +1761,7 @@ server.registerTool(
         locationOpen: args.locationOpen,
         whenOpen: args.whenOpen,
         changeOpen: (args.change ?? "").trim() ? undefined : args.changeOpen,
+        castOpen: args.castOpen,
         when: args.when,
         open: args.open,
         x: landing.x,
@@ -1810,6 +1812,8 @@ server.registerTool(
       return made;
     });
     const castSaid = names.length && result?.id ? ` Cast: ${castLine(result.characterIds, result.maybeCharacterIds, after.characters)}${added.length ? ` (added to the roster: ${added.join(", ")})` : ""}${(result.maybeCharacterIds ?? []).length ? " — a name with ? is not decided: listed under open, counted neither way" : ""}.` : "";
+    // Who is in it, left open in the writer's words (round twenty-three, entries 13, 14).
+    const castOpenSaid = (result?.castOpen ?? "").trim() ? ` Who ${names.length ? "else " : ""}is in it: open, by the writer's word — "${result.castOpen}" (listed, not asked).` : "";
     const landed = [
       result?.rank === "beat" ? "a beat" : "a scene",
       result?.lengthEighths === null ? "about a page (unsized: the writer's guess until set_length)" : `${formatPages(noteEighths(result))} ${formatPages(noteEighths(result)) === "1" ? "page" : "pages"}`,
@@ -1826,7 +1830,7 @@ server.registerTool(
       : args.x === undefined && args.y === undefined ? ` Placed after the last card in story order.${once("placed", " organize lays the wall out along the arrows.")}` : "";
     // Under a lock a new scene has a letter, not a number: say it, since the board is the only other place to learn it (round fourteen, entry 44).
     const numbered = after?.lock && result?.id ? ` Numbered ${sceneNumbers(storyOrder(after), after.lock).get(result.id)} (the numbers are locked; a new scene's letter is its place between locked ones now, worked out again from where it sits if it moves; the locked numbers never move).` : "";
-    return ok(`Created card ${result?.id ?? ""}: ${landed}${where(live)}.${castSaid}${placed}${numbered}`, result);
+    return ok(`Created card ${result?.id ?? ""}: ${landed}${where(live)}.${castSaid}${castOpenSaid}${placed}${numbered}`, result);
   },
 );
 
@@ -3742,6 +3746,7 @@ server.registerTool(
     inputSchema: {
       noteIds: z.array(z.string()).min(1),
       characters: z.array(z.string()),
+      castOpen: z.string().optional().describe("The writer's words for why who is in the scene is not decided — \"I don't know yet\", or \"anyone else: I don't know\" beside the names — listed under open, and the card is not asked who is in it. \"\" clears the words; leave it out and the card keeps its own."),
     },
   },
   async (args) => {
@@ -3765,7 +3770,7 @@ server.registerTool(
         const into = maybe ? maybeCharacterIds : characterIds;
         if (person && !characterIds.includes(person.id) && !maybeCharacterIds.includes(person.id)) into.push(person.id);
       }
-      return step({ type: "set_cast", ids: args.noteIds, characterIds, maybeCharacterIds }).result;
+      return step({ type: "set_cast", ids: args.noteIds, characterIds, maybeCharacterIds, ...(typeof args.castOpen === "string" ? { open: args.castOpen } : {}) }).result;
     });
     const characterIds = (result ?? []).length ? result[0].characterIds : [];
     const maybeIds = (result ?? []).length ? (result[0].maybeCharacterIds ?? []) : [];
@@ -3787,7 +3792,7 @@ server.registerTool(
     const cameOff = args.noteIds.length === 1 && beforeCast ? (beforeCast.characterIds ?? []).filter((id) => !characterIds.includes(id) && !maybeIds.includes(id)).map(nameOf) : [];
     const whatChanged = [decidedIn.length ? `decided: ${decidedIn.join(", ")} ${decidedIn.length === 1 ? "is" : "are"} in it` : "", decidedOut.length ? `decided: ${decidedOut.join(", ")} ${decidedOut.length === 1 ? "is" : "are"} not in it, so that is no longer open` : "", cameOff.length ? `off the card: ${cameOff.join(", ")}` : ""].filter(Boolean).join("; ");
     return ok(
-      `${result.length} card(s) now cast ${names.length ? names.join(", ") : "nobody"}${maybeNames.length ? `, with ${maybeNames.join(", ")} not decided (listed under open, counted neither way; the name without the mark decides it)` : ""}${whatChanged ? ` (${whatChanged})` : ""}: ${result.map((note) => `"${note.headline}"`).join(", ")}${added.length ? ` (added to the cast: ${added.join(", ")})` : ""}${where(live)}.${stillOpen(result)}`,
+      `${result.length} card(s) now cast ${names.length ? names.join(", ") : "nobody"}${maybeNames.length ? `, with ${maybeNames.join(", ")} not decided (listed under open, counted neither way; the name without the mark decides it)` : ""}${whatChanged ? ` (${whatChanged})` : ""}${(result[0]?.castOpen ?? "").trim() ? `, who ${names.length || maybeNames.length ? "else " : ""}is in it left open, by the writer's word: "${result[0].castOpen}" (listed, not asked)` : ""}: ${result.map((note) => `"${note.headline}"`).join(", ")}${added.length ? ` (added to the cast: ${added.join(", ")})` : ""}${where(live)}.${stillOpen(result)}`,
       result,
     );
   },

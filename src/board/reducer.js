@@ -284,6 +284,7 @@ export function seedState(now = nowIso()) {
     lengthEighths: null,
     characterIds,
     maybeCharacterIds: [],
+    castOpen: "",
     location: "",
     // The writer's words for why the place is not decided (R61), or nothing.
     locationOpen: "",
@@ -408,6 +409,8 @@ export function normalizeState(value) {
     const characterIds = knownCast(note?.characterIds, characters);
     // Cards written before the maybe (round twenty-two, H9) have nobody who may be there; a person on the cast line is certainly in the scene, and certain wins.
     const maybeCharacterIds = knownCast(note?.maybeCharacterIds, characters).filter((id) => !characterIds.includes(id));
+    // Cards written before the cast's own open (round twenty-three, entries 13, 14) have none: who is in a scene is said, or blank, until the writer says why it is not decided.
+    const castOpen = typeof note?.castOpen === "string" ? note.castOpen : "";
     // Cards written before R31 have no fold; a plant is a claim you make.
     const plants = note?.plants === true;
     // Cards folded before R62 say "something": the fold's words are the writer's, or nothing.
@@ -442,6 +445,7 @@ export function normalizeState(value) {
       sameIds(note.characterIds, characterIds) &&
       Array.isArray(note.maybeCharacterIds) &&
       sameIds(note.maybeCharacterIds, maybeCharacterIds) &&
+      note.castOpen === castOpen &&
       note.plants === plants &&
       note.plantsWhat === plantsWhat &&
       note.alternativeOf === alternativeOf &&
@@ -459,7 +463,7 @@ export function normalizeState(value) {
       return note;
     }
     patched = true;
-    return { ...note, rank, lengthEighths, characterIds, maybeCharacterIds, plants, plantsWhat, alternativeOf, payoffBoardId, payoffNoteId, open, location, locationOpen, when, whenOpen, changeOpen, aside, text };
+    return { ...note, rank, lengthEighths, characterIds, maybeCharacterIds, castOpen, plants, plantsWhat, alternativeOf, payoffBoardId, payoffNoteId, open, location, locationOpen, when, whenOpen, changeOpen, aside, text };
   });
   // A version of a version is a version of the front card, so the pair stays a pair.
   for (const [index, note] of notes.entries()) {
@@ -730,6 +734,8 @@ export function applyCommand(state, command, now = nowIso()) {
         characterIds: knownCast(command.characterIds, state.characters ?? []),
         // Who may or may not be in it, by the writer's word: listed as open, counted neither way.
         maybeCharacterIds: knownCast(command.maybeCharacterIds, state.characters ?? []).filter((id) => !knownCast(command.characterIds, state.characters ?? []).includes(id)),
+        // Who is in it, left open by the writer's word when nobody can be named, or beside the names: "anyone else, I don't know".
+        castOpen: cleanOpen(command.castOpen),
         alternativeOf: null,
         plants: command.plants === true || Boolean(cleanOpen(command.plantsWhat)),
         // What it plants, in the writer's words (R62): naming a plant folds the card.
@@ -1363,12 +1369,15 @@ export function applyCommand(state, command, now = nowIso()) {
       const cast = knownCast(command.characterIds, state.characters);
       // Who may be there (H9): given, it replaces the card's maybes; not given, the card keeps its own. Certain wins, so nobody is in both.
       const maybes = Array.isArray(command.maybeCharacterIds) ? knownCast(command.maybeCharacterIds, state.characters).filter((id) => !cast.includes(id)) : null;
+      // The cast's own open: given, it replaces the words ("" clears them); not given, the card keeps its own. The words stand beside names, so naming someone does not clear them.
+      const open = typeof command.open === "string" ? cleanOpen(command.open) : null;
       const touched = [];
       const notes = state.notes.map((note) => {
         if (!ids.has(note.id)) return note;
         const maybe = maybes ?? note.maybeCharacterIds.filter((id) => !cast.includes(id));
-        if (sameIds(note.characterIds, cast) && sameIds(note.maybeCharacterIds, maybe)) return note;
-        const next = bump(note, { characterIds: [...cast], maybeCharacterIds: [...maybe] }, now);
+        const words = open ?? note.castOpen;
+        if (sameIds(note.characterIds, cast) && sameIds(note.maybeCharacterIds, maybe) && note.castOpen === words) return note;
+        const next = bump(note, { characterIds: [...cast], maybeCharacterIds: [...maybe], castOpen: words }, now);
         touched.push(next);
         return next;
       });
@@ -1407,6 +1416,7 @@ export function applyCommand(state, command, now = nowIso()) {
         lengthEighths: null,
         characterIds: [],
         maybeCharacterIds: [],
+        castOpen: "",
         plants: false,
         plantsWhat: "",
         alternativeOf: null,

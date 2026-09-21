@@ -45,7 +45,7 @@ type NoteCardProps = {
   onUnclaim: (id: string) => void;
   /** Open Pages at this scene: the number is the script's address for it. */
   onOpenPages: (id: string) => void;
-  onCastNames: (id: string, names: string[]) => void;
+  onCastNames: (id: string, names: string[], open: string) => void;
   /** Where and when the scene happens, typed as one line on the card (R37, R55). */
   onLocation: (id: string, location: string, when: string, whenOpen: string, locationOpen: string) => void;
   onRaise: (id: string) => void;
@@ -649,9 +649,10 @@ export function NoteCard({
         headline={note.headline}
         characterIds={note.characterIds}
         maybeCharacterIds={note.maybeCharacterIds}
+        castOpen={note.castOpen}
         characters={characters}
         onBegin={() => onRaise(note.id)}
-        onCommit={(names) => onCastNames(note.id, names)}
+        onCommit={(names, open) => onCastNames(note.id, names, open)}
       />
       <PlaceLine
         headline={note.headline}

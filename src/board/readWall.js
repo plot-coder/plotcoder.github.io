@@ -407,7 +407,8 @@ export function readWall(state, options = {}) {
   // entry 28): a scene nobody is in passed every check.
   if ((state.characters ?? []).length > 0) {
     // A card where someone may be is one whose cast the writer has spoken to: listed under open, not asked (H9).
-    const empty = order.filter((note) => askable(note) && !(note.characterIds ?? []).length && !(note.maybeCharacterIds ?? []).length);
+    // Nor is a card whose cast the writer has left open in their own words (round twenty-three, entry 13).
+    const empty = order.filter((note) => askable(note) && !(note.characterIds ?? []).length && !(note.maybeCharacterIds ?? []).length && !(note.castOpen ?? "").trim());
     if (empty.length) {
       findings.push({
         kind: "nobody",
@@ -558,6 +559,11 @@ export function readWall(state, options = {}) {
  * board's name live on the project, and the door adds them. Listed, never
  * asked about: no check asks about a missing logline or when.
  */
+/** "who is in it" on a card with nobody named, "who else is in it" beside names. */
+export function castOpenLabel(note) {
+  return (note.characterIds ?? []).length || (note.maybeCharacterIds ?? []).length ? "who else is in it" : "who is in it";
+}
+
 /** "whether Tomás is in it", for a card where someone may or may not be (H9); empty when nobody is a maybe. */
 export function maybeWords(note, state) {
   const names = (note.maybeCharacterIds ?? []).map((id) => (state.characters ?? []).find((character) => character.id === id)?.name).filter(Boolean);
@@ -576,6 +582,8 @@ function describeOpenFields(state, order) {
     const words = maybeWords(note, state);
     if (words) fields.push({ field: "cast", id: note.id, words });
   }
+  // Who is in it, or who else, left open in the writer's words.
+  for (const note of order) if ((note.castOpen ?? "").trim()) fields.push({ field: "castOpen", id: note.id, words: `${castOpenLabel(note)}: ${note.castOpen.trim()}` });
   return fields;
 }
 
@@ -618,7 +626,7 @@ function sameList(a, b) {
 export function openOutsideFilm(state) {
   let count = 0;
   for (const note of state.notes.filter((item) => !inStory(item))) {
-    for (const words of [note.open, note.changeOpen, note.locationOpen, note.whenOpen]) if ((words ?? "").trim()) count += 1;
+    for (const words of [note.open, note.changeOpen, note.locationOpen, note.whenOpen, note.castOpen]) if ((words ?? "").trim()) count += 1;
     if (maybeWords(note, state)) count += 1;
   }
   return count;
@@ -662,6 +670,8 @@ export function describeUndecided(state, reading, extras = {}) {
     }
     const cast = reading.openFields.find((item) => item.field === "cast" && item.id === id);
     if (cast) parts.push(cast.words);
+    const castOpen = reading.openFields.find((item) => item.field === "castOpen" && item.id === id);
+    if (castOpen) parts.push(castOpen.words);
     if (parts.length) open.push(`  - ${name(id)} — ${parts.join("; ")}`);
   }
 
@@ -674,6 +684,7 @@ export function describeUndecided(state, reading, extras = {}) {
       (note.locationOpen ?? "").trim() ? `${FIELD.location}: ${note.locationOpen.trim()}` : "",
       (note.whenOpen ?? "").trim() ? `${FIELD.when}: ${note.whenOpen.trim()}` : "",
       maybeWords(note, state),
+      (note.castOpen ?? "").trim() ? `${castOpenLabel(note)}: ${note.castOpen.trim()}` : "",
     ].filter(Boolean);
     if (parts.length) open.push(`  - ${name(note.id)} (${note.aside === true ? "set aside" : "a version behind, not chosen"}) — ${parts.join("; ")}`);
   }
@@ -686,7 +697,7 @@ export function describeUndecided(state, reading, extras = {}) {
   const noPlace = cards.filter((note) => !(note.location ?? "").trim() && !(note.locationOpen ?? "").trim());
   const noWhen = cards.filter((note) => !(note.when ?? "").trim() && !(note.whenOpen ?? "").trim());
   const unsized = cards.filter((note) => note.lengthEighths === null && !(note.text ?? "").trim());
-  const nobody = (state.characters ?? []).length ? cards.filter((note) => !(note.characterIds ?? []).length && !(note.maybeCharacterIds ?? []).length) : [];
+  const nobody = (state.characters ?? []).length ? cards.filter((note) => !(note.characterIds ?? []).length && !(note.maybeCharacterIds ?? []).length && !(note.castOpen ?? "").trim()) : [];
   if (noPlace.length) blank.push(`  - no place: ${list(noPlace)}`);
   if (noWhen.length) blank.push(`  - no when: ${list(noWhen)}`);
   if (unsized.length) blank.push(`  - no length (read as a page each): ${list(unsized)}`);

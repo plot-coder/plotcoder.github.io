@@ -1032,3 +1032,23 @@ describe("what is open on a card not in the film (round twenty-three, entries 37
     expect(openOutsideFilm(state)).toBe(3);
   });
 });
+
+describe("who is in a scene, left open by the writer's word (round twenty-three, entries 13, 14)", () => {
+  it("is listed in the writer's words and the card is not asked who is in it", () => {
+    const state = run(
+      wall({ id: "a", rank: "beat", headline: "The school hall" }, { id: "j", headline: "The job centre" }),
+      { type: "add_character", id: "ada", name: "Ada" },
+      { type: "set_cast", ids: ["a"], characterIds: ["ada"], open: "anyone else: I don't know" },
+      { type: "set_cast", ids: ["j"], characterIds: [], open: "I don't know yet" },
+    );
+    const reading = readWall(state);
+    expect(reading.findings.filter((f) => f.kind === "nobody")).toEqual([]);
+    const undecided = describeUndecided(state, reading);
+    expect(undecided.open).toContain('  - "The school hall" — who else is in it: anyone else: I don\'t know');
+    expect(undecided.open).toContain('  - "The job centre" — who is in it: I don\'t know yet');
+    expect(undecided.blank.join("\n")).not.toContain("nobody in it");
+    // Without the words the card is asked, as before.
+    const bare = run(state, { type: "set_cast", ids: ["j"], characterIds: [], open: "" });
+    expect(readWall(bare).findings.filter((f) => f.kind === "nobody")).toHaveLength(1);
+  });
+});

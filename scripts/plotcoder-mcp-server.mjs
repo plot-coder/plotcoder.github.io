@@ -56,6 +56,7 @@ import { sceneHeading, standInFor } from "../src/board/fountain.js";
 import { describePresence, presenceTail } from "../src/board/presence.js";
 import { accountSessionStore, isSessionId, normalizeMemory } from "../src/board/agentSession.js";
 import { castLine, readMaybe } from "../src/board/castMaybe.js";
+import { shapeNote } from "../src/board/shape.js";
 import { segmentBrief, WORKFLOWS } from "../src/board/workflows.js";
 import { DEFAULT_REMINDERS, titleFromBody } from "../src/board/reminders.js";
 import crypto from "node:crypto";
@@ -866,6 +867,12 @@ function newWallInHand() {
 let lastChange = null;
 // The same question in the same words is the same question, whatever order its names come in (round seventeen, entry 21).
 const findingKey = (finding) => `${finding.kind}|${[...finding.ids].sort().join(",")}`;
+/** Set by a tool whose write can change the story's shape — a reorder, a cut, a delete, a choice of version, a scene wired in — so the next change's tail says what it did to the runs, the ending and the wall's order (round twenty-three, entries 30, 31, 50, 52, 72). */
+let shapeAsked = null;
+function askShape(options = {}) {
+  shapeAsked = options;
+}
+
 function noteChange(before, after, boardId = null) {
   // The same reading read_wall gives: a person cast on another board is not
   // asked about, so a write's tail never names a question the reading does not.
@@ -883,7 +890,9 @@ function noteChange(before, after, boardId = null) {
     eighthsAfter: boardEighths(after),
     target: after.targetEighths,
     targetOpen: Boolean((after.targetOpen ?? "").trim()),
+    shape: shapeAsked ? shapeNote(before, after, shapeAsked) : [],
   };
+  shapeAsked = null;
 }
 function changeNote() {
   const change = lastChange;
@@ -907,6 +916,7 @@ function changeNote() {
     // Silence read as "unchanged" or "not computed" (round twenty-two, entries 66, 92): say which, with the count an agent can use.
     parts.push(`the wall's questions unchanged (${change.asks})`);
   }
+  parts.push(...(change.shape ?? []));
   if (change.leftAfter !== change.leftBefore) parts.push(`left, for now: ${change.leftAfter} (was ${change.leftBefore})`);
   // An open target is not 120: the tail says the pages and that the target is open, as the reading does (round twenty-two, entry 19).
   if (change.eighthsAfter !== change.eighthsBefore)
@@ -1825,6 +1835,8 @@ server.registerTool(
     // The arrow the wiring took out, by its cards, as delete_note names one (round twenty-two, entry 65).
     const removedNames = [];
     let drawnArrows = 0;
+    // A scene wired into the story can change a run and leave the rows out of order; one simply added cannot.
+    if (beside) askShape();
     const { value: result, live, state: after } = await commitAll(`create_note "${args.headline}"`, (step, current) => {
       let made = step({
         type: "create_note",
@@ -2012,6 +2024,7 @@ server.registerTool(
     inputSchema: { id: z.string() },
   },
   async (args) => {
+    askShape();
     const { result, live } = await commit({ type: "delete_note", id: args.id });
     if (result === undefined) return ok(`No card with id ${args.id}.`);
     // Say what went with the card (round thirteen, entry 17).
@@ -2453,6 +2466,7 @@ server.registerTool(
     let joinedGroup = null;
     // The whole move — its dozen arrows and the tidy — as one change: one frame on
     // the bridge, one ⌘Z on the wall, one step for undo here.
+    askShape();
     const { state: final, live } = await commitAll(`move_scene "${card.headline}"`, (step, current) => {
       const run = (command) => {
         const done = step(command);
@@ -2509,6 +2523,7 @@ server.registerTool(
     const named = new Set(ids);
     let removed = 0;
     let drawn = 0;
+    askShape();
     const { state: final, live } = await commitAll(`set_order (${ids.length} cards)`, (step, current) => {
       for (const arrow of current().arrows.filter((item) => item.kind !== "setup" && (named.has(item.from) || named.has(item.to)))) if (step({ type: "delete_arrow", id: arrow.id }).changed) removed += 1;
       for (let index = 1; index < ids.length; index += 1) if (step({ type: "create_arrow", from: ids[index - 1], to: ids[index], kind: "follows" }).changed) drawn += 1;
@@ -3417,6 +3432,7 @@ server.registerTool(
     if (refs.missing.length) return ok(`Nothing changed: not on the board — ${refs.missing.map((ref) => `"${ref}"`).join(", ")}. Call list_board for the ids or the exact headlines.`);
     const behind = refs.found.map((id) => current.notes.find((note) => note.id === id)).filter((note) => note?.alternativeOf);
     if (behind.length && args.aside !== false) return ok(`Nothing changed: ${behind.map((note) => `"${note.headline}"`).join(", ")} ${behind.length === 1 ? "is" : "are"} already out of the film, behind another card as its other version. choose_version with keep sets the one not chosen aside.`);
+    askShape();
     const { changed, result, live, state: after } = await commit({ type: "set_aside", ids: refs.found, aside: args.aside !== false });
     if (!changed) return ok(`Nothing changed: ${args.aside === false ? "those cards are not set aside" : "those cards are already set aside"}.`);
     // The arrows that closed the story over the cut, by their cards (round twenty-three, entry 49).
@@ -3446,6 +3462,7 @@ server.registerTool(
     if (!card) return ok(`No card with id or headline "${args.id}". Call list_board.`);
     const other = card.alternativeOf ? current.notes.find((note) => note.id === card.alternativeOf) : current.notes.find((note) => note.alternativeOf === card.id);
     if (!other) return ok(`"${card.headline}" has no other version; nothing to choose.`);
+    askShape();
     const { changed, result, live } = await commit({ type: "choose_version", id: card.id, keep: args.keep === true });
     if (!changed) return ok("Nothing chosen.");
     return ok(`Chose "${card.headline}"${result.steppedForward ? ` — it steps forward into "${other.headline}"'s place, with its arrows, rank, group and threads${!card.plants && other.plants ? `, and its fold${other.plantsWhat ? ` ("${other.plantsWhat}")` : ""}` : ""}` : ""}${where(live)}. "${other.headline}" ${result.kept ? "is kept, set aside below it, clear of the other cards: on the wall and not in the film — out of the order, the count, the pages and every export; the reading lists it and asks nothing of it. set_aside with aside false brings it back as a plain card" : "is gone"}.`, result);

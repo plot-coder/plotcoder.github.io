@@ -724,6 +724,13 @@ than a dictionary's, so the app and you never explain a word two ways.
   opposite change — and "undo that scene" from a writer, when other changes
   they want have landed since, is `delete_note` or `set_aside`, never a walk
   back through the stack.
+- **What the change did to the story's shape** rides the same tail, when it
+  did anything: after `set_order`, `move_scene`, `set_aside`, `delete_note`,
+  `choose_version` or a scene wired in with `after`, the reply says which
+  runs between the turns changed and by how much, that the last card of the
+  story is now another, and how many cards now sit out of the story's order
+  on the wall — so you need no second reading to tell the writer what a cut
+  did. It says nothing when none of that changed.
 - **The account tail** says presence only when it has changed since the
   last reply — otherwise just "saved to the account" — so a change is
   noticed. It says what the wall shows: "open on Robert's screen

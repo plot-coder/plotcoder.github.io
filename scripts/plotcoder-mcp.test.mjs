@@ -3365,3 +3365,45 @@ describe("a person who may or may not be in a scene (round twenty-two, H9)", () 
     expect(update.description).toContain("three homes and no fourth");
   });
 });
+
+describe("a reply says what the change did to the story's shape (round twenty-three, entries 30, 31, 50, 52, 72)", () => {
+  let root;
+  let door;
+  const ids = {};
+
+  beforeAll(async () => {
+    root = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-shape-"));
+    door = new McpClient(root);
+    await door.start();
+    await door.callTool("new_board", { name: "The Tuner" });
+    let last = null;
+    for (const [headline, rank] of [["The chapel", "beat"], ["The job centre", "scene"], ["The school hall", "scene"], ["The chapel again", "beat"], ["The concert", "scene"]]) {
+      const made = await door.callToolData("create_note", { headline, change: "Something is different.", rank, ...(last ? { after: last } : {}) });
+      ids[headline] = made.id;
+      last = made.id;
+    }
+  });
+
+  afterAll(() => {
+    door.stop();
+    fs.rmSync(root, { recursive: true, force: true });
+  });
+
+  it("says nothing of the shape while a build only appends", async () => {
+    const appended = await door.callTool("create_note", { headline: "After the concert", change: "x", after: ids["The concert"] });
+    expect(appended).not.toContain("the last card of the story is now");
+    ids["After the concert"] = appended.match(/Created card ([0-9a-f-]{36})/)[1];
+  });
+
+  it("says the run a cut shortened, the ending a delete moved, and the cards a reorder left out of order on the wall", async () => {
+    const cut = await door.callTool("set_aside", { ids: [ids["The job centre"]] });
+    expect(cut).toContain('the run from "The chapel" to "The chapel again" is now 1 card');
+    const gone = await door.callTool("delete_note", { id: ids["After the concert"] });
+    expect(gone).toContain('the last card of the story is now "The concert"');
+    const reordered = await door.callTool("set_order", { cards: [ids["The chapel"], ids["The chapel again"], ids["The school hall"], ids["The concert"]] });
+    expect(reordered).toContain("out of the story's order on the wall");
+    expect(reordered).toContain('nothing runs from "The chapel" to "The chapel again" now');
+    // A write that changes none of it says none of it.
+    expect(await door.callTool("update_note", { id: ids["The concert"], headline: "The concert, at night" })).not.toMatch(/the runs between|last card of the story|out of the story's order/);
+  });
+});

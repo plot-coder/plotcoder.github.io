@@ -796,7 +796,7 @@ Add new items at the bottom of this list. Do not renumber. If a requirement dies
 
 ### R70 — Not decided yet, about the film
 
-- **Status:** **built** 2026-09-20, **to be seen in the app before it is released** — drawn in `docs/mockups/round-twenty-three-i-dont-know.html` (item 2, A) beside what ships; approved the same night: "Recommendations."
+- **Status:** **built** 2026-09-20, released as 0.1.48 on the owner's "go" — drawn in `docs/mockups/round-twenty-three-i-dont-know.html` (item 2, A) beside what ships; approved the same night: "Recommendations."
 - **Date:** 2026-09-20
 - **Statement:** What a writer has **not decided about the film itself** — when it happens, whether it has acts and where they break, what runs long or short, whether there are other plants, a place that may or may not be in it — is held as **the writer's own sentences**, a short list under the logline. The wall shows it closed to its count; the reading lists the sentences first under open and never asks about them; a line is struck when it is decided. **The app never adds a line.**
 - **Why:** Round twenty-three (15, 16), and F8 asked for the third time. Five of the writer's answers were true of no one card — a when for the whole film, the acts, the lengths, other plants, the flat and the shop — so no card's open could hold them, the agent would not stamp one sentence on eight cards, and they existed only in a conversation the writer would close. The premise holds what is true of the whole film; nothing held what is not yet decided about it. Notes are mostly this, so it would recur with every page of them.
@@ -805,7 +805,7 @@ Add new items at the bottom of this list. Do not renumber. If a requirement dies
 
 ### R71 — A proposed turn
 
-- **Status:** **built** 2026-09-20, **to be seen in the app before it is released** — drawn in `docs/mockups/round-twenty-three-i-dont-know.html` (item 5, A) beside what ships, recommended and held less firmly than R69 and R70; approved the same night: "Recommendations."
+- **Status:** **built** 2026-09-20, released as 0.1.48 on the owner's "go" — drawn in `docs/mockups/round-twenty-three-i-dont-know.html` (item 5, A) beside what ships, recommended and held less firmly than R69 and R70; approved the same night: "Recommendations."
 - **Date:** 2026-09-20
 - **Statement:** When the writer says "propose the turns and I will strike", the agent's candidates are **on the wall**: a dashed bar where a beat's solid one goes and the words "proposed turn", with keep and strike for the writer, on the card and at the head of the wall's questions. A proposed card is **a scene everywhere** — the count, the runs, every question — until the writer keeps it, so the app still says nothing about how many turns there should be (D21). Nothing is a beat on the agent's word.
 - **Why:** Round twenty-three (32, 34), and round twenty-two's F5, settled then with words and asked again. "Propose them and I will strike" is an answer the app's own checklist offers, and the proposal lived only in the chat: "strike 3" could mean the third proposal or the third card, and a writer who stepped away and opened the wall saw no proposal at all.

@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<title>Round twenty-three — where "I don't know" has no home</title>
+<!-- The app's own paper: the source stylesheet, so the link never goes stale. -->
+<link rel="stylesheet" href="../../src/styles.css">
+<style>
+  html, body { height: auto; min-height: 100%; }
+  body { margin: 0; padding: 2rem 2.5rem 4rem; font-family: ui-sans-serif, system-ui, sans-serif; }
+  h1 { font: 600 1.05rem/1.3 ui-serif, Georgia, serif; margin: 0 0 0.25rem; }
+  h2.sec { font: 600 0.95rem/1.3 ui-serif, Georgia, serif; margin: 3rem 0 0.2rem; padding-top: 1.2rem; border-top: 1px solid rgba(127,127,127,0.25); }
+  .lede { font-size: 0.85rem; opacity: 0.78; margin: 0 0 1.2rem; max-width: 74ch; line-height: 1.5; }
+  .said { font-size: 0.82rem; line-height: 1.5; margin: 0.4rem 0 1.3rem; max-width: 78ch; padding: 0.6rem 0.9rem; border-left: 3px solid var(--over); background: rgba(127,127,127,0.08); }
+  .said b { font-weight: 600; }
+  .row { display: flex; gap: 2.2rem; flex-wrap: wrap; align-items: flex-start; }
+  .opt { width: 500px; max-width: 100%; }
+  .opt h3 { font: 700 0.62rem/1.3 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; margin: 0 0 0.6rem; }
+  .opt h3 em { font-style: normal; color: var(--over); }
+  .opt p { font-size: 0.8rem; line-height: 1.45; opacity: 0.82; margin: 0.7rem 0 0; max-width: 58ch; }
+  pre.read { font: 0.68rem/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; background: rgba(127,127,127,0.12); padding: 0.75rem 0.95rem; border-radius: 6px; white-space: pre-wrap; margin: 0.7rem 0 0; }
+  pre.read b { color: var(--over); font-weight: 600; }
+  pre.read s { opacity: 0.5; }
+  .paper { position: relative; height: 300px; width: 500px; max-width: 100%; border-radius: 6px; background: var(--canvas); outline: 1px solid rgba(127,127,127,0.18); overflow: hidden; }
+  .paper .note { position: absolute; transform-origin: top left; min-height: 11rem; }
+  .ask { margin-top: 1.2rem; max-width: 80ch; font-size: 0.86rem; line-height: 1.55; }
+  .ask b { font-weight: 600; }
+  .yes { margin-top: 0.7rem; max-width: 80ch; font-size: 0.84rem; line-height: 1.5; padding: 0.6rem 0.9rem; border-radius: 6px; background: rgba(127,127,127,0.12); }
+  .words { font-size: 0.82rem; line-height: 1.55; background: rgba(127,127,127,0.12); border-radius: 6px; padding: 0.7rem 0.95rem; max-width: 78ch; }
+  .words b { font-weight: 600; }
+  .words li { margin: 0.25rem 0; }
+  /* The strip above the wall, as the app sets the logline. */
+  .top { background: var(--canvas); outline: 1px solid rgba(127,127,127,0.18); border-radius: 6px; padding: 0.9rem 1.1rem 1rem; }
+  .top .line { font: italic 0.95rem/1.4 ui-serif, Georgia, serif; opacity: 0.9; }
+  .top .film-open { margin-top: 0.6rem; font-size: 0.74rem; line-height: 1.6; }
+  .top .film-open .k { font: 700 0.55rem/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.14em; text-transform: uppercase; color: var(--over); margin-right: 0.5rem; }
+  .top .film-open ul { margin: 0.3rem 0 0; padding-left: 1.1rem; }
+  /* A proposed turn: the beat's bar, not yet the writer's. */
+  .note.is-proposed { border-top: 14px dashed rgba(31, 24, 16, 0.55); }
+  .proposed-tag { position: absolute; top: -13px; right: 8px; font: 700 0.5rem/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(31,24,16,0.8); background: rgba(255,255,255,0.55); padding: 1px 5px; border-radius: 2px; }
+  .sheet { background: var(--canvas); outline: 1px solid rgba(127,127,127,0.18); border-radius: 6px; padding: 0.9rem 1.1rem; font-size: 0.78rem; line-height: 1.55; }
+  .sheet .k { font: 700 0.55rem/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.6; display: block; margin-bottom: 0.4rem; }
+  .sheet button { font: 600 0.55rem/1.4 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; background: none; color: inherit; border: 1px solid rgba(127,127,127,0.5); border-radius: 3px; padding: 0.1rem 0.45rem; margin-left: 0.4rem; }
+</style>
+</head>
+<body>
+<h1>Round twenty-three: where a writer's "I don't know" has no home</h1>
+<p class="lede">Drawn 2026-09-20, from <code>blind-runs/round-twenty-three-report.md</code> — entries 13 to 18, 32 and 9. A place, a when, a change line and a named person can each be left open by the writer's word. In this round the writer said "I don't know yet" about seven more things, the agent found no home for any of them, and the wall then told the writer that "nobody has said why" they were blank. The words are fixed (0.1.47). This page is about the homes. Seven items; <b>my recommendation is to build two, change words for three, and leave two.</b> Each stands alone.</p>
+
+<!-- ───────────── 1 ───────────── -->
+<h2 class="sec">1 · Who is in a scene, when nobody can be named (entries 13, 14)</h2>
+<div class="said"><b>What happened.</b> "The job centre sends Callum. Who is in it: I don't know yet — leave it open." A maybe (<i>Tomás?</i>, R68) needs a name to put the question mark after. With nobody to name, the agent left the card uncast, and the wall listed it as blank and asked "[nobody] Who is in the scene?" — a question the writer had already answered. The same for "anyone else in any of them: I don't know yet": the cards read as fully cast.</div>
+<div class="row">
+  <div class="opt">
+    <h3>As it ships · uncast, and asked about</h3>
+    <div class="paper">
+      <article class="note note--yellow" style="left:28px;top:22px;transform:rotate(-1deg)">
+        <div class="note__headline">The job centre sends Callum</div>
+        <div class="note__change"><span class="is-open-field"><span class="open-mark">Open</span> I don't know what changes yet</span></div>
+        <div class="note__with note__with--empty"><span class="note__with-prefix">with</span> …</div>
+        <div class="note__with note__at"><span class="note__with-prefix">at</span> <span class="is-open-field"><span class="open-mark">Open</span> I don't know yet</span></div>
+      </article>
+    </div>
+    <pre class="read">questions the wall raises:
+  - <b>[nobody] "The job centre sends Callum" has nobody in it. Who is in the scene?</b>
+
+blank on the wall:
+  - nobody in it: "The job centre sends Callum"</pre>
+    <p>Two of the card's lines hold the writer's "I don't know". The third cannot.</p>
+  </div>
+  <div class="opt">
+    <h3>A · the cast line takes <em>"Not decided yet…"</em>, as the place line does</h3>
+    <div class="paper">
+      <article class="note note--yellow" style="left:28px;top:22px;transform:rotate(-1deg)">
+        <div class="note__headline">The job centre sends Callum</div>
+        <div class="note__change"><span class="is-open-field"><span class="open-mark">Open</span> I don't know what changes yet</span></div>
+        <div class="note__with"><span class="note__with-prefix">with</span> <span class="is-open-field"><span class="open-mark">Open</span> I don't know yet</span></div>
+        <div class="note__with note__at"><span class="note__with-prefix">at</span> <span class="is-open-field"><span class="open-mark">Open</span> I don't know yet</span></div>
+      </article>
+      <article class="note note--blue" style="left:262px;top:30px;transform:rotate(1.2deg)">
+        <div class="note__headline">The school hall grand</div>
+        <div class="note__change">Callum names a note out loud, and he is right.</div>
+        <div class="note__with"><span class="note__with-prefix">with</span> Ada, Callum · <span class="is-open-field"><span class="open-mark">Open</span> anyone else: I don't know</span></div>
+        <div class="note__with note__at"><span class="note__with-prefix">at</span> the school hall</div>
+      </article>
+    </div>
+    <pre class="read">open, by the writer's word:
+  - "The job centre sends Callum" — who is in it: <b>I don't know yet</b>
+  - "The school hall grand" — who else is in it: <b>anyone else: I don't know</b></pre>
+    <p>The same offer the place line and the change line already make, in the same warm colour. Unlike a place, the words can stand <i>beside</i> names: "Ada, Callum, and I don't know who else." Names decide nothing about the words; clearing the words decides it. The [nobody] question is not asked of a card whose cast is open.</p>
+  </div>
+</div>
+<div class="ask"><b>What I would do: A.</b> It is the last of the card's lines without an open of its own, and the round's agent was forced to leave a writer's answer on the floor and then watch the wall ask it again. The kernel change is R61's shape a fourth time: <code>castOpen</code> on the card, empty by default, repaired in <code>normalizeState</code>; <code>cast</code> and <code>create_note</code> take <code>castOpen</code>. The alternative is to leave it and have agents use <code>leave_question</code> — but that silences one question on one reading, and says nothing on the card the writer looks at.</div>
+<div class="yes"><b>A yes means:</b> the field, its command and a unit test; the two tools; the reading lists it and skips [nobody]; the cast line's offer on the wall; the writer's guide, the agent's guide and the words. About the size of R68.</div>
+
+<!-- ───────────── 2 ───────────── -->
+<h2 class="sec">2 · What is undecided about the film, not about any card (entries 15, 16)</h2>
+<div class="said"><b>What happened.</b> Five answers landed nowhere at all: <i>when</i>, for the whole film ("I don't know yet"); whether it has <i>acts</i>; what <i>runs long or short</i>; whether there are <i>other plants</i>; whether any scene is <i>at the flat or the shop</i>. None is a fact about a card, so no card's open could hold it, and the agent would not stamp one sentence on eight cards. They exist only in a chat the writer will close. The premise holds what <i>is</i> true of the whole film; nothing holds what is <i>not yet decided</i> about it.</div>
+<div class="row">
+  <div class="opt">
+    <h3>As it ships · the logline, the premise, and nothing else above the wall</h3>
+    <div class="top">
+      <div class="line"><span class="is-open-field"><span class="open-mark">Open</span> I don't know yet</span></div>
+    </div>
+    <pre class="read">open, by the writer's word:
+  - the logline — I don't know yet
+<s>  (acts, the when, lengths, other plants, the flat and the shop: not on the wall)</s></pre>
+  </div>
+  <div class="opt">
+    <h3>A · <em>"Not decided yet, about the film"</em> — the writer's sentences, under the logline</h3>
+    <div class="top">
+      <div class="line"><span class="is-open-field"><span class="open-mark">Open</span> I don't know yet</span></div>
+      <div class="film-open"><span class="k">Not decided yet, about the film · 4</span>
+        <ul>
+          <li>When it happens — the season, the year.</li>
+          <li>Whether it has acts, and where they break.</li>
+          <li>What runs long and what runs short.</li>
+          <li>Whether any scene is at the flat, or the shop below it.</li>
+        </ul>
+      </div>
+    </div>
+    <pre class="read">open, by the writer's word:
+  - the logline — I don't know yet
+  - <b>about the film — when it happens: the season, the year</b>
+  - <b>about the film — whether it has acts, and where they break</b>
+  - …</pre>
+    <p>A short list of sentences in the writer's words, collapsed to its count until opened. Listed first in the reading, never asked. A line is struck when the writer decides it — by them on the wall, by the agent through a tool. It is not a checklist the app supplies: the app never adds a line.</p>
+  </div>
+</div>
+<div class="ask"><b>What I would do: A</b>, and keep it plain. This is the first finding in twenty-three rounds where a whole category of the writer's answers had no home, and it will recur with every page of notes, because notes are mostly this. The alternatives: <b>reminders</b> — they exist, and the round's agent considered and refused them, rightly: reminders are principles a writer keeps in view, not facts about this film, and they are the project's, not the board's; <b>the premise's own open</b> — one string, for why the premise itself is undecided, not a list of other things. Earlier this month a <i>list</i> of open items on a <i>card</i> was decided against, because it turns a sentence into a form; a film has no sentence of its own for these, which is the difference. On the board, not the project: acts and length are this episode's.</div>
+<div class="yes"><b>A yes means:</b> <code>openLines</code> on the board (strings, empty by default, repaired in <code>normalizeState</code>); two commands, add and strike; two tools of the same names; the reading lists them first under open and counts them at the head; the list under the logline on the wall, with the offer to add one; both guides and the words. A little more than R68, because it is a new small surface on the wall. <b>This one I would want your eye on in the app before it ships.</b></div>
+
+<!-- ───────────── 3 ───────────── -->
+<h2 class="sec">3 · A card's length, left open (entry 16; F8, asked for the third time)</h2>
+<div class="said"><b>What happened.</b> "What runs long or short: I don't know yet." Every card stayed unsized, and the reading listed "no length" under blank. Rounds twenty-one and twenty-two asked for the same and were answered "unsized is its form".</div>
+<div class="ask"><b>What I would do: nothing on the card.</b> Unsized already claims nothing — it reads as about a page and says so — and an "open" length would be a second way to say the same nothing, on every card of a new wall. What was missing was somewhere to put the writer's <i>sentence</i>, and that is item 2's list: "what runs long and what runs short" is one line about the film. With 0.1.47 the reading no longer says nobody has said why. If item 2 is built and a fourth round still asks, draw it then.</div>
+<div class="yes"><b>A yes to "nothing" means:</b> nothing built; the guide says a writer's "I don't know" about lengths is a line about the film (item 2), and the cards stay unsized.</div>
+
+<!-- ───────────── 4 ───────────── -->
+<h2 class="sec">4 · How the fork changes hands (entry 17)</h2>
+<div class="said"><b>What happened.</b> "It ends at the concert: she gives it to Callum." The wall knew <i>where</i> the fork ends and never <i>how</i>. Last round's decision (F1) was that how a plant pays off is that scene's change line — but here the change line was the writer's own dictated sentence, and the agent would not append to it; and the round's rules forbade scene text.</div>
+<div class="ask"><b>What I would do: words, not a field.</b> The home already exists and I checked it: a <code>[[note]]</code> in the scene's text neither prints nor counts, and <b>a scene whose text is only a note still measures as unwritten</b> — so "[[she gives the fork to Callum]]" on the concert card is safe today, and shows to the writer in Pages. The agent did not use it because the round's prompt said "do not write scene text", which is the round's rule and not a writer's. The guide should say that a note on an unwritten scene is not writing the scene, and that when the change line is the writer's own words the agent <i>asks</i> whether the line should say it.</div>
+<div class="yes"><b>A yes means:</b> three sentences in the agent's guide and one in <code>set_plant</code>'s description, with the test that reads descriptions; and a unit test pinning that a note-only scene is unwritten, so it stays true.</div>
+
+<!-- ───────────── 5 ───────────── -->
+<h2 class="sec">5 · A proposed turn (entry 32; F5, asked for the second time)</h2>
+<div class="said"><b>What happened.</b> "Propose them and I will strike" is an answer the app itself offers. The agent proposed five turns — in the chat. Nothing on the wall showed which cards were candidates, so "strike 3" could mean the third proposal or the third card (34), and a writer who stepped away and opened the wall would see no proposal at all. Last round this was settled with words. It came back.</div>
+<div class="row">
+  <div class="opt">
+    <h3>As it ships · proposals live in the chat</h3>
+    <div class="paper">
+      <article class="note note--yellow" style="left:28px;top:30px;transform:rotate(-1deg)">
+        <div class="note__headline">The school hall grand</div>
+        <div class="note__change">Callum names a note out loud, and he is right.</div>
+        <div class="note__with"><span class="note__with-prefix">with</span> Ada, Callum</div>
+      </article>
+      <article class="note note--pink" style="left:262px;top:22px;transform:rotate(1deg)">
+        <div class="note__headline">She finds out about his pitch</div>
+        <div class="note__change"><span class="is-open-field"><span class="open-mark">Open</span> that is all I know about it</span></div>
+      </article>
+    </div>
+    <p>The wall is as it was. The candidates are five numbered lines in a conversation.</p>
+  </div>
+  <div class="opt">
+    <h3>A · a <em>proposed</em> turn is drawn, and the writer strikes or keeps it on the wall</h3>
+    <div class="paper">
+      <article class="note note--yellow is-proposed" style="left:28px;top:30px;transform:rotate(-1deg)">
+        <span class="proposed-tag">proposed turn</span>
+        <div class="note__headline">The school hall grand</div>
+        <div class="note__change">Callum names a note out loud, and he is right.</div>
+        <div class="note__with"><span class="note__with-prefix">with</span> Ada, Callum</div>
+      </article>
+      <article class="note note--pink is-proposed" style="left:262px;top:22px;transform:rotate(1deg)">
+        <span class="proposed-tag">proposed turn</span>
+        <div class="note__headline">She finds out about his pitch</div>
+        <div class="note__change"><span class="is-open-field"><span class="open-mark">Open</span> that is all I know about it</span></div>
+      </article>
+    </div>
+    <div class="sheet" style="margin-top:0.6rem"><span class="k">What the wall asks · proposed by your agent</span>
+      "The school hall grand" as a turn <button>keep</button><button>strike</button><br>
+      "She finds out about his pitch" as a turn <button>keep</button><button>strike</button>
+    </div>
+    <p>A dashed bar where a beat's solid one goes: not a beat until the writer keeps it. Keep marks the beat; strike takes the mark off; both are the writer's, on the wall or by word to the agent. A proposed turn counts as a scene everywhere — the runs, the questions, the beat count — so the app still says nothing about how many turns there should be.</p>
+  </div>
+</div>
+<div class="ask"><b>What I would do: A, and I hold it less firmly than items 1 and 2.</b> For: it is the second asking, the app's own checklist offers the answer that needs it, and "strike 3" was ambiguous only because the candidates had no existence. Against: it is the first thing on the wall that is the <i>agent's</i> claim and not the writer's, and the rule so far is that the wall holds what the writer has said. The dashed bar and the word "proposed" are what keep that honest. If you would rather keep the wall purely the writer's, the fallback is words again: the guide tells the agent to propose by headline, never by number.</div>
+<div class="yes"><b>A yes means:</b> <code>proposedBeat</code> on the card (false by default; marking a beat clears it); <code>set_rank</code> takes <code>proposed</code>; the reading lists proposals and counts them as scenes; the dashed bar and keep/strike on the wall and in the questions sheet; guides and words. About the size of R68.</div>
+
+<!-- ───────────── 6 ───────────── -->
+<h2 class="sec">6 · Two undecided things about one person (entry 18)</h2>
+<div class="said"><b>What happened.</b> Ngozi had two: whether she knows about the ear, and whether there is any scene she is definitely in. A person's page has one open line, so the agent joined them; deciding one means rewriting the string.</div>
+<div class="ask"><b>What I would do: leave it.</b> First asking. One line in the writer's words holds two sentences as well as one, and the second of these ("a scene she is definitely in") is better said by the wall itself: she is on no card for certain, and the cast's counts say so. If item 2's list is built and proves itself, the same shape could come to a person's page later; not before.</div>
+
+<!-- ───────────── 7 ───────────── -->
+<h2 class="sec">7 · The asking's checklist has no question for what these notes needed (entry 9)</h2>
+<div class="said"><b>What happened.</b> The guide says the treatment questions are "the asking's checklist; do not write your own". The list has no question for what changes in a scene — which <code>create_note</code> requires — nor for a scene that was cut, a scene the writer has two ways, someone who may or may not be in a scene, or a thing undecided about a person. Every one has a tool; the agent wrote seven questions of its own against the guide's word.</div>
+<div class="words"><b>The five to add</b>, each with the tool it lands in, as the others have:
+  <ul>
+    <li><b>What changes in each scene?</b> One line: what is different when it ends. Not decided: say so, and the line waits in your words. <i>(create_note, update_note — change, changeOpen)</i></li>
+    <li><b>Is there a scene you have two ways?</b> Keep both until you choose; which goes in front decides nothing. <i>(set_alternative, choose_version)</i></li>
+    <li><b>Is there a scene you have cut and want kept?</b> It stays on the wall and out of the film. <i>(set_aside)</i></li>
+    <li><b>Is anyone in a scene only maybe?</b> Their name with a question mark. <i>(cast)</i></li>
+    <li><b>Is anything undecided about a person, rather than about a scene?</b> It goes on their page. <i>(update_character — open)</i></li>
+  </ul>
+  And the sentence "do not write your own" becomes "ask these, and then anything the notes raise that these do not".
+</div>
+<div class="ask"><b>What I would do: add them.</b> The checklist also shows to the writer, under Reminders, so these read for a person too. No mockup beyond the words above: the sheet lists questions already, and these are five more lines in it.</div>
+<div class="yes"><b>A yes means:</b> five entries in <code>src/board/workflows.js</code>, the guide's sentence, the writer's guide where the checklist is described, and the test that reads <code>list_workflows</code>.</div>
+
+<h2 class="sec">The seven, in one line each</h2>
+<p class="lede" style="margin-top:0.6rem">1 — <b>A</b>: the cast line takes "Not decided yet…". 2 — <b>A</b>: "Not decided yet, about the film", a short list under the logline; see it in the app before it ships. 3 — nothing on the card; the sentence goes in item 2's list. 4 — words: a note on an unwritten scene is the home, and it is already safe. 5 — <b>A</b>, held less firmly: a proposed turn is drawn, and kept or struck by the writer. 6 — leave. 7 — add the five questions.</p>
+</body>
+</html>

@@ -614,6 +614,7 @@ function atAGlance(state, reading, project = null, boardMeta = null) {
   const open =
     reading.open.length +
     reading.openFields.length +
+    (reading.openLines?.length ?? 0) +
     (reading.openPeople?.length ?? 0) +
     (state.targetOpen ? 1 : 0) +
     (project?.nameOpen ? 1 : 0) +
@@ -1141,6 +1142,11 @@ let lastPresenceSaid = null;
 function accountTail() {
   const said = presenceTail(presentPeople(), lastPresenceSaid, hosted());
   lastPresenceSaid = said.key;
+  // Through the hosted door a write answers before presence arrives, so it claims nothing about who is watching; once a session it says whose question that is.
+  if (hosted() && presentPeople().length === 0) {
+    const advice = once("who-is-here", "this door answers before it can see who has a wall open: who_is_here says, and a write shows on an open wall the moment it lands");
+    return advice ? ` (saved to the account; ${advice})` : said.text;
+  }
   return said.text;
 }
 
@@ -1356,7 +1362,7 @@ function summarize(state) {
   const cardRow = (note) => {
       // "Tomás?" is someone who may or may not be in it, by the writer's word (H9).
       const cast = castLine(note.characterIds, note.maybeCharacterIds, state.characters);
-      const who = cast ? `, cast: ${cast}` : "";
+      const who = `${cast ? `, cast: ${cast}` : ""}${(note.castOpen ?? "").trim() ? `, who ${cast ? "else " : ""}is in it: open, by the writer's word — "${note.castOpen.trim()}"` : ""}`;
       // The board it pays off on, named here as read_wall names it (round fifteen, entry 44).
       const laterName = note.payoffBoardId ? (lastHeld?.project?.boards?.find((meta) => meta.id === note.payoffBoardId)?.name ?? note.payoffBoardId) : null;
       const laterAt = note.payoffBoardId && note.payoffNoteId && lastHeld?.project ? ` at ${episodeLabel(lastHeld.project, lastHeld.boards, note.payoffBoardId, note.payoffNoteId)} "${lastHeld.boards[note.payoffBoardId]?.notes?.find((item) => item.id === note.payoffNoteId)?.headline ?? note.payoffNoteId}"` : "";
@@ -1368,7 +1374,7 @@ function summarize(state) {
       const revised = snap && (snap.headline !== note.headline || snap.change !== note.change || (snap.text ?? "") !== (note.text ?? "") || (snap.location ?? "") !== (note.location ?? "")) ? `, changed in ${state.revision.color}` : "";
       const place = note.location ? `, at: ${note.location}` : note.locationOpen ? `, at: open, by the writer's word — "${note.locationOpen}"` : "";
       const when = note.when ? `, when: ${note.when}` : note.whenOpen ? `, when: open, by the writer's word — "${note.whenOpen}"` : "";
-      const openWord = `${note.changeOpen ? `, change line: open, by the writer's word — "${note.changeOpen}"` : ""}${note.open ? `, open (the writer's words): "${note.open}"` : ""}${note.aside ? ", set aside: not in the film" : ""}`;
+      const openWord = `${note.changeOpen ? `, change line: open, by the writer's word — "${note.changeOpen}"` : ""}${note.open ? `, open (the writer's words): "${note.open}"` : ""}${note.aside ? ", set aside: not in the film" : ""}${note.proposedBeat ? ", proposed as a turn (yours, not yet the writer's: set_rank beat keeps it, scene strikes it)" : ""}`;
       const count = formatPages(noteEighths(note));
       // A written card's estimate is kept underneath for when the text goes; say it, or it is invisible (round sixteen, entry 44).
       const underneath = isMeasured(note) && note.lengthEighths !== null ? `; the writer's estimate underneath: ${formatPages(note.lengthEighths)}` : "";
@@ -1454,6 +1460,7 @@ function summarize(state) {
     `left, for now: ${leftCount ? `${leftCount} question(s) the writer left; read_wall lists them` : "none"}`,
     `beats: ${beats}, scenes: ${scenes}${state.notes.some((note) => note.alternativeOf) ? ` — and ${state.notes.filter((note) => note.alternativeOf).length} behind as other versions, out of the count` : ""}${state.notes.some((note) => note.aside) ? ` — and ${state.notes.filter((note) => note.aside).length} set aside, not in the film` : ""}`,
     ...runtimeBlock(state),
+    ...((state.openLines ?? []).length ? ["not decided yet, about the film (the writer's sentences; listed, never asked; strike_open_line when one is decided):", ...state.openLines.map((line, index) => `  ${index + 1}. ${line}`)] : []),
     `notes: ${state.notes.length}, groups: ${state.groups.length}, arrows: ${state.arrows.length}, cast: ${state.characters.length}`,
     "cards (in story order — the follows arrows over the rows; each with its id):",
     notes || "  (no cards)",
@@ -1490,6 +1497,9 @@ const TEXT_ONLY = env.PLOTCODER_JSON !== "1";
  * (round twenty-three, entry 71). The writer's ⌘Z on the wall is true at
  * every door.
  */
+/** undo's and redo's own descriptions through the hosted door: said first and plainly, so an agent never has to risk the writer's work to find out (round twenty-three, entries 70, 71). */
+const NO_UNDO_HERE = "NOT THROUGH THIS DOOR: the hosted door is a fresh server on every call and keeps no trail, so this tool can take nothing back here and says so. The writer's ⌘Z on the wall takes any change back; to take one back yourself, make the opposite change (delete_note, set_aside, update_note with the old words). Elsewhere: ";
+
 function undoAsThisDoorHasIt(text) {
   if (!hosted()) return text;
   return text
@@ -1532,7 +1542,7 @@ const registerTool = server.registerTool.bind(server);
 let lane = Promise.resolve();
 server.registerTool = (name, config, handler) =>
   // A tool's description promises what its reply does, so it says undo as this door has it too.
-  registerTool(name, { ...config, description: undoAsThisDoorHasIt(config.description ?? "") }, (...args) => {
+  registerTool(name, { ...config, description: `${hosted() && (name === "undo" || name === "redo") ? NO_UNDO_HERE : ""}${undoAsThisDoorHasIt(config.description ?? "")}` }, (...args) => {
     const turn = lane.then(async () => {
       await recallSession();
       try {
@@ -1571,6 +1581,37 @@ server.registerTool(
 );
 
 server.registerTool(
+  "add_open_line",
+  {
+    title: "Not decided yet, about the film",
+    description:
+      "Hold something the writer has not decided about the film itself, in their own sentence, when it is true of no one card: when it happens (the season, the year), whether it has acts and where they break, what runs long or short, whether there are other plants, a place that may or may not be in it. One sentence a call. The wall shows the list under the logline and the reading lists it first under open and never asks about it. Not for a card's place, when, change line or cast, which have opens of their own, and never a sentence of yours: only what the writer said they do not know. strike_open_line when they decide.",
+    inputSchema: { text: z.string().min(1).describe("The writer's sentence, as they would read it back: \"Whether it has acts, and where they break.\"") },
+  },
+  async (args) => {
+    const { state, changed, result, live } = await commit({ type: "add_open_line", text: args.text });
+    if (!changed) return ok(`Nothing changed: the film's list already has that sentence${(state.openLines ?? []).length ? ` — ${state.openLines.map((line, index) => `${index + 1}. ${line}`).join(" ")}` : ""}.`);
+    return ok(`Held, about the film: "${result.line}"${where(live)}. ${result.openLines.length} not decided yet about the film; the reading lists them first under open and asks nothing. strike_open_line takes one off when the writer decides it.`, result);
+  },
+);
+
+server.registerTool(
+  "strike_open_line",
+  {
+    title: "Decided: strike a line about the film",
+    description:
+      "Take a sentence off the film's not-decided list, when the writer has decided it: by its number as list_board shows it, or by its words. What they decided goes where it belongs — the premise, a group for an act, a card's when — with that field's own tool; this only strikes the line.",
+    inputSchema: { line: z.union([z.number().int().positive(), z.string().min(1)]).describe("The line's number in list_board, from 1, or its words.") },
+  },
+  async (args) => {
+    const command = typeof args.line === "number" ? { type: "strike_open_line", index: args.line - 1 } : { type: "strike_open_line", text: args.line };
+    const { state, changed, result, live } = await commit(command);
+    if (!changed) return ok(`Nothing struck: no such line. ${(state.openLines ?? []).length ? `The film's list: ${state.openLines.map((line, index) => `${index + 1}. ${line}`).join(" ")}` : "Nothing is held as not decided about the film."}`);
+    return ok(`Struck, as decided: "${result.line}"${where(live)}. ${result.openLines.length} still not decided about the film. Where what they decided belongs is that field's own tool.`, result);
+  },
+);
+
+server.registerTool(
   "set_logline",
   {
     title: "Set logline",
@@ -1604,13 +1645,22 @@ server.registerTool(
   {
     title: "Set card rank",
     description:
-      `Mark cards as beats or scenes. ${wordSentence("beat")} Rank is carried by the card, not by where it sits. Do not volunteer an opinion about how many beats there should be.`,
+      `Mark cards as beats or scenes. ${wordSentence("beat")} Rank is carried by the card, not by where it sits. Do not volunteer an opinion about how many beats there should be. When the writer says "propose the turns and I will strike", pass rank "proposed": each candidate wears a dashed bar and the words "proposed turn" on the wall, and is listed in the reading, so the proposal is on the wall and not only in the chat — and it is still a scene everywhere, in the count, the runs and the questions, until the writer keeps it. Keep is rank "beat"; strike is rank "scene". Never mark a beat on your own word.`,
     inputSchema: {
       ids: z.array(z.string()).min(1),
-      rank: rankSchema,
+      rank: z.enum([...NOTE_RANKS, "proposed"]).describe("beat or scene, on the writer's word; or proposed, your candidate for the writer to keep (beat) or strike (scene)."),
     },
   },
   async (args) => {
+    if (args.rank === "proposed") {
+      const proposal = await commit({ type: "propose_beat", ids: args.ids });
+      if (!proposal.changed) return ok("Nothing changed: those cards are beats already, or proposed already, or not on this board.");
+      const beatsAlready = args.ids.length - proposal.result.length;
+      return ok(
+        `Proposed as ${proposal.result.length === 1 ? "a turn" : "turns"}, for the writer to keep or strike: ${proposal.result.map((note) => `"${note.headline}"`).join(", ")}${where(proposal.live)}.${beatsAlready > 0 ? ` ${beatsAlready} of the cards named ${beatsAlready === 1 ? "was" : "were"} left as ${beatsAlready === 1 ? "it was" : "they were"}: a beat already, or proposed already.` : ""} Each wears a dashed bar and "proposed turn" on the wall, where the writer can keep or strike it; each is still a scene in the count, the runs and the questions. Keep: set_rank beat. Strike: set_rank scene. Name them to the writer by headline, never by number.`,
+        proposal.result,
+      );
+    }
     const { state, result, live } = await commit({
       type: "set_rank",
       ids: args.ids,
@@ -1699,7 +1749,7 @@ server.registerTool(
   {
     title: "Create note",
     description:
-      "Add a card (post-it) to the board. A card is one scene: a headline plus the change it causes. Provide both headline and change. Optionally set color, x/y position, rank ('beat' for one of the major turns — a beat is a whole card, the scene where the turn happens), pages (how long it runs; leave it out and the card is taken to be about a page), plants (true if this scene sets something up that must pay off later), location (where it happens, as the writer would say it — 'the piano shop', not 'INT. PIANO SHOP'), and characters (who is in the scene, by name; a name not in the cast yet is added to it — name an unnamed person by their role, 'Dana's mother', rather than leaving them off). When the writer does not know whether someone is in the scene, put a question mark after the name — 'Tomás?' — and the wall holds it as not decided: listed under open, never asked, and counted neither way by the cast's counts or the check for someone gone too long; the name without the mark decides it, and leaving the name off decides it the other way. Only on the writer's word. The reply names the card's id.",
+      "Add a card (post-it) to the board. A card is one scene: a headline plus the change it causes. Provide both headline and change. Optionally set color, x/y position, rank ('beat' for one of the major turns — a beat is a whole card, the scene where the turn happens), pages (how long it runs; leave it out and the card is taken to be about a page), plants (true if this scene sets something up that must pay off later), location (where it happens, as the writer would say it — 'the piano shop', not 'INT. PIANO SHOP'), and characters (who is in the scene, by name; a name not in the cast yet is added to it — name an unnamed person by their role, 'Dana's mother', rather than leaving them off). When the writer does not know whether someone is in the scene, put a question mark after the name — 'Tomás?' — and the wall holds it as not decided: listed under open, never asked, and counted neither way by the cast's counts or the check for someone gone too long; the name without the mark decides it, and leaving the name off decides it the other way. Only on the writer's word. When the writer does not know who is in a scene and nobody can be named — or knows some and not whether there is anyone else — that is the cast's own open: pass castOpen with their words (\"I don't know yet\"; \"anyone else: I don't know\"), and the card is listed under open and not asked who is in it, while its other questions stand. The words stand beside names; castOpen \"\" clears them. Only on the writer's word. The reply names the card's id.",
     inputSchema: {
       headline: z.string().min(1),
       change: z.string().optional().describe("What is different when the scene ends. Required, unless the writer has not decided it: then pass changeOpen with their words, and the change line waits while every other question about the card stands. (A card born wholly open, with open, may also wait.)"),
@@ -1717,6 +1767,7 @@ server.registerTool(
       whenOpen: z.string().optional().describe("The writer's words for why the when is not decided: the card is born with its when open, listed and not asked."),
       open: z.string().optional().describe("The writer's words for what is not decided about this card — \"whether Tom knows\" — so the card is born open: the reading lists it and asks nothing else of it until the words are cleared."),
       characters: z.array(z.string().min(1)).optional(),
+      castOpen: z.string().optional().describe("The writer's words for why who is in the scene is not decided, when nobody can be named or beside the names given. Not the same as open, which says the whole card is undecided."),
       x: z.number().optional(),
       y: z.number().optional(),
     },
@@ -1760,6 +1811,7 @@ server.registerTool(
         locationOpen: args.locationOpen,
         whenOpen: args.whenOpen,
         changeOpen: (args.change ?? "").trim() ? undefined : args.changeOpen,
+        castOpen: args.castOpen,
         when: args.when,
         open: args.open,
         x: landing.x,
@@ -1810,6 +1862,8 @@ server.registerTool(
       return made;
     });
     const castSaid = names.length && result?.id ? ` Cast: ${castLine(result.characterIds, result.maybeCharacterIds, after.characters)}${added.length ? ` (added to the roster: ${added.join(", ")})` : ""}${(result.maybeCharacterIds ?? []).length ? " — a name with ? is not decided: listed under open, counted neither way" : ""}.` : "";
+    // Who is in it, left open in the writer's words (round twenty-three, entries 13, 14).
+    const castOpenSaid = (result?.castOpen ?? "").trim() ? ` Who ${names.length ? "else " : ""}is in it: open, by the writer's word — "${result.castOpen}" (listed, not asked).` : "";
     const landed = [
       result?.rank === "beat" ? "a beat" : "a scene",
       result?.lengthEighths === null ? "about a page (unsized: the writer's guess until set_length)" : `${formatPages(noteEighths(result))} ${formatPages(noteEighths(result)) === "1" ? "page" : "pages"}`,
@@ -1826,7 +1880,7 @@ server.registerTool(
       : args.x === undefined && args.y === undefined ? ` Placed after the last card in story order.${once("placed", " organize lays the wall out along the arrows.")}` : "";
     // Under a lock a new scene has a letter, not a number: say it, since the board is the only other place to learn it (round fourteen, entry 44).
     const numbered = after?.lock && result?.id ? ` Numbered ${sceneNumbers(storyOrder(after), after.lock).get(result.id)} (the numbers are locked; a new scene's letter is its place between locked ones now, worked out again from where it sits if it moves; the locked numbers never move).` : "";
-    return ok(`Created card ${result?.id ?? ""}: ${landed}${where(live)}.${castSaid}${placed}${numbered}`, result);
+    return ok(`Created card ${result?.id ?? ""}: ${landed}${where(live)}.${castSaid}${castOpenSaid}${placed}${numbered}`, result);
   },
 );
 
@@ -1981,13 +2035,14 @@ server.registerTool(
     // Fields, not lines: a card's line can carry three of them.
     // What is open about a person is counted at the head, so it is counted here: the two lines must add up to one number (round twenty-three, entry 26).
     const openPeopleCount = reading.openPeople?.length ?? 0;
-    const openFieldCount = reading.openFields.length + (projectForRead.nameOpen ? 1 : 0) + (state.targetOpen ? 1 : 0) + (projectForRead.premiseOpen ? 1 : 0) + (readBoardMeta?.nameOpen ? 1 : 0);
+    const openFieldCount = reading.openFields.length + (reading.openLines?.length ?? 0) + (projectForRead.nameOpen ? 1 : 0) + (state.targetOpen ? 1 : 0) + (projectForRead.premiseOpen ? 1 : 0) + (readBoardMeta?.nameOpen ? 1 : 0);
     // The short read (round twenty-two, entry 83): confirming nothing was owed cost three hundred lines.
     if (args?.only === "questions") {
       return ok(
         [
           `PlotCoder wall (${door(live, base)}) — the questions only; read_wall without only is the whole reading`,
           atAGlance(state, reading, projectForRead, readBoardMeta),
+          ...((reading.proposed ?? []).length ? [`waiting on the writer: ${reading.proposed.length} turn${reading.proposed.length === 1 ? "" : "s"} you proposed, not yet kept or struck — ${reading.proposed.map((id) => `"${state.notes.find((note) => note.id === id)?.headline ?? id}"`).join(", ")}`] : []),
           "questions the wall raises:",
           ...(reading.findings.length ? reading.findings.map((finding) => `  - [${finding.kind}] ${finding.text}${finding.ids.length ? ` (ids: ${finding.ids.join(", ")})` : ""}`) : [reading.left.length ? "  (none the writer has not left)" : "  (none that this reading can see)"]),
           ...(reading.left.length ? ["left, for now:", ...reading.left.map((finding) => `  - [${finding.kind}] ${finding.text}${finding.why ? ` ("${finding.why}")` : ""}`)] : []),
@@ -2064,6 +2119,7 @@ server.registerTool(
       ...(reading.threads.length
         ? ["threads (the writer's strings through the story; a loose end is asked about below):", ...reading.threads.map((thread) => `  - "${thread.name}": ${thread.ids.length ? thread.ids.map((id) => `"${state.notes.find((note) => note.id === id)?.headline ?? id}"`).join(" → ") : "no card yet"}${thread.startOpen ? " — starts nowhere yet" : ""}${thread.endOpen ? " — ends nowhere yet" : ""}${!thread.startOpen && !thread.endOpen && thread.ids.length >= 2 ? ` — both ends tied, about ${formatPages(thread.apart)} pages apart` : ""}`)]
         : []),
+      ...((reading.proposed ?? []).length ? ["turns proposed and not yet kept or struck (yours, said on the wall; scenes until the writer keeps one — set_rank beat keeps, scene strikes):", ...reading.proposed.map((id) => `  - "${state.notes.find((note) => note.id === id)?.headline ?? id}" (${id})`)] : []),
       "questions the wall raises (each stands on every reading until the wall changes to answer it, or the writer leaves it — leave_question, with their reason):",
       ...(reading.findings.length
         ? reading.findings.map((finding) => `  - [${finding.kind}] ${finding.text}${finding.ids.length ? ` (ids: ${finding.ids.join(", ")})` : ""}`)
@@ -3169,7 +3225,7 @@ server.registerTool(
   {
     title: "Undo my last change",
     description:
-      "Take back the last change this server made, restoring the board to what it was before that call. Refuses if the board has changed since — a person moved on, or another agent did — so it never tramples work; the person can always undo anything from the wall with ⌘Z. Call it again to go back further.",
+      "Take back the LAST change this server made, restoring the board to what it was before that call. It is a stack, newest first, with no way to pick a change: when the writer says \"undo that scene\" and changes they want have landed since — a scene written, a line added — undo would take those first, so use delete_note or set_aside on the card instead. Refuses if the board has changed since — a person moved on, or another agent did — so it never tramples work; the person can always undo anything from the wall with ⌘Z. Call it again to go back further.",
     inputSchema: {},
   },
   async () => {
@@ -3383,7 +3439,7 @@ server.registerTool(
   {
     title: "Fold the corner",
     description:
-      `Fold the corner of cards — mark them as planting something — or unfold them. ${wordSentence("corner")} what is a short label for the thing planted ("the jar of coins"), repeated wherever the fold is named: how it is first seen and how it pays off are what happens in those two scenes, so they go in those cards' change lines or text, never in the label. The setup arrow is create_arrow with kind 'setup'. A fold that pays off in a later episode: pass later, another board of the project by name, id or number — a board that exists; new_board makes one — and, once you know it, at: the scene on that board that pays it off, by id or headline. A board alone is a promise: the reading lists the card under 'later' and, once that board holds cards, asks which scene until one claims it; with at, both boards' readings name the payoff and the paying-off card says so. later '' forgets the board; at '' keeps the board and forgets the scene. set_payoff makes the same claim from the other board. Folding never moves a card.`,
+      `Fold the corner of cards — mark them as planting something — or unfold them. ${wordSentence("corner")} what is a short label for the thing planted ("the jar of coins"), repeated wherever the fold is named: how it is first seen and how it pays off are what happens in those two scenes, so they go in those cards' change lines or text, never in the label; when the change line is the writer's own words, ask before adding to it, and keep it meanwhile as a [[note]] in the scene's text with write_scene — a scene whose text is only notes is still unwritten, so that is not writing the scene. The setup arrow is create_arrow with kind 'setup'. A fold that pays off in a later episode: pass later, another board of the project by name, id or number — a board that exists; new_board makes one — and, once you know it, at: the scene on that board that pays it off, by id or headline. A board alone is a promise: the reading lists the card under 'later' and, once that board holds cards, asks which scene until one claims it; with at, both boards' readings name the payoff and the paying-off card says so. later '' forgets the board; at '' keeps the board and forgets the scene. set_payoff makes the same claim from the other board. Folding never moves a card.`,
     inputSchema: {
       ids: z.array(z.string()).min(1),
       plants: z.boolean().optional(),
@@ -3742,6 +3798,7 @@ server.registerTool(
     inputSchema: {
       noteIds: z.array(z.string()).min(1),
       characters: z.array(z.string()),
+      castOpen: z.string().optional().describe("The writer's words for why who is in the scene is not decided — \"I don't know yet\", or \"anyone else: I don't know\" beside the names — listed under open, and the card is not asked who is in it. \"\" clears the words; leave it out and the card keeps its own."),
     },
   },
   async (args) => {
@@ -3765,7 +3822,7 @@ server.registerTool(
         const into = maybe ? maybeCharacterIds : characterIds;
         if (person && !characterIds.includes(person.id) && !maybeCharacterIds.includes(person.id)) into.push(person.id);
       }
-      return step({ type: "set_cast", ids: args.noteIds, characterIds, maybeCharacterIds }).result;
+      return step({ type: "set_cast", ids: args.noteIds, characterIds, maybeCharacterIds, ...(typeof args.castOpen === "string" ? { open: args.castOpen } : {}) }).result;
     });
     const characterIds = (result ?? []).length ? result[0].characterIds : [];
     const maybeIds = (result ?? []).length ? (result[0].maybeCharacterIds ?? []) : [];
@@ -3787,7 +3844,7 @@ server.registerTool(
     const cameOff = args.noteIds.length === 1 && beforeCast ? (beforeCast.characterIds ?? []).filter((id) => !characterIds.includes(id) && !maybeIds.includes(id)).map(nameOf) : [];
     const whatChanged = [decidedIn.length ? `decided: ${decidedIn.join(", ")} ${decidedIn.length === 1 ? "is" : "are"} in it` : "", decidedOut.length ? `decided: ${decidedOut.join(", ")} ${decidedOut.length === 1 ? "is" : "are"} not in it, so that is no longer open` : "", cameOff.length ? `off the card: ${cameOff.join(", ")}` : ""].filter(Boolean).join("; ");
     return ok(
-      `${result.length} card(s) now cast ${names.length ? names.join(", ") : "nobody"}${maybeNames.length ? `, with ${maybeNames.join(", ")} not decided (listed under open, counted neither way; the name without the mark decides it)` : ""}${whatChanged ? ` (${whatChanged})` : ""}: ${result.map((note) => `"${note.headline}"`).join(", ")}${added.length ? ` (added to the cast: ${added.join(", ")})` : ""}${where(live)}.${stillOpen(result)}`,
+      `${result.length} card(s) now cast ${names.length ? names.join(", ") : "nobody"}${maybeNames.length ? `, with ${maybeNames.join(", ")} not decided (listed under open, counted neither way; the name without the mark decides it)` : ""}${whatChanged ? ` (${whatChanged})` : ""}${(result[0]?.castOpen ?? "").trim() ? `, who ${names.length || maybeNames.length ? "else " : ""}is in it left open, by the writer's word: "${result[0].castOpen}" (listed, not asked)` : ""}: ${result.map((note) => `"${note.headline}"`).join(", ")}${added.length ? ` (added to the cast: ${added.join(", ")})` : ""}${where(live)}.${stillOpen(result)}`,
       result,
     );
   },

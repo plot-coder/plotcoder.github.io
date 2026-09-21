@@ -137,6 +137,7 @@ describe("plotcoder MCP server", () => {
 
   const SORTED_TOOLS = [
       "add_character",
+      "add_open_line",
       "add_reminder",
       "add_to_group",
       "add_picture",
@@ -221,6 +222,7 @@ describe("plotcoder MCP server", () => {
       "set_target",
       "set_when",
       "start_revision",
+      "strike_open_line",
       "undo",
       "ungroup",
       "unlock_numbers",
@@ -3268,6 +3270,70 @@ describe("a person who may or may not be in a scene (round twenty-two, H9)", () 
     expect(again).toContain("now cast Marta, with Tomás not decided");
     const alone = await door.callTool("cast", { noteIds: [card.id], characters: ["Marta"] });
     expect(alone).toContain("decided: Tomás is not in it, so that is no longer open");
+  });
+
+  it("holds who is in a scene as open, in the writer's words, when nobody can be named or beside the names (round twenty-three, entries 13, 14)", async () => {
+    const made = await door.callTool("create_note", { headline: "The job centre sends Callum", change: "He is sent.", castOpen: "I don't know yet" });
+    expect(made).toContain('Who is in it: open, by the writer\'s word — "I don\'t know yet" (listed, not asked).');
+    const read = await door.callTool("read_wall");
+    expect(read).toContain('"The job centre sends Callum" — who is in it: I don\'t know yet');
+    expect(read).not.toMatch(/\[nobody\][^\n]*The job centre sends Callum/);
+    const board = await door.callToolData("list_board");
+    const depot = board.notes.find((note) => note.headline === "The depot, after hours");
+    const beside = await door.callTool("cast", { noteIds: [depot.id], characters: ["Marta"], castOpen: "anyone else: I don't know" });
+    expect(beside).toContain('who else is in it left open, by the writer\'s word: "anyone else: I don\'t know"');
+    expect(await door.callTool("list_board")).toContain('cast: Marta, who else is in it: open, by the writer\'s word — "anyone else: I don\'t know"');
+    // A recast that does not speak of it keeps the words; "" clears them.
+    await door.callTool("cast", { noteIds: [depot.id], characters: ["Marta", "Tomás"] });
+    expect(await door.callTool("list_board")).toContain("who else is in it: open");
+    await door.callTool("cast", { noteIds: [depot.id], characters: ["Marta", "Tomás"], castOpen: "" });
+    expect(await door.callTool("list_board")).not.toContain("who else is in it: open");
+  });
+
+  it("holds what is not decided about the film itself, in the writer's sentences, and strikes a line when it is decided (round twenty-three, entries 15, 16)", async () => {
+    const held = await door.callTool("add_open_line", { text: "Whether it has acts, and where they break." });
+    expect(held).toContain('Held, about the film: "Whether it has acts, and where they break."');
+    await door.callTool("add_open_line", { text: "When it happens: the season, the year." });
+    expect(await door.callTool("add_open_line", { text: "whether it has acts, and where they break." })).toContain("Nothing changed");
+    const listed = await door.callTool("list_board");
+    expect(listed).toContain("not decided yet, about the film");
+    expect(listed).toContain("  2. When it happens: the season, the year.");
+    const read = await door.callTool("read_wall");
+    expect(read).toContain("  - about the film — Whether it has acts, and where they break.");
+    expect(read).not.toMatch(/\[[a-z]+\][^\n]*acts/);
+    const struck = await door.callTool("strike_open_line", { line: 1 });
+    expect(struck).toContain('Struck, as decided: "Whether it has acts, and where they break."');
+    expect(await door.callTool("strike_open_line", { line: "When it happens: the season, the year." })).toContain("0 still not decided");
+    expect(await door.callTool("strike_open_line", { line: 1 })).toContain("Nothing struck");
+  });
+
+  it("puts a proposed turn on the wall, a scene until the writer keeps it, and says what is waiting on them (round twenty-three, entry 32)", async () => {
+    const board = await door.callToolData("list_board");
+    const depot = board.notes.find((note) => note.headline === "The depot, after hours");
+    const job = board.notes.find((note) => note.headline === "The job centre sends Callum");
+    const proposed = await door.callTool("set_rank", { ids: [depot.id, job.id], rank: "proposed" });
+    expect(proposed).toContain('Proposed as turns, for the writer to keep or strike: "The depot, after hours", "The job centre sends Callum"');
+    expect(proposed).toContain("never by number");
+    const listed = await door.callTool("list_board");
+    expect(listed).toContain("proposed as a turn");
+    expect(listed).toMatch(/beats: 0/);
+    const read = await door.callTool("read_wall");
+    expect(read).toContain("turns proposed and not yet kept or struck");
+    expect(read).toContain("[unmarked] No card is marked as a beat");
+    expect(await door.callTool("read_wall", { only: "questions" })).toContain("waiting on the writer: 2 turns you proposed");
+    // Keep one, strike the other.
+    expect(await door.callTool("set_rank", { ids: [depot.id], rank: "beat" })).toContain('1 card(s) are now beat: "The depot, after hours"');
+    await door.callTool("set_rank", { ids: [job.id], rank: "scene" });
+    const after = await door.callTool("read_wall");
+    expect(after).not.toContain("turns proposed and not yet kept or struck");
+    expect(await door.callTool("set_rank", { ids: [depot.id], rank: "proposed" })).toContain("Nothing changed");
+  });
+
+  it("asks, in the treatment's checklist, the five things round twenty-three's notes needed (entry 9)", async () => {
+    const listed = await door.callTool("list_workflows");
+    for (const question of ["What changes in each scene?", "Is anyone in a scene only maybe?", "Is anything undecided about a person", "Is there a scene you have two ways?", "Is there a scene you have cut and want kept?"]) expect(listed).toContain(question);
+    const tools = await door.request("tools/list", {});
+    expect(tools.tools.find((tool) => tool.name === "set_plant").description).toContain("a scene whose text is only notes is still unwritten");
   });
 
   it("says the camera's mark in the words, and where a decided fact about one scene goes (H8, H10)", async () => {

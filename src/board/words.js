@@ -46,6 +46,11 @@ export const WORD_GROUPS = [
         target: "beat",
       },
       {
+        id: "proposed",
+        name: "A proposed turn",
+        sentence: "A card your agent has put forward as a turn, when you said “propose them and I will strike”: a dashed bar where a beat’s solid one goes. Keep makes it a beat; strike takes the mark off. Until you keep it, it is a scene in every count.",
+      },
+      {
         id: "scene",
         name: "A scene",
         sentence: "Every card that is not a beat: what happens between the turns. One card, one scene.",
@@ -66,7 +71,7 @@ export const WORD_GROUPS = [
       {
         id: "open",
         name: "Open",
-        sentence: "A card the writer has not decided, in their words on its edge: the reading lists it and asks nothing else of it until the words are cleared. A field can be open the same way — the logline, the premise, a card's place or when, a board's or the project's name — the words where the value would be, listed and not asked.",
+        sentence: "A card the writer has not decided, in their words on its edge: the reading lists it and asks nothing else of it until the words are cleared. A field can be open the same way — the logline, the premise, a card's place, when, change line or who is in it, a board's or the project's name — the words where the value would be, listed and not asked. And what is not decided about the film itself — when it happens, whether it has acts, what runs long — is a short list of your own sentences under the logline, struck one at a time as you decide.",
       },
       {
         id: "aside",
@@ -106,7 +111,7 @@ export const WORD_GROUPS = [
       {
         id: "cast",
         name: "The cast on a card",
-        sentence: "Who is in the scene. Each person has a page: looks, voice, wants, needs. A name with a question mark — “Tomás?” — is someone who may or may not be in it: not decided, listed with what is open, and counted neither way.",
+        sentence: "Who is in the scene. Each person has a page: looks, voice, wants, needs. A name with a question mark — “Tomás?” — is someone who may or may not be in it: not decided, listed with what is open, and counted neither way. And when you do not know who is in a scene at all, or whether there is anyone else, the line can be left open in your own words, as the place can.",
         target: "cast",
       },
       {

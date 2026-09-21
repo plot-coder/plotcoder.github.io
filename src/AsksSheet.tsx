@@ -13,6 +13,10 @@ import type { Finding, FindingKind } from "./board/readWall";
 type AsksSheetProps = {
   open: boolean;
   findings: Finding[];
+  /** Turns the writer's agent has proposed, not yet kept or struck: theirs to decide, never a question of the wall's. */
+  proposed: Array<{ id: string; headline: string }>;
+  onKeep: (id: string) => void;
+  onStrike: (id: string) => void;
   /** Questions the writer has left, for now (R53), with the reason when they gave one. */
   left: Array<Finding & { since: string; why?: string }>;
   onClose: () => void;
@@ -45,7 +49,7 @@ export const KIND_NAMES: Record<FindingKind, string> = {
 /** The kinds a debt is: shown warm. */
 const WARM: ReadonlySet<FindingKind> = new Set(["unpaid", "backwards"]);
 
-export function AsksSheet({ open, findings, left, onClose, onShow, onLeave, onAskAgain }: AsksSheetProps) {
+export function AsksSheet({ open, findings, left, proposed, onKeep, onStrike, onClose, onShow, onLeave, onAskAgain }: AsksSheetProps) {
   const titleId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
 
@@ -80,6 +84,36 @@ export function AsksSheet({ open, findings, left, onClose, onShow, onLeave, onAs
           Read the way the method reads it: the sag, the setup with no payoff, the person who disappears, two scenes
           doing one job. Questions, not fixes.
         </p>
+        {proposed.length > 0 ? (
+          <div className="asks__proposed">
+            <p className="cast-lens__kicker">Proposed by your agent · turns, for you to keep or strike</p>
+            <ul className="asks__list asks__list--proposed">
+              {proposed.map((card) => (
+                <li key={card.id} className="asks__q">
+                  <p className="asks__text">
+                    “{card.headline}” as a turn{" "}
+                    <button
+                      type="button"
+                      className="words__show"
+                      onClick={() => {
+                        onClose();
+                        onShow([card.id]);
+                      }}
+                    >
+                      show me
+                    </button>{" "}
+                    <button type="button" className="words__show" onClick={() => onKeep(card.id)}>
+                      keep
+                    </button>{" "}
+                    <button type="button" className="words__show asks__leave" onClick={() => onStrike(card.id)}>
+                      strike
+                    </button>
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
         {findings.length === 0 ? (
           <p className="project-copy asks__none">
             {left.length ? "Nothing to ask that you have not left." : "Nothing to ask. The wall answers every question it knows how to put."}

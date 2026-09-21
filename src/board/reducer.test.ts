@@ -15,6 +15,7 @@ import {
   filledCharacterFields,
   formatPages,
   isBoardState,
+  isMeasured,
   NOTE_HEIGHT,
   NOTE_WIDTH,
   normalizeState,
@@ -1821,5 +1822,112 @@ describe("a person who may or may not be in a scene (round twenty-two, H9)", () 
     const old = start();
     const before = { ...old, notes: old.notes.map(({ maybeCharacterIds: _gone, ...note }) => note) } as unknown as BoardState;
     expect(card(normalizeState(before)).maybeCharacterIds).toEqual([]);
+  });
+});
+
+describe("a scene whose text is only notes (round twenty-three, entry 17)", () => {
+  it("is still unwritten and reads at its estimate: a note is a home for what the change line cannot say, not the writing of the scene", () => {
+    const at = "2026-09-20T00:00:00.000Z";
+    let state = applyCommand(emptyState(), { type: "create_note", id: "c", headline: "The concert", change: "Ada hands Callum the lever.", lengthEighths: 16 }, at).state;
+    state = applyCommand(state, { type: "set_text", id: "c", text: "[[she gives the fork to Callum]]\n\n[[and says nothing]]" }, at).state;
+    const card = state.notes.find((note) => note.id === "c")!;
+    expect(isMeasured(card)).toBe(false);
+    expect(noteEighths(card)).toBe(16);
+  });
+});
+
+describe("who is in a scene, left open by the writer's word (round twenty-three, entries 13, 14)", () => {
+  const at = "2026-09-20T00:00:00.000Z";
+  const start = () => {
+    let state = applyCommand(emptyState(), { type: "add_character", id: "a", name: "Ada" }, at).state;
+    state = applyCommand(state, { type: "create_note", id: "j", headline: "The job centre sends Callum", castOpen: "  I don't know yet " }, at).state;
+    return applyCommand(state, { type: "create_note", id: "s", headline: "The school hall", characterIds: ["a"] }, at).state;
+  };
+  const card = (state: BoardState, id: string) => state.notes.find((note) => note.id === id)!;
+
+  it("stands on the card in the writer's words, with nobody named or beside the names", () => {
+    expect(card(start(), "j").castOpen).toBe("I don't know yet");
+    const beside = applyCommand(start(), { type: "set_cast", ids: ["s"], characterIds: ["a"], open: "anyone else: I don't know" }, at).state;
+    expect(card(beside, "s").characterIds).toEqual(["a"]);
+    expect(card(beside, "s").castOpen).toBe("anyone else: I don't know");
+  });
+
+  it("is kept by a recast that does not speak of it, and cleared only by the writer's word", () => {
+    const named = applyCommand(start(), { type: "set_cast", ids: ["j"], characterIds: ["a"] }, at).state;
+    expect(card(named, "j").castOpen).toBe("I don't know yet");
+    const cleared = applyCommand(named, { type: "set_cast", ids: ["j"], characterIds: ["a"], open: "" }, at).state;
+    expect(card(cleared, "j").castOpen).toBe("");
+    expect(applyCommand(cleared, { type: "set_cast", ids: ["j"], characterIds: ["a"], open: "" }, at).changed).toBe(false);
+  });
+
+  it("is repaired on a card written before it existed, to nothing", () => {
+    const old = start();
+    const before = { ...old, notes: old.notes.map(({ castOpen: _gone, ...note }) => note) } as unknown as BoardState;
+    expect(card(normalizeState(before), "j").castOpen).toBe("");
+  });
+});
+
+describe("what is not decided about the film itself (round twenty-three, entries 15, 16)", () => {
+  const at = "2026-09-20T00:00:00.000Z";
+
+  it("keeps the writer's sentences, one each, in the order they were said", () => {
+    let state = applyCommand(emptyState(), { type: "add_open_line", text: "  Whether it has acts,  and where they break. " }, at).state;
+    state = applyCommand(state, { type: "add_open_line", text: "When it happens: the season, the year." }, at).state;
+    expect(state.openLines).toEqual(["Whether it has acts, and where they break.", "When it happens: the season, the year."]);
+    // The same sentence twice, whatever the case, is one line; an empty one is nothing.
+    expect(applyCommand(state, { type: "add_open_line", text: "whether it has acts, and where they break." }, at).changed).toBe(false);
+    expect(applyCommand(state, { type: "add_open_line", text: "   " }, at).changed).toBe(false);
+  });
+
+  it("strikes a line by its words or its place, and says which", () => {
+    let state = applyCommand(emptyState(), { type: "add_open_line", text: "Acts." }, at).state;
+    state = applyCommand(state, { type: "add_open_line", text: "What runs long." }, at).state;
+    const byWords = applyCommand(state, { type: "strike_open_line", text: "acts." }, at);
+    expect(byWords.state.openLines).toEqual(["What runs long."]);
+    expect(byWords.result).toMatchObject({ line: "Acts." });
+    expect(applyCommand(state, { type: "strike_open_line", index: 1 }, at).state.openLines).toEqual(["Acts."]);
+    expect(applyCommand(state, { type: "strike_open_line", text: "not there" }, at).changed).toBe(false);
+  });
+
+  it("is repaired on a board written before it existed, to nothing, and cleaned when it is a mess", () => {
+    const { openLines: _gone, ...old } = emptyState();
+    expect(normalizeState(old as unknown as BoardState).openLines).toEqual([]);
+    const messy = { ...emptyState(), openLines: ["Acts.", 4, "  acts. ", "", "When."] } as unknown as BoardState;
+    expect(normalizeState(messy).openLines).toEqual(["Acts.", "When."]);
+  });
+});
+
+describe("a proposed turn (round twenty-three, entry 32)", () => {
+  const at = "2026-09-20T00:00:00.000Z";
+  const start = () => {
+    let state = emptyState();
+    for (const id of ["a", "b", "c"]) state = applyCommand(state, { type: "create_note", id, headline: id, change: "x" }, at).state;
+    state = applyCommand(state, { type: "set_rank", ids: ["c"], rank: "beat" }, at).state;
+    return applyCommand(state, { type: "propose_beat", ids: ["a", "b", "c"] }, at).state;
+  };
+  const card = (state: BoardState, id: string) => state.notes.find((note) => note.id === id)!;
+
+  it("is said on the card and changes no rank: a proposed card is a scene, and a beat is never proposed", () => {
+    const state = start();
+    expect(card(state, "a")).toMatchObject({ proposedBeat: true, rank: "scene" });
+    expect(card(state, "c")).toMatchObject({ proposedBeat: false, rank: "beat" });
+    expect(countRanks(state)).toMatchObject({ beats: 1 });
+  });
+
+  it("is kept by marking the beat and struck by taking the proposal off, and either is the end of it", () => {
+    const kept = applyCommand(start(), { type: "set_rank", ids: ["a"], rank: "beat" }, at).state;
+    expect(card(kept, "a")).toMatchObject({ proposedBeat: false, rank: "beat" });
+    const struck = applyCommand(start(), { type: "propose_beat", ids: ["b"], proposed: false }, at).state;
+    expect(card(struck, "b")).toMatchObject({ proposedBeat: false, rank: "scene" });
+    // The writer saying "a scene" of a proposed card strikes it too.
+    const scene = applyCommand(start(), { type: "set_rank", ids: ["b"], rank: "scene" }, at);
+    expect(scene.changed).toBe(true);
+    expect(card(scene.state, "b").proposedBeat).toBe(false);
+  });
+
+  it("is repaired on a card written before it existed, to not proposed", () => {
+    const old = start();
+    const before = { ...old, notes: old.notes.map(({ proposedBeat: _gone, ...note }) => note) } as unknown as BoardState;
+    expect(normalizeState(before).notes.every((note) => note.proposedBeat === false)).toBe(true);
   });
 });

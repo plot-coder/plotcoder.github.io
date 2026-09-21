@@ -87,6 +87,10 @@ export type BoardNote = {
   characterIds: string[];
   /** Who may or may not be in the scene, by the writer's word: listed as open, counted neither way, never also in characterIds. */
   maybeCharacterIds: string[];
+  /** The writer's words for why who is in the scene is not decided — when nobody can be named, or beside the names ("anyone else: I don't know") — or empty. */
+  castOpen: string;
+  /** A turn the agent has proposed and the writer has not yet kept or struck. A scene everywhere until kept; never true on a beat. */
+  proposedBeat: boolean;
   /** The corner is folded: this card plants something that must pay off (R31). */
   plants: boolean;
   /** What the fold plants, in the writer's words (R62), or empty; never set on an unfolded card. */
@@ -136,6 +140,8 @@ export type BoardState = {
   logline: string;
   /** The writer's words for why there is no logline yet (R61), or empty. */
   loglineOpen: string;
+  /** What is not decided about the film itself, in the writer's sentences: when it happens, whether it has acts. Listed, never asked; the app never adds one. */
+  openLines: string[];
   /** The writer's words for why the target is not decided, or empty; the number stands as the default meanwhile. */
   targetOpen: string;
   /** The writer's word for the target when they gave a kind and not a number — "feature", "hour", "half-hour" — or empty: the pages are the app's reading of it. */
@@ -188,6 +194,7 @@ export declare function sameName(a: string, b: string): boolean;
 export type Command =
   | { type: "set_logline"; logline?: string; open?: string }
   | { type: "set_rank"; ids: string[]; rank: NoteRank }
+  | { type: "propose_beat"; ids: string[]; proposed?: boolean }
   | { type: "set_length"; ids: string[]; lengthEighths: number | null }
   | { type: "set_target"; targetEighths?: number; open?: string; kind?: "feature" | "hour" | "half-hour" }
   | {
@@ -203,6 +210,7 @@ export type Command =
       lengthEighths?: number;
       characterIds?: string[];
       maybeCharacterIds?: string[];
+      castOpen?: string;
       plants?: boolean;
       /** What it plants, in the writer's words (R62); naming a plant folds the card. */
       plantsWhat?: string;
@@ -238,7 +246,9 @@ export type Command =
   | { type: "rename_character"; id: string; name: string }
   | { type: "remove_character"; id: string }
   | ({ type: "update_character"; id: string } & Partial<Record<CharacterField | "open", string>>)
-  | { type: "set_cast"; ids: string[]; characterIds: string[]; /** Given, it replaces the cards' maybes; not given, each card keeps its own. */ maybeCharacterIds?: string[] }
+  | { type: "add_open_line"; text: string }
+  | { type: "strike_open_line"; text?: string; index?: number }
+  | { type: "set_cast"; ids: string[]; characterIds: string[]; /** Given, it replaces the cards' maybes; not given, each card keeps its own. */ maybeCharacterIds?: string[]; /** Given, it replaces the cards' open words ("" clears them); not given, each card keeps its own. */ open?: string }
   | { type: "set_plant"; ids: string[]; plants?: boolean; what?: string }
   | { type: "set_open"; ids: string[]; open: string }
   | { type: "set_alternative"; id: string; of: string | null }

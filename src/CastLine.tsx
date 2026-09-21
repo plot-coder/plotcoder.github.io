@@ -6,20 +6,26 @@
 // so casting someone and adding them are one motion. A name with a question
 // mark — "Tomás?" — is someone who may or may not be in the scene, by the
 // writer's word (round twenty-two, H9): drawn quieter, counted neither way.
+// And who is in it can be left open in the writer's own words, as the place
+// can (round twenty-three, entries 13, 14): "Not decided yet…" puts the mark
+// on the line, and the words after it stand in the warm colour — alone when
+// nobody can be named, or after the names: "Ada, Callum, ? anyone else".
 
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { type BoardCharacter } from "./board/reducer";
-import { castLine, readMaybe } from "./board/castMaybe";
+import { CAST_OPEN_MARK, castLine, castLineWithOpen, readMaybe, splitCastLine } from "./board/castMaybe";
 import { castText, completions, findCharacter, splitNames } from "./castNames";
 
 type CastLineProps = {
   headline: string;
   characterIds: string[];
   maybeCharacterIds: string[];
+  /** The writer's words for why who is in it is not decided, or empty. */
+  castOpen: string;
   characters: BoardCharacter[];
   /** Called as editing starts, so the card can come to the top and the completion list is not under a neighbour. */
   onBegin: () => void;
-  onCommit: (names: string[]) => void;
+  onCommit: (names: string[], open: string) => void;
 };
 
 type Option = { kind: "person"; character: BoardCharacter } | { kind: "add"; name: string };
@@ -28,9 +34,10 @@ function stop(event: PointerEvent<HTMLElement>) {
   event.stopPropagation();
 }
 
-export function CastLine({ headline, characterIds, maybeCharacterIds, characters, onBegin, onCommit }: CastLineProps) {
-  // The line as it is typed: "Marta, Tomás?".
+export function CastLine({ headline, characterIds, maybeCharacterIds, castOpen, characters, onBegin, onCommit }: CastLineProps) {
+  // The line as it is typed: "Marta, Tomás?", and the open words behind their mark.
   const display = castLine(characterIds, maybeCharacterIds, characters);
+  const typedBack = castLineWithOpen(characterIds, maybeCharacterIds, characters, castOpen);
   const certain = castText(characterIds, characters);
   const maybe = castText(maybeCharacterIds, characters);
   const [editing, setEditing] = useState(false);
@@ -42,36 +49,48 @@ export function CastLine({ headline, characterIds, maybeCharacterIds, characters
     if (editing) inputRef.current?.focus();
   }, [editing]);
 
+  // Once the mark is on the line the rest is the writer's words, not names: no completions there.
+  const openTyped = splitCastLine(text).open !== "" || text.split(",").some((part) => part.trim().startsWith(CAST_OPEN_MARK));
   // The fragment is whatever follows the last comma: the name being typed now.
   const settled = text.slice(0, text.lastIndexOf(",") + 1);
   // The roster knows "Tomás", not "Tomás?": the mark is the writer's, the name is the person's.
   const fragment = readMaybe(text.slice(settled.length)).name;
   const typedNames = splitNames(settled).map((name) => readMaybe(name).name);
-  const options: Option[] = editing
+  const options: Option[] = editing && !openTyped
     ? completions(fragment, characters, typedNames).map(
         (character): Option => ({ kind: "person", character }),
       )
     : [];
-  if (editing && fragment && !findCharacter(fragment, characters)) {
+  if (editing && !openTyped && fragment && !findCharacter(fragment, characters)) {
     options.push({ kind: "add", name: fragment });
   }
   const current = Math.min(highlight, Math.max(options.length - 1, 0));
 
   function begin() {
     onBegin();
-    setText(display ? `${display}, ` : "");
+    // With open words on the line the caret waits after them; otherwise after a comma, for the next name.
+    setText(castOpen ? typedBack : display ? `${display}, ` : "");
     setHighlight(0);
     setEditing(true);
   }
 
   function commit(finalText: string) {
     setEditing(false);
-    const names = splitNames(finalText);
+    const typed = splitCastLine(finalText);
+    const names = splitNames(typed.names);
     const before = splitNames(display);
     const same =
       names.length === before.length &&
       names.every((name, index) => name.toLowerCase() === before[index].toLowerCase());
-    if (!same) onCommit(names);
+    if (!same || typed.open !== castOpen) onCommit(names, typed.open);
+  }
+
+  /** "Not decided yet…": the mark goes on the end of the line and the caret waits for the writer's words. */
+  function leaveOpen() {
+    const names = text.replace(/[\s,]+$/, "");
+    setText(`${names}${names ? ", " : ""}${CAST_OPEN_MARK} `);
+    setHighlight(0);
+    inputRef.current?.focus();
   }
 
   function accept(option: Option) {
@@ -122,8 +141,8 @@ export function CastLine({ headline, characterIds, maybeCharacterIds, characters
     return (
       <button
         type="button"
-        className={`note__with ${display ? "" : "note__with--empty"}`}
-        aria-label={display ? `Cast of ${headline}: ${display}` : `Cast ${headline}`}
+        className={`note__with ${display || castOpen ? "" : "note__with--empty"}`}
+        aria-label={display || castOpen ? `Cast of ${headline}: ${typedBack}` : `Cast ${headline}`}
         onPointerDown={stop}
         onClick={begin}
       >
@@ -134,7 +153,16 @@ export function CastLine({ headline, characterIds, maybeCharacterIds, characters
             {maybe.split(", ").map((name) => `${name}?`).join(", ")}
           </span>
         ) : null}
-        {display ? "" : "…"}
+        {castOpen ? (
+          <span className="is-open-field">
+            {display ? " · " : ""}
+            <span className="open-mark" aria-hidden="true">
+              Open
+            </span>
+            {castOpen}
+          </span>
+        ) : null}
+        {display || castOpen ? "" : "…"}
       </button>
     );
   }
@@ -157,6 +185,19 @@ export function CastLine({ headline, characterIds, maybeCharacterIds, characters
         onKeyDown={onKeyDown}
         onBlur={() => commit(text)}
       />
+      {!openTyped ? (
+        <button
+          type="button"
+          className="field-offer note__offer"
+          onPointerDown={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            leaveOpen();
+          }}
+        >
+          Not decided yet…
+        </button>
+      ) : null}
       {options.length > 0 ? (
         <ul className="note__complete" role="listbox" aria-label="People in the cast">
           {options.map((option, index) => {

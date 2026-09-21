@@ -267,7 +267,7 @@ describe("one cast for the project (R51)", () => {
   const NOW = "2026-09-14T00:00:00.000Z";
   const person = (id: string, name: string, notes = "") => ({ id, name, looks: "", voice: "", wants: "", needs: "", notes, open: "", createdAt: NOW, updatedAt: NOW });
   const card = (id: string, characterIds: string[]) => ({
-    id, headline: id, change: "Turns.", color: "yellow" as const, x: 0, y: 0, rotate: 0, z: 1, rank: "scene" as const, lengthEighths: null, characterIds, maybeCharacterIds: [] as string[], plants: false, plantsWhat: "", alternativeOf: null, payoffBoardId: null, payoffNoteId: null, open: "", location: "", locationOpen: "", when: "", whenOpen: "", changeOpen: "", aside: false, text: "", createdAt: NOW, updatedAt: NOW,
+    id, headline: id, change: "Turns.", color: "yellow" as const, x: 0, y: 0, rotate: 0, z: 1, rank: "scene" as const, lengthEighths: null, characterIds, maybeCharacterIds: [] as string[], castOpen: "", proposedBeat: false, plants: false, plantsWhat: "", alternativeOf: null, payoffBoardId: null, payoffNoteId: null, open: "", location: "", locationOpen: "", when: "", whenOpen: "", changeOpen: "", aside: false, text: "", createdAt: NOW, updatedAt: NOW,
   });
 
   it("lifts the boards' rosters onto a record written before it, merging by name and recasting folded ids", () => {

@@ -29,7 +29,8 @@ export function readPresence(state) {
  */
 export function presenceTail(people, lastKey, hosted) {
   const key = [...people].sort().join("|");
-  if (people.length === 0 && hosted) return { key, text: " (saved to the account; it shows on any open wall the moment it lands)" };
+  // Said on every reply, "it shows on any open wall the moment it lands" read as though someone might be watching, all session, when nobody was (round twenty-three, entry 68). The door says where the write landed; the server says once whose tool the question is.
+  if (people.length === 0 && hosted) return { key, text: " (saved to the account)" };
   if (key === lastKey) return { key, text: " (saved to the account)" };
   if (people.length === 0) return { key, text: " (saved to the account; no wall open right now — it shows the moment one opens)" };
   return { key, text: ` (saved to the account; open on ${people.length === 1 ? `${people[0]}'s screen` : `${people.length} screens: ${people.join(", ")}`} now)` };

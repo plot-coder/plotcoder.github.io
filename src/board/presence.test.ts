@@ -38,4 +38,9 @@ describe("who has the wall open (round twenty-two, entries 93, 94)", () => {
     expect(blind).toContain("Could not see in time");
     expect(blind).not.toContain("Nobody");
   });
+
+  it("claims nothing about who is watching through the hosted door, on any reply (round twenty-three, entry 68)", () => {
+    expect(presenceTail([], null, true).text).toBe(" (saved to the account)");
+    expect(presenceTail([], "", true).text).toBe(" (saved to the account)");
+  });
 });

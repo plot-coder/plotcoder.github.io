@@ -51,7 +51,7 @@ type NoteBoardProps = {
   /** When the lens holds or hovers a place, cards elsewhere fade (R37). */
   placeFocus: string | null;
   places: string[];
-  onCastNames: (id: string, names: string[]) => void;
+  onCastNames: (id: string, names: string[], open: string) => void;
   onLocation: (id: string, location: string, when: string, whenOpen: string, locationOpen: string) => void;
   /** The empty wall offers a structure (R38). */
   onStructure: () => void;

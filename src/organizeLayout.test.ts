@@ -16,6 +16,8 @@ function card(id: string, x: number, y: number, rotate = -2.2): MockNote {
     lengthEighths: 8,
     characterIds: [],
     maybeCharacterIds: [],
+    castOpen: "",
+    proposedBeat: false,
     plants: false,
     payoffBoardId: null,
   payoffNoteId: null,

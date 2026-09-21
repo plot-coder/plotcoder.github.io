@@ -193,6 +193,10 @@ describe("a session through the hosted door", () => {
       const described = listed.body.result.tools.find((tool) => tool.name === "delete_note").description;
       expect(described).not.toMatch(/\bundo brings\b/);
       expect(described).toContain("⌘Z on the wall brings all of it back");
+      // undo's own description says first and plainly that there is none here, and that it is a stack (entries 70, 71).
+      const undo = listed.body.result.tools.find((tool) => tool.name === "undo").description;
+      expect(undo.startsWith("NOT THROUGH THIS DOOR")).toBe(true);
+      expect(undo).toContain("It is a stack, newest first");
     });
 
     it("says undo keeps no trail through this door, rather than that nothing was changed", async () => {

@@ -258,6 +258,8 @@ export function emptyState() {
     // The writer's word for the target when they gave a kind and not a number — "a feature" — or nothing (round twenty-two, entry 91).
     targetKind: "",
     loglineOpen: "",
+    // What is not decided about the film itself, in the writer's sentences (round twenty-three, entries 15, 16): nothing until the writer says.
+    openLines: [],
     characters: [],
     notes: [],
     groups: [],
@@ -284,6 +286,8 @@ export function seedState(now = nowIso()) {
     lengthEighths: null,
     characterIds,
     maybeCharacterIds: [],
+    castOpen: "",
+    proposedBeat: false,
     location: "",
     // The writer's words for why the place is not decided (R61), or nothing.
     locationOpen: "",
@@ -322,6 +326,8 @@ export function seedState(now = nowIso()) {
     // The writer's word for the target when they gave a kind and not a number — "a feature" — or nothing (round twenty-two, entry 91).
     targetKind: "",
     loglineOpen: "",
+    // What is not decided about the film itself, in the writer's sentences (round twenty-three, entries 15, 16): nothing until the writer says.
+    openLines: [],
     // Two people, cast on the cards, so a new writer sees what the roster is for.
     characters: [
       fillCharacter({ id: "maya", name: "Maya", createdAt: now, updatedAt: now }),
@@ -408,6 +414,10 @@ export function normalizeState(value) {
     const characterIds = knownCast(note?.characterIds, characters);
     // Cards written before the maybe (round twenty-two, H9) have nobody who may be there; a person on the cast line is certainly in the scene, and certain wins.
     const maybeCharacterIds = knownCast(note?.maybeCharacterIds, characters).filter((id) => !characterIds.includes(id));
+    // Cards written before a turn could be proposed have none proposed: a proposal is the agent's, said on the card, and a beat is never also proposed.
+    const proposedBeat = note?.proposedBeat === true && rank !== "beat";
+    // Cards written before the cast's own open (round twenty-three, entries 13, 14) have none: who is in a scene is said, or blank, until the writer says why it is not decided.
+    const castOpen = typeof note?.castOpen === "string" ? note.castOpen : "";
     // Cards written before R31 have no fold; a plant is a claim you make.
     const plants = note?.plants === true;
     // Cards folded before R62 say "something": the fold's words are the writer's, or nothing.
@@ -442,6 +452,8 @@ export function normalizeState(value) {
       sameIds(note.characterIds, characterIds) &&
       Array.isArray(note.maybeCharacterIds) &&
       sameIds(note.maybeCharacterIds, maybeCharacterIds) &&
+      note.castOpen === castOpen &&
+      note.proposedBeat === proposedBeat &&
       note.plants === plants &&
       note.plantsWhat === plantsWhat &&
       note.alternativeOf === alternativeOf &&
@@ -459,7 +471,7 @@ export function normalizeState(value) {
       return note;
     }
     patched = true;
-    return { ...note, rank, lengthEighths, characterIds, maybeCharacterIds, plants, plantsWhat, alternativeOf, payoffBoardId, payoffNoteId, open, location, locationOpen, when, whenOpen, changeOpen, aside, text };
+    return { ...note, rank, lengthEighths, characterIds, maybeCharacterIds, castOpen, proposedBeat, plants, plantsWhat, alternativeOf, payoffBoardId, payoffNoteId, open, location, locationOpen, when, whenOpen, changeOpen, aside, text };
   });
   // A version of a version is a version of the front card, so the pair stays a pair.
   for (const [index, note] of notes.entries()) {
@@ -500,6 +512,9 @@ export function normalizeState(value) {
     .filter(Boolean);
   // Boards written before R61 have no open logline; a logline is decided or blank until the writer says otherwise.
   const loglineOpen = typeof value.loglineOpen === "string" ? value.loglineOpen : "";
+  // Boards written before the film's own open lines have none: a sentence is the writer's or it is not there.
+  const openLines = cleanOpenLines(value.openLines);
+  const openLinesSame = Array.isArray(value.openLines) && value.openLines.length === openLines.length && value.openLines.every((line, index) => line === openLines[index]);
   // A target left open in the writer's words (the handover's calls, 2026-09-19): the number stands as the default meanwhile.
   const targetOpen = typeof value.targetOpen === "string" ? value.targetOpen : "";
   // Boards written before the target kept the writer's word have a number and no word: nothing is claimed.
@@ -507,6 +522,7 @@ export function normalizeState(value) {
   if (
     value.logline === logline &&
     value.loglineOpen === loglineOpen &&
+    openLinesSame &&
     value.targetEighths === targetEighths &&
     value.targetOpen === targetOpen &&
     value.targetKind === targetKind &&
@@ -524,6 +540,7 @@ export function normalizeState(value) {
     ...value,
     logline,
     loglineOpen,
+    openLines,
     targetEighths,
     targetOpen,
     targetKind,
@@ -556,6 +573,20 @@ function bump(note, patch, now) {
 }
 
 /** The writer's words for what is open about a card, one line, spaces collapsed; empty closes it (R59). */
+/** The film's open lines as kept: the writer's sentences, trimmed, none empty, none twice (whatever the case). */
+function cleanOpenLines(value) {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set();
+  const lines = [];
+  for (const item of value) {
+    const line = cleanOpen(item);
+    if (!line || seen.has(line.toLowerCase())) continue;
+    seen.add(line.toLowerCase());
+    lines.push(line);
+  }
+  return lines;
+}
+
 function cleanOpen(value) {
   return typeof value === "string" ? value.trim().replace(/\s+/g, " ") : "";
 }
@@ -701,6 +732,26 @@ export function applyCommand(state, command, now = nowIso()) {
     // The logline, or the writer's words for why there is none yet (R61): a
     // value clears the open words, open words clear the value, and open ""
     // leaves the field blank.
+    // What is not decided about the film itself (round twenty-three, entries
+    // 15, 16): when it happens, whether it has acts, what runs long. The
+    // writer's sentences, added one at a time and struck when decided. The
+    // app never adds one.
+    case "add_open_line": {
+      const line = cleanOpen(command.text);
+      const lines = state.openLines ?? [];
+      if (!line || lines.some((item) => item.toLowerCase() === line.toLowerCase())) return { state, changed: false };
+      return { state: { ...state, openLines: [...lines, line] }, changed: true, result: { line, openLines: [...lines, line] } };
+    }
+
+    case "strike_open_line": {
+      const lines = state.openLines ?? [];
+      const wanted = cleanOpen(command.text).toLowerCase();
+      const at = typeof command.index === "number" ? command.index : lines.findIndex((item) => item.toLowerCase() === wanted);
+      if (!Number.isInteger(at) || at < 0 || at >= lines.length) return { state, changed: false };
+      const openLines = lines.filter((_, index) => index !== at);
+      return { state: { ...state, openLines }, changed: true, result: { line: lines[at], openLines } };
+    }
+
     case "set_logline": {
       const hasOpen = typeof command.open === "string";
       const logline = hasOpen && command.open.trim() ? "" : typeof command.logline === "string" ? command.logline.trim() : (state.logline ?? "");
@@ -730,6 +781,9 @@ export function applyCommand(state, command, now = nowIso()) {
         characterIds: knownCast(command.characterIds, state.characters ?? []),
         // Who may or may not be in it, by the writer's word: listed as open, counted neither way.
         maybeCharacterIds: knownCast(command.maybeCharacterIds, state.characters ?? []).filter((id) => !knownCast(command.characterIds, state.characters ?? []).includes(id)),
+        // Who is in it, left open by the writer's word when nobody can be named, or beside the names: "anyone else, I don't know".
+        castOpen: cleanOpen(command.castOpen),
+        proposedBeat: false,
         alternativeOf: null,
         plants: command.plants === true || Boolean(cleanOpen(command.plantsWhat)),
         // What it plants, in the writer's words (R62): naming a plant folds the card.
@@ -843,8 +897,30 @@ export function applyCommand(state, command, now = nowIso()) {
       const rank = NOTE_RANKS.includes(command.rank) ? command.rank : "scene";
       const touched = [];
       const notes = state.notes.map((note) => {
-        if (!ids.has(note.id) || note.rank === rank) return note;
-        const next = bump(note, { rank }, now);
+        // The writer's word on a card's rank decides a proposal too: kept as a beat, or a scene and the proposal gone.
+        if (!ids.has(note.id) || (note.rank === rank && !note.proposedBeat)) return note;
+        const next = bump(note, { rank, proposedBeat: false }, now);
+        touched.push(next);
+        return next;
+      });
+      if (touched.length === 0) return { state, changed: false };
+      return { state: { ...state, notes }, changed: true, result: touched };
+    }
+
+    // A proposed turn (round twenty-three, entry 32; round twenty-two's F5):
+    // the agent's candidate, said on the card and not only in the chat, until
+    // the writer keeps it (set_rank beat) or strikes it (proposed false). A
+    // proposed card is a scene everywhere: the app still says nothing about
+    // how many turns there should be.
+    case "propose_beat": {
+      const ids = new Set(command.ids);
+      if (ids.size === 0) return { state, changed: false };
+      const proposed = command.proposed !== false;
+      const touched = [];
+      const notes = state.notes.map((note) => {
+        // A beat is the writer's already: there is nothing to propose.
+        if (!ids.has(note.id) || note.proposedBeat === proposed || (proposed && note.rank === "beat")) return note;
+        const next = bump(note, { proposedBeat: proposed }, now);
         touched.push(next);
         return next;
       });
@@ -1363,12 +1439,15 @@ export function applyCommand(state, command, now = nowIso()) {
       const cast = knownCast(command.characterIds, state.characters);
       // Who may be there (H9): given, it replaces the card's maybes; not given, the card keeps its own. Certain wins, so nobody is in both.
       const maybes = Array.isArray(command.maybeCharacterIds) ? knownCast(command.maybeCharacterIds, state.characters).filter((id) => !cast.includes(id)) : null;
+      // The cast's own open: given, it replaces the words ("" clears them); not given, the card keeps its own. The words stand beside names, so naming someone does not clear them.
+      const open = typeof command.open === "string" ? cleanOpen(command.open) : null;
       const touched = [];
       const notes = state.notes.map((note) => {
         if (!ids.has(note.id)) return note;
         const maybe = maybes ?? note.maybeCharacterIds.filter((id) => !cast.includes(id));
-        if (sameIds(note.characterIds, cast) && sameIds(note.maybeCharacterIds, maybe)) return note;
-        const next = bump(note, { characterIds: [...cast], maybeCharacterIds: [...maybe] }, now);
+        const words = open ?? note.castOpen;
+        if (sameIds(note.characterIds, cast) && sameIds(note.maybeCharacterIds, maybe) && note.castOpen === words) return note;
+        const next = bump(note, { characterIds: [...cast], maybeCharacterIds: [...maybe], castOpen: words }, now);
         touched.push(next);
         return next;
       });
@@ -1407,6 +1486,8 @@ export function applyCommand(state, command, now = nowIso()) {
         lengthEighths: null,
         characterIds: [],
         maybeCharacterIds: [],
+        castOpen: "",
+        proposedBeat: false,
         plants: false,
         plantsWhat: "",
         alternativeOf: null,

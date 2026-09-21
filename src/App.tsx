@@ -548,7 +548,7 @@ export function App() {
   // Names typed on a card (R29). Known names resolve to the roster's spelling;
   // a stranger is added to the roster on the way, so casting someone and
   // adding them are one motion. Applies to the whole selection like recolour.
-  function castNames(id: string, names: string[]) {
+  function castNames(id: string, names: string[], open: string) {
     const ids =
       selectedIds.includes(id) && selectedIds.length >= 2 ? selectedIds : [id];
     // "Tomás?" is someone who may or may not be in it (round twenty-two, H9): the mark is read off, the name resolved as any other.
@@ -568,7 +568,8 @@ export function App() {
         .filter((value): value is string => value !== null);
     const characterIds = resolve(typed.filter((entry) => !entry.maybe).map((entry) => entry.name));
     const maybeCharacterIds = resolve(typed.filter((entry) => entry.maybe).map((entry) => entry.name));
-    boardStore.dispatch({ type: "set_cast", ids, characterIds, maybeCharacterIds });
+    // The line shows the card's open words, so what comes back is the whole truth: "" clears them.
+    boardStore.dispatch({ type: "set_cast", ids, characterIds, maybeCharacterIds, open });
   }
 
   // Where a scene happens (R37) and when (R55), typed as one line on the
@@ -858,6 +859,9 @@ export function App() {
         onSetLoglineOpen={setLoglineOpen}
         onSetPremise={savePremise}
         onSetPremiseOpen={savePremiseOpen}
+        openLines={board.openLines}
+        onAddOpenLine={(text) => boardStore.dispatch({ type: "add_open_line", text })}
+        onStrikeOpenLine={(index) => boardStore.dispatch({ type: "strike_open_line", index })}
       />
       <div className="top-actions">
         <button
@@ -940,6 +944,9 @@ export function App() {
           open={asksOpen}
           findings={reading.findings}
           left={reading.left}
+          proposed={reading.proposed.map((id) => ({ id, headline: board.notes.find((note) => note.id === id)?.headline ?? "" }))}
+          onKeep={(id) => boardStore.dispatch({ type: "set_rank", ids: [id], rank: "beat" })}
+          onStrike={(id) => boardStore.dispatch({ type: "set_rank", ids: [id], rank: "scene" })}
           onClose={() => setAsksOpen(false)}
           onShow={showCards}
           onLeave={(finding) => boardStore.dispatch({ type: "leave_question", kind: finding.kind, ids: finding.ids, text: finding.text })}

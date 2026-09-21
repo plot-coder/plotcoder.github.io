@@ -45,7 +45,7 @@ type NoteCardProps = {
   onUnclaim: (id: string) => void;
   /** Open Pages at this scene: the number is the script's address for it. */
   onOpenPages: (id: string) => void;
-  onCastNames: (id: string, names: string[]) => void;
+  onCastNames: (id: string, names: string[], open: string) => void;
   /** Where and when the scene happens, typed as one line on the card (R37, R55). */
   onLocation: (id: string, location: string, when: string, whenOpen: string, locationOpen: string) => void;
   onRaise: (id: string) => void;
@@ -216,7 +216,7 @@ export function NoteCard({
 
   return (
     <article
-      className={`note note--${note.color} ${isBeat ? "is-beat" : ""} ${sized ? "is-sized" : ""} ${active ? "is-active" : ""} ${selected ? "is-selected" : ""} ${linking ? "is-linking" : ""} ${dropTarget ? "is-drop-target" : ""} ${picking || sizing || cornering ? "is-picking" : ""} ${dimmed ? "is-dim" : ""} ${note.aside ? "is-aside" : ""} ${note.plants ? "is-planted" : ""} ${paysOff ? "is-paying" : ""} ${isOpen ? "is-open" : ""} ${revised ? `is-revised rev--${revised}` : ""} ${versionOf ? "is-version" : ""}`}
+      className={`note note--${note.color} ${isBeat ? "is-beat" : ""} ${note.proposedBeat ? "is-proposed" : ""} ${sized ? "is-sized" : ""} ${active ? "is-active" : ""} ${selected ? "is-selected" : ""} ${linking ? "is-linking" : ""} ${dropTarget ? "is-drop-target" : ""} ${picking || sizing || cornering ? "is-picking" : ""} ${dimmed ? "is-dim" : ""} ${note.aside ? "is-aside" : ""} ${note.plants ? "is-planted" : ""} ${paysOff ? "is-paying" : ""} ${isOpen ? "is-open" : ""} ${revised ? `is-revised rev--${revised}` : ""} ${versionOf ? "is-version" : ""}`}
       style={{
         left: note.x,
         top: note.y,
@@ -645,13 +645,26 @@ export function NoteCard({
           ) : null}
         </>
       )}
+      {note.proposedBeat ? (
+        // A turn the writer's agent has proposed (round twenty-three, entry 32): theirs to keep or strike, a scene until kept.
+        <div className="note__proposed" onPointerDown={(event) => event.stopPropagation()}>
+          <span className="note__proposed-word">proposed turn</span>
+          <button type="button" className="note__proposed-act" aria-label={`Keep ${note.headline} as a turn`} onClick={() => onSetRank(note.id, "beat")}>
+            keep
+          </button>
+          <button type="button" className="note__proposed-act" aria-label={`Strike the proposal on ${note.headline}`} onClick={() => onSetRank(note.id, "scene")}>
+            strike
+          </button>
+        </div>
+      ) : null}
       <CastLine
         headline={note.headline}
         characterIds={note.characterIds}
         maybeCharacterIds={note.maybeCharacterIds}
+        castOpen={note.castOpen}
         characters={characters}
         onBegin={() => onRaise(note.id)}
-        onCommit={(names) => onCastNames(note.id, names)}
+        onCommit={(names, open) => onCastNames(note.id, names, open)}
       />
       <PlaceLine
         headline={note.headline}

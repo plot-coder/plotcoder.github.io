@@ -5,7 +5,7 @@ else, asked to build a wall and to keep a log of everything that made the job
 harder than it should have been. The friction log is the product; the wall is
 just what produces it.
 
-The practice is Robert's, from 2026-09-13. Twenty-one rounds have been run;
+The practice is Robert's, from 2026-09-13. Twenty-two rounds have been run, and the twenty-third is cued (`prompt.md`, on `round-twenty-three-idea.md`, "The Tuner": the connector alone, and a session behind the hosted door);
 every finding is fixed, decided, or waiting on a mockup — see
 `REQUIREMENTS.md`, "The blind run", and the `friction, fixed` entries in the
 changelog. The latest report, round twenty-one's, says at its head what

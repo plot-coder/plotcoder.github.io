@@ -1,59 +1,77 @@
-# The blind-run prompt — round twenty-two: new notes, through the door's name
+# The blind-run prompt — round twenty-three: the connector alone, and a session behind the door
 
 Paste everything below the line into a fresh agent session. The credentials
 ride in the connector's header: the test account is `test@test.com`,
 password `test`, a throwaway that holds nothing of anyone's. The agent
 checks and empties it itself at the start of the round, in case round
-twenty-one left something.
+twenty-two left something.
 
-Round twenty-two is the first on a new page of notes — `round-twenty-two-idea.md`,
-"The Last Bus" — and the first through the hosted door's name,
-`https://mcp.plotcoder.com`, wired into the session as a desktop-app
-connector rather than a stdio block in a file (Robert's call 3: a wiring
-that cannot vanish). It runs against 0.1.41, which carries what rounds
-twenty and twenty-one produced and Robert's seven calls: the tails that
-count until the first reading, presence, R65's two versions of a scene, the
-camera marks, the open target and the sketch. It measures five things.
-Whether the connector answers from the first message, with the writer
-signed in and nothing to install. Whether a stranger, told of a scene "I
-have it two ways, keep both", reaches `set_alternative` and later
-`choose_version`, rather than two plain cards or one card with a note.
-Whether the fold gets named in one call now, and the tie rule does the
-adjacent half right. What the write's reply says about the camera, and
-whether the agent reads those marks as marks and not as questions to bring
-the writer. And what the tail says about the wall's questions before the
-first `read_wall` and after it. Beside those, unmeasured but worth reading
-for: the target left open by the writer's word, and what the runtime line
-and the reading do with it; whether a written scene comes out a sketch and
-what the reply calls it; and what the presence line says with no wall open.
-Nothing here tells the agent what any of these are.
+Round twenty-three is on a new page of notes — `round-twenty-three-idea.md`,
+"The Tuner" — and is the first through **the desktop connector and nothing
+else**: twenty-two's agent found a fallback the cueing session had left in
+`~/.claude.json` and worked the whole round through that, so whether a
+stranger holding only the connector is in from the first message is still
+unmeasured. It runs against the release after 0.1.44, which carries
+everything round twenty-two's to-do built, none of it run blind: set aside
+(R66), the change line's own open (R67), "a feature" as the writer's word,
+the open line on a person's page, `set_order`, `who_is_here`, the one view
+of everything undecided, the short read, no tool tidying the wall on its
+own, a version that steps forward inheriting what was tied to the scene —
+and a session for the hosted door, so that the door remembers, from one
+call to the next, what the agent has read and been told. It measures six
+things. Whether the connector answers from the first message with nothing
+else wired. Whether a stranger, told "I have cut it; I do not want it in the
+film and I do not want to lose it", reaches `set_aside` rather than a
+deleted card, an open card or a group called "cut". Whether "I don't know
+what changes" reaches the change line's own open and leaves the card's
+other questions standing. Whether "it is a feature" is kept as the writer's
+word and not turned into a number. Whether a thing undecided about a person
+lands on the person and not on a scene. And what the write's tail says
+before the agent's first `read_wall` and after it, and whether advice is
+said once — the session, which the agent cannot see and the report's quoted
+replies can. Beside those, unmeasured but worth reading for: what the agent
+does with someone who may or may not be in a scene, which the wall has no
+field for; whether the order given as a list becomes one call; what "is
+there anything I owe you?" costs to answer; and what happens to the fork's
+thread when the version behind is chosen. Nothing here tells the agent what
+any of these are.
+
+---
 
 Before you paste:
 
-1. **Wire the name.** In the Claude desktop app, Settings › Connectors ›
-   Add custom connector: name **PlotCoder**, URL
+1. **Wire the connector, and nothing else.** In the Claude desktop app,
+   Settings › Connectors › Add custom connector: name **PlotCoder**, URL
    `https://mcp.plotcoder.com`; under Authentication choose **No sign-in**
    (the screen says OAuth is "Detected" and preselects "Sign in now": the
-   door has no OAuth, and the app reads its 401 as one — round twenty-two's
-   first finding); and under Request headers one header,
-   `authorization`, with the value `Basic dGVzdEB0ZXN0LmNvbTp0ZXN0` (that is
-   `test@test.com:test`, base64). Make sure the connector is enabled for
-   the fresh session and not for any session of your own work: it is
-   signed in as the test account. Check the door answers first:
+   door has no OAuth, and the app reads its 401 as one); and under Request
+   headers one header, `authorization`, with the value
+   `Basic dGVzdEB0ZXN0LmNvbTp0ZXN0` (that is `test@test.com:test`, base64).
+   Make sure the connector is enabled for the fresh session and not for any
+   session of your own work: it is signed in as the test account. **Check
+   that no other PlotCoder server is wired:** `~/.claude.json` must hold no
+   `plotcoder` or `plotcoder-board` entry (twenty-two's mistake), and the
+   fresh session must not be in a folder with an `.mcp.json`. Check the door
+   answers, and that it carries the release and issues a session:
 
    ```bash
    curl -s https://mcp.plotcoder.com
    ```
 
-   It should say what the door is. If the connector does not appear in the
-   session or offers no tools, that is the round's first finding; note it,
-   and fall back to `claude mcp add --transport http plotcoder https://mcp.plotcoder.com --header "Authorization: Basic dGVzdEB0ZXN0LmNvbTp0ZXN0" --scope user`
-   so the round can go on.
+   ```bash
+   curl -si https://mcp.plotcoder.com -H "Authorization: Basic dGVzdEB0ZXN0LmNvbTp0ZXN0" -H "content-type: application/json" -H "accept: application/json, text/event-stream" -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"check","version":"0"}}}' | grep -i "mcp-session-id\|\"version\""
+   ```
+
+   The first says what the door is; the second should print an
+   `mcp-session-id` header and the release's version. **There is no
+   fallback this round.** If the connector does not appear in the session or
+   offers no tools, that is the round's finding: note what the screen said,
+   and stop.
 2. **Land the fixes where the round will find them.** plotcoder.com, the
-   registry and the door all carry 0.1.41; if code has changed since, merge
-   to `main`, wait for the Pages deploy, release from a current `main`, then
-   bump the version pinned in `supabase/functions/mcp/index.ts` and
-   redeploy the function:
+   registry and the door must all carry the release after 0.1.44; if code
+   has changed since, merge to `main`, wait for the Pages deploy, release
+   from a current `main`, then bump the version pinned in
+   `supabase/functions/mcp/index.ts` and redeploy the function:
 
    ```bash
    npm version patch && git push && git push --tags
@@ -64,59 +82,68 @@ Before you paste:
    agent's context, and the run is not blind.
 4. **The writer's answers.** Answer only what the agent asks; where it does
    not ask, do not volunteer:
-   - **Half an hour or a feature: "I don't know yet — leave it open"**, in
-     those words. Whether the agent leaves the target open, picks one, or
-     asks again, is worth reading for.
-   - **The title: "The Last Bus."**
-   - Tomás's surname is Ó Ceallaigh. The mother is Bríd Ó Ceallaigh. The
-     inspector has no name.
-   - What he goes to the town for: a music lesson — the fiddle, with an old
-     man above a shop, paid for from the jar. Nuala finds out when she sees
-     the fiddle case. Say this only when asked what he goes for; before
-     that, if asked whether it is decided, "yes, but not yet on the wall".
-   - The cut is announced in September, in the first scene; the film is
-     September to New Year.
-   - **The breakdown: "I have it two ways. Keep both on the wall until I
-     decide."** In those words, every time it is asked about, and nothing
-     about how. Whether the agent finds a way to hold two versions of one
-     scene, and what it calls them, is the measurement.
-   - **The depot: the same words**, "I have it two ways. Keep both on the
-     wall until I decide."
-   - The ending: nobody on the last run but the boy.
+   - **How long: "It is a feature."** In those words, and if asked for a
+     number of pages or minutes, "a feature; I have not counted".
+   - **The title: "Not decided — leave it open."**
+   - **What changes in a scene**, for the chapel the first time, the school
+     hall and the concert, say what the notes imply in a sentence of your
+     own. For Mrs Hallam, the pub, and the chapel again: **"I don't know
+     what changes yet"**, in those words, every time, and nothing about how.
+   - **The pub: "I have it two ways. Keep both on the wall until I
+     decide."** In those words.
+   - **The audiologist's: "I have cut it. I do not want it in the film and I
+     do not want to lose it."** In those words, every time it comes up, and
+     nothing about how. If asked what happens in it: she is told the left
+     ear is going and the right will follow, and she asks how long.
+   - **Whether Ngozi knows: "I don't know. It is about Ngozi, not about a
+     scene."** In those words.
+   - **Whether Ngozi is at the pub: "I don't know yet."** Nothing more.
+   - **The fork: "I know where it ends, not where it is first seen"** — it
+     ends at the concert, she gives it to Callum — in those words, every
+     time, until the direction below decides it.
+   - "Nobody says the word deaf" — if asked where that goes or what it is:
+     "it is true of the whole film".
+   - The scene where she finds out about his pitch: "just after the school
+     hall. That is all I know about it."
+   - The organist is a man in his seventies; the pianist is a woman, young,
+     foreign. No names.
    - The turns: "propose them and I will strike".
-   - The jar pays off on the last run: he empties it into her hand. The
-     timetable pays off when the mother reads it in the shelter. The keys:
-     **"I know where they pay off, not where they are first seen"** — the
-     inspector's hand, the last scene — in those words, every time, and
-     nothing more.
-   - **Where a scene happens**, when the notes do not say: **"I don't know
-     yet — leave it open"**, in those words.
-   - Anything else the notes do not say: **"I don't know yet — leave it
-     open"**, in those words, every time. Do not say how.
+   - **Where a scene happens**, when the notes do not say, and anything else
+     the notes do not say: **"I don't know yet — leave it open"**, in those
+     words, every time. Do not say how.
 5. The agent stops after its first calls with the first friction entries and
    waits for you to say "go on". Then it asks; answer as above. When it has
    built and read the wall, stay, and direct, one at a time:
-   - give the order, and have it propose the turns and mark them;
-   - "what is still open on this wall, and what would close each one" — ask
-     it to answer from the wall, not from memory;
-   - "I have decided about the breakdown: it is the second way, she walks
-     him home and meets the mother. Keep the other; I may come back to it"
-     — and see what it does with the two, and whether the one not chosen
-     leaves the count and the order;
-   - "the jar is first seen on the first morning: he counts the fare out of
-     it on the step of the bus. Put that on the wall" — the first morning's
-     fold is free, so the tie should fold it, name it and draw the arrow to
-     the last run; see what the reply says and whether it took one call;
-   - "the keys are first seen in the depot scene, either way of it" — the
-     depot has two versions; see what it does and what it asks;
-   - "add the scene where the mother comes to the stop, between the
-     breakdown and the day Nuala finds out. That is all I know about it";
-   - write the first morning — and read what the reply says about the
-     camera, then "are those questions for me?";
-   - how long is it, and what is missing — with the target open, see what it
-     reads against;
-   - "the target: I have decided. It is a feature" — and see what closes;
+   - "the order is: the chapel, the job centre, the school hall, the scene
+     where she finds out, Mrs Hallam, the pub, the chapel again, the
+     concert" — and see how many calls it takes and what the reply says the
+     story now runs;
+   - have it propose the turns and mark them on your word;
+   - "is there anything you are waiting on me for?" — see what it reads to
+     answer, and how long the answer is;
+   - "what is still undecided on this wall, all of it, and what would close
+     each thing" — ask it to answer from the wall, not from memory; see
+     whether Ngozi's question and the cut scene's open things are in it;
+   - "the fork is first seen in the pub scene, either way of it" — the pub
+     has two versions; see what it does, what it asks, and whether it says
+     it once or twice;
+   - "I have decided about the pub: she is there with Callum. Keep the
+     other; I may come back to it" — if the version with Callum is the one
+     behind, this is the one that tests what a version stepping forward
+     inherits; see where the other goes, and whether the fork is still
+     planted;
+   - "I have changed my mind about Mrs Hallam: cut it, but keep it" — a
+     second cut, by direction this time, of a card already wired into the
+     order; see what happens to the order and the count;
+   - "add a scene after the concert. That is all I know about it" — see
+     whether any other card moves;
+   - write the chapel scene, the first one — and read what the reply says
+     about the camera; then "add a line after the first paragraph: She
+     hears it a half-second late.";
+   - how long is it, and what is missing — see what "a feature" reads as;
    - "who has this wall open right now?";
+   - "undo that last scene you added" — through this door; read what it
+     says;
    - anything else a writer would ask on day one.
    It brings you the new entries at each step; "log so far" gets the whole
    log, "stop" gets the report.
@@ -161,8 +188,8 @@ the run: do not log it. If the account is already empty, say so and carry on.
 1. Make the calls the on-ramp tells you to make first, before you change
    anything.
 2. Read my notes at the end of this message. They are notes, not a
-   treatment: some of it I know, some of it I have two versions of, and some
-   of it I have not decided. **Ask me** what you need to build a wall from
+   treatment: some of it I know, some of it I have two versions of, some of it
+   I have cut, and some of it I have not decided. **Ask me** what you need to build a wall from
    them. Ask what the app says a treatment should answer, and anything the
    notes leave open that you need. Where I say I don't know, leave it open
    and tell me how the wall holds an open thing.
@@ -251,48 +278,50 @@ anything you smooth over is something I will not fix.
 
 ## The notes
 
-A country bus route in the west, one bus a day each way, and the company is
-cutting it at the end of the year. Nuala Feeney, sixties, has driven it for
-twenty-two years. She knows every passenger by their stop.
+A piano tuner in a mill town in the north, the last one for forty miles.
+Ada Okafor, fifty-eight. She is losing the hearing in her left ear and has
+told nobody. Nobody in this film says the word deaf, not once, not even her.
 
-A boy, Tomás, fourteen, starts riding it into the town every morning and
-back on the evening run. He pays in coins from a jar. He will not say what he
-goes to the town for. School is in the other direction.
+She takes on a lad, Callum Reed, nineteen, sent by the job centre, who
+cannot play a note and has perfect pitch and does not know it. She finds out
+before he does.
 
-Somewhere in the middle: the bus breaks down on the bog road at night, with
-only the two of them on it. I have this two ways and I cannot choose yet.
-One: they sit it out till morning and he talks. Two: she walks him the four
-miles home and meets the mother. Keep both until I know.
+The pianos I know:
+- the chapel upright she has tuned every spring for thirty years, and this
+  spring she gets it wrong and the organist hears it
+- the school hall grand, where Callum first names a note out loud without
+  meaning to
+- the pub piano nobody has asked her to tune, which she tunes anyway, at
+  night, alone — or with Callum; I have this two ways and cannot choose.
+  Alone, she tests what she can still hear. With him, she tests what he can.
+  Keep both until I know.
+- the house of the widow, Mrs Hallam, who wants her husband's piano tuned
+  and never played
+- the concert: the visiting pianist, the hired Steinway, and Ada hands
+  Callum the lever
 
-The depot: an inspector comes out from the city about the cut. Either he
-comes to the depot and she says nothing, or she drives to the city and says
-too much. Two ways of that one as well.
+There was a scene at the audiologist's. I have cut it. I do not want it in
+the film and I do not want to lose it; keep it somewhere I can find it.
 
-Ending: the last run. Who is on it? Everyone, or nobody but the boy. I lean
-to nobody but the boy.
+Her sister, Ngozi, runs the shop below the flat. Does Ngozi know about the
+ear? I go back and forth. It is not a question about any one scene, it is a
+question about Ngozi. And the night at the pub — is Ngozi there? I don't
+know that either.
 
-Scenes I know:
-- the first morning he gets on, the jar of coins
-- the timetable she rewrites by hand every winter and pins in the shelter
-- the breakdown (two ways, above)
-- the depot (two ways, above)
-- the mother comes to the stop to see who is driving her son about
-- the day Nuala finds out what he goes to the town for
-- the last run
+The tuning fork: her father's, an A, 440. She carries it everywhere. At the
+end she gives it to Callum, or she drops it in the canal. It should be seen
+early; I know where it ends, not where it starts.
 
-What is he going to the town for? A hospital visit, a music lesson, or the
-courthouse. I keep changing my mind. Decide, or leave it.
+The order, as far as I have one: the chapel, the job centre sends Callum,
+the school hall, Mrs Hallam, the pub, the chapel again when the organist
+hears it, the concert. The scene where she finds out about his pitch is the
+school hall or just after it; I have not written it.
 
-Time: September to New Year. The cut is announced in September. Or it is
-announced in the first scene, and the film is the last month only.
+What changes in each? For half of these I honestly could not tell you yet.
 
-Half an hour? A feature? I honestly do not know; it could be either.
+How long? It is a feature. I know that much.
 
-Things that should pay off: the jar of coins (he empties it on the last run,
-or she gives it back full). The hand-written timetable. The keys to the
-bus — she keeps them when it is over, or hands them to the inspector.
+Names: Ada Okafor, Ngozi Okafor, Callum Reed, Mrs Hallam. The organist and
+the pianist have no names yet.
 
-Names: Nuala Feeney. Tomás — surname? The mother: Bríd. The inspector, no
-name.
-
-Title: The Last Bus, or Route 43.
+Title: The Tuner, or Four Forty. Not decided.

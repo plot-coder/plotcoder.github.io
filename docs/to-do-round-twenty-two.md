@@ -289,7 +289,7 @@ B9, an open gap — the question now offers "not that far yet" and
 write's reply says when both exist. A14's fractions: eighths are the
 industry's unit.
 
-**What it caught that this to-do had missed** (H1 to H7 built and tested 2026-09-20; H8 to H10 are Robert's to see):
+**What it caught that this to-do had missed** (H1 to H7 built and tested 2026-09-20; H8 to H10 are drawn in `docs/mockups/round-twenty-two-last-three.html` and wait for a word — recommended: the sentence as written, "Tomás?" on the cast line (A), and no notes field, only words saying where a scene's fact goes):
 
 - [x] **H1 · A requirement number in a parameter's description** (its A14):
   `create_note`'s `locationOpen` says "(R61's edge)". The test that keeps

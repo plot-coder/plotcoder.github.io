@@ -15,7 +15,9 @@ kernel; **test**, and look at it in the app when a person can see it.
 Status marks: `[ ]` open · `[~]` planned and asked, waiting on a word ·
 `[x]` built and tested.
 
-**Where it stands:** thirty entries were fixed the night of the round and
+**Where it stands (2026-09-21):** #142 is merged and released as 0.1.48; N1 to N7 are built. What is left is X1 to X4. Before that:
+
+**Where it stood (2026-09-20, night):** thirty entries were fixed the night of the round and
 released as 0.1.47. The round's real finding — a writer's "I don't know" with
 no home — is built as R69, R70 and R71 with the checklist's five questions
 (pull request #142), **waiting on the owner's look at R70 and R71 in the app
@@ -27,9 +29,26 @@ decided against.**
 
 ## N. Now — one small release, after #142 lands
 
-Each is tools or words; none needs a drawing. Together about a session's work.
+Each is tools or words; none needs a drawing. **All seven built and tested
+2026-09-21, on the owner's "go"** (689 unit tests, e2e ten of ten; N6 looked
+at in the app). As built, where it differs from the plan: **N1** — the reset
+is "another wall is in hand": `new_project`, `open_project`, `open_board`,
+`new_board`, an import that starts a project, and the working project
+deleted, all in the session's memory; the first calls are `list_words`,
+`list_workflows`, `list_projects`, then the three reads. **N3** — the note
+also carries an open change line. **N4** — `src/board/shape.js`, clauses on
+the write's tail; a card the write itself appended is not "the ending
+moved"; "nothing runs from A to B now" when a run is emptied. **Not built
+from N4's plan:** the clause saying a version behind a card went with it
+when the card was reordered (entry 31) — the wall draws a version behind its
+sibling wherever that is, so nothing is wrong, only unsaid; it stays open
+as a small item. **N5** — the
+lead is "how long it is: about N pages. Say this one to the writer", in
+`read_wall`, `list_board` and `page_count`. **N6** — in `organizePoses`, so
+the wall's own Organize does it too. **N7** — the beat on an open card was
+checked true by a test first.
 
-- [~] **N1 · What "the session's first reading" means, and the first calls**
+- [x] **N1 · What "the session's first reading" means, and the first calls**
   (entry 4; the report's head). *Waiting on a yes: it changes the handover's
   call 2.* The count-and-point tail is unreachable by an agent who follows
   the on-ramp, whose five first calls include `read_wall` — in this round, of
@@ -51,7 +70,7 @@ Each is tools or words; none needs a drawing. Together about a session's work.
   *Test:* `plotcoder-http.test.mjs`: a session that reads, then `new_project`
   (file door: `new_board`), then writes — the tail counts; a `read_wall`; the
   next write quotes. `llms.txt` and the guide say the first calls the same way.
-- [ ] **N2 · A card born as a version, or born set aside** (entry 20; the
+- [x] **N2 · A card born as a version, or born set aside** (entry 20; the
   synthesis, section 3). A version took two writes and raised two false
   questions ([unlinked], [duplicate]) between them; a cut scene the same.
   *Plan:* `create_note` takes `of` (a card's id or headline: the new card is
@@ -63,7 +82,7 @@ Each is tools or words; none needs a drawing. Together about a session's work.
   build's tail is read, and the agent stopped to check they were gone. Yes.
   *Test:* server test: no [unlinked] or [duplicate] in either reply's tail;
   the aside-born card overlaps nothing.
-- [ ] **N3 · The pages' scene note says who may be there, and an open cast**
+- [x] **N3 · The pages' scene note says who may be there, and an open cast**
   (entry 54). `read_pages` is what the guide says to read before writing a
   scene, and its note reads `[[with Ada Okafor]]` — no `The organist?`, no
   "who else: I don't know". Someone writing from the pages writes a scene
@@ -73,7 +92,7 @@ Each is tools or words; none needs a drawing. Together about a session's work.
   anyone else]]`. Through every export that carries the note.
   *Best?* Yes; one helper already exists. *Test:* `fountain`/pages unit test
   with a maybe and an open cast.
-- [ ] **N4 · A reply says what the change did to the story's shape** (entries
+- [x] **N4 · A reply says what the change did to the story's shape** (entries
   30, 31, 50, 52, 72; the synthesis, section 7). A reorder, a cut, a delete or
   a choice of version changes the runs between turns, can move the ending,
   and leaves the rows disagreeing with the arrows; the replies report the
@@ -91,7 +110,7 @@ Each is tools or words; none needs a drawing. Together about a session's work.
   said only when true, and it replaces a full `read_wall` the agent would
   otherwise run to find out. Yes. *Test:* server tests, one per case, and
   one where the helper says nothing.
-- [ ] **N5 · One number for "how long is it"** (entry 62). Three film numbers
+- [x] **N5 · One number for "how long is it"** (entry 62). Three film numbers
   came back — by the cards, the script paginated, and "if the sketch ran to
   the page it was read as" — and the agent gave the writer all three.
   *Plan:* `page_count` and `read_wall`'s runtime block open with one
@@ -100,7 +119,7 @@ Each is tools or words; none needs a drawing. Together about a session's work.
   *Best?* D4 did this for the block; it did not reach `page_count`, and the
   lead sentence did not say "say this one". Yes. *Test:* both replies'
   first line.
-- [ ] **N6 · An aside card the app placed is never under the story** (entry
+- [x] **N6 · An aside card the app placed is never under the story** (entry
   22). A card with no position lands "after the last card"; set aside, it
   stays there; `organize` then lays the rows under it and reports it "left
   where the writer put it", which nobody did.
@@ -113,7 +132,7 @@ Each is tools or words; none needs a drawing. Together about a session's work.
   writer who set one aside by hand put it where they want it. Only the tidy
   moves it, and only when it would be on top of something. *Test:* organize
   unit test; the reply names the moved card.
-- [ ] **N7 · Three sentences the guide lacks** (entries 3, 25, 33). The tools
+- [x] **N7 · Three sentences the guide lacks** (entries 3, 25, 33). The tools
   may arrive under a connector's id, not a name: know the server by
   `list_words`. A version's headline may carry what tells the two apart
   ("…alone", "…with Callum"): that is not "how" in a headline. A beat marked

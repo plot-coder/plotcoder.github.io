@@ -2061,11 +2061,13 @@ describe("after the blind run", () => {
 
   it("says over or under in words, and what page_count counts", async () => {
     expect(await blind.callTool("set_target", { pages: 2 })).toMatch(/— [0-9 /]+ (over|under)\./);
-    expect(await blind.callTool("list_board")).toMatch(/runtime: about [\d /]+ pages — the number to use[^\n]*\n(  made of: [^\n]*\n)?  against the 2-page target the writer set \(set_target changes it\): [\d /]+ (over|under)\n/);
+    expect(await blind.callTool("list_board")).toMatch(/how long it is: about [\d /]+ pages\. Say this one to the writer[^\n]*\n(  made of: [^\n]*\n)?  against the 2-page target the writer set \(set_target changes it\): [\d /]+ (over|under)\n/);
     const written = await blind.callToolData("list_board");
     await blind.callTool("write_scene", { id: written.notes[0].id, text: "INT. KITCHEN - NIGHT\n\nMaya reads it twice." });
     const pages = await blind.callTool("page_count");
     expect(pages).toContain("unwritten and set their change line as action");
+    // One number for "how long is it", first, and said to be the one (round twenty-three, entry 62).
+    expect(pages).toMatch(/^how long the film is: about [\d /]+ pages, by the cards — say this one to the writer/);
     expect(await blind.callTool("new_board", { name: "Ep 2" })).toContain("leave it empty rather than invent it");
   });
 
@@ -2826,7 +2828,7 @@ describe("round ten's replies", () => {
     const tidy = await ten.callTool("organize");
     expect(tidy).toContain("five cards wide — no beats yet");
     const board = await ten.callTool("list_board");
-    expect(board).toMatch(/runtime: about \d+ pages — the number to use[^\n]*\n  made of: [^\n]*\n  no target set — set_target/);
+    expect(board).toMatch(/how long it is: about \d+ pages\. Say this one to the writer[^\n]*\n  made of: [^\n]*\n  no target set — set_target/);
     expect(board).not.toContain("-page target");
     await ten.callTool("set_target", { pages: 60 });
     expect(await ten.callTool("list_board")).toContain("against the 60-page target the writer set");
@@ -2838,7 +2840,7 @@ describe("round ten's replies", () => {
     await ten.callTool("set_rank", { ids: [ids[1]], rank: "beat" });
     await ten.callTool("create_group", { noteIds: [ids[0], ids[1]], title: "Act one" });
     const read = await ten.callTool("read_wall");
-    expect(read).toContain("runtime: about");
+    expect(read).toContain("how long it is: about");
     expect(read).toMatch(/\n  made of: of its \d+ cards, 0 measured from written text \(0 pages\), \d+ sized by the writer \([0-9/ ]+\), \d+ unsized and read as a page each \([0-9/ ]+\)\n/);
     expect(read).toContain("  the script so far, paginated, is page_count's number, not this one");
     expect(read).toMatch(/a beat's own pages are in no run — the 1 beat holds? about [0-9/ ]+ pages between them/);
@@ -3329,6 +3331,25 @@ describe("a person who may or may not be in a scene (round twenty-two, H9)", () 
     expect(await door.callTool("set_rank", { ids: [depot.id], rank: "proposed" })).toContain("Nothing changed");
   });
 
+  it("makes a card born as a version, or born set aside, in one call with no loose card in between (round twenty-three, entry 20)", async () => {
+    const version = await door.callTool("create_note", { headline: "The depot, after hours: she drives to the city", change: "She says too much.", of: "The depot, after hours" });
+    expect(version).toContain('Born as the other version of "The depot, after hours", behind it');
+    expect(version).not.toMatch(/\[unlinked\]|\[duplicate\]/);
+    const cut = await door.callTool("create_note", { headline: "At the audiologist's", change: "She asks how long.", aside: true });
+    expect(cut).toContain("Born set aside");
+    expect(cut).not.toMatch(/\[unlinked\]|\[uncast\]/);
+    const board = await door.callToolData("list_board");
+    const behind = board.notes.find((note) => note.headline.endsWith("she drives to the city"));
+    const front = board.notes.find((note) => note.headline === "The depot, after hours");
+    expect(behind.alternativeOf).toBe(front.id);
+    const aside = board.notes.find((note) => note.headline === "At the audiologist's");
+    expect(aside.aside).toBe(true);
+    // Clear of every card the wall draws.
+    for (const other of board.notes.filter((note) => note.id !== aside.id && !note.alternativeOf)) expect(Math.abs(other.x - aside.x) >= 192 || Math.abs(other.y - aside.y) >= 192).toBe(true);
+    expect(await door.callTool("create_note", { headline: "x", change: "y", of: "The depot, after hours", after: "The depot, after hours" })).toContain("takes no after or before");
+    expect(await door.callTool("create_note", { headline: "x", change: "y", of: "The depot, after hours" })).toContain("has a version behind it already");
+  });
+
   it("asks, in the treatment's checklist, the five things round twenty-three's notes needed (entry 9)", async () => {
     const listed = await door.callTool("list_workflows");
     for (const question of ["What changes in each scene?", "Is anyone in a scene only maybe?", "Is anything undecided about a person", "Is there a scene you have two ways?", "Is there a scene you have cut and want kept?"]) expect(listed).toContain(question);
@@ -3344,5 +3365,47 @@ describe("a person who may or may not be in a scene (round twenty-two, H9)", () 
     const listed = await door.request("tools/list", {});
     const update = listed.tools.find((tool) => tool.name === "update_note");
     expect(update.description).toContain("three homes and no fourth");
+  });
+});
+
+describe("a reply says what the change did to the story's shape (round twenty-three, entries 30, 31, 50, 52, 72)", () => {
+  let root;
+  let door;
+  const ids = {};
+
+  beforeAll(async () => {
+    root = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-shape-"));
+    door = new McpClient(root);
+    await door.start();
+    await door.callTool("new_board", { name: "The Tuner" });
+    let last = null;
+    for (const [headline, rank] of [["The chapel", "beat"], ["The job centre", "scene"], ["The school hall", "scene"], ["The chapel again", "beat"], ["The concert", "scene"]]) {
+      const made = await door.callToolData("create_note", { headline, change: "Something is different.", rank, ...(last ? { after: last } : {}) });
+      ids[headline] = made.id;
+      last = made.id;
+    }
+  });
+
+  afterAll(() => {
+    door.stop();
+    fs.rmSync(root, { recursive: true, force: true });
+  });
+
+  it("says nothing of the shape while a build only appends", async () => {
+    const appended = await door.callTool("create_note", { headline: "After the concert", change: "x", after: ids["The concert"] });
+    expect(appended).not.toContain("the last card of the story is now");
+    ids["After the concert"] = appended.match(/Created card ([0-9a-f-]{36})/)[1];
+  });
+
+  it("says the run a cut shortened, the ending a delete moved, and the cards a reorder left out of order on the wall", async () => {
+    const cut = await door.callTool("set_aside", { ids: [ids["The job centre"]] });
+    expect(cut).toContain('the run from "The chapel" to "The chapel again" is now 1 card');
+    const gone = await door.callTool("delete_note", { id: ids["After the concert"] });
+    expect(gone).toContain('the last card of the story is now "The concert"');
+    const reordered = await door.callTool("set_order", { cards: [ids["The chapel"], ids["The chapel again"], ids["The school hall"], ids["The concert"]] });
+    expect(reordered).toContain("out of the story's order on the wall");
+    expect(reordered).toContain('nothing runs from "The chapel" to "The chapel again" now');
+    // A write that changes none of it says none of it.
+    expect(await door.callTool("update_note", { id: ids["The concert"], headline: "The concert, at night" })).not.toMatch(/the runs between|last card of the story|out of the story's order/);
   });
 });

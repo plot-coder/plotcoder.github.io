@@ -216,7 +216,10 @@ only when the server is started with `PLOTCODER_JSON=1`.
   the runs and every question. Name your candidates to the writer by
   **headline, never by number**; on their word, keep is `rank: "beat"` and
   strike is `rank: "scene"`. Never mark a beat on your own word, and never
-  propose a number of turns.
+  propose a number of turns. **A beat marked on a wholly open card is an
+  ordinary beat:** it ends and starts runs like any other and the story
+  around it is still asked about — two turns back to back, a run out of
+  proportion — while the card itself, being open, is asked nothing.
 - `set_length` — how long cards run, in `pages`. Takes a list of ids. Fractions
   are fine (`0.5`); they are stored in eighths of a page. A card nobody has
   sized is **unsized** — `list_board` says so — and reads as about a page; a
@@ -236,7 +239,11 @@ only when the server is started with `PLOTCODER_JSON=1`.
   *how* it pays off, are what happens in those two scenes, so they are those
   cards' change lines, or their text: "he counts the fare out of a jar" is
   the first morning's, "he empties it into her hand" is the last run's.
-  Never a sentence in the label, and never in a headline. **When the change
+  Never a sentence in the label, and never in a headline. (What tells two
+  versions of one scene apart is not "how": "The pub, alone" and "The pub,
+  with Callum" are headlines, and when the writer does not yet know what
+  changes in either, the headline is the only place that difference can go.)
+  **When the change
   line is the writer's own words**, do not append to it: ask whether the line
   should say it, and meanwhile put it on the card as a note in the scene's
   text — `[[she gives the fork to Callum]]` with `write_scene`. A note neither
@@ -297,6 +304,12 @@ only when the server is started with `PLOTCODER_JSON=1`.
   other, I may come back to it" is `keep`. `of: ""` takes a card out from
   behind. Only on the writer's word:
   two versions the notes hold, never two the agent could not choose between.
+- **A card born as a version, or born set aside:** `create_note` with `of`
+  (the front card's id or headline) makes the new card the other version of
+  that scene in one call — no loose card for the wall to ask about in
+  between — and with `aside: true` makes a scene the writer has cut and wants
+  kept, placed under the story's rows. Neither takes `after` or `before`: it
+  is not in the order.
 - `set_aside` — a card **on the wall and not in the film**: a scene the
   writer cuts and will not throw away, an idea with no place in the story
   yet, the version not chosen. By id or headline. It keeps its words, its
@@ -661,10 +674,13 @@ card of another board is not asked about as uncast here.
 
 ## Workflow
 
-1. **Start as the on-ramp says** — the five calls, in any order: `list_words`,
-   `read_wall`, `list_workflows`, `list_reminders`, `list_board` — and use
-   the real `id`s `list_board` returns before any move, edit, group, or
-   arrow. Never guess ids.
+1. **Start as the on-ramp says** — `list_words`, `list_workflows` and
+   `list_projects` first, which read no wall and say which one is in hand;
+   then `read_wall`, `list_reminders` and `list_board` of the wall you are to
+   work — after `new_project` or `open_project` when the wall in hand is not
+   that one, so your first reading is never of a wall you are about to
+   leave. Use the real `id`s `list_board` returns before any move, edit,
+   group, or arrow. Never guess ids.
 2. Give every card a real `headline` and `change` — not placeholders. A card
    whose change line is empty is a card that has not earned its place.
 3. To lay cards out, draw the arrows and call `organize`. A straight
@@ -703,7 +719,9 @@ than a dictionary's, so the app and you never explain a word two ways.
   session's first `read_wall` it counts and points — "the wall's questions
   have changed since your last read_wall: 4 now, 2 of them new" — because a
   build is a run of writes whose quoted questions the next write answers;
-  after the first reading it quotes them. The hosted door
+  after the first reading it quotes them. "First" is of **the wall in hand**:
+  starting or opening a project, or opening or making a board, begins the
+  count again, since what you had read was another wall. The hosted door
   (`mcp.plotcoder.com`) remembers the same things from one call to the next —
   what you have read, which advice it has said — by the session your client
   opened; a client that sends no session gets the quoting tail from the first
@@ -713,6 +731,13 @@ than a dictionary's, so the app and you never explain a word two ways.
   opposite change — and "undo that scene" from a writer, when other changes
   they want have landed since, is `delete_note` or `set_aside`, never a walk
   back through the stack.
+- **What the change did to the story's shape** rides the same tail, when it
+  did anything: after `set_order`, `move_scene`, `set_aside`, `delete_note`,
+  `choose_version` or a scene wired in with `after`, the reply says which
+  runs between the turns changed and by how much, that the last card of the
+  story is now another, and how many cards now sit out of the story's order
+  on the wall — so you need no second reading to tell the writer what a cut
+  did. It says nothing when none of that changed.
 - **The account tail** says presence only when it has changed since the
   last reply — otherwise just "saved to the account" — so a change is
   noticed. It says what the wall shows: "open on Robert's screen

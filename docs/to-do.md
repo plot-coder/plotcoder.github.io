@@ -10,6 +10,8 @@ done and merged, what is left, and the order I would take it in.
 
 ## Next, in order (2026-09-20, night, after round twenty-three)
 
+**2026-09-21:** N1 to N7 of the working list are built (689 unit tests); what is left of round twenty-three is X1 to X4, each with its own asking — X1, a day-one page for someone holding a connector, is a third asking and goes first.
+
 **The working list is `docs/to-do-round-twenty-three.md`:** every one of the round's seventy-two entries accounted for, and what is left sorted — **seven items now (N1 to N7), one small release after #142 lands; four next (X1 to X4), each with its own asking; three left until a second round asks; the rest decided against, with the reason.** N1 waits on a yes: it changes what "the session's first reading" means.
 
 **Round twenty-three has run** — the connector alone, "The Tuner", 0.1.46: seventy-two entries, `blind-runs/round-twenty-three-report.md`, verbatim under a head that says what became of each. **Thirty fixed the same night** (658 unit tests), **merged as #139 and released as 0.1.47.** What it measured is in the head: the connector is in from the first message; every new tool was reached unprompted; the desktop connector sends the session id back, so B1 works where it matters. In order:

@@ -182,6 +182,22 @@ describe("a session through the hosted door", () => {
       expect(broken).toContain("Created");
     });
 
+    it("counts again when another wall is in hand: the first reading is of this wall, not of the one the session read before (round twenty-three, entry 4)", async () => {
+      const session = "5a6b7c8d-1e2f-4a3b-9c4d-5e6f7a8b9c0d";
+      // The on-ramp's reads, of whatever wall was standing.
+      await request("read_wall", {}, { session });
+      expect(rows.get(session).readOnce).toBe(true);
+      // Then a wall of the agent's own.
+      await request("new_board", { name: "The Tuner" }, { session });
+      expect(rows.get(session).readOnce).toBe(false);
+      expect(rows.get(session).lastReading).toBeNull();
+      const first = await request("create_note", { headline: "The chapel upright", change: "She gets it wrong.", rank: "beat" }, { session });
+      expect(first).toContain("the wall's questions have changed since your last read_wall");
+      await request("read_wall", {}, { session });
+      const next = await request("create_note", { headline: "The school hall", change: "He names a note." }, { session });
+      expect(next).not.toContain("since your last read_wall");
+    });
+
     it("never promises its own undo in a write's reply: the writer's ⌘Z is what is true here (round twenty-three, entry 71)", async () => {
       const made = await request("create_note", { headline: "To be deleted", change: "Something.", x: 6000, y: 2000 });
       const id = made.match(/Created card ([0-9a-f-]{36})/)?.[1];

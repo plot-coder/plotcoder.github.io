@@ -56,6 +56,7 @@ import { sceneHeading, standInFor } from "../src/board/fountain.js";
 import { describePresence, presenceTail } from "../src/board/presence.js";
 import { accountSessionStore, isSessionId, normalizeMemory } from "../src/board/agentSession.js";
 import { castLine, readMaybe } from "../src/board/castMaybe.js";
+import { shapeNote } from "../src/board/shape.js";
 import { segmentBrief, WORKFLOWS } from "../src/board/workflows.js";
 import { DEFAULT_REMINDERS, titleFromBody } from "../src/board/reminders.js";
 import crypto from "node:crypto";
@@ -276,6 +277,7 @@ async function deleteProjectRows(plan) {
 /** After a deletion took the working project: work the most recent one left, or nothing. */
 async function workWhatIsLeft(deletedIds) {
   if (!deletedIds.includes(accountDoor.projectId)) return "";
+  newWallInHand();
   if (accountDoor.channel) {
     void accountDoor.client.removeChannel(accountDoor.channel);
     accountDoor.channel = null;
@@ -703,6 +705,7 @@ async function writeProject(project, boards, rev, base, reminders = null) {
 
 /** Open a board everywhere: the record's open board, and the board channel with its id. */
 async function openBoardEverywhere(project, boards, projectRev, base, boardId) {
+  newWallInHand();
   const opened = setActiveBoard(project, boardId);
   const state = isBoardState(boards[boardId]) ? normalizeState(boards[boardId]) : emptyState();
   const live = await writeProject(opened, { ...boards, [boardId]: state }, projectRev, base);
@@ -846,10 +849,30 @@ let lastReading = null;
 const sinceRead = [];
 /** Whether this session has read a wall yet: until it has, a write's tail counts the questions and points at read_wall; after, it quotes them (the handover's call 2). */
 let readOnce = false;
+/**
+ * A different wall is in hand — a project started or opened, a board opened or
+ * made, the working project deleted: what this session had read was another
+ * wall, so "the session's first reading" is the first reading of THIS one
+ * (round twenty-three: the on-ramp's first calls read a stale wall, and the
+ * count-and-point tail never appeared for the build that followed). Held in
+ * the session's memory, so it is true through the hosted door too.
+ */
+function newWallInHand() {
+  readOnce = false;
+  lastReading = null;
+  sinceRead.length = 0;
+}
+
 /** What the last write did to the wall's questions and runtime, said once on that write's tail (round fourteen, entries 18, 19, 42). */
 let lastChange = null;
 // The same question in the same words is the same question, whatever order its names come in (round seventeen, entry 21).
 const findingKey = (finding) => `${finding.kind}|${[...finding.ids].sort().join(",")}`;
+/** Set by a tool whose write can change the story's shape — a reorder, a cut, a delete, a choice of version, a scene wired in — so the next change's tail says what it did to the runs, the ending and the wall's order (round twenty-three, entries 30, 31, 50, 52, 72). */
+let shapeAsked = null;
+function askShape(options = {}) {
+  shapeAsked = options;
+}
+
 function noteChange(before, after, boardId = null) {
   // The same reading read_wall gives: a person cast on another board is not
   // asked about, so a write's tail never names a question the reading does not.
@@ -867,7 +890,9 @@ function noteChange(before, after, boardId = null) {
     eighthsAfter: boardEighths(after),
     target: after.targetEighths,
     targetOpen: Boolean((after.targetOpen ?? "").trim()),
+    shape: shapeAsked ? shapeNote(before, after, shapeAsked) : [],
   };
+  shapeAsked = null;
 }
 function changeNote() {
   const change = lastChange;
@@ -891,6 +916,7 @@ function changeNote() {
     // Silence read as "unchanged" or "not computed" (round twenty-two, entries 66, 92): say which, with the count an agent can use.
     parts.push(`the wall's questions unchanged (${change.asks})`);
   }
+  parts.push(...(change.shape ?? []));
   if (change.leftAfter !== change.leftBefore) parts.push(`left, for now: ${change.leftAfter} (was ${change.leftBefore})`);
   // An open target is not 120: the tail says the pages and that the target is open, as the reading does (round twenty-two, entry 19).
   if (change.eighthsAfter !== change.eighthsBefore)
@@ -1263,7 +1289,8 @@ function runtimeBlock(state) {
       ? `no target set — set_target for a pilot (60) or a half-hour (30); against the feature default of 120 it would be ${formatPages(-over)} under`
       : `against the ${formatPages(state.targetEighths)}-page target the writer set (set_target changes it): ${over > 0 ? `${formatPages(over)} over` : over < 0 ? `${formatPages(-over)} under` : "on it"}`;
   return [
-    `runtime: about ${formatPages(total)} pages — the number to use: the cards' estimate, a page about a minute, counted in eighths as a production does`,
+    // One number for "how long is it", said first and said to be the one (round twenty-three, entry 62): an agent handed the writer three.
+    `how long it is: about ${formatPages(total)} pages. Say this one to the writer: the film by its cards, a page about a minute, counted in eighths as a production does. The other figures below are what it is made of and what it is read against, not other answers`,
     ...(made ? [`  made of: ${made}`] : []),
     `  ${target}`,
     ...(found.length ? [`  if ${found.length === 1 ? "the sketch" : `the ${found.length} sketches`} ran to the page ${found.length === 1 ? "it was" : "they were"} read as: about ${formatPages(ifRan)} pages — a written scene measured under its page is a sketch, and this is a guess about a guess`] : []),
@@ -1768,13 +1795,29 @@ server.registerTool(
       open: z.string().optional().describe("The writer's words for what is not decided about this card — \"whether Tom knows\" — so the card is born open: the reading lists it and asks nothing else of it until the words are cleared."),
       characters: z.array(z.string().min(1)).optional(),
       castOpen: z.string().optional().describe("The writer's words for why who is in the scene is not decided, when nobody can be named or beside the names given. Not the same as open, which says the whole card is undecided."),
+      of: z.string().optional().describe("Born as the other version of this card (id or headline): it stands behind that card from the first moment — out of the order, the count and the pages until choose_version — in one call and one step, so the wall never asks about it as a loose card. Not with after, before or aside."),
+      aside: z.boolean().optional().describe("Born set aside: a scene the writer has cut and wants kept. On the wall, clear of the story's rows, and not in the film. Not with after, before or of."),
       x: z.number().optional(),
       y: z.number().optional(),
     },
   },
   async (args) => {
     const { state } = await readBoard();
-    const landing = args.x === undefined && args.y === undefined ? nextPlace(state) : { x: args.x, y: args.y };
+    // A card born as a version, or born set aside (round twenty-three, entry 20): neither is in the order, so neither is wired.
+    if ((args.of || args.aside) && (args.after || args.before)) return ok("A version behind another card, or a card set aside, is not in the story's order, so it takes no after or before. Say one: where it goes in the order, or of, or aside.");
+    if (args.of && args.aside) return ok("Say one: of (another version of a scene, behind it until the writer chooses) or aside (cut and kept).");
+    const ofKey = (args.of ?? "").trim();
+    const front = ofKey ? state.notes.find((note) => note.id === ofKey) ?? state.notes.find((note) => note.headline.trim().toLowerCase() === ofKey.toLowerCase()) ?? null : null;
+    if (ofKey && !front) return ok(`No card with id or headline "${ofKey}" on this board. Call list_board.`);
+    if (front?.alternativeOf) return ok(`"${front.headline}" is itself a version behind another card; name the front card.`);
+    if (front && state.notes.some((note) => note.alternativeOf === front.id)) return ok(`"${front.headline}" has a version behind it already; choose_version there first.`);
+    // A card born aside lands under the wall's lowest card, never "after the last card", which is inside the story (entry 22).
+    const below = () => {
+      const drawn = state.notes.filter((note) => !note.alternativeOf);
+      if (!drawn.length) return { x: 140, y: 140 };
+      return { x: Math.min(...drawn.map((note) => note.x)), y: Math.max(...drawn.map((note) => note.y)) + NOTE_HEIGHT + GAP * 2 };
+    };
+    const landing = args.x !== undefined || args.y !== undefined ? { x: args.x, y: args.y } : front ? { x: front.x, y: front.y } : args.aside ? below() : nextPlace(state);
     const names = (args.characters ?? []).map((name) => name.trim()).filter(Boolean);
     const added = [];
     // The card, anyone new in its cast, and the casting land as one change, so
@@ -1793,6 +1836,8 @@ server.registerTool(
     // The arrow the wiring took out, by its cards, as delete_note names one (round twenty-two, entry 65).
     const removedNames = [];
     let drawnArrows = 0;
+    // A scene wired into the story can change a run and leave the rows out of order; one simply added cannot.
+    if (beside) askShape();
     const { value: result, live, state: after } = await commitAll(`create_note "${args.headline}"`, (step, current) => {
       let made = step({
         type: "create_note",
@@ -1839,6 +1884,15 @@ server.registerTool(
           made = cast.state.notes.find((note) => note.id === made.id) ?? made;
         }
       }
+      // Born behind another card, or born set aside, in the same frame: no loose card for the wall to ask about.
+      if (front && made?.id) {
+        const paired = step({ type: "set_alternative", id: made.id, of: front.id });
+        made = paired.state.notes.find((note) => note.id === made.id) ?? made;
+      }
+      if (args.aside && made?.id) {
+        const cut = step({ type: "set_aside", ids: [made.id], aside: true });
+        made = cut.state.notes.find((note) => note.id === made.id) ?? made;
+      }
       // Wired into the story where the writer said, in the same frame.
       // On a wall with no follows arrows yet, after or before draws the first one (round nineteen, entry 14).
       if (beside && made?.id) {
@@ -1875,7 +1929,11 @@ server.registerTool(
       result?.open ? `open: "${result.open}" (listed, not asked about)` : null,
     ].filter(Boolean).join(", ");
     // Where it landed matters only until the tidy, so the reply says the rule once and never the coordinates (round fourteen, entry 11).
-    const placed = beside
+    const placed = front
+      ? ` Born as the other version of "${front.headline}", behind it: out of the order, the count and the pages until choose_version decides. Which card is in front decides nothing.`
+      : args.aside
+      ? " Born set aside: on the wall under the story's rows, and not in the film — out of the order, the count, the pages and every export; set_aside with aside false brings it in."
+      : beside
       ? ` Wired ${args.after ? "after" : "before"} "${beside.headline}" in the story (${removedArrows} follows arrow${removedArrows === 1 ? "" : "s"} removed${removedNames.length ? ` — ${removedNames.join(", ")}` : ""}, ${drawnArrows} drawn${wallHasFollows ? "" : "; the wall's first, so the story order starts here"})${joinedGroup ? `, in "${joinedGroup}"` : ""}. ${notTidied()}`
       : args.x === undefined && args.y === undefined ? ` Placed after the last card in story order.${once("placed", " organize lays the wall out along the arrows.")}` : "";
     // Under a lock a new scene has a letter, not a number: say it, since the board is the only other place to learn it (round fourteen, entry 44).
@@ -1967,6 +2025,7 @@ server.registerTool(
     inputSchema: { id: z.string() },
   },
   async (args) => {
+    askShape();
     const { result, live } = await commit({ type: "delete_note", id: args.id });
     if (result === undefined) return ok(`No card with id ${args.id}.`);
     // Say what went with the card (round thirteen, entry 17).
@@ -2408,6 +2467,7 @@ server.registerTool(
     let joinedGroup = null;
     // The whole move — its dozen arrows and the tidy — as one change: one frame on
     // the bridge, one ⌘Z on the wall, one step for undo here.
+    askShape();
     const { state: final, live } = await commitAll(`move_scene "${card.headline}"`, (step, current) => {
       const run = (command) => {
         const done = step(command);
@@ -2464,6 +2524,7 @@ server.registerTool(
     const named = new Set(ids);
     let removed = 0;
     let drawn = 0;
+    askShape();
     const { state: final, live } = await commitAll(`set_order (${ids.length} cards)`, (step, current) => {
       for (const arrow of current().arrows.filter((item) => item.kind !== "setup" && (named.has(item.from) || named.has(item.to)))) if (step({ type: "delete_arrow", id: arrow.id }).changed) removed += 1;
       for (let index = 1; index < ids.length; index += 1) if (step({ type: "create_arrow", from: ids[index - 1], to: ids[index], kind: "follows" }).changed) drawn += 1;
@@ -2488,9 +2549,12 @@ server.registerTool(
   },
   async (args) => {
     const { state } = await readBoard();
-    const poses = organizePoses(state, { onlyIds: args.noteIds });
+    const everyPose = organizePoses(state, { onlyIds: args.noteIds });
+    // The film's cards are what is laid out; a card set aside comes along only when the rows would run under it (round twenty-three, entry 22).
+    const poses = everyPose.filter((pose) => !pose.aside);
+    const clearedAside = everyPose.filter((pose) => pose.aside);
     if (poses.length === 0) return ok("Nothing to organize: no cards in scope.");
-    const { changed, live } = await commit({ type: "apply_poses", poses });
+    const { changed, live } = await commit({ type: "apply_poses", poses: everyPose });
     const rows = new Set(poses.map((pose) => pose.y)).size;
     const beats = state.notes.filter(
       (note) => note.rank === "beat" && poses.some((pose) => pose.id === note.id),
@@ -2518,7 +2582,9 @@ server.registerTool(
     const behindCount = state.notes.filter((note) => note.alternativeOf).length;
     // A version behind a card goes where its card goes: the wall draws it there, whatever x,y its record keeps for the day it is chosen (round twenty-two, entry 32).
     const behindLine = behindCount ? ` ${behindCount} card(s) behind as other versions went with the cards they stand behind: the wall draws a version behind its sibling wherever that is, and its own x,y waits until it is chosen.` : "";
-    const asideLine = asideLeft ? ` ${asideLeft} card(s) set aside stayed where the writer put them: they are not in the film, so the tidy does not move them.` : "";
+    const clearedNames = clearedAside.map((pose) => `"${state.notes.find((note) => note.id === pose.id)?.headline ?? pose.id}"`);
+    const stayed = asideLeft - clearedAside.length;
+    const asideLine = `${clearedAside.length ? ` ${clearedNames.join(", ")} — set aside, not in the film — would have been under the rows, so ${clearedAside.length === 1 ? "it was" : "they were"} moved to a row of ${clearedAside.length === 1 ? "its" : "their"} own beneath them.` : ""}${stayed > 0 ? ` ${stayed} card(s) set aside stayed where the writer put them: they are not in the film, so the tidy does not move them.` : ""}`;
     return ok(`Organized ${poses.length} card(s) along the arrows into ${shape}${where(live)}.${behindLine}${asideLine}`, poses);
   },
 );
@@ -3006,7 +3072,9 @@ server.registerTool(
       : unwritten
       ? [`${unwritten} of ${order.length} scenes are unwritten and set their change line as action, marked [Unwritten], a few lines each — so this is the script so far, not the runtime: the runtime from the cards is about ${formatPages(boardEighths(state))} pages, ${order.length - unwritten} of ${order.length} measured and the rest estimated.`]
       : [];
-    return ok([...note, `pages: ${result.pageCount} of ${Math.round(state.targetEighths / 8)}`, `scene numbers here are ${state.lock ? "the locked numbers" : "story order (not locked)"}`, ...lines].join("\n"), result.scenes);
+    // The film's length is the cards' number, said first; the page count here is how far the script has got (round twenty-three, entry 62).
+    const lead = `how long the film is: about ${formatPages(boardEighths(state))} pages, by the cards — say this one to the writer. What follows is the script as written so far, paginated${unwritten ? `: ${order.length - unwritten} of ${order.length} scenes written` : ""}, which is a different number and not the film's length until every scene is written.`;
+    return ok([lead, ...note, `pages: ${result.pageCount} of ${Math.round(state.targetEighths / 8)}`, `scene numbers here are ${state.lock ? "the locked numbers" : "story order (not locked)"}`, ...lines].join("\n"), result.scenes);
   },
 );
 
@@ -3372,6 +3440,7 @@ server.registerTool(
     if (refs.missing.length) return ok(`Nothing changed: not on the board — ${refs.missing.map((ref) => `"${ref}"`).join(", ")}. Call list_board for the ids or the exact headlines.`);
     const behind = refs.found.map((id) => current.notes.find((note) => note.id === id)).filter((note) => note?.alternativeOf);
     if (behind.length && args.aside !== false) return ok(`Nothing changed: ${behind.map((note) => `"${note.headline}"`).join(", ")} ${behind.length === 1 ? "is" : "are"} already out of the film, behind another card as its other version. choose_version with keep sets the one not chosen aside.`);
+    askShape();
     const { changed, result, live, state: after } = await commit({ type: "set_aside", ids: refs.found, aside: args.aside !== false });
     if (!changed) return ok(`Nothing changed: ${args.aside === false ? "those cards are not set aside" : "those cards are already set aside"}.`);
     // The arrows that closed the story over the cut, by their cards (round twenty-three, entry 49).
@@ -3401,6 +3470,7 @@ server.registerTool(
     if (!card) return ok(`No card with id or headline "${args.id}". Call list_board.`);
     const other = card.alternativeOf ? current.notes.find((note) => note.id === card.alternativeOf) : current.notes.find((note) => note.alternativeOf === card.id);
     if (!other) return ok(`"${card.headline}" has no other version; nothing to choose.`);
+    askShape();
     const { changed, result, live } = await commit({ type: "choose_version", id: card.id, keep: args.keep === true });
     if (!changed) return ok("Nothing chosen.");
     return ok(`Chose "${card.headline}"${result.steppedForward ? ` — it steps forward into "${other.headline}"'s place, with its arrows, rank, group and threads${!card.plants && other.plants ? `, and its fold${other.plantsWhat ? ` ("${other.plantsWhat}")` : ""}` : ""}` : ""}${where(live)}. "${other.headline}" ${result.kept ? "is kept, set aside below it, clear of the other cards: on the wall and not in the film — out of the order, the count, the pages and every export; the reading lists it and asks nothing of it. set_aside with aside false brings it back as a plain card" : "is gone"}.`, result);
@@ -4457,6 +4527,7 @@ server.registerTool(
     const found = projects.find((row) => row.id === args.project) ?? projects.find((row) => row.record.name.trim().toLowerCase() === wanted);
     if (!found) return ok(`No project called "${args.project}". Call list_projects.`);
     workingProject(found.id, found.record.name, projects.length);
+    newWallInHand();
     joinPresence(found.id);
     return ok(`Working "${found.record.name}" (${found.id}) now, as ${account.email}.${oneCallHint(found.record)}`, { id: found.id, name: found.record.name });
   },
@@ -4544,6 +4615,7 @@ server.registerTool(
     const board = await account.client.from("boards").insert({ id: record.activeBoardId, project_id: record.id, state, rev: 1, updated_by: null });
     if (board.error) return ok(`Started "${record.name}" but could not make its first board: ${board.error.message}`);
     workingProject(record.id, record.name, (account.projectCount ?? 0) + 1);
+    newWallInHand();
     joinPresence(record.id);
     const targetLine = state.targetOpen ? ` Its target is left open, by the writer's word: "${state.targetOpen}"; the reading reads the cards against a half-hour and a feature until set_target decides it.` : targetWords(state) ? ` Its target is ${targetWords(state)}, read as ${formatPages(state.targetEighths)} pages: kept as the writer's word, not a page count (set_target with pages says a number).` : target === undefined ? ` Its target is ${formatPages(state.targetEighths)} pages, the default for a feature; set_target for a pilot or a half-hour, or pass pages or minutes here.` : ` Its target is ${formatPages(state.targetEighths)} pages.`;
     const first = record.boards[0];
@@ -4773,6 +4845,7 @@ server.registerTool(
         if (board.error) return ok(`Imported "${record.name}" but could not make its board "${meta.name}": ${board.error.message}`);
       }
       workingProject(record.id, record.name, (account.projectCount ?? 0) + 1);
+      newWallInHand();
       joinPresence(record.id);
       return ok(
         `Imported "${record.name}" onto the account as a new project (${record.id}): ${record.boards.length} board(s), ${cards} card(s). Working it now, as ${account.email}; the writer sees it under Projects on every device.${oneCallHint(record)}`,

@@ -165,3 +165,23 @@ describe("organizePoses with beats", () => {
     expect(JSON.stringify(state)).toBe(snapshot);
   });
 });
+
+describe("a card set aside and the tidy (round twenty-three, entry 22)", () => {
+  it("is left where the writer put it when the rows do not run under it", () => {
+    const state = run(wall("a", "b", "c"), ...follows(["a", "b"], ["b", "c"]), { type: "create_note", id: "cut", headline: "cut", x: 3000, y: 3000 }, { type: "set_aside", ids: ["cut"], aside: true });
+    expect(organizePoses(state).some((pose) => pose.id === "cut")).toBe(false);
+  });
+
+  it("is moved to a row of its own under the rows when they would run under it, and marked", () => {
+    // The app put it "after the last card", in the first row, and the writer then cut it.
+    let state = run(wall("a", "b", "c"), ...follows(["a", "b"], ["b", "c"]));
+    const laid = organizePoses(state);
+    const last = poseOf(laid, "c");
+    state = run(state, { type: "create_note", id: "cut", headline: "cut", x: last.x + 20, y: last.y + 20 }, { type: "set_aside", ids: ["cut"], aside: true });
+    const poses = organizePoses(state);
+    const moved = poses.find((pose) => pose.id === "cut")!;
+    expect(moved.aside).toBe(true);
+    for (const pose of poses.filter((item) => item.id !== "cut")) expect(Math.abs(pose.x - moved.x) >= NOTE_WIDTH || Math.abs(pose.y - moved.y) >= NOTE_HEIGHT).toBe(true);
+    expect(moved.y).toBeGreaterThan(Math.max(...poses.filter((item) => item.id !== "cut").map((pose) => pose.y)));
+  });
+});

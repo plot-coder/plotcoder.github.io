@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<title>Round twenty-two's last three — H8, H9, H10</title>
+<!-- The app's own paper: the source stylesheet, so the link never goes stale. -->
+<link rel="stylesheet" href="../../src/styles.css">
+<style>
+  body { margin: 0; padding: 2rem 2.5rem 4rem; font-family: ui-sans-serif, system-ui, sans-serif; }
+  h1 { font: 600 1.05rem/1.3 ui-serif, Georgia, serif; margin: 0 0 0.25rem; }
+  h2.sec { font: 600 0.95rem/1.3 ui-serif, Georgia, serif; margin: 3rem 0 0.2rem; padding-top: 1.2rem; border-top: 1px solid rgba(127,127,127,0.25); }
+  .lede { font-size: 0.85rem; opacity: 0.78; margin: 0 0 1.2rem; max-width: 72ch; line-height: 1.5; }
+  .said { font-size: 0.82rem; line-height: 1.5; margin: 0.4rem 0 1.3rem; max-width: 76ch; padding: 0.6rem 0.9rem; border-left: 3px solid var(--over); background: rgba(127,127,127,0.08); }
+  .said b { font-weight: 600; }
+  .row { display: flex; gap: 2.2rem; flex-wrap: wrap; align-items: flex-start; }
+  .opt { width: 500px; max-width: 100%; }
+  .opt h3 { font: 700 0.62rem/1.3 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; margin: 0 0 0.6rem; }
+  .opt h3 em { font-style: normal; color: var(--over); }
+  .opt p { font-size: 0.8rem; line-height: 1.45; opacity: 0.82; margin: 0.7rem 0 0; max-width: 58ch; }
+  pre.read { font: 0.68rem/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; background: rgba(127,127,127,0.12); padding: 0.75rem 0.95rem; border-radius: 6px; white-space: pre-wrap; margin: 0.7rem 0 0; }
+  pre.read b { color: var(--over); font-weight: 600; }
+  pre.read s { opacity: 0.5; }
+  .paper { position: relative; height: 250px; width: 500px; max-width: 100%; border-radius: 6px; background: var(--canvas); outline: 1px solid rgba(127,127,127,0.18); overflow: hidden; }
+  .paper .note { position: absolute; transform-origin: top left; min-height: 11rem; }
+  .ask { margin-top: 1.2rem; max-width: 78ch; font-size: 0.86rem; line-height: 1.55; }
+  .ask b { font-weight: 600; }
+  .yes { margin-top: 0.7rem; max-width: 78ch; font-size: 0.84rem; line-height: 1.5; padding: 0.6rem 0.9rem; border-radius: 6px; background: rgba(127,127,127,0.12); }
+  .words { font-size: 0.82rem; line-height: 1.5; background: rgba(127,127,127,0.12); border-radius: 6px; padding: 0.7rem 0.95rem; max-width: 76ch; }
+  .words b { font-weight: 600; }
+  .maybe { opacity: 0.62; font-style: italic; }
+</style>
+</head>
+<body>
+<h1>Round twenty-two's last three: the camera's mark in the words, a person who may be there, a note on a card</h1>
+<p class="lede"><b>2026-09-20:</b> "yes to all three recommendations." Built the same day: the sentence, A as R68, and no notes field. The page stands as it was drawn.</p>
+<p class="lede">The three items of <code>docs/to-do-round-twenty-two.md</code>, section H, that a person would see (drawn 2026-09-20). They came from the round's agent's own issues file, not the report. Each: what happened, how it behaves today, what it could be, what I would do, and what a yes means. <b>My recommendation is to build one of the three</b>, say one sentence for another, and leave the third until a second round asks.</p>
+
+<!-- ───────────── H8 ───────────── -->
+<h2 class="sec">1 · The camera's mark is not in the words (H8 · the agent's D5)</h2>
+<div class="said"><b>What happened.</b> The mark beside a line the camera cannot see — "She <i>knows</i> every passenger by their stop" — was built into the app's Pages this round (F7), so a writer now sees a small ◂ in the margin. The words sheet, which is where a writer looks up anything the app says, has no entry for it. Nothing to draw: it is a sentence.</div>
+<div class="words"><b>The camera's mark.</b> A small ◂ in the margin of Pages beside a line that says what someone knows, feels, thinks or wants, which a camera cannot see. A mark, not a question: keep the line or show it. It never prints.</div>
+<div class="ask"><b>What I would do:</b> add it as written, in <code>src/board/words.js</code>, so the sheet, <code>list_words</code> and the writer's guide all carry it. It is the hover's own words, a little longer.</div>
+<div class="yes"><b>A yes means:</b> one entry in the words, the same sentence in <code>public/writers.html</code> where Pages is described, a line in the test that reads the words. Ten minutes.</div>
+
+<!-- ───────────── H9 ───────────── -->
+<h2 class="sec">2 · A person who may or may not be in a scene (H9 · the agent's B4)</h2>
+<div class="said"><b>What happened.</b> The writer said of the depot scene: "Whether Tomás is there, I don't know yet." The agent had two honest choices and both were wrong. Cast him, and the wall says he is in the scene — the cast's counts include it, and "Tomás is gone for a third of the story" is never asked though it may be true. Leave him off, and the only record is a clause in the card's open words, which no count or check can read, and which marks the <i>whole card</i> undecided when one thing about it is. A place, a when and a change line each have an open of their own (R61, R67); who is in the scene does not.</div>
+<div class="row">
+  <div class="opt">
+    <h3>As it ships · the maybe lives in the card's open words</h3>
+    <div class="paper">
+      <article class="note note--yellow is-open" style="left:28px;top:22px;transform:rotate(-1deg)">
+        <div class="note__headline">The depot, after hours</div>
+        <div class="note__change">Marta takes the keys off the hook.</div>
+        <div class="note__with"><span class="note__with-prefix">with</span> Marta</div>
+        <div class="note__with note__at"><span class="note__with-prefix">at</span> The depot</div>
+      </article>
+    </div>
+    <pre class="read">open, by the writer's word:
+  - "The depot, after hours": <b>"whether Tomás is there: I don't know yet"</b>
+
+the cast: Marta (6 scenes), Tomás (3 scenes), …</pre>
+    <p>The whole card is hatched as open, though the scene is decided but for one person. Tomás's count and his absence check read the wall as if he were certainly not there.</p>
+  </div>
+  <div class="opt">
+    <h3>A · <em>"Tomás?"</em> on the cast line — his own open, counted neither way</h3>
+    <div class="paper">
+      <article class="note note--yellow" style="left:28px;top:22px;transform:rotate(-1deg)">
+        <div class="note__headline">The depot, after hours</div>
+        <div class="note__change">Marta takes the keys off the hook.</div>
+        <div class="note__with"><span class="note__with-prefix">with</span> Marta, <span class="maybe">Tomás?</span></div>
+        <div class="note__with note__at"><span class="note__with-prefix">at</span> The depot</div>
+      </article>
+    </div>
+    <pre class="read">open, by the writer's word:
+  - "The depot, after hours": <b>whether Tomás is in it</b>
+
+the cast: Marta (6 scenes), Tomás (3 scenes<b>, and maybe 1 more</b>), …</pre>
+    <p>Typing a name with a question mark on the cast line is the whole gesture; taking the mark off decides it, deleting the name decides it the other way. The card is not hatched: the scene is in the film and its other questions stand. The reading lists it under open and never asks it. The absence check counts only scenes he is certainly in, and when a maybe sits inside the gap it says so: "…unless he is in <i>The depot, after hours</i>."</p>
+  </div>
+</div>
+<div class="ask"><b>What I would do: A.</b> It is R61's shape once more, on the one card field that does not have it, and it removes a case where the agent's only honest move was a free-text clause the app cannot read. The alternatives: <b>leave it</b> — costs nothing, and the round's agent did cope, but the wall then miscounts a person on the writer's own word; <b>a second list on the card</b> ("maybe: Tomás") — a second model for one idea, which the combine log exists to stop. The kernel change is small: <code>maybeCharacterIds</code> beside <code>characterIds</code>, empty by default, repaired in <code>normalizeState</code>, never in both lists at once.</div>
+<div class="yes"><b>A yes means:</b> the field and its command in the kernel with a unit test; <code>cast_note</code> and <code>create_note</code> take <code>maybe</code>; the reading lists it under open and the absence check reads it as above; the cast line draws and takes "Name?"; the writer's guide, the agent's guide and the words say it. An afternoon. It rides the release after B1's, not this one.</div>
+
+<!-- ───────────── H10 ───────────── -->
+<h2 class="sec">3 · A note on a card, for what is also true of the scene (H10 · the agent's B7)</h2>
+<div class="said"><b>What happened.</b> "The cut is announced in this scene" was true of one scene and had nowhere to go. The headline says what the scene is, the change line says what is different after it, the text is the scene itself, and open words are for what is undecided. A decided fact that is none of those had no home, so the agent put it in the change line, where it displaced the change.</div>
+<div class="row">
+  <div class="opt">
+    <h3>As it ships · two lines, and the scene's own text</h3>
+    <div class="paper">
+      <article class="note note--blue" style="left:28px;top:22px;transform:rotate(1deg)">
+        <div class="note__headline">The drivers' room</div>
+        <div class="note__change">Marta learns the route is cut; she says nothing.</div>
+        <div class="note__with"><span class="note__with-prefix">with</span> Marta, Iván</div>
+        <div class="note__with note__at"><span class="note__with-prefix">at</span> The depot</div>
+      </article>
+    </div>
+    <p>Said well, the fact <i>is</i> the change: "the cut is announced" is what is different after this scene. When it truly is not, it belongs in the scene's text as a <code>[[note]]</code>, which neither prints nor counts, or in the premise when it is true of the whole film.</p>
+  </div>
+  <div class="opt">
+    <h3>B · a third line, <em>notes</em>, under the change</h3>
+    <div class="paper">
+      <article class="note note--blue" style="left:28px;top:22px;transform:rotate(1deg)">
+        <div class="note__headline">The drivers' room</div>
+        <div class="note__change">Marta says nothing.</div>
+        <div class="note__with" style="opacity:.75;font-style:italic">The cut is announced here. Iván already knew. Check the union's notice period. Rain?</div>
+        <div class="note__with"><span class="note__with-prefix">with</span> Marta, Iván</div>
+        <div class="note__with note__at"><span class="note__with-prefix">at</span> The depot</div>
+      </article>
+    </div>
+    <p>It fills, as a notes field does. The card stops being two lines a writer can read across a wall, and the change line — the one the app is built on — gets shorter, because the hard part of it now has somewhere else to go.</p>
+  </div>
+</div>
+<div class="ask"><b>What I would do: nothing yet, and say where it goes.</b> One round has asked, once. The card has two lines by design, and a notes field is where a wall turns into a document. What is cheap and true: the agent's guide and <code>update_note</code>'s description say that a decided fact about one scene is the change line when it is what changes, a <code>[[note]]</code> in the text when it is not, and the premise when it is the whole film's. If a second round puts a fact in the wrong place with those words in front of it, draw B again.</div>
+<div class="yes"><b>A yes to "nothing yet" means:</b> two sentences in the guide and one in a tool's description, with the test that reads descriptions. No field.</div>
+
+<h2 class="sec">The three, in one line each</h2>
+<p class="lede" style="margin-top:0.6rem">1 — the sentence, as written. 2 — <b>A</b>: "Tomás?" on the cast line, counted neither way. 3 — no field; say where a scene's fact goes.</p>
+</body>
+</html>

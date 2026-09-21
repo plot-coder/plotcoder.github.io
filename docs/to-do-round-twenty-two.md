@@ -53,7 +53,7 @@ Patched the night of the round — there the tail quotes from the first
 write, once-a-session advice is not said, presence is not claimed. The
 patches are honest; they are not the answer.
 
-- [~] **B1 · A session for the hosted door.** *(planned and asked; waiting on Robert's word: it adds a table and a secret to the function)*
+- [x] **B1 · A session for the hosted door.** *(built and tested 2026-09-20, changed at the asking: **one table and no secret.** The row is the writer's own — the door already signs in as the writer on every request, so row-level security by user is the wall and the function needs no service key. The memory carries the last reading and the changes since as well as `readOnce` and `once()`, so a `leave_question` that misses says what the agent last read. The SDK's stateful mode keeps the session in the transport, which here dies with the request, so the door sets `Mcp-Session-Id` itself. An id with no row is a new session; no id, no account or no table is the patched behaviour. Not carried: the undo trail — `undo` through the door now says so — and presence in the tail. `src/board/agentSession.js`, R48's "A session". **The migration is applied (2026-09-20) and the store round-tripped against the real table as the test account; the migration history was repaired to match the repo. Still to do: release, bump the pin, redeploy the function (the Worker forwards every header both ways and needs nothing); then one check that the desktop connector sends the id back.**)*
   *Plan:* MCP's Streamable HTTP has a session id (`Mcp-Session-Id`). The
   function issues one on `initialize` and keeps a small row per session — has
   it read the wall, which advice it has said — in a table behind the service
@@ -289,7 +289,7 @@ B9, an open gap — the question now offers "not that far yet" and
 write's reply says when both exist. A14's fractions: eighths are the
 industry's unit.
 
-**What it caught that this to-do had missed** (H1 to H7 built and tested 2026-09-20; H8 to H10 are Robert's to see):
+**What it caught that this to-do had missed** (H1 to H10 built and tested 2026-09-20; H8 to H10 were drawn in `docs/mockups/round-twenty-two-last-three.html` and built on a yes to all three — as recommended — recommended: the sentence as written, "Tomás?" on the cast line (A), and no notes field, only words saying where a scene's fact goes):
 
 - [x] **H1 · A requirement number in a parameter's description** (its A14):
   `create_note`'s `locationOpen` says "(R61's edge)". The test that keeps
@@ -324,18 +324,18 @@ industry's unit.
   (C7). The hosted door now says nothing. *Plan:* the tail mentions presence
   only when it differs from what the last reply said; `who_is_here` is the
   question's tool. *Best?* Yes. *Test:* two writes, the second silent.
-- [~] **H8 · The camera's mark is not in the words** (D5). It is in the app's
+- [x] **H8 · The camera's mark is not in the words** *(built 2026-09-20 on a yes: the sentence, in `src/board/words.js`; tested through `list_words`)* (D5). It is in the app's
   Pages now, so the words sheet should say what it is. *A person sees the
   words sheet: the sentence, for Robert's word* — "**The camera's mark.** A
   small ◂ in the margin of Pages beside a line that says what someone knows,
   feels, thinks or wants, which a camera cannot see. A mark, not a question:
   keep the line or show it. It never prints."
-- [~] **H9 · A person who may or may not be in a scene** (B4). "Whether Tomás
+- [x] **H9 · A person who may or may not be in a scene** *(drawn, A chosen, built 2026-09-20 as **R68**: `maybeCharacterIds`, "Tomás?" through every door, listed under open, counted neither way; tested in the kernel, the reading and the server, and seen in the app — which found two bugs in the cast line before it shipped)* (B4). "Whether Tomás
   is there: I don't know yet" went into a card's open words; the cast
   counts and the "gone for a third of the story" check cannot see a maybe.
   *To draw:* "Tomás?" on the card's cast line, listed under open, counted
   neither way. R61's shape once more, on the cast line.
-- [~] **H10 · A note on a card, for what is also true of the scene** (B7).
+- [x] **H10 · A note on a card, for what is also true of the scene** *(drawn, "nothing yet" chosen 2026-09-20: no field; `update_note` and the guide say the three homes a scene's fact has; tested through the description)* (B7).
   "The cut is announced in this scene" had no home on the card. The premise
   now heads `read_pages`; a fact about one scene still has only the change
   line, the text, or open words. *To draw, with a recommendation against

@@ -73,7 +73,7 @@ export type WallReading = {
   /** Open cards (R59): the writer's words for what is not decided, in story order; not asked about while they stand. */
   open: Array<{ id: string; words: string; hides: FindingKind[] }>;
   /** Fields left open by the writer's word (R61): the board's logline, and each card's when, in story order. Listed, not asked. */
-  openFields: Array<{ field: "logline"; words: string } | { field: "location"; id: string; words: string } | { field: "when"; id: string; words: string } | { field: "change"; id: string; words: string }>;
+  openFields: Array<{ field: "logline"; words: string } | { field: "location"; id: string; words: string } | { field: "when"; id: string; words: string } | { field: "change"; id: string; words: string } | { field: "cast"; id: string; words: string }>;
   /** Two versions of one scene (R65): each front card with the versions behind it, in story order; listed, never asked. */
   versions: Array<{ id: string; alternatives: string[] }>;
   /** People the writer has left something open about, in their words: listed, never asked. */
@@ -116,3 +116,5 @@ export declare function describeUndecided(
   reading: WallReading,
   extras?: { project?: Array<{ label: string; words: string }>; wouldAsk?: (item: { id: string; words: string; hides: string[] }) => string },
 ): { open: string[]; blank: string[] };
+/** "whether Tomás is in it", for a card where someone may or may not be; empty when nobody is a maybe. */
+export declare function maybeWords(note: { maybeCharacterIds?: string[] }, state: { characters?: Array<{ id: string; name: string }> }): string;

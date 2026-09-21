@@ -4842,3 +4842,9 @@ body {
   opacity: 0.92;
   filter: brightness(0.96);
 }
+
+/* Someone who may or may not be in the scene, by the writer's word (round twenty-two, H9): quieter than the cast, never hatching the card. */
+.note__maybe {
+  font-style: italic;
+  opacity: 0.62;
+}

@@ -3203,3 +3203,59 @@ describe("one cast for the project (R51)", () => {
     expect((await one.callToolData("list_board")).characters.some((person) => person.id === nessa.id)).toBe(false);
   });
 });
+
+describe("a person who may or may not be in a scene (round twenty-two, H9)", () => {
+  let root;
+  let door;
+
+  beforeAll(async () => {
+    root = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-maybe-"));
+    door = new McpClient(root);
+    await door.start();
+    await door.callTool("new_board", { name: "The Last Bus" });
+  });
+
+  afterAll(() => {
+    door.stop();
+    fs.rmSync(root, { recursive: true, force: true });
+  });
+
+  it("takes a name with a question mark, through create_note and cast, and says what it means", async () => {
+    const made = await door.callTool("create_note", { headline: "The depot, after hours", change: "Marta takes the keys off the hook.", characters: ["Marta", "Tomás?"] });
+    expect(made).toContain("Cast: Marta, Tomás?");
+    expect(made).toContain("a name with ? is not decided");
+    const board = await door.callToolData("list_board");
+    const card = board.notes.find((note) => note.headline === "The depot, after hours");
+    const tomas = board.characters.find((person) => person.name === "Tomás");
+    expect(card.maybeCharacterIds).toEqual([tomas.id]);
+    expect(card.characterIds).not.toContain(tomas.id);
+
+    const listed = await door.callTool("list_board");
+    expect(listed).toContain("cast: Marta, Tomás?");
+    expect(listed).toContain('"Tomás" on 0 cards of this board (and maybe 1 more: not decided, counted neither way)');
+
+    const read = await door.callTool("read_wall");
+    expect(read).toContain('"The depot, after hours" — whether Tomás is in it');
+    expect(read).toContain("Tomás (on no card for certain, and maybe 1 more)");
+    expect(read).not.toContain("Tomás is in the cast but on no card");
+
+    // The name without the mark decides it.
+    const decided = await door.callTool("cast", { noteIds: [card.id], characters: ["Marta", "Tomás"] });
+    expect(decided).toContain("now cast Marta, Tomás:");
+    expect(await door.callTool("read_wall")).not.toContain("whether Tomás is in it");
+
+    // And back, through cast: the reply says what the mark means.
+    const again = await door.callTool("cast", { noteIds: [card.id], characters: ["Marta", "Tomás?"] });
+    expect(again).toContain("now cast Marta, with Tomás not decided");
+  });
+
+  it("says the camera's mark in the words, and where a decided fact about one scene goes (H8, H10)", async () => {
+    const words = await door.callTool("list_words");
+    expect(words).toContain("The camera’s mark");
+    expect(words).toContain("A mark, not a question");
+    expect(words).toContain("may or may not be in it");
+    const listed = await door.request("tools/list", {});
+    const update = listed.tools.find((tool) => tool.name === "update_note");
+    expect(update.description).toContain("three homes and no fourth");
+  });
+});

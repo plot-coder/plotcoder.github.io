@@ -5,19 +5,25 @@
 // password), or X-PlotCoder-Email and X-PlotCoder-Password — so two writers
 // never share a door, and the account wins as it does everywhere else. No
 // disk: the file door is off, and export_project answers with the file as
-// JSON. Stateless streamable HTTP: any MCP client that speaks it connects
-// with `--transport http` and the two headers.
+// JSON. Streamable HTTP, a server per request: any MCP client that speaks it
+// connects with `--transport http` and the two headers. The door issues an
+// Mcp-Session-Id on initialize and hands a returning one to the server, which
+// keeps what a session remembers on the writer's own account
+// (src/board/agentSession.js); the transport itself stays stateless, since no
+// process here outlives a request.
 //
 //   PORT=8787 node scripts/plotcoder-http.mjs      (or: npx plotcoder-board serve)
 //
 // Deploy it anywhere Node runs (a Dockerfile is in the repo); put it behind
 // HTTPS, since the sign-in travels in the header.
 
+import crypto from "node:crypto";
 import http from "node:http";
 import os from "node:os";
 import path from "node:path";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { createPlotcoderServer } from "./plotcoder-mcp-server.mjs";
+import { isSessionId } from "../src/board/agentSession.js";
 
 const PORT = Number(process.env.PORT ?? 8787);
 const HOST = process.env.HOST ?? "0.0.0.0";
@@ -63,13 +69,31 @@ export function envFor(headers, base = process.env) {
     PLOTCODER_EMAIL: creds.email,
     PLOTCODER_PASSWORD: creds.password,
     PLOTCODER_PROJECT: typeof headers["x-plotcoder-project"] === "string" ? headers["x-plotcoder-project"] : "",
+    // The session this door issued on initialize, when the client sends it back; anything else is no session.
+    ...(isSessionId(headers["mcp-session-id"]) ? { PLOTCODER_SESSION_ID: headers["mcp-session-id"] } : {}),
     ...(base.VITE_SUPABASE_URL ? { VITE_SUPABASE_URL: base.VITE_SUPABASE_URL } : {}),
     ...(base.VITE_SUPABASE_KEY ? { VITE_SUPABASE_KEY: base.VITE_SUPABASE_KEY } : {}),
     ...(base.PLOTCODER_VIDEO_PROVIDER ? { PLOTCODER_VIDEO_PROVIDER: base.PLOTCODER_VIDEO_PROVIDER } : {}),
   };
 }
 
-export function createHostedDoor(base = process.env) {
+/** The request's body as JSON, or undefined when it is not JSON: the transport then says so in its own words. */
+async function bodyOf(req) {
+  const chunks = [];
+  for await (const chunk of req) chunks.push(chunk);
+  try {
+    return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+  } catch {
+    return undefined;
+  }
+}
+
+/** Whether a body opens a session: MCP's initialize, alone or in a batch. */
+export function opensSession(body) {
+  return [].concat(body ?? []).some((message) => message && message.method === "initialize");
+}
+
+export function createHostedDoor(base = process.env, options = {}) {
   return http.createServer(async (req, res) => {
     const url = new URL(req.url ?? "/", "http://localhost");
     if (url.pathname === "/" || url.pathname === "/health") {
@@ -88,8 +112,11 @@ export function createHostedDoor(base = process.env) {
       res.end("The hosted door needs the writer's sign-in on the request: Authorization: Basic base64(email:password), or X-PlotCoder-Email and X-PlotCoder-Password.\n");
       return;
     }
-    // One server per request, stateless: the sign-in is the session.
-    const { server } = createPlotcoderServer(env);
+    // One server per request. The sign-in says whose door it is; the session
+    // id, issued here on initialize, says which conversation.
+    const body = req.method === "POST" ? await bodyOf(req) : undefined;
+    if (opensSession(body)) res.setHeader("mcp-session-id", crypto.randomUUID());
+    const { server } = createPlotcoderServer(env, options);
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
     res.on("close", () => {
       void transport.close();
@@ -97,7 +124,8 @@ export function createHostedDoor(base = process.env) {
     });
     try {
       await server.connect(transport);
-      await transport.handleRequest(req, res);
+      // An unreadable body goes through as one: the transport refuses it as a parse error.
+      await transport.handleRequest(req, res, body ?? null);
     } catch (error) {
       if (!res.headersSent) {
         res.writeHead(500, { "content-type": "text/plain; charset=utf-8" });

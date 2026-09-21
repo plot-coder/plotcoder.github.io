@@ -1778,3 +1778,43 @@ describe("a left question carries the writer's reason (round fourteen, entry 23)
     expect("why" in without.state.left[0]).toBe(false);
   });
 });
+
+describe("a person who may or may not be in a scene (round twenty-two, H9)", () => {
+  const at = "2026-09-20T00:00:00.000Z";
+  const start = () => {
+    let state = applyCommand(emptyState(), { type: "add_character", id: "m", name: "Marta" }, at).state;
+    state = applyCommand(state, { type: "add_character", id: "t", name: "Tomás" }, at).state;
+    return applyCommand(state, { type: "create_note", id: "d", headline: "The depot", characterIds: ["m"], maybeCharacterIds: ["t", "m", "nobody"] }, at).state;
+  };
+  const card = (state: BoardState) => state.notes.find((note) => note.id === "d")!;
+
+  it("is kept beside the cast, never in both, and only for people the roster knows", () => {
+    expect(card(start()).characterIds).toEqual(["m"]);
+    expect(card(start()).maybeCharacterIds).toEqual(["t"]);
+  });
+
+  it("is decided by casting them, and the other way by taking the name off", () => {
+    const cast = applyCommand(start(), { type: "set_cast", ids: ["d"], characterIds: ["m", "t"] }, at).state;
+    expect(card(cast).characterIds).toEqual(["m", "t"]);
+    expect(card(cast).maybeCharacterIds).toEqual([]);
+    const off = applyCommand(start(), { type: "set_cast", ids: ["d"], characterIds: ["m"], maybeCharacterIds: [] }, at).state;
+    expect(card(off).maybeCharacterIds).toEqual([]);
+  });
+
+  it("is left alone by a recast that does not speak of it, and says nothing changed when nothing did", () => {
+    const again = applyCommand(start(), { type: "set_cast", ids: ["d"], characterIds: ["m"] }, at);
+    expect(again.changed).toBe(false);
+    expect(card(again.state).maybeCharacterIds).toEqual(["t"]);
+  });
+
+  it("goes with the person when they leave the cast", () => {
+    const gone = applyCommand(start(), { type: "remove_character", id: "t" }, at).state;
+    expect(card(gone).maybeCharacterIds).toEqual([]);
+  });
+
+  it("is repaired on a card written before it existed, to nobody", () => {
+    const old = start();
+    const before = { ...old, notes: old.notes.map(({ maybeCharacterIds: _gone, ...note }) => note) } as unknown as BoardState;
+    expect(card(normalizeState(before)).maybeCharacterIds).toEqual([]);
+  });
+});

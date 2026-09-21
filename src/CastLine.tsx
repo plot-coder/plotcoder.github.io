@@ -3,15 +3,19 @@
 // Reads "with Maya, Tom". Tap it and type, the same gesture as the headline
 // (D11). The roster completes as you type; commit hands the typed names back
 // and the app resolves them — a name the roster does not know is added to it,
-// so casting someone and adding them are one motion.
+// so casting someone and adding them are one motion. A name with a question
+// mark — "Tomás?" — is someone who may or may not be in the scene, by the
+// writer's word (round twenty-two, H9): drawn quieter, counted neither way.
 
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { type BoardCharacter } from "./board/reducer";
+import { castLine, readMaybe } from "./board/castMaybe";
 import { castText, completions, findCharacter, splitNames } from "./castNames";
 
 type CastLineProps = {
   headline: string;
   characterIds: string[];
+  maybeCharacterIds: string[];
   characters: BoardCharacter[];
   /** Called as editing starts, so the card can come to the top and the completion list is not under a neighbour. */
   onBegin: () => void;
@@ -24,8 +28,11 @@ function stop(event: PointerEvent<HTMLElement>) {
   event.stopPropagation();
 }
 
-export function CastLine({ headline, characterIds, characters, onBegin, onCommit }: CastLineProps) {
-  const display = castText(characterIds, characters);
+export function CastLine({ headline, characterIds, maybeCharacterIds, characters, onBegin, onCommit }: CastLineProps) {
+  // The line as it is typed: "Marta, Tomás?".
+  const display = castLine(characterIds, maybeCharacterIds, characters);
+  const certain = castText(characterIds, characters);
+  const maybe = castText(maybeCharacterIds, characters);
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState("");
   const [highlight, setHighlight] = useState(0);
@@ -37,8 +44,9 @@ export function CastLine({ headline, characterIds, characters, onBegin, onCommit
 
   // The fragment is whatever follows the last comma: the name being typed now.
   const settled = text.slice(0, text.lastIndexOf(",") + 1);
-  const fragment = text.slice(settled.length).trim();
-  const typedNames = splitNames(settled);
+  // The roster knows "Tomás", not "Tomás?": the mark is the writer's, the name is the person's.
+  const fragment = readMaybe(text.slice(settled.length)).name;
+  const typedNames = splitNames(settled).map((name) => readMaybe(name).name);
   const options: Option[] = editing
     ? completions(fragment, characters, typedNames).map(
         (character): Option => ({ kind: "person", character }),
@@ -71,7 +79,9 @@ export function CastLine({ headline, characterIds, characters, onBegin, onCommit
       commit(text);
       return;
     }
-    const next = `${settled}${settled ? " " : ""}${option.character.name}, `;
+    // The roster's spelling, and the writer's mark kept: "tom?" completes to "Tom?".
+    const mark = readMaybe(text.slice(settled.length)).maybe ? "?" : "";
+    const next = `${settled}${settled ? " " : ""}${option.character.name}${mark}, `;
     setText(next);
     setHighlight(0);
   }
@@ -117,7 +127,14 @@ export function CastLine({ headline, characterIds, characters, onBegin, onCommit
         onPointerDown={stop}
         onClick={begin}
       >
-        <span className="note__with-prefix">with</span> {display || "…"}
+        <span className="note__with-prefix">with</span> {certain}
+        {maybe ? (
+          <span className="note__maybe">
+            {certain ? ", " : ""}
+            {maybe.split(", ").map((name) => `${name}?`).join(", ")}
+          </span>
+        ) : null}
+        {display ? "" : "…"}
       </button>
     );
   }

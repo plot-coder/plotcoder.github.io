@@ -951,3 +951,47 @@ describe("the duplicate check ignores a leading day (round fourteen, entry 13)",
     expect(readWall(same).findings.some((f) => f.kind === "duplicate")).toBe(true);
   });
 });
+
+describe("a person who may or may not be in a scene (round twenty-two, H9)", () => {
+  // 12 pages. Tom is in the first page and the last; the middle beat is where he may be.
+  const base = () =>
+    run(
+      wall(
+        { id: "b1", rank: "beat", headline: "Tom arrives" },
+        { id: "s1", pages: 4 },
+        { id: "b2", rank: "beat", pages: 2, headline: "The depot" },
+        { id: "s2", pages: 4 },
+        { id: "b3", rank: "beat", headline: "Tom returns" },
+      ),
+      { type: "add_character", id: "t", name: "Tom" },
+      { type: "add_character", id: "m", name: "Maya" },
+      { type: "set_cast", ids: ["b1", "b3"], characterIds: ["t"] },
+      { type: "set_cast", ids: ["s1", "s2"], characterIds: ["m"] },
+      { type: "set_cast", ids: ["b2"], characterIds: [], maybeCharacterIds: ["t"] },
+    );
+
+  it("is listed under open in the writer's terms, and the card is not asked who is in it", () => {
+    const reading = readWall(base());
+    expect(reading.openFields).toContainEqual({ field: "cast", id: "b2", words: "whether Tom is in it" });
+    expect(reading.findings.filter((f) => f.kind === "nobody")).toEqual([]);
+    const undecided = describeUndecided(base(), reading);
+    expect(undecided.open).toContain('  - "The depot" — whether Tom is in it');
+    expect(undecided.blank.join("\n")).not.toContain("nobody in it");
+  });
+
+  it("is counted neither way: the absence is still asked, and says the scene that would answer it", () => {
+    const absent = readWall(base()).findings.filter((f) => f.kind === "absent");
+    expect(absent).toHaveLength(1);
+    expect(absent[0].ids).toEqual(["t", "b1", "b3"]);
+    expect(absent[0].text).toBe(
+      'Tom is in "Tom arrives" and then not again until "Tom returns", about 10 pages later — unless they are in "The depot", which is not decided. Where are they in between?',
+    );
+  });
+
+  it("does not ask where someone comes in when the only card they are on is a maybe", () => {
+    const state = run(base(), { type: "add_character", id: "n", name: "Ngozi" }, { type: "set_cast", ids: ["b2"], characterIds: [], maybeCharacterIds: ["t", "n"] });
+    const reading = readWall(state);
+    expect(reading.findings.filter((f) => f.kind === "uncast")).toEqual([]);
+    expect(reading.openFields).toContainEqual({ field: "cast", id: "b2", words: "whether Tom and Ngozi are in it" });
+  });
+});

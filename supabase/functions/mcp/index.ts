@@ -13,6 +13,15 @@
 //   claude mcp add plotcoder --transport http https://<ref>.supabase.co/functions/v1/mcp \
 //     --header "Authorization: Basic <base64 of email:password>"
 //
+// A session (the to-do's B1): the door issues an Mcp-Session-Id on
+// initialize and hands a returning one to the server, which keeps what the
+// session remembers — whether it has read the wall, what advice it has said —
+// in a row of the writer's own (public.agent_sessions, row-level security by
+// user). The function holds no secret for it. The transport stays stateless:
+// no process here outlives a request. The server reads the id from
+// PLOTCODER_SESSION_ID from the release after 0.1.44; before it, the id is
+// issued and ignored.
+//
 // The function's own key check is off (verify_jwt = false in config.toml):
 // the writer's sign-in is the wall, as on every other door, and the server
 // refuses a wrong password from every tool.
@@ -43,6 +52,14 @@ function credentialsFrom(headers: Headers): { email: string; password: string } 
   return null;
 }
 
+/** Only an id this door could have issued is a session (as isSessionId in src/board/agentSession.js). */
+const SESSION_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Whether a body opens a session: MCP's initialize, alone or in a batch. */
+function opensSession(body: unknown): boolean {
+  return ([] as unknown[]).concat(body ?? []).some((message) => (message as { method?: string } | null)?.method === "initialize");
+}
+
 /** The environment one request's server runs with: hosted, no bridge, no disk, the writer's sign-in. */
 function envFor(headers: Headers): Record<string, string> | null {
   const creds = credentialsFrom(headers);
@@ -57,6 +74,8 @@ function envFor(headers: Headers): Record<string, string> | null {
     PLOTCODER_PASSWORD: creds.password,
     PLOTCODER_PROJECT: headers.get("x-plotcoder-project") ?? "",
   };
+  const session = headers.get("mcp-session-id") ?? "";
+  if (SESSION_ID.test(session)) env.PLOTCODER_SESSION_ID = session;
   const url = Deno.env.get("VITE_SUPABASE_URL") ?? Deno.env.get("SUPABASE_URL");
   const key = Deno.env.get("VITE_SUPABASE_KEY") ?? Deno.env.get("SUPABASE_ANON_KEY");
   if (url) env.VITE_SUPABASE_URL = url;
@@ -75,12 +94,26 @@ Deno.serve(async (request: Request) => {
       headers: { "content-type": "text/plain; charset=utf-8", "www-authenticate": 'Basic realm="PlotCoder"' },
     });
   }
-  // One server per request, stateless: the SDK's fetch-based transport answers the POST with JSON.
+  // One server per request: the SDK's fetch-based transport answers the POST
+  // with JSON. An unreadable body goes through as one, and the transport
+  // refuses it as a parse error.
+  let body: unknown = null;
+  if (request.method === "POST") {
+    try {
+      body = await request.json();
+    } catch {
+      body = null;
+    }
+  }
   const { server } = createPlotcoderServer(env);
   const transport = new WebStandardStreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
   await server.connect(transport);
   try {
-    return await transport.handleRequest(request);
+    const response = await transport.handleRequest(request, { parsedBody: body });
+    if (!opensSession(body)) return response;
+    const headers = new Headers(response.headers);
+    headers.set("mcp-session-id", crypto.randomUUID());
+    return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
   } finally {
     // The request is answered; let the server go with it.
     void transport.close();

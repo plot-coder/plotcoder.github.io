@@ -406,7 +406,8 @@ export function readWall(state, options = {}) {
   // A card with nobody in it, once the wall has a cast (round seventeen,
   // entry 28): a scene nobody is in passed every check.
   if ((state.characters ?? []).length > 0) {
-    const empty = order.filter((note) => askable(note) && !(note.characterIds ?? []).length);
+    // A card where someone may be is one whose cast the writer has spoken to: listed under open, not asked (H9).
+    const empty = order.filter((note) => askable(note) && !(note.characterIds ?? []).length && !(note.maybeCharacterIds ?? []).length);
     if (empty.length) {
       findings.push({
         kind: "nobody",
@@ -426,8 +427,12 @@ export function readWall(state, options = {}) {
   }
   for (const character of state.characters ?? []) {
     const scenes = order.filter((note) => note.characterIds?.includes(character.id));
+    // Where they may or may not be, by the writer's word (H9): counted neither way.
+    const maybes = order.filter((note) => note.maybeCharacterIds?.includes(character.id));
     if (scenes.length === 0) {
       if (elsewhere.has(character.id)) continue;
+      // On no card for certain, and the writer has said where they may be: open, not a question.
+      if (maybes.length) continue;
       findings.push({
         kind: "uncast",
         ids: [character.id],
@@ -446,7 +451,11 @@ export function readWall(state, options = {}) {
       findings.push({
         kind: "absent",
         ids: [character.id, longest.from.id, longest.to.id],
-        text: `${character.name} is in ${quote(longest.from)} and then not again until ${quote(longest.to)}, about ${pages(longest.gap)} pages later. Where are they in between?`,
+        text: `${character.name} is in ${quote(longest.from)} and then not again until ${quote(longest.to)}, about ${pages(longest.gap)} pages later${(() => {
+          // A maybe inside the gap is the writer's own answer in waiting: say it, never count it.
+          const between = maybes.filter((note) => at.get(note.id) > at.get(longest.from.id) && at.get(note.id) < at.get(longest.to.id));
+          return between.length ? ` — unless they are in ${list(between)}, which is not decided` : "";
+        })()}. Where are they in between?`,
       });
     }
   }
@@ -547,12 +556,24 @@ export function readWall(state, options = {}) {
  * board's name live on the project, and the door adds them. Listed, never
  * asked about: no check asks about a missing logline or when.
  */
+/** "whether Tomás is in it", for a card where someone may or may not be (H9); empty when nobody is a maybe. */
+export function maybeWords(note, state) {
+  const names = (note.maybeCharacterIds ?? []).map((id) => (state.characters ?? []).find((character) => character.id === id)?.name).filter(Boolean);
+  if (!names.length) return "";
+  const who = names.length === 1 ? names[0] : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+  return `whether ${who} ${names.length === 1 ? "is" : "are"} in it`;
+}
+
 function describeOpenFields(state, order) {
   const fields = [];
   if ((state.loglineOpen ?? "").trim()) fields.push({ field: "logline", words: state.loglineOpen.trim() });
   for (const note of order) if ((note.locationOpen ?? "").trim()) fields.push({ field: "location", id: note.id, words: note.locationOpen.trim() });
   for (const note of order) if ((note.changeOpen ?? "").trim()) fields.push({ field: "change", id: note.id, words: note.changeOpen.trim() });
   for (const note of order) if ((note.whenOpen ?? "").trim()) fields.push({ field: "when", id: note.id, words: note.whenOpen.trim() });
+  for (const note of order) {
+    const words = maybeWords(note, state);
+    if (words) fields.push({ field: "cast", id: note.id, words });
+  }
   return fields;
 }
 
@@ -627,6 +648,8 @@ export function describeUndecided(state, reading, extras = {}) {
       const field = reading.openFields.find((item) => item.field === kind && item.id === id);
       if (field && !grouped.has(`${kind}:${id}`)) parts.push(`${FIELD[kind]}: ${field.words}`);
     }
+    const cast = reading.openFields.find((item) => item.field === "cast" && item.id === id);
+    if (cast) parts.push(cast.words);
     if (parts.length) open.push(`  - ${name(id)} — ${parts.join("; ")}`);
   }
 
@@ -637,6 +660,7 @@ export function describeUndecided(state, reading, extras = {}) {
       (note.changeOpen ?? "").trim() ? `${FIELD.change}: ${note.changeOpen.trim()}` : "",
       (note.locationOpen ?? "").trim() ? `${FIELD.location}: ${note.locationOpen.trim()}` : "",
       (note.whenOpen ?? "").trim() ? `${FIELD.when}: ${note.whenOpen.trim()}` : "",
+      maybeWords(note, state),
     ].filter(Boolean);
     if (parts.length) open.push(`  - ${name(note.id)} (set aside) — ${parts.join("; ")}`);
   }
@@ -648,7 +672,7 @@ export function describeUndecided(state, reading, extras = {}) {
   const noPlace = cards.filter((note) => !(note.location ?? "").trim() && !(note.locationOpen ?? "").trim());
   const noWhen = cards.filter((note) => !(note.when ?? "").trim() && !(note.whenOpen ?? "").trim());
   const unsized = cards.filter((note) => note.lengthEighths === null && !(note.text ?? "").trim());
-  const nobody = (state.characters ?? []).length ? cards.filter((note) => !(note.characterIds ?? []).length) : [];
+  const nobody = (state.characters ?? []).length ? cards.filter((note) => !(note.characterIds ?? []).length && !(note.maybeCharacterIds ?? []).length) : [];
   if (noPlace.length) blank.push(`  - no place: ${list(noPlace)}`);
   if (noWhen.length) blank.push(`  - no when: ${list(noWhen)}`);
   if (unsized.length) blank.push(`  - no length (read as a page each): ${list(unsized)}`);

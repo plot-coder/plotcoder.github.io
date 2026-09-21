@@ -648,6 +648,7 @@ export function NoteCard({
       <CastLine
         headline={note.headline}
         characterIds={note.characterIds}
+        maybeCharacterIds={note.maybeCharacterIds}
         characters={characters}
         onBegin={() => onRaise(note.id)}
         onCommit={(names) => onCastNames(note.id, names)}

@@ -9,7 +9,7 @@ import { accountStore } from "./board/account";
 import { boardStore, installWindowApi } from "./board/store";
 import { type NoteColor, type NoteRank } from "./noteMock";
 import { readWall } from "./board/readWall";
-import { castText } from "./castNames";
+import { castLine, readMaybe } from "./board/castMaybe";
 import { sceneNumbers } from "./board/numbering";
 import {
   boardEighths,
@@ -551,18 +551,24 @@ export function App() {
   function castNames(id: string, names: string[]) {
     const ids =
       selectedIds.includes(id) && selectedIds.length >= 2 ? selectedIds : [id];
-    const characterIds = resolveCast(names, boardStore.getState().characters).map((entry) => {
-      if (entry.id) return entry.id;
-      const added = boardStore.dispatch({ type: "add_character", name: entry.name }) as
-        | BoardCharacter
-        | undefined;
-      return added?.id ?? null;
-    });
-    boardStore.dispatch({
-      type: "set_cast",
-      ids,
-      characterIds: characterIds.filter((value): value is string => value !== null),
-    });
+    // "Tomás?" is someone who may or may not be in it (round twenty-two, H9): the mark is read off, the name resolved as any other.
+    // The line opens with the cast already on it, so "Maya, Tom, Tom?" is a writer adding the mark: the last mention of a name decides.
+    const mentions = new Map<string, { name: string; maybe: boolean }>();
+    for (const entry of names.map((name) => readMaybe(name))) if (entry.name) mentions.set(entry.name.toLowerCase(), entry);
+    const typed = [...mentions.values()];
+    const resolve = (wanted: string[]) =>
+      resolveCast(wanted, boardStore.getState().characters)
+        .map((entry) => {
+          if (entry.id) return entry.id;
+          const added = boardStore.dispatch({ type: "add_character", name: entry.name }) as
+            | BoardCharacter
+            | undefined;
+          return added?.id ?? null;
+        })
+        .filter((value): value is string => value !== null);
+    const characterIds = resolve(typed.filter((entry) => !entry.maybe).map((entry) => entry.name));
+    const maybeCharacterIds = resolve(typed.filter((entry) => entry.maybe).map((entry) => entry.name));
+    boardStore.dispatch({ type: "set_cast", ids, characterIds, maybeCharacterIds });
   }
 
   // Where a scene happens (R37) and when (R55), typed as one line on the
@@ -1003,7 +1009,7 @@ export function App() {
         }}
         onMoveAfter={moveAfter}
         onSaveAs={() => setTakeOpen(true)}
-        castNames={(note) => castText(note.characterIds, characters)}
+        castNames={(note) => castLine(note.characterIds, note.maybeCharacterIds, characters)}
         board={board}
         reading={reading}
         focusId={sceneFocusId ?? (selectedIds.length === 1 ? selectedIds[0] : null)}

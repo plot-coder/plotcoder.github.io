@@ -1219,7 +1219,7 @@ describe("open fields (R61): the logline, the premise, a when and a board's name
     // choose_version with keep sets the one not chosen aside, and says so.
     await client.callTool("set_alternative", { id: b.id, of: a.id });
     const chosen = await client.callTool("choose_version", { id: a.id, keep: true });
-    expect(chosen).toContain('"They sit it out till morning" is kept, set aside beside it: on the wall and not in the film');
+    expect(chosen).toContain('"They sit it out till morning" is kept, set aside below it, clear of the other cards: on the wall and not in the film');
     expect((await client.callToolData("list_board")).notes.find((note) => note.id === b.id).aside).toBe(true);
     for (const id of [a.id, b.id, c.id]) await client.callTool("delete_note", { id });
     expect(before.notes.length).toBeGreaterThan(0);

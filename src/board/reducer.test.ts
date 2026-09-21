@@ -1034,6 +1034,11 @@ describe("two versions of one scene (R65)", () => {
     expect(kept.notes.map((note) => note.id).sort()).toEqual(["a", "b", "c"]);
     expect(kept.notes.find((note) => note.id === "b")?.alternativeOf).toBeNull();
     expect(kept.arrows.some((arrow) => arrow.to === "b" || arrow.from === "b")).toBe(false);
+    // Kept is clear of every card the wall draws, not on top of the chosen one (round twenty-three, entry 46).
+    const keptCard = kept.notes.find((note) => note.id === "b")!;
+    for (const drawn of kept.notes.filter((note) => note.id !== "b")) {
+      expect(Math.abs(drawn.x - keptCard.x) >= 192 || Math.abs(drawn.y - keptCard.y) >= 192).toBe(true);
+    }
     // The turn goes forward with the chosen card: a kept front is a scene, not a second beat (round twenty-two, entry 48).
     const turn = run(run(paired, { type: "set_rank", ids: ["b"], rank: "beat" }), { type: "choose_version", id: "c", keep: true });
     expect(turn.notes.find((note) => note.id === "c")?.rank).toBe("beat");

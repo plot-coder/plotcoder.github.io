@@ -94,7 +94,8 @@ describe("everything undecided in one place (round twenty-two, entries 41, 43, 6
     const state = wall();
     const { open, blank } = describeUndecided(state, readWall(state));
     // "B" is wholly open by the writer's word, so nothing on it is blank (round twenty-three, entry 66).
-    expect(blank).toContain('  - no place: "D"');
+    // The wall asks where "D" happens, so it is listed there and only counted here (round twenty-three, entries 38, 63).
+    expect(blank).toContain("  - no place: 1 more the wall asks about above");
     expect(blank).toContain('  - no when: "C", "D"');
     expect(blank).toContain('  - no length (read as a page each): "A", "D"');
     expect(open.join("\n")).not.toContain("no place");
@@ -1076,5 +1077,24 @@ describe("a beat marked on a wholly open card (round twenty-three, entry 33)", (
     expect(reading.findings.some((f) => f.kind === "empty" && f.ids.includes("o") && f.ids.includes("b"))).toBe(true);
     // And the card itself is asked nothing: listed under open.
     expect(reading.open.map((item) => item.id)).toEqual(["o"]);
+  });
+});
+
+describe("each undecided thing once (round twenty-three, entries 38, 63)", () => {
+  it("lists what the wall asks about where it is asked, and only counts it under blank", () => {
+    const state = run(
+      wall({ id: "a", rank: "beat", headline: "The chapel" }, { id: "j", headline: "The job centre" }, { id: "s", headline: "The school hall" }),
+      { type: "add_character", id: "ada", name: "Ada" },
+      { type: "set_cast", ids: ["a", "s"], characterIds: ["ada"] },
+    );
+    const reading = readWall(state);
+    // The wall asks who is in the job centre scene…
+    expect(reading.findings.some((f) => f.kind === "nobody" && f.ids.includes("j"))).toBe(true);
+    // …so the blank list does not name it again; it says one more is asked about.
+    const blank = describeUndecided(state, reading).blank.join("\n");
+    expect(blank).toContain("  - nobody in it: 1 more the wall asks about above");
+    expect(blank).not.toContain('nobody in it: "The job centre"');
+    // What is blank and not asked is still named.
+    expect(blank).toContain("no when: every card (3)");
   });
 });

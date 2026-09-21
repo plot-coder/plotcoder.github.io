@@ -50,4 +50,12 @@ describe("what a change did to the story's shape (round twenty-three, entries 30
     expect(shapeNote(before, after).join(" ")).toContain("1 card now sits out of the story's order on the wall");
     expect(shapeNote(after, run(after, { type: "update_note", id: "b", headline: "again" }))).toEqual([]);
   });
+
+  it("says a version behind a card went with it when the card changed its place in the order (entry 31)", () => {
+    let before = run(wall(), { type: "create_note", id: "c2", headline: "C, another way", change: "x", x: 560, y: 100 }, { type: "set_alternative", id: "c2", of: "c" });
+    let after = before;
+    for (const arrow of before.arrows) after = run(after, { type: "delete_arrow", id: arrow.id });
+    for (const [from, to] of [["a", "c"], ["c", "b"], ["b", "d"], ["d", "e"]]) after = run(after, { type: "create_arrow", from, to, kind: "follows" });
+    expect(shapeNote(before, after).join("; ")).toContain('the version behind "C" went with it');
+  });
 });

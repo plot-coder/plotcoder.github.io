@@ -55,6 +55,7 @@ import { REVISION_COLORS, revisionMarks, sceneNumbers } from "../src/board/numbe
 import { sceneHeading, standInFor } from "../src/board/fountain.js";
 import { describePresence, presenceTail } from "../src/board/presence.js";
 import { accountSessionStore, isSessionId, normalizeMemory } from "../src/board/agentSession.js";
+import { agentsInstructions } from "../src/board/agents.js";
 import { castLine, readMaybe } from "../src/board/castMaybe.js";
 import { shapeNote } from "../src/board/shape.js";
 import { segmentBrief, WORKFLOWS } from "../src/board/workflows.js";
@@ -1556,7 +1557,9 @@ function packageVersion() {
   }
 }
 
-const server = new McpServer({ name: "plotcoder-board", version: packageVersion() });
+// The day's rules ride the handshake (round twenty-three, entries 1, 2, 7): an agent holding a connector has them
+// with nothing to fetch, and word for word — its own fetch tool paraphrased the on-ramp.
+const server = new McpServer({ name: "plotcoder-board", version: packageVersion() }, { instructions: agentsInstructions() });
 
 // A door's answer is a reply, not an error: a shut account door, or an
 // account with no project yet, says so in words from every tool alike.

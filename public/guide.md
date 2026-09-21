@@ -1,7 +1,10 @@
 # PlotCoder board
 
 This is the whole guide; the on-ramp at plotcoder.com/llms.txt is its first
-page, and where the two differ, this wins.
+page, and where the two differ, this wins. **The day's part of it, cut from
+this file word for word, is plotcoder.com/day-one.md** — about two thirds the
+size, and all a day's work needs. The same rules, shorter still, arrive with
+the tools themselves, in the server's instructions at the handshake.
 
 **Holding the tools already — a connector, or a server someone wired? Read
 this much on day one, and leave the rest until the writer asks for it.**

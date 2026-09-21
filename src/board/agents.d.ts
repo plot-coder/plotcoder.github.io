@@ -9,6 +9,12 @@ export declare const AGENTS: {
   rules: string[];
   person: string;
   guide: string;
+  dayOne: string;
+  wiring: string;
   url: string;
 };
 export declare function agentsAsText(): string;
+/** The doors, for whoever wires a server in: the file at /wiring.md. */
+export declare function wiringAsText(): string;
+/** What the MCP server hands a client at initialize: the day's rules, with nothing to fetch. */
+export declare function agentsInstructions(): string;

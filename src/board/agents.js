@@ -7,7 +7,7 @@
 
 export const AGENTS = {
   lead:
-    "A storyline wall. Cards are scenes, beats are the big turns, arrows say what follows or pays off what. An agent driven by a person has every tool a person here has; the person directs, the agent operates. Call the tools; never fake a mouse. Already have PlotCoder's tools in front of you — list_words, read_wall and the rest, under whatever name your session gives the server or the connector (plotcoder-board, plotcoder, PlotCoder — or no name at all, only an id: know the server by its tools, list_words and read_wall)? Then your way in is: read the guide, make the calls under Call these first, and skip the doors at the end — they are for wiring a server in.",
+    "A storyline wall. Cards are scenes, beats are the big turns, arrows say what follows or pays off what. An agent driven by a person has every tool a person here has; the person directs, the agent operates. Call the tools; never fake a mouse. Already have PlotCoder's tools in front of you — list_words, read_wall and the rest, under whatever name your session gives the server or the connector (plotcoder-board, plotcoder, PlotCoder — or no name at all, only an id: know the server by its tools, list_words and read_wall)? Then your way in is this page and one more: read the day-one guide, make the calls under Call these first, and you are working. No tools in front of you? The doors are how a server is wired in.",
   doors: [
     {
       id: "mcp",
@@ -61,24 +61,56 @@ export const AGENTS = {
   person:
     "Give your agent the account door only on a machine you trust; it signs in as you and shows under People as “an agent, as you” while it runs. Wire the server before you start the agent's session, with the two sign-in lines beside it, and the agent has every tool from its first message; wired from inside a session, the server connects only on the next one. Your agent can also make your account: give it your email and a password of your choosing. Your own guide — how a writer uses PlotCoder, from the door to the script out, the agent first — is at https://plotcoder.com/writers.html.",
   guide: "https://plotcoder.com/guide.md",
+  /** The part of the guide a day's work needs, cut from the guide itself so the two cannot drift (round twenty-three, entries 1, 2; twenty-two's 6, 8). */
+  dayOne: "https://plotcoder.com/day-one.md",
+  /** The doors, on a page of their own: someone holding the tools never needs them, and read them all the same when they were here. */
+  wiring: "https://plotcoder.com/wiring.md",
   url: "https://plotcoder.com/llms.txt",
 };
 
-/** The on-ramp as one text: the file at /llms.txt, and what an agent reads. */
+/** The on-ramp as one text: the file at /llms.txt, and what an agent reads. The calls and the rules, and nothing about wiring but where it is. */
 export function agentsAsText() {
-  // The calls and the rules first, the doors after: an agent with the tools in
-  // front of it reads two pages of wiring it was told to skip before it reached
-  // the first call (round fifteen, entry 1).
-  const lines = ["# PlotCoder — for agents", "", AGENTS.lead, "", `The guide: ${AGENTS.guide}. Read it once, before your first call if you can; it is the whole and this page is its first page, and where the two differ, the guide wins. Then Call these first, below.`, "", "## Call these first"];
+  const lines = [
+    "# PlotCoder — for agents",
+    "",
+    AGENTS.lead,
+    "",
+    `The day-one guide: ${AGENTS.dayOne} — the method, the reading, cards and what can be left open, threads, versions, set aside, the cast, what the tools refuse and what a reply's tail means. Read it once, before your first call if you can. The whole guide is ${AGENTS.guide}: come to it when the writer says write it, how long, export, a series, a structure to compare with, or lock the numbers. Where this page and the guide differ, the guide wins.`,
+    "",
+    "## Call these first",
+  ];
   AGENTS.first.forEach((item, index) => lines.push(`${index + 1}. ${item.tool} — ${item.why}`));
   lines.push("", AGENTS.firstNote);
   lines.push("", "## Rules");
   for (const rule of AGENTS.rules) lines.push(`- ${rule}`);
-  lines.push("", "## Doors");
+  lines.push("", "## No tools in front of you?", `The doors — the MCP server as a package, the shell door, the hosted door at https://mcp.plotcoder.com, the account's sign-in — are on a page of their own: ${AGENTS.wiring}. Someone holding the tools needs none of it.`, "");
+  return lines.join("\n");
+}
+
+/** The doors, for whoever wires a server in: the file at /wiring.md. */
+export function wiringAsText() {
+  const lines = ["# PlotCoder — wiring a server in", "", "For whoever connects PlotCoder's tools to an agent's session. An agent with the tools already in front of it needs none of this: its page is https://plotcoder.com/llms.txt.", "", "## Doors"];
   for (const door of AGENTS.doors) {
     lines.push(`- ${door.name}: ${door.text}`);
     if (door.code) lines.push("", "```", door.code, "```", "");
   }
-  lines.push("## For the person", AGENTS.person, "", "## The guide", AGENTS.guide, "");
+  lines.push("## For the person", AGENTS.person, "");
   return lines.join("\n");
+}
+
+/**
+ * What the MCP server hands a client at initialize, so an agent holding a
+ * connector has the day's rules without fetching anything: a fetch can be
+ * paraphrased by the agent's own tools (round twenty-three, entry 7), and
+ * this cannot. Short on purpose; the day-one guide is the long form.
+ */
+export function agentsInstructions() {
+  return [
+    "PlotCoder is a storyline wall: cards are scenes, beats are the big turns, arrows say what follows or pays off what. The writer directs; you operate the wall with these tools, and never fake a mouse.",
+    `First: ${AGENTS.first.map((item) => item.tool).join(", ")} — the first three read no wall and say which wall is in hand; make the three reads of the wall you are to work, after new_project or open_project when the wall in hand is not that one.`,
+    "Before you ask the writer anything, list_workflows: its first workflow carries what a treatment should answer, each question with the tool its answer lands in. Ask those, then anything the writer's notes raise that those do not. Invent no fact.",
+    "A writer's \"I don't know\" is held in their own words, never guessed and never dropped: a card's place, when, change line and who is in it each have an open of their own; someone who may or may not be in a scene is their name with a question mark; a thing undecided about a person goes on their page; a thing undecided about the film itself is add_open_line; a whole card undecided is set_open. A scene the writer has two ways is set_alternative; a scene cut and kept is set_aside. Turns you propose are set_rank proposed: nothing is a beat on your word.",
+    `Rules: ${AGENTS.rules.join(" ")}`,
+    `The day-one guide is ${AGENTS.dayOne}; the whole guide, for pages, exports, a series, structures and production, is ${AGENTS.guide}.`,
+  ].join("\n\n");
 }

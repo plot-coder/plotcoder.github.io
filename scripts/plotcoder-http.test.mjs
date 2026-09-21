@@ -61,6 +61,9 @@ describe("the hosted door", () => {
     const init = await rpc("initialize", { protocolVersion: "2024-11-05", capabilities: {}, clientInfo: { name: "test", version: "0" } });
     expect(init.status).toBe(200);
     expect(init.body.result.serverInfo.name).toBe("plotcoder-board");
+    // The day's rules ride the handshake, so a connector-holder has them with nothing to fetch (round twenty-three, entries 1, 2, 7).
+    expect(init.body.result.instructions).toContain("list_words, list_workflows, list_projects");
+    expect(init.body.result.instructions).toContain("https://plotcoder.com/day-one.md");
     // The door names the release it runs, not a constant.
     expect(init.body.result.serverInfo.version).toBe(JSON.parse(fs.readFileSync(new URL("../package.json", import.meta.url), "utf8")).version);
     const listed = await rpc("tools/list", {}, 2);

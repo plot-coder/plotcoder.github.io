@@ -2219,7 +2219,9 @@ describe("after the blind run", () => {
       expect(nx).toBeGreaterThan(mx);
       expect(Math.abs(ny - my)).toBeLessThan(80);
       const reply = await door.callTool("move_scene", { id: made.id, after: "letter-aloud" });
-      expect(reply).toContain("nothing else moved");
+      // The why was said once, on the create above; after that the reply says only that nothing else moved (round twenty-three, entry 24).
+      expect(reply).toContain("Nothing else moved.");
+      expect(reply).not.toContain("the order is the arrows");
       const moved = await where();
       for (const id of Object.keys(before)) expect(moved[id]).toBe(before[id]);
       const ordered = await door.callTool("set_order", { cards: ["tom-lies", "maya-letter", "letter-aloud"] });

@@ -1071,7 +1071,9 @@ function besidePlace(state, cardId, target, after) {
 }
 
 /** What a wiring reply says now that it does not tidy. */
-const NOT_TIDIED = "It sits beside the card it follows and nothing else moved: the order is the arrows, and where cards sit is the writer's. organize tidies the wall along them when that is wanted.";
+const NOT_TIDIED_WHY = "It sits beside the card it follows and nothing else moved: the order is the arrows, and where cards sit is the writer's. organize tidies the wall along them when that is wanted.";
+/** Said in full once a session, and as three words after: eight builds buried the one new fact in each reply under the same two sentences (round twenty-three, entry 24). With no session to remember by, the short form. */
+const notTidied = () => once("not-tidied", NOT_TIDIED_WHY) || "Nothing else moved.";
 
 /** Said once per session: that cards stack until organize (round seven, finding 11). */
 /** Where a new card lands when the agent gives no position: after the last card in reading order, wrapping five wide, so cards never stack (round eleven, finding 14). */
@@ -1380,14 +1382,19 @@ function summarize(state) {
       return `  - ${character.id} — "${character.name}" on ${on} card${on === 1 ? "" : "s"} of this board${maybeOn ? ` (and maybe ${maybeOn} more: not decided, counted neither way)` : ""}${onBehind ? ` (and ${onBehind} not in the film — behind as another version, or set aside — not counted)` : ""}${away ? ` and ${away} of other boards` : ""}${brief}`;
     })
     .join("\n");
+  // The film's cards, and the ones not in it said apart, as the cast's counts are and as read_wall counts (round twenty-three, entry 29).
   const placeCounts = new Map();
   for (const note of state.notes) {
     const phrase = (note.location ?? "").trim();
-    if (phrase) placeCounts.set(phrase, (placeCounts.get(phrase) ?? 0) + 1);
+    if (!phrase) continue;
+    const held = placeCounts.get(phrase) ?? { on: 0, out: 0 };
+    if (note.alternativeOf || note.aside) held.out += 1;
+    else held.on += 1;
+    placeCounts.set(phrase, held);
   }
   const places = [...placeCounts.entries()]
     .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([phrase, count]) => `  - "${phrase}" on ${count} card${count === 1 ? "" : "s"}`)
+    .map(([phrase, { on, out }]) => `  - "${phrase}" on ${on} card${on === 1 ? "" : "s"}${out ? ` (and ${out} not in the film — behind as another version, or set aside — not counted)` : ""}`)
     .join("\n");
   const { beats, scenes } = countRanks(state);
   const headline = (id) =>
@@ -1787,7 +1794,7 @@ server.registerTool(
     ].filter(Boolean).join(", ");
     // Where it landed matters only until the tidy, so the reply says the rule once and never the coordinates (round fourteen, entry 11).
     const placed = beside
-      ? ` Wired ${args.after ? "after" : "before"} "${beside.headline}" in the story (${removedArrows} follows arrow${removedArrows === 1 ? "" : "s"} removed${removedNames.length ? ` — ${removedNames.join(", ")}` : ""}, ${drawnArrows} drawn${wallHasFollows ? "" : "; the wall's first, so the story order starts here"})${joinedGroup ? `, in "${joinedGroup}"` : ""}. ${NOT_TIDIED}`
+      ? ` Wired ${args.after ? "after" : "before"} "${beside.headline}" in the story (${removedArrows} follows arrow${removedArrows === 1 ? "" : "s"} removed${removedNames.length ? ` — ${removedNames.join(", ")}` : ""}, ${drawnArrows} drawn${wallHasFollows ? "" : "; the wall's first, so the story order starts here"})${joinedGroup ? `, in "${joinedGroup}"` : ""}. ${notTidied()}`
       : args.x === undefined && args.y === undefined ? ` Placed after the last card in story order.${once("placed", " organize lays the wall out along the arrows.")}` : "";
     // Under a lock a new scene has a letter, not a number: say it, since the board is the only other place to learn it (round fourteen, entry 44).
     const numbered = after?.lock && result?.id ? ` Numbered ${sceneNumbers(storyOrder(after), after.lock).get(result.id)} (the numbers are locked; a new scene's letter is its place between locked ones now, worked out again from where it sits if it moves; the locked numbers never move).` : "";
@@ -2346,7 +2353,7 @@ server.registerTool(
       ? ` It joined "${joinedGroup}", the group it landed in, so an organize keeps it with the act.`
       : group ? ` It is still in "${group.title || "an untitled group"}"; a frame does not follow a move, so say if the act or sequence should change.` : "";
     return ok(
-      `${chainedFromRows ? "The wall had no follows arrows, so the order was drawn from the rows first, as the wall read it; then: " : ""}Moved "${card.headline}" to ${args.after ? "after" : "before"} "${target.headline}": ${removed} follows arrow(s) removed, ${drawn} drawn${final.arrows.some((arrow) => arrow.kind === "setup") ? ", setup arrows untouched" : ""}${where(live)}. ${NOT_TIDIED} Story order now: ${order.map((note, index) => `${index + 1}. ${note.headline}`).join(", ")}.${groupLine}${lockedNow} One undo takes the whole move back.`,
+      `${chainedFromRows ? "The wall had no follows arrows, so the order was drawn from the rows first, as the wall read it; then: " : ""}Moved "${card.headline}" to ${args.after ? "after" : "before"} "${target.headline}": ${removed} follows arrow(s) removed, ${drawn} drawn${final.arrows.some((arrow) => arrow.kind === "setup") ? ", setup arrows untouched" : ""}${where(live)}. ${notTidied()} Story order now: ${order.map((note, index) => `${index + 1}. ${note.headline}`).join(", ")}.${groupLine}${lockedNow} One undo takes the whole move back.`,
       { order: order.map((note) => note.id) },
     );
   },

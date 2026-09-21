@@ -225,6 +225,15 @@ export function formatMinutes(eighths) {
 export const NOTE_WIDTH = 192;
 export const NOTE_HEIGHT = 192;
 
+/** A place at or below x,y that overlaps no card the wall draws at its own place (a version behind is drawn behind its sibling, so it is in nobody's way). */
+function clearSpot(notes, x, y, selfId) {
+  const drawn = notes.filter((note) => note.id !== selfId && !note.alternativeOf);
+  const hits = (top) => drawn.some((note) => Math.abs(note.x - x) < NOTE_WIDTH + 20 && Math.abs(note.y - top) < NOTE_HEIGHT + 20);
+  let top = y;
+  for (let step = 0; step < 40 && hits(top); step += 1) top += NOTE_HEIGHT + 40;
+  return { x, y: top };
+}
+
 // How far a dropped card's centre may sit outside the *other* members' bounds
 // and still belong to the group. It has to cover a whole neighbouring card:
 // the first card of a row sits a card-width from the rest, and dropping it in
@@ -1044,7 +1053,9 @@ export function applyCommand(state, command, now = nowIso()) {
       if (keep) {
         // Kept is set aside (R66): on the wall where the writer can see it, and not in the film. The turn went
         // forward with the chosen card, so the kept one is a scene, not a second beat (round twenty-two, entries 47 to 50).
-        notes = notes.map((item) => (item.id === other.id ? bump(item, { alternativeOf: null, aside: true, rank: "scene", x: item.x + 40, y: item.y + 40 }, now) : item));
+        // Clear of every card the wall draws, under the scene it was a way of: "beside it" was on top of it, a cut card inside a row of the story (round twenty-three, entry 46).
+        const spot = clearSpot(notes, other.x, other.y + NOTE_HEIGHT + 40, other.id);
+        notes = notes.map((item) => (item.id === other.id ? bump(item, { alternativeOf: null, aside: true, rank: "scene", x: spot.x, y: spot.y }, now) : item));
         if (chosen.alternativeOf) {
           arrows = arrows.filter((arrow) => arrow.kind === "setup" || (arrow.from !== other.id && arrow.to !== other.id));
           groups = groups.map((group) => (group.noteIds.includes(other.id) ? { ...group, noteIds: group.noteIds.filter((id) => id !== other.id) } : group));

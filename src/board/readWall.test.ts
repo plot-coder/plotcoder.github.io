@@ -7,7 +7,7 @@ import {
   type BoardState,
   type Command,
 } from "./reducer";
-import { describeRuns, describeSetups, describeUndecided, readingOrder, readWall, storyOrder } from "./readWall";
+import { describeRuns, describeSetups, describeUndecided, openOutsideFilm, readingOrder, readWall, storyOrder } from "./readWall";
 
 const NOW = "2026-01-01T00:00:00.000Z";
 
@@ -93,9 +93,10 @@ describe("everything undecided in one place (round twenty-two, entries 41, 43, 6
   it("lists what is simply not said under its own head, never as open", () => {
     const state = wall();
     const { open, blank } = describeUndecided(state, readWall(state));
-    expect(blank).toContain('  - no place: "B", "D"');
-    expect(blank).toContain('  - no when: "B", "C", "D"');
-    expect(blank).toContain('  - no length (read as a page each): "A", "B", "D"');
+    // "B" is wholly open by the writer's word, so nothing on it is blank (round twenty-three, entry 66).
+    expect(blank).toContain('  - no place: "D"');
+    expect(blank).toContain('  - no when: "C", "D"');
+    expect(blank).toContain('  - no length (read as a page each): "A", "D"');
     expect(open.join("\n")).not.toContain("no place");
     // Nobody in it is only a blank once the wall has a cast.
     expect(blank.some((line) => line.includes("nobody in it"))).toBe(false);
@@ -993,5 +994,41 @@ describe("a person who may or may not be in a scene (round twenty-two, H9)", () 
     const reading = readWall(state);
     expect(reading.findings.filter((f) => f.kind === "uncast")).toEqual([]);
     expect(reading.openFields).toContainEqual({ field: "cast", id: "b2", words: "whether Tom and Ngozi are in it" });
+  });
+});
+
+describe("a person who is only in a scene the writer cut (round twenty-three, entry 19)", () => {
+  it("is not asked where they come in: the card set aside is where, if it ever comes back", () => {
+    let state = run(
+      wall({ id: "a", rank: "beat" }, { id: "cut", headline: "At the audiologist's" }),
+      { type: "add_character", id: "ada", name: "Ada" },
+      { type: "add_character", id: "aud", name: "The audiologist" },
+      { type: "set_cast", ids: ["a"], characterIds: ["ada"] },
+      { type: "set_cast", ids: ["cut"], characterIds: ["ada", "aud"] },
+    );
+    expect(readWall(state).findings.filter((f) => f.kind === "uncast")).toEqual([]);
+    state = run(state, { type: "set_aside", ids: ["cut"], aside: true });
+    expect(readWall(state).findings.filter((f) => f.kind === "uncast")).toEqual([]);
+    // Someone on no card at all is still asked about.
+    state = run(state, { type: "add_character", id: "n", name: "Ngozi" });
+    expect(readWall(state).findings.filter((f) => f.kind === "uncast").map((f) => f.ids)).toEqual([["n"]]);
+  });
+});
+
+describe("what is open on a card not in the film (round twenty-three, entries 37, 40)", () => {
+  it("is listed, marked, and counted: a card set aside and a version behind", () => {
+    const state = run(
+      wall({ id: "pub", rank: "beat", headline: "The pub, alone" }, { id: "pub2", headline: "The pub, with Callum" }, { id: "cut", headline: "At the audiologist's" }),
+      { type: "add_character", id: "n", name: "Ngozi" },
+      { type: "set_cast", ids: ["pub2"], characterIds: [], maybeCharacterIds: ["n"] },
+      { type: "update_note", id: "pub2", changeOpen: "I don't know what changes yet" },
+      { type: "set_alternative", id: "pub2", of: "pub" },
+      { type: "set_location", ids: ["cut"], location: "", open: "I don't know yet" },
+      { type: "set_aside", ids: ["cut"], aside: true },
+    );
+    const undecided = describeUndecided(state, readWall(state));
+    expect(undecided.open).toContain('  - "The pub, with Callum" (a version behind, not chosen) — the change line: I don\'t know what changes yet; whether Ngozi is in it');
+    expect(undecided.open).toContain('  - "At the audiologist\'s" (set aside) — where: I don\'t know yet');
+    expect(openOutsideFilm(state)).toBe(3);
   });
 });

@@ -17,7 +17,7 @@
 // before any tidy — the arrows are the writer's claim about the order, and
 // where they say nothing the positions decide.
 
-import { isMeasured, boardEighths, EIGHTHS_PER_PAGE, formatPages, noteEighths, readingOrder, storyOrder } from "./reducer.js";
+import { isMeasured, boardEighths, EIGHTHS_PER_PAGE, formatPages, inStory, noteEighths, readingOrder, storyOrder } from "./reducer.js";
 
 // The two orders live in the kernel (R62: a thread's cards are held in story
 // order), and every reader still imports them from here.
@@ -433,6 +433,8 @@ export function readWall(state, options = {}) {
       if (elsewhere.has(character.id)) continue;
       // On no card for certain, and the writer has said where they may be: open, not a question.
       if (maybes.length) continue;
+      // Only on a card the writer set aside, or on a version behind another: they come in where that card does, if it ever comes back. Asking would be asking about a scene the writer cut (round twenty-three, entry 19).
+      if (state.notes.some((note) => !inStory(note) && (note.characterIds?.includes(character.id) || note.maybeCharacterIds?.includes(character.id)))) continue;
       findings.push({
         kind: "uncast",
         ids: [character.id],
@@ -612,6 +614,16 @@ function sameList(a, b) {
  * @param extras.project lines for fields the project holds ({ label, words })
  * @param extras.wouldAsk (openItem) => a suffix saying what a closed card would be asked
  */
+/** How many things are open, by the writer's word, on cards not in the film — set aside, or behind as a version: listed by describeUndecided, so counted where the list is counted (round twenty-three, entry 37). */
+export function openOutsideFilm(state) {
+  let count = 0;
+  for (const note of state.notes.filter((item) => !inStory(item))) {
+    for (const words of [note.open, note.changeOpen, note.locationOpen, note.whenOpen]) if ((words ?? "").trim()) count += 1;
+    if (maybeWords(note, state)) count += 1;
+  }
+  return count;
+}
+
 export function describeUndecided(state, reading, extras = {}) {
   const byId = new Map(state.notes.map((note) => [note.id, note]));
   const name = (id) => `"${byId.get(id)?.headline ?? id}"`;
@@ -654,7 +666,8 @@ export function describeUndecided(state, reading, extras = {}) {
   }
 
   // A card set aside keeps what was open on it, and that is where undecided things sit: listed after the film's, marked.
-  for (const note of state.notes.filter((item) => item.aside === true)) {
+  // A version behind another the same: what is undecided on it is in no other reading (round twenty-three, entry 40).
+  for (const note of state.notes.filter((item) => !inStory(item))) {
     const parts = [
       (note.open ?? "").trim() ? `open: ${note.open.trim()}` : "",
       (note.changeOpen ?? "").trim() ? `${FIELD.change}: ${note.changeOpen.trim()}` : "",
@@ -662,11 +675,12 @@ export function describeUndecided(state, reading, extras = {}) {
       (note.whenOpen ?? "").trim() ? `${FIELD.when}: ${note.whenOpen.trim()}` : "",
       maybeWords(note, state),
     ].filter(Boolean);
-    if (parts.length) open.push(`  - ${name(note.id)} (set aside) — ${parts.join("; ")}`);
+    if (parts.length) open.push(`  - ${name(note.id)} (${note.aside === true ? "set aside" : "a version behind, not chosen"}) — ${parts.join("; ")}`);
   }
 
   // Not said yet: blank, and nobody has said why.
-  const cards = reading.order.map((id) => byId.get(id)).filter(Boolean);
+  // A card wholly open by the writer's word is not blank in any field: "that is all I know about it" covers them all (round twenty-three, entry 66).
+  const cards = reading.order.map((id) => byId.get(id)).filter(Boolean).filter((note) => !(note.open ?? "").trim());
   const list = (notes) => (notes.length === cards.length && cards.length > 1 ? `every card (${notes.length})` : notes.length > 6 ? `${notes.length} of ${cards.length} cards` : notes.map((note) => name(note.id)).join(", "));
   const blank = [];
   const noPlace = cards.filter((note) => !(note.location ?? "").trim() && !(note.locationOpen ?? "").trim());

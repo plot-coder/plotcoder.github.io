@@ -118,3 +118,5 @@ export declare function describeUndecided(
 ): { open: string[]; blank: string[] };
 /** "whether Tomás is in it", for a card where someone may or may not be; empty when nobody is a maybe. */
 export declare function maybeWords(note: { maybeCharacterIds?: string[] }, state: { characters?: Array<{ id: string; name: string }> }): string;
+/** How many things are open, by the writer's word, on cards not in the film. */
+export declare function openOutsideFilm(state: BoardState): number;

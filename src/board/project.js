@@ -386,7 +386,8 @@ export function setPremiseOpen(project, words, now = nowIso()) {
 export function scriptTitles(project, board) {
   const boardName = (board?.name ?? "").trim() || "Untitled";
   const named = typeof project?.name === "string" && project.name.trim() && project.name !== DEFAULT_PROJECT_NAME;
-  if (!named) return { title: boardName };
+  // A film whose title is not decided goes out as "Untitled", never as "Board 1": the board's default name is the app's word, not a title (round twenty-three, entry 53).
+  if (!named) return { title: /^Board \d+$/.test(boardName) && (project?.boards ?? []).length <= 1 ? "Untitled" : boardName };
   const boards = project.boards ?? [];
   if (boards.length > 1) {
     // A series: the project is the title and the board is the episode line,

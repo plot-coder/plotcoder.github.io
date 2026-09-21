@@ -351,5 +351,8 @@ describe("scriptTitles (round thirteen, entry 26)", () => {
     const untitled = { ...film, name: "Untitled project" };
     expect(scriptTitles(untitled, untitled.boards[0])).toEqual({ title: "Feature" });
     expect(scriptTitles(untitled, null)).toEqual({ title: "Untitled" });
+    // A film whose title is not decided never goes out as "Board 1" (round twenty-three, entry 53).
+    const fresh = { ...film, name: "Untitled project", boards: [board("Board 1")] };
+    expect(scriptTitles(fresh, fresh.boards[0])).toEqual({ title: "Untitled" });
   });
 });

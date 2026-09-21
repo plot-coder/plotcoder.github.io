@@ -269,7 +269,8 @@ describe("plotcoder MCP server", () => {
     const target = notes[0].id;
 
     const text = await client.callTool("set_rank", { ids: [target], rank: "beat" });
-    expect(text).toContain("are now beat");
+    // By name, not only by count (round twenty-three, entry 35).
+    expect(text).toContain(`1 card(s) are now beat: "${notes[0].headline}"`);
     expect(text).toContain("1 beats");
 
     const listed = await client.callTool("list_board");
@@ -511,7 +512,10 @@ describe("plotcoder MCP server", () => {
     const state = await client.callToolData("list_board");
     const id = state.notes.at(-1).id;
 
-    expect(await client.callTool("move_note", { id, x: 100, y: 200 })).toContain("Moved card.");
+    // Which card, from where, to where (round twenty-three, entry 23).
+    const moved = await client.callTool("move_note", { id, x: 100, y: 200 });
+    expect(moved).toMatch(/^Moved ".+" from 640,320 to 100,200/);
+    expect(await client.callTool("move_note", { id, x: 100, y: 200 })).toContain("is already at 100,200");
     expect(await client.callTool("recolor_note", { id, color: "pink" })).toContain("Recolored");
     expect(await client.callTool("update_note", { id, change: "Tom will never know." })).toContain(
       'Updated "',
@@ -1120,7 +1124,8 @@ describe("open fields (R61): the logline, the premise, a when and a board's name
     expect(paired).toContain('"Con dies" is now the other version of "They lose the plots"');
     const listed = await client.callTool("list_board");
     expect(listed).toContain('versions, not chosen');
-    expect(listed).toContain(`  - ${other.id} — "Con dies", a version of "They lose the plots"`);
+    // The version's own row says what is on it — rank, length, cast, place — as any card's does (round twenty-three, entries 21, 28).
+    expect(listed).toMatch(new RegExp(`  - ${other.id} \\[scene, [^\\]]+\\] — "Con dies" \\(\\w+\\), a version of "They lose the plots"`));
     expect(await client.callTool("read_wall")).toContain('  - "They lose the plots" or "Con dies"');
     expect(await client.callTool("set_alternative", { id: ending.id, of: other.id })).toContain("is itself a version");
     // Round twenty-two: what a version behind leaves open is said beside it (21); a thread will not run through it, and says why (58); a setup from it has no distance, never NaN (60).
@@ -1195,6 +1200,8 @@ describe("open fields (R61): the logline, the premise, a when and a board's name
     const aside = await client.callTool("set_aside", { ids: ["They sit it out till morning"] });
     expect(aside).toContain('Set aside "They sit it out till morning"');
     expect(aside).toContain("2 follows arrows dropped, and the story closed over it");
+    // The closing arrow by its cards, not "the cards on either side" alone (round twenty-three, entry 49).
+    expect(aside).toContain('"The depot" → "The morning after"');
     const listed = await client.callTool("list_board");
     expect(listed).toContain("1 set aside, not in the film");
     expect(listed).toMatch(/set aside \(on the wall and not in the film[^\n]*\n  - [^\n]*"They sit it out till morning"/);
@@ -1214,7 +1221,7 @@ describe("open fields (R61): the logline, the premise, a when and a board's name
     // choose_version with keep sets the one not chosen aside, and says so.
     await client.callTool("set_alternative", { id: b.id, of: a.id });
     const chosen = await client.callTool("choose_version", { id: a.id, keep: true });
-    expect(chosen).toContain('"They sit it out till morning" is kept, set aside beside it: on the wall and not in the film');
+    expect(chosen).toContain('"They sit it out till morning" is kept, set aside below it, clear of the other cards: on the wall and not in the film');
     expect((await client.callToolData("list_board")).notes.find((note) => note.id === b.id).aside).toBe(true);
     for (const id of [a.id, b.id, c.id]) await client.callTool("delete_note", { id });
     expect(before.notes.length).toBeGreaterThan(0);
@@ -2214,7 +2221,9 @@ describe("after the blind run", () => {
       expect(nx).toBeGreaterThan(mx);
       expect(Math.abs(ny - my)).toBeLessThan(80);
       const reply = await door.callTool("move_scene", { id: made.id, after: "letter-aloud" });
-      expect(reply).toContain("nothing else moved");
+      // The why was said once, on the create above; after that the reply says only that nothing else moved (round twenty-three, entry 24).
+      expect(reply).toContain("Nothing else moved.");
+      expect(reply).not.toContain("the order is the arrows");
       const moved = await where();
       for (const id of Object.keys(before)) expect(moved[id]).toBe(before[id]);
       const ordered = await door.callTool("set_order", { cards: ["tom-lies", "maya-letter", "letter-aloud"] });
@@ -2356,6 +2365,15 @@ describe("after the blind run", () => {
         expect(`${tool.name}.${name}: ${schema.description ?? ""}`).not.toMatch(/\b[RD]\d\d\b|question \d+/);
       }
     }
+  });
+
+  it("says each of new_project's parameters in its own words: a kind is the writer's word for the length, not why it is open (round twenty-three, entry 5)", async () => {
+    const { tools } = await blind.request("tools/list", {});
+    const fields = tools.find((tool) => tool.name === "new_project").inputSchema.properties;
+    for (const [name, schema] of Object.entries(fields)) expect(`${name}: ${schema.description ?? ""}`).toMatch(/: .{20,}/);
+    expect(fields.kind.description).toContain("it is a feature");
+    expect(fields.kind.description).not.toContain("not decided");
+    expect(fields.targetOpen.description).toContain("not decided");
   });
 });
 
@@ -3241,12 +3259,15 @@ describe("a person who may or may not be in a scene (round twenty-two, H9)", () 
 
     // The name without the mark decides it.
     const decided = await door.callTool("cast", { noteIds: [card.id], characters: ["Marta", "Tomás"] });
-    expect(decided).toContain("now cast Marta, Tomás:");
+    // The reply says the maybe was decided, and which way (round twenty-three, entry 58).
+    expect(decided).toContain("now cast Marta, Tomás (decided: Tomás is in it):");
     expect(await door.callTool("read_wall")).not.toContain("whether Tomás is in it");
 
     // And back, through cast: the reply says what the mark means.
     const again = await door.callTool("cast", { noteIds: [card.id], characters: ["Marta", "Tomás?"] });
     expect(again).toContain("now cast Marta, with Tomás not decided");
+    const alone = await door.callTool("cast", { noteIds: [card.id], characters: ["Marta"] });
+    expect(alone).toContain("decided: Tomás is not in it, so that is no longer open");
   });
 
   it("says the camera's mark in the words, and where a decided fact about one scene goes (H8, H10)", async () => {

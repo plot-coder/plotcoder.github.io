@@ -59,7 +59,7 @@ import { castLine, readMaybe } from "../src/board/castMaybe.js";
 import { segmentBrief, WORKFLOWS } from "../src/board/workflows.js";
 import { DEFAULT_REMINDERS, titleFromBody } from "../src/board/reminders.js";
 import crypto from "node:crypto";
-import { describeRuns, describeSetups, describeUndecided, readWall } from "../src/board/readWall.js";
+import { describeRuns, describeSetups, describeUndecided, openOutsideFilm, readWall } from "../src/board/readWall.js";
 import { compareStructure, describeComparison, MATCH_PAGES } from "../src/board/compareStructure.js";
 import { GAP, ROW_WIDTH, organizePoses } from "../src/board/organize.js";
 import { parseScene, sceneLineCount } from "../src/board/paginate.js";
@@ -621,7 +621,9 @@ function atAGlance(state, reading, project = null, boardMeta = null) {
     (boardMeta?.nameOpen ? 1 : 0);
   const unwritten = inFilm.filter((note) => !(note.text ?? "").trim()).length;
   const asked = reading.findings.length;
-  return `this wall: ${asked} question${asked === 1 ? "" : "s"} asked · ${open} thing${open === 1 ? "" : "s"} left open by the writer's word · ${unwritten} of ${inFilm.length} scene${inFilm.length === 1 ? "" : "s"} unwritten`;
+  // What is open on a card set aside or behind as a version is listed below, so it is said here: the head and the list must add up (round twenty-three, entry 37).
+  const outside = openOutsideFilm(state);
+  return `this wall: ${asked} question${asked === 1 ? "" : "s"} asked · ${open} thing${open === 1 ? "" : "s"} left open by the writer's word${outside ? ` (and ${outside} more on cards not in the film)` : ""} · ${unwritten} of ${inFilm.length} scene${inFilm.length === 1 ? "" : "s"} unwritten`;
 }
 
 /** A card's number as the reading prints it: the lock's when locked, else its place in story order. */
@@ -974,6 +976,14 @@ async function keepSession() {
   }
 }
 
+/** A line quoted in a reply: whole when it fits, otherwise cut at a word with an ellipsis, never mid-word (round twenty-three, entry 60). */
+function clip(text, max) {
+  const line = String(text ?? "").trim();
+  if (line.length <= max) return line;
+  const cut = line.slice(0, max);
+  return `${cut.slice(0, Math.max(cut.lastIndexOf(" "), 1)).trimEnd()}…`;
+}
+
 function describeCommand(command) {
   switch (command.type) {
     case "create_note":
@@ -1071,7 +1081,9 @@ function besidePlace(state, cardId, target, after) {
 }
 
 /** What a wiring reply says now that it does not tidy. */
-const NOT_TIDIED = "It sits beside the card it follows and nothing else moved: the order is the arrows, and where cards sit is the writer's. organize tidies the wall along them when that is wanted.";
+const NOT_TIDIED_WHY = "It sits beside the card it follows and nothing else moved: the order is the arrows, and where cards sit is the writer's. organize tidies the wall along them when that is wanted.";
+/** Said in full once a session, and as three words after: eight builds buried the one new fact in each reply under the same two sentences (round twenty-three, entry 24). With no session to remember by, the short form. */
+const notTidied = () => once("not-tidied", NOT_TIDIED_WHY) || "Nothing else moved.";
 
 /** Said once per session: that cards stack until organize (round seven, finding 11). */
 /** Where a new card lands when the agent gives no position: after the last card in reading order, wrapping five wide, so cards never stack (round eleven, finding 14). */
@@ -1340,8 +1352,8 @@ function summarize(state) {
   const nameOf = new Map(state.characters.map((character) => [character.id, character.name]));
   // What lands here from the other boards' folds (R58), from the last project read.
   const paidByHere = lastHeld?.project ? landingsOn(lastHeld.project, { ...lastHeld.boards, [lastHeld.project.activeBoardId]: state }, lastHeld.project.activeBoardId).paid : [];
-  const notes = storyOrder(state)
-    .map((note) => {
+  // One row for any card — in the story, behind as a version, or set aside — so what is on a card can always be read back (round twenty-three, entries 21, 28).
+  const cardRow = (note) => {
       // "Tomás?" is someone who may or may not be in it, by the writer's word (H9).
       const cast = castLine(note.characterIds, note.maybeCharacterIds, state.characters);
       const who = cast ? `, cast: ${cast}` : "";
@@ -1363,8 +1375,8 @@ function summarize(state) {
       const sketch = isMeasured(note) && noteEighths(note) < (note.lengthEighths ?? DEFAULT_NOTE_EIGHTHS) ? " (a sketch: under the page it was read as)" : "";
       const pages = isMeasured(note) ? `${count} ${count === "1" ? "page" : "pages"}, written${sketch}${underneath}` : note.lengthEighths === null ? "about a page, unsized" : `${count} ${count === "1" ? "page" : "pages"}`;
       return `  - ${note.id} [${note.rank ?? "scene"}, ${pages}${who}${place}${when}${openWord}${plant}${pays}${revised}] — "${note.headline}" (${note.color}) at ${Math.round(note.x)},${Math.round(note.y)}`;
-    })
-    .join("\n");
+  };
+  const notes = storyOrder(state).map(cardRow).join("\n");
   const cast = state.characters
     .map((character) => {
       // Cards in the story; a version behind another is said apart, since it is not in the film until chosen (round twenty-two, entry 68).
@@ -1380,14 +1392,19 @@ function summarize(state) {
       return `  - ${character.id} — "${character.name}" on ${on} card${on === 1 ? "" : "s"} of this board${maybeOn ? ` (and maybe ${maybeOn} more: not decided, counted neither way)` : ""}${onBehind ? ` (and ${onBehind} not in the film — behind as another version, or set aside — not counted)` : ""}${away ? ` and ${away} of other boards` : ""}${brief}`;
     })
     .join("\n");
+  // The film's cards, and the ones not in it said apart, as the cast's counts are and as read_wall counts (round twenty-three, entry 29).
   const placeCounts = new Map();
   for (const note of state.notes) {
     const phrase = (note.location ?? "").trim();
-    if (phrase) placeCounts.set(phrase, (placeCounts.get(phrase) ?? 0) + 1);
+    if (!phrase) continue;
+    const held = placeCounts.get(phrase) ?? { on: 0, out: 0 };
+    if (note.alternativeOf || note.aside) held.out += 1;
+    else held.on += 1;
+    placeCounts.set(phrase, held);
   }
   const places = [...placeCounts.entries()]
     .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([phrase, count]) => `  - "${phrase}" on ${count} card${count === 1 ? "" : "s"}`)
+    .map(([phrase, { on, out }]) => `  - "${phrase}" on ${on} card${on === 1 ? "" : "s"}${out ? ` (and ${out} not in the film — behind as another version, or set aside — not counted)` : ""}`)
     .join("\n");
   const { beats, scenes } = countRanks(state);
   const headline = (id) =>
@@ -1441,10 +1458,10 @@ function summarize(state) {
     "cards (in story order — the follows arrows over the rows; each with its id):",
     notes || "  (no cards)",
     ...(state.notes.some((note) => note.alternativeOf)
-      ? ["versions, not chosen (behind their front cards; out of the order, the count and the pages; choose_version decides):", ...state.notes.filter((note) => note.alternativeOf).map((note) => `  - ${note.id} — "${note.headline}", a version of "${state.notes.find((item) => item.id === note.alternativeOf)?.headline ?? note.alternativeOf}"`)]
+      ? ["versions, not chosen (behind their front cards; out of the order, the count and the pages; choose_version decides):", ...state.notes.filter((note) => note.alternativeOf).map((note) => `${cardRow(note).replace(/ at -?\d+,-?\d+$/, "")}, a version of "${state.notes.find((item) => item.id === note.alternativeOf)?.headline ?? note.alternativeOf}"`)]
       : []),
     ...(state.notes.some((note) => note.aside)
-      ? ["set aside (on the wall and not in the film: out of the order, the count, the pages and every export; set_aside with aside false brings one back):", ...state.notes.filter((note) => note.aside).map((note) => `  - ${note.id} — "${note.headline}"${note.change && note.change !== "What changes?" ? ` — ${note.change}` : ""} at ${Math.round(note.x)},${Math.round(note.y)}`)]
+      ? ["set aside (on the wall and not in the film: out of the order, the count, the pages and every export; set_aside with aside false brings one back):", ...state.notes.filter((note) => note.aside).map((note) => `${cardRow(note)}${note.change && note.change !== "What changes?" ? ` — ${note.change}` : ""}`)]
       : []),
     "rows on the wall (top to bottom, left to right; ★ a beat; (aside) a card set aside):",
     ...(rowLines.length ? rowLines : ["  (no cards)"]),
@@ -1466,7 +1483,24 @@ function summarize(state) {
 // PLOTCODER_JSON=0 drops the JSON tail from every reply, for an agent that
 // reads the sentence and wants nothing more (a blind run found 400-line replies).
 const TEXT_ONLY = env.PLOTCODER_JSON !== "1";
-function ok(text, data) {
+/**
+ * Through the hosted door a reply never promises this server's undo: it is a
+ * fresh server on every call and keeps no trail, so "undo brings it back" is
+ * false there, and an agent cannot test it without risking the writer's work
+ * (round twenty-three, entry 71). The writer's ⌘Z on the wall is true at
+ * every door.
+ */
+function undoAsThisDoorHasIt(text) {
+  if (!hosted()) return text;
+  return text
+    .replace(/\bundo brings all of it back\b/g, "the writer's ⌘Z on the wall brings all of it back (this door keeps no undo of its own)")
+    .replace(/\b[Oo]ne undo takes (it all|the whole move) back\b/g, (_, what) => `one ⌘Z on the writer's wall takes ${what} back (this door keeps no undo of its own)`)
+    .replace(/\bundo takes back the leaving\b/g, "the writer's ⌘Z on the wall takes back the leaving")
+    .replace(/ One undo step\./g, " One ⌘Z step on the writer's wall.");
+}
+
+function ok(rawText, data) {
+  const text = undoAsThisDoorHasIt(rawText);
   const body = data === undefined || TEXT_ONLY ? text : `${text}\n\n${JSON.stringify(data, null, 2)}`;
   return { content: [{ type: "text", text: body }] };
 }
@@ -1497,7 +1531,8 @@ const server = new McpServer({ name: "plotcoder-board", version: packageVersion(
 const registerTool = server.registerTool.bind(server);
 let lane = Promise.resolve();
 server.registerTool = (name, config, handler) =>
-  registerTool(name, config, (...args) => {
+  // A tool's description promises what its reply does, so it says undo as this door has it too.
+  registerTool(name, { ...config, description: undoAsThisDoorHasIt(config.description ?? "") }, (...args) => {
     const turn = lane.then(async () => {
       await recallSession();
       try {
@@ -1583,7 +1618,8 @@ server.registerTool(
     });
     const { beats, scenes } = countRanks(state);
     return ok(
-      `${result?.length ?? 0} card(s) are now ${args.rank}${where(live)}. The board holds ${beats} beats and ${scenes} scenes. The rows are as they were.${once("rank-rows", " organize lays a row per beat, when the writer wants the wall laid out.")}`,
+      // By name, so a wrong reading of "strike 3" is caught at a glance (round twenty-three, entry 35).
+      `${result?.length ?? 0} card(s) are now ${args.rank}: ${(result ?? []).map((note) => `"${note.headline}"`).join(", ")}${where(live)}. The board holds ${beats} beats and ${scenes} scenes. The rows are as they were.${once("rank-rows", " organize lays a row per beat, when the writer wants the wall laid out.")}`,
       result,
     );
   },
@@ -1786,7 +1822,7 @@ server.registerTool(
     ].filter(Boolean).join(", ");
     // Where it landed matters only until the tidy, so the reply says the rule once and never the coordinates (round fourteen, entry 11).
     const placed = beside
-      ? ` Wired ${args.after ? "after" : "before"} "${beside.headline}" in the story (${removedArrows} follows arrow${removedArrows === 1 ? "" : "s"} removed${removedNames.length ? ` — ${removedNames.join(", ")}` : ""}, ${drawnArrows} drawn${wallHasFollows ? "" : "; the wall's first, so the story order starts here"})${joinedGroup ? `, in "${joinedGroup}"` : ""}. ${NOT_TIDIED}`
+      ? ` Wired ${args.after ? "after" : "before"} "${beside.headline}" in the story (${removedArrows} follows arrow${removedArrows === 1 ? "" : "s"} removed${removedNames.length ? ` — ${removedNames.join(", ")}` : ""}, ${drawnArrows} drawn${wallHasFollows ? "" : "; the wall's first, so the story order starts here"})${joinedGroup ? `, in "${joinedGroup}"` : ""}. ${notTidied()}`
       : args.x === undefined && args.y === undefined ? ` Placed after the last card in story order.${once("placed", " organize lays the wall out along the arrows.")}` : "";
     // Under a lock a new scene has a letter, not a number: say it, since the board is the only other place to learn it (round fourteen, entry 44).
     const numbered = after?.lock && result?.id ? ` Numbered ${sceneNumbers(storyOrder(after), after.lock).get(result.id)} (the numbers are locked; a new scene's letter is its place between locked ones now, worked out again from where it sits if it moves; the locked numbers never move).` : "";
@@ -1839,9 +1875,13 @@ server.registerTool(
     inputSchema: { id: z.string(), x: z.number(), y: z.number() },
   },
   async (args) => {
-    const { result } = await commit({ type: "move_note", id: args.id, x: args.x, y: args.y });
+    const { state: before } = await readBoard();
+    const was = before.notes.find((note) => note.id === args.id);
+    const { result, changed, live } = await commit({ type: "move_note", id: args.id, x: args.x, y: args.y });
     if (result === undefined) return ok(`No card with id ${args.id}.`);
-    return ok("Moved card.", result);
+    // Which card, from where, to where, and where it was saved: every other write says (round twenty-three, entry 23).
+    if (!changed || (was && Math.round(was.x) === Math.round(result.x) && Math.round(was.y) === Math.round(result.y))) return ok(`"${result.headline}" is already at ${Math.round(result.x)},${Math.round(result.y)}.`, result);
+    return ok(`Moved "${result.headline}" from ${Math.round(was?.x ?? 0)},${Math.round(was?.y ?? 0)} to ${Math.round(result.x)},${Math.round(result.y)}${where(live)}. Position is where the card is drawn, never the story's order: the arrows are.`, result);
   },
 );
 
@@ -1918,7 +1958,9 @@ server.registerTool(
       return ids.length ? `${line} — ${ids.map((id) => `"${state.notes.find((note) => note.id === id)?.headline ?? id}"`).join(", ")}` : line;
     });
     // No blank lines: ok() splits prose from payload on the first one.
-    const written = state.notes.filter((note) => isMeasured(note)).length;
+    // The film's cards only: a card set aside or behind as a version is out of the count in every other line (round twenty-three, entry 65).
+    const filmCards = state.notes.filter((note) => !note.alternativeOf && !note.aside);
+    const written = filmCards.filter((note) => isMeasured(note)).length;
     // Whose number the runtime is (round eighteen, entries 45, 47, 50): once a
     // scene is written the total is part measure, part guess, part default,
     // and the reading says which, the same way list_board does.
@@ -1937,6 +1979,8 @@ server.registerTool(
       wouldAsk: (item) => (item.hides.length ? ` (closed, it would be asked ${item.hides.map((kind) => ASK_WORDS[kind] ?? CHECK_WORDS[kind] ?? kind).join("; ")})` : ""),
     });
     // Fields, not lines: a card's line can carry three of them.
+    // What is open about a person is counted at the head, so it is counted here: the two lines must add up to one number (round twenty-three, entry 26).
+    const openPeopleCount = reading.openPeople?.length ?? 0;
     const openFieldCount = reading.openFields.length + (projectForRead.nameOpen ? 1 : 0) + (state.targetOpen ? 1 : 0) + (projectForRead.premiseOpen ? 1 : 0) + (readBoardMeta?.nameOpen ? 1 : 0);
     // The short read (round twenty-two, entry 83): confirming nothing was owed cost three hundred lines.
     if (args?.only === "questions") {
@@ -1989,7 +2033,7 @@ server.registerTool(
               .join("; ")
           : "(none)"
       }`,
-      `pages: ${written === 0 ? "all estimates — no scene is written yet, so every card is the writer's guess" : written === state.notes.length ? "measured — every scene is written" : `estimates — ${written} of ${state.notes.length} cards are written${written <= 5 ? ` (${state.notes.filter((note) => isMeasured(note)).map((note) => `"${note.headline}"`).join(", ")})` : ""}, the rest are guesses`}`,
+      `pages: ${written === 0 ? "all estimates — no scene is written yet, so every card is the writer's guess" : written === filmCards.length ? "measured — every scene is written" : `estimates — ${written} of ${filmCards.length} cards are written${written <= 5 ? ` (${filmCards.filter((note) => isMeasured(note)).map((note) => `"${note.headline}"`).join(", ")})` : ""}, the rest are guesses`}`,
       // A wall with cards and no follows arrows has no story order yet; say so rather than read the rows as one (round seventeen, entries 10, 11).
       `story order: ${state.notes.length > 1 && !state.arrows.some((arrow) => arrow.kind !== "setup") ? "unset — no follows arrows, so the rows stand in for it; create_arrow the sequence and the reading, the numbers and every export follow the arrows" : "the follows arrows, and the rows where they say nothing"}`,
       `beats in wall order: ${
@@ -2006,10 +2050,10 @@ server.registerTool(
       ...reading.later.map((item) => `  - "${state.notes.find((note) => note.id === item.id)?.headline ?? item.id}" is folded and pays off later, on "${boardById(projectForRead, item.boardId)?.name ?? item.boardId}"${item.noteId ? `, at ${episodeLabel(projectForRead, boardsNow, item.boardId, item.noteId)} "${boardsNow[item.boardId]?.notes?.find((note) => note.id === item.noteId)?.headline ?? item.noteId}"` : " — no scene there claims it yet"}`),
       ...reading.paidBy.map((item) => `  - "${state.notes.find((note) => note.id === item.id)?.headline ?? item.id}" pays off "${item.fromHeadline}" from "${item.fromBoardName}" (${episodeLabel(projectForRead, boardsNow, item.fromBoardId, item.fromNoteId)}), one board earlier`),
       ...(undecided.open.length
-        ? ["open, by the writer's word (listed, not asked about while the words stand; each card once, with everything open on it; set_open with \"\" closes a card, the field's own tool with open \"\" a field):", ...undecided.open]
+        ? ["open, by the writer's word (listed, not asked about while the words stand; each card once, with everything open on it; set_open with \"\" closes a card, the field's own tool with open \"\" a field; \"whether someone is in it\" is decided by cast, with their name without the question mark or left off; a card not in the film is marked):", ...undecided.open]
         : []),
       ...(undecided.blank.length
-        ? ["not said yet (blank, and nobody has said why — not the writer's word, so not open; the wall asks about some of these above, and says nothing of the rest):", ...undecided.blank]
+        ? ["blank on the wall (no value here, and no words of the writer's on the wall to say why. That is a fact about the wall, not about the writer: they may have told you, and a when, a length or who is in a scene with nobody named has no open of its own to hold it. The wall asks about some of these above, and says nothing of the rest):", ...undecided.blank]
         : []),
       ...(reading.aside.length
         ? ["set aside, not in the film (on the wall; out of the order, the count, the pages and every export; never asked; set_aside with aside false brings one back):", ...reading.aside.map((id) => `  - "${state.notes.find((note) => note.id === id)?.headline ?? id}"`)]
@@ -2037,7 +2081,7 @@ server.registerTool(
         const counts = new Map();
         for (const finding of asked) counts.set(finding.kind, (counts.get(finding.kind) ?? 0) + 1);
         return `asking ${asked.length} question${asked.length === 1 ? "" : "s"} of ${counts.size} kind${counts.size === 1 ? "" : "s"}: ${[...counts.entries()].map(([kind, n]) => (n > 1 ? `${kind} ×${n}` : kind)).join(", ")}${held}`;
-      })()}${reading.left.length ? `; left by the writer, so not clean: ${[...new Set(reading.left.map((finding) => finding.kind))].map((kind) => `[${kind}]`).join(" ")}` : ""}${reading.open.length || openFieldCount ? `; ${[reading.open.length ? `${reading.open.length} card${reading.open.length === 1 ? "" : "s"}` : "", openFieldCount ? `${openFieldCount} field${openFieldCount === 1 ? "" : "s"}` : ""].filter(Boolean).join(" and ")} open by the writer's word, not asked` : ""}; checked and clean: ${CHECKS.filter((kind) => !reading.findings.some((finding) => finding.kind === kind) && !reading.left.some((finding) => finding.kind === kind)).map((kind) => {
+      })()}${reading.left.length ? `; left by the writer, so not clean: ${[...new Set(reading.left.map((finding) => finding.kind))].map((kind) => `[${kind}]`).join(" ")}` : ""}${reading.open.length || openFieldCount || openPeopleCount ? `; ${[reading.open.length ? `${reading.open.length} card${reading.open.length === 1 ? "" : "s"}` : "", openFieldCount ? `${openFieldCount} field${openFieldCount === 1 ? "" : "s"}` : "", openPeopleCount ? `${openPeopleCount} thing${openPeopleCount === 1 ? "" : "s"} about a person` : ""].filter(Boolean).join(", ")} open by the writer's word, not asked (the ${reading.open.length + openFieldCount + openPeopleCount} at the head)` : ""}; checked and clean: ${CHECKS.filter((kind) => !reading.findings.some((finding) => finding.kind === kind) && !reading.left.some((finding) => finding.kind === kind)).map((kind) => {
         // The reading's own numbers: follows arrows and the film's cards, not setup arrows and the wall's (round twenty-two, entry 20).
         if (kind === "unlinked" && reading.wired.linked === 0) return "no card without a follows arrow (not asked until half the film's cards are wired: no follows arrows yet)";
         if (kind === "unlinked" && reading.wired.linked * 2 < reading.wired.of) return `no card without a follows arrow (not asked until half the film's cards are wired: ${reading.wired.linked} of ${reading.wired.of} are; a setup arrow is a claim, not a place in the story)`;
@@ -2339,7 +2383,7 @@ server.registerTool(
       ? ` It joined "${joinedGroup}", the group it landed in, so an organize keeps it with the act.`
       : group ? ` It is still in "${group.title || "an untitled group"}"; a frame does not follow a move, so say if the act or sequence should change.` : "";
     return ok(
-      `${chainedFromRows ? "The wall had no follows arrows, so the order was drawn from the rows first, as the wall read it; then: " : ""}Moved "${card.headline}" to ${args.after ? "after" : "before"} "${target.headline}": ${removed} follows arrow(s) removed, ${drawn} drawn${final.arrows.some((arrow) => arrow.kind === "setup") ? ", setup arrows untouched" : ""}${where(live)}. ${NOT_TIDIED} Story order now: ${order.map((note, index) => `${index + 1}. ${note.headline}`).join(", ")}.${groupLine}${lockedNow} One undo takes the whole move back.`,
+      `${chainedFromRows ? "The wall had no follows arrows, so the order was drawn from the rows first, as the wall read it; then: " : ""}Moved "${card.headline}" to ${args.after ? "after" : "before"} "${target.headline}": ${removed} follows arrow(s) removed, ${drawn} drawn${final.arrows.some((arrow) => arrow.kind === "setup") ? ", setup arrows untouched" : ""}${where(live)}. ${notTidied()} Story order now: ${order.map((note, index) => `${index + 1}. ${note.headline}`).join(", ")}.${groupLine}${lockedNow} One undo takes the whole move back.`,
       { order: order.map((note) => note.id) },
     );
   },
@@ -2684,7 +2728,7 @@ server.registerTool(
       const done = await commit({ type: "set_text", id: note.id, text: paragraphs.join("\n\n") });
       const linesNow = sceneLineCount(done.result.text);
       return ok(
-        `Inserted a paragraph ${args.after ? "after" : "before"} "${paragraphs[args.after ? at : at + 1].split("\n")[0].slice(0, 60)}" in "${done.result.headline}": "${args.insert.trim()}"${where(done.live)}. Now ${linesNow} line(s) as they print (was ${linesWere}; blank lines and wrapped lines count), measured at ${formatPages(noteEighths(done.result))} of a page${cameraReply(done.result.text)}.${revisionMark(done.state, done.result.id)}${cueReport(done.state, done.result.text)}`,
+        `Inserted a paragraph ${args.after ? "after" : "before"} "${clip(paragraphs[args.after ? at : at + 1].split("\n")[0], 90)}" in "${done.result.headline}": "${args.insert.trim()}"${where(done.live)}. Now ${linesNow} line(s) as they print (was ${linesWere}; blank lines and wrapped lines count), measured at ${formatPages(noteEighths(done.result))} of a page${cameraReply(done.result.text)}.${revisionMark(done.state, done.result.id)}${cueReport(done.state, done.result.text)}`,
         { ...done.result, eighths: noteEighths(done.result), measured: true },
       );
     }
@@ -3272,12 +3316,16 @@ server.registerTool(
     if (refs.missing.length) return ok(`Nothing changed: not on the board — ${refs.missing.map((ref) => `"${ref}"`).join(", ")}. Call list_board for the ids or the exact headlines.`);
     const behind = refs.found.map((id) => current.notes.find((note) => note.id === id)).filter((note) => note?.alternativeOf);
     if (behind.length && args.aside !== false) return ok(`Nothing changed: ${behind.map((note) => `"${note.headline}"`).join(", ")} ${behind.length === 1 ? "is" : "are"} already out of the film, behind another card as its other version. choose_version with keep sets the one not chosen aside.`);
-    const { changed, result, live } = await commit({ type: "set_aside", ids: refs.found, aside: args.aside !== false });
+    const { changed, result, live, state: after } = await commit({ type: "set_aside", ids: refs.found, aside: args.aside !== false });
     if (!changed) return ok(`Nothing changed: ${args.aside === false ? "those cards are not set aside" : "those cards are already set aside"}.`);
+    // The arrows that closed the story over the cut, by their cards (round twenty-three, entry 49).
+    const had = new Set(current.arrows.map((arrow) => arrow.id));
+    const headlineOf = (id) => after.notes.find((note) => note.id === id)?.headline ?? id;
+    const closing = (after?.arrows ?? []).filter((arrow) => !had.has(arrow.id) && arrow.kind !== "setup").map((arrow) => `"${headlineOf(arrow.from)}" → "${headlineOf(arrow.to)}"`);
     const names = result.ids.map((id) => `"${current.notes.find((note) => note.id === id)?.headline ?? id}"`).join(", ");
     if (!result.aside) return ok(`Brought back ${names}${where(live)}: in the film again, as ${result.ids.length === 1 ? "a plain unwired card" : "plain unwired cards"} — in the count and the pages, and the wall will ask what comes before and after ${result.ids.length === 1 ? "it" : "them"}; create_arrow or move_scene says.`, result);
     return ok(
-      `Set aside ${names}${where(live)}: on the wall and not in the film — out of the order, the count, the pages and every export${result.arrowsDropped ? `; ${result.arrowsDropped} follows arrow${result.arrowsDropped === 1 ? "" : "s"} dropped${result.closedOver ? `, and the story closed over ${result.closedOver === 1 ? "it" : "them"} (${result.closedOver} arrow${result.closedOver === 1 ? "" : "s"} drawn between the cards on either side)` : ""}` : ""}. The reading lists ${result.ids.length === 1 ? "it" : "them"} under "set aside" and asks nothing; set_aside with aside false brings ${result.ids.length === 1 ? "it" : "them"} back.`,
+      `Set aside ${names}${where(live)}: on the wall and not in the film — out of the order, the count, the pages and every export${result.arrowsDropped ? `; ${result.arrowsDropped} follows arrow${result.arrowsDropped === 1 ? "" : "s"} dropped${result.closedOver ? `, and the story closed over ${result.closedOver === 1 ? "it" : "them"} (${result.closedOver} arrow${result.closedOver === 1 ? "" : "s"} drawn between the cards on either side${closing.length ? `: ${closing.join(", ")}` : ""})` : ""}` : ""}. The reading lists ${result.ids.length === 1 ? "it" : "them"} under "set aside" and asks nothing; set_aside with aside false brings ${result.ids.length === 1 ? "it" : "them"} back.`,
       result,
     );
   },
@@ -3288,7 +3336,7 @@ server.registerTool(
   {
     title: "Choose a version",
     description:
-      "Choose one of two versions of a scene, by id or headline: the chosen card is the scene, in the front card's place — its arrows, its rank, its group, the threads that ran through it, and its fold when the chosen card has none of its own, so what was true of the scene \"either way of it\" needs saying once, on the front card; the other goes, or with keep true is set aside beside it: on the wall where the writer can see it, and not in the film — out of the order, the count, the pages and every export, a scene and no longer a beat. set_aside with aside false brings it back as a plain card. Only on the writer's word.",
+      "Choose one of two versions of a scene, by id or headline: the chosen card is the scene, in the front card's place — its arrows, its rank, its group, the threads that ran through it, and its fold when the chosen card has none of its own, so what was true of the scene \"either way of it\" needs saying once, on the front card; the other goes, or with keep true is set aside below it, clear of the other cards: on the wall where the writer can see it, and not in the film — out of the order, the count, the pages and every export, a scene and no longer a beat. set_aside with aside false brings it back as a plain card. Only on the writer's word.",
     inputSchema: { id: z.string(), keep: z.boolean().optional() },
   },
   async (args) => {
@@ -3299,7 +3347,7 @@ server.registerTool(
     if (!other) return ok(`"${card.headline}" has no other version; nothing to choose.`);
     const { changed, result, live } = await commit({ type: "choose_version", id: card.id, keep: args.keep === true });
     if (!changed) return ok("Nothing chosen.");
-    return ok(`Chose "${card.headline}"${result.steppedForward ? ` — it steps forward into "${other.headline}"'s place, with its arrows, rank, group and threads${!card.plants && other.plants ? `, and its fold${other.plantsWhat ? ` ("${other.plantsWhat}")` : ""}` : ""}` : ""}${where(live)}. "${other.headline}" ${result.kept ? "is kept, set aside beside it: on the wall and not in the film — out of the order, the count, the pages and every export; the reading lists it and asks nothing of it. set_aside with aside false brings it back as a plain card" : "is gone"}.`, result);
+    return ok(`Chose "${card.headline}"${result.steppedForward ? ` — it steps forward into "${other.headline}"'s place, with its arrows, rank, group and threads${!card.plants && other.plants ? `, and its fold${other.plantsWhat ? ` ("${other.plantsWhat}")` : ""}` : ""}` : ""}${where(live)}. "${other.headline}" ${result.kept ? "is kept, set aside below it, clear of the other cards: on the wall and not in the film — out of the order, the count, the pages and every export; the reading lists it and asks nothing of it. set_aside with aside false brings it back as a plain card" : "is gone"}.`, result);
   },
 );
 
@@ -3700,6 +3748,8 @@ server.registerTool(
     // A name the cast does not have is added to it in the same frame, as
     // create_note does — two tools, one rule (round seventeen, entry 14).
     const added = [];
+    // Who was on the first card before, so the reply can say who came off and which maybe was decided (round twenty-three, entry 58).
+    const beforeCast = (await readBoard()).state.notes.find((note) => note.id === args.noteIds[0]);
     const { state, changed, value: result, live } = await commitAll(`cast ${args.noteIds.length} card(s)`, (step, current) => {
       const characterIds = [];
       const maybeCharacterIds = [];
@@ -3731,8 +3781,13 @@ server.registerTool(
       (id) => state.characters.find((character) => character.id === id)?.name ?? id,
     );
     const maybeNames = maybeIds.map((id) => state.characters.find((character) => character.id === id)?.name ?? id);
+    const nameOf = (id) => state.characters.find((character) => character.id === id)?.name ?? id;
+    const decidedIn = args.noteIds.length === 1 && beforeCast ? (beforeCast.maybeCharacterIds ?? []).filter((id) => characterIds.includes(id)).map(nameOf) : [];
+    const decidedOut = args.noteIds.length === 1 && beforeCast ? (beforeCast.maybeCharacterIds ?? []).filter((id) => !characterIds.includes(id) && !maybeIds.includes(id)).map(nameOf) : [];
+    const cameOff = args.noteIds.length === 1 && beforeCast ? (beforeCast.characterIds ?? []).filter((id) => !characterIds.includes(id) && !maybeIds.includes(id)).map(nameOf) : [];
+    const whatChanged = [decidedIn.length ? `decided: ${decidedIn.join(", ")} ${decidedIn.length === 1 ? "is" : "are"} in it` : "", decidedOut.length ? `decided: ${decidedOut.join(", ")} ${decidedOut.length === 1 ? "is" : "are"} not in it, so that is no longer open` : "", cameOff.length ? `off the card: ${cameOff.join(", ")}` : ""].filter(Boolean).join("; ");
     return ok(
-      `${result.length} card(s) now cast ${names.length ? names.join(", ") : "nobody"}${maybeNames.length ? `, with ${maybeNames.join(", ")} not decided (listed under open, counted neither way; the name without the mark decides it)` : ""}: ${result.map((note) => `"${note.headline}"`).join(", ")}${added.length ? ` (added to the cast: ${added.join(", ")})` : ""}${where(live)}.${stillOpen(result)}`,
+      `${result.length} card(s) now cast ${names.length ? names.join(", ") : "nobody"}${maybeNames.length ? `, with ${maybeNames.join(", ")} not decided (listed under open, counted neither way; the name without the mark decides it)` : ""}${whatChanged ? ` (${whatChanged})` : ""}: ${result.map((note) => `"${note.headline}"`).join(", ")}${added.length ? ` (added to the cast: ${added.join(", ")})` : ""}${where(live)}.${stillOpen(result)}`,
       result,
     );
   },
@@ -4401,7 +4456,16 @@ server.registerTool(
     title: "Start a project",
     description:
       "Through the account door: start a new project of the writer's with this name — one empty board, nothing on it — and work it from now on. The writer sees it under Projects on every device. A title not decided: open with the writer's words (\"The Allotments, or Plot 14\") instead of a name, and the project starts as Untitled project with those words beside it. A film is one board and goes out under the project's name: leave board alone and do not ask the writer to name it. For a series, board names the first episode; boardOpen leaves that name open in the writer's words instead (\"the pilot, or the film\").",
-    inputSchema: { name: z.string().min(1).optional(), open: z.string().optional(), board: z.string().optional(), boardOpen: z.string().optional(), pages: pagesSchema.optional(), minutes: z.number().positive().optional(), targetOpen: z.string().optional(), kind: z.enum(["feature", "hour", "half-hour"]).optional().describe("The writer's words for why the length is not decided — \"half-hour or feature\" — so the target is born open instead of the feature default standing unsaid.") },
+    inputSchema: {
+      name: z.string().min(1).optional().describe("The title. Or leave it out and pass open."),
+      open: z.string().optional().describe("The writer's words for why the title is not decided — \"The Tuner, or Four Forty\" — in place of name: the project starts as Untitled project with those words beside it."),
+      board: z.string().optional().describe("A name for the first board. A film of one board needs none; an episode does."),
+      boardOpen: z.string().optional().describe("The writer's words for why the first board's name is not decided, in place of board."),
+      pages: pagesSchema.optional().describe("The target, when the writer gave a number of pages."),
+      minutes: z.number().positive().optional().describe("The target, when the writer gave a running time: a page a minute."),
+      kind: z.enum(["feature", "hour", "half-hour"]).optional().describe("The target as the writer said it — \"it is a feature\" — kept as their word and read as 120, 60 or 30 pages; not a page count. In place of pages or minutes."),
+      targetOpen: z.string().optional().describe("The writer's words for why the length is not decided — \"half-hour or feature\" — so the target is born open instead of the feature default standing unsaid."),
+    },
   },
   async (args) => {
     const account = await findAccount();
@@ -4424,7 +4488,7 @@ server.registerTool(
     if (board.error) return ok(`Started "${record.name}" but could not make its first board: ${board.error.message}`);
     workingProject(record.id, record.name, (account.projectCount ?? 0) + 1);
     joinPresence(record.id);
-    const targetLine = state.targetOpen ? ` Its target is left open, by the writer's word: "${state.targetOpen}"; the reading reads the cards against a half-hour and a feature until set_target decides it.` : target === undefined ? ` Its target is ${formatPages(state.targetEighths)} pages, the default for a feature; set_target for a pilot or a half-hour, or pass pages or minutes here.` : ` Its target is ${formatPages(state.targetEighths)} pages.`;
+    const targetLine = state.targetOpen ? ` Its target is left open, by the writer's word: "${state.targetOpen}"; the reading reads the cards against a half-hour and a feature until set_target decides it.` : targetWords(state) ? ` Its target is ${targetWords(state)}, read as ${formatPages(state.targetEighths)} pages: kept as the writer's word, not a page count (set_target with pages says a number).` : target === undefined ? ` Its target is ${formatPages(state.targetEighths)} pages, the default for a feature; set_target for a pilot or a half-hour, or pass pages or minutes here.` : ` Its target is ${formatPages(state.targetEighths)} pages.`;
     const first = record.boards[0];
     const nameOpenLine = `${record.nameOpen ? ` The project's name is left open, by the writer's word: "${record.nameOpen}"; rename_project decides it.` : ""}${first.nameOpen ? ` The board's name is left open, by the writer's word: "${first.nameOpen}"; rename_board decides it.` : ""}`;
     // A film is one board and goes out under the project's name: nothing to ask the writer about "Board 1" (round twenty-two, entry 16).

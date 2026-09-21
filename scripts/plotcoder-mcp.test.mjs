@@ -2061,11 +2061,13 @@ describe("after the blind run", () => {
 
   it("says over or under in words, and what page_count counts", async () => {
     expect(await blind.callTool("set_target", { pages: 2 })).toMatch(/— [0-9 /]+ (over|under)\./);
-    expect(await blind.callTool("list_board")).toMatch(/runtime: about [\d /]+ pages — the number to use[^\n]*\n(  made of: [^\n]*\n)?  against the 2-page target the writer set \(set_target changes it\): [\d /]+ (over|under)\n/);
+    expect(await blind.callTool("list_board")).toMatch(/how long it is: about [\d /]+ pages\. Say this one to the writer[^\n]*\n(  made of: [^\n]*\n)?  against the 2-page target the writer set \(set_target changes it\): [\d /]+ (over|under)\n/);
     const written = await blind.callToolData("list_board");
     await blind.callTool("write_scene", { id: written.notes[0].id, text: "INT. KITCHEN - NIGHT\n\nMaya reads it twice." });
     const pages = await blind.callTool("page_count");
     expect(pages).toContain("unwritten and set their change line as action");
+    // One number for "how long is it", first, and said to be the one (round twenty-three, entry 62).
+    expect(pages).toMatch(/^how long the film is: about [\d /]+ pages, by the cards — say this one to the writer/);
     expect(await blind.callTool("new_board", { name: "Ep 2" })).toContain("leave it empty rather than invent it");
   });
 
@@ -2826,7 +2828,7 @@ describe("round ten's replies", () => {
     const tidy = await ten.callTool("organize");
     expect(tidy).toContain("five cards wide — no beats yet");
     const board = await ten.callTool("list_board");
-    expect(board).toMatch(/runtime: about \d+ pages — the number to use[^\n]*\n  made of: [^\n]*\n  no target set — set_target/);
+    expect(board).toMatch(/how long it is: about \d+ pages\. Say this one to the writer[^\n]*\n  made of: [^\n]*\n  no target set — set_target/);
     expect(board).not.toContain("-page target");
     await ten.callTool("set_target", { pages: 60 });
     expect(await ten.callTool("list_board")).toContain("against the 60-page target the writer set");
@@ -2838,7 +2840,7 @@ describe("round ten's replies", () => {
     await ten.callTool("set_rank", { ids: [ids[1]], rank: "beat" });
     await ten.callTool("create_group", { noteIds: [ids[0], ids[1]], title: "Act one" });
     const read = await ten.callTool("read_wall");
-    expect(read).toContain("runtime: about");
+    expect(read).toContain("how long it is: about");
     expect(read).toMatch(/\n  made of: of its \d+ cards, 0 measured from written text \(0 pages\), \d+ sized by the writer \([0-9/ ]+\), \d+ unsized and read as a page each \([0-9/ ]+\)\n/);
     expect(read).toContain("  the script so far, paginated, is page_count's number, not this one");
     expect(read).toMatch(/a beat's own pages are in no run — the 1 beat holds? about [0-9/ ]+ pages between them/);

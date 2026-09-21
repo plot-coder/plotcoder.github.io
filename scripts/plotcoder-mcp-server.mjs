@@ -1289,7 +1289,8 @@ function runtimeBlock(state) {
       ? `no target set — set_target for a pilot (60) or a half-hour (30); against the feature default of 120 it would be ${formatPages(-over)} under`
       : `against the ${formatPages(state.targetEighths)}-page target the writer set (set_target changes it): ${over > 0 ? `${formatPages(over)} over` : over < 0 ? `${formatPages(-over)} under` : "on it"}`;
   return [
-    `runtime: about ${formatPages(total)} pages — the number to use: the cards' estimate, a page about a minute, counted in eighths as a production does`,
+    // One number for "how long is it", said first and said to be the one (round twenty-three, entry 62): an agent handed the writer three.
+    `how long it is: about ${formatPages(total)} pages. Say this one to the writer: the film by its cards, a page about a minute, counted in eighths as a production does. The other figures below are what it is made of and what it is read against, not other answers`,
     ...(made ? [`  made of: ${made}`] : []),
     `  ${target}`,
     ...(found.length ? [`  if ${found.length === 1 ? "the sketch" : `the ${found.length} sketches`} ran to the page ${found.length === 1 ? "it was" : "they were"} read as: about ${formatPages(ifRan)} pages — a written scene measured under its page is a sketch, and this is a guess about a guess`] : []),
@@ -3066,7 +3067,9 @@ server.registerTool(
       : unwritten
       ? [`${unwritten} of ${order.length} scenes are unwritten and set their change line as action, marked [Unwritten], a few lines each — so this is the script so far, not the runtime: the runtime from the cards is about ${formatPages(boardEighths(state))} pages, ${order.length - unwritten} of ${order.length} measured and the rest estimated.`]
       : [];
-    return ok([...note, `pages: ${result.pageCount} of ${Math.round(state.targetEighths / 8)}`, `scene numbers here are ${state.lock ? "the locked numbers" : "story order (not locked)"}`, ...lines].join("\n"), result.scenes);
+    // The film's length is the cards' number, said first; the page count here is how far the script has got (round twenty-three, entry 62).
+    const lead = `how long the film is: about ${formatPages(boardEighths(state))} pages, by the cards — say this one to the writer. What follows is the script as written so far, paginated${unwritten ? `: ${order.length - unwritten} of ${order.length} scenes written` : ""}, which is a different number and not the film's length until every scene is written.`;
+    return ok([lead, ...note, `pages: ${result.pageCount} of ${Math.round(state.targetEighths / 8)}`, `scene numbers here are ${state.lock ? "the locked numbers" : "story order (not locked)"}`, ...lines].join("\n"), result.scenes);
   },
 );
 

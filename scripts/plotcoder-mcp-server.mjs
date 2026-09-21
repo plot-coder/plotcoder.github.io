@@ -988,9 +988,28 @@ async function recallSession() {
   }
 }
 
+/** Steps this request made, waiting to be kept on the session's trail once the tool has answered (the working list's X2). */
+const undoQueue = [];
+const wallHash = (state) => crypto.createHash("sha256").update(canon(state)).digest("hex");
+function queueUndo(before, after, what, boardId) {
+  if (!hosted()) return;
+  undoQueue.push({ what, before, afterHash: wallHash(after), boardId: boardId ?? "", projectId: accountDoor?.projectId ?? "" });
+}
+/** Whether an undo of this session's own works through this door: everywhere but a hosted door with no session, or a store that keeps no trail. */
+function undoKeptHere() {
+  if (!hosted()) return true;
+  if (sessionTried) return Boolean(sessionStore?.peekUndo);
+  return isSessionId(env.PLOTCODER_SESSION_ID ?? "");
+}
+
 async function keepSession() {
   if (!sessionStore) return;
   try {
+    // The trail first: a step the writer may want back matters more than which advice was said.
+    while (undoQueue.length) {
+      const step = undoQueue.shift();
+      if (sessionStore.pushUndo) await sessionStore.pushUndo(env.PLOTCODER_SESSION_ID, step);
+    }
     const memory = sessionMemory();
     const now = JSON.stringify(memory);
     // A session that has nothing to remember yet needs no row.
@@ -1057,6 +1076,7 @@ async function commit(command) {
 
   const live = await writeBoard(next, rev, base, boardId, "exact");
   trail.push({ before: state, after: canon(next), what: describeCommand(command) });
+  queueUndo(state, next, describeCommand(command), boardId);
   sinceRead.push(describeCommand(command));
   noteChange(state, next, boardId);
   if (trail.length > TRAIL_CAP) trail.shift();
@@ -1089,6 +1109,7 @@ async function commitAll(what, build) {
   if (!changed) return { state: current, changed: false, value, live: base !== null };
   const live = await writeBoard(current, rev, base, boardId, "exact");
   trail.push({ before: state, after: canon(current), what });
+  queueUndo(state, current, what, boardId);
   sinceRead.push(what);
   noteChange(state, current, boardId);
   if (trail.length > TRAIL_CAP) trail.shift();
@@ -1526,10 +1547,12 @@ const TEXT_ONLY = env.PLOTCODER_JSON !== "1";
  * every door.
  */
 /** undo's and redo's own descriptions through the hosted door: said first and plainly, so an agent never has to risk the writer's work to find out (round twenty-three, entries 70, 71). */
-const NO_UNDO_HERE = "NOT THROUGH THIS DOOR: the hosted door is a fresh server on every call and keeps no trail, so this tool can take nothing back here and says so. The writer's ⌘Z on the wall takes any change back; to take one back yourself, make the opposite change (delete_note, set_aside, update_note with the old words). Elsewhere: ";
+const NO_UNDO_HERE = "NOT THROUGH THIS DOOR: your client sent no session, and without one the hosted door is a fresh server on every call and keeps no trail, so this tool can take nothing back here and says so. The writer's ⌘Z on the wall takes any change back; to take one back yourself, make the opposite change (delete_note, set_aside, update_note with the old words). Elsewhere: ";
+const UNDO_THROUGH_THE_DOOR = "Through the hosted door: this session's last ten changes are kept on the writer's own account for a day, and undo takes them back newest first. ";
+const NO_REDO_HERE = "NOT THROUGH THIS DOOR: the hosted door keeps what undo needs and not what redo needs; make the change again. Elsewhere: ";
 
 function undoAsThisDoorHasIt(text) {
-  if (!hosted()) return text;
+  if (undoKeptHere()) return text;
   return text
     .replace(/\bundo brings all of it back\b/g, "the writer's ⌘Z on the wall brings all of it back (this door keeps no undo of its own)")
     .replace(/\b[Oo]ne undo takes (it all|the whole move) back\b/g, (_, what) => `one ⌘Z on the writer's wall takes ${what} back (this door keeps no undo of its own)`)
@@ -1572,7 +1595,7 @@ const registerTool = server.registerTool.bind(server);
 let lane = Promise.resolve();
 server.registerTool = (name, config, handler) =>
   // A tool's description promises what its reply does, so it says undo as this door has it too.
-  registerTool(name, { ...config, description: `${hosted() && (name === "undo" || name === "redo") ? NO_UNDO_HERE : ""}${undoAsThisDoorHasIt(config.description ?? "")}` }, (...args) => {
+  registerTool(name, { ...config, description: `${hosted() && name === "redo" ? NO_REDO_HERE : hosted() && name === "undo" ? (undoKeptHere() ? UNDO_THROUGH_THE_DOOR : NO_UNDO_HERE) : ""}${undoAsThisDoorHasIt(config.description ?? "")}` }, (...args) => {
     const turn = lane.then(async () => {
       await recallSession();
       try {
@@ -3296,22 +3319,40 @@ server.registerTool(
   {
     title: "Undo my last change",
     description:
-      "Take back the LAST change this server made, restoring the board to what it was before that call. It is a stack, newest first, with no way to pick a change: when the writer says \"undo that scene\" and changes they want have landed since — a scene written, a line added — undo would take those first, so use delete_note or set_aside on the card instead. Refuses if the board has changed since — a person moved on, or another agent did — so it never tramples work; the person can always undo anything from the wall with ⌘Z. Call it again to go back further.",
-    inputSchema: {},
+      "Take back the LAST change this server made, restoring the board to what it was before that call. It is a stack, newest first, with no way to pick a change: when the writer says \"undo that scene\" and changes they want have landed since — a scene written, a line added — undo would take those first, so use delete_note or set_aside on the card instead. preview: true says what it would take back, and whether it still can, without taking it. Refuses if the board has changed since — a person moved on, or another agent did — so it never tramples work; the person can always undo anything from the wall with ⌘Z. Call it again to go back further.",
+    inputSchema: { preview: z.boolean().optional().describe("Say what undo would take back, and whether the board is still as that change left it, and take nothing back.") },
   },
-  async () => {
-    const last = trail[trail.length - 1];
-    // The hosted door's session carries what was read and said, not the trail, which holds whole walls: "nothing of mine" there would be false after a build.
+  async (args) => {
+    let last = trail[trail.length - 1];
+    // Through the hosted door the trail is the session's, kept on the writer's account (the working list's X2).
+    let kept = null;
+    if (!last && hosted() && sessionStore?.peekUndo) {
+      kept = await sessionStore.peekUndo(env.PLOTCODER_SESSION_ID);
+      if (kept) last = { before: normalizeState(kept.before), afterHash: kept.afterHash, what: kept.what, boardId: kept.boardId };
+    }
+    if (!last && hosted() && sessionStore?.peekUndo) return ok("Nothing of this session's to undo: no change of yours is on its trail. The writer can take any change back from the wall with ⌘Z.");
+    // With no session the door keeps nothing: "nothing of mine" there would be false after a build.
     if (!last && hosted()) return ok("Nothing to undo through this door: it is a fresh server on every call and keeps no trail of its changes. The writer can take any change back from the wall with ⌘Z; to take one back yourself, make the opposite change.");
     if (!last) return ok(oneCall() ? "Nothing to undo here: through plotcoder-call every call is a fresh server, so undo works only from an MCP session. The writer can take any change back from the wall with ⌘Z." : "Nothing of mine to undo in this session.");
-    const { state, rev, base } = await readBoard();
-    if (canon(state) !== last.after) {
+    const { state, rev, base, boardId: openBoardId } = await readBoard();
+    const steps = kept ? kept.steps : trail.length;
+    if (kept && last.boardId && openBoardId && last.boardId !== openBoardId) {
+      return ok(`Not undone: my last change, ${last.what}, was on another board. open_board there first; undo takes a change back only on the board it was made on.`);
+    }
+    const unchanged = last.afterHash ? wallHash(state) === last.afterHash : canon(state) === last.after;
+    if (args?.preview) {
+      return ok(`undo would take back: ${last.what}${unchanged ? "" : " — but the board has changed since, so it would refuse rather than trample that"}. ${steps} step${steps === 1 ? "" : "s"} of this session's can be taken back, newest first; nothing was taken back now.`);
+    }
+    if (!unchanged) {
       return ok(
         `Not undone: the board has changed since my ${last.what}. Undoing now would trample that. Ask the person to undo from the wall if they want it back.`,
       );
     }
-    trail.pop();
-    undone.push(last);
+    if (kept) await sessionStore.popUndo(env.PLOTCODER_SESSION_ID, kept.seq);
+    else {
+      trail.pop();
+      undone.push(last);
+    }
     const { boardId } = await readBoard();
     const live = await writeBoard(last.before, rev, base, boardId, "exact");
     const orderLine = /^(move_scene|organize)/.test(last.what) ? ` Story order now: ${storyOrder(last.before).map((note, index) => `${index + 1}. ${note.headline}`).join(", ")}.` : "";
@@ -3339,7 +3380,8 @@ server.registerTool(
       lockLine = moved.length ? ` Under the lock, ${moved.join("; ")}.` : "";
     }
     // Whose trail the count is (entry 47): this session's, across the boards.
-    const more = `${trail.length} more of this session's changes can be undone, across the boards — each only on the board it was made on, and only while that board is as the change left it${trail.length >= TRAIL_CAP ? "; that is the most I keep, so the oldest have gone" : ""}`;
+    const left = kept ? Math.max(kept.steps - 1, 0) : trail.length;
+    const more = `${left} more of this session's changes can be undone, across the boards — each only on the board it was made on, and only while that board is as the change left it${trail.length >= TRAIL_CAP ? "; that is the most I keep, so the oldest have gone" : ""}`;
     return ok(`Undid ${last.what}${where(live)}.${orderLine}${countLine}${lockLine} ${more}. list_board has the board.`, { undid: last.what, notes: last.before.notes.length, arrows: last.before.arrows.length, groups: last.before.groups.length });
   },
 );

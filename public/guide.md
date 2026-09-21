@@ -719,12 +719,16 @@ than a dictionary's, so the app and you never explain a word two ways.
   (`mcp.plotcoder.com`) remembers the same things from one call to the next —
   what you have read, which advice it has said — by the session your client
   opened; a client that sends no session gets the quoting tail from the first
-  write and no once-a-session advice. **What that door does not keep is an
-  undo:** `undo` there says so, and its replies never promise one. The writer's
-  ⌘Z on the wall takes any change back; to take one back yourself, make the
-  opposite change — and "undo that scene" from a writer, when other changes
-  they want have landed since, is `delete_note` or `set_aside`, never a walk
-  back through the stack.
+  write and no once-a-session advice. **Undo works through that door too:**
+  your session's last ten changes are kept on the writer's own account for a
+  day, and `undo` takes them back newest first, refusing when the wall has
+  changed since so nobody's work is trampled. `undo` with `preview: true`
+  says what it would take back, and whether it still can, and takes nothing —
+  use it before an undo you are not sure of. Redo is not kept there. A client
+  that sends no session has no trail, and `undo` says so. The writer's ⌘Z on
+  the wall takes any change back at every door. And "undo that scene" from a
+  writer, when other changes they want have landed since, is `delete_note`
+  or `set_aside`, never a walk back through the stack.
 - **What the change did to the story's shape** rides the same tail, when it
   did anything: after `set_order`, `move_scene`, `set_aside`, `delete_note`,
   `choose_version` or a scene wired in with `after`, the reply says which

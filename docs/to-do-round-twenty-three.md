@@ -15,7 +15,7 @@ kernel; **test**, and look at it in the app when a person can see it.
 Status marks: `[ ]` open · `[~]` planned and asked, waiting on a word ·
 `[x]` built and tested.
 
-**Where it stands (2026-09-21):** #142 is merged and released as 0.1.48; N1 to N7 are built. What is left is X1 to X4. Before that:
+**Where it stands (2026-09-21):** everything on this list that was to be built is built: N1 to N7 (0.1.49) and X1 to X4. What is left is what was left on purpose (L1 to L3), and a blind round to measure X1. Before that:
 
 **Where it stood (2026-09-20, night):** thirty entries were fixed the night of the round and
 released as 0.1.47. The round's real finding — a writer's "I don't know" with
@@ -38,11 +38,8 @@ deleted, all in the session's memory; the first calls are `list_words`,
 `list_workflows`, `list_projects`, then the three reads. **N3** — the note
 also carries an open change line. **N4** — `src/board/shape.js`, clauses on
 the write's tail; a card the write itself appended is not "the ending
-moved"; "nothing runs from A to B now" when a run is emptied. **Not built
-from N4's plan:** the clause saying a version behind a card went with it
-when the card was reordered (entry 31) — the wall draws a version behind its
-sibling wherever that is, so nothing is wrong, only unsaid; it stays open
-as a small item. **N5** — the
+moved"; "nothing runs from A to B now" when a run is emptied. **Built the day after (with X3):** the clause saying a version behind a
+card went with it when the card changed its place in the order (entry 31). **N5** — the
 lead is "how long it is: about N pages. Say this one to the writer", in
 `read_wall`, `list_board` and `page_count`. **N6** — in `organizePoses`, so
 the wall's own Organize does it too. **N7** — the beat on an open card was
@@ -142,7 +139,35 @@ checked true by a test first.
 
 ## X. Next — each its own item, with its own asking
 
-- [ ] **X1 · A day-one page for someone holding a connector** (entries 1, 2,
+**All four built and tested 2026-09-21, on the owner's "build it all"** (697
+unit tests, e2e ten of ten), with the clause N4 had left unsaid. As built,
+and where it differs from what was planned below: **X1** — all three options
+in part: `llms.txt` is the calls and the rules (6 KB, from 10), the doors
+moved to `wiring.md`; `day-one.md` is the guide's day sections **cut from the
+guide by heading**, word for word, so the two cannot drift and a renamed
+heading fails the build (38 KB of 58 — two thirds, not the third hoped for:
+Cards alone is two hundred lines, and trimming it is a writing job of its
+own); and the day's rules ride the MCP handshake as the server's
+`instructions`, so a connector-holder needs no fetch. **Its test is a blind
+round's section 3.** **X2** — option (a) and (c) together: `undo` takes
+`preview`, at every door; through the hosted door a session's last ten
+changes are kept as whole walls in `public.agent_undo`, rows of the writer's
+own as `agent_sessions` is (migration `20260921090000`, applied), swept with
+the session after a day; undo compares a hash of the wall as the change left
+it, so it still refuses to trample; **redo is not kept there**, and says so;
+a client that sends no session gets the old honest "no trail". Not built:
+replies saying how many undo steps a compound write made — every tool's
+write is one step, and `preview` answers the question when it is asked.
+**X3** — the rule as written, applied to the blank list: a card the wall
+asks about ([nobody], [unplaced]) is listed where it is asked and only
+counted under blank ("1 more the wall asks about above"). A thread's loose
+end stays in the threads section as well as the question: one is the record,
+the other the asking. **X4** — as planned: the file goes with the project's
+files (an `assets` row, kind `file`), the reply is a signed link good for an
+hour with the size and a sha256; `inline: true`, or anything wrong with the
+upload, and the JSON comes in the reply as before, saying why.
+
+- [x] **X1 · A day-one page for someone holding a connector** (entries 1, 2,
   6, 7; round twenty-two's 6, 8 and D5 — **the third asking**). `llms.txt` is
   half wiring a connector-holder is told to skip after reading it; the guide
   is one 52 KB file with a reading map that says "read a third", delivered
@@ -159,7 +184,7 @@ checked true by a test first.
   fetch tool paraphrased the rules (entry 7), and the one to try first.
   *Size:* a day, mostly writing, and a blind round to measure it: the
   report's section 3 is the test.
-- [ ] **X2 · An undo through the hosted door** (entries 43, 70, 71; the
+- [x] **X2 · An undo through the hosted door** (entries 43, 70, 71; the
   synthesis, section 5 — its third "if you fix only three"). Tonight the door
   says plainly it has none and `undo` says it is a stack. What is not built:
   an undo that works there, that can name what it would take back before it
@@ -173,7 +198,7 @@ checked true by a test first.
   `preview: true` on `undo` that says what it would take back, at every
   door, which is cheap and worth having whatever else is decided. Start with
   (c); ask about (a).
-- [ ] **X3 · Each undecided thing once in the reading** (entries 38, 63). One
+- [x] **X3 · Each undecided thing once in the reading** (entries 38, 63). One
   thing appears in up to three sections — a cast nobody has named under
   blank and again as a [nobody] question; a thread's loose start under
   threads and as [loose]; an open card's place inside the card and under "no
@@ -183,7 +208,7 @@ checked true by a test first.
   where it is asked, and nowhere else**, and the undecided view says "asked
   above" rather than repeating it. Wants a before-and-after of one real
   reading in the asking, since it changes the text every agent reads.
-- [ ] **X4 · The project's file through a connector, without retyping** (the
+- [x] **X4 · The project's file through a connector, without retyping** (the
   report's section 4; the synthesis, section 8). `export_project` on a door
   with no disk returns the file as JSON inside the reply, about 20 KB and
   escaped twice over; the agent retyped it by hand to keep a copy.

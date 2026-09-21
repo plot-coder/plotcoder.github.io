@@ -132,10 +132,16 @@ only when the server is started with `PLOTCODER_JSON=1`.
   scenes unwritten — so a quiet wall is never taken for a finished one. Its
   open section lists the project's open fields, one grouped line where the
   same words sit on three or more cards, then each card once with everything
-  open on it. Under a separate head, "not said yet", it lists what is simply
-  blank — no place, no when, no length, nobody in it. Blank is not open: open
-  is the writer's word, blank is nobody's, so never tell the writer they left
-  something open that they only have not said.
+  open on it. Under a separate head, "blank on the wall", it lists what has
+  no value and no words of the writer's beside it — no place, no when, no
+  length, nobody in it. Blank is a fact about the wall, not about the writer:
+  never tell the writer they left something open that they only have not said,
+  and never tell them they have not said something they told you. A place, a
+  when, a change line and a named person each have an open of their own; a
+  length, the acts, and who is in a scene when nobody is named do not yet, so
+  a writer's "I don't know" about those lives with you until they decide, and
+  a question the wall asks about one of them is `leave_question`'s, with their
+  reason.
 - `leave_question` / `ask_again` — the writer's word on a question: "leave
   it". Pass the kind as `read_wall` names it, and the ids when that kind is
   asked more than once. A leave is the open board's: to leave a question on

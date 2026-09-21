@@ -2025,7 +2025,7 @@ server.registerTool(
         ? ["open, by the writer's word (listed, not asked about while the words stand; each card once, with everything open on it; set_open with \"\" closes a card, the field's own tool with open \"\" a field; \"whether someone is in it\" is decided by cast, with their name without the question mark or left off; a card not in the film is marked):", ...undecided.open]
         : []),
       ...(undecided.blank.length
-        ? ["not said yet (blank, and nobody has said why — not the writer's word, so not open; the wall asks about some of these above, and says nothing of the rest):", ...undecided.blank]
+        ? ["blank on the wall (no value here, and no words of the writer's on the wall to say why. That is a fact about the wall, not about the writer: they may have told you, and a when, a length or who is in a scene with nobody named has no open of its own to hold it. The wall asks about some of these above, and says nothing of the rest):", ...undecided.blank]
         : []),
       ...(reading.aside.length
         ? ["set aside, not in the film (on the wall; out of the order, the count, the pages and every export; never asked; set_aside with aside false brings one back):", ...reading.aside.map((id) => `  - "${state.notes.find((note) => note.id === id)?.headline ?? id}"`)]

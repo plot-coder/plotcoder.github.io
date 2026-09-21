@@ -59,7 +59,7 @@ import { castLine, readMaybe } from "../src/board/castMaybe.js";
 import { segmentBrief, WORKFLOWS } from "../src/board/workflows.js";
 import { DEFAULT_REMINDERS, titleFromBody } from "../src/board/reminders.js";
 import crypto from "node:crypto";
-import { describeRuns, describeSetups, describeUndecided, readWall } from "../src/board/readWall.js";
+import { describeRuns, describeSetups, describeUndecided, openOutsideFilm, readWall } from "../src/board/readWall.js";
 import { compareStructure, describeComparison, MATCH_PAGES } from "../src/board/compareStructure.js";
 import { GAP, ROW_WIDTH, organizePoses } from "../src/board/organize.js";
 import { parseScene, sceneLineCount } from "../src/board/paginate.js";
@@ -621,7 +621,9 @@ function atAGlance(state, reading, project = null, boardMeta = null) {
     (boardMeta?.nameOpen ? 1 : 0);
   const unwritten = inFilm.filter((note) => !(note.text ?? "").trim()).length;
   const asked = reading.findings.length;
-  return `this wall: ${asked} question${asked === 1 ? "" : "s"} asked · ${open} thing${open === 1 ? "" : "s"} left open by the writer's word · ${unwritten} of ${inFilm.length} scene${inFilm.length === 1 ? "" : "s"} unwritten`;
+  // What is open on a card set aside or behind as a version is listed below, so it is said here: the head and the list must add up (round twenty-three, entry 37).
+  const outside = openOutsideFilm(state);
+  return `this wall: ${asked} question${asked === 1 ? "" : "s"} asked · ${open} thing${open === 1 ? "" : "s"} left open by the writer's word${outside ? ` (and ${outside} more on cards not in the film)` : ""} · ${unwritten} of ${inFilm.length} scene${inFilm.length === 1 ? "" : "s"} unwritten`;
 }
 
 /** A card's number as the reading prints it: the lock's when locked, else its place in story order. */

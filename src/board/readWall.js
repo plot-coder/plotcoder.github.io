@@ -614,6 +614,16 @@ function sameList(a, b) {
  * @param extras.project lines for fields the project holds ({ label, words })
  * @param extras.wouldAsk (openItem) => a suffix saying what a closed card would be asked
  */
+/** How many things are open, by the writer's word, on cards not in the film — set aside, or behind as a version: listed by describeUndecided, so counted where the list is counted (round twenty-three, entry 37). */
+export function openOutsideFilm(state) {
+  let count = 0;
+  for (const note of state.notes.filter((item) => !inStory(item))) {
+    for (const words of [note.open, note.changeOpen, note.locationOpen, note.whenOpen]) if ((words ?? "").trim()) count += 1;
+    if (maybeWords(note, state)) count += 1;
+  }
+  return count;
+}
+
 export function describeUndecided(state, reading, extras = {}) {
   const byId = new Map(state.notes.map((note) => [note.id, note]));
   const name = (id) => `"${byId.get(id)?.headline ?? id}"`;
@@ -656,7 +666,8 @@ export function describeUndecided(state, reading, extras = {}) {
   }
 
   // A card set aside keeps what was open on it, and that is where undecided things sit: listed after the film's, marked.
-  for (const note of state.notes.filter((item) => item.aside === true)) {
+  // A version behind another the same: what is undecided on it is in no other reading (round twenty-three, entry 40).
+  for (const note of state.notes.filter((item) => !inStory(item))) {
     const parts = [
       (note.open ?? "").trim() ? `open: ${note.open.trim()}` : "",
       (note.changeOpen ?? "").trim() ? `${FIELD.change}: ${note.changeOpen.trim()}` : "",
@@ -664,7 +675,7 @@ export function describeUndecided(state, reading, extras = {}) {
       (note.whenOpen ?? "").trim() ? `${FIELD.when}: ${note.whenOpen.trim()}` : "",
       maybeWords(note, state),
     ].filter(Boolean);
-    if (parts.length) open.push(`  - ${name(note.id)} (set aside) — ${parts.join("; ")}`);
+    if (parts.length) open.push(`  - ${name(note.id)} (${note.aside === true ? "set aside" : "a version behind, not chosen"}) — ${parts.join("; ")}`);
   }
 
   // Not said yet: blank, and nobody has said why.

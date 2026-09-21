@@ -976,6 +976,14 @@ async function keepSession() {
   }
 }
 
+/** A line quoted in a reply: whole when it fits, otherwise cut at a word with an ellipsis, never mid-word (round twenty-three, entry 60). */
+function clip(text, max) {
+  const line = String(text ?? "").trim();
+  if (line.length <= max) return line;
+  const cut = line.slice(0, max);
+  return `${cut.slice(0, Math.max(cut.lastIndexOf(" "), 1)).trimEnd()}…`;
+}
+
 function describeCommand(command) {
   switch (command.type) {
     case "create_note":
@@ -2700,7 +2708,7 @@ server.registerTool(
       const done = await commit({ type: "set_text", id: note.id, text: paragraphs.join("\n\n") });
       const linesNow = sceneLineCount(done.result.text);
       return ok(
-        `Inserted a paragraph ${args.after ? "after" : "before"} "${paragraphs[args.after ? at : at + 1].split("\n")[0].slice(0, 60)}" in "${done.result.headline}": "${args.insert.trim()}"${where(done.live)}. Now ${linesNow} line(s) as they print (was ${linesWere}; blank lines and wrapped lines count), measured at ${formatPages(noteEighths(done.result))} of a page${cameraReply(done.result.text)}.${revisionMark(done.state, done.result.id)}${cueReport(done.state, done.result.text)}`,
+        `Inserted a paragraph ${args.after ? "after" : "before"} "${clip(paragraphs[args.after ? at : at + 1].split("\n")[0], 90)}" in "${done.result.headline}": "${args.insert.trim()}"${where(done.live)}. Now ${linesNow} line(s) as they print (was ${linesWere}; blank lines and wrapped lines count), measured at ${formatPages(noteEighths(done.result))} of a page${cameraReply(done.result.text)}.${revisionMark(done.state, done.result.id)}${cueReport(done.state, done.result.text)}`,
         { ...done.result, eighths: noteEighths(done.result), measured: true },
       );
     }

@@ -56,6 +56,7 @@ into a story (Robert, 2026-09-17).
 | Twenty-one | The published package, the same notes, the open place and title in hand, the tie rule in story order | "Plot 14" (`round-seventeen-idea.md`) | Told "leave it open" of the title and the places: both left open through the fields' own `open`; the key on a taken fold stayed a thread, the bucket on a free fold made the fold and the arrow; the title decided, the first morning written, the length, what a writer would ask next | 42 (`round-twenty-one-report.md`); 8 fixed the same morning; a target, acts and lengths cannot be open |
 | Twenty-two | The hosted door's name, `https://mcp.plotcoder.com`, at 0.1.42, on new notes with two scenes the writer has two ways | "The Last Bus" (`round-twenty-two-idea.md`) | The add-connector screen says OAuth is detected on a door with none; told "keep both", `set_alternative` reached unprompted for both scenes; "keep the other" has no home — a kept card is back in the film; the keys' tie folded, named and drew in one call, and would not run through a version; the camera mark read as a mark; the tail never quoted, because the hosted door is a server per request | 95 (`round-twenty-two-report.md`); fixed the same night; a card on the wall and not in the film, and the all-or-nothing open card, are Robert's to draw |
 | Twenty-three | The desktop connector alone, to `https://mcp.plotcoder.com` at 0.1.46, a session behind the door | "The Tuner" (`round-twenty-three-idea.md`) | In from the first message with nothing else wired; `set_aside`, the change line's own open, "a feature", a person's open line and `Name?` all reached unprompted; the order as one `set_order`; a version stepping forward took the thread, the fold and the arrow; the connector sends the session id back and advice was said once — and the counting tail never appeared, because the on-ramp's first calls include a reading | 72 (`round-twenty-three-report.md`); 30 fixed the same night; **a writer's "I don't know" has no home for a cast nobody can name, a film-wide when, a length, the acts** — F8's third asking, to draw |
+| Twenty-four | The desktop connector alone, at 0.1.50: what the handshake's instructions teach before anything is read, the cast's own open, a line about the whole film, proposed turns, cards born as versions and set aside, the counting tail, an undo through the door | "Doyle's" (`round-twenty-four-idea.md`) | Not yet run | — |
 
 ## What the rounds keep finding
 
@@ -122,23 +123,33 @@ directions phase. Each round's findings are itemised in `REQUIREMENTS.md`,
 - `round-twenty-report.md` — the agent's report from round twenty,
   verbatim, under a head saying what was fixed from it the same morning and
   what waits.
-- `round-twenty-two-report.md` — **the open queue.** The agent's report from
-  round twenty-two, verbatim, under a head saying what the round measured,
-  what was fixed from it the same night, and what waits for Robert's word.
-  The next session on the agent surface starts here.
-- `prompt.md` — round twenty-two, as it ran (2026-09-20): a new page of notes, "The
-  Last Bus" (`round-twenty-two-idea.md`), through the hosted door's name
-  `https://mcp.plotcoder.com` wired as a desktop-app connector, against
-  0.1.42 with Robert's seven calls in it. On the Add custom connector
-  screen choose **No sign-in** before adding the header: the app reads the
-  door's 401 as OAuth and preselects "Sign in now". It measures the wiring, whether a
-  stranger holds a scene two ways through `set_alternative`, the fold named
-  in one call, the camera marks read as marks, and the tail before and after
-  the first reading. The writer's private answers sit above the divider. Its
-  first step wires the name. Paste everything below its divider.
+- `round-twenty-three-report.md` — **the open queue.** The agent's report
+  from round twenty-three, verbatim, under a head saying what the round
+  measured, what was fixed from it and what was decided against. The next
+  session on the agent surface starts here.
+- `prompt.md` — round twenty-four, ready to run (written 2026-09-21): a
+  third page of notes, "Doyle's" (`round-twenty-four-idea.md`), through the
+  desktop connector alone against 0.1.50. It measures what the agent knows
+  from the handshake before it reads a word, the cast's own open, a line
+  about the whole film, proposed turns, cards born as a version and born
+  set aside, the counting tail after the first reading of the agent's own
+  wall, and an undo through the hosted door. The writer's private answers
+  sit above the divider. Paste everything below its divider.
+- `round-twenty-four-idea.md` — "Doyle's", the notes: six scenes the writer
+  knows, one two ways, one cut and kept, one known only to be last, a room
+  nobody can name, a when undecided for the whole film, a sign that should
+  pay off. Embedded in the current prompt.
+- `round-twenty-three-prompt.md` — round twenty-three's own instructions, as
+  they ran, without their copy of the notes.
+- `round-twenty-three-idea.md` — "The Tuner", the notes round twenty-three
+  ran on.
+- `round-twenty-two-report.md` — the agent's report from round twenty-two,
+  verbatim, under a head saying what was fixed from it the same night.
+- `round-twenty-two-prompt.md` — round twenty-two's own instructions, as
+  they ran.
 - `round-twenty-two-idea.md` — "The Last Bus", the notes: seven scenes the
   writer knows, two of them two ways, a target not chosen, three things that
-  should pay off. Embedded in the current prompt.
+  should pay off.
 - `round-twenty-one-prompt.md` — round twenty-one's own instructions, as
   they ran, without their copy of the notes.
 - `round-twenty-prompt.md` — round twenty's own instructions, as they ran,
@@ -195,7 +206,8 @@ twelve fed the agent a finished story and the app is for making one from
 an idea. Rounds seventeen to twenty-one ran the same notes so the walls
 were comparable; round twenty-two starts a second page of notes, with a
 scene the writer has two ways, because the findings on the first had
-become repeats.
+become repeats. Twenty-three and twenty-four each take a new page again:
+each is written around what the round before could not put anywhere.
 
 **What a round leaves behind, and what it does not.** Keep the report, whole
 and unedited: it is cheap, and it is the only record not written by whoever

@@ -11,3 +11,7 @@ dist
 test-results/
 playwright-report/
 blob-report/
+
+# The Supabase CLI's link to the project, and a machine's own Claude permissions.
+supabase/.temp/
+.claude/settings.local.json

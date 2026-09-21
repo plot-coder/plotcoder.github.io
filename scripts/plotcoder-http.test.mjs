@@ -61,6 +61,9 @@ describe("the hosted door", () => {
     const init = await rpc("initialize", { protocolVersion: "2024-11-05", capabilities: {}, clientInfo: { name: "test", version: "0" } });
     expect(init.status).toBe(200);
     expect(init.body.result.serverInfo.name).toBe("plotcoder-board");
+    // The day's rules ride the handshake, so a connector-holder has them with nothing to fetch (round twenty-three, entries 1, 2, 7).
+    expect(init.body.result.instructions).toContain("list_words, list_workflows, list_projects");
+    expect(init.body.result.instructions).toContain("https://plotcoder.com/day-one.md");
     // The door names the release it runs, not a constant.
     expect(init.body.result.serverInfo.version).toBe(JSON.parse(fs.readFileSync(new URL("../package.json", import.meta.url), "utf8")).version);
     const listed = await rpc("tools/list", {}, 2);
@@ -111,7 +114,21 @@ describe("a session through the hosted door", () => {
     let root;
     const rows = new Map();
     const saves = [];
+    const trails = new Map();
+    let seq = 0;
     const store = {
+      pushUndo: async (id, step) => {
+        trails.set(id, [...(trails.get(id) ?? []), { ...JSON.parse(JSON.stringify(step)), seq: (seq += 1) }].slice(-10));
+        return true;
+      },
+      peekUndo: async (id) => {
+        const steps = trails.get(id) ?? [];
+        return steps.length ? { ...steps[steps.length - 1], steps: steps.length } : null;
+      },
+      popUndo: async (id, which) => {
+        trails.set(id, (trails.get(id) ?? []).filter((step) => step.seq !== which));
+        return true;
+      },
       load: async (id) => (rows.has(id) ? { memory: rows.get(id), fresh: false } : { memory: emptyMemory(), fresh: true }),
       save: async (id, memory, fresh) => {
         saves.push({ id, fresh });
@@ -215,8 +232,33 @@ describe("a session through the hosted door", () => {
       expect(undo).toContain("It is a stack, newest first");
     });
 
-    it("says undo keeps no trail through this door, rather than that nothing was changed", async () => {
-      const reply = await request("undo");
+    it("takes back this session's own change from one request to the next, says first what it would take, and never another session's (the working list's X2)", async () => {
+      const session = "7c8d9e0f-2a3b-4c4d-8e5f-6a7b8c9d0e1f";
+      const made = await request("create_note", { headline: "A scene to take back", change: "Something.", x: 7000, y: 2000 }, { session });
+      const id = made.match(/Created card ([0-9a-f-]{36})/)?.[1];
+      const preview = await request("undo", { preview: true }, { session });
+      expect(preview).toContain('undo would take back: create_note "A scene to take back"');
+      expect(preview).toContain("nothing was taken back now");
+      // Another session has no such step, and takes nothing of this one's.
+      expect(await request("undo", {}, { session: "8d9e0f1a-3b4c-4d5e-9f6a-7b8c9d0e1f2a" })).toContain("Nothing of this session's to undo");
+      const undone = await request("undo", {}, { session });
+      expect(undone).toContain('Undid create_note "A scene to take back"');
+      expect(await request("delete_note", { id }, { session })).toContain("No card");
+      // The delete was refused, so the trail is empty again.
+      expect(await request("undo", {}, { session })).toContain("Nothing of this session's to undo");
+    });
+
+    it("refuses to trample a wall that changed since, and says so in the preview", async () => {
+      const session = "9e0f1a2b-4c5d-4e6f-8a7b-8c9d0e1f2a3b";
+      await request("create_note", { headline: "Mine", change: "Something.", x: 7600, y: 2000 }, { session });
+      // Someone else changes the wall: another session, here.
+      await request("create_note", { headline: "Theirs", change: "Something.", x: 8200, y: 2000 }, { session: "0f1a2b3c-5d6e-4f7a-9b8c-9d0e1f2a3b4c" });
+      expect(await request("undo", { preview: true }, { session })).toContain("the board has changed since");
+      expect(await request("undo", {}, { session })).toContain("Not undone: the board has changed since");
+    });
+
+    it("says undo keeps no trail through this door when the client sent no session, rather than that nothing was changed", async () => {
+      const reply = await request("undo", {}, { session: null });
       expect(reply).toContain("keeps no trail");
       expect(reply).not.toContain("Nothing of mine to undo");
     });

@@ -10,7 +10,7 @@ done and merged, what is left, and the order I would take it in.
 
 ## Next, in order (2026-09-20, night, after round twenty-three)
 
-**2026-09-21:** N1 to N7 of the working list are built (689 unit tests); what is left of round twenty-three is X1 to X4, each with its own asking — X1, a day-one page for someone holding a connector, is a third asking and goes first.
+**2026-09-21:** the whole of round twenty-three's working list is built — N1 to N7, then X1 to X4 on the owner's "build it all" (697 unit tests). **What is next is round twenty-four**, which should measure what no test can: whether a connector-holder reads less and knows more (X1: the handshake's instructions, `day-one.md`, the doors off the on-ramp), whether `undo` through the door is reached for and trusted (X2), and the four homes for "I don't know" (R69, R70, R71, and the checklist) on a new page of notes. Left on purpose: L1 to L3 of the working list. Carried: C1's OAuth proposal, R64's weekly agent.
 
 **The working list is `docs/to-do-round-twenty-three.md`:** every one of the round's seventy-two entries accounted for, and what is left sorted — **seven items now (N1 to N7), one small release after #142 lands; four next (X1 to X4), each with its own asking; three left until a second round asks; the rest decided against, with the reason.** N1 waits on a yes: it changes what "the session's first reading" means.
 

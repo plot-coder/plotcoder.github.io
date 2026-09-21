@@ -703,10 +703,24 @@ export function describeUndecided(state, reading, extras = {}) {
   const noWhen = cards.filter((note) => !(note.when ?? "").trim() && !(note.whenOpen ?? "").trim());
   const unsized = cards.filter((note) => note.lengthEighths === null && !(note.text ?? "").trim());
   const nobody = (state.characters ?? []).length ? cards.filter((note) => !(note.characterIds ?? []).length && !(note.maybeCharacterIds ?? []).length && !(note.castOpen ?? "").trim()) : [];
-  if (noPlace.length) blank.push(`  - no place: ${list(noPlace)}`);
-  if (noWhen.length) blank.push(`  - no when: ${list(noWhen)}`);
-  if (unsized.length) blank.push(`  - no length (read as a page each): ${list(unsized)}`);
-  if (nobody.length) blank.push(`  - nobody in it: ${list(nobody)}`);
+  // Each undecided thing once (round twenty-three, entries 38, 63): what the wall asks about is listed where it is
+  // asked — with its question, its ids and leave_question — and not again here. This head is for what is blank and
+  // NOT asked; a count says how many more were, so the numbers still add up.
+  const askedOf = (kind) => new Set((reading.findings ?? []).filter((finding) => finding.kind === kind).flatMap((finding) => finding.ids));
+  const split = (notes, kind) => {
+    const asked = askedOf(kind);
+    return { quiet: notes.filter((note) => !asked.has(note.id)), asked: notes.filter((note) => asked.has(note.id)).length };
+  };
+  const line = (label, notes, kind) => {
+    if (!notes.length) return;
+    const { quiet, asked } = kind ? split(notes, kind) : { quiet: notes, asked: 0 };
+    const more = asked ? `${quiet.length ? "; and " : ""}${asked} more the wall asks about above` : "";
+    if (quiet.length || asked) blank.push(`  - ${label}: ${quiet.length ? list(quiet) : ""}${more}`);
+  };
+  line("no place", noPlace, "unplaced");
+  line("no when", noWhen, null);
+  line("no length (read as a page each)", unsized, null);
+  line("nobody in it", nobody, "nobody");
   return { open, blank };
 }
 

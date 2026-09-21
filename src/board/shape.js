@@ -77,6 +77,12 @@ export function shapeNote(before, after, { added = null } = {}) {
   // A card the write itself made and appended moves the ending by definition: not news.
   const madeNow = lastNow && !before.notes.some((note) => note.id === lastNow);
   if (lastNow && lastWas && lastNow !== lastWas && lastNow !== added && !madeNow) lines.push(`the last card of the story is now ${quote(after, lastNow)}${after.notes.some((note) => note.id === lastWas) ? ` (it was ${quote(before, lastWas)})` : ""}`);
+  // A version behind a card that changed its place in the order goes with it: the wall draws it behind its sibling
+  // wherever that is. Nothing is wrong, and nothing said it (round twenty-three, entry 31).
+  const placeWas = new Map(was.order.map((id, index) => [id, index]));
+  const moved = new Set(now.order.filter((id, index) => placeWas.has(id) && placeWas.get(id) !== index));
+  const carried = after.notes.filter((note) => note.alternativeOf && moved.has(note.alternativeOf));
+  if (carried.length) lines.push(`${carried.map((note) => `the version behind ${quote(after, note.alternativeOf)} went with it`).join(", ")}`);
   const astray = outOfOrder(after);
   if (astray > outOfOrder(before)) lines.push(`${astray} card${astray === 1 ? "" : "s"} now sit${astray === 1 ? "s" : ""} out of the story's order on the wall (the order is the arrows; organize lays the cards along them when the writer wants it)`);
   return lines;

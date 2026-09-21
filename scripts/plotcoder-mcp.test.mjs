@@ -2293,6 +2293,10 @@ describe("after the blind run", () => {
       const description = tools.find((tool) => tool.name === "export_project").description;
       expect(description).toContain("This door has no disk");
       expect(description).not.toMatch(/which is\s+—/);
+      // The file is a link, not twenty kilobytes to retype (round twenty-three); with no account behind the door it still comes inline.
+      expect(description).toContain("the reply is a link to it, good for an hour");
+      const inline = await hosted.callTool("export_project");
+      expect(inline).toContain("The JSON below is the file");
     } finally {
       hosted.stop();
       fs.rmSync(hostedRoot, { recursive: true, force: true });

@@ -55,6 +55,7 @@ import { REVISION_COLORS, revisionMarks, sceneNumbers } from "../src/board/numbe
 import { sceneHeading, standInFor } from "../src/board/fountain.js";
 import { describePresence, presenceTail } from "../src/board/presence.js";
 import { accountSessionStore, isSessionId, normalizeMemory } from "../src/board/agentSession.js";
+import { agentsInstructions } from "../src/board/agents.js";
 import { castLine, readMaybe } from "../src/board/castMaybe.js";
 import { shapeNote } from "../src/board/shape.js";
 import { segmentBrief, WORKFLOWS } from "../src/board/workflows.js";
@@ -987,9 +988,28 @@ async function recallSession() {
   }
 }
 
+/** Steps this request made, waiting to be kept on the session's trail once the tool has answered (the working list's X2). */
+const undoQueue = [];
+const wallHash = (state) => crypto.createHash("sha256").update(canon(state)).digest("hex");
+function queueUndo(before, after, what, boardId) {
+  if (!hosted()) return;
+  undoQueue.push({ what, before, afterHash: wallHash(after), boardId: boardId ?? "", projectId: accountDoor?.projectId ?? "" });
+}
+/** Whether an undo of this session's own works through this door: everywhere but a hosted door with no session, or a store that keeps no trail. */
+function undoKeptHere() {
+  if (!hosted()) return true;
+  if (sessionTried) return Boolean(sessionStore?.peekUndo);
+  return isSessionId(env.PLOTCODER_SESSION_ID ?? "");
+}
+
 async function keepSession() {
   if (!sessionStore) return;
   try {
+    // The trail first: a step the writer may want back matters more than which advice was said.
+    while (undoQueue.length) {
+      const step = undoQueue.shift();
+      if (sessionStore.pushUndo) await sessionStore.pushUndo(env.PLOTCODER_SESSION_ID, step);
+    }
     const memory = sessionMemory();
     const now = JSON.stringify(memory);
     // A session that has nothing to remember yet needs no row.
@@ -1056,6 +1076,7 @@ async function commit(command) {
 
   const live = await writeBoard(next, rev, base, boardId, "exact");
   trail.push({ before: state, after: canon(next), what: describeCommand(command) });
+  queueUndo(state, next, describeCommand(command), boardId);
   sinceRead.push(describeCommand(command));
   noteChange(state, next, boardId);
   if (trail.length > TRAIL_CAP) trail.shift();
@@ -1088,6 +1109,7 @@ async function commitAll(what, build) {
   if (!changed) return { state: current, changed: false, value, live: base !== null };
   const live = await writeBoard(current, rev, base, boardId, "exact");
   trail.push({ before: state, after: canon(current), what });
+  queueUndo(state, current, what, boardId);
   sinceRead.push(what);
   noteChange(state, current, boardId);
   if (trail.length > TRAIL_CAP) trail.shift();
@@ -1525,10 +1547,12 @@ const TEXT_ONLY = env.PLOTCODER_JSON !== "1";
  * every door.
  */
 /** undo's and redo's own descriptions through the hosted door: said first and plainly, so an agent never has to risk the writer's work to find out (round twenty-three, entries 70, 71). */
-const NO_UNDO_HERE = "NOT THROUGH THIS DOOR: the hosted door is a fresh server on every call and keeps no trail, so this tool can take nothing back here and says so. The writer's ⌘Z on the wall takes any change back; to take one back yourself, make the opposite change (delete_note, set_aside, update_note with the old words). Elsewhere: ";
+const NO_UNDO_HERE = "NOT THROUGH THIS DOOR: your client sent no session, and without one the hosted door is a fresh server on every call and keeps no trail, so this tool can take nothing back here and says so. The writer's ⌘Z on the wall takes any change back; to take one back yourself, make the opposite change (delete_note, set_aside, update_note with the old words). Elsewhere: ";
+const UNDO_THROUGH_THE_DOOR = "Through the hosted door: this session's last ten changes are kept on the writer's own account for a day, and undo takes them back newest first. ";
+const NO_REDO_HERE = "NOT THROUGH THIS DOOR: the hosted door keeps what undo needs and not what redo needs; make the change again. Elsewhere: ";
 
 function undoAsThisDoorHasIt(text) {
-  if (!hosted()) return text;
+  if (undoKeptHere()) return text;
   return text
     .replace(/\bundo brings all of it back\b/g, "the writer's ⌘Z on the wall brings all of it back (this door keeps no undo of its own)")
     .replace(/\b[Oo]ne undo takes (it all|the whole move) back\b/g, (_, what) => `one ⌘Z on the writer's wall takes ${what} back (this door keeps no undo of its own)`)
@@ -1556,7 +1580,9 @@ function packageVersion() {
   }
 }
 
-const server = new McpServer({ name: "plotcoder-board", version: packageVersion() });
+// The day's rules ride the handshake (round twenty-three, entries 1, 2, 7): an agent holding a connector has them
+// with nothing to fetch, and word for word — its own fetch tool paraphrased the on-ramp.
+const server = new McpServer({ name: "plotcoder-board", version: packageVersion() }, { instructions: agentsInstructions() });
 
 // A door's answer is a reply, not an error: a shut account door, or an
 // account with no project yet, says so in words from every tool alike.
@@ -1569,7 +1595,7 @@ const registerTool = server.registerTool.bind(server);
 let lane = Promise.resolve();
 server.registerTool = (name, config, handler) =>
   // A tool's description promises what its reply does, so it says undo as this door has it too.
-  registerTool(name, { ...config, description: `${hosted() && (name === "undo" || name === "redo") ? NO_UNDO_HERE : ""}${undoAsThisDoorHasIt(config.description ?? "")}` }, (...args) => {
+  registerTool(name, { ...config, description: `${hosted() && name === "redo" ? NO_REDO_HERE : hosted() && name === "undo" ? (undoKeptHere() ? UNDO_THROUGH_THE_DOOR : NO_UNDO_HERE) : ""}${undoAsThisDoorHasIt(config.description ?? "")}` }, (...args) => {
     const turn = lane.then(async () => {
       await recallSession();
       try {
@@ -3293,22 +3319,40 @@ server.registerTool(
   {
     title: "Undo my last change",
     description:
-      "Take back the LAST change this server made, restoring the board to what it was before that call. It is a stack, newest first, with no way to pick a change: when the writer says \"undo that scene\" and changes they want have landed since — a scene written, a line added — undo would take those first, so use delete_note or set_aside on the card instead. Refuses if the board has changed since — a person moved on, or another agent did — so it never tramples work; the person can always undo anything from the wall with ⌘Z. Call it again to go back further.",
-    inputSchema: {},
+      "Take back the LAST change this server made, restoring the board to what it was before that call. It is a stack, newest first, with no way to pick a change: when the writer says \"undo that scene\" and changes they want have landed since — a scene written, a line added — undo would take those first, so use delete_note or set_aside on the card instead. preview: true says what it would take back, and whether it still can, without taking it. Refuses if the board has changed since — a person moved on, or another agent did — so it never tramples work; the person can always undo anything from the wall with ⌘Z. Call it again to go back further.",
+    inputSchema: { preview: z.boolean().optional().describe("Say what undo would take back, and whether the board is still as that change left it, and take nothing back.") },
   },
-  async () => {
-    const last = trail[trail.length - 1];
-    // The hosted door's session carries what was read and said, not the trail, which holds whole walls: "nothing of mine" there would be false after a build.
+  async (args) => {
+    let last = trail[trail.length - 1];
+    // Through the hosted door the trail is the session's, kept on the writer's account (the working list's X2).
+    let kept = null;
+    if (!last && hosted() && sessionStore?.peekUndo) {
+      kept = await sessionStore.peekUndo(env.PLOTCODER_SESSION_ID);
+      if (kept) last = { before: normalizeState(kept.before), afterHash: kept.afterHash, what: kept.what, boardId: kept.boardId };
+    }
+    if (!last && hosted() && sessionStore?.peekUndo) return ok("Nothing of this session's to undo: no change of yours is on its trail. The writer can take any change back from the wall with ⌘Z.");
+    // With no session the door keeps nothing: "nothing of mine" there would be false after a build.
     if (!last && hosted()) return ok("Nothing to undo through this door: it is a fresh server on every call and keeps no trail of its changes. The writer can take any change back from the wall with ⌘Z; to take one back yourself, make the opposite change.");
     if (!last) return ok(oneCall() ? "Nothing to undo here: through plotcoder-call every call is a fresh server, so undo works only from an MCP session. The writer can take any change back from the wall with ⌘Z." : "Nothing of mine to undo in this session.");
-    const { state, rev, base } = await readBoard();
-    if (canon(state) !== last.after) {
+    const { state, rev, base, boardId: openBoardId } = await readBoard();
+    const steps = kept ? kept.steps : trail.length;
+    if (kept && last.boardId && openBoardId && last.boardId !== openBoardId) {
+      return ok(`Not undone: my last change, ${last.what}, was on another board. open_board there first; undo takes a change back only on the board it was made on.`);
+    }
+    const unchanged = last.afterHash ? wallHash(state) === last.afterHash : canon(state) === last.after;
+    if (args?.preview) {
+      return ok(`undo would take back: ${last.what}${unchanged ? "" : " — but the board has changed since, so it would refuse rather than trample that"}. ${steps} step${steps === 1 ? "" : "s"} of this session's can be taken back, newest first; nothing was taken back now.`);
+    }
+    if (!unchanged) {
       return ok(
         `Not undone: the board has changed since my ${last.what}. Undoing now would trample that. Ask the person to undo from the wall if they want it back.`,
       );
     }
-    trail.pop();
-    undone.push(last);
+    if (kept) await sessionStore.popUndo(env.PLOTCODER_SESSION_ID, kept.seq);
+    else {
+      trail.pop();
+      undone.push(last);
+    }
     const { boardId } = await readBoard();
     const live = await writeBoard(last.before, rev, base, boardId, "exact");
     const orderLine = /^(move_scene|organize)/.test(last.what) ? ` Story order now: ${storyOrder(last.before).map((note, index) => `${index + 1}. ${note.headline}`).join(", ")}.` : "";
@@ -3336,7 +3380,8 @@ server.registerTool(
       lockLine = moved.length ? ` Under the lock, ${moved.join("; ")}.` : "";
     }
     // Whose trail the count is (entry 47): this session's, across the boards.
-    const more = `${trail.length} more of this session's changes can be undone, across the boards — each only on the board it was made on, and only while that board is as the change left it${trail.length >= TRAIL_CAP ? "; that is the most I keep, so the oldest have gone" : ""}`;
+    const left = kept ? Math.max(kept.steps - 1, 0) : trail.length;
+    const more = `${left} more of this session's changes can be undone, across the boards — each only on the board it was made on, and only while that board is as the change left it${trail.length >= TRAIL_CAP ? "; that is the most I keep, so the oldest have gone" : ""}`;
     return ok(`Undid ${last.what}${where(live)}.${orderLine}${countLine}${lockLine} ${more}. list_board has the board.`, { undid: last.what, notes: last.before.notes.length, arrows: last.before.arrows.length, groups: last.before.groups.length });
   },
 );
@@ -4790,11 +4835,11 @@ server.registerTool(
   {
     title: "Save the project as a file",
     description:
-      `The project the server is working, as the file Save project writes and Open project takes: the record, every board with its cards, the reminders and the writer's structures. ${hosted() ? "This door has no disk: call it without a path and the reply's JSON is the file, to write wherever you keep files." : `Pass path to write it (a .json) — an absolute path, since a relative one resolves from the folder the server was started in, which is ${process.cwd()} — this session's own folder when the server was started from it, and somewhere else when it was not; without a path, the reply's JSON is the file.`} Pictures and takes on the account are not in the file. Works through every door.`,
-    inputSchema: { path: z.string().optional() },
+      `The project the server is working, as the file Save project writes and Open project takes: the record, every board with its cards, the reminders and the writer's structures. ${hosted() ? "This door has no disk, so the file is kept with the project's files on the account and the reply is a link to it, good for an hour, with its size and checksum — nothing to retype; list_files shows it and remove_file takes it off. Pass inline: true to have the JSON in the reply instead." : `Pass path to write it (a .json) — an absolute path, since a relative one resolves from the folder the server was started in, which is ${process.cwd()} — this session's own folder when the server was started from it, and somewhere else when it was not; without a path, the reply's JSON is the file.`} Pictures and takes on the account are not in the file. Works through every door.`,
+    inputSchema: { path: z.string().optional(), inline: z.boolean().optional().describe("The JSON in the reply itself, rather than a link to the file. Through a door with a disk, no path already means this.") },
   },
   async (args) => {
-    if (args.path && hosted()) return ok("The hosted door has no disk to write to: call export_project without a path and the reply's JSON is the file.");
+    if (args.path && hosted()) return ok("The hosted door has no disk to write to: call export_project without a path and the reply is a link to the file, kept with the project's files; inline: true puts the JSON in the reply.");
     const { project, boards, reminders } = await readProject();
     const file = toProjectFile({ project, boards, reminders: reminders ?? null });
     const cards = countCards(boards);
@@ -4806,7 +4851,36 @@ server.registerTool(
       fs.writeFileSync(args.path, JSON.stringify(file, null, 2));
       return ok(`Saved ${what}. Written to ${path.resolve(args.path)}: Open project in the app takes it, import_project brings it onto an account.`, { path: path.resolve(args.path), boards: project.boards.length, cards });
     }
+    // Through the hosted door the file goes with the project's files and the reply is a link (round twenty-three: the agent
+    // retyped twenty kilobytes of escaped JSON by hand to keep a copy). Anything wrong with that and the JSON comes inline, saying why.
+    let whyInline = "";
+    if (hosted() && !args.inline) {
+      const account = await findAccount();
+      if (account?.projectId) {
+        try {
+          const body = JSON.stringify(file, null, 2);
+          const bytes = Buffer.from(body, "utf8");
+          const safe = (project.name || "project").replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "") || "project";
+          const name = `${safe}-${new Date().toISOString().replace(/[:.]/g, "-")}.json`;
+          const storagePath = `${account.projectId}/file/${crypto.randomUUID()}-${name}`;
+          const up = await account.client.storage.from("projects").upload(storagePath, bytes, { contentType: "application/json", upsert: false });
+          if (up.error) throw new Error(up.error.message);
+          const row = await account.client.from("assets").insert({ project_id: account.projectId, kind: "file", subject: "", path: storagePath, name, size: bytes.length, content_type: "application/json", note: "export_project" }).select("id").maybeSingle();
+          if (row.error) {
+            await account.client.storage.from("projects").remove([storagePath]);
+            throw new Error(row.error.message);
+          }
+          const signed = await account.client.storage.from("projects").createSignedUrl(storagePath, 3600, { download: name });
+          if (signed.error || !signed.data?.signedUrl) throw new Error(signed.error?.message ?? "no link came back");
+          const sha = crypto.createHash("sha256").update(bytes).digest("hex");
+          return ok(`Saved ${what}. Kept with the project's files as ${name} (${bytes.length} bytes, sha256 ${sha}). A link to it, good for an hour: ${signed.data.signedUrl} — fetch it to keep a copy; nothing to retype. list_files shows it and remove_file takes it off; deleting the project takes it too, so fetch first when the copy is the point. Open project in the app takes the file, and import_project brings it onto an account.`, { id: row.data?.id, name, size: bytes.length, sha256: sha, url: signed.data.signedUrl });
+        } catch (error) {
+          whyInline = ` (The file could not be kept with the project's files — ${error instanceof Error ? error.message : String(error)} — so it is here instead.)`;
+        }
+      }
+    }
     // The file is the reply's payload, not a tail: it comes whether or not PLOTCODER_JSON is on (round twenty-two, entry 4).
+    if (whyInline) return { content: [{ type: "text", text: `The project as a file — ${what}.${whyInline} The JSON below is the file; write it to a .json for Open project or import_project.\n\n${JSON.stringify(file, null, 2)}` }] };
     return { content: [{ type: "text", text: `The project as a file — ${what}. The JSON below is the file; write it to a .json for Open project or import_project.\n\n${JSON.stringify(file, null, 2)}` }] };
   },
 );

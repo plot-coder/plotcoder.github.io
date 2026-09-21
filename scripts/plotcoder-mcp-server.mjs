@@ -1142,6 +1142,11 @@ let lastPresenceSaid = null;
 function accountTail() {
   const said = presenceTail(presentPeople(), lastPresenceSaid, hosted());
   lastPresenceSaid = said.key;
+  // Through the hosted door a write answers before presence arrives, so it claims nothing about who is watching; once a session it says whose question that is.
+  if (hosted() && presentPeople().length === 0) {
+    const advice = once("who-is-here", "this door answers before it can see who has a wall open: who_is_here says, and a write shows on an open wall the moment it lands");
+    return advice ? ` (saved to the account; ${advice})` : said.text;
+  }
   return said.text;
 }
 
@@ -1492,6 +1497,9 @@ const TEXT_ONLY = env.PLOTCODER_JSON !== "1";
  * (round twenty-three, entry 71). The writer's ⌘Z on the wall is true at
  * every door.
  */
+/** undo's and redo's own descriptions through the hosted door: said first and plainly, so an agent never has to risk the writer's work to find out (round twenty-three, entries 70, 71). */
+const NO_UNDO_HERE = "NOT THROUGH THIS DOOR: the hosted door is a fresh server on every call and keeps no trail, so this tool can take nothing back here and says so. The writer's ⌘Z on the wall takes any change back; to take one back yourself, make the opposite change (delete_note, set_aside, update_note with the old words). Elsewhere: ";
+
 function undoAsThisDoorHasIt(text) {
   if (!hosted()) return text;
   return text
@@ -1534,7 +1542,7 @@ const registerTool = server.registerTool.bind(server);
 let lane = Promise.resolve();
 server.registerTool = (name, config, handler) =>
   // A tool's description promises what its reply does, so it says undo as this door has it too.
-  registerTool(name, { ...config, description: undoAsThisDoorHasIt(config.description ?? "") }, (...args) => {
+  registerTool(name, { ...config, description: `${hosted() && (name === "undo" || name === "redo") ? NO_UNDO_HERE : ""}${undoAsThisDoorHasIt(config.description ?? "")}` }, (...args) => {
     const turn = lane.then(async () => {
       await recallSession();
       try {
@@ -3217,7 +3225,7 @@ server.registerTool(
   {
     title: "Undo my last change",
     description:
-      "Take back the last change this server made, restoring the board to what it was before that call. Refuses if the board has changed since — a person moved on, or another agent did — so it never tramples work; the person can always undo anything from the wall with ⌘Z. Call it again to go back further.",
+      "Take back the LAST change this server made, restoring the board to what it was before that call. It is a stack, newest first, with no way to pick a change: when the writer says \"undo that scene\" and changes they want have landed since — a scene written, a line added — undo would take those first, so use delete_note or set_aside on the card instead. Refuses if the board has changed since — a person moved on, or another agent did — so it never tramples work; the person can always undo anything from the wall with ⌘Z. Call it again to go back further.",
     inputSchema: {},
   },
   async () => {

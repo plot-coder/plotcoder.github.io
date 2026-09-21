@@ -269,7 +269,8 @@ describe("plotcoder MCP server", () => {
     const target = notes[0].id;
 
     const text = await client.callTool("set_rank", { ids: [target], rank: "beat" });
-    expect(text).toContain("are now beat");
+    // By name, not only by count (round twenty-three, entry 35).
+    expect(text).toContain(`1 card(s) are now beat: "${notes[0].headline}"`);
     expect(text).toContain("1 beats");
 
     const listed = await client.callTool("list_board");
@@ -1123,7 +1124,8 @@ describe("open fields (R61): the logline, the premise, a when and a board's name
     expect(paired).toContain('"Con dies" is now the other version of "They lose the plots"');
     const listed = await client.callTool("list_board");
     expect(listed).toContain('versions, not chosen');
-    expect(listed).toContain(`  - ${other.id} — "Con dies", a version of "They lose the plots"`);
+    // The version's own row says what is on it — rank, length, cast, place — as any card's does (round twenty-three, entries 21, 28).
+    expect(listed).toMatch(new RegExp(`  - ${other.id} \\[scene, [^\\]]+\\] — "Con dies" \\(\\w+\\), a version of "They lose the plots"`));
     expect(await client.callTool("read_wall")).toContain('  - "They lose the plots" or "Con dies"');
     expect(await client.callTool("set_alternative", { id: ending.id, of: other.id })).toContain("is itself a version");
     // Round twenty-two: what a version behind leaves open is said beside it (21); a thread will not run through it, and says why (58); a setup from it has no distance, never NaN (60).

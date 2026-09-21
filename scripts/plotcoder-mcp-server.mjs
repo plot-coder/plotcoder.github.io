@@ -1340,8 +1340,8 @@ function summarize(state) {
   const nameOf = new Map(state.characters.map((character) => [character.id, character.name]));
   // What lands here from the other boards' folds (R58), from the last project read.
   const paidByHere = lastHeld?.project ? landingsOn(lastHeld.project, { ...lastHeld.boards, [lastHeld.project.activeBoardId]: state }, lastHeld.project.activeBoardId).paid : [];
-  const notes = storyOrder(state)
-    .map((note) => {
+  // One row for any card — in the story, behind as a version, or set aside — so what is on a card can always be read back (round twenty-three, entries 21, 28).
+  const cardRow = (note) => {
       // "Tomás?" is someone who may or may not be in it, by the writer's word (H9).
       const cast = castLine(note.characterIds, note.maybeCharacterIds, state.characters);
       const who = cast ? `, cast: ${cast}` : "";
@@ -1363,8 +1363,8 @@ function summarize(state) {
       const sketch = isMeasured(note) && noteEighths(note) < (note.lengthEighths ?? DEFAULT_NOTE_EIGHTHS) ? " (a sketch: under the page it was read as)" : "";
       const pages = isMeasured(note) ? `${count} ${count === "1" ? "page" : "pages"}, written${sketch}${underneath}` : note.lengthEighths === null ? "about a page, unsized" : `${count} ${count === "1" ? "page" : "pages"}`;
       return `  - ${note.id} [${note.rank ?? "scene"}, ${pages}${who}${place}${when}${openWord}${plant}${pays}${revised}] — "${note.headline}" (${note.color}) at ${Math.round(note.x)},${Math.round(note.y)}`;
-    })
-    .join("\n");
+  };
+  const notes = storyOrder(state).map(cardRow).join("\n");
   const cast = state.characters
     .map((character) => {
       // Cards in the story; a version behind another is said apart, since it is not in the film until chosen (round twenty-two, entry 68).
@@ -1441,10 +1441,10 @@ function summarize(state) {
     "cards (in story order — the follows arrows over the rows; each with its id):",
     notes || "  (no cards)",
     ...(state.notes.some((note) => note.alternativeOf)
-      ? ["versions, not chosen (behind their front cards; out of the order, the count and the pages; choose_version decides):", ...state.notes.filter((note) => note.alternativeOf).map((note) => `  - ${note.id} — "${note.headline}", a version of "${state.notes.find((item) => item.id === note.alternativeOf)?.headline ?? note.alternativeOf}"`)]
+      ? ["versions, not chosen (behind their front cards; out of the order, the count and the pages; choose_version decides):", ...state.notes.filter((note) => note.alternativeOf).map((note) => `${cardRow(note).replace(/ at -?\d+,-?\d+$/, "")}, a version of "${state.notes.find((item) => item.id === note.alternativeOf)?.headline ?? note.alternativeOf}"`)]
       : []),
     ...(state.notes.some((note) => note.aside)
-      ? ["set aside (on the wall and not in the film: out of the order, the count, the pages and every export; set_aside with aside false brings one back):", ...state.notes.filter((note) => note.aside).map((note) => `  - ${note.id} — "${note.headline}"${note.change && note.change !== "What changes?" ? ` — ${note.change}` : ""} at ${Math.round(note.x)},${Math.round(note.y)}`)]
+      ? ["set aside (on the wall and not in the film: out of the order, the count, the pages and every export; set_aside with aside false brings one back):", ...state.notes.filter((note) => note.aside).map((note) => `${cardRow(note)}${note.change && note.change !== "What changes?" ? ` — ${note.change}` : ""}`)]
       : []),
     "rows on the wall (top to bottom, left to right; ★ a beat; (aside) a card set aside):",
     ...(rowLines.length ? rowLines : ["  (no cards)"]),
@@ -1583,7 +1583,8 @@ server.registerTool(
     });
     const { beats, scenes } = countRanks(state);
     return ok(
-      `${result?.length ?? 0} card(s) are now ${args.rank}${where(live)}. The board holds ${beats} beats and ${scenes} scenes. The rows are as they were.${once("rank-rows", " organize lays a row per beat, when the writer wants the wall laid out.")}`,
+      // By name, so a wrong reading of "strike 3" is caught at a glance (round twenty-three, entry 35).
+      `${result?.length ?? 0} card(s) are now ${args.rank}: ${(result ?? []).map((note) => `"${note.headline}"`).join(", ")}${where(live)}. The board holds ${beats} beats and ${scenes} scenes. The rows are as they were.${once("rank-rows", " organize lays a row per beat, when the writer wants the wall laid out.")}`,
       result,
     );
   },

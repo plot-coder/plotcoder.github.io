@@ -1200,6 +1200,8 @@ describe("open fields (R61): the logline, the premise, a when and a board's name
     const aside = await client.callTool("set_aside", { ids: ["They sit it out till morning"] });
     expect(aside).toContain('Set aside "They sit it out till morning"');
     expect(aside).toContain("2 follows arrows dropped, and the story closed over it");
+    // The closing arrow by its cards, not "the cards on either side" alone (round twenty-three, entry 49).
+    expect(aside).toContain('"The depot" → "The morning after"');
     const listed = await client.callTool("list_board");
     expect(listed).toContain("1 set aside, not in the film");
     expect(listed).toMatch(/set aside \(on the wall and not in the film[^\n]*\n  - [^\n]*"They sit it out till morning"/);

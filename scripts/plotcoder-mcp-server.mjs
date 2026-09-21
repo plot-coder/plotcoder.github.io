@@ -3288,12 +3288,16 @@ server.registerTool(
     if (refs.missing.length) return ok(`Nothing changed: not on the board — ${refs.missing.map((ref) => `"${ref}"`).join(", ")}. Call list_board for the ids or the exact headlines.`);
     const behind = refs.found.map((id) => current.notes.find((note) => note.id === id)).filter((note) => note?.alternativeOf);
     if (behind.length && args.aside !== false) return ok(`Nothing changed: ${behind.map((note) => `"${note.headline}"`).join(", ")} ${behind.length === 1 ? "is" : "are"} already out of the film, behind another card as its other version. choose_version with keep sets the one not chosen aside.`);
-    const { changed, result, live } = await commit({ type: "set_aside", ids: refs.found, aside: args.aside !== false });
+    const { changed, result, live, state: after } = await commit({ type: "set_aside", ids: refs.found, aside: args.aside !== false });
     if (!changed) return ok(`Nothing changed: ${args.aside === false ? "those cards are not set aside" : "those cards are already set aside"}.`);
+    // The arrows that closed the story over the cut, by their cards (round twenty-three, entry 49).
+    const had = new Set(current.arrows.map((arrow) => arrow.id));
+    const headlineOf = (id) => after.notes.find((note) => note.id === id)?.headline ?? id;
+    const closing = (after?.arrows ?? []).filter((arrow) => !had.has(arrow.id) && arrow.kind !== "setup").map((arrow) => `"${headlineOf(arrow.from)}" → "${headlineOf(arrow.to)}"`);
     const names = result.ids.map((id) => `"${current.notes.find((note) => note.id === id)?.headline ?? id}"`).join(", ");
     if (!result.aside) return ok(`Brought back ${names}${where(live)}: in the film again, as ${result.ids.length === 1 ? "a plain unwired card" : "plain unwired cards"} — in the count and the pages, and the wall will ask what comes before and after ${result.ids.length === 1 ? "it" : "them"}; create_arrow or move_scene says.`, result);
     return ok(
-      `Set aside ${names}${where(live)}: on the wall and not in the film — out of the order, the count, the pages and every export${result.arrowsDropped ? `; ${result.arrowsDropped} follows arrow${result.arrowsDropped === 1 ? "" : "s"} dropped${result.closedOver ? `, and the story closed over ${result.closedOver === 1 ? "it" : "them"} (${result.closedOver} arrow${result.closedOver === 1 ? "" : "s"} drawn between the cards on either side)` : ""}` : ""}. The reading lists ${result.ids.length === 1 ? "it" : "them"} under "set aside" and asks nothing; set_aside with aside false brings ${result.ids.length === 1 ? "it" : "them"} back.`,
+      `Set aside ${names}${where(live)}: on the wall and not in the film — out of the order, the count, the pages and every export${result.arrowsDropped ? `; ${result.arrowsDropped} follows arrow${result.arrowsDropped === 1 ? "" : "s"} dropped${result.closedOver ? `, and the story closed over ${result.closedOver === 1 ? "it" : "them"} (${result.closedOver} arrow${result.closedOver === 1 ? "" : "s"} drawn between the cards on either side${closing.length ? `: ${closing.join(", ")}` : ""})` : ""}` : ""}. The reading lists ${result.ids.length === 1 ? "it" : "them"} under "set aside" and asks nothing; set_aside with aside false brings ${result.ids.length === 1 ? "it" : "them"} back.`,
       result,
     );
   },

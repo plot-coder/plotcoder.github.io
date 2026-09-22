@@ -904,8 +904,16 @@ function noteChange(before, after, boardId = null) {
   const wasKeys = new Set(was.findings.map(findingKey));
   const nowKeys = new Set(now.findings.map(findingKey));
   const wasText = new Map(was.findings.map((finding) => [findingKey(finding), finding.text]));
+  // A question left in this change is said once, by the leave's own reply, not again under gone (pass 1a, entry 30);
+  // a left question the change made the wall ask again is named (entry 65), so the writer's reason can be given again.
+  const wasLeft = new Set(was.left.map(findingKey));
+  const nowLeft = new Set(now.left.map(findingKey));
+  const leftNow = new Set([...nowLeft].filter((key) => !wasLeft.has(key)));
+  const unleft = was.left.filter((finding) => !nowLeft.has(findingKey(finding)));
   lastChange = {
-    gone: was.findings.filter((finding) => !nowKeys.has(findingKey(finding))),
+    leftNow: leftNow.size,
+    unleft,
+    gone: was.findings.filter((finding) => !nowKeys.has(findingKey(finding)) && !leftNow.has(findingKey(finding))),
     came: now.findings.filter((finding) => !wasKeys.has(findingKey(finding))),
     // The same question, asked differently now: both ends open became one (round twenty-four, entry 32).
     // A sag whose pages moved with a measure is the same question with new numbers, not a new shape (pass 1a, entry 36): compare the words, not the figures.
@@ -933,7 +941,9 @@ function changeNote() {
   // The hosted door is one server per request: with no session to remember a
   // reading by it could only ever count, so there the tail quotes (round
   // twenty-two, entry 25).
-  if (!readOnce && remembers() && (change.gone.length || change.came.length)) {
+  if (change.leftNow && !change.gone.length && !change.came.length) {
+    parts.push(`the wall now asks ${change.asks} question${change.asks === 1 ? "" : "s"} (${change.leftNow} left, said above)`);
+  } else if (!readOnce && remembers() && (change.gone.length || change.came.length)) {
     parts.push(`the wall's questions have changed since your last read_wall: ${change.asks} now${change.came.length ? `, ${change.came.length} of them new` : ""} — read_wall lists them`);
   } else if (change.gone.length || change.came.length) {
     parts.push(
@@ -946,7 +956,7 @@ function changeNote() {
     parts.push(`the wall's questions unchanged (${change.asks})`);
   }
   parts.push(...(change.shape ?? []));
-  if (change.leftAfter !== change.leftBefore) parts.push(`left, for now: ${change.leftAfter} (was ${change.leftBefore})`);
+  if (change.leftAfter !== change.leftBefore) parts.push(`left, for now: ${change.leftAfter} (was ${change.leftBefore})${(change.unleft ?? []).length ? ` — no longer left, because the question would read differently now: ${change.unleft.map((finding) => `[${finding.kind}] ${finding.text.replace(/\.$/, "")}${finding.why ? ` (the writer's reason was "${finding.why}"; leave_question again if it still holds)` : ""}`).join("; ")}` : ""}`);
   // An open target is not 120: the tail says the pages and that the target is open, as the reading does (round twenty-two, entry 19).
   if (change.eighthsAfter !== change.eighthsBefore)
     parts.push(change.targetOpen ? `runtime now about ${formatPages(change.eighthsAfter)} pages, the target open` : `runtime now about ${formatPages(change.eighthsAfter)} of ${formatPages(change.target)} pages`);
@@ -1331,6 +1341,13 @@ function sketchLine(state) {
  * kinds of count and two targets, none labelled. The same block in list_board
  * and read_wall, so the two cannot tell it differently.
  */
+/** How much of the number is the default page (pass 1a, entry 29): said beside under or over, not left to "made of". */
+function unsizedWord(state) {
+  const cards = state.notes.filter((note) => inStory(note));
+  const unsized = cards.filter((note) => note.lengthEighths === null && !(note.text ?? "").trim()).length;
+  return unsized ? ` — ${unsized} of ${cards.length} cards unsized, read as a page each, so this number is mostly the default until they are sized or written` : "";
+}
+
 /** Every card in the film written: the script is whole, and its length is the paginated count (pass 1a, entries 42, 45). */
 function wholeScript(state) {
   const cards = state.notes.filter((note) => inStory(note));
@@ -1349,7 +1366,7 @@ function runtimeBlock(state) {
       ? `against ${targetWords(state)}, read as ${formatPages(state.targetEighths)} pages (the writer said "${targetWords(state)}", not a number; set_target with pages says one): ${over > 0 ? `${formatPages(over)} over` : over < 0 ? `${formatPages(-over)} under` : "on it"}`
       : state.targetEighths === DEFAULT_TARGET_EIGHTHS
       ? `no target set — set_target for a pilot (60) or a half-hour (30); against the feature default of 120 it would be ${formatPages(-over)} under`
-      : `against the ${formatPages(state.targetEighths)}-page target the writer set (set_target changes it): ${over > 0 ? `${formatPages(over)} over` : over < 0 ? `${formatPages(-over)} under` : "on it"}`;
+      : `against the ${formatPages(state.targetEighths)}-page target the writer set (set_target changes it): ${over > 0 ? `${formatPages(over)} over` : over < 0 ? `${formatPages(-over)} under` : "on it"}${unsizedWord(state)}`;
   return [
     // One number for "how long is it", said first and said to be the one (round twenty-three, entry 62): an agent handed the writer three.
     `how long it is: about ${formatPages(total)} pages. Say this one to the writer: the film by its cards, a page about a minute, counted in eighths as a production does. The other figures below are what it is made of and what it is read against, not other answers`,
@@ -1606,6 +1623,13 @@ function undoAsThisDoorHasIt(text) {
     .replace(/\b[Oo]ne undo takes (it all|the whole move) back\b/g, (_, what) => `one ⌘Z on the writer's wall takes ${what} back (this door keeps no undo of its own)`)
     .replace(/\bundo takes back the leaving\b/g, "the writer's ⌘Z on the wall takes back the leaving")
     .replace(/ One undo step\./g, " One ⌘Z step on the writer's wall.");
+}
+
+/** The maybes on a card who are on no card of the film for certain (pass 1a, entry 17): the uncast question goes quiet for them, and the reply says so. */
+function maybeOnly(card, state) {
+  return (card?.maybeCharacterIds ?? [])
+    .filter((id) => !state.notes.some((note) => inStory(note) && (note.characterIds ?? []).includes(id)))
+    .map((id) => `${state.characters.find((person) => person.id === id)?.name ?? id}?`);
 }
 
 function ok(rawText, data) {
@@ -2002,7 +2026,7 @@ async function createNoteCall(args) {
       }
       return made;
     });
-    const castSaid = names.length && result?.id ? ` Cast: ${castLine(result.characterIds, result.maybeCharacterIds, after.characters)}${added.length ? ` (added to the roster: ${added.join(", ")})` : ""}${(result.maybeCharacterIds ?? []).length ? " — a name with ? is not decided: listed under open, counted neither way" : ""}.` : "";
+    const castSaid = names.length && result?.id ? ` Cast: ${castLine(result.characterIds, result.maybeCharacterIds, after.characters)}${added.length ? ` (added to the roster: ${added.join(", ")})` : ""}${(result.maybeCharacterIds ?? []).length ? " — a name with ? is not decided: listed under open, counted neither way" : ""}${maybeOnly(result, after).length ? ` — ${maybeOnly(result, after).join(", ")} on no card for certain now, so the wall stops asking where they come in and lists them under open instead; the question comes back if the maybe is struck` : ""}.` : "";
     // Who is in it, left open in the writer's words (round twenty-three, entries 13, 14).
     const castOpenSaid = (result?.castOpen ?? "").trim() ? ` Who ${names.length ? "else " : ""}is in it: open, by the writer's word — "${result.castOpen}" (listed, not asked).` : "";
     const landed = [
@@ -2265,7 +2289,9 @@ server.registerTool(
               .map((group) => {
                 const members = state.notes.filter((note) => group.noteIds.includes(note.id));
                 const act = /^act\b/i.test((group.title ?? "").trim());
-                return `"${group.title || "(untitled)"}" — ${members.length} card(s), about ${formatPages(members.reduce((sum, note) => sum + noteEighths(note), 0))} pages${act ? ", read as an act, so its length is not questioned" : ", read as a sequence"}`;
+                const pages = members.reduce((sum, note) => sum + noteEighths(note), 0);
+                const share = boardEighths(state) > 0 ? Math.round((100 * pages) / boardEighths(state)) : 0;
+                return `"${group.title || "(untitled)"}" — ${members.length} card(s), about ${formatPages(pages)} pages${act ? `, ${share}% of the wall, read as an act, so its length is not questioned` : ", read as a sequence"}`;
               })
               .join("; ")
           : "(none)"
@@ -2335,6 +2361,7 @@ server.registerTool(
         const placesOpen = kind === "unplaced" ? reading.openFields.filter((field) => field.field === "location").length : 0;
         const except = [hiddenBy ? `${hiddenBy} open card${hiddenBy === 1 ? "" : "s"}` : "", placesOpen ? `${placesOpen} with ${placesOpen === 1 ? "its" : "their"} place open` : ""].filter(Boolean).join(" and ");
         if (except) return `${CHECK_WORDS[kind]} (except ${except}, not asked)`;
+        if (kind === "sag" && reading.sagWaiting) return `no run out of proportion — not read yet: ${reading.sagWaiting.unsized} of ${reading.sagWaiting.total} cards in the runs read as a page each, and the sag is read once half are sized or written`;
         return CHECK_WORDS[kind];
       }).join("; ") || "(nothing — every check found something)"}`,
     ];
@@ -2352,7 +2379,7 @@ server.registerTool(
   {
     title: "Leave a question, for now",
     description:
-      "Write the writer's word on a question the wall asks — \"leave it\" — so the reading stops asking it. Pass the question's kind as read_wall names it (sag, empty, unpaid, …) and, when that kind is asked more than once, its ids as read_wall lists them; `why` keeps the writer's reason with it, so the next reader sees why. Several at once: `questions`, a list of {kind, ids, why}, one step. A leave answers the reading in front of you: edits change the questions, so make the writer's changes first, read_wall, then leave what they still want left — a question that changed or went since the last reading is refused, with what it was. The reply says what the wall still asks, so no read after is needed. The wall keeps a left question and asks it again on its own the moment it would read differently — a card in it changes, a page moves, the median shifts — so a left question is never a dismissal; ask_again brings one back now. Only on the writer's word: never leave a question unasked.",
+      "Write the writer's word on a question the wall asks — \"leave it\" — so the reading stops asking it. Pass the question's kind as read_wall names it (sag, empty, unpaid, …) and its ids exactly as the reading lists them for that question (a sag's are the two beats either side of the run, not the cards in it; a thread's are the thread and its card); the refusal lists them when they differ. When that kind is asked more than once, its ids as read_wall lists them; `why` keeps the writer's reason with it, so the next reader sees why. Several at once: `questions`, a list of {kind, ids, why}, one step. A leave answers the reading in front of you: edits change the questions, so make the writer's changes first, read_wall, then leave what they still want left — a question that changed or went since the last reading is refused, with what it was. The reply says what the wall still asks, so no read after is needed. The wall keeps a left question and asks it again on its own the moment it would read differently — a card in it changes, a page moves, the median shifts — so a left question is never a dismissal; ask_again brings one back now. Only on the writer's word: never leave a question unasked.",
     inputSchema: {
       kind: z.string().optional(),
       ids: z.array(z.string()).optional(),
@@ -2626,7 +2653,7 @@ server.registerTool(
       ? ` It joined "${joinedGroup}", the group it landed in, so an organize keeps it with the act.`
       : group ? ` It is still in "${group.title || "an untitled group"}"; a frame does not follow a move, so say if the act or sequence should change.` : "";
     return ok(
-      `${chainedFromRows ? "The wall had no follows arrows, so the order was drawn from the rows first, as the wall read it; then: " : ""}Moved "${card.headline}" to ${args.after ? "after" : "before"} "${target.headline}": ${removed} follows arrow(s) removed, ${drawn} drawn${final.arrows.some((arrow) => arrow.kind === "setup") ? ", setup arrows untouched" : ""}${where(live)}. ${notTidied()} Story order now: ${order.map((note, index) => `${index + 1}. ${note.headline}`).join(", ")}.${groupLine}${lockedNow} One undo takes the whole move back.`,
+      `${chainedFromRows ? "The wall had no follows arrows, so the order was drawn from the rows first, as the wall read it; then: " : ""}Moved "${card.headline}" to ${args.after ? "after" : "before"} "${target.headline}": ${removed} follows arrow(s) removed, ${drawn} drawn${final.arrows.some((arrow) => arrow.kind === "setup") ? `, setup arrows untouched${plantsTravelled(final, card.id)}` : ""}${where(live)}. ${notTidied()} Story order now: ${order.map((note, index) => `${index + 1}. ${note.headline}`).join(", ")}.${groupLine}${lockedNow} One undo takes the whole move back.`,
       { order: order.map((note) => note.id) },
     );
   },
@@ -2941,19 +2968,22 @@ server.registerTool(
     inputSchema: { id: z.string(), text: z.string() },
   },
   async (args) => {
-    const { state, changed, result, live } = await commit({ type: "set_text", id: args.id, text: args.text });
+    const { state, changed, result, live, before: stateBefore } = await commit({ type: "set_text", id: args.id, text: args.text });
     if (!changed) {
       if (!result) return ok(`No card with id ${args.id}. Call list_board.`);
       return ok(`Nothing changed: "${result.headline}" already reads that way.`);
     }
+    const beforeWrite = stateBefore?.notes.find((note) => note.id === args.id) ?? null;
     const printed = sceneLineCount(args.text);
     const landedLines = String(args.text ?? "").split("\n").map((line) => line.trim()).filter(Boolean);
     const landed = landedLines.length ? ` First line as it landed: "${clip(landedLines[0], 80)}"${landedLines.length > 1 ? `; last: "${clip(landedLines[landedLines.length - 1], 80)}"` : ""}.` : "";
     return ok(
       `Wrote "${result.headline}": ${printed} line(s) as they print${once("write-lines", " (headings, blank lines and wrapped dialogue counted; a [[note]] neither prints nor counts)")}, measured at ${formatPages(noteEighths(result))} of a 55-line page${once("write-measure", ", rounded to the nearest eighth and never below one eighth")}${noteEighths(result) < (result.lengthEighths ?? DEFAULT_NOTE_EIGHTHS) ? ` — a sketch: shorter than ${result.lengthEighths !== null ? "the writer's pages for it" : "the page it was read as"}${once("write-sketch", "; the wall counts the measure and says so")}` : ""}${cameraReply(result.text)}${where(live)}.${twoHomes(result)}${revisionMark(state, result.id)}${once("heading-from-place", " The heading comes from the card's place and when, so the text starts with the action.")} While the text stands the wall reads the measure, not the estimate${(() => {
         // How far the measure sits from what the card was read as before (round eighteen, entry 43): the writer's estimate, or the page an unsized card is read as.
-        const before = result.lengthEighths !== null ? result.lengthEighths : 8;
-        const label = result.lengthEighths !== null ? `the writer's ${formatPages(result.lengthEighths)} pages` : "the page an unsized card is read as";
+        // A card already written measures against its last measure, not the estimate under it (pass 1a, entries 66, 74).
+        const wasWritten = beforeWrite && isMeasured(beforeWrite);
+        const before = wasWritten ? noteEighths(beforeWrite) : result.lengthEighths !== null ? result.lengthEighths : 8;
+        const label = wasWritten ? `its last measure, ${formatPages(noteEighths(beforeWrite))} pages` : result.lengthEighths !== null ? `the writer's ${formatPages(result.lengthEighths)} pages` : "the page an unsized card is read as";
         const moved = noteEighths(result) - before;
         return ` (${label}${moved ? `, so the runtime moved ${formatPages(Math.abs(moved))} ${moved < 0 ? "down" : "up"}` : ""})`;
       })()}${once("write-estimate", "; the estimate is kept for when the text goes, and set_length changes it")}.${landed}${cueReport(state, result.text, result)}`,
@@ -3062,6 +3092,18 @@ server.registerTool(
     return ok([...film, ...lines].join("\n"));
   },
 );
+
+/** The plants a moved card carries and where they pay off now, with the new distance (pass 1a, entry 69). */
+function plantsTravelled(state, id) {
+  const order = storyOrder(state);
+  const at = new Map();
+  let cursor = 0;
+  for (const note of order) { at.set(note.id, cursor); cursor += noteEighths(note); }
+  const headline = (noteId) => state.notes.find((note) => note.id === noteId)?.headline ?? noteId;
+  const gap = (from, to) => (at.has(from) && at.has(to) ? ` about ${formatPages(Math.abs(at.get(to) - at.get(from)))} pages ${at.get(to) >= at.get(from) ? "later" : "earlier — before its plant now"}` : "");
+  const lines = (state.arrows ?? []).filter((arrow) => arrow.kind === "setup" && (arrow.from === id || arrow.to === id)).map((arrow) => arrow.from === id ? `its plant still pays off in "${headline(arrow.to)}",${gap(arrow.from, arrow.to)}` : `it still pays off "${headline(arrow.from)}",${gap(arrow.from, arrow.to)}`);
+  return lines.length ? ` (${lines.join("; ")})` : "";
+}
 
 /** Which cards an import wrote onto, by headline (pass 1a, entry 60), so nobody has to read every page back to find them. */
 function writtenNames(state, commands) {
@@ -3854,7 +3896,7 @@ server.registerTool(
         ? ok(`Already in the cast as "${result.name}" (${result.id}). Use that id.`, result)
         : ok("No character added: the name was empty.");
     }
-    return ok(`Added "${result.name}" (id ${result.id}) to the project's cast; every board of the project casts from it${where(live)}.`, result);
+    return ok(`Added "${result.name}" (id ${result.id}) to the project's cast; every board of the project casts from it${where(live)}. On no card yet, so the wall asks where they come in until a card names them; a name given to create_note or cast is added to the roster by itself, so this tool is for a person before their card.`, result);
   },
 );
 
@@ -4101,8 +4143,9 @@ server.registerTool(
     const decidedOut = args.noteIds.length === 1 && beforeCast ? (beforeCast.maybeCharacterIds ?? []).filter((id) => !characterIds.includes(id) && !maybeIds.includes(id)).map(nameOf) : [];
     const cameOff = args.noteIds.length === 1 && beforeCast ? (beforeCast.characterIds ?? []).filter((id) => !characterIds.includes(id) && !maybeIds.includes(id)).map(nameOf) : [];
     const whatChanged = [decidedIn.length ? `decided: ${decidedIn.join(", ")} ${decidedIn.length === 1 ? "is" : "are"} in it` : "", decidedOut.length ? `decided: ${decidedOut.join(", ")} ${decidedOut.length === 1 ? "is" : "are"} not in it, so that is no longer open` : "", cameOff.length ? `off the card: ${cameOff.join(", ")}` : ""].filter(Boolean).join("; ");
+    const onNoCertainCard = maybeOnly(result[0], state);
     return ok(
-      `${result.length} card(s) now cast ${names.length ? names.join(", ") : "nobody"}${maybeNames.length ? `, with ${maybeNames.join(", ")} not decided (listed under open, counted neither way; the name without the mark decides it)` : ""}${whatChanged ? ` (${whatChanged})` : ""}${(result[0]?.castOpen ?? "").trim() ? `, who ${names.length || maybeNames.length ? "else " : ""}is in it left open, by the writer's word: "${result[0].castOpen}" (listed, not asked)` : ""}: ${result.map((note) => `"${note.headline}"`).join(", ")}${added.length ? ` (added to the cast: ${added.join(", ")})` : ""}${where(live)}.${stillOpen(result)}`,
+      `${result.length} card(s) now cast ${names.length ? names.join(", ") : "nobody"}${maybeNames.length ? `, with ${maybeNames.join(", ")} not decided (listed under open, counted neither way; the name without the mark decides it)` : ""}${onNoCertainCard.length ? ` — ${onNoCertainCard.join(", ")} on no card for certain now, so the wall stops asking where they come in and lists them under open instead; the question comes back if the maybe is struck` : ""}${whatChanged ? ` (${whatChanged})` : ""}${(result[0]?.castOpen ?? "").trim() ? `, who ${names.length || maybeNames.length ? "else " : ""}is in it left open, by the writer's word: "${result[0].castOpen}" (listed, not asked)` : ""}: ${result.map((note) => `"${note.headline}"`).join(", ")}${added.length ? ` (added to the cast: ${added.join(", ")})` : ""}${where(live)}.${stillOpen(result)}`,
       result,
     );
   },
@@ -4302,7 +4345,8 @@ server.registerTool(
           : "No group made: a group needs at least two cards.",
       );
     }
-    return ok(`Grouped ${result.noteIds.length} cards as "${result.title}" (group id ${result.id})${where(live)}.`, result);
+    const act = /^act\b/i.test((result.title ?? "").trim());
+    return ok(`Grouped ${result.noteIds.length} cards as "${result.title}" (group id ${result.id})${act ? " — read as an act, so its length is not questioned" : " — read as a sequence, asked about if it runs long"}${where(live)}.`, result);
   },
 );
 

@@ -2192,7 +2192,7 @@ describe("after the blind run", () => {
 
   it("says over or under in words, and what page_count counts", async () => {
     expect(await blind.callTool("set_target", { pages: 2 })).toMatch(/— [0-9 /]+ (over|under)\./);
-    expect(await blind.callTool("list_board")).toMatch(/how long it is: about [\d /]+ pages\. Say this one to the writer[^\n]*\n(  made of: [^\n]*\n)?  against the 2-page target the writer set \(set_target changes it\): [\d /]+ (over|under)\n/);
+    expect(await blind.callTool("list_board")).toMatch(/how long it is: about [\d /]+ pages\. Say this one to the writer[^\n]*\n(  made of: [^\n]*\n)?  against the 2-page target the writer set \(set_target changes it\): [\d /]+ (over|under)( — [^\n]*)?\n/);
     const written = await blind.callToolData("list_board");
     await blind.callTool("write_scene", { id: written.notes[0].id, text: "INT. KITCHEN - NIGHT\n\nMaya reads it twice." });
     const pages = await blind.callTool("page_count");
@@ -2991,7 +2991,7 @@ describe("round ten's replies", () => {
     expect(read).toMatch(/\n  made of: of its \d+ cards, 0 measured from written text \(0 pages\), \d+ sized by the writer \([0-9/ ]+\), \d+ unsized and read as a page each \([0-9/ ]+\)\n/);
     expect(read).toContain("  the script so far, paginated, is page_count's number, not this one");
     expect(read).toMatch(/a beat's own pages are in no run — the 1 beat's own pages, about [0-9/ ]+, are in no run/);
-    expect(read).toContain('groups: "Act one" — 2 card(s), about 2 pages, read as an act');
+    expect(read).toContain('groups: "Act one" — 2 card(s), about 2 pages, 50% of the wall, read as an act');
     const tidy = await ten.callTool("organize");
     expect(tidy).toMatch(/an opening row of \d+ card\(s\) before the first beat, then 1 row\(s\), one per beat/);
     expect(await ten.callTool("rename_character", { id: board.characters[0].id, name: "Nessa" })).toMatch(/the name changed on \d+ cards?/);

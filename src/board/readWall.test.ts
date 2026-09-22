@@ -303,11 +303,17 @@ describe("findings", () => {
 
   it("names the words two headlines share when it asks whether they are the same scene (pass 1a, entry 20)", () => {
     const state = wall(
-      { id: "a", headline: "The bus station in Tralee: Ciara gets on the bus" },
-      { id: "b", headline: "The bus station in Tralee: Ciara has not gone" },
+      { id: "a", headline: "The bus station in Tralee, Ciara gets on the bus" },
+      { id: "b", headline: "The bus station in Tralee, Ciara has not gone" },
     );
     const dupe = readWall(state).findings.find((f) => f.kind === "duplicate");
     expect(dupe?.text).toContain('their headlines share "bus station tralee ciara"');
+    // A place prefix before a colon is the card's place, not the scene's job (entry 67): compared after it, these are two scenes.
+    const placed = wall(
+      { id: "a", headline: "The bus station in Tralee: Ciara gets on the bus" },
+      { id: "b", headline: "The bus station in Tralee: Ciara has not gone" },
+    );
+    expect(readWall(placed).findings.filter((f) => f.kind === "duplicate")).toEqual([]);
   });
 
   it("does not call an even wall saggy just because one run is a little longer", () => {

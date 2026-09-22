@@ -176,6 +176,8 @@ export function toFountain(state, options = {}) {
     notes,
   });
 
+  const byIdNote = new Map(state.notes.map((note) => [note.id, note]));
+  const headlineOfId = new Map(state.notes.map((note) => [note.id, note.headline]));
   const body = [];
   let beat = 0;
   for (const note of order) {
@@ -199,7 +201,11 @@ export function toFountain(state, options = {}) {
     const maybe = (note.maybeCharacterIds ?? []).map((id) => nameOf.get(id)).filter(Boolean).map((name) => `${name}?`);
     if (cast.length || maybe.length) marks.push(`with ${[...cast, ...maybe].join(", ")}${maybe.length ? " (? — not decided whether they are in it)" : ""}`);
     if ((note.castOpen ?? "").trim()) marks.push(`who ${cast.length || maybe.length ? "else " : ""}is in it, not decided: ${note.castOpen.trim()}`);
-    if (note.plants) marks.push(note.plantsWhat ? `plants ${note.plantsWhat}` : "plants something to pay off later");
+    // The plant and its payoff on both pages (pass 1a, entry 68): a reader of the script sees the string from either end.
+    const paidBy = (state.arrows ?? []).filter((arrow) => arrow.kind === "setup" && arrow.from === note.id).map((arrow) => headlineOfId.get(arrow.to)).filter(Boolean);
+    if (note.plants) marks.push(`${note.plantsWhat ? `plants ${note.plantsWhat}` : "plants something to pay off later"}${paidBy.length ? ` — pays off in "${paidBy.join('", "')}"` : ""}`);
+    const paysOff = (state.arrows ?? []).filter((arrow) => arrow.kind === "setup" && arrow.to === note.id).map((arrow) => { const from = byIdNote.get(arrow.from); return from ? `pays off ${from.plantsWhat ? from.plantsWhat : "what was planted"} from "${from.headline}"` : null; }).filter(Boolean);
+    marks.push(...paysOff);
     if (note.open) marks.push(`open: ${note.open}`);
     if (note.changeOpen) marks.push(`change line open: ${note.changeOpen}`);
     if (note.locationOpen) marks.push(`place open: ${note.locationOpen}`);

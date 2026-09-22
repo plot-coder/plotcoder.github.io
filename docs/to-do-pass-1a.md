@@ -39,6 +39,36 @@ reads right; the block comes out before pass 1b.
   tools an "I don't know" lands in.
   *Built:* 1923 characters.
 
+- [~] **D2 · The pages read against the wall** (entries 68, 71, 72, 73;
+  the pass's own question). With every scene written and the ending
+  rewritten, the wall still said the chime pays off, the logline stood
+  unchecked, and the eighth turn was undone by the ninth on the page
+  without a word: "the wall reads beats singly, never one against the next,
+  and nothing reads the page against the arrow". This is goal 1's first
+  new requirement (`docs/plan.md`), the one the wall's design has not
+  anticipated.
+  *Plan, as questions and never verdicts (D21's spirit):* a reading of the
+  pages beside the reading of the wall — **R74, proposed** — with checks
+  the app can make from words: a payoff scene whose page never mentions
+  what the fold planted ("'Noreen's yard: the keys' pays off the chime and
+  its page does not say chime — does it pay off there, or is the plant
+  unpaid now?"); a written scene whose page has none of its change line's
+  words; a person's want, from their page, that no scene of theirs says;
+  a logline whose words the last scene does not touch. Each a question
+  with ids, left with a reason like any other; listed under its own head
+  ("the pages, against the wall") in `read_wall` and in Read the wall on
+  the app, so a person sees it too.
+  *Alternatives:* leave it to the agent (which is what happened — it read
+  pages and wall side by side and told the writer, and that is the friction
+  the pass was for); a judgement of meaning (not the app's: it counts and
+  asks, it does not read for sense).
+  *Best?* The word checks: they are the duplicate check's kind of reading,
+  honest about being words, and they ask what a writer would want asked.
+  A person sees them in Read the wall, so a mockup first and Robert's
+  word; the checks themselves are pure and testable.
+  *Not built:* waiting on the word. Mockup to draw: the reading's new
+  head beside the wall's, on the app's own paper.
+
 ## N. Now — fixes a session can make, each with a test
 
 - [x] **N1 · A call that fails before it answers says so in words** (entry
@@ -195,7 +225,33 @@ reads right; the block comes out before pass 1b.
   shows and that headlines ride as scene titles; `write_scene` names every
   form the page takes.
 
+- [x] **N23 · A left question that dropped is named** (entry 65). *Built:*
+  the tail says which left question the wall asks again and why, with the
+  writer's reason beside it, so it can be given again.
+- [x] **N24 · A rewrite measures against the last measure** (entries 66,
+  74). The tail measured a rewritten scene against the default page and
+  said "moved 5/8 down" for a move up. *Built:* a card already written
+  measures against its last measure.
+- [x] **N25 · The duplicate check and a place prefix** (entries 67, 70).
+  Two headlines that lead with the same words before a colon share the
+  card's place, not the scene's job. *Built:* compared after the colon. Two
+  scenes at one place about "two thousand" still read alike (70); the
+  question names what matched, and the writer leaves it.
+- [x] **N26 · The pages say where a plant pays off** (entry 68). *Built:*
+  the folded card's note says where it pays off and the paying-off card's
+  says what it pays off and from where, in Fountain and every export cut
+  from it.
+- [x] **N27 · A move names the plants that travelled** (entry 69). *Built:*
+  "setup arrows untouched (its plant still pays off in 'The pier at
+  Fenit', about 2 2/8 pages later)".
+
 ## Decided against, with the reason
+
+- **Move it, when a card is already there** (entry 64). The rule (one
+  place, one stretch of time, one card) and the direction met; the agent
+  asked, which is the rule. Not the app's.
+- **"Scraps it" as a line or a thing seen** (entry 75). The agent's
+  reading of a treatment that shows no machinery. Not the app's.
 
 - **The run's own permission gate** (entries 48, 54, 59): the session's,
   not the app's.
@@ -241,5 +297,9 @@ N16 · 32, 34, 35 → N17 · 33 → N18 · 42, 45, 47 → N19.
 **Decided against, above:** 14, 15, 19, 24, 25, 26, 37, 38, 40, 43, 44, 48, 54, 59.
 
 **Here as an item, the exports:** 50, 55 → N20 · 51 → N21 · 49, 52, 53, 56, 57, 58 → N22.
+
+**Here as an item, the import and the edits:** 60 → the import names its cards · 61 → a forced-action mark is no change · 62 → the records count what the reading counts · 65 → N23 · 66, 74 → N24 · 67, 70 → N25 · 68 → N26 · 69 → N27 · 68, 71, 72, 73 → D2 (R74, proposed).
+
+**Decided against, the edits:** 63 (the gate), 64, 75.
 
 **Not the app's:** 39, 41 (nothing new).

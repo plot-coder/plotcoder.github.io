@@ -76,6 +76,14 @@ function sameScene(a, b, ignore = new Set()) {
   return shared / Math.min(setA.size, setB.size) >= DUPLICATE_OVERLAP;
 }
 
+/** Two headlines with one place prefix before a colon are compared after it (pass 1a, entry 67). */
+function jobWords(a, b) {
+  const pa = a.indexOf(":");
+  const pb = b.indexOf(":");
+  if (pa > 0 && pb > 0 && a.slice(0, pa).trim().toLowerCase() === b.slice(0, pb).trim().toLowerCase()) return [a.slice(pa + 1), b.slice(pb + 1)];
+  return [a, b];
+}
+
 /** The words two headlines share, in the first one's order, for the duplicate question to name. */
 function sharedWords(a, b, ignore = new Set()) {
   const setB = new Set(words(b).filter((word) => !ignore.has(word)));
@@ -330,9 +338,13 @@ export function readWall(state, options = {}) {
       const b = order[j];
       // A leading "Day three." is the guide's convention for when a scene
       // happens, not the scene's words (round fourteen, entry 13).
-      if (sameScene(a.headline.replace(DAY_PREFIX, ""), b.headline.replace(DAY_PREFIX, ""), nameWords)) {
+      // "The mechanic's yard, in the van: the fair tomorrow" and "…: the glove box" share a place prefix, which is the
+      // card's place and not the scene's job (pass 1a, entry 67): when both headlines lead with the same words before a
+      // colon, only what follows is compared.
+      const [ha, hb] = jobWords(a.headline.replace(DAY_PREFIX, ""), b.headline.replace(DAY_PREFIX, ""));
+      if (sameScene(ha, hb, nameWords)) {
         // Say what matched (pass 1a, entry 20), so a writer knows what the check reads and what would tell the two apart.
-        const shared = sharedWords(a.headline.replace(DAY_PREFIX, ""), b.headline.replace(DAY_PREFIX, ""), nameWords);
+        const shared = sharedWords(ha, hb, nameWords);
         findings.push({
           kind: "duplicate",
           ids: [a.id, b.id],

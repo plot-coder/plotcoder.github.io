@@ -75,7 +75,7 @@ export function agentsAsText() {
     "",
     AGENTS.lead,
     "",
-    `The day-one guide: ${AGENTS.dayOne} — the method, the reading, cards and what can be left open, threads, versions, set aside, the cast, what the tools refuse and what a reply's tail means. Read it once, before your first call if you can. The whole guide is ${AGENTS.guide}: come to it when the writer says write it, how long, export, a series, a structure to compare with, or lock the numbers. Where this page and the guide differ, the guide wins.`,
+    `The day-one guide: ${AGENTS.dayOne} — about 40 KB, the method, the reading, cards and what can be left open, threads, versions, set aside, the cast, what the tools refuse and what a reply's tail means; it is cut from the whole guide, so the two say the same, and the first calls below are the ones it names. Read it once, before your first call if you can; the tool descriptions carry the rest, and the whole guide's Pages section is the one to read before write_scene. The whole guide is ${AGENTS.guide}: come to it when the writer says write it, how long, export, a series, a structure to compare with, or lock the numbers. Where this page and the guide differ, the guide wins.`,
     "",
     "## Call these first",
   ];

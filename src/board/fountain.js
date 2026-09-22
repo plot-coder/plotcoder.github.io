@@ -87,6 +87,8 @@ export const UNWRITTEN_MARK = "[Unwritten]";
 /** What stands in for an unwritten scene's body: the mark, then the change line. */
 /** What an open card's words print after, in an unwritten scene's body; read back as open words, not a change line. */
 export const OPEN_STAND_IN = "Open, by the writer's word:";
+/** The same for a change line left open on its own (R67): read back as the change line's open, not the card's. */
+export const CHANGE_OPEN_STAND_IN = "What changes is open, by the writer's word:";
 
 export function standInFor(note) {
   const change = (note.change ?? "").trim();
@@ -95,8 +97,12 @@ export function standInFor(note) {
   // film asking (round twenty-two, entries 18, 69). An open card's words
   // stand in instead, said as the writer's; otherwise the mark alone.
   if (!change || change === PLACEHOLDER_CHANGE) {
+    // The card's own open words (R59), or the change line's (R67): either is the writer's word for why the
+    // line is blank, and a page that prints the mark alone reads as a forgotten scene (round twenty-four, entry 50).
     const open = (note.open ?? "").trim();
-    return open ? `${UNWRITTEN_MARK} ${OPEN_STAND_IN} ${open}` : UNWRITTEN_MARK;
+    if (open) return `${UNWRITTEN_MARK} ${OPEN_STAND_IN} ${open}`;
+    const changeOpen = (note.changeOpen ?? "").trim();
+    return changeOpen ? `${UNWRITTEN_MARK} ${CHANGE_OPEN_STAND_IN} ${changeOpen}` : UNWRITTEN_MARK;
   }
   return `${UNWRITTEN_MARK} ${change}`;
 }
@@ -340,12 +346,15 @@ export function mergeFountain(state, parsed) {
     const body = unmark(scene.text);
     // An open card's stand-in comes back as its open words, the change line still waiting.
     const openWords = body.marked && body.text.startsWith(OPEN_STAND_IN) ? body.text.slice(OPEN_STAND_IN.length).trim() : "";
+    // A change line's own open (R67) comes back as that, and not as the whole card's.
+    const changeOpenWords = body.marked && body.text.startsWith(CHANGE_OPEN_STAND_IN) ? body.text.slice(CHANGE_OPEN_STAND_IN.length).trim() : "";
     commands.push({
       type: "create_note",
       id,
       headline,
       ...(openWords ? { open: openWords } : {}),
-      change: openWords ? PLACEHOLDER_CHANGE : body.marked ? body.text || PLACEHOLDER_CHANGE : scene.text ? firstSentence(scene.text) : PLACEHOLDER_CHANGE,
+      ...(changeOpenWords ? { changeOpen: changeOpenWords } : {}),
+      change: openWords || changeOpenWords ? PLACEHOLDER_CHANGE : body.marked ? body.text || PLACEHOLDER_CHANGE : scene.text ? firstSentence(scene.text) : PLACEHOLDER_CHANGE,
       location: isPlace && !openPlace ? titleCase(parts.place) : "",
       locationOpen: openPlace && (isPlace || noPlace) ? openPlace : "",
       when: isPlace || (noPlace && !dashIsHeadline) ? parts.when.toLowerCase() : "",

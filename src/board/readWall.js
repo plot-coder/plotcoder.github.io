@@ -17,7 +17,7 @@
 // before any tidy — the arrows are the writer's claim about the order, and
 // where they say nothing the positions decide.
 
-import { isMeasured, boardEighths, EIGHTHS_PER_PAGE, formatPages, inStory, noteEighths, readingOrder, storyOrder } from "./reducer.js";
+import { isMeasured, boardEighths, EIGHTHS_PER_PAGE, formatPages, inStory, noteEighths, readingOrder, storyOrder, unlinkedCards } from "./reducer.js";
 
 // The two orders live in the kernel (R62: a thread's cards are held in story
 // order), and every reader still imports them from here.
@@ -123,6 +123,9 @@ export function readWall(state, options = {}) {
   const paidBy = Array.isArray(options.paidBy) ? options.paidBy : [];
   const order = storyOrder(state);
   const beats = order.filter((note) => note.rank === "beat");
+  // A card on no follows arrow once the film has any is in no run (round twenty-four, entry 34): it is in the film,
+  // and the wall asks where it goes; until then it is nowhere between two turns.
+  const unlinked = new Set(unlinkedCards(state).map((note) => note.id));
 
   // Runs: the scene pages strictly between consecutive beats, plus the opening
   // run before the first beat and the closing run after the last. A beat's own
@@ -133,6 +136,7 @@ export function readWall(state, options = {}) {
   let cards = 0;
   let ids = [];
   for (const note of order) {
+    if (unlinked.has(note.id)) continue;
     if (note.rank === "beat") {
       if (from !== null || cards > 0) runs.push({ from, to: note.id, eighths, cards, ids });
       from = note.id;
@@ -482,10 +486,18 @@ export function readWall(state, options = {}) {
   // open until the writer ties it. The reading asks about each loose end from
   // that end — the question a fold cannot ask, where a thing is first seen.
   const threads = (state.threads ?? []).map((thread) => {
-    const ids = order.filter((note) => thread.noteIds.includes(note.id)).map((note) => note.id);
-    // How far the string runs, in the same estimated pages a setup's distance uses (round twenty, entry 44).
-    const apart = ids.length >= 2 ? (startAt.get(ids[ids.length - 1]) ?? 0) - (startAt.get(ids[0]) ?? 0) : 0;
-    return { id: thread.id, name: thread.name, ids, startOpen: thread.startOpen === true, endOpen: thread.endOpen === true, apart };
+    // In the order the string runs, a card out of the film included (round twenty-four, entry 17): a version behind
+    // another, or a card set aside, is where the writer said the thing is seen, if that card is ever the scene.
+    const ids = thread.noteIds.filter((id) => byId.has(id) || state.notes.some((note) => note.id === id));
+    const outside = ids
+      .map((id) => state.notes.find((note) => note.id === id))
+      .filter((note) => note && !inStory(note))
+      .map((note) => ({ id: note.id, behind: note.alternativeOf ?? null, aside: note.aside === true }));
+    // How far the string runs, in the same estimated pages a setup's distance uses (round twenty, entry 44), between
+    // its ends in the film.
+    const inFilm = ids.filter((id) => startAt.has(id));
+    const apart = inFilm.length >= 2 ? (startAt.get(inFilm[inFilm.length - 1]) ?? 0) - (startAt.get(inFilm[0]) ?? 0) : 0;
+    return { id: thread.id, name: thread.name, ids, outside, startOpen: thread.startOpen === true, endOpen: thread.endOpen === true, apart };
   });
   for (const thread of threads) {
     const first = thread.ids.length ? byId.get(thread.ids[0]) : null;
@@ -538,6 +550,8 @@ export function readWall(state, options = {}) {
     // People the writer has left something open about (round twenty-two, entries 12, 24): listed, never asked.
     // Turns the agent has proposed and the writer has not kept or struck, in story order: scenes until kept, and never asked about.
     proposed: order.filter((note) => note.proposedBeat === true).map((note) => note.id),
+    // Cards on no follows arrow while the film has them: in the film, in no run, printed last; asked about above.
+    unlinked: order.filter((note) => unlinked.has(note.id)).map((note) => note.id),
     // What is not decided about the film itself, in the writer's sentences: listed first, never asked.
     openLines: [...(state.openLines ?? [])],
     openPeople: (state.characters ?? []).filter((person) => (person.open ?? "").trim()).map((person) => ({ id: person.id, name: person.name, words: person.open.trim() })),

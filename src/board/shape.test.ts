@@ -58,4 +58,11 @@ describe("what a change did to the story's shape (round twenty-three, entries 30
     for (const [from, to] of [["a", "c"], ["c", "b"], ["b", "d"], ["d", "e"]]) after = run(after, { type: "create_arrow", from, to, kind: "follows" });
     expect(shapeNote(before, after).join("; ")).toContain('the version behind "C" went with it');
   });
+
+  it("says nothing of a version behind a card that only changed its number, as when a card ahead of it is deleted (round twenty-four, entry 33)", () => {
+    const before = run(wall(), { type: "create_note", id: "e2", headline: "E, another way", change: "x", x: 1020, y: 100 }, { type: "set_alternative", id: "e2", of: "e" });
+    // B goes: every card after it is renumbered, and none of them moved.
+    const after = run(before, { type: "delete_note", id: "b" });
+    expect(shapeNote(before, after).join("; ")).not.toContain("went with it");
+  });
 });

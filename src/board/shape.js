@@ -7,7 +7,7 @@
 // and an agent ran a whole reading to learn the rest. Pure: two board states
 // in, sentences out, and nothing when nothing of the kind changed.
 
-import { formatPages, inStory, readingOrder, storyOrder } from "./reducer.js";
+import { formatPages, inStory, readingOrder, storyOrder, unlinkedCards } from "./reducer.js";
 import { readWall } from "./readWall.js";
 
 const quote = (state, id) => `"${state.notes.find((note) => note.id === id)?.headline ?? id}"`;
@@ -24,9 +24,11 @@ const runSize = (run) => `${run.cards} card${run.cards === 1 ? "" : "s"}, about 
 
 /** How many of the film's cards the wall's rows read out of the story's order: the fewest that would have to move for the rows to agree with the arrows. */
 export function outOfOrder(state) {
-  const story = storyOrder(state).map((note) => note.id);
+  // An unlinked card has no place in the order to be out of (round twenty-four).
+  const unlinked = new Set(unlinkedCards(state).map((note) => note.id));
+  const story = storyOrder(state).filter((note) => !unlinked.has(note.id)).map((note) => note.id);
   const place = new Map(story.map((id, index) => [id, index]));
-  const rows = readingOrder(state.notes.filter((note) => inStory(note))).map((note) => place.get(note.id)).filter((index) => index !== undefined);
+  const rows = readingOrder(state.notes.filter((note) => inStory(note) && !unlinked.has(note.id))).map((note) => place.get(note.id)).filter((index) => index !== undefined);
   // The longest run of cards the rows already have in story order; the rest are out of it.
   const tails = [];
   for (const index of rows) {
@@ -79,8 +81,13 @@ export function shapeNote(before, after, { added = null } = {}) {
   if (lastNow && lastWas && lastNow !== lastWas && lastNow !== added && !madeNow) lines.push(`the last card of the story is now ${quote(after, lastNow)}${after.notes.some((note) => note.id === lastWas) ? ` (it was ${quote(before, lastWas)})` : ""}`);
   // A version behind a card that changed its place in the order goes with it: the wall draws it behind its sibling
   // wherever that is. Nothing is wrong, and nothing said it (round twenty-three, entry 31).
-  const placeWas = new Map(was.order.map((id, index) => [id, index]));
-  const moved = new Set(now.order.filter((id, index) => placeWas.has(id) && placeWas.get(id) !== index));
+  // Moved means the card's neighbours changed, not its number: deleting a card ahead of it renumbers every
+  // card after, and none of them went anywhere (round twenty-four, entry 33).
+  const beforeOf = (order) => new Map(order.map((id, index) => [id, index > 0 ? order[index - 1] : null]));
+  const wasBefore = beforeOf(was.order);
+  const nowBefore = beforeOf(now.order);
+  const gone = new Set(was.order.filter((id) => !nowBefore.has(id)));
+  const moved = new Set(now.order.filter((id) => wasBefore.has(id) && wasBefore.get(id) !== nowBefore.get(id) && !gone.has(wasBefore.get(id))));
   const carried = after.notes.filter((note) => note.alternativeOf && moved.has(note.alternativeOf));
   if (carried.length) lines.push(`${carried.map((note) => `the version behind ${quote(after, note.alternativeOf)} went with it`).join(", ")}`);
   const astray = outOfOrder(after);

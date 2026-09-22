@@ -238,7 +238,7 @@ describe("findings", () => {
 
   it("returns nothing at all for an empty board", () => {
     const reading = readWall(emptyState());
-    expect(reading).toEqual({ order: [], beats: [], runs: [], setups: [], payoffs: {}, later: [], paidBy: [], open: [], proposed: [], openLines: [], openFields: [], versions: [], openPeople: [], wired: { linked: 0, of: 0 }, aside: [], threads: [], findings: [], left: [] });
+    expect(reading).toEqual({ order: [], beats: [], runs: [], setups: [], payoffs: {}, later: [], paidBy: [], open: [], proposed: [], unlinked: [], openLines: [], openFields: [], versions: [], openPeople: [], wired: { linked: 0, of: 0 }, aside: [], threads: [], findings: [], left: [] });
   });
 
   it("notes that runs cannot be read until a beat is marked, and passes no judgement on the count", () => {
@@ -694,7 +694,38 @@ describe("open fields (R61): the logline and a card's when, in the writer's word
   });
 });
 
+describe("an unlinked card is in no run and listed (round twenty-four, entries 21, 28, 34)", () => {
+  it("keeps a card on no follows arrow out of the runs between the turns, lists it, and still asks where it goes", () => {
+    const state = run(
+      wall({ id: "a", rank: "beat", headline: "The first Friday" }, { id: "sign", headline: "The sign" }, { id: "b", headline: "The range" }, { id: "c", rank: "beat", headline: "The last night" }),
+      { type: "create_arrow", from: "a", to: "b" },
+      { type: "create_arrow", from: "b", to: "c" },
+    );
+    const reading = readWall(state);
+    expect(reading.unlinked).toEqual(["sign"]);
+    expect(reading.runs.find((run) => run.from === "a" && run.to === "c")?.ids).toEqual(["b"]);
+    expect(reading.findings.some((finding) => finding.kind === "unlinked" && finding.ids.includes("sign"))).toBe(true);
+  });
+});
+
 describe("threads (R60): a loose end is asked about from that end", () => {
+  it("carries a card out of the film on the string and says where it is, asking nothing of that end (round twenty-four, entry 17)", () => {
+    let state = run(
+      wall({ id: "a", headline: "The man from the chain" }, { id: "b", headline: "The pier, alone" }),
+      { type: "create_note", id: "b2", headline: "The pier, with Priya", change: "x", x: 340, y: 400 },
+      { type: "set_alternative", id: "b2", of: "b" },
+      { type: "create_thread", id: "knife", name: "the fish knife", noteIds: ["b2"], startOpen: true },
+    );
+    const reading = readWall(state);
+    expect(reading.threads[0]).toMatchObject({ ids: ["b2"], outside: [{ id: "b2", behind: "b", aside: false }], startOpen: true });
+    const loose = reading.findings.filter((finding) => finding.kind === "loose");
+    expect(loose).toHaveLength(1);
+    expect(loose[0].text).toContain("starts nowhere yet");
+    // Chosen, the thread is on the scene and nothing is behind.
+    state = run(state, { type: "choose_version", id: "b2" });
+    expect(readWall(state).threads[0]).toMatchObject({ ids: ["b2"], outside: [] });
+  });
+
   it("asks a loose end even when its card is open, and never lists loose among what the open words hide (round nineteen, entry 23)", () => {
     const state = run(
       wall({ id: "a", headline: "The first morning" }, { id: "c", headline: "Ruth keeps the crowns in a bucket" }),
@@ -717,10 +748,10 @@ describe("threads (R60): a loose end is asked about from that end", () => {
     );
     const reading = readWall(state);
     expect(reading.threads).toEqual([
-      { id: "bucket", name: "the bucket", ids: ["c"], startOpen: true, endOpen: false, apart: 0 },
-      { id: "declan", name: "Declan", ids: ["a", "b"], startOpen: false, endOpen: true, apart: 8 },
-      { id: "key", name: "the key", ids: [], startOpen: false, endOpen: false, apart: 0 },
-      { id: "tools", name: "the tools", ids: ["a", "c"], startOpen: false, endOpen: false, apart: 16 },
+      { id: "bucket", name: "the bucket", ids: ["c"], outside: [], startOpen: true, endOpen: false, apart: 0 },
+      { id: "declan", name: "Declan", ids: ["a", "b"], outside: [], startOpen: false, endOpen: true, apart: 8 },
+      { id: "key", name: "the key", ids: [], outside: [], startOpen: false, endOpen: false, apart: 0 },
+      { id: "tools", name: "the tools", ids: ["a", "c"], outside: [], startOpen: false, endOpen: false, apart: 16 },
     ]);
     expect(reading.findings.filter((finding) => finding.kind === "loose")).toEqual([
       { kind: "loose", ids: ["bucket", "c"], text: '"the bucket" starts nowhere yet: it runs to "The last harvest". Where is it first seen?' },

@@ -77,6 +77,15 @@ describe("an unwritten scene whose change line is the app's placeholder (round t
     const back = mergeFountain(emptyState(), fromFountain(".THE BOG ROAD\n= The morning after\n\n[Unwritten] Open, by the writer's word: that is all I know about it\n")).commands[0] as { open?: string; change: string; text: string };
     expect(back).toMatchObject({ open: "that is all I know about it", change: "What changes?", text: "" });
   });
+
+  it("prints a change line's own open words and reads them back as the change line's open, not the card's (round twenty-four, entry 50)", () => {
+    expect(standInFor({ change: "What changes?", changeOpen: "I don't know what changes yet" } as never)).toBe("[Unwritten] What changes is open, by the writer's word: I don't know what changes yet");
+    // The card's own open wins when both are there: it is the wider claim.
+    expect(standInFor({ change: "What changes?", open: "all of it", changeOpen: "what changes" } as never)).toBe("[Unwritten] Open, by the writer's word: all of it");
+    const back = mergeFountain(emptyState(), fromFountain(".THE PIER\n= The pier\n\n[Unwritten] What changes is open, by the writer's word: I don't know what changes yet\n")).commands[0] as { open?: string; changeOpen?: string; change: string };
+    expect(back).toMatchObject({ changeOpen: "I don't know what changes yet", change: "What changes?" });
+    expect(back.open).toBeUndefined();
+  });
 });
 
 describe("the title page with the target open (round twenty-two, entry 80)", () => {

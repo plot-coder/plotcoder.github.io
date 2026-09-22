@@ -292,3 +292,7 @@ export declare function applyCommand(
 export declare function readingOrder(notes: BoardNote[]): BoardNote[];
 /** The follows arrows where they exist, reading order where they do not; versions of other cards left out (R56, R65). */
 export declare function storyOrder(state: BoardState, ids?: string[]): BoardNote[];
+/** The film's cards on no follows arrow once the film has any: in the film, in no run, last in the order (round twenty-four). */
+export declare function unlinkedCards(state: BoardState): BoardNote[];
+/** A thread's cards in the order the string runs: the film's in story order, a version behind beside its front, a card set aside last (round twenty-four). */
+export declare function threadOrder(state: BoardState, ids: string[]): string[];

@@ -15,6 +15,18 @@
 import { formatPages, boardEighths, targetWords } from "./reducer.js";
 import { PLACEHOLDER_CHANGE, storyOrder } from "./readWall.js";
 import { revisionLine, revisionMarks } from "./numbering.js";
+import { parseScene } from "./paginate.js";
+
+/**
+ * Two texts that print the same page are the same scene (pass 1a, entry 61):
+ * a round trip through Final Draft brings an all-caps action line back with
+ * Fountain's forced-action mark, and the card's text should not change for a
+ * mark the page never shows.
+ */
+export function sameOnThePage(a, b) {
+  const shape = (text) => JSON.stringify(parseScene(text ?? "").map(({ at: _at, ...element }) => element));
+  return shape(a) === shape(b);
+}
 
 function upper(text) {
   return text.trim().replace(/\s+/g, " ").toUpperCase();
@@ -324,7 +336,7 @@ export function mergeFountain(state, parsed) {
       // export of an unwritten card coming back: still unwritten, not a page.
       const body = unmark(scene.text);
       const standIn = !(found.text ?? "").trim() && (body.marked || sameWords(body.text, found.change ?? ""));
-      if ((found.text ?? "") !== scene.text && !standIn) {
+      if ((found.text ?? "") !== scene.text && !standIn && !sameOnThePage(found.text ?? "", scene.text)) {
         commands.push({ type: "set_text", id: found.id, text: scene.text });
       }
       matched.push({ id: found.id, heading: scene.heading, created: false });

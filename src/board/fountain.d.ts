@@ -14,6 +14,8 @@ export declare const UNWRITTEN_MARK: string;
 export declare function standInFor(note: Pick<BoardNote, "change"> & Partial<Pick<BoardNote, "open">>): string;
 export declare function unmark(text: string | null | undefined): { text: string; marked: boolean };
 
+/** Two texts that print the same page (pass 1a, entry 61): a forced-action mark alone does not make a change. */
+export declare function sameOnThePage(a: string, b: string): boolean;
 export declare function titlePage(titles: {
   title?: string;
   episode?: string;

@@ -2610,7 +2610,7 @@ describe("the premise and reminders (roadmap item 6)", () => {
     const imported = await door.callTool("import_fountain", {
       text: ".TOM LIES ABOUT THE JOB\n\nHe says the job is fine.\n\n.THE BANK\n\nThere is no loan.\n",
     });
-    expect(imported).toContain("Imported 2 scene(s): 1 written onto cards, 0 matched with the same text (unchanged), 1 new card(s)");
+    expect(imported).toContain('Imported 2 scene(s): 1 written onto cards ("Tom lies about the job"), 0 matched with the same text (unchanged), 1 new card(s)');
     const board = await door.callToolData("list_board");
     expect(board.notes.find((note) => note.id === "tom-lies").text).toBe("He says the job is fine.");
     expect(board.notes.some((note) => note.headline === "The Bank" && note.text === "There is no loan.")).toBe(true);
@@ -2628,6 +2628,8 @@ describe("the premise and reminders (roadmap item 6)", () => {
       xml: xml.replace("<Text>Rain on the window.", "<Text>Rain, harder now."),
     });
     expect(imported).toContain("Imported");
+    // The cards written onto, by name (pass 1a, entry 60).
+    expect(imported).toMatch(/1 written onto cards \("[^"]+"\)/);
     expect(await door.callTool("export_fdx")).toContain("<FinalDraft");
   });
 
@@ -3229,6 +3231,8 @@ describe("round twelve's decisions: leaving a question, a structure beside the w
     expect(longer).toContain("left, for now");
     expect(longer).toContain(`[sag] About 10 pages run between "B" and "C"`);
     expect(longer.split("left, for now")[0]).not.toContain("[sag]");
+    // The records count what the reading counts (pass 1a, entry 62).
+    expect(await twelve.callTool("list_board")).toContain("left, for now: 1 question(s)");
     await twelve.callTool("set_length", { ids: [s3.id], pages: 4 });
     // The run's end is another scene: the question would read differently, and the wall asks again on its own.
     await twelve.callTool("update_note", { id: c.id, headline: "C2" });

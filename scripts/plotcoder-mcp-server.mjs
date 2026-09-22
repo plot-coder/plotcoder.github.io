@@ -1546,7 +1546,8 @@ function summarize(state) {
     else rows.push({ top: note.y, notes: [note] });
   }
   const rowLines = rows.map((row, index) => `  ${index + 1}: ${row.notes.map((note) => `${note.rank === "beat" ? "★ " : ""}"${note.headline}"${note.aside ? " (aside)" : ""}`).join(" · ")}`);
-  const leftCount = (state.left ?? []).length;
+  // The reading's count, not the record's: a left question the wall asks again on its own is not left (pass 1a, entry 62).
+  const leftCount = readWall(state).left.length;
   return [
     ...(isSampleWall(state) ? [SAMPLE_NOTE] : []),
     atAGlance(state, readWall(state, readOptions(lastHeld?.project?.activeBoardId ?? null, state)), lastHeld?.project ?? null, lastHeld?.project?.boards?.find((meta) => meta.id === lastHeld.project.activeBoardId) ?? null),
@@ -3062,6 +3063,12 @@ server.registerTool(
   },
 );
 
+/** Which cards an import wrote onto, by headline (pass 1a, entry 60), so nobody has to read every page back to find them. */
+function writtenNames(state, commands) {
+  const names = commands.filter((command) => command.type === "set_text").map((command) => `"${state.notes.find((note) => note.id === command.id)?.headline ?? command.id}"`);
+  return names.length ? ` (${names.join(", ")})` : "";
+}
+
 server.registerTool(
   "import_fountain",
   {
@@ -3084,7 +3091,7 @@ server.registerTool(
     const created = matched.filter((item) => item.created).length;
     const same = matched.length - created - written;
     return ok(
-      `Imported ${parsed.scenes.length} scene(s): ${written} written onto cards, ${same} matched with the same text (unchanged), ${created} new card(s)${where(live)}.`,
+      `Imported ${parsed.scenes.length} scene(s): ${written} written onto cards${writtenNames(state, commands)}, ${same} matched with the same text (unchanged), ${created} new card(s)${where(live)}.`,
       matched,
     );
   },
@@ -3187,7 +3194,7 @@ server.registerTool(
     const created = matched.filter((item) => item.created).length;
     const same = matched.length - created - written;
     const receipt = describeSetAside(parsed.setAside);
-    return ok(`Imported ${parsed.scenes.length} scene(s) from Final Draft: ${written} written onto cards, ${same} matched with the same text (unchanged), ${created} new card(s)${where(live)}.${receipt ? ` ${receipt}` : ""}`, matched);
+    return ok(`Imported ${parsed.scenes.length} scene(s) from Final Draft: ${written} written onto cards${writtenNames(state, commands)}, ${same} matched with the same text (unchanged), ${created} new card(s)${where(live)}.${receipt ? ` ${receipt}` : ""}`, matched);
   },
 );
 

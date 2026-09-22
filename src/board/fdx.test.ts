@@ -121,6 +121,14 @@ describe("Final Draft in (c4)", () => {
     expect(scenes[1].text).toBe("Tom on the step with two cups.");
   });
 
+  it("brings an all-caps action line back without rewriting the card for the forced-action mark (pass 1a, entry 61)", () => {
+    let state = wall();
+    state = applyCommand(state, { type: "set_text", id: state.notes[0].id, text: "INSERT - THE LETTER\n\nShe reads it twice.\n\nBACK TO SCENE\n\nShe folds it away." }, NOW).state;
+    const back = fromFdx(toFdx(state, { title: "x" }));
+    expect(back.scenes[0].text).toContain("!INSERT - THE LETTER");
+    expect(mergeFountain(state, back).commands).toEqual([]);
+  });
+
   it("round-trips: out, then in, changes nothing on the wall", () => {
     const state = wall();
     const back = fromFdx(toFdx(state, { title: "Episode 2" }));

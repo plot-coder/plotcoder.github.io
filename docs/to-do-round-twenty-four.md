@@ -115,7 +115,7 @@ built.
   *Built 2026-09-21 as R73, before its mockup on Robert's word:* `unlinkedCards`, `storyOrder` last, the reading's runs and `unlinked` list, `outOfOrder`, `organizePoses` (not laid; beneath when in the way, marked `unlinked`), `list_board`, `read_wall`, the runtime line, the tidy's reply, the guides. Better than planned: the threshold is the reading's own half-wired rule, so one arrow among seven does not make six unlinked; and the word is the reading's own, unlinked, not a second one.
   *Seen in the app 2026-09-21 (a wall of five through the dev bridge, Organize pressed):* the rows were laid a row per beat and the sign card stayed where it was, out of the rows, the strip reading it last; the pair between the man and the pier drew as a solid line with the dashed setup bowed beside it. **One thing for Robert to draw:** on the wall itself an unlinked card looks like any other card without an arrow; a mark on the card ("on no arrow") would say what the reading says. A person-visible claim, so a mockup first.
 
-- [ ] **D4 · The server's instructions and the desktop connector** (entry
+- [x] **D4 · The server's instructions and the desktop connector** (entry
   5; the round's first measure). "The connector carries no instructions of
   its own. Every other connector in the session does." The door sends
   `instructions` on `initialize` (checked live at 0.1.50 the same day).
@@ -135,6 +135,7 @@ built.
   says once-a-session advice) carrying the day's rules once.
   *Test:* the cold start, twice.
   *Not built:* Robert's hand at the screen. The prompt's wiring step should say "on before the session's first message" whatever the answer.
+  *Answered 2026-09-22 by pass 1a (its entry 1):* the instructions do arrive, and the desktop app **cuts them at 2048 characters** — the 3072-character text ended "…which is a name until th… [truncated]" at exactly that offset, and the driving session's own context shows the same cut. Round twenty-four's agent, who said none arrived, had enabled the connector mid-session. The text is now under 2000, with a test (`docs/to-do-pass-1a.md`, D1).
 
 ## N. Now — fixes a session can make, each with a test
 

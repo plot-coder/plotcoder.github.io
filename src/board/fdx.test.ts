@@ -68,6 +68,12 @@ const SAMPLE = `<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
 `;
 
 describe("Final Draft out (c3)", () => {
+  it("prints the contact's lines on the title page under the date (pass 1a, entry 50)", () => {
+    const xml = toFdx(wall(), { title: "Ninety-Nine", author: "Robert Douglas", draftDate: "2026-09-22T10:00:00Z", contact: "12 The Quay\nrobert@example.com" });
+    expect(xml).toMatch(/<Paragraph Type="General" Alignment="Center">\s*<Text>Written by Robert Douglas<\/Text>/);
+    expect(xml).toMatch(/<Text>Draft date: 2026-09-22<\/Text>\s*<\/Paragraph>\s*<Paragraph Type="General">\s*<Text>12 The Quay<\/Text>\s*<\/Paragraph>\s*<Paragraph Type="General">\s*<Text>robert@example.com<\/Text>/);
+  });
+
   it("writes one paragraph per element, dual dialogue as a pair, numbers by wall order, and a title page", () => {
     const xml = toFdx(wall(), { title: "The Letter", episode: "Episode 2 of 3 · The pier", draftDate: "2026-09-13T10:00:00Z" });
     expect(xml.startsWith('<?xml version="1.0"')).toBe(true);
@@ -84,7 +90,7 @@ describe("Final Draft out (c3)", () => {
     expect(xml).toContain("<Text>The Letter</Text>");
     expect(xml).toContain("<Text>Episode 2 of 3 · The pier</Text>");
     expect(xml).not.toContain("not locked");
-    expect(xml).toContain("<Text>2026-09-13</Text>");
+    expect(xml).toContain("<Text>Draft date: 2026-09-13</Text>");
   });
 });
 
@@ -113,6 +119,14 @@ describe("Final Draft in (c4)", () => {
       ].join("\n"),
     );
     expect(scenes[1].text).toBe("Tom on the step with two cups.");
+  });
+
+  it("brings an all-caps action line back without rewriting the card for the forced-action mark (pass 1a, entry 61)", () => {
+    let state = wall();
+    state = applyCommand(state, { type: "set_text", id: state.notes[0].id, text: "INSERT - THE LETTER\n\nShe reads it twice.\n\nBACK TO SCENE\n\nShe folds it away." }, NOW).state;
+    const back = fromFdx(toFdx(state, { title: "x" }));
+    expect(back.scenes[0].text).toContain("!INSERT - THE LETTER");
+    expect(mergeFountain(state, back).commands).toEqual([]);
   });
 
   it("round-trips: out, then in, changes nothing on the wall", () => {

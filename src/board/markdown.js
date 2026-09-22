@@ -68,6 +68,9 @@ export function toMarkdown(state, options = {}) {
   const numbers = sceneNumbers(order, state.lock);
   const marks = revisionMarks(state);
   const out = [`# ${documentTitle(options)}`, ""];
+  // The byline and contact under the title, as the title page carries them (pass 1a, entry 50).
+  if (options.author) out.push(`*Written by ${options.author}*`, "");
+  if (options.contact) out.push(...String(options.contact).split("\n").filter((line) => line.trim()).map((line) => `${line.trim()}  `), "");
   if (options.premise) out.push(`*${options.premise}*`, "");
   if (state.logline) out.push(`**${state.logline}**`, "");
   if (state.revision) out.push(`*${revisionLine(state)} · a scene changed since it began has \\* after its heading*`, "");
@@ -185,11 +188,19 @@ export function toPlainText(state, options = {}) {
   } else {
     out.push(centred(upper(title)));
   }
+  if (options.author) out.push("", centred(`Written by ${options.author}`));
   if (state.revision) out.push("", centred(revisionLine(state).toUpperCase()));
+  // The lock's date, as lock_numbers promises of every script out (pass 1a, entry 108).
+  if (state.lock) out.push("", centred(`SCENE NUMBERS LOCKED ${String(state.lock.at).slice(0, 10)}`));
+  // The contact where a title page keeps it: under the byline, at the left (pass 1a, entry 50).
+  if (options.contact) out.push("", ...String(options.contact).split("\n").filter((line) => line.trim()).map((line) => `${" ".repeat(GUTTER)}${line.trim()}`));
   out.push("", "");
-  // Pages run on with no gap: a page turn inside a paragraph is not a blank
-  // line in a text file (round fourteen, entry 33).
+  // A page turn prints as a page number in the right margin between two
+  // blank lines, the way a script prints (pass 1a, entry 51) — never as a
+  // bare blank line, which inside a paragraph reads as a paragraph break
+  // (round fourteen, entry 33). The first page carries no number.
   for (const page of result.pages) {
+    if (page.number > 1) out.push("", `${page.number}.`.padStart(GUTTER + 60 + 4), "");
     for (const line of page.lines) {
       const mark = marks.get(line.noteId);
       const star = Boolean(mark) && (line.kind === "heading" ? mark.revised && mark.lines.size === 0 : typeof line.src === "number" && mark.lines.has(line.src));

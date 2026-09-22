@@ -97,7 +97,7 @@ describe("everything undecided in one place (round twenty-two, entries 41, 43, 6
     // The wall asks where "D" happens, so it is listed there and only counted here (round twenty-three, entries 38, 63).
     expect(blank).toContain("  - no place: 1 more the wall asks about above");
     expect(blank).toContain('  - no when: "C", "D"');
-    expect(blank).toContain('  - no length (read as a page each): "A", "D"');
+    expect(blank).toContain('  - no length (read as a page each until written — ordinary while the wall is built; set_length where the writer gave one): "A", "D"');
     expect(open.join("\n")).not.toContain("no place");
     // Nobody in it is only a blank once the wall has a cast.
     expect(blank.some((line) => line.includes("nobody in it"))).toBe(false);
@@ -238,7 +238,7 @@ describe("findings", () => {
 
   it("returns nothing at all for an empty board", () => {
     const reading = readWall(emptyState());
-    expect(reading).toEqual({ order: [], beats: [], runs: [], setups: [], payoffs: {}, later: [], paidBy: [], open: [], proposed: [], unlinked: [], openLines: [], openFields: [], versions: [], openPeople: [], wired: { linked: 0, of: 0 }, aside: [], threads: [], findings: [], left: [] });
+    expect(reading).toEqual({ order: [], sagWaiting: null, beats: [], runs: [], setups: [], payoffs: {}, later: [], paidBy: [], open: [], proposed: [], unlinked: [], openLines: [], openFields: [], versions: [], openPeople: [], wired: { linked: 0, of: 0 }, aside: [], threads: [], findings: [], left: [] });
   });
 
   it("notes that runs cannot be read until a beat is marked, and passes no judgement on the count", () => {
@@ -283,6 +283,37 @@ describe("findings", () => {
     const findings = readWall(state).findings;
     expect(findings.filter((f) => f.kind === "sag")).toEqual([]);
     expect(findings.filter((f) => f.kind === "empty")).toHaveLength(1);
+  });
+
+  it("waits until half the cards in the runs are sized or written, and says how many are not (pass 1a, entry 21)", () => {
+    // Fifteen unsized cards read as a page each; one sized at four made the median the default and the long run a question.
+    const cards: Card[] = [{ id: "b1", rank: "beat" }];
+    for (let i = 0; i < 4; i += 1) cards.push({ id: `s${i}` });
+    cards.push({ id: "b2", rank: "beat" }, { id: "f", pages: 4 }, { id: "b3", rank: "beat" });
+    let state = wall(...cards);
+    for (const id of ["s0", "s1", "s2", "s3"]) state = applyCommand(state, { type: "set_length", ids: [id], lengthEighths: null }, NOW).state;
+    const reading = readWall(state);
+    expect(reading.findings.filter((f) => f.kind === "sag")).toEqual([]);
+    expect(reading.sagWaiting).toEqual({ unsized: 4, total: 5 });
+    // Size three of the five and the sag is read.
+    for (const id of ["s0", "s1", "s2"]) state = applyCommand(state, { type: "set_length", ids: [id], lengthEighths: 2 }, NOW).state;
+    const later = readWall(state);
+    expect(later.sagWaiting).toBeNull();
+  });
+
+  it("names the words two headlines share when it asks whether they are the same scene (pass 1a, entry 20)", () => {
+    const state = wall(
+      { id: "a", headline: "The bus station in Tralee, Ciara gets on the bus" },
+      { id: "b", headline: "The bus station in Tralee, Ciara has not gone" },
+    );
+    const dupe = readWall(state).findings.find((f) => f.kind === "duplicate");
+    expect(dupe?.text).toContain('their headlines share "bus station tralee ciara"');
+    // A place prefix before a colon is the card's place, not the scene's job (entry 67): compared after it, these are two scenes.
+    const placed = wall(
+      { id: "a", headline: "The bus station in Tralee: Ciara gets on the bus" },
+      { id: "b", headline: "The bus station in Tralee: Ciara has not gone" },
+    );
+    expect(readWall(placed).findings.filter((f) => f.kind === "duplicate")).toEqual([]);
   });
 
   it("does not call an even wall saggy just because one run is a little longer", () => {
@@ -915,13 +946,17 @@ describe("a left question (R53)", () => {
     const held = readWall(state);
     expect(held.findings.find((finding) => finding.kind === "sag")).toBeUndefined();
     expect(held.left).toEqual([{ ...sag, since: NOW }]);
-    // A page moves in the run: the question would read differently, so it is asked again.
-    const changed = run(state, { type: "set_length", ids: ["s3"], lengthEighths: 6 * EIGHTHS_PER_PAGE });
+    // A page moves in the run: the same run with new figures is the same question, and the word holds (pass 1a, entry 36).
+    const longer = run(state, { type: "set_length", ids: ["s3"], lengthEighths: 6 * EIGHTHS_PER_PAGE });
+    expect(readWall(longer).findings.find((finding) => finding.kind === "sag")).toBeUndefined();
+    expect(readWall(longer).left).toHaveLength(1);
+    // The run's end is another scene now: the question would read differently, so it is asked again.
+    const changed = run(longer, { type: "update_note", id: "c", headline: "The new midpoint" });
     const again = readWall(changed);
     expect(again.findings.find((finding) => finding.kind === "sag")).toBeDefined();
     expect(again.left).toEqual([]);
     // Back to how it was, and the writer's word holds again.
-    const restored = run(changed, { type: "set_length", ids: ["s3"], lengthEighths: 4 * EIGHTHS_PER_PAGE });
+    const restored = run(changed, { type: "update_note", id: "c", headline: "Scene c" });
     expect(readWall(restored).left).toHaveLength(1);
     // ask_again takes the word back now.
     expect(readWall(run(restored, { type: "ask_again", kind: "sag" })).findings.find((finding) => finding.kind === "sag")).toBeDefined();
@@ -959,7 +994,7 @@ describe("story order: the arrows over the rows (R56)", () => {
 });
 
 describe("the sag waits for a claim (round fourteen, entry 12)", () => {
-  it("asks nothing while every run is the default page per card, and asks once a card in a run is sized or written", () => {
+  it("asks nothing while every run is the default page per card, and asks once half the cards in the runs are sized or written (pass 1a, entry 21)", () => {
     // Beats A, B, C, D; one card between A and B, three between B and C, one between C and D — all unsized.
     const cards = [{ id: "A", rank: "beat" as const }, { id: "s1" }, { id: "B", rank: "beat" as const }, { id: "s2" }, { id: "s3" }, { id: "s4" }, { id: "C", rank: "beat" as const }, { id: "s5" }, { id: "D", rank: "beat" as const }];
     const defaults = cards.reduce(
@@ -968,7 +1003,12 @@ describe("the sag waits for a claim (round fourteen, entry 12)", () => {
     );
     expect(defaults.notes.every((note) => note.lengthEighths === null)).toBe(true);
     expect(readWall(defaults).findings.some((f) => f.kind === "sag")).toBe(false);
-    const sized = run(defaults, { type: "set_length", ids: ["s2"], lengthEighths: 8 });
+    const one = run(defaults, { type: "set_length", ids: ["s2"], lengthEighths: 8 });
+    // One sized card of five is not a claim about the runs: the reading says the sag waits, and how many are unsized.
+    expect(readWall(one).findings.some((f) => f.kind === "sag")).toBe(false);
+    expect(readWall(one).sagWaiting).toEqual({ unsized: 4, total: 5 });
+    let sized = one;
+    for (const id of ["s3", "s4"]) sized = run(sized, { type: "set_length", ids: [id], lengthEighths: 8 });
     expect(readWall(sized).findings.some((f) => f.kind === "sag")).toBe(true);
     expect(readWall(sized).findings.find((f) => f.kind === "sag")?.text).toContain("About 3 pages run between");
     // The median run of one page reads "1 page", never "1 pages" (round thirteen, entry 15).
@@ -1127,5 +1167,42 @@ describe("each undecided thing once (round twenty-three, entries 38, 63)", () =>
     expect(blank).not.toContain('nobody in it: "The job centre"');
     // What is blank and not asked is still named.
     expect(blank).toContain("no when: every card (3)");
+  });
+});
+
+describe("a left question keeps its word when only its figures move (pass 1a, entry 36)", () => {
+  it("holds a left sag while the run is the same run, and asks again when the run's ends change", () => {
+    const state = wall(
+      { id: "b1", rank: "beat", headline: "Inciting" },
+      { id: "s1", pages: 3 },
+      { id: "b2", rank: "beat", headline: "Lock in" },
+      { id: "s2", pages: 4 },
+      { id: "s3", pages: 4 },
+      { id: "s4", pages: 4 },
+      { id: "b3", rank: "beat", headline: "Midpoint" },
+      { id: "s5", pages: 3 },
+      { id: "b4", rank: "beat", headline: "All is lost" },
+    );
+    const sag = readWall(state).findings.find((f) => f.kind === "sag")!;
+    const left = applyCommand(state, { type: "leave_question", kind: "sag", ids: sag.ids, text: sag.text, why: "that run is the story" }, NOW).state;
+    expect(readWall(left).findings.filter((f) => f.kind === "sag")).toEqual([]);
+    // A scene in the run measures longer: the same run, new figures, still left.
+    const longer = applyCommand(left, { type: "set_length", ids: ["s3"], lengthEighths: 6 * EIGHTHS_PER_PAGE }, NOW).state;
+    expect(readWall(longer).findings.filter((f) => f.kind === "sag")).toEqual([]);
+    expect(readWall(longer).left.some((f) => f.kind === "sag" && f.why === "that run is the story")).toBe(true);
+  });
+});
+
+describe("a person's empty want is listed as blank (pass 1a, entry 88)", () => {
+  it("names the people on the film's cards whose page has no want, and never asks", () => {
+    let state = wall({ id: "a" }, { id: "b" });
+    state = applyCommand(state, { type: "add_character", name: "Ciara Deasy", id: "ciara" }, NOW).state;
+    state = applyCommand(state, { type: "add_character", name: "Maeve", id: "maeve" }, NOW).state;
+    state = applyCommand(state, { type: "set_cast", ids: ["a"], characterIds: ["ciara"] }, NOW).state;
+    const { blank } = describeUndecided(state, readWall(state));
+    expect(blank).toContain("  - no want on the page (update_character wants): Ciara Deasy");
+    expect(readWall(state).findings.some((f) => f.text.includes("want"))).toBe(false);
+    const wanting = applyCommand(state, { type: "update_character", id: "ciara", wants: "to be told the truth" }, NOW).state;
+    expect(describeUndecided(wanting, readWall(wanting)).blank.some((line) => line.includes("no want"))).toBe(false);
   });
 });

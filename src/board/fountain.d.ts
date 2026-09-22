@@ -14,12 +14,16 @@ export declare const UNWRITTEN_MARK: string;
 export declare function standInFor(note: Pick<BoardNote, "change"> & Partial<Pick<BoardNote, "open">>): string;
 export declare function unmark(text: string | null | undefined): { text: string; marked: boolean };
 
+/** Two texts that print the same page (pass 1a, entry 61): a forced-action mark alone does not make a change. */
+export declare function sameOnThePage(a: string, b: string): boolean;
 export declare function titlePage(titles: {
   title?: string;
   episode?: string;
   credit?: string;
   author?: string;
   draftDate?: string;
+  /** The contact's lines, under Contact: (pass 1a, entry 50). */
+  contact?: string;
   notes?: string[];
 }): string;
 
@@ -32,6 +36,8 @@ export type FountainOptions = {
   author?: string;
   /** ISO date string; only the date is printed. */
   draftDate?: string;
+  /** The contact's lines, under Contact: (pass 1a, entry 50). */
+  contact?: string;
 };
 
 export declare function toFountain(state: BoardState, options?: FountainOptions): string;

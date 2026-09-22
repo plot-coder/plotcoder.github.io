@@ -15,6 +15,18 @@
 import { formatPages, boardEighths, targetWords } from "./reducer.js";
 import { PLACEHOLDER_CHANGE, storyOrder } from "./readWall.js";
 import { revisionLine, revisionMarks } from "./numbering.js";
+import { parseScene } from "./paginate.js";
+
+/**
+ * Two texts that print the same page are the same scene (pass 1a, entry 61):
+ * a round trip through Final Draft brings an all-caps action line back with
+ * Fountain's forced-action mark, and the card's text should not change for a
+ * mark the page never shows.
+ */
+export function sameOnThePage(a, b) {
+  const shape = (text) => JSON.stringify(parseScene(text ?? "").map(({ at: _at, ...element }) => element));
+  return shape(a) === shape(b);
+}
 
 function upper(text) {
   return text.trim().replace(/\s+/g, " ").toUpperCase();
@@ -115,13 +127,18 @@ export function unmark(text) {
 }
 
 /** The title page block. `titles` is what the writer would put above the script. */
-export function titlePage({ title, episode, credit, author, draftDate, notes }) {
+export function titlePage({ title, episode, credit, author, draftDate, contact, notes }) {
   const lines = [];
   if (title) lines.push(`Title: ${title}`);
   if (episode) lines.push(`Episode: ${episode}`);
   if (credit) lines.push(`Credit: ${credit}`);
   if (author) lines.push(`Author: ${author}`);
   if (draftDate) lines.push(`Draft date: ${draftDate}`);
+  // A contact runs to several lines; Fountain indents a value's lines under its key.
+  if (contact) {
+    lines.push("Contact:");
+    for (const line of String(contact).split("\n")) if (line.trim()) lines.push(`\t${line.trim()}`);
+  }
   if (notes && notes.length) {
     lines.push("Notes:");
     for (const line of notes) lines.push(`\t${line}`);
@@ -155,9 +172,12 @@ export function toFountain(state, options = {}) {
     episode: options.episode,
     author: options.author,
     draftDate: options.draftDate ? options.draftDate.slice(0, 10) : undefined,
+    contact: options.contact,
     notes,
   });
 
+  const byIdNote = new Map(state.notes.map((note) => [note.id, note]));
+  const headlineOfId = new Map(state.notes.map((note) => [note.id, note.headline]));
   const body = [];
   let beat = 0;
   for (const note of order) {
@@ -181,7 +201,11 @@ export function toFountain(state, options = {}) {
     const maybe = (note.maybeCharacterIds ?? []).map((id) => nameOf.get(id)).filter(Boolean).map((name) => `${name}?`);
     if (cast.length || maybe.length) marks.push(`with ${[...cast, ...maybe].join(", ")}${maybe.length ? " (? — not decided whether they are in it)" : ""}`);
     if ((note.castOpen ?? "").trim()) marks.push(`who ${cast.length || maybe.length ? "else " : ""}is in it, not decided: ${note.castOpen.trim()}`);
-    if (note.plants) marks.push(note.plantsWhat ? `plants ${note.plantsWhat}` : "plants something to pay off later");
+    // The plant and its payoff on both pages (pass 1a, entry 68): a reader of the script sees the string from either end.
+    const paidBy = (state.arrows ?? []).filter((arrow) => arrow.kind === "setup" && arrow.from === note.id).map((arrow) => headlineOfId.get(arrow.to)).filter(Boolean);
+    if (note.plants) marks.push(`${note.plantsWhat ? `plants ${note.plantsWhat}` : "plants something to pay off later"}${paidBy.length ? ` — pays off in "${paidBy.join('", "')}"` : ""}`);
+    const paysOff = (state.arrows ?? []).filter((arrow) => arrow.kind === "setup" && arrow.to === note.id).map((arrow) => { const from = byIdNote.get(arrow.from); return from ? `pays off ${from.plantsWhat ? from.plantsWhat : "what was planted"} from "${from.headline}"` : null; }).filter(Boolean);
+    marks.push(...paysOff);
     if (note.open) marks.push(`open: ${note.open}`);
     if (note.changeOpen) marks.push(`change line open: ${note.changeOpen}`);
     if (note.locationOpen) marks.push(`place open: ${note.locationOpen}`);
@@ -318,7 +342,7 @@ export function mergeFountain(state, parsed) {
       // export of an unwritten card coming back: still unwritten, not a page.
       const body = unmark(scene.text);
       const standIn = !(found.text ?? "").trim() && (body.marked || sameWords(body.text, found.change ?? ""));
-      if ((found.text ?? "") !== scene.text && !standIn) {
+      if ((found.text ?? "") !== scene.text && !standIn && !sameOnThePage(found.text ?? "", scene.text)) {
         commands.push({ type: "set_text", id: found.id, text: scene.text });
       }
       matched.push({ id: found.id, heading: scene.heading, created: false });

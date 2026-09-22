@@ -129,11 +129,29 @@ describe("revisions and the when reach the text forms (round fourteen, entries 2
     expect(setLine({ kind: "action", text: "She waits." }, true)).toBe(`${" ".repeat(GUTTER)}She waits.`.padEnd(GUTTER + 60 + 1) + " *");
   });
 
-  it("does not put a blank line between pages", () => {
+  it("prints a page turn as the page's number in the right margin between blank lines, never as a bare blank line (pass 1a, entry 51; round fourteen, entry 33)", () => {
     let state = seedState();
     const long = Array(70).fill("A line of action that runs on.").join("\n");
     state = applyCommand(state, { type: "set_text", id: "maya-letter", text: long }, NOW2).state;
     const text = toPlainText(state, { title: "Long" });
     expect(text).not.toMatch(/runs on\.\n\n {5}A line of action/);
+    expect(text).toMatch(/runs on\.\n\n {60,}2\.\n\n {5}A line of action/);
+    expect(text).not.toMatch(/ 1\.\n/);
+  });
+
+  it("prints the byline and the contact under the title in plain text and in Markdown (pass 1a, entry 50)", () => {
+    const state = seedState();
+    const text = toPlainText(state, { title: "Ninety-Nine", author: "Robert Douglas", contact: "12 The Quay\nrobert@example.com" });
+    expect(text).toMatch(/NINETY-NINE\n\n *Written by Robert Douglas\n\n {5}12 The Quay\n {5}robert@example.com\n/);
+    const md = toMarkdown(state, { title: "Ninety-Nine", author: "Robert Douglas", contact: "robert@example.com" });
+    expect(md.startsWith("# Ninety-Nine\n\n*Written by Robert Douglas*\n\nrobert@example.com  \n\n")).toBe(true);
+  });
+});
+
+describe("the lock's date on the plain text's title (pass 1a, entry 108)", () => {
+  it("prints when the numbers were locked, as lock_numbers promises", () => {
+    let state = seedState();
+    state = applyCommand(state, { type: "lock_numbers", order: state.notes.map((note) => note.id) }, "2026-09-22T12:00:00.000Z").state;
+    expect(toPlainText(state, { title: "Pilot" })).toContain("SCENE NUMBERS LOCKED 2026-09-22");
   });
 });

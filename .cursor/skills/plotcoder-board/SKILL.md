@@ -183,6 +183,10 @@ only when the server is started with `PLOTCODER_JSON=1`.
 
 ### Cards
 
+- `create_cards` — several cards in one call, wired in the order given, each
+  after the one before (the first after `after`); everything `create_note`
+  takes, on each. A treatment's scenes in one round trip; one reply names
+  every card's id, then the last card's reply for the wall's state.
 - `create_note` — add a card. Requires `headline` **and** `change` — unless
   the writer has not decided what changes: then pass **`changeOpen`** with
   their words ("I don't know yet") in place of `change`. The change line
@@ -317,6 +321,10 @@ only when the server is started with `PLOTCODER_JSON=1`.
   between — and with `aside: true` makes a scene the writer has cut and wants
   kept, placed under the story's rows. Neither takes `after` or `before`: it
   is not in the order.
+- A writer's **"cut it"** means `set_aside` unless they say delete: set aside
+  keeps the card on the wall, out of the film, the count and every export,
+  where they can bring it back; `delete_note` takes it off the wall. When
+  the word could mean either, keep it (pass 1a, entry 95).
 - `set_aside` — a card **on the wall and not in the film**: a scene the
   writer cuts and will not throw away, an idea with no place in the story
   yet, the version not chosen. By id or headline. It keeps its words, its
@@ -401,7 +409,10 @@ card of another board is not asked about as uncast here.
 
 - `add_character` — add a person to the project's cast by `name`. The reply
   names the person's id. The same name twice, on any board, is refused and
-  the existing record returned; use its id.
+  the existing record returned; use its id. A name given to `create_note`
+  or `cast` that the roster lacks is added by itself, so a treatment's
+  people come in with their cards; `add_character` is for a person before
+  their card, and the wall asks where they come in until one names them.
 - `rename_character` / `remove_character` — by id. Renaming carries to every
   card on every board; removing takes them off every card here and leaves the
   cards, and is refused while another board has them on a card — cast them
@@ -570,6 +581,11 @@ card of another board is not asked about as uncast here.
 
 ### The project
 
+- `set_title_page` — the byline and the contact for every script the
+  project sends out: "Written by …" under the title and the lines under it
+  (an address, an agent, an email), in Fountain, Final Draft, Markdown and
+  plain text, with the day's date as the draft date. `""` clears one.
+  Nothing is claimed until the writer says who it is by.
 - `set_premise` / `rename_project` — the line above every board's logline, and
   the project's name. `list_boards` shows both. The premise is the project's
   whatever its board count: a series' line, or what is true before a film

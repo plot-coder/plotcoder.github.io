@@ -151,6 +151,7 @@ describe("plotcoder MCP server", () => {
       "claim_account",
       "compare_structure",
       "create_arrow",
+      "create_cards",
       "create_group",
       "create_note",
       "create_thread",
@@ -178,6 +179,7 @@ describe("plotcoder MCP server", () => {
       "list_projects",
       "list_questions",
       "lock_numbers",
+      "measure",
       "list_reminders",
       "list_structures",
       "list_takes",
@@ -218,6 +220,7 @@ describe("plotcoder MCP server", () => {
       "set_payoff",
       "set_plant",
       "set_premise",
+      "set_title_page",
       "set_rank",
       "set_target",
       "set_when",
@@ -508,6 +511,48 @@ describe("plotcoder MCP server", () => {
       x: 640,
       y: 320,
     });
+  });
+
+  it("makes several cards in one call, each wired after the one before (create_cards, pass 1a entry 18)", async () => {
+    const before = await client.callToolData("list_board");
+    const text = await client.callTool("create_cards", {
+      after: "Maya burns the letter",
+      cards: [
+        { headline: "Tom finds the ashes", change: "He knows she burned it.", characters: ["Tom"] },
+        { headline: "Tom rings Maya", change: "She does not pick up.", rank: "beat" },
+        { headline: "Maya at the station", change: "She has not gone.", location: "The station" },
+      ],
+    });
+    expect(text).toMatch(/^Made 3 of 3 cards after "Maya burns the letter", each wired after the one before it:/);
+    expect(text).toContain('1. "Tom finds the ashes" (');
+    expect(text).toContain("2. \"Tom rings Maya\" (");
+    expect(text).toContain("a beat");
+    expect(text).toContain("at The station");
+    expect(text).toContain("After the last card: Created card");
+    const after = await client.callToolData("list_board");
+    expect(after.notes.length).toBe(before.notes.length + 3);
+    const [ashes, rings, station] = after.notes.slice(-3);
+    const follows = after.arrows.filter((arrow) => arrow.kind !== "setup");
+    expect(follows.some((arrow) => arrow.from === ashes.id && arrow.to === rings.id)).toBe(true);
+    expect(follows.some((arrow) => arrow.from === rings.id && arrow.to === station.id)).toBe(true);
+    expect(after.characters.some((person) => person.name === "Tom")).toBe(true);
+    for (const note of [ashes, rings, station]) await client.callTool("delete_note", { id: note.id });
+  });
+
+  it("says at the head of a reading what changed since the last one, and how long it was then (pass 1a, entry 90)", async () => {
+    await client.callTool("read_wall");
+    await client.callTool("create_note", { headline: "A scene between readings", change: "Something.", pages: 2 });
+    const read = await client.callTool("read_wall");
+    expect(read).toMatch(/since your last reading: 1 change \(create_note "A scene between readings"\); it was about [\d /]+ pages then and is about [\d /]+ now \(2 longer\)/);
+    // A stretch's length is one call (pass 1a, entry 94).
+    const stretch = await client.callTool("measure", { from: "Maya finds the letter", to: "A scene between readings" });
+    expect(stretch).toMatch(/^"Maya finds the letter" to "A scene between readings": 5 cards, about [\d /]+ pages/);
+    expect(stretch).toContain('  - "A scene between readings" — 2 pages (sized by the writer)');
+    expect(await client.callTool("measure", { from: "nowhere" })).toContain("No card with id or headline");
+    const again = await client.callTool("read_wall");
+    expect(again).toContain("since your last reading: no change; it was about");
+    const state = await client.callToolData("list_board");
+    await client.callTool("delete_note", { id: state.notes.at(-1).id });
   });
 
   it("moves, recolors and rewrites a card by id", async () => {
@@ -982,9 +1027,25 @@ describe("characters", () => {
     expect(board.notes.find((note) => note.id === "letter-aloud").location).toBe("the piano shop");
   });
 
-  it("renames a person and every card follows, because cards hold the id", async () => {
+  it("renames a person and every card follows, because cards hold the id — and every page, in the same step (pass 1a, entries 83, 84)", async () => {
+    await cast.callTool("write_scene", { id: "maya-letter", text: "Maya reads it twice.\n\nMAYA\nNot a word to Tom.\n\nMAYA\nNot one." });
     const text = await cast.callTool("rename_character", { id: "maya", name: "Maya Reed" });
     expect(text).toContain('Renamed to "Maya Reed"');
+    expect(text).toContain('The pages followed: the old name rewritten on 1 scene ("Maya finds the letter"), cues and action alike, in this one step.');
+    const pages = await cast.callTool("read_pages");
+    expect(pages).toContain("Maya Reed reads it twice.");
+    expect(pages).toContain("MAYA REED\nNot a word to Tom.");
+    // One undo takes the rename and the pages back together.
+    await cast.callTool("undo");
+    expect(await cast.callTool("read_pages")).toContain("MAYA\nNot a word to Tom.");
+    expect(await cast.callTool("list_board")).toContain("cast: Maya, Sam]");
+    // A cue that recurs is changed everywhere with all (entry 83).
+    expect(await cast.callTool("edit_scene", { id: "maya-letter", find: "MAYA", replace: "MAYA?" })).toContain("occurs 2 times");
+    expect(await cast.callTool("edit_scene", { id: "maya-letter", find: "MAYA\n", replace: "MAYA (quiet)\n", all: true })).toContain('Changed 2 places in "Maya finds the letter"');
+    await cast.callTool("undo");
+    await cast.callTool("write_scene", { id: "maya-letter", text: "" });
+    const again = await cast.callTool("rename_character", { id: "maya", name: "Maya Reed" });
+    expect(again).toContain('Renamed to "Maya Reed"');
     const board = await cast.callTool("list_board");
     expect(board).toContain("cast: Maya Reed, Sam]");
     const clash = await cast.callTool("rename_character", { id: "tom", name: "maya reed" });
@@ -992,7 +1053,8 @@ describe("characters", () => {
   });
 
   it("removes a person from the cast and from every card", async () => {
-    await cast.callTool("remove_character", { id: "tom" });
+    // A removed person's page goes with them, and the reply says so (pass 1a, entry 81).
+    expect(await cast.callTool("remove_character", { id: "tom" })).toContain("Their page — notes, want, pictures — goes with them");
     const board = await cast.callToolData("list_board");
     expect(board.characters.map((character) => character.id)).not.toContain("tom");
     expect(board.notes.every((note) => !note.characterIds.includes("tom"))).toBe(true);
@@ -1343,6 +1405,15 @@ describe("open fields (R61): the logline, the premise, a when and a board's name
   });
 
   it("leaves the premise and a board's name open, and a value decides each", async () => {
+    // The title page's byline and contact, on the project and on every export (pass 1a, entry 50).
+    expect(await client.callTool("set_title_page", {})).toContain("Say which");
+    const signed = await client.callTool("set_title_page", { author: "Robert Douglas", contact: "12 The Quay\nrobert@example.com" });
+    expect(signed).toContain("Title page: Written by Robert Douglas; contact: 12 The Quay / robert@example.com");
+    expect(await client.callTool("export_fountain", {})).toContain("Author: Robert Douglas\nDraft date: ");
+    expect(await client.callTool("export_text", {})).toContain("Written by Robert Douglas");
+    expect(await client.callTool("export_markdown", {})).toContain("*Written by Robert Douglas*");
+    expect(await client.callTool("set_title_page", { author: "", contact: "" })).toContain("Title page: no byline; no contact");
+    expect(await client.callTool("set_title_page", { author: "" })).toContain("Title page unchanged");
     expect(await client.callTool("set_premise", {})).toContain("Say which");
     expect(await client.callTool("set_premise", { open: "the buyer: housing, or a supermarket" })).toContain('Premise left open, by the writer\'s word: "the buyer: housing, or a supermarket"');
     expect(await client.callTool("list_boards")).toContain('premise: open, by the writer\'s word — "the buyer: housing, or a supermarket"');
@@ -1700,7 +1771,8 @@ describe("round sixteen", () => {
   it("reports the cues against the cast by the whole name (entry 30)", async () => {
     await six.callTool("add_character", { name: "Dana Kerr" });
     const wrote = await six.callTool("write_scene", { id: "maya-letter", text: "Rain.\n\nMAYA\nIt's here.\n\nDANA\nLeave it.\n\nTHE BOY\nNo." });
-    expect(wrote).toContain("Cues: MAYA (in the cast); DANA (nobody by that whole name — cues match by the whole name, and the cast has \"Dana Kerr\": cue DANA KERR); THE BOY (nobody in the cast).");
+    // A cue by one word of one name is that person (pass 1a, entry 32).
+    expect(wrote).toContain("Cues: MAYA (in the cast); DANA (Dana Kerr, by one word of the name); THE BOY (nobody in the cast).");
   });
 
   it("stars the changed lines in the pages reading under a revision, and says when a count moved (entries 31, 32)", async () => {
@@ -1823,6 +1895,12 @@ describe("set_plant", () => {
       plants: true,
     });
     expect(created.plants).toBe(true);
+    // Once both ends are written, the reading's setup line says the page each lands on (pass 1a, entry 86).
+    const payoff = await fold.callToolData("create_note", { headline: "The gun goes off", change: "It was loaded.", after: created.id });
+    await fold.callTool("create_arrow", { from: created.id, to: payoff.id, kind: "setup" });
+    await fold.callTool("write_scene", { id: created.id, text: "A gun on the wall. Nobody mentions it." });
+    await fold.callTool("write_scene", { id: payoff.id, text: "The gun goes off." });
+    expect(await fold.callTool("read_wall")).toMatch(/"The gun on the wall" sets up "The gun goes off"[^\n]*\(p\. 1 → p\. 1\)/);
   });
 });
 
@@ -2154,7 +2232,7 @@ describe("after the blind run", () => {
 
   it("says over or under in words, and what page_count counts", async () => {
     expect(await blind.callTool("set_target", { pages: 2 })).toMatch(/— [0-9 /]+ (over|under)\./);
-    expect(await blind.callTool("list_board")).toMatch(/how long it is: about [\d /]+ pages\. Say this one to the writer[^\n]*\n(  made of: [^\n]*\n)?  against the 2-page target the writer set \(set_target changes it\): [\d /]+ (over|under)\n/);
+    expect(await blind.callTool("list_board")).toMatch(/how long it is: about [\d /]+ pages\. Say this one to the writer[^\n]*\n(  made of: [^\n]*\n)?  against the 2-page target the writer set \(set_target changes it\): [\d /]+ (over|under)( — [^\n]*)?\n/);
     const written = await blind.callToolData("list_board");
     await blind.callTool("write_scene", { id: written.notes[0].id, text: "INT. KITCHEN - NIGHT\n\nMaya reads it twice." });
     const pages = await blind.callTool("page_count");
@@ -2564,7 +2642,7 @@ describe("the premise and reminders (roadmap item 6)", () => {
 
   it("writes a scene onto a card, measures it, reads the pages with ids, and imports a script", async () => {
     const wrote = await door.callTool("write_scene", { id: "maya-letter", text: "Rain on the window.\n\nMAYA\nTom?" });
-    expect(wrote).toMatch(/Wrote "Maya finds the letter": \d+ line\(s\) as they print .*measured at 1\/8 of a 55-line page/);
+    expect(wrote).toMatch(/Wrote "Maya finds the letter": \d+ line\(s\) as they print.*measured at 1\/8 of a 55-line page/);
     expect(await door.callTool("list_board")).toContain("[scene, 1/8 pages, written");
     const pages = await door.callTool("read_pages");
     expect(pages).toContain(".NO PLACE YET: MAYA FINDS THE LETTER    [[id: maya-letter · measured 1/8pp · no place: the headline heads the scene behind the mark, not a place]]");
@@ -2572,7 +2650,7 @@ describe("the premise and reminders (roadmap item 6)", () => {
     const imported = await door.callTool("import_fountain", {
       text: ".TOM LIES ABOUT THE JOB\n\nHe says the job is fine.\n\n.THE BANK\n\nThere is no loan.\n",
     });
-    expect(imported).toContain("Imported 2 scene(s): 1 written onto cards, 0 matched with the same text (unchanged), 1 new card(s)");
+    expect(imported).toContain('Imported 2 scene(s): 1 written onto cards ("Tom lies about the job"), 0 matched with the same text (unchanged), 1 new card(s)');
     const board = await door.callToolData("list_board");
     expect(board.notes.find((note) => note.id === "tom-lies").text).toBe("He says the job is fine.");
     expect(board.notes.some((note) => note.headline === "The Bank" && note.text === "There is no loan.")).toBe(true);
@@ -2590,6 +2668,8 @@ describe("the premise and reminders (roadmap item 6)", () => {
       xml: xml.replace("<Text>Rain on the window.", "<Text>Rain, harder now."),
     });
     expect(imported).toContain("Imported");
+    // The cards written onto, by name (pass 1a, entry 60).
+    expect(imported).toMatch(/1 written onto cards \("[^"]+"\)/);
     expect(await door.callTool("export_fdx")).toContain("<FinalDraft");
   });
 
@@ -2951,7 +3031,7 @@ describe("round ten's replies", () => {
     expect(read).toMatch(/\n  made of: of its \d+ cards, 0 measured from written text \(0 pages\), \d+ sized by the writer \([0-9/ ]+\), \d+ unsized and read as a page each \([0-9/ ]+\)\n/);
     expect(read).toContain("  the script so far, paginated, is page_count's number, not this one");
     expect(read).toMatch(/a beat's own pages are in no run — the 1 beat's own pages, about [0-9/ ]+, are in no run/);
-    expect(read).toContain('groups: "Act one" — 2 card(s), about 2 pages, read as an act');
+    expect(read).toContain('groups: "Act one" — 2 card(s), about 2 pages, 50% of the wall, read as an act');
     const tidy = await ten.callTool("organize");
     expect(tidy).toMatch(/an opening row of \d+ card\(s\) before the first beat, then 1 row\(s\), one per beat/);
     expect(await ten.callTool("rename_character", { id: board.characters[0].id, name: "Nessa" })).toMatch(/the name changed on \d+ cards?/);
@@ -3185,13 +3265,24 @@ describe("round twelve's decisions: leaving a question, a structure beside the w
     expect(read).toContain(`[sag] About 8 pages run between "B" and "C"`);
     expect(read).toContain("1 left by the writer");
     expect(await twelve.callTool("leave_question", { kind: "sag" })).toContain("Already left");
-    // A page moves in the run, and the wall asks again on its own.
+    // The file's left records against the ones holding (pass 1a, entry 112).
+    expect(await twelve.callTool("export_project")).toContain("1 left-question record(s) (1 holding on the wall now");
+    // A page moves in the run: the same run, new figures, and the writer's word holds (pass 1a, entry 36).
     await twelve.callTool("set_length", { ids: [s3.id], pages: 6 });
+    const longer = await twelve.callTool("read_wall");
+    expect(longer).toContain("left, for now");
+    expect(longer).toContain(`[sag] About 10 pages run between "B" and "C"`);
+    expect(longer.split("left, for now")[0]).not.toContain("[sag]");
+    // The records count what the reading counts (pass 1a, entry 62).
+    expect(await twelve.callTool("list_board")).toContain("left, for now: 1 question(s)");
+    await twelve.callTool("set_length", { ids: [s3.id], pages: 4 });
+    // The run's end is another scene: the question would read differently, and the wall asks again on its own.
+    await twelve.callTool("update_note", { id: c.id, headline: "C2" });
     const again = await twelve.callTool("read_wall");
-    expect(again).toContain("  - [sag] About 10 pages run");
+    expect(again).toContain('  - [sag] About 8 pages run between "B" and "C2"');
     expect(again).not.toContain("left, for now");
     // Back as it was, the word holds; ask_again takes it back now.
-    await twelve.callTool("set_length", { ids: [s3.id], pages: 4 });
+    await twelve.callTool("update_note", { id: c.id, headline: "C" });
     expect(await twelve.callTool("read_wall")).toContain("left, for now");
     expect(await twelve.callTool("ask_again", { kind: "empty" })).toContain('Nothing of kind "empty"');
     const back = await twelve.callTool("ask_again", { kind: "sag", ids: [b.id, c.id] });

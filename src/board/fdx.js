@@ -90,7 +90,10 @@ export function toFdx(state, options = {}) {
   if (options.title) title.push(paragraph("General", options.title, ' Alignment="Center"'));
   if (options.episode) title.push(paragraph("General", options.episode, ' Alignment="Center"'));
   if (options.author) title.push(paragraph("General", `Written by ${options.author}`, ' Alignment="Center"'));
-  if (options.draftDate) title.push(paragraph("General", options.draftDate.slice(0, 10)));
+  // Labelled, so a reader does not take the export's day for a draft they know (pass 1a, entry 55).
+  if (options.draftDate) title.push(paragraph("General", `Draft date: ${options.draftDate.slice(0, 10)}`));
+  // The contact, a line each, left as an address sits (pass 1a, entry 50).
+  if (options.contact) for (const line of String(options.contact).split("\n")) if (line.trim()) title.push(paragraph("General", line.trim()));
   // A lock is a fact about the document; that there is none is the app's business, not the title page's (round fifteen, entry 36).
   if (state.lock) title.push(paragraph("General", `Scene numbers locked ${String(state.lock.at).slice(0, 10)}.`));
   if (state.revision) title.push(paragraph("General", `${revisionLine(state)}; changed paragraphs are marked.`));

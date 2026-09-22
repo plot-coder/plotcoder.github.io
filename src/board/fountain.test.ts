@@ -105,6 +105,12 @@ describe("Fountain out (R23, slice a)", () => {
     expect(sceneHeading(placed.notes[0])).toBe(".THE PIANO SHOP");
   });
 
+  it("prints the byline and the contact's lines on the title page (pass 1a, entry 50)", () => {
+    expect(titlePage({ title: "Ninety-Nine", author: "Robert Douglas", draftDate: "2026-09-22", contact: "12 The Quay\nrobert@example.com" })).toBe(
+      "Title: Ninety-Nine\nAuthor: Robert Douglas\nDraft date: 2026-09-22\nContact:\n\t12 The Quay\n\trobert@example.com",
+    );
+  });
+
   it("writes a title page with the wall's numbers in its notes", () => {
     expect(titlePage({ title: "The Letter", episode: "Episode 2 of 3 · The pier", draftDate: "2026-09-13", notes: ["Logline: x"] })).toBe(
       "Title: The Letter\nEpisode: Episode 2 of 3 · The pier\nDraft date: 2026-09-13\nNotes:\n\tLogline: x",

@@ -11,7 +11,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createHostedDoor, credentialsFrom, envFor, opensSession } from "./plotcoder-http.mjs";
-import { createPlotcoderServer } from "./plotcoder-mcp-server.mjs";
+import { createPlotcoderServer, failedCallReply } from "./plotcoder-mcp-server.mjs";
 import { emptyMemory } from "../src/board/agentSession.js";
 
 let door;
@@ -262,5 +262,22 @@ describe("a session through the hosted door", () => {
       expect(reply).toContain("keeps no trail");
       expect(reply).not.toContain("Nothing of mine to undo");
     });
+  });
+});
+
+describe("a call that fails before it answers (pass 1a, entry 8)", () => {
+  it("says what failed, what a network failure means, and what to do, in words", () => {
+    const text = failedCallReply("list_projects", new TypeError("fetch failed"));
+    expect(text).toMatch(/^list_projects failed before it answered: fetch failed\./);
+    expect(text).toContain("the account not answering for a moment");
+    expect(text).toContain("call it again");
+    expect(text).toContain("list_board shows what landed");
+  });
+
+  it("tells any other failure apart from a network one", () => {
+    const text = failedCallReply("write_scene", new Error("boom"));
+    expect(text).toContain("boom");
+    expect(text).not.toContain("not answering");
+    expect(text).toContain("tell the writer what it said");
   });
 });

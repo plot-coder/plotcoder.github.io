@@ -321,6 +321,10 @@ only when the server is started with `PLOTCODER_JSON=1`.
   between — and with `aside: true` makes a scene the writer has cut and wants
   kept, placed under the story's rows. Neither takes `after` or `before`: it
   is not in the order.
+- A writer's **"cut it"** means `set_aside` unless they say delete: set aside
+  keeps the card on the wall, out of the film, the count and every export,
+  where they can bring it back; `delete_note` takes it off the wall. When
+  the word could mean either, keep it (pass 1a, entry 95).
 - `set_aside` — a card **on the wall and not in the film**: a scene the
   writer cuts and will not throw away, an idea with no place in the story
   yet, the version not chosen. By id or headline. It keeps its words, its

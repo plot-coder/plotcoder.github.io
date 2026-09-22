@@ -69,6 +69,18 @@ reads right; the block comes out before pass 1b.
   *Not built:* waiting on the word. Mockup to draw: the reading's new
   head beside the wall's, on the app's own paper.
 
+- [~] **D3 · A proposed cut** (entry 92). "Nothing on the wall can hold a
+  proposed cut: set_rank proposed is for turns only, and set_aside cuts
+  for real. A proposal has to live in chat, where the writer cannot see it
+  beside the cards." *Plan:* as R71's proposed turn — a card marked
+  *proposed aside* by the agent, drawn on the wall as set aside would be
+  but held less firmly (dashed), in the film and the count until the
+  writer keeps or strikes it; `set_aside` with `proposed: true`, and the
+  reading lists proposals under "waiting on the writer" as it does turns.
+  *Alternative:* a reminder naming the cards (not beside the cards; the
+  wall does not draw it). A person sees it: a mockup on the app's own
+  paper first, and Robert's word. *Not built.*
+
 ## N. Now — fixes a session can make, each with a test
 
 - [x] **N1 · A call that fails before it answers says so in words** (entry
@@ -264,7 +276,38 @@ reads right; the block comes out before pass 1b.
   removed person's reply says their page goes with them and undo brings it
   back.
 
+- [x] **N30 · A reading says what changed since the last one** (entries
+  90, 91). "What changed since" had no tool; the write tails' figures were
+  wrong six times (N24 fixed the tails). *Plan:* the session already keeps
+  the changes since the last reading; the next reading says them at its
+  head with how long the wall was then and is now. On the hosted door the
+  memory rides `agent_sessions`, so it holds across calls. *Built.*
+- [x] **N31 · `measure`: a stretch's length in one call** (entry 94).
+  Eight measures added by hand. *Plan:* from one card to another
+  inclusive, each card's pages and what kind of number it is, and the
+  total against the film's — a fact, never a verdict (D21). *Built.*
+- [x] **N32 · An empty want is listed as blank** (entries 88, 89). The
+  house reminder says give a clear want; no reading listed a blank one.
+  *Built:* "no want on the page" among the blanks, never asked.
+- [x] **N33 · The setup lines carry their pages** (entry 86). *Built:*
+  "(p. 4 → p. 6)" once both ends are written.
+- [x] **N34 · The guide says what "cut" means** (entry 95): set aside
+  keeps the card on the wall and out of the film; delete takes it off.
+  *Built* in the guide's words.
+
 ## Decided against, with the reason
+
+- **A second payoff on the page** (entry 87): the guide allows a second
+  setup arrow; drawing one is the agent's reading of the page, which is
+  the writer's to ask for.
+- **"The second act runs long" as the app's judgement** (entry 93): D21 —
+  the app counts and stays quiet; each act's share of the wall is now a
+  fact on the reading (N15), and `measure` gives any stretch.
+- **A leave re-asked as a chain grows** (entry 96). A chain of three turns
+  is a different question from a chain of two; the reason must be given
+  again. Left for a round to ask twice: a leave that holds for a pair
+  inside a longer chain.
+- **The rewrite's tail** (entry 97): N24.
 
 - **"Cut the boy" and the roster** (entry 82): the agent's inference,
   confirmed. Not the app's.
@@ -329,5 +372,9 @@ N16 · 32, 34, 35 → N17 · 33 → N18 · 42, 45, 47 → N19.
 **Decided against, the edits:** 63 (the gate), 64, 75, 76, 77, 80, 82.
 
 **Here as an item, the cut and the rename:** 78, 79, 81 → N29 · 83, 84 → N28.
+
+**Here as an item, the reading of the whole and the cuts:** 85 → D2 · 86 → N33 · 88, 89 → N32 · 90, 91 → N30 · 92 → D3 · 94 → N31 · 95 → N34.
+
+**Decided against, the reading of the whole:** 87, 93, 96, 97.
 
 **Not the app's:** 39, 41 (nothing new).

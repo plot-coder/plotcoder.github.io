@@ -51,10 +51,13 @@ describe("arrowOrder", () => {
     expect(arrowOrder(state)).toEqual(["c", "a", "b"]);
   });
 
-  it("places a card nothing points at by reading order among what is ready", () => {
+  it("places a card nothing points at last, once half the film is wired (round twenty-four, entry 21)", () => {
     const state = run(wall("a", "b", "c", "d"), ...follows(["a", "c"]));
-    // b and d have no arrows; a must precede c; reading order fills the rest.
-    expect(arrowOrder(state)).toEqual(["a", "b", "c", "d"]);
+    // b and d have no arrows and half the film is wired: they are unlinked, and come last in reading order.
+    expect(arrowOrder(state)).toEqual(["a", "c", "b", "d"]);
+    // Below half wired, the rows are the order and nothing is unlinked.
+    const barely = run(wall("a", "b", "c", "d", "e", "f"), ...follows(["a", "c"]));
+    expect(arrowOrder(barely)).toEqual(["a", "b", "c", "d", "e", "f"]);
   });
 
   it("ignores setups: a payoff is not pulled forward", () => {
@@ -78,6 +81,20 @@ describe("arrowOrder", () => {
 });
 
 describe("organizePoses without beats", () => {
+  it("does not lay an unlinked card: it stays where it is, or goes beneath the rows when they would run under it (round twenty-four, entry 21)", () => {
+    // a → b → c wired; "sign" on no arrow, standing where the second card of the row would be laid.
+    let state = run(wall("a", "b", "c"), ...follows(["a", "b"], ["b", "c"]));
+    state = run(state, { type: "create_note", id: "sign", x: 88 + STEP_X, y: 110, headline: "sign" });
+    const poses = organizePoses(state);
+    const sign = poseOf(poses, "sign");
+    expect(sign.unlinked).toBe(true);
+    expect(sign.y).toBeGreaterThan(110);
+    // Out of the rows' way, it is not touched at all.
+    let clear = run(wall("a", "b", "c"), ...follows(["a", "b"], ["b", "c"]));
+    clear = run(clear, { type: "create_note", id: "sign", x: 2000, y: 2000, headline: "sign" });
+    expect(organizePoses(clear).some((pose) => pose.id === "sign")).toBe(false);
+  });
+
   it("wraps the arrow order into rows five cards wide from the wall's origin", () => {
     const state = run(
       wall("a", "b", "c", "d", "e", "f", "g"),

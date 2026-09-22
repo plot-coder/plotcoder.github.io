@@ -1,6 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { classifyLines, LINES_PER_PAGE, layoutScene, paginate, parseScene, sceneLineCount, splitSpeech, wrap } from "./paginate";
 
+describe("a heading that wraps (round twenty-four, entry 51)", () => {
+  it("carries its scene number on its first line only", () => {
+    const heading = "PLACE NOT DECIDED: THE MORNING AFTER - THE MORNING AFTER THE LAST NIGHT OF SERVICE AT DOYLE'S";
+    const [block] = layoutScene([], heading, 8);
+    expect(block.lines.length).toBeGreaterThan(1);
+    expect(block.lines[0].sceneNumber).toBe(8);
+    expect(block.lines.slice(1).every((line) => line.sceneNumber === undefined)).toBe(true);
+  });
+});
+
 describe("wrap", () => {
   it("wraps at the width, keeps line breaks, and leaves a long word alone", () => {
     expect(wrap("Rain on the shop window. Maya lifts the lid.", 20)).toEqual(["Rain on the shop", "window. Maya lifts", "the lid."]);

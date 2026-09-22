@@ -637,9 +637,35 @@ export function readingOrder(notes) {
  * keeps it. The order organize lays the wall out in, and the order every
  * reading, numbering and page uses (R56). Returns the notes.
  */
+/**
+ * The film's cards on no follows arrow, once the film has any (round
+ * twenty-four, entries 21, 28, 34): a writer's "seen early, not decided where"
+ * is a card, and the wall seating it by its x,y — fourth, then between two
+ * others after every reorder — was the app deciding for them. An unlinked
+ * card is in the film and its length, in no run, printed last, and asked
+ * about. On a wall with no follows arrows the rows are the order, as ever.
+ */
+export function unlinkedCards(state) {
+  const film = state.notes.filter((note) => inStory(note));
+  const ids = new Set(film.map((note) => note.id));
+  const touched = new Set();
+  for (const arrow of state.arrows ?? []) {
+    if (arrow.kind === "setup" || !ids.has(arrow.from) || !ids.has(arrow.to)) continue;
+    touched.add(arrow.from);
+    touched.add(arrow.to);
+  }
+  // The reading's own threshold for asking about a card on no arrow: half the film wired. Below that the wall is
+  // rows, not arrows, and one arrow among seven cards would otherwise leave six unlinked.
+  if (touched.size === 0 || touched.size * 2 < film.length) return [];
+  return readingOrder(film.filter((note) => !touched.has(note.id)));
+}
+
 export function storyOrder(state, ids) {
   const scope = ids ? new Set(ids) : null;
-  const notes = state.notes.filter((note) => inStory(note) && (!scope || scope.has(note.id)));
+  const unlinked = new Set(unlinkedCards(state).map((note) => note.id));
+  const inScope = state.notes.filter((note) => inStory(note) && (!scope || scope.has(note.id)));
+  const notes = inScope.filter((note) => !unlinked.has(note.id));
+  const last = readingOrder(inScope.filter((note) => unlinked.has(note.id)));
   const reading = readingOrder(notes);
   const byId = new Map(reading.map((note) => [note.id, note]));
   const rank = new Map(reading.map((note, index) => [note.id, index]));
@@ -665,7 +691,34 @@ export function storyOrder(state, ids) {
     order.push(byId.get(id));
   }
   for (const note of reading) visit(note.id);
-  return order;
+  return [...order, ...last];
+}
+
+/**
+ * A thread's cards in the order the string runs (R60, round twenty-four,
+ * entry 17): the film's cards in story order; a version behind another card
+ * beside its front — where the front stands in the story, right after it when
+ * both are on the thread; and a card set aside last. A thread may run through
+ * a card that is not in the film: "it comes out there, if I choose that" is
+ * the writer's word before the choice, and dropping the card lost it.
+ */
+export function threadOrder(state, ids) {
+  const wanted = new Set(ids ?? []);
+  const byId = new Map(state.notes.map((note) => [note.id, note]));
+  const film = storyOrder(state).map((note) => note.id);
+  const at = new Map(film.map((id, index) => [id, index]));
+  const place = (id) => {
+    const note = byId.get(id);
+    if (!note) return null;
+    if (inStory(note)) return { at: at.get(id) ?? film.length, tie: 0 };
+    if (note.alternativeOf && at.has(note.alternativeOf)) return { at: at.get(note.alternativeOf), tie: 1 };
+    return { at: film.length + 1, tie: 2 };
+  };
+  return [...wanted]
+    .filter((id) => byId.has(id))
+    .map((id) => ({ id, ...place(id) }))
+    .sort((a, b) => a.at - b.at || a.tie - b.tie)
+    .map((item) => item.id);
 }
 /**
  * The combine log's rule, both halves (R60, R62). A thread tied at both ends
@@ -683,7 +736,12 @@ function tieIntoFold(state, thread, now) {
   const firstId = thread.noteIds[0];
   const lastId = thread.noteIds[thread.noteIds.length - 1];
   const first = state.notes.find((note) => note.id === firstId);
-  if (!first) return none;
+  const last = state.notes.find((note) => note.id === lastId);
+  if (!first || !last) return none;
+  // An end on a card out of the film — a version behind, a card set aside — is the writer's word and not yet a
+  // scene: the fold and the arrow wait until it is (round twenty-four, entry 17).
+  const waiting = [first, last].find((note) => !inStory(note));
+  if (waiting) return { state, fold: { waiting: waiting.id, firstId, lastId } };
   const what = first.plantsWhat ?? "";
   if (first.plants && what && what.toLowerCase() !== thread.name.toLowerCase()) {
     return { state, fold: { kept: true, firstId, what } };
@@ -697,12 +755,12 @@ function tieIntoFold(state, thread, now) {
       notes: next.notes.map((note) => (note.id === firstId ? bump(note, { plants: true, plantsWhat: thread.name }, now) : note)),
     };
   }
-  // One arrow per direction between two cards (R15): a follows arrow already
-  // running from the first card to the last means the payoff is the very next
-  // scene, and the setup cannot be drawn over it.
-  const existing = next.arrows.find((arrow) => arrow.from === firstId && arrow.to === lastId);
+  // One arrow per kind between two cards (R15, round twenty-four): a follows
+  // arrow already running from the first card to the last means the payoff is
+  // the very next scene, and the setup arrow is drawn beside it all the same.
+  const existing = next.arrows.find((arrow) => arrow.kind === "setup" && arrow.from === firstId && arrow.to === lastId);
   let arrow = null;
-  const adjacent = Boolean(existing && existing.kind !== "setup");
+  const adjacent = next.arrows.some((item) => item.kind !== "setup" && item.from === firstId && item.to === lastId);
   if (!existing) {
     const drawn = applyCommand(next, { type: "create_arrow", from: firstId, to: lastId, kind: "setup" }, now);
     if (drawn.changed) {
@@ -971,7 +1029,7 @@ export function applyCommand(state, command, now = nowIso()) {
       const ins = taken.filter((arrow) => arrow.kind !== "setup" && arrow.to === command.id);
       const outs = taken.filter((arrow) => arrow.kind !== "setup" && arrow.from === command.id);
       let joined = null;
-      if (ins.length === 1 && outs.length === 1 && ins[0].from !== outs[0].to && !arrows.some((arrow) => arrow.from === ins[0].from && arrow.to === outs[0].to)) {
+      if (ins.length === 1 && outs.length === 1 && ins[0].from !== outs[0].to && !arrows.some((arrow) => arrow.kind !== "setup" && arrow.from === ins[0].from && arrow.to === outs[0].to)) {
         joined = { id: newId(), from: ins[0].from, to: outs[0].to, kind: "follows" };
         arrows = [...arrows, joined];
       }
@@ -1114,16 +1172,14 @@ export function applyCommand(state, command, now = nowIso()) {
         threads = threads.map((thread) =>
           thread.noteIds.includes(frontId) ? { ...thread, noteIds: [...new Set(thread.noteIds.map((id) => (id === frontId ? chosen.id : id)))] } : thread,
         );
-        // Both versions may have carried an arrow to the same card: one pair of cards, one arrow, as create_arrow
-        // holds. A follows arrow wins over a setup between the same two — the payoff is the very next scene, and the
-        // fold says so on its own (R62's adjacent rule).
+        // Both versions may have carried an arrow of one kind to the same card: one pair of cards, one arrow per
+        // kind, as create_arrow holds (round twenty-four: a follows and a setup arrow may share the pair).
         const seen = new Map();
         for (const arrow of arrows) {
-          const key = `${arrow.from}>${arrow.to}`;
-          const held = seen.get(key);
-          if (!held || (held.kind === "setup" && arrow.kind !== "setup")) seen.set(key, arrow);
+          const key = `${arrow.from}>${arrow.to}>${arrow.kind}`;
+          if (!seen.has(key)) seen.set(key, arrow);
         }
-        arrows = arrows.filter((arrow) => seen.get(`${arrow.from}>${arrow.to}`) === arrow);
+        arrows = arrows.filter((arrow) => seen.get(`${arrow.from}>${arrow.to}>${arrow.kind}`) === arrow);
       }
       const keep = command.keep === true;
       if (keep) {
@@ -1168,7 +1224,7 @@ export function applyCommand(state, command, now = nowIso()) {
           const outs = arrows.filter((arrow) => arrow.kind !== "setup" && arrow.from === id);
           dropped += ins.length + outs.length;
           arrows = arrows.filter((arrow) => arrow.kind === "setup" || (arrow.from !== id && arrow.to !== id));
-          if (ins.length === 1 && outs.length === 1 && ins[0].from !== outs[0].to && !arrows.some((arrow) => arrow.from === ins[0].from && arrow.to === outs[0].to)) {
+          if (ins.length === 1 && outs.length === 1 && ins[0].from !== outs[0].to && !arrows.some((arrow) => arrow.kind !== "setup" && arrow.from === ins[0].from && arrow.to === outs[0].to)) {
             arrows = [...arrows, { id: newId(), from: ins[0].from, to: outs[0].to, kind: "follows" }];
             closed += 1;
           }
@@ -1181,11 +1237,15 @@ export function applyCommand(state, command, now = nowIso()) {
         return note;
       });
       const groups = aside ? pruneGroups(state.groups.map((group) => ({ ...group, noteIds: group.noteIds.filter((id) => !movingIds.has(id)) }))) : state.groups;
-      const threads = aside ? (state.threads ?? []).map((thread) => (thread.noteIds.some((id) => movingIds.has(id)) ? { ...thread, noteIds: thread.noteIds.filter((id) => !movingIds.has(id)) } : thread)) : state.threads;
+      // A thread through a card set aside keeps it (round twenty-four, entry 17): the string is the writer's word about
+      // where a thing is seen, and the card is still on the wall. The reading says the card is out of the film and
+      // asks nothing of that end. Its place on the string follows threadOrder: last, until it is back.
+      const threads = (state.threads ?? []).map((thread) => (thread.noteIds.some((id) => movingIds.has(id)) ? { ...thread, noteIds: threadOrder({ ...state, notes }, thread.noteIds) } : thread));
+      const onThreads = (state.threads ?? []).filter((thread) => thread.noteIds.some((id) => movingIds.has(id))).map((thread) => thread.id);
       return {
         state: { ...state, notes, arrows, groups, threads },
         changed: true,
-        result: { ids: [...movingIds], aside, arrowsDropped: dropped, closedOver: closed },
+        result: { ids: [...movingIds], aside, arrowsDropped: dropped, closedOver: closed, onThreads },
       };
     }
 
@@ -1196,8 +1256,8 @@ export function applyCommand(state, command, now = nowIso()) {
       const name = cleanThreadName(command.name);
       if (!name) return { state, changed: false };
       const wanted = (command.noteIds ?? []).filter((id, index, all) => all.indexOf(id) === index && state.notes.some((note) => note.id === id));
-      // Held in story order, whatever order the writer named them (R62).
-      const noteIds = storyOrder(state, wanted).map((note) => note.id);
+      // Held in the order the string runs, whatever order the writer named them (R62); a card out of the film stays on it (round twenty-four, entry 17).
+      const noteIds = threadOrder(state, wanted);
       const thread = {
         id: typeof command.id === "string" && command.id && !(state.threads ?? []).some((item) => item.id === command.id) ? command.id : newId(),
         name,
@@ -1218,7 +1278,7 @@ export function applyCommand(state, command, now = nowIso()) {
       if (Array.isArray(command.remove)) noteIds = noteIds.filter((id) => !command.remove.includes(id));
       // Held in story order, whatever order the cards were added (R62): the
       // rule below folds the first card in the story, not the last one named.
-      noteIds = storyOrder(state, noteIds).map((note) => note.id);
+      noteIds = threadOrder(state, noteIds);
       const name = command.name === undefined ? current.name : cleanThreadName(command.name) || current.name;
       const startOpen = typeof command.startOpen === "boolean" ? command.startOpen : current.startOpen;
       const endOpen = typeof command.endOpen === "boolean" ? command.endOpen : current.endOpen;
@@ -1327,14 +1387,17 @@ export function applyCommand(state, command, now = nowIso()) {
       // version behind another, or a card set aside. A setup arrow is a claim, and either may carry one.
       const kindWanted = ARROW_KINDS.includes(command.kind) ? command.kind : "follows";
       if (kindWanted !== "setup" && state.notes.some((note) => (note.id === command.from || note.id === command.to) && !inStory(note))) return { state, changed: false };
-      if (state.arrows.some((arrow) => arrow.from === command.from && arrow.to === command.to)) {
+      // One arrow per kind per pair (R15, round twenty-four, entry 26): a follows arrow and a setup arrow may run the
+      // same way between two cards — a plant whose payoff is the very next scene is ordinary — and a second of the
+      // same kind is the same arrow.
+      if (state.arrows.some((arrow) => arrow.from === command.from && arrow.to === command.to && arrow.kind === kindWanted)) {
         return { state, changed: false };
       }
       const arrow = {
         id: newId(),
         from: command.from,
         to: command.to,
-        kind: ARROW_KINDS.includes(command.kind) ? command.kind : "follows",
+        kind: kindWanted,
       };
       return {
         state: { ...state, arrows: [...state.arrows, arrow] },
@@ -1348,6 +1411,8 @@ export function applyCommand(state, command, now = nowIso()) {
       let changedArrow;
       const arrows = state.arrows.map((arrow) => {
         if (arrow.id !== command.id || arrow.kind === kind) return arrow;
+        // The pair already carries one of that kind: changing this one would make two of the same.
+        if (state.arrows.some((other) => other.id !== arrow.id && other.from === arrow.from && other.to === arrow.to && other.kind === kind)) return arrow;
         changedArrow = { ...arrow, kind };
         return changedArrow;
       });

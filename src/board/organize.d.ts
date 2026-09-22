@@ -23,4 +23,4 @@ export declare function arrowOrder(state: BoardState, ids?: ReadonlyArray<string
 export declare function organizePoses(
   state: BoardState,
   options?: { onlyIds?: ReadonlyArray<string> },
-): Array<Pose & { aside?: boolean }>;
+): Array<Pose & { aside?: boolean; unlinked?: boolean }>;

@@ -39,6 +39,19 @@
         "--strictPort"
       ],
       "port": 5181
+    },
+    {
+      "name": "plotcoder-dev-5199",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--",
+        "--port",
+        "5199",
+        "--strictPort"
+      ],
+      "port": 5199
     }
   ]
 }

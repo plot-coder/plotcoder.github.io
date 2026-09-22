@@ -75,6 +75,8 @@ export type WallReading = {
   /** Fields left open by the writer's word (R61): the board's logline, and each card's when, in story order. Listed, not asked. */
   /** Turns proposed and not yet kept or struck, in story order. */
   proposed: string[];
+  /** Cards on no follows arrow while the film has them: in the film, in no run, printed last; asked about. */
+  unlinked: string[];
   /** What is not decided about the film itself, in the writer's sentences. */
   openLines: string[];
   openFields: Array<{ field: "logline"; words: string } | { field: "location"; id: string; words: string } | { field: "when"; id: string; words: string } | { field: "change"; id: string; words: string } | { field: "cast"; id: string; words: string } | { field: "castOpen"; id: string; words: string }>;

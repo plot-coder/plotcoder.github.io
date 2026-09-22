@@ -180,7 +180,8 @@ function mergeDialogue(parts) {
  */
 export function layoutScene(elements, heading, sceneNumber) {
   const blocks = [];
-  if (heading) blocks.push({ kind: "heading", lines: wrap(heading, WIDTH.heading).map((text) => ({ kind: "heading", text, sceneNumber, src: -1 })) });
+  // A heading that wraps carries its number on its first line only (round twenty-four, entry 51).
+  if (heading) blocks.push({ kind: "heading", lines: wrap(heading, WIDTH.heading).map((text, index) => ({ kind: "heading", text, sceneNumber: index === 0 ? sceneNumber : undefined, src: -1 })) });
   for (let index = 0; index < elements.length; index += 1) {
     const element = elements[index];
     if (element.kind === "break") {

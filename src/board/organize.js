@@ -17,7 +17,7 @@
 // and it returns poses for apply_poses rather than touching anything.
 
 import { readingOrder, storyOrder } from "./readWall.js";
-import { NOTE_HEIGHT, NOTE_WIDTH } from "./reducer.js";
+import { NOTE_HEIGHT, NOTE_WIDTH, unlinkedCards } from "./reducer.js";
 
 export const ROW_CARDS = 5;
 export const GAP = 28;
@@ -116,7 +116,11 @@ export function organizePoses(state, options = {}) {
     .map((group) => ({ ...group, noteIds: group.noteIds.filter((id) => scopeIds.has(id)) }))
     .filter((group) => group.noteIds.length >= 2);
 
-  const order = keepGroupsTogether(arrowOrder(state, [...scopeIds]), groups);
+  // A card on no follows arrow, once the film has them, is not laid in the rows: the rows are the order, and it
+  // has no place in it yet (round twenty-four, entry 21). It stays where it is, or goes beneath when the rows
+  // would run under it, like a card set aside.
+  const unlinked = new Set(unlinkedCards(state).map((note) => note.id));
+  const order = keepGroupsTogether(arrowOrder(state, [...scopeIds]), groups).filter((id) => !unlinked.has(id));
   const originX = wanted ? Math.min(...scope.map((note) => note.x)) : ORIGIN_X;
   const originY = wanted ? Math.min(...scope.map((note) => note.y)) : ORIGIN_Y;
   const hasBeats = scope.some((note) => note.rank === "beat");
@@ -136,10 +140,11 @@ function clearAside(state, laid, originX) {
   if (laid.length === 0) return [];
   const laidIds = new Set(laid.map((pose) => pose.id));
   const covers = (card, pose) => Math.abs(card.x - pose.x) < NOTE_WIDTH && Math.abs(card.y - pose.y) < NOTE_HEIGHT;
-  const inTheWay = state.notes.filter((note) => note.aside === true && !laidIds.has(note.id) && laid.some((pose) => covers(note, pose)));
+  const unlinked = new Set(unlinkedCards(state).map((note) => note.id));
+  const inTheWay = state.notes.filter((note) => (note.aside === true || unlinked.has(note.id)) && !laidIds.has(note.id) && laid.some((pose) => covers(note, pose)));
   if (inTheWay.length === 0) return [];
   // Under everything the wall draws once the rows are laid, other cards set aside included.
   const others = state.notes.filter((note) => !note.alternativeOf && !laidIds.has(note.id) && !inTheWay.includes(note));
   const floor = Math.max(...laid.map((pose) => pose.y), ...others.map((note) => note.y));
-  return inTheWay.map((note, index) => ({ id: note.id, x: originX + index * STEP_X, y: floor + STEP_Y + GAP, rotate: note.rotate ?? 0, aside: true }));
+  return inTheWay.map((note, index) => ({ id: note.id, x: originX + index * STEP_X, y: floor + STEP_Y + GAP, rotate: note.rotate ?? 0, aside: note.aside === true, unlinked: unlinked.has(note.id) }));
 }

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { sceneNumbers } from "./numbering";
 import {
+  threadOrder,
+  unlinkedCards,
   formatMinutes,
   applyCommand,
   atPlace,
@@ -632,17 +634,19 @@ describe("choosing the version behind inherits what was tied to the scene (round
     expect(chosen.notes.some((note) => note.id === "front")).toBe(false);
   });
 
-  it("keeps its own fold, and never leaves two arrows between one pair of cards", () => {
+  it("keeps its own fold, and never leaves two arrows of one kind between one pair of cards", () => {
     let state = applyCommand(wall(), { type: "set_plant", ids: ["front"], plants: true, what: "the keys" } as never, at).state;
     state = applyCommand(state, { type: "set_plant", ids: ["behind"], plants: true, what: "the keys, in his hand" } as never, at).state;
     state = applyCommand(state, { type: "create_arrow", from: "first", to: "behind", kind: "setup" }, at).state;
     state = applyCommand(state, { type: "create_arrow", from: "behind", to: "last", kind: "setup" }, at).state;
     const chosen = applyCommand(state, { type: "choose_version", id: "behind" }, at).state;
     expect(chosen.notes.find((note) => note.id === "behind")?.plantsWhat).toBe("the keys, in his hand");
-    const pairs = chosen.arrows.map((arrow) => `${arrow.from}>${arrow.to}`);
+    const pairs = chosen.arrows.map((arrow) => `${arrow.from}>${arrow.to}>${arrow.kind}`);
     expect(new Set(pairs).size).toBe(pairs.length);
-    // The order survives: where a follows and a setup meet on one pair, the follows arrow stays.
+    // The order survives, and the setup arrows the version carried run beside the follows arrows on the same
+    // pairs: one arrow per kind (round twenty-four, entry 26).
     expect(chosen.arrows.filter((arrow) => arrow.kind !== "setup").map((arrow) => `${arrow.from}>${arrow.to}`)).toEqual(["first>behind", "behind>last"]);
+    expect(chosen.arrows.filter((arrow) => arrow.kind === "setup").map((arrow) => `${arrow.from}>${arrow.to}`).sort()).toEqual(["behind>last", "first>behind"]);
   });
 
   it("takes a kept card off the threads it was on, since it is set aside", () => {
@@ -928,6 +932,84 @@ describe("formatPages", () => {
 
 type Fold = { kept: boolean; firstId?: string; lastId?: string; what?: string; folded?: boolean; named?: boolean; arrow?: { from: string; to: string } | null; adjacent?: boolean } | null;
 
+describe("a card on no follows arrow is unlinked: in the film, last in the order (round twenty-four, entries 21, 28, 34)", () => {
+  const at = "2026-09-21T00:00:00.000Z";
+  function wallOf(...ids: string[]) {
+    let state = emptyState();
+    ids.forEach((id, index) => {
+      state = applyCommand(state, { type: "create_note", id, headline: id.toUpperCase(), change: "x", x: 100 + index * 240, y: 100 }, at).state;
+    });
+    return state;
+  }
+
+  it("comes last in story order once half the film is wired, and is nowhere special before that", () => {
+    let state = wallOf("a", "sign", "b", "c");
+    // No arrows: the rows are the order, and nothing is unlinked.
+    expect(unlinkedCards(state)).toEqual([]);
+    expect(storyOrder(state).map((note) => note.id)).toEqual(["a", "sign", "b", "c"]);
+    // Wired a → b → c with the sign card between them on the wall: it was fourth by its x; now it is last.
+    state = applyCommand(state, { type: "create_arrow", from: "a", to: "b" }, at).state;
+    state = applyCommand(state, { type: "create_arrow", from: "b", to: "c" }, at).state;
+    expect(unlinkedCards(state).map((note) => note.id)).toEqual(["sign"]);
+    expect(storyOrder(state).map((note) => note.id)).toEqual(["a", "b", "c", "sign"]);
+    // Wired in, it takes its place.
+    state = applyCommand(state, { type: "create_arrow", from: "a", to: "sign" }, at).state;
+    expect(unlinkedCards(state)).toEqual([]);
+  });
+
+  it("is not a version behind, a card set aside, or a card on a setup arrow alone", () => {
+    let state = wallOf("a", "b", "c", "d");
+    state = applyCommand(state, { type: "create_arrow", from: "a", to: "b" }, at).state;
+    state = applyCommand(state, { type: "create_arrow", from: "b", to: "c" }, at).state;
+    state = applyCommand(state, { type: "create_arrow", from: "a", to: "d", kind: "setup" }, at).state;
+    expect(unlinkedCards(state).map((note) => note.id)).toEqual(["d"]);
+    state = applyCommand(state, { type: "set_aside", ids: ["d"], aside: true } as never, at).state;
+    expect(unlinkedCards(state)).toEqual([]);
+  });
+});
+
+describe("a thread through a card out of the film (round twenty-four, entry 17)", () => {
+  const at = "2026-09-21T00:00:00.000Z";
+  function wallOf() {
+    let state = emptyState();
+    for (const [id, x] of [["a", 100], ["b", 340], ["c", 580]] as Array<[string, number]>) state = applyCommand(state, { type: "create_note", id, headline: id.toUpperCase(), change: "x", x, y: 100 }, at).state;
+    state = applyCommand(state, { type: "create_arrow", from: "a", to: "b" }, at).state;
+    state = applyCommand(state, { type: "create_arrow", from: "b", to: "c" }, at).state;
+    state = applyCommand(state, { type: "create_note", id: "b2", headline: "B, another way", change: "x", x: 340, y: 400 }, at).state;
+    return applyCommand(state, { type: "set_alternative", id: "b2", of: "b" }, at).state;
+  }
+
+  it("holds a version behind on the string, beside its front, and a card set aside last", () => {
+    const state = wallOf();
+    expect(threadOrder(state, ["c", "b2", "a"])).toEqual(["a", "b2", "c"]);
+    expect(threadOrder(state, ["c", "b2", "b", "a"])).toEqual(["a", "b", "b2", "c"]);
+    const strung = applyCommand(state, { type: "create_thread", id: "knife", name: "the knife", noteIds: ["b2"], startOpen: true }, at).state;
+    expect(strung.threads[0].noteIds).toEqual(["b2"]);
+    const aside = applyCommand(state, { type: "set_aside", ids: ["c"], aside: true } as never, at).state;
+    expect(threadOrder(aside, ["c", "a"])).toEqual(["a", "c"]);
+  });
+
+  it("makes the fold wait while an end of a tied thread is out of the film, and ties it once the version is chosen", () => {
+    const state = wallOf();
+    const tied = applyCommand(state, { type: "create_thread", id: "knife", name: "the knife", noteIds: ["a", "b2"] }, at);
+    expect((tied.result as { fold: { waiting?: string } }).fold).toMatchObject({ waiting: "b2" });
+    expect(tied.state.notes.find((note) => note.id === "a")?.plants).toBe(false);
+    expect(tied.state.arrows.some((arrow) => arrow.kind === "setup")).toBe(false);
+    // Chosen, the thread is already there, and update_thread's rule can fold it.
+    const chosen = applyCommand(tied.state, { type: "choose_version", id: "b2" }, at).state;
+    expect(chosen.threads[0].noteIds).toEqual(["a", "b2"]);
+    const folded = applyCommand(chosen, { type: "update_thread", id: "knife", name: "the fish knife" }, at).state;
+    expect(folded.notes.find((note) => note.id === "a")).toMatchObject({ plants: true, plantsWhat: "the fish knife" });
+  });
+
+  it("keeps a card set aside on the threads it was on, and says which", () => {
+    const state = applyCommand(wallOf(), { type: "create_thread", id: "knife", name: "the knife", noteIds: ["a", "c"] }, at).state;
+    const aside = applyCommand(state, { type: "set_aside", ids: ["c"], aside: true } as never, at);
+    expect(aside.state.threads[0].noteIds).toEqual(["a", "c"]);
+    expect((aside.result as { onThreads: string[] }).onThreads).toEqual(["knife"]);
+  });
+});
+
 describe("what the fold plants (R62)", () => {
   it("names a fold in the writer's words, folds an unfolded card when named, and forgets the words on unfolding", () => {
     const base = run(emptyState(), { type: "create_note", id: "a", headline: "The first morning", change: "x" });
@@ -995,8 +1077,10 @@ describe("what the fold plants (R62)", () => {
     );
     const appended = applyCommand(chain, { type: "update_thread", id: "key2", add: ["a"], startOpen: false }, NOW);
     expect((appended.result as { thread: { noteIds: string[] } }).thread.noteIds).toEqual(["a", "k"]);
-    // The payoff is the very next scene, and a follows arrow already runs there: the fold is named, and no setup arrow is drawn over it.
-    expect((appended.result as { fold: Fold }).fold).toMatchObject({ kept: false, firstId: "a", lastId: "k", folded: true, arrow: null, adjacent: true });
+    // The payoff is the very next scene, and a follows arrow already runs there: the fold is named, and the setup
+    // arrow is drawn beside the follows arrow all the same (one arrow per kind, round twenty-four).
+    expect((appended.result as { fold: Fold }).fold).toMatchObject({ kept: false, firstId: "a", lastId: "k", folded: true, arrow: { from: "a", to: "k" }, adjacent: true });
+    expect(appended.state.arrows.filter((arrow) => arrow.from === "a" && arrow.to === "k").map((arrow) => arrow.kind).sort()).toEqual(["follows", "setup"]);
     expect(appended.state.notes.find((note) => note.id === "k")?.plants).toBe(false);
     // A loose end, or one card: no rule.
     expect((applyCommand(wallOf, { type: "create_thread", id: "b", name: "the bucket", noteIds: ["t"], startOpen: true }, NOW).result as { fold: Fold }).fold).toBeNull();
@@ -1493,11 +1577,26 @@ describe("typed arrows (R30)", () => {
     expect(odd.state.arrows[0].kind).toBe("follows");
   });
 
-  it("keeps one arrow per direction whatever the kind", () => {
+  it("keeps one arrow per kind per direction: a follows and a setup arrow may share a pair, a second of one kind is the same arrow (round twenty-four, entry 26)", () => {
     const state = run(board(), { type: "create_arrow", from: "a", to: "b", kind: "setup" });
-    const again = applyCommand(state, { type: "create_arrow", from: "a", to: "b" }, NOW);
+    const both = applyCommand(state, { type: "create_arrow", from: "a", to: "b" }, NOW);
+    expect(both.changed).toBe(true);
+    expect(both.state.arrows.map((arrow) => arrow.kind).sort()).toEqual(["follows", "setup"]);
+    const again = applyCommand(both.state, { type: "create_arrow", from: "a", to: "b", kind: "setup" }, NOW);
     expect(again.changed).toBe(false);
-    expect(again.state).toBe(state);
+    expect(again.state).toBe(both.state);
+    // set_arrow_kind will not make two of one kind on a pair.
+    const setupId = both.state.arrows.find((arrow) => arrow.kind === "setup")!.id;
+    expect(applyCommand(both.state, { type: "set_arrow_kind", id: setupId, kind: "follows" }, NOW).changed).toBe(false);
+  });
+
+  it("closes the chain over a deleted or set-aside card even when a setup arrow already joins its neighbours (round twenty-four)", () => {
+    let state = run(board(), { type: "create_note", id: "c", headline: "C", change: "x", x: 800, y: 0 });
+    state = run(state, { type: "create_arrow", from: "a", to: "b" }, { type: "create_arrow", from: "b", to: "c" }, { type: "create_arrow", from: "a", to: "c", kind: "setup" });
+    const cut = applyCommand(state, { type: "delete_note", id: "b" }, NOW).state;
+    expect(cut.arrows.map((arrow) => `${arrow.from}>${arrow.to}>${arrow.kind}`).sort()).toEqual(["a>c>follows", "a>c>setup"]);
+    const aside = applyCommand(state, { type: "set_aside", ids: ["b"], aside: true } as never, NOW).state;
+    expect(aside.arrows.map((arrow) => `${arrow.from}>${arrow.to}>${arrow.kind}`).sort()).toEqual(["a>c>follows", "a>c>setup"]);
   });
 
   it("changes an arrow's kind, and is a no-op for the same kind or an unknown arrow", () => {

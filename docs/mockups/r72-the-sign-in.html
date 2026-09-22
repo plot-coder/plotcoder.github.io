@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<title>R72 — a sign-in for the door</title>
+<!-- The app's own paper: the source stylesheet, so the link never goes stale. -->
+<link rel="stylesheet" href="../../src/styles.css">
+<style>
+  html, body { height: auto; min-height: 100%; }
+  body { margin: 0; padding: 2rem 2.5rem 4rem; font-family: ui-sans-serif, system-ui, sans-serif; }
+  h1 { font: 600 1.05rem/1.3 ui-serif, Georgia, serif; margin: 0 0 0.25rem; }
+  h2.sec { font: 600 0.95rem/1.3 ui-serif, Georgia, serif; margin: 3rem 0 0.2rem; padding-top: 1.2rem; border-top: 1px solid rgba(127,127,127,0.25); }
+  .lede { font-size: 0.85rem; opacity: 0.78; margin: 0 0 1.2rem; max-width: 74ch; line-height: 1.5; }
+  .said { font-size: 0.82rem; line-height: 1.5; margin: 0.4rem 0 1.3rem; max-width: 78ch; padding: 0.6rem 0.9rem; border-left: 3px solid var(--over); background: rgba(127,127,127,0.08); }
+  .said b { font-weight: 600; }
+  .row { display: flex; gap: 2.2rem; flex-wrap: wrap; align-items: flex-start; }
+  .opt { width: 420px; max-width: 100%; }
+  .opt h3 { font: 700 0.62rem/1.3 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; margin: 0 0 0.6rem; }
+  .opt h3 em { font-style: normal; color: var(--over); }
+  .opt p { font-size: 0.8rem; line-height: 1.45; opacity: 0.82; margin: 0.7rem 0 0; max-width: 58ch; }
+  pre.read { font: 0.68rem/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; background: rgba(127,127,127,0.12); padding: 0.75rem 0.95rem; border-radius: 6px; white-space: pre-wrap; margin: 0.7rem 0; }
+  pre.read b { color: var(--over); font-weight: 600; }
+  /* A browser tab on plotcoder.com, the page as it would stand. */
+  .tab { border-radius: 8px; outline: 1px solid rgba(127,127,127,0.25); overflow: hidden; background: var(--canvas); }
+  .tab .bar { font: 0.62rem/1 ui-monospace, SFMono-Regular, Menlo, monospace; padding: 0.5rem 0.8rem; background: rgba(127,127,127,0.14); opacity: 0.8; }
+  .tab .page { padding: 1.4rem 1.5rem 1.6rem; }
+  .consent h2 { font: 600 1rem/1.3 ui-serif, Georgia, serif; margin: 0 0 0.6rem; }
+  .consent p { font-size: 0.82rem; line-height: 1.5; margin: 0.4rem 0; opacity: 0.9; }
+  .consent .who { font-weight: 600; }
+  .consent .actions { display: flex; gap: 0.6rem; margin-top: 1rem; }
+  .consent .fine { font-size: 0.7rem; opacity: 0.6; margin-top: 1rem; max-width: 46ch; }
+  .consent form { display: grid; gap: 0.5rem; margin: 0.8rem 0 0; max-width: 20rem; }
+  .consent input { font: inherit; font-size: 0.82rem; padding: 0.45rem 0.6rem; border-radius: 4px; border: 1px solid rgba(127,127,127,0.45); background: rgba(127,127,127,0.08); color: inherit; }
+  .ask { margin-top: 1.2rem; max-width: 80ch; font-size: 0.86rem; line-height: 1.55; }
+  .ask b { font-weight: 600; }
+  .words { font-size: 0.82rem; line-height: 1.55; background: rgba(127,127,127,0.12); border-radius: 6px; padding: 0.7rem 0.95rem; max-width: 78ch; }
+  .words li { margin: 0.25rem 0; }
+</style>
+</head>
+<body>
+<h1>R72: a sign-in for the door</h1>
+<p class="lede">Drawn 2026-09-21 on Robert's "let's build a sign in for users", from round twenty-two's C1: the desktop app's connector screen says OAuth is "Detected" on a door that has none, and the way through is "No sign-in" and a password base64 in a header. What follows is the one page a person would see, beside what ships today, and the question.</p>
+
+<!-- ───────────── 1 ───────────── -->
+<h2 class="sec">1 · What the writer does at the connector screen</h2>
+<div class="said"><b>As it ships.</b> Add custom connector: name, the address, then <i>Authentication</i>: the screen says OAuth is "Detected" and preselects "Sign in now". The writer must choose "No sign-in" instead and type a header — <code>authorization</code>, <code>Basic dGVzdEB0ZXN0LmNvbTp0ZXN0</code> — which is their email and password, base64, sitting in a settings screen. The on-ramp, the door's root and the prompt each explain this.</div>
+<div class="said"><b>With R72.</b> Add custom connector: name, the address. The screen says Sign in, because the door now says where its sign-in is. The writer presses it; a browser tab opens on plotcoder.com; they see page 2 below; they press Allow; the tab closes and the tools are there. Nothing else to type. The header still works for anyone with a script, and for the test account.</div>
+
+<!-- ───────────── 2 ───────────── -->
+<h2 class="sec">2 · The page on plotcoder.com, two ways it can be met</h2>
+<div class="row">
+  <div class="opt">
+    <h3>Signed in already · <em>one question</em></h3>
+    <div class="tab">
+      <div class="bar">plotcoder.com/oauth/consent</div>
+      <div class="page consent">
+        <h2>Let Claude work your walls?</h2>
+        <p>You are signed in as <span class="who">mairead@example.com</span>.</p>
+        <p><span class="who">Claude</span> is asking to work your PlotCoder account as you: every project you are on, reading and writing, until you take it back.</p>
+        <div class="actions">
+          <button type="button" class="project-action">Allow</button>
+          <button type="button" class="project-action project-action--ghost">Not now</button>
+        </div>
+        <p class="fine">Not you? Sign out on plotcoder.com first. You can take this back any time from the account sheet.</p>
+      </div>
+    </div>
+    <p>The writer's own session on plotcoder.com carries over: same origin, same sign-in. The app's words for who the asker is come from what the connector registered itself as — the desktop app says "Claude"; a script would say its own name. One question, two answers, and back.</p>
+  </div>
+  <div class="opt">
+    <h3>Signed out · <em>the app's sign-in, then the question</em></h3>
+    <div class="tab">
+      <div class="bar">plotcoder.com/oauth/consent</div>
+      <div class="page consent">
+        <h2>Sign in to let Claude work your walls</h2>
+        <p><span class="who">Claude</span> is asking to work a PlotCoder account. Sign in as yourself first.</p>
+        <form>
+          <input type="email" placeholder="Your email" value="">
+          <input type="password" placeholder="Your password" value="">
+          <div class="actions" style="margin-top:0.2rem">
+            <button type="button" class="project-action">Sign in</button>
+          </div>
+        </form>
+        <p class="fine">Your email and a password, as on the app. No account yet? Claim one on plotcoder.com, then come back.</p>
+      </div>
+    </div>
+    <p>The same form the account sheet has, the password hashed on the device before it is sent (R39), and then the page on the left. Not a second sign-in system: the app's own, on a page of its own.</p>
+  </div>
+</div>
+
+<!-- ───────────── 3 ───────────── -->
+<h2 class="sec">3 · What the door says, for a client</h2>
+<pre class="read">GET https://mcp.plotcoder.com/.well-known/oauth-protected-resource
+{ "resource": "https://mcp.plotcoder.com",
+  "authorization_servers": ["https://kmpahjsggbleygsnuwug.supabase.co/auth/v1"],
+  "bearer_methods_supported": ["header"] }
+
+POST https://mcp.plotcoder.com            (no sign-in)
+HTTP/1.1 401
+WWW-Authenticate: Bearer resource_metadata="https://mcp.plotcoder.com/.well-known/oauth-protected-resource"
+
+POST https://mcp.plotcoder.com
+Authorization: Bearer eyJ…                 (a token the writer allowed, from the project's own auth)
+→ the same server, as that writer, session id and all
+
+POST https://mcp.plotcoder.com
+Authorization: Basic base64(email:password) (as today; scripts, the CLI, the test account)</pre>
+<p class="lede">The authorization server is PlotCoder's own Supabase Auth, switched on as an OAuth 2.1 server on the dashboard; the desktop app registers itself with it (dynamic client registration), so there is no client id to hand anyone. The door takes a bearer token only if the project's keys sign it and it was minted for a connector, never the app's own session token.</p>
+
+<!-- ───────────── the ask ───────────── -->
+<h2 class="sec">The question</h2>
+<p class="ask"><b>Is this the best we can do?</b> The alternatives: keep the header (nothing to build, and every writer keeps a password in a settings screen under a prompt that misreads the door); make the door its own authorization server, minting tokens in the function (a second sign-in beside the account's, with keys to keep); take Supabase's ready-made consent screen (it is a page of ours anyway, and the words should be the app's). I recommend the pages above: the account the writer already has, one new page, the header kept for scripts.</p>
+<div class="words"><b>What Robert decides:</b>
+  <ul>
+    <li>the words on page 2 — "work your walls", "as you", "until you take it back";</li>
+    <li>whether the header stays as a second way in (I say yes: the CLI, scripts and the test account use it);</li>
+    <li>the dashboard switches are his hand: Authentication › OAuth Server on, dynamic client registration on, authorization path <code>/oauth/consent</code>, site URL <code>https://plotcoder.com</code>.</li>
+  </ul>
+</div>
+</body>
+</html>

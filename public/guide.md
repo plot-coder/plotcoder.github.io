@@ -74,12 +74,16 @@ tool call lands on the exact same board a person sees. (Wiring a server, the
 shell caller and the hosted door are under **The account, the app, or the
 file**, at the end; with the tools in front of you, skip them.)
 
-**Call these first, in any order:** `list_words` (the room's words), `read_wall`
-(what is here and what it asks — a fresh folder holds a sample wall, Maya and
-Tom and the letter, and says so; it is not the writer's), `list_workflows`
-(what a writer can ask for — and, in its first workflow, what a treatment
-should answer: the questions to ask the writer before building), `list_reminders` (the writer's principles),
-`list_board` (the records and their ids) — and only then change anything.
+**Call these first, as the on-ramp says:** `list_words` (the room's words),
+`list_workflows` (what a writer can ask for — and, in its first workflow, what
+a treatment should answer: the questions to ask the writer before building),
+`list_projects` (which wall is in hand; on an account, `new_project` or
+`open_project` comes next when it is not the writer's) — those three before
+anything else — then the three reads of the wall you are to work:
+`read_wall` (what is here and what it asks — a fresh folder holds a sample
+wall, Maya and Tom and the letter, and says so; it is not the writer's),
+`list_reminders` (the writer's principles), `list_board` (the records and
+their ids) — and only then change anything.
 
 ### Reading
 
@@ -342,7 +346,10 @@ only when the server is started with `PLOTCODER_JSON=1`.
   key", a subplot — with either end open until the writer ties it. Name it
   and string it through cards by id or headline in story order; say
   `startOpen` when the writer knows where it comes out and not where it is
-  first seen, `endOpen` the other way round. The reading lists every thread
+  first seen, `endOpen` when the card it comes out on is not decided — the
+  writer may know it comes out at the end and not on which card, or not what
+  happens when it does: what happens is the end card's change line, open in
+  their words, not the thread's. The reading lists every thread
   and asks about each open end from that end — "where is the ring first
   seen?" — until `update_thread` ties it (`add` the card and `startOpen`
   false in one call). The wall draws it as a dashed string through its
@@ -437,7 +444,9 @@ card of another board is not asked about as uncast here.
 - **Who is not on the wall.** A person in the treatment who is in no scene
   (a daughter spoken of, a name on a wall) belongs in the **notes** of the
   person they matter to, not the roster — the roster asks about anyone on no
-  card. Age, job, a bad knee: `notes` too, unless they are how the person looks
+  card. When the writer does not know yet whom they matter to (a dead man
+  whose funeral is a scene), the person goes on the film's open lines
+  (`add_open_line`, in the writer's words) until they do. Age, job, a bad knee: `notes` too, unless they are how the person looks
   or sounds.
 - **Under target** is reported as plainly as over — a number and "an
   estimate" — never as a verdict either way.
@@ -614,8 +623,10 @@ card of another board is not asked about as uncast here.
 - `rename_group` / `ungroup` — by group id. Ungrouping leaves the cards alone.
 - `create_arrow` — a directed arrow, `from` → `to`, with an optional `kind`
   (`follows` or `setup`).
-- `set_arrow_kind` — change an arrow's kind by id. One arrow per direction, so
-  change the kind rather than drawing it again.
+- `set_arrow_kind` — change an arrow's kind by id. One arrow per kind per
+  direction: a follows arrow and a setup arrow may share a pair (a plant whose
+  payoff is the very next scene has both), and a second of the same kind is
+  not drawn, so change the kind rather than drawing it again.
 - `delete_arrow` — by arrow id. Removes that direction only.
 - `set_order` — **"the order is: A, B, C…"**: the story order from a list
   of cards, by id or headline, in one step one undo takes back. The follows
@@ -679,7 +690,13 @@ card of another board is not asked about as uncast here.
    whose change line is empty is a card that has not earned its place.
 3. To lay cards out, draw the arrows and call `organize`. A straight
    sequence needs its `follows` arrows too: they are what `organize` lays
-   the wall out along, and the wall asks about a card no arrow touches. Use `move_note` only
+   the wall out along, and the wall asks about a card no arrow touches. Once
+  the film has follows arrows, a card on none is **unlinked**: in the film and
+  its length, in no run between two turns, last in the order and printed last,
+  not laid by `organize` — it stays where it is, or goes beneath the rows when
+  they would run under it — and the reading lists it and asks where it goes.
+  "Seen early, not decided where" is such a card, and the wall does not seat it
+  for the writer (round twenty-four). Use `move_note` only
    for a card that belongs somewhere the arrows do not say. Cards are 192px;
    leave ~30px gaps for a readable row.
 4. Mark the major turns with `set_rank`. Marking a beat never moves it.
@@ -696,7 +713,7 @@ reply, call `list_board`, and fix the ids.
 - A group needs **two or more cards that exist**. A card can only be in one
   group, so grouping it removes it from its previous frame.
 - An arrow cannot point at itself, cannot use an id that is not on the board,
-  and the same direction cannot be drawn twice.
+  and the same kind cannot be drawn twice the same way.
 - Arrows are **one-way**. `A→B` does not create `B→A`. Draw both if you mean
   both — that is two arrows, and deleting one leaves the other.
 

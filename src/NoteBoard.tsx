@@ -589,7 +589,11 @@ export function NoteBoard({
           const from = notesById.get(arrow.from);
           const to = notesById.get(arrow.to);
           if (!from || !to) return null;
-          const paired = arrows.some((item) => item.from === arrow.to && item.to === arrow.from);
+          // Bowed aside when an arrow runs the other way, or when this is the setup of a pair that also carries a
+          // follows arrow (one arrow per kind, R15): the dashed setup sits beside the solid line, not under it.
+          const paired =
+            arrows.some((item) => item.from === arrow.to && item.to === arrow.from) ||
+            (arrow.kind === "setup" && arrows.some((item) => item.kind !== "setup" && item.from === arrow.from && item.to === arrow.to));
           const layout = arrowLayout(from, to, paired);
           return (
             <g

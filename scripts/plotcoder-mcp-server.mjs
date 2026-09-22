@@ -3001,7 +3001,7 @@ server.registerTool(
 function revisionMark(state, id) {
   const mark = revisionMarks(state).get(id);
   if (!state.revision || !mark?.revised) return "";
-  return ` Marked changed in the ${state.revision.color} revision${mark.lines.size ? `: ${mark.lines.size} line(s), starred on the page and in every export` : ""}.`;
+  return ` Marked changed in the ${state.revision.color} revision${mark.lines.size ? `: ${mark.lines.size} line(s) of the text, starred on the page and in every export (a star on every printed line a long one wraps to, so the page may show more stars than lines)` : ""}.`;
 }
 
 server.registerTool(

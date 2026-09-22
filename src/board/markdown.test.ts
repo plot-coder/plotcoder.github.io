@@ -147,3 +147,11 @@ describe("revisions and the when reach the text forms (round fourteen, entries 2
     expect(md.startsWith("# Ninety-Nine\n\n*Written by Robert Douglas*\n\nrobert@example.com  \n\n")).toBe(true);
   });
 });
+
+describe("the lock's date on the plain text's title (pass 1a, entry 108)", () => {
+  it("prints when the numbers were locked, as lock_numbers promises", () => {
+    let state = seedState();
+    state = applyCommand(state, { type: "lock_numbers", order: state.notes.map((note) => note.id) }, "2026-09-22T12:00:00.000Z").state;
+    expect(toPlainText(state, { title: "Pilot" })).toContain("SCENE NUMBERS LOCKED 2026-09-22");
+  });
+});

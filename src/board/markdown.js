@@ -190,6 +190,8 @@ export function toPlainText(state, options = {}) {
   }
   if (options.author) out.push("", centred(`Written by ${options.author}`));
   if (state.revision) out.push("", centred(revisionLine(state).toUpperCase()));
+  // The lock's date, as lock_numbers promises of every script out (pass 1a, entry 108).
+  if (state.lock) out.push("", centred(`SCENE NUMBERS LOCKED ${String(state.lock.at).slice(0, 10)}`));
   // The contact where a title page keeps it: under the byline, at the left (pass 1a, entry 50).
   if (options.contact) out.push("", ...String(options.contact).split("\n").filter((line) => line.trim()).map((line) => `${" ".repeat(GUTTER)}${line.trim()}`));
   out.push("", "");

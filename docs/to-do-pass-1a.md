@@ -310,7 +310,15 @@ reads right; the block comes out before pass 1b.
   card brought back gets a letter where it lands, like any added scene.
   *Test:* kernel. *Built.*
 
+- [x] **N37 · The plain text keeps the lock's promise** (entries 108,
+  110). *Built:* "SCENE NUMBERS LOCKED <date>" under the title; the
+  revision's reply says its count is lines of the text and the page stars
+  every printed line a long one wraps to.
+
 ## Decided against, with the reason
+
+- **The page turns** (entry 109): N21, built after this run's server
+  started.
 
 - **"Put it back as it was" with no tool** (entry 104). Undo is a stack,
   newest first; a targeted undo of one older change is a design of its
@@ -409,5 +417,7 @@ N16 · 32, 34, 35 → N17 · 33 → N18 · 42, 45, 47 → N19.
 **The revision and the export:** 98, 99 → N35 · 100, 101, 102 decided against, above.
 
 **The lock and the restore:** 103 → N36 · 104, 105, 106, 107 decided against, above.
+
+**The script as it prints:** 108, 110 → N37 · 109 → N21.
 
 **Not the app's:** 39, 41 (nothing new).

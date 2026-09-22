@@ -295,7 +295,22 @@ reads right; the block comes out before pass 1b.
   keeps the card on the wall and out of the film; delete takes it off.
   *Built* in the guide's words.
 
+- [x] **N35 · Before a draft goes out** (entries 98, 99). The revision
+  marked one line because it began after five scenes had changed; the
+  numbers shifted with a cut because no lock was set; nothing at export
+  said either. *Plan:* every export's words say it: lock_numbers keeps the
+  numbers for the next file, start_revision marks what changes after,
+  and the agent says both to the writer at the first export — the reply
+  without a path is the file itself, so the words live in the
+  description. *Built.*
+
 ## Decided against, with the reason
+
+- **The "!" marks coming off on export** (entry 101): the round trip no
+  longer rewrites the stored text (entry 61's fix), so the two agree.
+- **No byline on the revision's title page** (entry 102): N20, built after
+  this run's server started.
+- **A clean edit** (entry 100): nothing to fix.
 
 - **A second payoff on the page** (entry 87): the guide allows a second
   setup arrow; drawing one is the agent's reading of the page, which is
@@ -376,5 +391,7 @@ N16 · 32, 34, 35 → N17 · 33 → N18 · 42, 45, 47 → N19.
 **Here as an item, the reading of the whole and the cuts:** 85 → D2 · 86 → N33 · 88, 89 → N32 · 90, 91 → N30 · 92 → D3 · 94 → N31 · 95 → N34.
 
 **Decided against, the reading of the whole:** 87, 93, 96, 97.
+
+**The revision and the export:** 98, 99 → N35 · 100, 101, 102 decided against, above.
 
 **Not the app's:** 39, 41 (nothing new).

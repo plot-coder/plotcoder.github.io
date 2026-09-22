@@ -8,6 +8,65 @@ done and merged, what is left, and the order I would take it in.
 
 ---
 
+## Next, for whoever picks this up (2026-09-22, after pass 1a)
+
+Everything is merged and released: `main`, npm and the hosted door carry
+**0.1.52**, which is pass 1a's thirty-eight fixes. No pull request is open.
+Read `docs/plan.md` (the three goals and the claim board), then
+`blind-runs/pass-1a-report.md` (its head and sections 3 to 6), then
+`docs/to-do-pass-1a.md` (every entry accounted for; D2 and D3 are the
+plans below). Three items, in the order worth taking them; each stands on
+its own, and each ends with a release when it touches the server or the
+app (the recipe is under "For whoever picks this up (2026-09-21)" below —
+a session runs it itself now; if the permission layer declines a step,
+`.claude/settings.local.json` is missing from that checkout and Robert
+copies it in).
+
+1. **R74 — the pages read against the wall.** Proposed in
+   `REQUIREMENTS.md`; the plan with its alternatives is D2 of
+   `docs/to-do-pass-1a.md`. Pass 1a found that with every scene written
+   the app can say nothing of the whole: the logline stands unchecked, a
+   setup arrow keeps claiming a payoff the page never makes, a turn is
+   undone by the next one unseen. **Do:** a mockup on the app's own paper
+   (`docs/mockups/r74-the-pages-against-the-wall.html`, in the shape of
+   the earlier mockups there) showing the reading's new head beside the
+   wall's, with the four word checks as questions and never verdicts — a
+   payoff page that never mentions what was planted, a scene whose page
+   has none of its change line's words, a person's want no scene of theirs
+   says, a logline the last scene does not touch — as they would print in
+   `read_wall` and in Read the wall in Reminders; then Robert's word; then
+   the checks in `readWall.js` (pure, tested), the words in the server, the
+   tab in the app, the guide and `public/writers.html`; then a release.
+2. **Pass 1b — "Doyle's" to a complete script, from notes** (the claim
+   board in `docs/plan.md`). **Before the run:** take the user-scope
+   `plotcoder-board` stdio block out of `~/.claude.json` on this Mac (copy
+   the file to `~/.claude/backups/claude.json.before-pass-1b` first), so
+   the fresh session goes in through the desktop connector `plot-coder`
+   and the pass measures the door's own session memory and undo, which 1a
+   did not. **Write the prompt** as `blind-runs/prompt.md` in pass 1a's
+   shape (archive 1a's as `blind-runs/pass-1a-prompt.md` without its
+   treatment): the wall from `round-twenty-four-idea.md` with the writer
+   answering as round twenty-four's head says, then every scene written —
+   including the cards born open, set aside and as versions — the script
+   out three ways, and the directions that ask what a complete script does
+   with the homes for "I don't know": what an open change line, an
+   unlinked card and a version behind print as, and what the writer has to
+   decide before the script is whole. **Run it** as 1a was run: Robert
+   pastes it into a no-folder session with the connector on before the
+   first message; the driving session relays the writer with
+   `send_message` and `list_events`, waits with background `sleep`, fixes
+   as it goes on a branch, files the report verbatim under a head as
+   `blind-runs/pass-1b-report.md`, works it in `docs/to-do-pass-1b.md`,
+   marks the claim board, and releases.
+3. **Two smaller decisions from pass 1a, both Robert's word after a
+   mockup:** a **proposed cut** (D3 of `docs/to-do-pass-1a.md` — as R71's
+   proposed turn: a card the agent marks *proposed aside*, drawn dashed,
+   in the film and the count until the writer keeps or strikes it, listed
+   under "waiting on the writer"); and the **title page's field in the
+   app** (N20 there — `set_title_page` exists and every export prints the
+   byline and contact; a person has no field for it yet; the wordmark's
+   project sheet is the likely home). One mockup page can carry both.
+
 ## Next, in order (2026-09-20, night, after round twenty-three)
 
 **2026-09-22, later: pass 1a has run** — "Ninety-Nine" to a complete script through the stdio package at 0.1.51 (this Mac's `~/.claude.json` still had the block; take it out before pass 1b): 114 entries in `blind-runs/pass-1a-report.md`, thirty-eight fixes built as it ran on Robert's "fix all of the friction" (`docs/to-do-pass-1a.md`; 729 unit tests), on the branch `claude/pass-1a`, pull request #152. **What it found:** the tools make a complete script and take every sweeping edit; what the app cannot do is say anything of the whole — the logline unchecked, a payoff the page does not make still claimed, a turn undone by the next unseen — which is **R74, proposed**, the pages read against the wall, waiting on Robert's word with a proposed cut (D3 of the list) and the title page's field in the app. Next: release 0.1.52; then R74's mockup, or pass 1b on "Doyle's".

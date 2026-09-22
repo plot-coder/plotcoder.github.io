@@ -3265,6 +3265,8 @@ describe("round twelve's decisions: leaving a question, a structure beside the w
     expect(read).toContain(`[sag] About 8 pages run between "B" and "C"`);
     expect(read).toContain("1 left by the writer");
     expect(await twelve.callTool("leave_question", { kind: "sag" })).toContain("Already left");
+    // The file's left records against the ones holding (pass 1a, entry 112).
+    expect(await twelve.callTool("export_project")).toContain("1 left-question record(s) (1 holding on the wall now");
     // A page moves in the run: the same run, new figures, and the writer's word holds (pass 1a, entry 36).
     await twelve.callTool("set_length", { ids: [s3.id], pages: 6 });
     const longer = await twelve.callTool("read_wall");

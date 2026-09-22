@@ -315,7 +315,20 @@ reads right; the block comes out before pass 1b.
   revision's reply says its count is lines of the text and the page stars
   every printed line a long one wraps to.
 
+- [x] **N38 · The project file says what it holds and what it does not**
+  (entries 112, 113). Seven left records in the file, two live on the
+  wall; "pictures and takes are not in the file" with no count. *Built:*
+  the reply counts left records against the ones holding now (a dropped
+  leave waits for its question to read the same again), and counts the
+  account's files that are not in the file, or says there are none.
+
 ## Decided against, with the reason
+
+- **The file inside a prose reply** (entry 111): the stdio door writes to
+  disk with `path`, which N5's words now say is this machine's; the agent
+  chose inline on entry 6's doubt.
+- **Nobody watching** (entry 114): not the app's; goal 2's pass is the
+  person's side.
 
 - **The page turns** (entry 109): N21, built after this run's server
   started.
@@ -419,5 +432,7 @@ N16 · 32, 34, 35 → N17 · 33 → N18 · 42, 45, 47 → N19.
 **The lock and the restore:** 103 → N36 · 104, 105, 106, 107 decided against, above.
 
 **The script as it prints:** 108, 110 → N37 · 109 → N21.
+
+**The copy and the presence:** 112, 113 → N38 · 111, 114 decided against, above.
 
 **Not the app's:** 39, 41 (nothing new).

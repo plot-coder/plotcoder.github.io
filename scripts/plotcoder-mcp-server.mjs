@@ -5149,6 +5149,28 @@ server.registerTool(
   },
 );
 
+/** Left-question records against the ones holding now (pass 1a, entry 112): a dropped leave stays as a record, waiting for its question to read the same again. */
+function leftRecordsLine(boards) {
+  const states = Object.values(boards).filter(isBoardState);
+  const records = states.reduce((sum, state) => sum + (state.left ?? []).length, 0);
+  if (!records) return "";
+  const holding = states.reduce((sum, state) => sum + readWall(normalizeState(state)).left.length, 0);
+  return `, ${records} left-question record(s) (${holding} holding on the wall now; the rest wait for their question to read the same again)`;
+}
+
+/** What the account holds for the project that the file does not (pass 1a, entry 113): a count, so nobody has to guess whether list_files is worth a call. */
+async function filesNotInTheFile(project) {
+  try {
+    const account = await findAccount();
+    if (!account?.client) return "Pictures and takes on the account are not in the file";
+    const { data } = await account.client.from("assets").select("id, kind").eq("project_id", project.id);
+    const n = (data ?? []).length;
+    return n ? `${n} file(s) on the account — pictures, takes, kept exports — are not in the file: list_files names them; fetch what matters before emptying` : "No pictures, takes or kept exports on the account for this project, so the file is the whole of it";
+  } catch {
+    return "Pictures and takes on the account are not in the file";
+  }
+}
+
 server.registerTool(
   "export_project",
   {
@@ -5165,7 +5187,7 @@ server.registerTool(
     const filmCards = Object.values(boards).filter(isBoardState).reduce((sum, board) => sum + board.notes.filter((note) => !note.alternativeOf && !note.aside).length, 0);
     const ownReminders = (reminders ?? []).filter((item) => !item.builtIn).length;
     const builtInReminders = (reminders ?? []).length - ownReminders;
-    const what = `"${project.name}": ${project.boards.length} board(s) — ${project.boards.map((meta) => `"${meta.name}" (${isBoardState(boards[meta.id]) ? boards[meta.id].notes.length : 0} cards)`).join(", ")} — ${cards} card(s) in all${cards !== filmCards ? ` (${filmCards} in the film, ${cards - filmCards} set aside or behind as other versions)` : ""}${reminders?.length ? `, ${reminders.length} reminder(s) (${builtInReminders} built in, ${ownReminders} the writer's own)` : ", the six built-in reminders come with every project and no reminders of the writer's own (none to write)"}${project.structures?.length ? `, ${project.structures.length} structure(s)` : ", no structures of the writer's own (none to write)"}. Pictures and takes on the account are not in the file`;
+    const what = `"${project.name}": ${project.boards.length} board(s) — ${project.boards.map((meta) => `"${meta.name}" (${isBoardState(boards[meta.id]) ? boards[meta.id].notes.length : 0} cards)`).join(", ")} — ${cards} card(s) in all${cards !== filmCards ? ` (${filmCards} in the film, ${cards - filmCards} set aside or behind as other versions)` : ""}${reminders?.length ? `, ${reminders.length} reminder(s) (${builtInReminders} built in, ${ownReminders} the writer's own)` : ", the six built-in reminders come with every project and no reminders of the writer's own (none to write)"}${project.structures?.length ? `, ${project.structures.length} structure(s)` : ", no structures of the writer's own (none to write)"}${leftRecordsLine(boards)}. ${await filesNotInTheFile(project)}`;
     if (args.path) {
       fs.mkdirSync(path.dirname(path.resolve(args.path)), { recursive: true });
       fs.writeFileSync(args.path, JSON.stringify(file, null, 2));

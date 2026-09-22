@@ -245,7 +245,33 @@ reads right; the block comes out before pass 1b.
   "setup arrows untouched (its plant still pays off in 'The pier at
   Fenit', about 2 2/8 pages later)".
 
+- [x] **N28 · A rename follows onto every page** (entries 83, 84).
+  `rename_character` renamed the roster and the cards and not a word of any
+  page; "everywhere" took a rename and two full rewrites, and nothing said
+  the script still said Blaney. *Plan:* the old name, whole, as written
+  and in capitals, is rewritten on every scene in the same step — one undo
+  for all of it — and the reply names the scenes and where a word of the
+  old name still stands alone (a surname), for `edit_scene` with `all`.
+  *Alternatives:* leave the pages alone and only warn (the writer's
+  "everywhere" is the word; a warning makes them do it by hand); rewrite
+  any word of the old name (a surname alone may be another person's).
+  *Best?* The whole name follows, the rest is named. *Test:* a written cue
+  and an action line follow the rename; one undo takes both back.
+  *Built,* with `edit_scene`'s `all` for a line that recurs (entry 83).
+- [x] **N29 · Three replies** (entries 78, 79, 81). *Built:* deleting a
+  setup arrow says the fold is unpaid now and the way off; a rewrite of a
+  card the writer sized says the estimate was for the scene as it was; a
+  removed person's reply says their page goes with them and undo brings it
+  back.
+
 ## Decided against, with the reason
+
+- **"Cut the boy" and the roster** (entry 82): the agent's inference,
+  confirmed. Not the app's.
+- **The dropped leave on the mechanic's-yard duplicate** (entry 76): N23
+  names it now; the question changed because a card in it was rewritten.
+- **Two counts of left questions** (entry 77): entry 62's fix.
+- **The runtime tail on a rewrite** (entry 80): N24.
 
 - **Move it, when a card is already there** (entry 64). The rule (one
   place, one stretch of time, one card) and the direction met; the agent
@@ -300,6 +326,8 @@ N16 · 32, 34, 35 → N17 · 33 → N18 · 42, 45, 47 → N19.
 
 **Here as an item, the import and the edits:** 60 → the import names its cards · 61 → a forced-action mark is no change · 62 → the records count what the reading counts · 65 → N23 · 66, 74 → N24 · 67, 70 → N25 · 68 → N26 · 69 → N27 · 68, 71, 72, 73 → D2 (R74, proposed).
 
-**Decided against, the edits:** 63 (the gate), 64, 75.
+**Decided against, the edits:** 63 (the gate), 64, 75, 76, 77, 80, 82.
+
+**Here as an item, the cut and the rename:** 78, 79, 81 → N29 · 83, 84 → N28.
 
 **Not the app's:** 39, 41 (nothing new).

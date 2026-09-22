@@ -1010,9 +1010,25 @@ describe("characters", () => {
     expect(board.notes.find((note) => note.id === "letter-aloud").location).toBe("the piano shop");
   });
 
-  it("renames a person and every card follows, because cards hold the id", async () => {
+  it("renames a person and every card follows, because cards hold the id — and every page, in the same step (pass 1a, entries 83, 84)", async () => {
+    await cast.callTool("write_scene", { id: "maya-letter", text: "Maya reads it twice.\n\nMAYA\nNot a word to Tom.\n\nMAYA\nNot one." });
     const text = await cast.callTool("rename_character", { id: "maya", name: "Maya Reed" });
     expect(text).toContain('Renamed to "Maya Reed"');
+    expect(text).toContain('The pages followed: the old name rewritten on 1 scene ("Maya finds the letter"), cues and action alike, in this one step.');
+    const pages = await cast.callTool("read_pages");
+    expect(pages).toContain("Maya Reed reads it twice.");
+    expect(pages).toContain("MAYA REED\nNot a word to Tom.");
+    // One undo takes the rename and the pages back together.
+    await cast.callTool("undo");
+    expect(await cast.callTool("read_pages")).toContain("MAYA\nNot a word to Tom.");
+    expect(await cast.callTool("list_board")).toContain("cast: Maya, Sam]");
+    // A cue that recurs is changed everywhere with all (entry 83).
+    expect(await cast.callTool("edit_scene", { id: "maya-letter", find: "MAYA", replace: "MAYA?" })).toContain("occurs 2 times");
+    expect(await cast.callTool("edit_scene", { id: "maya-letter", find: "MAYA\n", replace: "MAYA (quiet)\n", all: true })).toContain('Changed 2 places in "Maya finds the letter"');
+    await cast.callTool("undo");
+    await cast.callTool("write_scene", { id: "maya-letter", text: "" });
+    const again = await cast.callTool("rename_character", { id: "maya", name: "Maya Reed" });
+    expect(again).toContain('Renamed to "Maya Reed"');
     const board = await cast.callTool("list_board");
     expect(board).toContain("cast: Maya Reed, Sam]");
     const clash = await cast.callTool("rename_character", { id: "tom", name: "maya reed" });
@@ -1020,7 +1036,8 @@ describe("characters", () => {
   });
 
   it("removes a person from the cast and from every card", async () => {
-    await cast.callTool("remove_character", { id: "tom" });
+    // A removed person's page goes with them, and the reply says so (pass 1a, entry 81).
+    expect(await cast.callTool("remove_character", { id: "tom" })).toContain("Their page — notes, want, pictures — goes with them");
     const board = await cast.callToolData("list_board");
     expect(board.characters.map((character) => character.id)).not.toContain("tom");
     expect(board.notes.every((note) => !note.characterIds.includes("tom"))).toBe(true);

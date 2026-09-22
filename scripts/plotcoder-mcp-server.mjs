@@ -2983,7 +2983,7 @@ server.registerTool(
         // A card already written measures against its last measure, not the estimate under it (pass 1a, entries 66, 74).
         const wasWritten = beforeWrite && isMeasured(beforeWrite);
         const before = wasWritten ? noteEighths(beforeWrite) : result.lengthEighths !== null ? result.lengthEighths : 8;
-        const label = wasWritten ? `its last measure, ${formatPages(noteEighths(beforeWrite))} pages` : result.lengthEighths !== null ? `the writer's ${formatPages(result.lengthEighths)} pages` : "the page an unsized card is read as";
+        const label = wasWritten ? `its last measure, ${formatPages(noteEighths(beforeWrite))} pages${result.lengthEighths !== null ? `; the writer's ${formatPages(result.lengthEighths)}-page estimate underneath was for the scene as it was — set_length if it no longer holds` : ""}` : result.lengthEighths !== null ? `the writer's ${formatPages(result.lengthEighths)} pages` : "the page an unsized card is read as";
         const moved = noteEighths(result) - before;
         return ` (${label}${moved ? `, so the runtime moved ${formatPages(Math.abs(moved))} ${moved < 0 ? "down" : "up"}` : ""})`;
       })()}${once("write-estimate", "; the estimate is kept for when the text goes, and set_length changes it")}.${landed}${cueReport(state, result.text, result)}`,
@@ -3004,8 +3004,8 @@ server.registerTool(
   {
     title: "Change a line of a scene",
     description:
-      "Change one line of a card's scene text without resending the scene: the exact text to find, and what replaces it. Or add to it: insert with after (or before) puts a new paragraph after (or before) the paragraph that holds that text, set off by a blank line, leaving the rest as it stands — \"add a line after he gets on\". The text to find, or the anchor, must occur once in the scene. The card is measured again and, under a revision, the changed line is marked. For a new scene or a rewrite, write_scene.",
-    inputSchema: { id: z.string(), find: z.string().min(1).optional(), replace: z.string().optional(), insert: z.string().min(1).optional(), after: z.string().min(1).optional(), before: z.string().min(1).optional() },
+      "Change one line of a card's scene text without resending the scene: the exact text to find, and what replaces it. Or add to it: insert with after (or before) puts a new paragraph after (or before) the paragraph that holds that text, set off by a blank line, leaving the rest as it stands — \"add a line after he gets on\". The text to find, or the anchor, must occur once in the scene — or pass all: true with find and replace to change every occurrence at once (a cue that recurs, a name in the action; pass 1a, entry 83). The card is measured again and, under a revision, the changed line is marked. For a new scene or a rewrite, write_scene.",
+    inputSchema: { id: z.string(), find: z.string().min(1).optional(), replace: z.string().optional(), insert: z.string().min(1).optional(), after: z.string().min(1).optional(), before: z.string().min(1).optional(), all: z.boolean().optional().describe("With find and replace: change every occurrence in the scene, not one.") },
   },
   async (args) => {
     const { state: before } = await readBoard();
@@ -3034,12 +3034,12 @@ server.registerTool(
     if (!args.find || args.replace === undefined) return ok("Say which: find and replace, to change a line; or insert with after or before, to add one.");
     const count = text.split(args.find).length - 1;
     if (count === 0) return ok(`"${args.find}" is not in "${note.headline}"'s text. read_pages shows the scene as it stands.`);
-    if (count > 1) return ok(`"${args.find}" occurs ${count} times in "${note.headline}"; give more of the line so it occurs once.`);
+    if (count > 1 && !args.all) return ok(`"${args.find}" occurs ${count} times in "${note.headline}"; give more of the line so it occurs once, or pass all: true to change every one.`);
     const linesBefore = sceneLineCount(text);
-    const { state, result, live } = await commit({ type: "set_text", id: note.id, text: text.replace(args.find, args.replace) });
+    const { state, result, live } = await commit({ type: "set_text", id: note.id, text: args.all ? text.split(args.find).join(args.replace) : text.replace(args.find, args.replace) });
     const linesAfter = sceneLineCount(result.text);
     return ok(
-      `Changed one line of "${result.headline}": "${args.find}" → "${args.replace}"${where(live)}. Now ${linesAfter} line(s) as they print${linesAfter !== linesBefore ? ` (was ${linesBefore}; blank lines and wrapped lines count)` : ""}, measured at ${formatPages(noteEighths(result))} of a page${cameraReply(result.text)}.${revisionMark(state, result.id)}${cueReport(state, result.text, result)}`,
+      `Changed ${args.all && count > 1 ? `${count} places in` : "one line of"} "${result.headline}": "${args.find}" → "${args.replace}"${where(live)}. Now ${linesAfter} line(s) as they print${linesAfter !== linesBefore ? ` (was ${linesBefore}; blank lines and wrapped lines count)` : ""}, measured at ${formatPages(noteEighths(result))} of a page${cameraReply(result.text)}.${revisionMark(state, result.id)}${cueReport(state, result.text, result)}`,
       { ...result, eighths: noteEighths(result), measured: true },
     );
   },
@@ -3103,6 +3103,14 @@ function plantsTravelled(state, id) {
   const gap = (from, to) => (at.has(from) && at.has(to) ? ` about ${formatPages(Math.abs(at.get(to) - at.get(from)))} pages ${at.get(to) >= at.get(from) ? "later" : "earlier — before its plant now"}` : "");
   const lines = (state.arrows ?? []).filter((arrow) => arrow.kind === "setup" && (arrow.from === id || arrow.to === id)).map((arrow) => arrow.from === id ? `its plant still pays off in "${headline(arrow.to)}",${gap(arrow.from, arrow.to)}` : `it still pays off "${headline(arrow.from)}",${gap(arrow.from, arrow.to)}`);
   return lines.length ? ` (${lines.join("; ")})` : "";
+}
+
+/** The old name on a page becomes the new one, whole and as written, and in capitals where a cue has it (pass 1a, entry 83). */
+function renameOnPage(text, oldName, newName) {
+  const escaped = oldName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return text
+    .replace(new RegExp(`\\b${escaped.toUpperCase()}\\b`, "g"), newName.toUpperCase())
+    .replace(new RegExp(`\\b${escaped}\\b`, "g"), newName);
 }
 
 /** Which cards an import wrote onto, by headline (pass 1a, entry 60), so nobody has to read every page back to find them. */
@@ -3905,15 +3913,27 @@ server.registerTool(
   {
     title: "Rename character",
     description:
-      "Rename a person in the cast by id. Every card they are on follows, because cards hold the id, not the name.",
+      "Rename a person in the cast by id. Every card they are on follows, because cards hold the id, not the name; and every page follows too (pass 1a, entries 83, 84): the old name is rewritten on every scene where it appears whole — cues in capitals and action lines alike — in the same step, one undo for all of it, and the reply says which scenes changed and where a word of the old name still stands on its own (a surname alone), for edit_scene with all.",
     inputSchema: { id: z.string(), name: z.string().min(1) },
   },
   async (args) => {
     const { state: before } = await readBoard();
-    const { state, changed, result, live } = await commit({
-      type: "rename_character",
-      id: args.id,
-      name: args.name,
+    const wasNamed = (before.characters.find((item) => item.id === args.id)?.name ?? "").trim();
+    // The pages follow the rename (pass 1a, entries 83, 84): the whole old name, as written and in capitals, on every scene, in the same step.
+    const pagesChanged = [];
+    const { state, changed, value: result, live } = await commitAll(`rename_character "${args.name}"`, (step, current) => {
+      const done = step({ type: "rename_character", id: args.id, name: args.name });
+      if (!done.changed || !wasNamed) return done.result;
+      for (const note of current().notes) {
+        const text = note.text ?? "";
+        if (!text.trim()) continue;
+        const rewritten = renameOnPage(text, wasNamed, args.name.trim());
+        if (rewritten !== text) {
+          step({ type: "set_text", id: note.id, text: rewritten });
+          pagesChanged.push(note.headline);
+        }
+      }
+      return done.result;
     });
     if (!changed) {
       if (result) return ok(`Not renamed: "${result.name}" (${result.id}) already has that name.`);
@@ -3925,7 +3945,13 @@ server.registerTool(
     const oldName = (before.characters.find((item) => item.id === result.id)?.name ?? "").trim();
     const stale = oldName ? CHARACTER_FIELDS.filter((field) => (result[field] ?? "").toLowerCase().includes(oldName.toLowerCase())) : [];
     const staleLine = stale.length ? ` The page's ${stale.join(", ")} still mention${stale.length === 1 ? "s" : ""} "${oldName}"; the page is untouched.` : "";
-    return ok(`Renamed to "${result.name}" (${result.id})${where(live)}; the name changed on ${followed} card${followed === 1 ? "" : "s"}.${staleLine}`, result);
+    // A word of the old name that is not in the new one — a surname alone — still standing on a scene.
+    const newWords = new Set(result.name.toLowerCase().split(/\s+/));
+    const oldWords = oldName.toLowerCase().split(/\s+/).filter((word) => word.length > 1 && !newWords.has(word));
+    const stillOn = oldWords.length ? state.notes.filter((note) => oldWords.some((word) => new RegExp(`\\b${word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i").test(note.text ?? ""))).map((note) => `"${note.headline}"`) : [];
+    const pagesLine = pagesChanged.length ? ` The pages followed: the old name rewritten on ${pagesChanged.length} scene${pagesChanged.length === 1 ? "" : "s"} (${pagesChanged.map((headline) => `"${headline}"`).join(", ")}), cues and action alike, in this one step.` : " No scene's text carried the old name whole.";
+    const stillLine = stillOn.length ? ` "${oldWords.join(" ")}" still stands on its own in ${stillOn.join(", ")}: edit_scene with all replaces every occurrence in a scene.` : "";
+    return ok(`Renamed to "${result.name}" (${result.id})${where(live)}; the name changed on ${followed} card${followed === 1 ? "" : "s"}.${pagesLine}${stillLine}${staleLine}`, result);
   },
 );
 
@@ -4085,7 +4111,7 @@ server.registerTool(
     }
     const { changed, live } = await commit({ type: "remove_character", id: args.id });
     if (!changed) return ok(`No character with id ${args.id}. Call list_board for the cast.`);
-    return ok(`Removed "${person.name}" from the project's cast and from every card${where(live)}.`);
+    return ok(`Removed "${person.name}" from the project's cast and from every card${where(live)}. Their page — notes, want, pictures — goes with them; undo brings it all back, and add_character would start them blank.`);
   },
 );
 
@@ -5284,7 +5310,10 @@ server.registerTool(
     const { changed, live } = await commit({ type: "delete_arrow", id: args.id });
     if (!changed) return ok(`No arrow with id ${args.id}. Call list_board for the real ids.`);
     const name = (id) => `"${before.notes.find((note) => note.id === id)?.headline ?? id}"`;
-    return ok(`Deleted the ${arrow?.kind ?? "follows"} arrow ${name(arrow?.from)} → ${name(arrow?.to)}${where(live)}. Any arrow the other way is untouched.`);
+    // A setup arrow gone leaves its fold unpaid (pass 1a, entry 78): say the way off, so the question does not live for one call.
+    const fromCard = before.notes.find((note) => note.id === arrow?.from);
+    const foldNow = arrow?.kind === "setup" && fromCard?.plants ? ` The fold on ${name(arrow.from)} now has no payoff, so the wall asks where it pays off; if the plant itself is gone, set_plant with plants false takes the fold off in the same breath.` : "";
+    return ok(`Deleted the ${arrow?.kind ?? "follows"} arrow ${name(arrow?.from)} → ${name(arrow?.to)}${where(live)}. Any arrow the other way is untouched.${foldNow}`);
   },
 );
 

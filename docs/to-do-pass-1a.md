@@ -14,6 +14,14 @@ the kernel; **test**, and look at it in the app when a person can see it.
 
 Status marks: `[ ]` open · `[~]` planned and asked · `[x]` built and tested.
 
+**Where it stands (2026-09-22, the run stopped):** 114 entries, every one
+accounted for at the foot. **Built as the run went, each with a test: N1 to
+N38 and D1** (729 unit tests, `npm run build` clean). **Waiting on Robert's
+word: D2 (R74, the pages read against the wall), D3 (a proposed cut), and
+the title page's field in the app (N20).** The report is
+`blind-runs/pass-1a-report.md`. The stdio block in `~/.claude.json` comes
+out before pass 1b, so it runs through the connector.
+
 **The way in, as it happened.** The session went in through the user-scope
 stdio block in `~/.claude.json` (`npx -y plotcoder-board@latest`, signed in
 as the test account), which this Mac still had, not the desktop connector

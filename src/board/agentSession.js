@@ -45,6 +45,8 @@ export function normalizeMemory(raw) {
       findings: raw.lastReading.findings
         .filter((finding) => finding && typeof finding.kind === "string" && typeof finding.text === "string")
         .map((finding) => ({ kind: finding.kind, text: finding.text, ids: strings(finding.ids) })),
+      // How long the wall was at that reading (pass 1a, entry 90), so the next reading can say what moved.
+      ...(typeof raw.lastReading.eighths === "number" ? { eighths: raw.lastReading.eighths } : {}),
     };
   }
   return memory;

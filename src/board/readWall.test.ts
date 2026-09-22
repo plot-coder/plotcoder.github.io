@@ -1192,3 +1192,17 @@ describe("a left question keeps its word when only its figures move (pass 1a, en
     expect(readWall(longer).left.some((f) => f.kind === "sag" && f.why === "that run is the story")).toBe(true);
   });
 });
+
+describe("a person's empty want is listed as blank (pass 1a, entry 88)", () => {
+  it("names the people on the film's cards whose page has no want, and never asks", () => {
+    let state = wall({ id: "a" }, { id: "b" });
+    state = applyCommand(state, { type: "add_character", name: "Ciara Deasy", id: "ciara" }, NOW).state;
+    state = applyCommand(state, { type: "add_character", name: "Maeve", id: "maeve" }, NOW).state;
+    state = applyCommand(state, { type: "set_cast", ids: ["a"], characterIds: ["ciara"] }, NOW).state;
+    const { blank } = describeUndecided(state, readWall(state));
+    expect(blank).toContain("  - no want on the page (update_character wants): Ciara Deasy");
+    expect(readWall(state).findings.some((f) => f.text.includes("want"))).toBe(false);
+    const wanting = applyCommand(state, { type: "update_character", id: "ciara", wants: "to be told the truth" }, NOW).state;
+    expect(describeUndecided(wanting, readWall(wanting)).blank.some((line) => line.includes("no want"))).toBe(false);
+  });
+});

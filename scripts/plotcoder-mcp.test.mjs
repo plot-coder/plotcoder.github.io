@@ -179,6 +179,7 @@ describe("plotcoder MCP server", () => {
       "list_projects",
       "list_questions",
       "lock_numbers",
+      "measure",
       "list_reminders",
       "list_structures",
       "list_takes",
@@ -536,6 +537,22 @@ describe("plotcoder MCP server", () => {
     expect(follows.some((arrow) => arrow.from === rings.id && arrow.to === station.id)).toBe(true);
     expect(after.characters.some((person) => person.name === "Tom")).toBe(true);
     for (const note of [ashes, rings, station]) await client.callTool("delete_note", { id: note.id });
+  });
+
+  it("says at the head of a reading what changed since the last one, and how long it was then (pass 1a, entry 90)", async () => {
+    await client.callTool("read_wall");
+    await client.callTool("create_note", { headline: "A scene between readings", change: "Something.", pages: 2 });
+    const read = await client.callTool("read_wall");
+    expect(read).toMatch(/since your last reading: 1 change \(create_note "A scene between readings"\); it was about [\d /]+ pages then and is about [\d /]+ now \(2 longer\)/);
+    // A stretch's length is one call (pass 1a, entry 94).
+    const stretch = await client.callTool("measure", { from: "Maya finds the letter", to: "A scene between readings" });
+    expect(stretch).toMatch(/^"Maya finds the letter" to "A scene between readings": 5 cards, about [\d /]+ pages/);
+    expect(stretch).toContain('  - "A scene between readings" — 2 pages (sized by the writer)');
+    expect(await client.callTool("measure", { from: "nowhere" })).toContain("No card with id or headline");
+    const again = await client.callTool("read_wall");
+    expect(again).toContain("since your last reading: no change; it was about");
+    const state = await client.callToolData("list_board");
+    await client.callTool("delete_note", { id: state.notes.at(-1).id });
   });
 
   it("moves, recolors and rewrites a card by id", async () => {
@@ -1878,6 +1895,12 @@ describe("set_plant", () => {
       plants: true,
     });
     expect(created.plants).toBe(true);
+    // Once both ends are written, the reading's setup line says the page each lands on (pass 1a, entry 86).
+    const payoff = await fold.callToolData("create_note", { headline: "The gun goes off", change: "It was loaded.", after: created.id });
+    await fold.callTool("create_arrow", { from: created.id, to: payoff.id, kind: "setup" });
+    await fold.callTool("write_scene", { id: created.id, text: "A gun on the wall. Nobody mentions it." });
+    await fold.callTool("write_scene", { id: payoff.id, text: "The gun goes off." });
+    expect(await fold.callTool("read_wall")).toMatch(/"The gun on the wall" sets up "The gun goes off"[^\n]*\(p\. 1 → p\. 1\)/);
   });
 });
 

@@ -769,6 +769,10 @@ export function describeUndecided(state, reading, extras = {}) {
   line("no when", noWhen, null);
   line("no length (read as a page each until written — ordinary while the wall is built; set_length where the writer gave one)", unsized, null);
   line("nobody in it", nobody, "nobody");
+  // A person on the film's cards whose page has no want (pass 1a, entry 88): the method's question, listed as blank, never asked.
+  const onCards = new Set(state.notes.filter((note) => inStory(note)).flatMap((note) => note.characterIds ?? []));
+  const noWant = (state.characters ?? []).filter((person) => onCards.has(person.id) && !(person.wants ?? "").trim()).map((person) => person.name);
+  if (noWant.length) blank.push(`  - no want on the page (update_character wants): ${noWant.join(", ")}`);
   return { open, blank };
 }
 

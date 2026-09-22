@@ -2206,7 +2206,11 @@ server.registerTool(
     const boardsNow = { ...boardsForRead, [readId]: state };
     const elsewhereForRead = castElsewhere(projectForRead, boardsForRead, readId);
     const reading = readWall(state, { elsewhere: Object.keys(elsewhereForRead), laterBoards: laterBoards(projectForRead, boardsNow), paidBy: landingsOn(projectForRead, boardsNow, readId).paid });
-    lastReading = { findings: reading.findings };
+    // What changed since the last reading, and how long it was then (pass 1a, entry 90): the session's own record, said at the head of the next reading.
+    const sinceLine = lastReading
+      ? `since your last reading: ${sinceRead.length ? `${sinceRead.length} change${sinceRead.length === 1 ? "" : "s"} (${[...sinceRead.reduce((counts, what) => counts.set(what, (counts.get(what) ?? 0) + 1), new Map())].map(([what, count]) => (count > 1 ? `${what} ×${count}` : what)).join(", ")})` : "no change"}${typeof lastReading.eighths === "number" ? `; it was about ${formatPages(lastReading.eighths)} pages then and is about ${formatPages(boardEighths(state))} now${boardEighths(state) === lastReading.eighths ? "" : ` (${formatPages(Math.abs(boardEighths(state) - lastReading.eighths))} ${boardEighths(state) > lastReading.eighths ? "longer" : "shorter"})`}` : ""}`
+      : null;
+    lastReading = { findings: reading.findings, eighths: boardEighths(state) };
     sinceRead.length = 0;
     readOnce = true;
     const runs = describeRuns(reading, state).map((line, index) => {
@@ -2259,6 +2263,7 @@ server.registerTool(
     const lines = [
       `PlotCoder wall (${door(live, base)})`,
       atAGlance(state, reading, projectForRead, readBoardMeta),
+      ...(sinceLine ? [sinceLine] : []),
       ...(state.lock ? [`numbers: locked since ${String(state.lock.at).slice(0, 10)}; read_pages shows each scene's number`] : []),
       `board: "${readBoardMeta?.name ?? "?"}"${readBoardMeta?.nameOpen ? ` — its name is open, by the writer's word: "${readBoardMeta.nameOpen}"` : ""}${projectForRead.boards.length > 1 ? ` — board ${projectForRead.boards.findIndex((meta) => meta.id === readBoardMeta?.id) + 1} of ${projectForRead.boards.length} in the project "${projectForRead.name}"; open_board reads another` : ""}`,
       ...(projectForRead.nameOpen ? [`project: "${projectForRead.name}" — its name is open, by the writer's word: "${projectForRead.nameOpen}"`] : []),
@@ -2308,7 +2313,7 @@ server.registerTool(
       ...(runs.length ? runs.map((line) => `  - ${line}`) : ["  (none)"]),
       `setups and payoffs${written < state.notes.length ? " (distances in estimated pages)" : ""}:`,
       ...(reading.setups.length
-        ? describeSetups(reading, state).map((line) => `  - ${line}`)
+        ? describeSetups(reading, state).map((line, index) => `  - ${line}${pageSpan(state, reading.setups[index])}`)
         : [reading.paidBy.length ? "  (no setup arrow on this board; what pays off a fold of another board is listed below)" : "  (no arrow is marked as a setup)"]),
       ...reading.later.map((item) => `  - "${state.notes.find((note) => note.id === item.id)?.headline ?? item.id}" is folded and pays off later, on "${boardById(projectForRead, item.boardId)?.name ?? item.boardId}"${item.noteId ? `, at ${episodeLabel(projectForRead, boardsNow, item.boardId, item.noteId)} "${boardsNow[item.boardId]?.notes?.find((note) => note.id === item.noteId)?.headline ?? item.noteId}"` : " — no scene there claims it yet"}`),
       ...reading.paidBy.map((item) => `  - "${state.notes.find((note) => note.id === item.id)?.headline ?? item.id}" pays off "${item.fromHeadline}" from "${item.fromBoardName}" (${episodeLabel(projectForRead, boardsNow, item.fromBoardId, item.fromNoteId)}), one board earlier`),
@@ -3093,6 +3098,24 @@ server.registerTool(
   },
 );
 
+/** The page each scene starts on, as page_count paginates it — the join the reading can make itself (pass 1a, entry 86). */
+function pageStarts(state) {
+  const order = storyOrder(state);
+  if (!order.some((note) => (note.text ?? "").trim())) return new Map();
+  const numbers = sceneNumbers(order, state.lock);
+  const result = paginate(order.map((note) => ({ id: note.id, heading: sceneHeading(note).slice(1), text: note.text, change: standInFor(note), written: Boolean(note.text && note.text.trim()), number: numbers.get(note.id) ?? undefined })));
+  return new Map(result.scenes.map((scene) => [scene.id, scene.page]));
+}
+
+/** " (p. 4 → p. 6)" for a setup whose ends are both written scenes on the pages. */
+function pageSpan(state, setup) {
+  const starts = pageStarts(state);
+  const from = starts.get(setup?.from);
+  const to = starts.get(setup?.to);
+  const written = (id) => (state.notes.find((note) => note.id === id)?.text ?? "").trim();
+  return from && to && written(setup.from) && written(setup.to) ? ` (p. ${from} → p. ${to})` : "";
+}
+
 /** The plants a moved card carries and where they pay off now, with the new distance (pass 1a, entry 69). */
 function plantsTravelled(state, id) {
   const order = storyOrder(state);
@@ -3245,6 +3268,40 @@ server.registerTool(
     const same = matched.length - created - written;
     const receipt = describeSetAside(parsed.setAside);
     return ok(`Imported ${parsed.scenes.length} scene(s) from Final Draft: ${written} written onto cards${writtenNames(state, commands)}, ${same} matched with the same text (unchanged), ${created} new card(s)${where(live)}.${receipt ? ` ${receipt}` : ""}`, matched);
+  },
+);
+
+server.registerTool(
+  "measure",
+  {
+    title: "Measure a stretch",
+    description:
+      "How long a stretch of the story is, from one card to another inclusive, in story order: each card's pages — measured when written, the writer's estimate when sized, the default page otherwise — and the total, so an act's or a sequence's length is one call and not eight measures added by hand (pass 1a, entry 94). By id or headline; without to, from that card to the end; without from, from the start. A fact, not a verdict: the reading questions a run against the median, never a stretch against a share of the target.",
+    inputSchema: { from: z.string().optional().describe("The first card, by id or headline."), to: z.string().optional().describe("The last card, by id or headline.") },
+  },
+  async (args) => {
+    const { state } = await readBoard();
+    const order = storyOrder(state);
+    if (!order.length) return ok("Nothing to measure: the wall has no cards in the film.");
+    const find = (key) => {
+      const wanted = String(key ?? "").trim();
+      if (!wanted) return null;
+      return order.find((note) => note.id === wanted) ?? order.find((note) => note.headline.trim().toLowerCase() === wanted.toLowerCase()) ?? null;
+    };
+    for (const key of [args.from, args.to]) if (key?.trim() && !find(key)) return ok(`No card with id or headline "${key.trim()}" in the film's order. Call list_board.`);
+    const first = args.from?.trim() ? order.indexOf(find(args.from)) : 0;
+    const last = args.to?.trim() ? order.indexOf(find(args.to)) : order.length - 1;
+    const [a, b] = first <= last ? [first, last] : [last, first];
+    const cards = order.slice(a, b + 1);
+    const total = cards.reduce((sum, note) => sum + noteEighths(note), 0);
+    const kind = (note) => (isMeasured(note) ? "measured" : note.lengthEighths !== null ? "sized by the writer" : "read as a page, unsized");
+    const counts = { measured: 0, sized: 0, unsized: 0 };
+    for (const note of cards) counts[isMeasured(note) ? "measured" : note.lengthEighths !== null ? "sized" : "unsized"] += 1;
+    const lines = cards.map((note) => `  - "${note.headline}" — ${formatPages(noteEighths(note))} page${formatPages(noteEighths(note)) === "1" ? "" : "s"} (${kind(note)})${note.rank === "beat" ? ", a beat" : ""}`);
+    return ok(
+      `"${cards[0].headline}" to "${cards[cards.length - 1].headline}": ${cards.length} card${cards.length === 1 ? "" : "s"}, about ${formatPages(total)} pages (${counts.measured} measured, ${counts.sized} sized by the writer, ${counts.unsized} read as a page each) of the film's ${formatPages(boardEighths(state))}.\n${lines.join("\n")}`,
+      { from: cards[0].id, to: cards[cards.length - 1].id, eighths: total, cards: cards.map((note) => ({ id: note.id, headline: note.headline, eighths: noteEighths(note) })) },
+    );
   },
 );
 

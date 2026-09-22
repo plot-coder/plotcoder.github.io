@@ -194,7 +194,7 @@ mockup or their alternatives before they are built.
 | Pass | What | Branch | Where it stands |
 | --- | --- | --- | --- |
 | 1a | Ninety-Nine to a complete script, edited across its length | `claude/pass-1a` | **run 2026-09-22**: 114 entries (`blind-runs/pass-1a-report.md`), 38 fixes built as it ran (`docs/to-do-pass-1a.md`), R74 proposed — the pages read against the wall — waiting on Robert's word |
-| 1b | Doyle's to a complete script, from notes | — | not started |
+| 1b | Doyle's to a complete script, from notes | — | ready to claim: the steps are item 2 of `docs/to-do.md`'s head (take the stdio block out of `~/.claude.json` first, so it runs through the connector) |
 | 2a | The morning after: a person reads the wall the agent left | — | not started |
 | 2b | Jumping in for the agent: the person answers, the agent resumes | — | not started |
 | 3a | Measure the size; a project past the window; three directions | — | not started |

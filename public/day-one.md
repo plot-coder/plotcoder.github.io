@@ -156,6 +156,10 @@ only when the server is started with `PLOTCODER_JSON=1`.
 
 ### Cards
 
+- `create_cards` — several cards in one call, wired in the order given, each
+  after the one before (the first after `after`); everything `create_note`
+  takes, on each. A treatment's scenes in one round trip; one reply names
+  every card's id, then the last card's reply for the wall's state.
 - `create_note` — add a card. Requires `headline` **and** `change` — unless
   the writer has not decided what changes: then pass **`changeOpen`** with
   their words ("I don't know yet") in place of `change`. The change line
@@ -374,7 +378,10 @@ card of another board is not asked about as uncast here.
 
 - `add_character` — add a person to the project's cast by `name`. The reply
   names the person's id. The same name twice, on any board, is refused and
-  the existing record returned; use its id.
+  the existing record returned; use its id. A name given to `create_note`
+  or `cast` that the roster lacks is added by itself, so a treatment's
+  people come in with their cards; `add_character` is for a person before
+  their card, and the wall asks where they come in until one names them.
 - `rename_character` / `remove_character` — by id. Renaming carries to every
   card on every board; removing takes them off every card here and leaves the
   cards, and is refused while another board has them on a card — cast them

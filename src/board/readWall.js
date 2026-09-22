@@ -76,6 +76,18 @@ function sameScene(a, b, ignore = new Set()) {
   return shared / Math.min(setA.size, setB.size) >= DUPLICATE_OVERLAP;
 }
 
+/** The words two headlines share, in the first one's order, for the duplicate question to name. */
+function sharedWords(a, b, ignore = new Set()) {
+  const setB = new Set(words(b).filter((word) => !ignore.has(word)));
+  const seen = new Set();
+  return words(a).filter((word) => !ignore.has(word) && setB.has(word) && !seen.has(word) && seen.add(word));
+}
+
+/** A question's words with its numbers blanked, so a run that measured longer is still the question the writer left. */
+function withoutFigures(text) {
+  return String(text ?? "").replace(/\d+(?:\s+\d+\/\d+|\/\d+)?/g, "#");
+}
+
 function median(values) {
   if (values.length === 0) return 0;
   const sorted = [...values].sort((a, b) => a - b);
@@ -192,10 +204,14 @@ export function readWall(state, options = {}) {
   // A run of unsized, unwritten cards is the default page each, so a wall
   // where every run is defaults measures nothing but card counts; the sag
   // waits until some card in some run is sized or written (round fourteen, 12).
-  const claimed = between.some((run) => run.ids.some((id) => {
-    const note = byId.get(id);
-    return note && (note.lengthEighths !== null || (note.text ?? "").trim());
-  }));
+  // One sized card among fifteen made the median the default page and asked
+  // about a run that was only longer in cards (pass 1a, entry 21): the sag
+  // waits until at least half the cards in the runs are sized or written,
+  // and the reading says how many are not.
+  const runCards = between.flatMap((run) => run.ids).map((id) => byId.get(id)).filter(Boolean);
+  const claimedCards = runCards.filter((note) => note.lengthEighths !== null || (note.text ?? "").trim());
+  const claimed = runCards.length > 0 && claimedCards.length * 2 >= runCards.length;
+  const sagWaiting = runCards.length > 0 && !claimed ? { unsized: runCards.length - claimedCards.length, total: runCards.length } : null;
   // The typical run is the median of the runs that hold a card: an empty run
   // is a question of its own ("empty"), and counting it here made a small
   // wall's one ordinary scene read as a sag against a median of an eighth
@@ -315,10 +331,12 @@ export function readWall(state, options = {}) {
       // A leading "Day three." is the guide's convention for when a scene
       // happens, not the scene's words (round fourteen, entry 13).
       if (sameScene(a.headline.replace(DAY_PREFIX, ""), b.headline.replace(DAY_PREFIX, ""), nameWords)) {
+        // Say what matched (pass 1a, entry 20), so a writer knows what the check reads and what would tell the two apart.
+        const shared = sharedWords(a.headline.replace(DAY_PREFIX, ""), b.headline.replace(DAY_PREFIX, ""), nameWords);
         findings.push({
           kind: "duplicate",
           ids: [a.id, b.id],
-          text: `${quote(a)} and ${quote(b)} read like the same scene. Are they doing the same job?`,
+          text: `${quote(a)} and ${quote(b)} read like the same scene: their headlines share ${shared.length ? `"${shared.join(" ")}"` : "their words"}, and the cast's names are not counted. Are they doing the same job?`,
         });
       }
     }
@@ -527,8 +545,10 @@ export function readWall(state, options = {}) {
   const openCards = openIds.size ? findings.filter((finding) => !ASKED_OF_OPEN_CARDS.has(finding.kind) && finding.ids.some((id) => byId.has(id)) && finding.ids.filter((id) => byId.has(id)).every((id) => openIds.has(id))) : [];
   const asked = findings.filter((finding) => {
     if (openCards.includes(finding)) return false;
+    // The same question with new figures is the same question (pass 1a, entry 36): a left sag stays left
+    // while its run is the same run, whatever the measures did to its pages; new cards or new ends re-ask it.
     const entry = (state.left ?? []).find(
-      (item) => item.kind === finding.kind && sameList(item.ids, finding.ids) && item.text === finding.text,
+      (item) => item.kind === finding.kind && sameList(item.ids, finding.ids) && withoutFigures(item.text) === withoutFigures(finding.text),
     );
     if (!entry) return true;
     left.push({ ...finding, since: entry.since, ...(entry.why ? { why: entry.why } : {}) });
@@ -537,6 +557,8 @@ export function readWall(state, options = {}) {
 
   return {
     order: order.map((note) => note.id),
+    // The sag not read yet, and why (pass 1a, entry 21); null once half the cards in the runs are sized or written.
+    sagWaiting,
     beats: beats.map((note) => ({ id: note.id, headline: note.headline })),
     runs,
     setups,
@@ -733,7 +755,7 @@ export function describeUndecided(state, reading, extras = {}) {
   };
   line("no place", noPlace, "unplaced");
   line("no when", noWhen, null);
-  line("no length (read as a page each)", unsized, null);
+  line("no length (read as a page each until written — ordinary while the wall is built; set_length where the writer gave one)", unsized, null);
   line("nobody in it", nobody, "nobody");
   return { open, blank };
 }

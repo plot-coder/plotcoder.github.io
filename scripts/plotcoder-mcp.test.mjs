@@ -151,6 +151,7 @@ describe("plotcoder MCP server", () => {
       "claim_account",
       "compare_structure",
       "create_arrow",
+      "create_cards",
       "create_group",
       "create_note",
       "create_thread",
@@ -508,6 +509,32 @@ describe("plotcoder MCP server", () => {
       x: 640,
       y: 320,
     });
+  });
+
+  it("makes several cards in one call, each wired after the one before (create_cards, pass 1a entry 18)", async () => {
+    const before = await client.callToolData("list_board");
+    const text = await client.callTool("create_cards", {
+      after: "Maya burns the letter",
+      cards: [
+        { headline: "Tom finds the ashes", change: "He knows she burned it.", characters: ["Tom"] },
+        { headline: "Tom rings Maya", change: "She does not pick up.", rank: "beat" },
+        { headline: "Maya at the station", change: "She has not gone.", location: "The station" },
+      ],
+    });
+    expect(text).toMatch(/^Made 3 of 3 cards after "Maya burns the letter", each wired after the one before it:/);
+    expect(text).toContain('1. "Tom finds the ashes" (');
+    expect(text).toContain("2. \"Tom rings Maya\" (");
+    expect(text).toContain("a beat");
+    expect(text).toContain("at The station");
+    expect(text).toContain("After the last card: Created card");
+    const after = await client.callToolData("list_board");
+    expect(after.notes.length).toBe(before.notes.length + 3);
+    const [ashes, rings, station] = after.notes.slice(-3);
+    const follows = after.arrows.filter((arrow) => arrow.kind !== "setup");
+    expect(follows.some((arrow) => arrow.from === ashes.id && arrow.to === rings.id)).toBe(true);
+    expect(follows.some((arrow) => arrow.from === rings.id && arrow.to === station.id)).toBe(true);
+    expect(after.characters.some((person) => person.name === "Tom")).toBe(true);
+    for (const note of [ashes, rings, station]) await client.callTool("delete_note", { id: note.id });
   });
 
   it("moves, recolors and rewrites a card by id", async () => {
@@ -1700,7 +1727,8 @@ describe("round sixteen", () => {
   it("reports the cues against the cast by the whole name (entry 30)", async () => {
     await six.callTool("add_character", { name: "Dana Kerr" });
     const wrote = await six.callTool("write_scene", { id: "maya-letter", text: "Rain.\n\nMAYA\nIt's here.\n\nDANA\nLeave it.\n\nTHE BOY\nNo." });
-    expect(wrote).toContain("Cues: MAYA (in the cast); DANA (nobody by that whole name — cues match by the whole name, and the cast has \"Dana Kerr\": cue DANA KERR); THE BOY (nobody in the cast).");
+    // A cue by one word of one name is that person (pass 1a, entry 32).
+    expect(wrote).toContain("Cues: MAYA (in the cast); DANA (Dana Kerr, by one word of the name); THE BOY (nobody in the cast).");
   });
 
   it("stars the changed lines in the pages reading under a revision, and says when a count moved (entries 31, 32)", async () => {
@@ -2564,7 +2592,7 @@ describe("the premise and reminders (roadmap item 6)", () => {
 
   it("writes a scene onto a card, measures it, reads the pages with ids, and imports a script", async () => {
     const wrote = await door.callTool("write_scene", { id: "maya-letter", text: "Rain on the window.\n\nMAYA\nTom?" });
-    expect(wrote).toMatch(/Wrote "Maya finds the letter": \d+ line\(s\) as they print .*measured at 1\/8 of a 55-line page/);
+    expect(wrote).toMatch(/Wrote "Maya finds the letter": \d+ line\(s\) as they print.*measured at 1\/8 of a 55-line page/);
     expect(await door.callTool("list_board")).toContain("[scene, 1/8 pages, written");
     const pages = await door.callTool("read_pages");
     expect(pages).toContain(".NO PLACE YET: MAYA FINDS THE LETTER    [[id: maya-letter · measured 1/8pp · no place: the headline heads the scene behind the mark, not a place]]");
@@ -3185,13 +3213,20 @@ describe("round twelve's decisions: leaving a question, a structure beside the w
     expect(read).toContain(`[sag] About 8 pages run between "B" and "C"`);
     expect(read).toContain("1 left by the writer");
     expect(await twelve.callTool("leave_question", { kind: "sag" })).toContain("Already left");
-    // A page moves in the run, and the wall asks again on its own.
+    // A page moves in the run: the same run, new figures, and the writer's word holds (pass 1a, entry 36).
     await twelve.callTool("set_length", { ids: [s3.id], pages: 6 });
+    const longer = await twelve.callTool("read_wall");
+    expect(longer).toContain("left, for now");
+    expect(longer).toContain(`[sag] About 10 pages run between "B" and "C"`);
+    expect(longer.split("left, for now")[0]).not.toContain("[sag]");
+    await twelve.callTool("set_length", { ids: [s3.id], pages: 4 });
+    // The run's end is another scene: the question would read differently, and the wall asks again on its own.
+    await twelve.callTool("update_note", { id: c.id, headline: "C2" });
     const again = await twelve.callTool("read_wall");
-    expect(again).toContain("  - [sag] About 10 pages run");
+    expect(again).toContain('  - [sag] About 8 pages run between "B" and "C2"');
     expect(again).not.toContain("left, for now");
     // Back as it was, the word holds; ask_again takes it back now.
-    await twelve.callTool("set_length", { ids: [s3.id], pages: 4 });
+    await twelve.callTool("update_note", { id: c.id, headline: "C" });
     expect(await twelve.callTool("read_wall")).toContain("left, for now");
     expect(await twelve.callTool("ask_again", { kind: "empty" })).toContain('Nothing of kind "empty"');
     const back = await twelve.callTool("ask_again", { kind: "sag", ids: [b.id, c.id] });

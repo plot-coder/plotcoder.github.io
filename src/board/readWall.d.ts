@@ -92,6 +92,8 @@ export type WallReading = {
   threads: Array<{ id: string; name: string; ids: string[]; startOpen: boolean; endOpen: boolean; /** Eighths from the first card's start to the last card's start; 0 with fewer than two cards. */ apart: number }>;
   /** Cards here that pay off a fold of another board (R58), composed by the door from the project. */
   paidBy: Array<{ id: string; fromBoardId: string; fromBoardName: string; fromNoteId: string; fromHeadline: string; fromColor: string }>;
+  /** The sag not read yet, and why (pass 1a, entry 21): how many cards in the runs are unsized and unwritten, of how many; null once half are sized or written. */
+  sagWaiting: { unsized: number; total: number } | null;
   /** The questions the wall asks now. A left one (R53) is not here while its words hold. */
   findings: Finding[];
   /** Questions the writer has left, for now: the same question, with when it was left. */

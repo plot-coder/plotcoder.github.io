@@ -35,6 +35,7 @@ import {
   DEFAULT_TARGET_EIGHTHS,
   targetWords,
   TARGET_KINDS,
+  inStory,
   DEFAULT_NOTE_EIGHTHS,
   normalizeState,
   newId,
@@ -889,6 +890,11 @@ function askShape(options = {}) {
   shapeAsked = options;
 }
 
+/** A question's words with its numbers blanked, so a run that measured longer is the same question. */
+function withoutFigures(text) {
+  return String(text ?? "").replace(/\d+(?:\s+\d+\/\d+|\/\d+)?/g, "#");
+}
+
 function noteChange(before, after, boardId = null) {
   // The same reading read_wall gives: a person cast on another board is not
   // asked about, so a write's tail never names a question the reading does not.
@@ -901,7 +907,8 @@ function noteChange(before, after, boardId = null) {
     gone: was.findings.filter((finding) => !nowKeys.has(findingKey(finding))),
     came: now.findings.filter((finding) => !wasKeys.has(findingKey(finding))),
     // The same question, asked differently now: both ends open became one (round twenty-four, entry 32).
-    reshaped: now.findings.filter((finding) => wasKeys.has(findingKey(finding)) && wasText.get(findingKey(finding)) !== finding.text),
+    // A sag whose pages moved with a measure is the same question with new numbers, not a new shape (pass 1a, entry 36): compare the words, not the figures.
+    reshaped: now.findings.filter((finding) => wasKeys.has(findingKey(finding)) && withoutFigures(wasText.get(findingKey(finding))) !== withoutFigures(finding.text)),
     asks: now.findings.length,
     leftBefore: was.left.length,
     leftAfter: now.left.length,
@@ -1267,19 +1274,25 @@ const SAMPLE_NOTE = "sample: this is the wall PlotCoder starts with (Maya, Tom, 
 
 /**
  * The cues in a scene's text against the cast (round sixteen, entry 30): a cue
- * matches a person by the whole name, so DANA is not "Dana Kerr", and the
- * reply says which cues found nobody and whom they nearly named.
+ * matches a person by the whole name, or by one word of it when only one
+ * person has that word — JOE is "Joe Deasy" on a cast with one Joe, as a
+ * script cues people (pass 1a, entry 32) — and the reply says which cues
+ * found nobody and whom they nearly named. A cue for someone the card holds
+ * as a maybe says so (entry 34): the page has given them a line, and the card
+ * has not decided them.
  */
-function cueReport(state, text) {
+function cueReport(state, text, card = null) {
   const names = [...new Set(parseScene(text ?? "").filter((element) => element.kind === "speech" && element.name).map((element) => element.name.replace(/\s*\(.*\)\s*$/, "").trim()).filter(Boolean))];
   if (!names.length) return "";
   const cast = state.characters ?? [];
+  const maybeHere = (person) => (card?.maybeCharacterIds ?? []).includes(person.id) ? ` — a maybe on this card: the page gives ${person.name} a line, and the card has not decided them; cast without the ? to decide it, or take the line off` : "";
   const parts = names.map((cue) => {
     const whole = cast.find((person) => person.name.trim().toLowerCase() === cue.toLowerCase());
-    if (whole) return `${cue} (in the cast)`;
+    if (whole) return `${cue} (in the cast${maybeHere(whole)})`;
     const near = cast.filter((person) => person.name.toLowerCase().split(/\s+/).includes(cue.toLowerCase()));
+    if (near.length === 1) return `${cue} (${near[0].name}, by one word of the name${maybeHere(near[0])})`;
     return near.length
-      ? `${cue} (nobody by that whole name — cues match by the whole name, and the cast has ${near.map((person) => `"${person.name}"`).join(", ")}: cue ${near.length === 1 ? near[0].name.toUpperCase() : "the whole name"})`
+      ? `${cue} (two or more by that word — the cast has ${near.map((person) => `"${person.name}"`).join(", ")}: cue the whole name, or the word that tells them apart)`
       : `${cue} (nobody in the cast)`;
   });
   return ` Cues: ${parts.join("; ")}.`;
@@ -1317,6 +1330,12 @@ function sketchLine(state) {
  * kinds of count and two targets, none labelled. The same block in list_board
  * and read_wall, so the two cannot tell it differently.
  */
+/** Every card in the film written: the script is whole, and its length is the paginated count (pass 1a, entries 42, 45). */
+function wholeScript(state) {
+  const cards = state.notes.filter((note) => inStory(note));
+  return cards.length > 0 && cards.every((note) => isMeasured(note));
+}
+
 function runtimeBlock(state) {
   const total = boardEighths(state);
   const over = total - state.targetEighths;
@@ -1335,7 +1354,8 @@ function runtimeBlock(state) {
     `how long it is: about ${formatPages(total)} pages. Say this one to the writer: the film by its cards, a page about a minute, counted in eighths as a production does. The other figures below are what it is made of and what it is read against, not other answers`,
     ...(made ? [`  made of: ${made}`] : []),
     `  ${target}`,
-    ...(found.length ? [`  if ${found.length === 1 ? "the sketch" : `the ${found.length} sketches`} ran to the page ${found.length === 1 ? "it was" : "they were"} read as: about ${formatPages(ifRan)} pages — a written scene measured under its page is a sketch, and this is a guess about a guess`] : []),
+    // Once every scene is written there is nothing left to guess about: the sketches are a fact about the draft, not a second length (pass 1a, entry 45).
+    ...(found.length && wholeScript(state) ? [`  every scene is written; ${found.length} of them ${found.length === 1 ? "is a sketch" : "are sketches"}, measured under the page ${found.length === 1 ? "it was" : "they were"} read as — a fact about the draft, not another length; the script as it prints is page_count's number`] : found.length ? [`  if ${found.length === 1 ? "the sketch" : `the ${found.length} sketches`} ran to the page ${found.length === 1 ? "it was" : "they were"} read as: about ${formatPages(ifRan)} pages — a written scene measured under its page is a sketch, and this is a guess about a guess`] : []),
     ...(unlinkedCards(state).length ? [`  ${unlinkedCards(state).length} card(s) on no follows arrow, in this number and in no run: ${unlinkedCards(state).map((note) => `"${note.headline}"`).join(", ")}`] : []),
     "  the script so far, paginated, is page_count's number, not this one",
   ];
@@ -1420,8 +1440,11 @@ function runtimeKinds(state) {
   const unsized = inStory.filter((note) => !isMeasured(note) && note.lengthEighths === null);
   if (!state.notes.length) return "";
   const sum = (notes) => formatPages(notes.reduce((total, note) => total + noteEighths(note), 0));
+  // A card the writer sized and then wrote is measured; their figure is kept underneath and said here, not hidden as "0 sized" (pass 1a, entry 46).
+  const sizedUnder = measured.filter((note) => note.lengthEighths !== null);
+  const kept = sizedUnder.length ? ` — ${sizedUnder.length} of them sized by the writer too, at ${formatPages(sizedUnder.reduce((total, note) => total + note.lengthEighths, 0))} pages between them, kept underneath and not counted while the text stands` : "";
   // Pages per kind, not only cards (round sixteen, entry 43).
-  return `; of its ${inStory.length} cards${behind || asideCount ? ` (${[behind ? `${behind} more behind as other versions` : "", asideCount ? `${asideCount} set aside` : ""].filter(Boolean).join(", ")}, not counted)` : ""}, ${measured.length} measured from written text (${sum(measured)} pages), ${sized.length} sized by the writer (${sum(sized)}), ${unsized.length} unsized and read as a page each (${sum(unsized)})`;
+  return `; of its ${inStory.length} cards${behind || asideCount ? ` (${[behind ? `${behind} more behind as other versions` : "", asideCount ? `${asideCount} set aside` : ""].filter(Boolean).join(", ")}, not counted)` : ""}, ${measured.length} measured from written text (${sum(measured)} pages${kept}), ${sized.length} sized by the writer (${sum(sized)}), ${unsized.length} unsized and read as a page each (${sum(unsized)})`;
 }
 
 function summarize(state) {
@@ -1824,37 +1847,46 @@ server.registerTool(
   },
 );
 
+/** create_note's arguments, shared with create_cards (pass 1a, entry 18). */
+const createNoteShape = {
+    headline: z.string().min(1),
+    change: z.string().optional().describe("What is different when the scene ends. Required, unless the writer has not decided it: then pass changeOpen with their words, and the change line waits while every other question about the card stands. (A card born wholly open, with open, may also wait.)"),
+    changeOpen: z.string().optional().describe("The writer's words for why there is no change line yet — \"I don't know yet\" — in place of change: the card is an ordinary card, asked about its place, its cast, its arrows and its fold, and the reading lists the change line as open, by the writer's word, without asking for it. Not the same as open, which says the whole card is undecided and silences every question about it."),
+    color: colorSchema.optional(),
+    rank: rankSchema.optional(),
+    pages: pagesSchema.optional(),
+    plants: z.boolean().optional(),
+    plantsWhat: z.string().optional().describe("What the folded corner plants, in the writer's words; naming it folds the card."),
+    after: z.string().optional().describe("Wire the new scene into the story after this card (id or headline): one call, one number under a lock. On a wall with no follows arrows yet this draws the first, so a wall can be built in order from its second card. The new card lands beside that card and nothing else on the wall moves; organize tidies the wall along the arrows when the writer wants that."),
+    before: z.string().optional().describe("Or before this card (id or headline)."),
+    location: z.string().optional(),
+    when: z.string().optional().describe('When the scene happens, as the writer says it — "night", "day four, dawn" — printed after the place on the scene heading.'),
+    locationOpen: z.string().optional().describe("The writer's words for why the place is not decided: the card is born with its place open, listed and not asked where, while its other questions stand."),
+    whenOpen: z.string().optional().describe("The writer's words for why the when is not decided: the card is born with its when open, listed and not asked."),
+    open: z.string().optional().describe("The writer's words for what is not decided about this card — \"whether Tom knows\" — so the card is born open: the reading lists it and asks nothing else of it until the words are cleared."),
+    characters: z.array(z.string().min(1)).optional(),
+    castOpen: z.string().optional().describe("The writer's words for why who is in the scene is not decided, when nobody can be named or beside the names given. Not the same as open, which says the whole card is undecided."),
+    of: z.string().optional().describe("Born as the other version of this card (id or headline): it stands behind that card from the first moment — out of the order, the count and the pages until choose_version — in one call and one step, so the wall never asks about it as a loose card. Not with after, before or aside."),
+    aside: z.boolean().optional().describe("Born set aside: a scene the writer has cut and wants kept. On the wall, clear of the story's rows, and not in the film. Not with after, before or of."),
+    x: z.number().optional(),
+    y: z.number().optional(),
+  };
+
 server.registerTool(
   "create_note",
   {
     title: "Create note",
     description:
       "Add a card (post-it) to the board. A card is one scene: a headline plus the change it causes. Provide both headline and change. Optionally set color, x/y position, rank ('beat' for one of the major turns — a beat is a whole card, the scene where the turn happens), pages (how long it runs; leave it out and the card is taken to be about a page), plants (true if this scene sets something up that must pay off later), location (where it happens, as the writer would say it — 'the piano shop', not 'INT. PIANO SHOP'), and characters (who is in the scene, by name; a name not in the cast yet is added to it — name an unnamed person by their role, 'Dana's mother', rather than leaving them off). When the writer does not know whether someone is in the scene, put a question mark after the name — 'Tomás?' — and the wall holds it as not decided: listed under open, never asked, and counted neither way by the cast's counts or the check for someone gone too long; the name without the mark decides it, and leaving the name off decides it the other way. Only on the writer's word. When the writer does not know who is in a scene and nobody can be named — or knows some and not whether there is anyone else — that is the cast's own open: pass castOpen with their words (\"I don't know yet\"; \"anyone else: I don't know\"), and the card is listed under open and not asked who is in it, while its other questions stand. The words stand beside names; castOpen \"\" clears them. Only on the writer's word. The reply names the card's id.",
-    inputSchema: {
-      headline: z.string().min(1),
-      change: z.string().optional().describe("What is different when the scene ends. Required, unless the writer has not decided it: then pass changeOpen with their words, and the change line waits while every other question about the card stands. (A card born wholly open, with open, may also wait.)"),
-      changeOpen: z.string().optional().describe("The writer's words for why there is no change line yet — \"I don't know yet\" — in place of change: the card is an ordinary card, asked about its place, its cast, its arrows and its fold, and the reading lists the change line as open, by the writer's word, without asking for it. Not the same as open, which says the whole card is undecided and silences every question about it."),
-      color: colorSchema.optional(),
-      rank: rankSchema.optional(),
-      pages: pagesSchema.optional(),
-      plants: z.boolean().optional(),
-      plantsWhat: z.string().optional().describe("What the folded corner plants, in the writer's words; naming it folds the card."),
-      after: z.string().optional().describe("Wire the new scene into the story after this card (id or headline): one call, one number under a lock. On a wall with no follows arrows yet this draws the first, so a wall can be built in order from its second card. The new card lands beside that card and nothing else on the wall moves; organize tidies the wall along the arrows when the writer wants that."),
-      before: z.string().optional().describe("Or before this card (id or headline)."),
-      location: z.string().optional(),
-      when: z.string().optional().describe('When the scene happens, as the writer says it — "night", "day four, dawn" — printed after the place on the scene heading.'),
-      locationOpen: z.string().optional().describe("The writer's words for why the place is not decided: the card is born with its place open, listed and not asked where, while its other questions stand."),
-      whenOpen: z.string().optional().describe("The writer's words for why the when is not decided: the card is born with its when open, listed and not asked."),
-      open: z.string().optional().describe("The writer's words for what is not decided about this card — \"whether Tom knows\" — so the card is born open: the reading lists it and asks nothing else of it until the words are cleared."),
-      characters: z.array(z.string().min(1)).optional(),
-      castOpen: z.string().optional().describe("The writer's words for why who is in the scene is not decided, when nobody can be named or beside the names given. Not the same as open, which says the whole card is undecided."),
-      of: z.string().optional().describe("Born as the other version of this card (id or headline): it stands behind that card from the first moment — out of the order, the count and the pages until choose_version — in one call and one step, so the wall never asks about it as a loose card. Not with after, before or aside."),
-      aside: z.boolean().optional().describe("Born set aside: a scene the writer has cut and wants kept. On the wall, clear of the story's rows, and not in the film. Not with after, before or of."),
-      x: z.number().optional(),
-      y: z.number().optional(),
-    },
+    inputSchema: createNoteShape,
   },
-  async (args) => {
+  createNoteCall,
+);
+
+/** The card create_note made last, for a caller that made several (create_cards). */
+let lastMadeCard = null;
+
+async function createNoteCall(args) {
     const { state } = await readBoard();
     // A card born as a version, or born set aside (round twenty-three, entry 20): neither is in the order, so neither is wired.
     if ((args.of || args.aside) && (args.after || args.before)) return ok("A version behind another card, or a card set aside, is not in the story's order, so it takes no after or before. Say one: where it goes in the order, or of, or aside.");
@@ -1991,7 +2023,39 @@ server.registerTool(
       : args.x === undefined && args.y === undefined ? ` Placed at the end of the rows, on no arrow.${once("placed", " organize lays the wall out along the arrows.")}` : "";
     // Under a lock a new scene has a letter, not a number: say it, since the board is the only other place to learn it (round fourteen, entry 44).
     const numbered = after?.lock && result?.id ? ` Numbered ${sceneNumbers(storyOrder(after), after.lock).get(result.id)} (the numbers are locked; a new scene's letter is its place between locked ones now, worked out again from where it sits if it moves; the locked numbers never move).` : "";
+    lastMadeCard = result?.id ? result : null;
     return ok(`Created card ${result?.id ?? ""}: ${landed}${where(live)}.${castSaid}${castOpenSaid}${placed}${numbered}`, result);
+}
+
+server.registerTool(
+  "create_cards",
+  {
+    title: "Create cards in order",
+    description:
+      "Several cards in one call, wired into the story in the order given: each lands after the one before it — the first after `after` when given, or as the wall's first card — with everything create_note takes on each (headline, change, cast, place, when, pages, rank, a fold, an open). A treatment's scenes are one round trip instead of one per card (pass 1a, entry 18). A card with its own after, before, of or aside is placed by that instead, and the next card follows the one before it. One reply lists every card with its id and what it landed as, then the last card's reply in full for the wall's state after all of them; a card the wall refused is named with the refusal and the rest still land. One undo step per card.",
+    inputSchema: { cards: z.array(z.object(createNoteShape)).min(1), after: z.string().optional().describe("The card the first one follows (id or headline). Without it, on a wall with follows arrows the first card lands on no arrow, as create_note does.") },
+  },
+  async (args) => {
+    const lines = [];
+    let previous = args.after?.trim() || null;
+    let lastReply = "";
+    let made = 0;
+    for (const [index, card] of args.cards.entries()) {
+      const own = card.after || card.before || card.of || card.aside;
+      lastMadeCard = null;
+      const reply = await createNoteCall(own || !previous ? card : { ...card, after: previous });
+      const text = reply.content?.[0]?.text ?? "";
+      lastReply = text;
+      if (lastMadeCard?.id) {
+        made += 1;
+        const it = lastMadeCard;
+        lines.push(`${index + 1}. "${it.headline}" (${it.id}) — ${it.rank === "beat" ? "a beat" : "a scene"}, ${it.lengthEighths === null && !(it.text ?? "").trim() ? "unsized" : `${formatPages(noteEighths(it))} pages`}${it.location ? `, ${atPlaceWords(it.location)}` : it.locationOpen ? ", place open" : ", no place yet"}${it.when ? `, ${it.when}` : ""}${(it.characterIds ?? []).length || (it.maybeCharacterIds ?? []).length ? `, cast ${castLine(it.characterIds, it.maybeCharacterIds, (await readBoard()).state.characters)}` : ""}`);
+        if (!own) previous = it.id;
+      } else {
+        lines.push(`${index + 1}. "${card.headline}" — not made: ${text.split("\n")[0]}`);
+      }
+    }
+    return ok(`Made ${made} of ${args.cards.length} card${args.cards.length === 1 ? "" : "s"}${args.after ? ` after "${args.after}"` : ""}, each wired after the one before it:\n${lines.join("\n")}\n\nAfter the last card: ${lastReply}`);
   },
 );
 
@@ -2105,7 +2169,7 @@ server.registerTool(
     title: "Read the wall",
     description:
       "Read the board back: the beats in wall order (rows top to bottom, cards left to right), the pages of scenes between consecutive beats with the cards in each, every setup with the distance to its payoff, and the questions the wall raises — no beat marked yet; a run out of proportion with the others; beats back to back with nothing between them (a chain of them is one question); a card with a placeholder headline or no change line; a card no arrow touches; two headlines that read like the same scene; a group too long to be one sequence; a person in the cast on no card; a person gone for more than a third of the story and ten pages; a payoff before its setup on the wall; a folded card no setup arrow pays off; a setup arrow leaving a card that is not folded; a card with nobody in it once the wall has a cast; cards that say no place once any card has one. These are questions, not fixes: put them to the writer and do not act on them unasked. A question the writer answers with \"leave it\" is left with leave_question and listed under \"left, for now\" instead, until it would read differently. It says nothing about how many beats there should be, and neither should you. The prose carries every id; PLOTCODER_JSON=1 in the server's environment adds the same reading as JSON after it, for a program.",
-    inputSchema: { only: z.enum(["questions"]).optional().describe("\"questions\": the short read — the three counts, what the wall asks, and what the writer has left, and nothing else. For \"is there anything I owe the writer?\" and \"did that raise a question?\"; the full reading is for reading the wall back.") },
+    inputSchema: { only: z.enum(["questions", "length"]).optional().describe("\"questions\": the short read — the three counts, what the wall asks, and what the writer has left, and nothing else. For \"is there anything I owe the writer?\" and \"did that raise a question?\". \"length\": how long it is, only — the one number first, then what it is made of and what it is read against. The full reading is for reading the wall back.") },
   },
   async (args = {}) => {
     const { state, live, base, boardId: readBoardId } = await readBoard();
@@ -2149,6 +2213,10 @@ server.registerTool(
     const openPeopleCount = reading.openPeople?.length ?? 0;
     const openFieldCount = reading.openFields.length + (reading.openLines?.length ?? 0) + (projectForRead.nameOpen ? 1 : 0) + (state.targetOpen ? 1 : 0) + (projectForRead.premiseOpen ? 1 : 0) + (readBoardMeta?.nameOpen ? 1 : 0);
     // The short read (round twenty-two, entry 83): confirming nothing was owed cost three hundred lines.
+    // The short read for "how long is it" (pass 1a, entry 47): the runtime block alone, the one number first.
+    if (args?.only === "length") {
+      return ok([`PlotCoder wall (${door(live, base)}) — how long it is, only; read_wall without only is the whole reading`, ...runtimeBlock(state)].join("\n"), { eighths: boardEighths(state), targetEighths: state.targetEighths, whole: wholeScript(state) });
+    }
     if (args?.only === "questions") {
       return ok(
         [
@@ -2880,13 +2948,13 @@ server.registerTool(
     const landedLines = String(args.text ?? "").split("\n").map((line) => line.trim()).filter(Boolean);
     const landed = landedLines.length ? ` First line as it landed: "${clip(landedLines[0], 80)}"${landedLines.length > 1 ? `; last: "${clip(landedLines[landedLines.length - 1], 80)}"` : ""}.` : "";
     return ok(
-      `Wrote "${result.headline}": ${printed} line(s) as they print (headings, blank lines and wrapped dialogue counted; a [[note]] neither prints nor counts), measured at ${formatPages(noteEighths(result))} of a 55-line page, rounded to the nearest eighth and never below one eighth${noteEighths(result) < (result.lengthEighths ?? DEFAULT_NOTE_EIGHTHS) ? " — a sketch: shorter than the page it was read as; the wall counts the measure and says so" : ""}${cameraReply(result.text)}${where(live)}.${twoHomes(result)}${revisionMark(state, result.id)}${once("heading-from-place", " The heading comes from the card's place and when, so the text starts with the action.")} While the text stands the wall reads the measure, not the estimate${(() => {
+      `Wrote "${result.headline}": ${printed} line(s) as they print${once("write-lines", " (headings, blank lines and wrapped dialogue counted; a [[note]] neither prints nor counts)")}, measured at ${formatPages(noteEighths(result))} of a 55-line page${once("write-measure", ", rounded to the nearest eighth and never below one eighth")}${noteEighths(result) < (result.lengthEighths ?? DEFAULT_NOTE_EIGHTHS) ? ` — a sketch: shorter than ${result.lengthEighths !== null ? "the writer's pages for it" : "the page it was read as"}${once("write-sketch", "; the wall counts the measure and says so")}` : ""}${cameraReply(result.text)}${where(live)}.${twoHomes(result)}${revisionMark(state, result.id)}${once("heading-from-place", " The heading comes from the card's place and when, so the text starts with the action.")} While the text stands the wall reads the measure, not the estimate${(() => {
         // How far the measure sits from what the card was read as before (round eighteen, entry 43): the writer's estimate, or the page an unsized card is read as.
         const before = result.lengthEighths !== null ? result.lengthEighths : 8;
         const label = result.lengthEighths !== null ? `the writer's ${formatPages(result.lengthEighths)} pages` : "the page an unsized card is read as";
         const moved = noteEighths(result) - before;
         return ` (${label}${moved ? `, so the runtime moved ${formatPages(Math.abs(moved))} ${moved < 0 ? "down" : "up"}` : ""})`;
-      })()}; the estimate is kept for when the text goes, and set_length changes it.${landed}${cueReport(state, result.text)}`,
+      })()}${once("write-estimate", "; the estimate is kept for when the text goes, and set_length changes it")}.${landed}${cueReport(state, result.text, result)}`,
       { ...result, eighths: noteEighths(result), measured: true, printedLines: printed },
     );
   },
@@ -2927,7 +2995,7 @@ server.registerTool(
       const done = await commit({ type: "set_text", id: note.id, text: paragraphs.join("\n\n") });
       const linesNow = sceneLineCount(done.result.text);
       return ok(
-        `Inserted a paragraph ${args.after ? "after" : "before"} "${clip(paragraphs[args.after ? at : at + 1].split("\n")[0], 90)}" in "${done.result.headline}": "${args.insert.trim()}"${where(done.live)}. Now ${linesNow} line(s) as they print (was ${linesWere}; blank lines and wrapped lines count), measured at ${formatPages(noteEighths(done.result))} of a page${cameraReply(done.result.text)}.${revisionMark(done.state, done.result.id)}${cueReport(done.state, done.result.text)}`,
+        `Inserted a paragraph ${args.after ? "after" : "before"} "${clip(paragraphs[args.after ? at : at + 1].split("\n")[0], 90)}" in "${done.result.headline}": "${args.insert.trim()}"${where(done.live)}. Now ${linesNow} line(s) as they print (was ${linesWere}; blank lines and wrapped lines count), measured at ${formatPages(noteEighths(done.result))} of a page${cameraReply(done.result.text)}.${revisionMark(done.state, done.result.id)}${cueReport(done.state, done.result.text, done.result)}`,
         { ...done.result, eighths: noteEighths(done.result), measured: true },
       );
     }
@@ -2939,7 +3007,7 @@ server.registerTool(
     const { state, result, live } = await commit({ type: "set_text", id: note.id, text: text.replace(args.find, args.replace) });
     const linesAfter = sceneLineCount(result.text);
     return ok(
-      `Changed one line of "${result.headline}": "${args.find}" → "${args.replace}"${where(live)}. Now ${linesAfter} line(s) as they print${linesAfter !== linesBefore ? ` (was ${linesBefore}; blank lines and wrapped lines count)` : ""}, measured at ${formatPages(noteEighths(result))} of a page${cameraReply(result.text)}.${revisionMark(state, result.id)}${cueReport(state, result.text)}`,
+      `Changed one line of "${result.headline}": "${args.find}" → "${args.replace}"${where(live)}. Now ${linesAfter} line(s) as they print${linesAfter !== linesBefore ? ` (was ${linesBefore}; blank lines and wrapped lines count)` : ""}, measured at ${formatPages(noteEighths(result))} of a page${cameraReply(result.text)}.${revisionMark(state, result.id)}${cueReport(state, result.text, result)}`,
       { ...result, eighths: noteEighths(result), measured: true },
     );
   },
@@ -3150,7 +3218,10 @@ server.registerTool(
       ? [`${unwritten} of ${order.length} scenes are unwritten and set their change line as action, marked [Unwritten], a few lines each — so this is the script so far, not the runtime: the runtime from the cards is about ${formatPages(boardEighths(state))} pages, ${order.length - unwritten} of ${order.length} measured and the rest estimated.`]
       : [];
     // The film's length is the cards' number, said first; the page count here is how far the script has got (round twenty-three, entry 62).
-    const lead = `how long the film is: about ${formatPages(boardEighths(state))} pages, by the cards — say this one to the writer. What follows is the script as written so far, paginated${unwritten ? `: ${order.length - unwritten} of ${order.length} scenes written` : ""}, which is a different number and not the film's length until every scene is written.`;
+    // Once every scene is written, the paginated count is the script's length (pass 1a, entry 42); before that, the cards' number leads and the pages say how far the script has got.
+    const lead = order.length > 0 && unwritten === 0
+      ? `how long the script is: ${result.pageCount} pages, paginated — say this one to the writer: every scene is written, so this is the script as it prints. By the cards' measures it is about ${formatPages(boardEighths(state))} pages, in eighths, the count a production breakdown uses; the difference is headings and the spacing of the page.`
+      : `how long the film is: about ${formatPages(boardEighths(state))} pages, by the cards — say this one to the writer. What follows is the script as written so far, paginated${unwritten ? `: ${order.length - unwritten} of ${order.length} scenes written` : ""}, which is a different number and not the film's length until every scene is written.`;
     return ok([lead, ...note, `pages: ${result.pageCount} of ${Math.round(state.targetEighths / 8)}`, `scene numbers here are ${state.lock ? "the locked numbers" : "story order (not locked)"}`, ...lines].join("\n"), result.scenes);
   },
 );

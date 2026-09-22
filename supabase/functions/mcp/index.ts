@@ -27,7 +27,7 @@
 // refuses a wrong password from every tool.
 
 import { WebStandardStreamableHTTPServerTransport } from "npm:@modelcontextprotocol/sdk@1.30.0/server/webStandardStreamableHttp.js";
-import { createPlotcoderServer } from "npm:plotcoder-board@0.1.51/scripts/plotcoder-mcp-server.mjs";
+import { createPlotcoderServer } from "npm:plotcoder-board@0.1.52/scripts/plotcoder-mcp-server.mjs";
 
 const ABOUT = `PlotCoder's hosted MCP door.
 

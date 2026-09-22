@@ -1595,8 +1595,10 @@ export function applyCommand(state, command, now = nowIso()) {
     case "lock_numbers": {
       const order = Array.isArray(command.order) ? command.order : state.notes.map((note) => note.id);
       const byId = new Map(state.notes.map((note) => [note.id, note]));
-      const ordered = order.map((id) => byId.get(id)).filter(Boolean);
-      for (const note of state.notes) if (!order.includes(note.id)) ordered.push(note);
+      // Only the film's cards take a locked number (pass 1a, entry 103): a card set aside or behind another
+      // is not in the script, and if it comes back it gets a letter where it lands, like any added scene.
+      const ordered = order.map((id) => byId.get(id)).filter((note) => note && inStory(note));
+      for (const note of state.notes) if (!order.includes(note.id) && inStory(note)) ordered.push(note);
       const lock = lockFrom(ordered, state.lock, now);
       return { state: { ...state, lock }, changed: true, result: lock };
     }

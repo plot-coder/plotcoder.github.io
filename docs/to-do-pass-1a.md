@@ -304,7 +304,21 @@ reads right; the block comes out before pass 1b.
   without a path is the file itself, so the words live in the
   description. *Built.*
 
+- [x] **N36 · A lock numbers the film's cards only** (entry 103). The
+  ferry, set aside, was given locked number 18 at the end and would have
+  come back there. *Plan:* only cards in the film take a locked number; a
+  card brought back gets a letter where it lands, like any added scene.
+  *Test:* kernel. *Built.*
+
 ## Decided against, with the reason
+
+- **"Put it back as it was" with no tool** (entry 104). Undo is a stack,
+  newest first; a targeted undo of one older change is a design of its
+  own (goal 3's record of changes is the nearer answer). Left for the plan.
+- **A restore starred as new** (entry 106): a revision marks what differs
+  from its snapshot, and a restore differs. By design.
+- **The dissolved leave named** (entry 105): N23. **The camera mark**
+  (entry 107): entry 40.
 
 - **The "!" marks coming off on export** (entry 101): the round trip no
   longer rewrites the stored text (entry 61's fix), so the two agree.
@@ -393,5 +407,7 @@ N16 · 32, 34, 35 → N17 · 33 → N18 · 42, 45, 47 → N19.
 **Decided against, the reading of the whole:** 87, 93, 96, 97.
 
 **The revision and the export:** 98, 99 → N35 · 100, 101, 102 decided against, above.
+
+**The lock and the restore:** 103 → N36 · 104, 105, 106, 107 decided against, above.
 
 **Not the app's:** 39, 41 (nothing new).

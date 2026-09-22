@@ -1784,6 +1784,15 @@ describe("the production half (Roadmap 2, item 8)", () => {
     expect(applyCommand(seed, { type: "unlock_numbers" }, NOW).changed).toBe(false);
   });
 
+  it("locks the film's cards only: a card set aside takes no number, and comes back with a letter where it lands (pass 1a, entry 103)", () => {
+    const seed = seedState();
+    const aside = applyCommand(seed, { type: "set_aside", ids: ["tom-lies"], aside: true }, NOW).state;
+    const locked = applyCommand(aside, { type: "lock_numbers", order: ["maya-letter", "letter-aloud"] }, NOW).state;
+    expect(locked.lock?.numbers).toEqual({ "maya-letter": "1", "letter-aloud": "2" });
+    const back = applyCommand(locked, { type: "set_aside", ids: ["tom-lies"], aside: false }, NOW).state;
+    expect(sceneNumbers([{ id: "maya-letter" }, { id: "tom-lies" }, { id: "letter-aloud" }], back.lock).get("tom-lies")).toBe("1A");
+  });
+
   it("starts a revision with a snapshot of every card, and ends it", () => {
     const seed = seedState();
     const started = applyCommand(seed, { type: "start_revision", name: "blue draft", color: "blue" }, NOW);

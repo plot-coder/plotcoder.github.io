@@ -35,6 +35,8 @@ describe("the agent on-ramp (R43)", () => {
     for (const item of AGENTS.first) expect(text).toContain(item.tool);
     for (const tool of ["add_open_line", "set_aside", "set_alternative", "set_open", "list_workflows"]) expect(text).toContain(tool);
     expect(text).toContain("nothing is a beat on your word");
-    expect(text.length).toBeLessThan(4500);
+    // The Claude desktop app cuts a server's instructions at 2048 characters (pass 1a, entry 1).
+    expect(text.length).toBeLessThan(2000);
+    for (const word of ["delete_project", "empty_account", "claim_account", "export_project first"]) expect(text).toContain(word);
   });
 });

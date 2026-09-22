@@ -34,6 +34,7 @@ import {
   NOTE_WIDTH,
   DEFAULT_TARGET_EIGHTHS,
   targetWords,
+  TARGET_KINDS,
   DEFAULT_NOTE_EIGHTHS,
   normalizeState,
   newId,
@@ -102,6 +103,17 @@ import {
  * Nothing lives at module level, so two writers never share a door.
  * options.sessionStore stands in for the account's own (src/board/agentSession.js).
  */
+/**
+ * A call that failed before it answered says so in words, not as a bare
+ * "TypeError: fetch failed" (pass 1a, entry 8): what failed, what it most
+ * likely means, and what to do.
+ */
+export function failedCallReply(name, error) {
+  const message = error instanceof Error ? error.message : String(error);
+  const network = /fetch failed|ECONNRESET|ETIMEDOUT|ENOTFOUND|network|timeout/i.test(message);
+  return `${name} failed before it answered: ${message}. ${network ? "That is the account not answering for a moment — the network, or the door — not a refusal: call it again." : "Call it again; if it fails twice the same way, tell the writer what it said."} Anything the call wrote before failing stands; list_board shows what landed.`;
+}
+
 export function createPlotcoderServer(env = process.env, options = {}) {
 
 const colorSchema = z.enum(NOTE_COLORS);
@@ -262,7 +274,9 @@ async function deletionPlan(row) {
 }
 
 function describePlan(plan) {
-  return `"${plan.name}" (${plan.id}): ${plan.boards} board(s), ${plan.cards} card(s), ${plan.files.length} file(s)`;
+  // The files by name (pass 1a, entry 7): a kept export goes with them, and an agent that never listed them cannot know.
+  const files = plan.files.length ? `${plan.files.length} file(s): ${plan.files.map((file) => file.split("/").pop()).join(", ")}` : "no files";
+  return `"${plan.name}" (${plan.id}): ${plan.boards} board(s), ${plan.cards} card(s), ${files}`;
 }
 
 /** Delete one project the writer owns: its files first, then the row; boards and file records cascade. */
@@ -1602,6 +1616,7 @@ const server = new McpServer({ name: "plotcoder-board", version: packageVersion(
 // eleven, finding 22). One lane, in the order the calls arrive.
 const registerTool = server.registerTool.bind(server);
 let lane = Promise.resolve();
+
 server.registerTool = (name, config, handler) =>
   // A tool's description promises what its reply does, so it says undo as this door has it too.
   registerTool(name, { ...config, description: `${hosted() && name === "redo" ? NO_REDO_HERE : hosted() && name === "undo" ? (undoKeptHere() ? UNDO_THROUGH_THE_DOOR : NO_UNDO_HERE) : ""}${undoAsThisDoorHasIt(config.description ?? "")}` }, (...args) => {
@@ -1610,7 +1625,7 @@ server.registerTool = (name, config, handler) =>
       try {
         return await handler(...args).catch((error) => {
           if (error instanceof DoorReply) return ok(error.message);
-          throw error;
+          return ok(failedCallReply(name, error));
         });
       } finally {
         await keepSession();
@@ -1678,7 +1693,7 @@ server.registerTool(
   {
     title: "Set logline",
     description:
-      "Set the board's logline — the central question, what this story is arguing. One sentence. Every card on the wall should be checkable against it. Pass an empty string to clear it. Or leave it open: pass open with the writer's words for why there is no logline yet — \"two candidates, not chosen\" — and the reading lists it under open, by the writer's word, and asks nothing; text decides it and clears the words; open \"\" takes the words back and leaves the field blank. Only on the writer's word: an open field is theirs, never a guess of yours.",
+      "Set the board's logline — the central question, what this story is arguing. One sentence, kept as given, capitals and all. Every card on the wall should be checkable against it. Pass an empty string to clear it. Or leave it open: pass open with the writer's words for why there is no logline yet — \"two candidates, not chosen\" — and the reading lists it under open, by the writer's word, and asks nothing; text decides it and clears the words; open \"\" takes the words back and leaves the field blank. Only on the writer's word: an open field is theirs, never a guess of yours.",
     inputSchema: {
       logline: z.string().optional(),
       open: z.string().optional(),
@@ -4454,7 +4469,7 @@ server.registerTool(
   {
     title: "Set the project's premise",
     description:
-      "Set the project's premise: the line above every board's logline, held by the project whatever its board count — what a series is about, or what is true before a film starts ('the winter the shop closes'). An empty string clears it. Or leave it open: pass open with the writer's words for why there is no premise yet — \"the buyer: a sale, or a lease\" — and the reading lists it under open, by the writer's word; a premise decides it, open \"\" leaves it blank. Boards keep their own loglines. The premise is also where a fact about the whole film goes when no card holds it: its span (\"September to New Year\"), a rule it keeps (\"Con does not die in this film\") — a sentence each. read_wall prints it above the logline and read_pages at the head of the script, so whoever writes a scene sees it; a fact about one scene belongs on that scene's card.",
+      "Set the project's premise: the line above every board's logline, held by the project whatever its board count — what a series is about, or what is true before a film starts ('the winter the shop closes'). An empty string clears it. Or leave it open: pass open with the writer's words for why there is no premise yet — \"the buyer: a sale, or a lease\" — and the reading lists it under open, by the writer's word; a premise decides it, open \"\" leaves it blank. Boards keep their own loglines. The premise is also where a fact about the whole film goes when no card holds it: its span (\"September to New Year\"), when it is set (\"five days in August\"), a rule it keeps (\"Con does not die in this film\") — a sentence each. A film with nothing true before it starts and no such fact leaves the premise blank, and the reading does not ask for one. read_wall prints it above the logline and read_pages at the head of the script, so whoever writes a scene sees it; a fact about one scene belongs on that scene's card.",
     inputSchema: { premise: z.string().optional(), open: z.string().optional() },
   },
   async (args) => {
@@ -4744,8 +4759,10 @@ server.registerTool(
     const first = record.boards[0];
     const nameOpenLine = `${record.nameOpen ? ` The project's name is left open, by the writer's word: "${record.nameOpen}"; rename_project decides it.` : ""}${first.nameOpen ? ` The board's name is left open, by the writer's word: "${first.nameOpen}"; rename_board decides it.` : ""}`;
     // A film is one board and goes out under the project's name: nothing to ask the writer about "Board 1" (round twenty-two, entry 16).
-    const filmBoard = !args.board?.trim() && !args.boardOpen?.trim() ? " A film is one board and goes out under the project's name, so its board needs no name; a series names each board for its episode (rename_board)." : "";
-    return ok(`Started "${record.name}" (${record.id}) with its first board "${first.name}" (${first.id}), and working it now, as ${account.email}.${filmBoard}${targetLine}${nameOpenLine}${oneCallHint(record)}`, { id: record.id, name: record.name, boardId: first.id, boardName: first.name, boardNameOpen: first.nameOpen ?? "", targetEighths: state.targetEighths });
+    const filmBoard = !args.board?.trim() && !args.boardOpen?.trim() ? " A film is one board and goes out under the project's name, so its board needs no name; a series names each board for its episode (rename_board)." : args.board?.trim() ? ` The board is named "${first.name}" by the writer's word; a one-board film goes out under the project's name either way, so the board's name shows on the wall and nowhere else.` : "";
+    // A kind and a number in one call (pass 1a, entry 4): the number is the target; say so, rather than drop the word in silence.
+    const kindDropped = target !== undefined && args.kind ? ` You passed kind "${args.kind}" and a number: the number is the target and the word is not kept (a number always clears the word) — pass kind alone to keep the writer's word instead, read as ${formatPages(TARGET_KINDS[args.kind]?.eighths ?? 0)} pages.` : "";
+    return ok(`Started "${record.name}" (${record.id}) with its first board "${first.name}" (${first.id}), and working it now, as ${account.email}.${filmBoard}${targetLine}${kindDropped}${nameOpenLine}${oneCallHint(record)}`, { id: record.id, name: record.name, boardId: first.id, boardName: first.name, boardNameOpen: first.nameOpen ?? "", targetEighths: state.targetEighths });
   },
 );
 
@@ -4779,7 +4796,7 @@ server.registerTool(
   {
     title: "Empty the account",
     description:
-      "Through the account door: delete every project the writer owns — boards, cards and files, the exports kept with them included — and leave the account itself, signed in and empty. On the hosted door an export_project without inline is kept with the project's files and goes too: fetch its link, or pass inline, before this. Projects merely shared with the writer by others stay. Cannot be undone: ask the writer first, and export_project each project first if they might want it back. Without confirm it only says what would go; pass confirm: true to empty.",
+      "Through the account door: delete every project the writer owns — boards, cards and files, the exports kept with them included — and leave the account itself, signed in and empty. On the hosted door an export_project without inline is kept with the project's files and goes too: fetch its link, or pass inline, before this. Projects merely shared with the writer by others stay. The reply names every file that goes, and list_files shows them first. Cannot be undone: ask the writer first, and export_project each project first if they might want it back. Without confirm it only says what would go; pass confirm: true to empty.",
     inputSchema: { confirm: z.boolean().optional() },
   },
   async (args) => {
@@ -4912,7 +4929,7 @@ server.registerTool(
   {
     title: "Save the project as a file",
     description:
-      `The project the server is working, as the file Save project writes and Open project takes: the record, every board with its cards, the reminders and the writer's structures. ${hosted() ? "This door has no disk, so the file is kept with the project's files on the account and the reply is a link to it, good for an hour, with its size and checksum — nothing to retype; list_files shows it and remove_file takes it off. Pass inline: true to have the JSON in the reply instead." : `Pass path to write it (a .json) — an absolute path, since a relative one resolves from the folder the server was started in, which is ${process.cwd()} — this session's own folder when the server was started from it, and somewhere else when it was not; without a path, the reply's JSON is the file.`} Pictures and takes on the account are not in the file. Works through every door.`,
+      `The project the server is working, as the file Save project writes and Open project takes: the record, every board with its cards, the reminders and the writer's structures. ${hosted() ? "This door has no disk, so the file is kept with the project's files on the account and the reply is a link to it, good for an hour, with its size and checksum — nothing to retype; list_files shows it and remove_file takes it off. Pass inline: true to have the JSON in the reply instead." : `Pass path to write it (a .json) on the machine this server runs on — a stdio server runs on the session's own machine, so the file lands on this disk — an absolute path, since a relative one resolves from the folder the server was started in, which is ${process.cwd()} — this session's own folder when the server was started from it, and somewhere else when it was not; without a path, the reply's JSON is the file.`} Pictures and takes on the account are not in the file. Works through every door.`,
     inputSchema: { path: z.string().optional(), inline: z.boolean().optional().describe("The JSON in the reply itself, rather than a link to the file. Through a door with a disk, no path already means this.") },
   },
   async (args) => {

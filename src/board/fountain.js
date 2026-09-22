@@ -115,13 +115,18 @@ export function unmark(text) {
 }
 
 /** The title page block. `titles` is what the writer would put above the script. */
-export function titlePage({ title, episode, credit, author, draftDate, notes }) {
+export function titlePage({ title, episode, credit, author, draftDate, contact, notes }) {
   const lines = [];
   if (title) lines.push(`Title: ${title}`);
   if (episode) lines.push(`Episode: ${episode}`);
   if (credit) lines.push(`Credit: ${credit}`);
   if (author) lines.push(`Author: ${author}`);
   if (draftDate) lines.push(`Draft date: ${draftDate}`);
+  // A contact runs to several lines; Fountain indents a value's lines under its key.
+  if (contact) {
+    lines.push("Contact:");
+    for (const line of String(contact).split("\n")) if (line.trim()) lines.push(`\t${line.trim()}`);
+  }
   if (notes && notes.length) {
     lines.push("Notes:");
     for (const line of notes) lines.push(`\t${line}`);
@@ -155,6 +160,7 @@ export function toFountain(state, options = {}) {
     episode: options.episode,
     author: options.author,
     draftDate: options.draftDate ? options.draftDate.slice(0, 10) : undefined,
+    contact: options.contact,
     notes,
   });
 

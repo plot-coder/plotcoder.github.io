@@ -164,7 +164,41 @@ reads right; the block comes out before pass 1b.
   guess and says the script as it prints is `page_count`'s; `read_wall`
   takes `only: "length"`. *Built.*
 
+- [x] **N20 · The title page: a byline and a contact** (entries 50, 55).
+  "A script going to an agency has nothing on its front but a title", and
+  the Final Draft page printed today's date unlabelled. *Plan:* the byline
+  and the contact live on the project (`author`, `contact`), since every
+  board's script goes out under them; `set_title_page` sets or clears them;
+  every export prints them — Fountain's Author and Contact keys, Final
+  Draft's "Written by" and the contact lines under a labelled "Draft
+  date:", Markdown's byline under the title, plain text's centred byline
+  and the contact at the left — and the draft date stays the day it goes
+  out, as the writer said. *Alternatives:* a draft date the writer sets
+  (a date on a project goes stale; the export's day is a fact); the fields
+  on the board (a series would carry them per episode). *Best?* On the
+  project, three fields, one tool. A person sees the byline only in the
+  file for now: the app's own field for it is a mockup for Robert
+  (`docs/mockups/` to come); the writer's guide says the agent sets it.
+  *Test:* the kernel keeps and clears them and a load repairs the shape;
+  each writer prints them; the door sets them and the exports carry them.
+  *Built.*
+- [x] **N21 · Page turns in plain text** (entry 51). Eleven joins read as
+  typesetting faults. *Plan:* a page turn prints as the new page's number
+  in the right margin between two blank lines, the way a script prints;
+  the first page unnumbered — never a bare blank line, which round
+  fourteen (entry 33) found reads as a paragraph break. *Built,* the
+  round-fourteen test rewritten to say so.
+- [x] **N22 · The exports' words** (entries 49, 52, 53, 56, 57, 58).
+  *Built:* each export without a path says the reply is the file itself
+  and what to name it; Markdown says a beat's headline is its heading, not
+  printed twice; Final Draft says what an unlocked, unrevised title page
+  shows and that headlines ride as scene titles; `write_scene` names every
+  form the page takes.
+
 ## Decided against, with the reason
+
+- **The run's own permission gate** (entries 48, 54, 59): the session's,
+  not the app's.
 
 - **The [empty] question mid-build** (entry 19). The reading reads what is
   there; after the first reading the tail quotes what changed, by design
@@ -204,6 +238,8 @@ reads right; the block comes out before pass 1b.
 N11 · 20 → N12 · 16, 17 → N13 · 22 → N14 · 27, 28, 29, 46 → N15 · 30, 31 →
 N16 · 32, 34, 35 → N17 · 33 → N18 · 42, 45, 47 → N19.
 
-**Decided against, above:** 14, 15, 19, 24, 25, 26, 37, 38, 40, 43, 44.
+**Decided against, above:** 14, 15, 19, 24, 25, 26, 37, 38, 40, 43, 44, 48, 54, 59.
+
+**Here as an item, the exports:** 50, 55 → N20 · 51 → N21 · 49, 52, 53, 56, 57, 58 → N22.
 
 **Not the app's:** 39, 41 (nothing new).

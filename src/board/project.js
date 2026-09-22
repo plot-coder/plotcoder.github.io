@@ -36,6 +36,9 @@ export function emptyProject(now = nowIso()) {
     nameOpen: "",
     premise: "",
     premiseOpen: "",
+    // The title page's byline and contact (pass 1a, entry 50): the project's, since every board's script goes out under them.
+    author: "",
+    contact: "",
     boards: [board],
     activeBoardId: board.id,
     createdAt: now,
@@ -93,6 +96,9 @@ export function normalizeProject(value, now = nowIso()) {
     premise: typeof value.premise === "string" ? value.premise.trim() : "",
     // A project written before R61 has no open premise (R61).
     premiseOpen: openWords(value.premiseOpen),
+    // A project written before pass 1a has no byline: blank, which claims nothing.
+    author: typeof value.author === "string" ? value.author.trim() : "",
+    contact: typeof value.contact === "string" ? value.contact.trim() : "",
     boards,
     activeBoardId,
     structures,
@@ -377,6 +383,18 @@ export function setPremiseOpen(project, words, now = nowIso()) {
 }
 
 /**
+ * The title page's byline and contact (pass 1a, entry 50): "Written by …" and
+ * the lines under it — an address, an agent, an email — on every script the
+ * project sends out. Undefined leaves a field as it is; "" clears it.
+ */
+export function setTitlePage(project, fields, now = nowIso()) {
+  const author = typeof fields?.author === "string" ? fields.author.trim().replace(/\s+/g, " ") : project.author ?? "";
+  const contact = typeof fields?.contact === "string" ? fields.contact.trim() : project.contact ?? "";
+  if (author === (project.author ?? "") && contact === (project.contact ?? "")) return project;
+  return touch(project, { author, contact }, now);
+}
+
+/**
  * What a script going out is called (round thirteen, entry 26): a named
  * project is the title — a one-board film is its project — with the board's
  * name beside it only when the project has several boards; an untitled
@@ -387,7 +405,9 @@ export function scriptTitles(project, board) {
   const boardName = (board?.name ?? "").trim() || "Untitled";
   const named = typeof project?.name === "string" && project.name.trim() && project.name !== DEFAULT_PROJECT_NAME;
   // A film whose title is not decided goes out as "Untitled", never as "Board 1": the board's default name is the app's word, not a title (round twenty-three, entry 53).
-  if (!named) return { title: /^Board \d+$/.test(boardName) && (project?.boards ?? []).length <= 1 ? "Untitled" : boardName };
+  // The byline and contact ride with the title on every export (pass 1a, entry 50).
+  const front = { ...(project?.author ? { author: project.author } : {}), ...(project?.contact ? { contact: project.contact } : {}) };
+  if (!named) return { title: /^Board \d+$/.test(boardName) && (project?.boards ?? []).length <= 1 ? "Untitled" : boardName, ...front };
   const boards = project.boards ?? [];
   if (boards.length > 1) {
     // A series: the project is the title and the board is the episode line,
@@ -395,9 +415,9 @@ export function scriptTitles(project, board) {
     // (round fifteen, entries 32 and 37).
     const index = boards.findIndex((item) => item.id === board?.id);
     const number = index >= 0 ? `Episode ${index + 1} of ${boards.length}` : "An episode";
-    return { title: project.name, episode: `${number} · ${boardName}` };
+    return { title: project.name, episode: `${number} · ${boardName}`, ...front };
   }
-  return { title: project.name };
+  return { title: project.name, ...front };
 }
 
 export function boardById(project, id) {

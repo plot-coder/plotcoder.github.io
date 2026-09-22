@@ -24,6 +24,10 @@ export type ProjectRecord = {
   premise: string;
   /** The writer's words for why there is no premise yet (R61), or empty. */
   premiseOpen: string;
+  /** The title page's byline — "Written by …" — on every script out (pass 1a, entry 50); empty claims nothing. */
+  author: string;
+  /** The title page's contact lines under the byline; empty is none. */
+  contact: string;
   boards: BoardMeta[];
   activeBoardId: string;
   /** A writer's own structures, saved from a wall's beats (Roadmap 2, item 7). */
@@ -73,6 +77,8 @@ export declare function moveBoard(
 export declare function setActiveBoard(project: ProjectRecord, id: string, now?: string): ProjectRecord;
 export declare function renameProject(project: ProjectRecord, name: string, now?: string): ProjectRecord;
 export declare function setPremise(project: ProjectRecord, premise: string, now?: string): ProjectRecord;
+/** The title page's byline and contact; undefined leaves a field, "" clears it. */
+export declare function setTitlePage(project: ProjectRecord, fields: { author?: string; contact?: string }, now?: string): ProjectRecord;
 /** The writer's words for why there is no premise yet (R61); words clear the premise, "" takes them back. */
 export declare function setPremiseOpen(project: ProjectRecord, words: string, now?: string): ProjectRecord;
 /** The writer's words for why a board's name is not decided (R61); the name stands meanwhile. */
@@ -81,7 +87,7 @@ export declare function setBoardNameOpen(project: ProjectRecord, id: string, wor
 export declare function setProjectNameOpen(project: ProjectRecord, words: string, now?: string): ProjectRecord;
 export declare function boardById(project: ProjectRecord, id: string): BoardMeta | null;
 /** What a script going out is called: a named project is the title, its board beside it only when the project has several. */
-export declare function scriptTitles(project: ProjectRecord, board: BoardMeta | null | undefined): { title: string; episode?: string };
+export declare function scriptTitles(project: ProjectRecord, board: BoardMeta | null | undefined): { title: string; episode?: string; author?: string; contact?: string };
 export declare function findBoard(project: ProjectRecord, key: string): BoardMeta | null;
 export declare function reidentifyProject(
   project: ProjectRecord,

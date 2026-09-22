@@ -219,6 +219,7 @@ describe("plotcoder MCP server", () => {
       "set_payoff",
       "set_plant",
       "set_premise",
+      "set_title_page",
       "set_rank",
       "set_target",
       "set_when",
@@ -1370,6 +1371,15 @@ describe("open fields (R61): the logline, the premise, a when and a board's name
   });
 
   it("leaves the premise and a board's name open, and a value decides each", async () => {
+    // The title page's byline and contact, on the project and on every export (pass 1a, entry 50).
+    expect(await client.callTool("set_title_page", {})).toContain("Say which");
+    const signed = await client.callTool("set_title_page", { author: "Robert Douglas", contact: "12 The Quay\nrobert@example.com" });
+    expect(signed).toContain("Title page: Written by Robert Douglas; contact: 12 The Quay / robert@example.com");
+    expect(await client.callTool("export_fountain", {})).toContain("Author: Robert Douglas\nDraft date: ");
+    expect(await client.callTool("export_text", {})).toContain("Written by Robert Douglas");
+    expect(await client.callTool("export_markdown", {})).toContain("*Written by Robert Douglas*");
+    expect(await client.callTool("set_title_page", { author: "", contact: "" })).toContain("Title page: no byline; no contact");
+    expect(await client.callTool("set_title_page", { author: "" })).toContain("Title page unchanged");
     expect(await client.callTool("set_premise", {})).toContain("Say which");
     expect(await client.callTool("set_premise", { open: "the buyer: housing, or a supermarket" })).toContain('Premise left open, by the writer\'s word: "the buyer: housing, or a supermarket"');
     expect(await client.callTool("list_boards")).toContain('premise: open, by the writer\'s word — "the buyer: housing, or a supermarket"');

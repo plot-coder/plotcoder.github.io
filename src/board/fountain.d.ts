@@ -20,6 +20,8 @@ export declare function titlePage(titles: {
   credit?: string;
   author?: string;
   draftDate?: string;
+  /** The contact's lines, under Contact: (pass 1a, entry 50). */
+  contact?: string;
   notes?: string[];
 }): string;
 
@@ -32,6 +34,8 @@ export type FountainOptions = {
   author?: string;
   /** ISO date string; only the date is printed. */
   draftDate?: string;
+  /** The contact's lines, under Contact: (pass 1a, entry 50). */
+  contact?: string;
 };
 
 export declare function toFountain(state: BoardState, options?: FountainOptions): string;

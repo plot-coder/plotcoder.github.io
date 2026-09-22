@@ -81,6 +81,7 @@ import {
   removeStructure,
   setActiveBoard,
   setPremise,
+  setTitlePage,
   setPremiseOpen,
   setBoardNameOpen,
   setProjectNameOpen,
@@ -2889,7 +2890,7 @@ server.registerTool(
   {
     title: "Export the wall as Markdown",
     description:
-      "The open board as Markdown, for a collaborator who lives in Google Docs or the like: titled for the project — a one-board film is its project, and the board's name follows only when the project has several boards — the premise and the logline under it, beats as second-level headings, a third-level heading per scene from its place with its scene number, the headline as a synopsis line, then the scene's text — a speech as its cue in bold with the lines under it — or, unwritten, its change line after the mark [Unwritten] in bold, so a reader can tell a placeholder from a page. Carries the beats and every headline; does not carry the cast or the fold (Fountain's notes do). In Google Docs, Paste from Markdown keeps the headings. Pass a path (relative to the server's folder) to write a .md file; otherwise the text comes back.",
+      "The open board as Markdown, for a collaborator who lives in Google Docs or the like: titled for the project — a one-board film is its project, and the board's name follows only when the project has several boards — the byline and contact under the title when set_title_page has set them, then the premise and the logline, beats as second-level headings, a third-level heading per scene from its place with its scene number, the headline as a synopsis line under a scene (a beat's headline is its own heading, not printed twice), then the scene's text — a speech as its cue in bold with the lines under it — or, unwritten, its change line after the mark [Unwritten] in bold, so a reader can tell a placeholder from a page. Carries the beats and every headline; does not carry the cast or the fold (Fountain's notes do). In Google Docs, Paste from Markdown keeps the headings. Pass a path (relative to the server's folder) to write a .md file; otherwise the text comes back.",
     inputSchema: { path: z.string().optional() },
   },
   async (args) => {
@@ -2912,7 +2913,7 @@ server.registerTool(
   {
     title: "Export the script as plain text",
     description:
-      "The script to read, as it prints — the open board's script as plain text: the paginator's lines at Courier's columns kept with spaces, scene numbers in both margins (the wall's order, or as locked), no page numbers, an unwritten scene's change line as action after the mark [Unwritten], a revision's stars in the right margin. The script and nothing else: no headlines, no beats, no cast — the heading is the place and the when. Titled for the project, a one-board film being its project. Pastes into anything and reads as a script wherever the font is monospaced. Pass a path (relative to the server's folder) to write a .txt file; otherwise the text comes back.",
+      "The script to read, as it prints — the open board's script as plain text: the paginator's lines at Courier's columns kept with spaces, scene numbers in both margins (the wall's order, or as locked), a page turn as the new page's number in the right margin between two blank lines (the first page unnumbered), the byline and contact under the title when set_title_page has set them, an unwritten scene's change line as action after the mark [Unwritten], a revision's stars in the right margin. Without a path the reply is the file itself and nothing else, to save as is: name it for the project (a series: the board), .txt. The script and nothing else: no headlines, no beats, no cast — the heading is the place and the when. Titled for the project, a one-board film being its project. Pastes into anything and reads as a script wherever the font is monospaced. Pass a path (relative to the server's folder) to write a .txt file; otherwise the text comes back.",
     inputSchema: { path: z.string().optional() },
   },
   async (args) => {
@@ -2935,7 +2936,7 @@ server.registerTool(
   {
     title: "Write a scene",
     description:
-      "Write a card's scene text in Fountain — action, character cues in capitals, dialogue under them — onto the card by id; the scene heading comes from the card's place, so start with the action. The card is then measured (its lines as they print against a 55-line page) instead of estimated. An empty string clears it. Read read_pages first so the scene fits what is around it, and do not write scenes the writer has not asked for.",
+      "Write a card's scene text in Fountain — action, character cues in capitals, dialogue under them, a (parenthetical) under a cue, a second cue ending ^ for dual dialogue, a line ending in TO: or beginning > for a transition, a line in > and < for a centred line (THE END), === for a page break, [[a note]] that never prints — onto the card by id; the scene heading comes from the card's place, so start with the action. Anything else on the page is action (INSERT and BACK TO SCENE included). The card is then measured (its lines as they print against a 55-line page) instead of estimated. An empty string clears it. Read read_pages first so the scene fits what is around it, and do not write scenes the writer has not asked for.",
     inputSchema: { id: z.string(), text: z.string() },
   },
   async (args) => {
@@ -3144,7 +3145,7 @@ server.registerTool(
   {
     title: "Export as Final Draft",
     description:
-      "The open board as a Final Draft .fdx: a heading per card with its scene number (the locked numbers under a lock, else story order), the scene's text as script paragraphs (action, character, parenthetical, dialogue, dual dialogue, transition) or the change line as action after the mark [Unwritten] when unwritten, and a title page: the project's name, and for a series the episode line (Episode 2 of 6 · its name). One board per file; a series is one file per episode. A lock's date and a revision's name print on the title page, and changed paragraphs carry the revision's mark. Pass a path to write the file (a relative path resolves from the server's folder); otherwise the XML comes back with the file's name in a comment on its second line, and the reply with a path repeats that name.",
+      "The open board as a Final Draft .fdx: a heading per card with its scene number (the locked numbers under a lock, else story order), the scene's text as script paragraphs (action, character, parenthetical, dialogue, dual dialogue, transition) or the change line as action after the mark [Unwritten] when unwritten, and a title page: the project's name, for a series the episode line (Episode 2 of 6 · its name), \"Written by\" and the contact when set_title_page has set them, and \"Draft date:\" with the day it goes out — an unlocked, unrevised script's title page is those and nothing else. Each card's headline rides as its scene's title in the scene properties, so Final Draft's navigator shows the wall's headlines. Without a path the reply is the file itself, to save as is: name it for the project (a series: the board), .fdx. One board per file; a series is one file per episode. A lock's date and a revision's name print on the title page, and changed paragraphs carry the revision's mark. Pass a path to write the file (a relative path resolves from the server's folder); otherwise the XML comes back with the file's name in a comment on its second line, and the reply with a path repeats that name.",
     inputSchema: { path: z.string().optional() },
   },
   async (args) => {
@@ -4552,6 +4553,25 @@ server.registerTool(
     const wasPremise = replacedWords([project.premise, project.premiseOpen], [next.premise, next.premiseOpen]);
     if (next.premiseOpen) return ok(`Premise left open, by the writer's word: "${next.premiseOpen}"${where(live)}.${wasPremise} The reading lists it and asks nothing; set_premise with a line decides it, open "" leaves it blank.`, next);
     return ok(`Premise ${next.premise ? `set to "${next.premise}"` : "cleared"}${where(live)}.${wasPremise}`, next);
+  },
+);
+
+server.registerTool(
+  "set_title_page",
+  {
+    title: "Set the title page",
+    description:
+      "The title page's byline and contact, on the project — every script it sends out carries them, in Fountain, Final Draft, Markdown and plain text, with the draft date of the day it goes out: \"Written by …\" under the title, and the contact lines (an address, an agent, an email; several lines are fine) where a title page keeps them. The title itself is the project's name (rename_project); a series' episode line comes from the board. Pass author, contact, or both; \"\" clears one; leaving one out leaves it as it is. Nothing is claimed until the writer says who it is by.",
+    inputSchema: { author: z.string().optional().describe("The byline as it should print after \"Written by\", or \"\" for none."), contact: z.string().optional().describe("The contact lines under the byline, newline-separated, or \"\" for none.") },
+  },
+  async (args) => {
+    if (args.author === undefined && args.contact === undefined) return ok("Say which: author (the byline), contact (the lines under it), or both; \"\" clears one.");
+    const { project, boards, rev, base, live } = await readProject();
+    const next = setTitlePage(project, { author: args.author, contact: args.contact });
+    if (next === project) return ok("Title page unchanged.");
+    await writeProject(next, boards, rev, base);
+    const front = [next.author ? `Written by ${next.author}` : "no byline", next.contact ? `contact: ${next.contact.split("\n").map((line) => line.trim()).filter(Boolean).join(" / ")}` : "no contact"].join("; ");
+    return ok(`Title page: ${front}${where(live)}. Every export of "${next.name}" now carries it under the title, with the draft date of the day it goes out.`, { author: next.author, contact: next.contact });
   },
 );
 

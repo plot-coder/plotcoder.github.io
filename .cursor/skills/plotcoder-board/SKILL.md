@@ -577,6 +577,11 @@ card of another board is not asked about as uncast here.
 
 ### The project
 
+- `set_title_page` — the byline and the contact for every script the
+  project sends out: "Written by …" under the title and the lines under it
+  (an address, an agent, an email), in Fountain, Final Draft, Markdown and
+  plain text, with the day's date as the draft date. `""` clears one.
+  Nothing is claimed until the writer says who it is by.
 - `set_premise` / `rename_project` — the line above every board's logline, and
   the project's name. `list_boards` shows both. The premise is the project's
   whatever its board count: a series' line, or what is true before a film

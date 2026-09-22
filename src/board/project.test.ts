@@ -20,6 +20,7 @@ import {
   renameProject,
   setActiveBoard,
   setPremise,
+  setTitlePage,
   type ProjectRecord,
   reidentifyProject,
   addStructure,
@@ -354,5 +355,30 @@ describe("scriptTitles (round thirteen, entry 26)", () => {
     // A film whose title is not decided never goes out as "Board 1" (round twenty-three, entry 53).
     const fresh = { ...film, name: "Untitled project", boards: [board("Board 1")] };
     expect(scriptTitles(fresh, fresh.boards[0])).toEqual({ title: "Untitled" });
+  });
+});
+
+describe("the title page (pass 1a, entry 50)", () => {
+  it("keeps a byline and a contact on the project, clears one with an empty string, and a load keeps them", () => {
+    const project = emptyProject("2026-09-22T00:00:00.000Z");
+    expect(project.author).toBe("");
+    expect(project.contact).toBe("");
+    const signed = setTitlePage(project, { author: "  Robert   Douglas ", contact: "12 The Quay\nrobert@example.com" }, "2026-09-22T01:00:00.000Z");
+    expect(signed.author).toBe("Robert Douglas");
+    expect(signed.contact).toBe("12 The Quay\nrobert@example.com");
+    expect(setTitlePage(signed, {})).toBe(signed);
+    expect(setTitlePage(signed, { contact: "" }).contact).toBe("");
+    expect(setTitlePage(signed, { contact: "" }).author).toBe("Robert Douglas");
+    const loaded = normalizeProject(JSON.parse(JSON.stringify(signed)));
+    expect(loaded.author).toBe("Robert Douglas");
+    const old = normalizeProject({ ...JSON.parse(JSON.stringify(project)), author: undefined, contact: 7 });
+    expect(old.author).toBe("");
+    expect(old.contact).toBe("");
+  });
+
+  it("rides with the title on every export", () => {
+    const project = setTitlePage(renameProject(emptyProject(), "Ninety-Nine"), { author: "Robert Douglas", contact: "robert@example.com" });
+    expect(scriptTitles(project, project.boards[0])).toEqual({ title: "Ninety-Nine", author: "Robert Douglas", contact: "robert@example.com" });
+    expect(scriptTitles(emptyProject(), emptyProject().boards[0])).toEqual({ title: "Untitled" });
   });
 });

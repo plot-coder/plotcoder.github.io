@@ -5,7 +5,7 @@ else, asked to build a wall and to keep a log of everything that made the job
 harder than it should have been. The friction log is the product; the wall is
 just what produces it.
 
-The practice is Robert's, from 2026-09-13. Twenty-three rounds have been run;
+The practice is Robert's, from 2026-09-13. Twenty-four rounds have been run, and the practice now runs the passes of `docs/plan.md`;
 every finding is fixed, decided, or waiting on a mockup — see
 `REQUIREMENTS.md`, "The blind run", and the `friction, fixed` entries in the
 changelog. The latest report, round twenty-one's, says at its head what
@@ -56,7 +56,8 @@ into a story (Robert, 2026-09-17).
 | Twenty-one | The published package, the same notes, the open place and title in hand, the tie rule in story order | "Plot 14" (`round-seventeen-idea.md`) | Told "leave it open" of the title and the places: both left open through the fields' own `open`; the key on a taken fold stayed a thread, the bucket on a free fold made the fold and the arrow; the title decided, the first morning written, the length, what a writer would ask next | 42 (`round-twenty-one-report.md`); 8 fixed the same morning; a target, acts and lengths cannot be open |
 | Twenty-two | The hosted door's name, `https://mcp.plotcoder.com`, at 0.1.42, on new notes with two scenes the writer has two ways | "The Last Bus" (`round-twenty-two-idea.md`) | The add-connector screen says OAuth is detected on a door with none; told "keep both", `set_alternative` reached unprompted for both scenes; "keep the other" has no home — a kept card is back in the film; the keys' tie folded, named and drew in one call, and would not run through a version; the camera mark read as a mark; the tail never quoted, because the hosted door is a server per request | 95 (`round-twenty-two-report.md`); fixed the same night; a card on the wall and not in the film, and the all-or-nothing open card, are Robert's to draw |
 | Twenty-three | The desktop connector alone, to `https://mcp.plotcoder.com` at 0.1.46, a session behind the door | "The Tuner" (`round-twenty-three-idea.md`) | In from the first message with nothing else wired; `set_aside`, the change line's own open, "a feature", a person's open line and `Name?` all reached unprompted; the order as one `set_order`; a version stepping forward took the thread, the fold and the arrow; the connector sends the session id back and advice was said once — and the counting tail never appeared, because the on-ramp's first calls include a reading | 72 (`round-twenty-three-report.md`); 30 fixed the same night; **a writer's "I don't know" has no home for a cast nobody can name, a film-wide when, a length, the acts** — F8's third asking, to draw |
-| Twenty-four | The desktop connector alone, at 0.1.50: what the handshake's instructions teach before anything is read, the cast's own open, a line about the whole film, proposed turns, cards born as versions and set aside, the counting tail, an undo through the door | "Doyle's" (`round-twenty-four-idea.md`) | Not yet run | — |
+| Twenty-four | The desktop connector alone, at 0.1.50: what the handshake's instructions teach before anything is read, the cast's own open, a line about the whole film, proposed turns, cards born as versions and set aside, the counting tail, an undo through the door | "Doyle's" (`round-twenty-four-idea.md`) | The way in; the four homes for "I don't know"; a reorder, an undo, the tidy, one scene written, the script and the project out | 54 (`round-twenty-four-report.md`); D1 to D3 (R73) and N1 to N15 built the same night, released as 0.1.51 |
+| **Pass 1a** | The desktop connector alone, at 0.1.51: **a complete script** — all seventeen scenes written, out three ways and back, then edited across the whole film (a plant moved, the ending changed, a plant and its payoff cut, a rename, ten pages out, the ending put back), and what the app can say of the whole | "Ninety-Nine" (`round-thirteen-treatment.md`) | Not yet run | — |
 
 ## What the rounds keep finding
 
@@ -127,14 +128,16 @@ directions phase. Each round's findings are itemised in `REQUIREMENTS.md`,
   from round twenty-three, verbatim, under a head saying what the round
   measured, what was fixed from it and what was decided against. The next
   session on the agent surface starts here.
-- `prompt.md` — round twenty-four, ready to run (written 2026-09-21): a
-  third page of notes, "Doyle's" (`round-twenty-four-idea.md`), through the
-  desktop connector alone against 0.1.50. It measures what the agent knows
-  from the handshake before it reads a word, the cast's own open, a line
-  about the whole film, proposed turns, cards born as a version and born
-  set aside, the counting tail after the first reading of the agent's own
-  wall, and an undo through the hosted door. The writer's private answers
-  sit above the divider. Paste everything below its divider.
+- `prompt.md` — **pass 1a**, ready to run (written 2026-09-22): the first
+  pass of goal 1 in `docs/plan.md`, a complete script. "Ninety-Nine" through
+  the desktop connector alone against 0.1.51: the wall as round fourteen
+  built it, then every scene written, the script out three ways and the
+  Final Draft file back in, then the film edited across its length on the
+  writer's word, and what the app can say of the whole. The writer's
+  answers and the eighteen directions sit above the divider. Paste
+  everything below its divider.
+- `round-twenty-four-prompt.md` — round twenty-four's own instructions, as
+  they ran, without their copy of the notes.
 - `round-twenty-four-idea.md` — "Doyle's", the notes: six scenes the writer
   knows, one two ways, one cut and kept, one known only to be last, a room
   nobody can name, a when undecided for the whole film, a sign that should

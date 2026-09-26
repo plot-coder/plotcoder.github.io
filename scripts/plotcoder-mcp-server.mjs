@@ -3102,10 +3102,13 @@ server.registerTool(
     if (count === 0) return ok(`"${args.find}" is not in "${note.headline}"'s text. read_pages shows the scene as it stands.`);
     if (count > 1 && !args.all) return ok(`"${args.find}" occurs ${count} times in "${note.headline}"; give more of the line so it occurs once, or pass all: true to change every one.`);
     const linesBefore = sceneLineCount(text);
-    const { state, result, live } = await commit({ type: "set_text", id: note.id, text: args.all ? text.split(args.find).join(args.replace) : text.replace(args.find, args.replace) });
+    // Replacing with nothing takes the line out and closes the gap (pass 1b, entry 82): no blank paragraph stands where a note was.
+    const replaced = args.all ? text.split(args.find).join(args.replace) : text.replace(args.find, args.replace);
+    const takingOut = !args.replace.trim();
+    const { state, result, live } = await commit({ type: "set_text", id: note.id, text: takingOut ? replaced.replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").replace(/^\n+/, "") : replaced });
     const linesAfter = sceneLineCount(result.text);
     return ok(
-      `Changed ${args.all && count > 1 ? `${count} places in` : "one line of"} "${result.headline}": "${args.find}" → "${args.replace}"${where(live)}. Now ${linesAfter} line(s) as they print${linesAfter !== linesBefore ? ` (was ${linesBefore}; blank lines and wrapped lines count)` : ""}, measured at ${formatPages(noteEighths(result))} of a page${cameraReply(result.text)}.${revisionMark(state, result.id)}${cueReport(state, result.text, result)}`,
+      `${takingOut ? `Took ${args.all && count > 1 ? `${count} places` : "it"} out of "${result.headline}": "${args.find}" is gone, and no blank paragraph stands where it was` : `Changed ${args.all && count > 1 ? `${count} places in` : "one line of"} "${result.headline}": "${args.find}" → "${args.replace}"`}${where(live)}. Now ${linesAfter} line(s) as they print${linesAfter !== linesBefore ? ` (was ${linesBefore}; blank lines and wrapped lines count)` : ""}, measured at ${formatPages(noteEighths(result))} of a page${cameraReply(result.text)}.${revisionMark(state, result.id)}${cueReport(state, result.text, result)}`,
       { ...result, eighths: noteEighths(result), measured: true },
     );
   },

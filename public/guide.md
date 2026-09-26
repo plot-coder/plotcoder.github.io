@@ -312,7 +312,12 @@ only when the server is started with `PLOTCODER_JSON=1`.
   chosen card is the scene, in the front card's place with its arrows, rank,
   group and threads, and the front card's fold when it has none of its own —
   so a thing true of the scene "either way of it" (a plant, a thread) is
-  said once, on the front card, and whichever version is chosen carries it; the other goes, or with `keep` is **set aside** beside it — on
+  said once, on the front card, and whichever version is chosen carries it. A
+  payoff true of **one version only** — the man's card is thrown in the
+  "alone" pier and not in the other — is a setup arrow drawn onto that
+  version's own card, behind or in front: a setup arrow is a claim and may
+  land on a card out of the film, so the other version never inherits it,
+  and choosing decides the payoff with the scene; the other goes, or with `keep` is **set aside** beside it — on
   the wall where the writer can see it, and not in the film. "Keep the
   other, I may come back to it" is `keep`. `of: ""` takes a card out from
   behind. Only on the writer's word:

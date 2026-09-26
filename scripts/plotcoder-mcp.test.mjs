@@ -3920,3 +3920,29 @@ describe("how long it is, once every scene is written (pass 1b, entry 74)", () =
     expect(whole).not.toContain("Say this one to the writer");
   });
 });
+
+describe("striking an open line names the pages whose notes carry it (pass 1b, entry 76)", () => {
+  let root;
+  let client;
+
+  beforeAll(async () => {
+    root = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-stale-notes-"));
+    client = new McpClient(root);
+    await client.start();
+    for (const seeded of ["maya-letter", "tom-lies", "letter-aloud"]) await client.callTool("delete_note", { id: seeded });
+  }, 30000);
+
+  afterAll(() => {
+    client?.stop();
+    if (root) fs.rmSync(root, { recursive: true, force: true });
+  });
+
+  it("names the page by word, and leaves the note to edit_scene", async () => {
+    const friday = (await client.callToolData("create_note", { headline: "The first Friday", change: "Eleven in the queue.", x: 100, y: 100 })).id;
+    await client.callToolData("create_note", { headline: "The last night", change: "The queue is out the door.", x: 330, y: 100 });
+    await client.callTool("add_open_line", { text: "The sign at the end: lit, all of it, or down. I don't know." });
+    await client.callTool("write_scene", { id: friday, text: "EXT. DOYLE'S - NIGHT\n\n[[the sign's end is not decided: lit or down, nothing on this page says]]\n\nDOYLE'S in red neon, the Y dead." });
+    const struck = await client.callTool("strike_open_line", { line: "The sign at the end: lit, all of it, or down. I don't know." });
+    expect(struck).toContain('A [[note]] on one page carries the line\'s words and may be stale now: "The first Friday" — read_pages shows the note; edit_scene takes it off.');
+  });
+});

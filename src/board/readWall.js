@@ -679,6 +679,11 @@ export function readWall(state, options = {}) {
     return false;
   });
 
+  // A setup whose page question the writer has left says so on its own line (pass 1b, entry 78), not "asked below".
+  for (const setup of setups) {
+    if (setup.page?.state === "asked" && left.some((finding) => finding.kind === "unsaid" && finding.ids[0] === setup.from && finding.ids[1] === setup.to)) setup.page = { state: "left" };
+  }
+
   return {
     order: order.map((note) => note.id),
     // The sag not read yet, and why (pass 1a, entry 21); null once half the cards in the runs are sized or written.
@@ -922,6 +927,7 @@ export function describePage(setup) {
   if (!page) return "";
   if (page.state === "quoted") return page.quote ? `on the page: "${page.quote}"` : "on the page: the plant's word is there";
   if (page.state === "asked") return "on the page: not a word of the plant — asked below";
+  if (page.state === "left") return "on the page: not a word of the plant — left by the writer, with their reason below";
   // Why a page was not read, said on the setup's own line (pass 1b, entry 48), not only in the checks line at the foot.
   if (page.state === "unwritten") return "on the page: not read — the payoff is unwritten";
   if (page.state === "no words") return "on the page: not read — the fold has no words (set_plant names what it plants)";

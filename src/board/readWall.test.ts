@@ -1356,3 +1356,17 @@ describe("a page written while its change line is open (pass 1b, entry 55)", () 
     expect(reading.findings.some((finding) => finding.kind === "behind")).toBe(false);
   });
 });
+
+describe("a setup whose page question the writer left (pass 1b, entry 78)", () => {
+  it("says so on the setup's own line, not asked below", () => {
+    let state = wall({ id: "yard", headline: "The yard", change: "The letter comes.", rank: "beat" }, { id: "end", headline: "Noreen's yard", change: "Joe takes the money.", rank: "beat" });
+    state = run(state, { type: "set_plant", ids: ["yard"], what: "the chime" }, { type: "create_arrow", from: "yard", to: "end", kind: "setup" }, { type: "create_arrow", from: "yard", to: "end", kind: "follows" }, { type: "set_text", id: "yard", text: "EXT. THE YARD - DAY\n\nThe chime." }, { type: "set_text", id: "end", text: "EXT. NOREEN'S YARD - DAY\n\nJoe takes the money." });
+    const asked = readWall(state).findings.find((finding) => finding.kind === "unsaid")!;
+    expect(describePage(readWall(state).setups[0])).toBe("on the page: not a word of the plant — asked below");
+    const left = run(state, { type: "leave_question", kind: asked.kind, ids: asked.ids, text: asked.text, why: "it is there as the tune" });
+    const reading = readWall(left);
+    expect(reading.setups[0].page).toEqual({ state: "left" });
+    expect(describePage(reading.setups[0])).toBe("on the page: not a word of the plant — left by the writer, with their reason below");
+    expect(reading.findings.some((finding) => finding.kind === "unsaid")).toBe(false);
+  });
+});

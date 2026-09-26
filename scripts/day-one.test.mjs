@@ -24,3 +24,12 @@ describe("the day-one guide (round twenty-three, entries 1, 2)", () => {
     expect(() => dayOne(guide.replace("## What the tools will refuse", "## What is refused"))).toThrow(/no section "## What the tools will refuse"/);
   });
 });
+
+describe("the guides carry no ticket numbers (pass 1b, entry 7)", () => {
+  it("names no requirement, pass or round in the skill, so the public guide and day-one carry none", () => {
+    for (const file of ["../.cursor/skills/plotcoder-board/SKILL.md", "../public/llms.txt", "../public/wiring.md"]) {
+      const text = fs.readFileSync(new URL(file, import.meta.url), "utf8");
+      expect(text, file).not.toMatch(/\((?:[RD]\d{1,3}|pass \d[a-z]?[^)]*|round [a-z-]+[^)]*)\)/);
+    }
+  });
+});

@@ -2353,7 +2353,7 @@ server.registerTool(
             ...reading.left.map((finding) => `  - [${finding.kind}] ${finding.text} (left ${String(finding.since).slice(0, 10)}${finding.why ? `, "${finding.why}"` : ""}${finding.ids.length ? `; ids: ${finding.ids.join(", ")}` : ""})`),
           ]
         : []),
-      `checks: ${CHECKS.length} run — ${(() => {
+      state.notes.length === 0 ? `checks: ${CHECKS.length} run — nothing to check yet: no cards` : `checks: ${CHECKS.length} run — ${(() => {
         const asked = reading.findings;
         const held = reading.left.length ? `, ${reading.left.length} left by the writer` : "";
         if (!state.notes.length) return "nothing to check yet: no cards";
@@ -4865,7 +4865,7 @@ server.registerTool(
     return ok(
       [
         `projects: ${projects.length} (as ${account.email})${projects.length === 0 ? ` — ${noProjectYet()}` : ""}`,
-        ...projects.map((row) => `  - ${row.id} — "${row.record.name}"${row.id === account.projectId ? " (working)" : ""}: ${row.record.boards.length} board(s) · ${(row.people ?? []).join(", ")}${row.id === account.projectId ? (() => { const people = presentPeople(); return people.length ? ` · open now on ${people.length} screen${people.length === 1 ? "" : "s"}: ${people.join(", ")}` : hosted() ? " · who has a wall open: who_is_here waits for presence and says" : " · no wall open right now"; })() : ""}`),
+        ...projects.map((row) => `  - ${row.id} — "${row.record.name}"${row.id === account.projectId ? " (working)" : ""}: ${row.record.boards.length} board(s) · ${(row.people ?? []).join(", ")}${row.id === account.projectId ? (() => { const people = presentPeople(); return people.length ? ` · open now on ${people.length} screen${people.length === 1 ? "" : "s"}: ${people.join(", ")}` : hosted() ? " · who has it open: not known until who_is_here asks" : " · no wall open right now"; })() : ""}`),
       ].join("\n"),
       projects.map((row) => ({ id: row.id, name: row.record.name, boards: row.record.boards.length, people: row.people })),
     );

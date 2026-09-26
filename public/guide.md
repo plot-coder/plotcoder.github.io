@@ -122,7 +122,7 @@ only when the server is started with `PLOTCODER_JSON=1`.
   between them (a chain of them is one question naming every turn), cards
   that say no place once any card has one, and a thread with a loose end —
   where is it first seen, or where does it come out. Once scenes are written
-  it also reads **the pages against the wall** (R74), under their own head: a
+  it also reads **the pages against the wall**, under their own head: a
   payoff whose page has not a word of what the fold planted, a written card
   whose page carries fewer than half its change line's words, a person's want
   no page of theirs says. Those read words, never sense — a page can say a
@@ -326,7 +326,7 @@ only when the server is started with `PLOTCODER_JSON=1`.
 - A writer's **"cut it"** means `set_aside` unless they say delete: set aside
   keeps the card on the wall, out of the film, the count and every export,
   where they can bring it back; `delete_note` takes it off the wall. When
-  the word could mean either, keep it (pass 1a, entry 95).
+  the word could mean either, keep it.
 - `set_aside` — a card **on the wall and not in the film**: a scene the
   writer cuts and will not throw away, an idea with no place in the story
   yet, the version not chosen. By id or headline. It keeps its words, its
@@ -723,7 +723,7 @@ card of another board is not asked about as uncast here.
   not laid by `organize` — it stays where it is, or goes beneath the rows when
   they would run under it — and the reading lists it and asks where it goes.
   "Seen early, not decided where" is such a card, and the wall does not seat it
-  for the writer (round twenty-four). Use `move_note` only
+  for the writer. Use `move_note` only
    for a card that belongs somewhere the arrows do not say. Cards are 192px;
    leave ~30px gaps for a readable row.
 4. Mark the major turns with `set_rank`. Marking a beat never moves it.

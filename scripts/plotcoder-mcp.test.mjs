@@ -3833,3 +3833,32 @@ describe("undo names the page and the version it moves (pass 1b, entries 63, 64)
     expect(back).toContain('"The pier: with Priya, the fish knife" is behind "The pier: alone, the man\'s card" again');
   });
 });
+
+describe("a card brought back and placed in one call (pass 1b, entry 67)", () => {
+  let root;
+  let client;
+
+  beforeAll(async () => {
+    root = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-back-placed-"));
+    client = new McpClient(root);
+    await client.start();
+    for (const seeded of ["maya-letter", "tom-lies", "letter-aloud"]) await client.callTool("delete_note", { id: seeded });
+    await client.callTool("create_cards", { cards: [{ headline: "The man from the chain", change: "He leaves his card." }, { headline: "The range goes out", change: "Priya lights it." }, { headline: "The bank", aside: true }] });
+  }, 30000);
+
+  afterAll(() => {
+    client?.stop();
+    if (root) fs.rmSync(root, { recursive: true, force: true });
+  });
+
+  it("wires the card in where the writer said, and the wall never asks where it goes", async () => {
+    const text = await client.callTool("set_aside", { ids: ["The bank"], aside: false, after: "The man from the chain" });
+    expect(text).toMatch(/^Brought back "The bank" and placed it after "The man from the chain"/);
+    expect(text).toContain('The story now runs: "The man from the chain" → "The bank" → "The range goes out".');
+    const read = await client.callTool("read_wall");
+    expect(read).not.toContain("[unlinked]");
+    expect(read).toContain('beats in wall order: (none marked)');
+    const refused = await client.callTool("set_aside", { ids: ["The bank"], after: "The range goes out" });
+    expect(refused).toMatch(/^after and before place a card brought back/);
+  });
+});

@@ -1749,7 +1749,12 @@ server.registerTool(
     const command = typeof args.line === "number" ? { type: "strike_open_line", index: args.line - 1 } : { type: "strike_open_line", text: args.line };
     const { state, changed, result, live } = await commit(command);
     if (!changed) return ok(`Nothing struck: no such line. ${(state.openLines ?? []).length ? `The film's list: ${state.openLines.map((line, index) => `${index + 1}. ${line}`).join(" ")}` : "Nothing is held as not decided about the film."}`);
-    return ok(`Struck, as decided: "${result.line}"${where(live)}. ${result.openLines.length} still not decided about the film. Where what they decided belongs: a fact true of the whole film in the premise (set_premise); a when on its cards (set_when); the acts as groups (create_group); a plant on its card (set_plant); a thing about a person on their page (update_character).`, result);
+    // A [[note]] on a page that named the undecided thing goes stale when the line is struck (pass 1b, entry 76): the
+    // pages whose notes carry the line's words are named, by word, so the agent can take the note off with edit_scene.
+    const lineWords = new Set(String(result.line ?? "").toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, " ").split(/\s+/).filter((word) => word.length > 3));
+    const staleNotes = state.notes.filter((note) => inStory(note) && [...String(note.text ?? "").matchAll(/\[\[([^\]]*)\]\]/g)].some((match) => match[1].toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, " ").split(/\s+/).filter((word) => lineWords.has(word)).length >= 2));
+    const staleLine = staleNotes.length ? ` A [[note]] on ${staleNotes.length === 1 ? "one page carries" : `${staleNotes.length} pages carry`} the line's words and may be stale now: ${staleNotes.map((note) => `"${note.headline}"`).join(", ")} — read_pages shows the note; edit_scene takes it off.` : "";
+    return ok(`Struck, as decided: "${result.line}"${where(live)}.${staleLine} ${result.openLines.length} still not decided about the film. Where what they decided belongs: a fact true of the whole film in the premise (set_premise); a when on its cards (set_when); the acts as groups (create_group); a plant on its card (set_plant); a thing about a person on their page (update_character).`, result);
   },
 );
 

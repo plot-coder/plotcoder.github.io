@@ -64,7 +64,7 @@ export type Run = {
 /** A setup arrow, with the distance from where it is planted to where it pays off. Negative means backwards. */
 /** `eighths` is null when an end is behind another card as its other version: no place in the story, no distance. */
 /** `page` (R74): what the payoff's page says of the plant — the page's sentence where the plant's first word lands, or that not a word did (asked), or why it could not be read. */
-export type Setup = { id: string; from: string; to: string; eighths: number | null; page?: { state: "quoted"; quote: string } | { state: "asked" } | { state: "unwritten" } | { state: "no words" } };
+export type Setup = { id: string; from: string; to: string; eighths: number | null; page?: { state: "quoted"; quote: string } | { state: "asked" } | { state: "left" } | { state: "unwritten" } | { state: "no words" } };
 
 export type WallReading = {
   /** Every card id in reading order. */

@@ -399,7 +399,24 @@ Not the app's; the prompt's next head says so.
   reading can be measured from, set when the agent answers the writer;
   or the since line kept per question. A design of its own.
 
+## The whole, read again (entries 76 to 78)
+
+- [x] **76 · The two-places warning came true: when the sign's open closed,
+  the notes that said "not decided" stayed on two pages, printed with
+  camera marks as if live; no tool lists a stale note.** *Fixed, by
+  word:* striking an open line names the pages whose notes carry the
+  line's words and says edit_scene takes a note off. (The camera marks on
+  notes went with 30.) Test.
+- [ ] **77 · "Is anything still open" is answered under four heads and a
+  count that covers one of them: fifteen at the top, a blank when under
+  "blank", the questions, the left one, an aside card's open in a
+  parenthesis.** *Plan for Robert, with 50:* one line at the head that
+  counts every kind and names where each is listed.
+- [x] **78 · The setup line says "asked below" for a question that is left,
+  not asked.** *Fixed:* a setup whose page question the writer left says
+  so on its own line. Test.
+
 ## Every entry, accounted for
 
 1 → decided against (the prompt's) · 2 → held · 3 → fixed · 4 → held · 5 →
-decided against · 6 → fixed · 7 → fixed · 8 → held · 9 → held · 10 → guide, fixed · 11 → held · 12 → held · 13 → fixed · 14 → fixed · 15 → fixed · 16 → decided against · 17 → held · 18 → decided against · 19 → guide, with 10 · 20 → fixed · 21 → fixed with 13 · 22 → planned · 23 → decided · 24 → decided against · 25 → held · 26 → held · 27 → fixed · 28 → fixed · 29 → decided against · 30 → fixed · 31, 32 → held · 33 → fixed · 34 → held · 35 → decided · 36 → fixed · 37 → held · 38 → decided against · 39 → held · 40 → fixed · 41, 42 → held · 43 → decided against · 44 → held · 45, 46, 47 → planned for Robert · 48 → fixed · 49 → held · 50 → planned for Robert · 51 → fixed with 15 · 52 → held · 53 → fixed · 54 → decided · 55 → fixed · 56 → fixed · 57 → decided · 58 → decided against · 59 → fixed with 55 · 60 → fixed with 55 · 61 → guide, with 10 · 62 → fixed with 30 · 63 → fixed · 64 → fixed · 65 → guide · 66 → decided against · 67 → fixed · 68 → decided with 15 · 69 → fixed · 70 → decided · 71 → fixed · 72 → fixed · 73 → decided, said · 74 → fixed · 75 → planned for Robert.
+decided against · 6 → fixed · 7 → fixed · 8 → held · 9 → held · 10 → guide, fixed · 11 → held · 12 → held · 13 → fixed · 14 → fixed · 15 → fixed · 16 → decided against · 17 → held · 18 → decided against · 19 → guide, with 10 · 20 → fixed · 21 → fixed with 13 · 22 → planned · 23 → decided · 24 → decided against · 25 → held · 26 → held · 27 → fixed · 28 → fixed · 29 → decided against · 30 → fixed · 31, 32 → held · 33 → fixed · 34 → held · 35 → decided · 36 → fixed · 37 → held · 38 → decided against · 39 → held · 40 → fixed · 41, 42 → held · 43 → decided against · 44 → held · 45, 46, 47 → planned for Robert · 48 → fixed · 49 → held · 50 → planned for Robert · 51 → fixed with 15 · 52 → held · 53 → fixed · 54 → decided · 55 → fixed · 56 → fixed · 57 → decided · 58 → decided against · 59 → fixed with 55 · 60 → fixed with 55 · 61 → guide, with 10 · 62 → fixed with 30 · 63 → fixed · 64 → fixed · 65 → guide · 66 → decided against · 67 → fixed · 68 → decided with 15 · 69 → fixed · 70 → decided · 71 → fixed · 72 → fixed · 73 → decided, said · 74 → fixed · 75 → planned for Robert · 76 → fixed · 77 → planned for Robert, with 50 · 78 → fixed.

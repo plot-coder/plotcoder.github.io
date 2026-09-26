@@ -3864,3 +3864,32 @@ describe("a card brought back and placed in one call (pass 1b, entry 67)", () =>
     expect(refused).toMatch(/^after and before place a card brought back/);
   });
 });
+
+describe("leave_question takes a card by its headline (pass 1b, entry 72)", () => {
+  let root;
+  let client;
+
+  beforeAll(async () => {
+    root = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-leave-by-name-"));
+    client = new McpClient(root);
+    await client.start();
+    for (const seeded of ["maya-letter", "tom-lies", "letter-aloud"]) await client.callTool("delete_note", { id: seeded });
+    await client.callTool("create_cards", { cards: [{ headline: "The first Friday", change: "Eleven in the queue.", plantsWhat: "the sign" }, { headline: "The morning after", change: "She opens." }] });
+    await client.callTool("create_arrow", { from: "The first Friday", to: "The morning after", kind: "setup" });
+  }, 30000);
+
+  afterAll(() => {
+    client?.stop();
+    if (root) fs.rmSync(root, { recursive: true, force: true });
+  });
+
+  it("leaves the question named by headlines, as by ids", async () => {
+    const morning = (await client.callToolData("list_board")).notes.find((note) => note.headline === "The morning after").id;
+    await client.callTool("write_scene", { id: morning, text: "INT. DOYLE'S - FIRST LIGHT\n\nOver the door DOYLE'S comes on, all of it." });
+    await client.callTool("read_wall");
+    const left = await client.callTool("leave_question", { kind: "unsaid", ids: ["The first Friday", "The morning after"], why: "the sign is on the page as DOYLE'S, lit" });
+    expect(left).toMatch(/^Left/);
+    const read = await client.callTool("read_wall");
+    expect(read).toMatch(/left, for now[\s\S]*\[unsaid\][\s\S]*the sign is on the page as DOYLE'S, lit/);
+  });
+});

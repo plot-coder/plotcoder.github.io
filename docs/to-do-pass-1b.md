@@ -1,13 +1,14 @@
 # Pass 1b — the working list
 
 Pass 1b ran 2026-09-26 (`blind-runs/prompt.md`, "Doyle's" to a complete
-script from notes, through the desktop connector at 0.1.53). This list is
-kept **as the run goes**, on Robert's word the same evening: "keep taking
+script from notes, through the desktop connector at 0.1.53; the report is
+`blind-runs/pass-1b-report.md`, eighty-two entries). This list was kept
+**as the run went**, on Robert's word the same evening: "keep taking
 notes about where their friction points are and fixing them, especially
-in setup". Every entry of the log is accounted for below as it arrives —
-fixed, decided against with the reason, or held for a decision — and the
-report is filed verbatim as `blind-runs/pass-1b-report.md` when the agent
-hands it over.
+in setup". Every entry is accounted for below — thirty-two fixed with
+tests in twenty pull requests (#161 to #180), four in the guide, eighteen
+decided against with the reason, twenty-seven held for Robert — and the
+report's sections 3 to 6 are read against them at the foot.
 
 The way the list is worked is `docs/to-do-round-twenty-two.md`'s: plan,
 ask, build, test, for every item; a fix that a person will see gets a
@@ -442,3 +443,47 @@ Not the app's; the prompt's next head says so.
 
 1 → decided against (the prompt's) · 2 → held · 3 → fixed · 4 → held · 5 →
 decided against · 6 → fixed · 7 → fixed · 8 → held · 9 → held · 10 → guide, fixed · 11 → held · 12 → held · 13 → fixed · 14 → fixed · 15 → fixed · 16 → decided against · 17 → held · 18 → decided against · 19 → guide, with 10 · 20 → fixed · 21 → fixed with 13 · 22 → planned · 23 → decided · 24 → decided against · 25 → held · 26 → held · 27 → fixed · 28 → fixed · 29 → decided against · 30 → fixed · 31, 32 → held · 33 → fixed · 34 → held · 35 → decided · 36 → fixed · 37 → held · 38 → decided against · 39 → held · 40 → fixed · 41, 42 → held · 43 → decided against · 44 → held · 45, 46, 47 → planned for Robert · 48 → fixed · 49 → held · 50 → planned for Robert · 51 → fixed with 15 · 52 → held · 53 → fixed · 54 → decided · 55 → fixed · 56 → fixed · 57 → decided · 58 → decided against · 59 → fixed with 55 · 60 → fixed with 55 · 61 → guide, with 10 · 62 → fixed with 30 · 63 → fixed · 64 → fixed · 65 → guide · 66 → decided against · 67 → fixed · 68 → decided with 15 · 69 → fixed · 70 → decided · 71 → fixed · 72 → fixed · 73 → decided, said · 74 → fixed · 75 → planned for Robert · 76 → fixed · 77 → planned for Robert, with 50 · 78 → fixed · 79 → fixed, in the .fdx comment · 80, 81 → held for Robert, with 39 · 82 → fixed.
+
+## The report's sections 3 to 6, against the list
+
+**Not needed on the on-ramp** (section 3): the doors and the wiring with
+the connector in hand — decided in seventeen; the sample wall — decided;
+the three-fold repetition — 8, held; the citations — 7, fixed; "know the
+server by its tools" — the on-ramp's line for a server with no name, kept.
+**Missing and needed:** no disk on the hosted door — 39, held; no redo —
+65, guide; a payoff true of one version — 10, 19, 61, guide; the camera
+reading notes — 30, fixed; what reaches a printed script — 41, 42, held;
+a whole-film fact into the premise — 53, fixed in the reply; "what is
+still open" across heads — 50, 77, held; which length to say — 74, fixed;
+a page and no turn — 55, 59, 60, fixed; a leave by headline — 72, fixed;
+the byline — 73, said. **Section 4** (never done as first reached for) and
+**section 5** (never sure it landed) are each an entry above: the undo
+trio (63, 64), forward again (65), the maybe (34), the husband (23), the
+version's payoff (61), the create replies (13, 21), the kept file (80).
+**Section 6** — what each undecided thing became on the page — is the
+pass's own finding and the material for the decisions below.
+
+## Held for Robert, in one place
+
+- **What a script carries of the wall's opens** (41, 42, 37): a page at
+  the end of the producer's Markdown, "what is not decided"; whether a
+  scene held two ways or cut says so in a file; whether an open when marks
+  the heading as an open place does.
+- **The page's form for a maybe** (34; pass 1a's 34, 35 again).
+- **The word checks' threshold** (31, 32): fewer than half asked two of
+  four written scenes; "none of its words" would have asked neither.
+- **What the reading of the whole should also say** (45, 46, 47): who is
+  on the written pages by cue against their cards; which stretch is
+  written and which guess; a duplicate check over pages.
+- **One count of what is still open** (50, 77), and which opens stop a
+  page (52); the order of dependence stays the agent's (49).
+- **"Since the writer last asked"** (75): a named mark to measure from.
+- **The hosted door's exports** (39, 80, 81): a link with its warning, and
+  the kept file's name.
+- **The smaller ones:** a rank's reply naming the runs it bounds (26);
+  the treatment question on whens (9); a thread through no card beside
+  an open line (17); a never-seen person's home (12); a thing seen as a
+  card or a plant (11); a card listed twice under open (25); Markdown's
+  two numberings (44); the tool descriptions unseen until loaded (2); a
+  thread's start shown on the card (29).
+

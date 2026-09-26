@@ -8,7 +8,27 @@ done and merged, what is left, and the order I would take it in.
 
 ---
 
-## Next, for whoever picks this up (2026-09-22, after pass 1a)
+## Next, for whoever picks this up (2026-09-26, night, after pass 1b)
+
+**Pass 1b has run** — "Doyle's" to a complete script from notes, through
+the desktop connector at 0.1.53: 82 entries in `blind-runs/pass-1b-report.md`,
+thirty-two fixes built with tests as it ran in twenty pull requests (#161
+to #180; `docs/to-do-pass-1b.md`), 764 unit tests. **Released as 0.1.54**
+(npm, the door's pin); the function's redeploy is Robert's hand, as
+before, and the handover's next line says whether it is done. **What is
+next, in order:** (1) **Robert's word on the twenty-seven held decisions**,
+in one list at the foot of `docs/to-do-pass-1b.md` — the largest are what a
+script carries of the wall's opens (41, 42, 37), the page's form for a
+maybe (34), the word checks' threshold (31, 32), and what the reading of
+the whole should also say (45 to 47; a mockup each, on the app's paper);
+(2) the claim board's **2a** — the morning after: a person reads the wall
+the agent left — which now has two walls to read ("Ninety-Nine" is in the
+pass 1a export on the test account's files; "Last Orders" is on the
+account); (3) the two smaller decisions from pass 1a below (a proposed
+cut, the title page's field). The PlotCoder connector was turned on for the
+driving session too during the run; turn it off outside a round.
+
+## Before it (2026-09-22, after pass 1a)
 
 **2026-09-26: R74 is built, released as 0.1.53 and on the door** — `main`,
 npm and the hosted door carry it (#156, #157; the function redeployed by

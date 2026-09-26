@@ -58,6 +58,7 @@ into a story (Robert, 2026-09-17).
 | Twenty-three | The desktop connector alone, to `https://mcp.plotcoder.com` at 0.1.46, a session behind the door | "The Tuner" (`round-twenty-three-idea.md`) | In from the first message with nothing else wired; `set_aside`, the change line's own open, "a feature", a person's open line and `Name?` all reached unprompted; the order as one `set_order`; a version stepping forward took the thread, the fold and the arrow; the connector sends the session id back and advice was said once — and the counting tail never appeared, because the on-ramp's first calls include a reading | 72 (`round-twenty-three-report.md`); 30 fixed the same night; **a writer's "I don't know" has no home for a cast nobody can name, a film-wide when, a length, the acts** — F8's third asking, to draw |
 | Twenty-four | The desktop connector alone, at 0.1.50: what the handshake's instructions teach before anything is read, the cast's own open, a line about the whole film, proposed turns, cards born as versions and set aside, the counting tail, an undo through the door | "Doyle's" (`round-twenty-four-idea.md`) | The way in; the four homes for "I don't know"; a reorder, an undo, the tidy, one scene written, the script and the project out | 54 (`round-twenty-four-report.md`); D1 to D3 (R73) and N1 to N15 built the same night, released as 0.1.51 |
 | **Pass 1a** | The desktop connector alone, at 0.1.51: **a complete script** — all seventeen scenes written, out three ways and back, then edited across the whole film (a plant moved, the ending changed, a plant and its payoff cut, a rename, ten pages out, the ending put back), and what the app can say of the whole | "Ninety-Nine" (`round-thirteen-treatment.md`) | **The complete script:** eighteen scenes written, out three ways and back; a plant moved, the ending replaced and put back, a plant and its payoff cut, a rename, four pages measured by hand, the ferry aside and the fair halved, a revision and a lock, the copy, who is here | 114 (`pass-1a-report.md`); thirty-eight fixed as it ran, R74 proposed |
+| **Pass 1b** | The desktop connector alone, at 0.1.53 with R74: **a complete script from notes** — "Doyle's" built with the writer answering, every scene the writer allowed written, the film decided one undecided thing at a time, an undo through the door on a written script | "Doyle's" (`round-twenty-four-idea.md`) | Eight scenes written; the three exports and what each home for "I don't know" printed as; the pages read against the wall reached for; a version stepping forward, a cut scene back, an open card closed; three undos and a redo by hand | 82 (`pass-1b-report.md`); 32 fixed as it ran, 27 held for Robert (`docs/to-do-pass-1b.md`) |
 
 ## What the rounds keep finding
 
@@ -128,12 +129,15 @@ directions phase. Each round's findings are itemised in `REQUIREMENTS.md`,
   from round twenty-three, verbatim, under a head saying what the round
   measured, what was fixed from it and what was decided against. The next
   session on the agent surface starts here.
-- `pass-1a-report.md` — **the open queue.** The agent's report from pass
-  1a, verbatim, under a head saying what the pass measured, what was fixed
-  from it as it ran (`docs/to-do-pass-1a.md`) and what waits on a word:
-  R74, the pages read against the wall. The next session on goal 1 starts
-  here; pass 1b's prompt is the next thing to write.
-- `prompt.md` — **pass 1b**, cued 2026-09-26: the second pass of goal 1
+- `pass-1b-report.md` — **the open queue.** The agent's report from pass
+  1b, verbatim, under a head saying what the pass measured, what was fixed
+  from it as it ran (`docs/to-do-pass-1b.md`) and what waits on Robert's
+  word, in one list at that file's foot. The next session on goal 1 starts
+  here.
+- `pass-1a-report.md` — the agent's report from pass 1a, verbatim, under a
+  head saying what the pass measured, what was fixed from it as it ran
+  (`docs/to-do-pass-1a.md`) and what it asked for: R74, built 2026-09-26.
+- `prompt.md` — **pass 1b**, as it ran 2026-09-26: the second pass of goal 1
   in `docs/plan.md`, a complete script **from notes**. "Doyle's" through
   the desktop connector alone against 0.1.53: the wall as round twenty-four
   built it, with the writer answering as that round's writer did, then

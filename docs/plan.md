@@ -64,6 +64,13 @@ checks the wall's fifteen things and nothing on the pages but the camera.
 pages against the wall (three word checks as questions, the page's sentence
 quoted under each setup, the logline's words counted as a fact), so "what
 can the app say of the whole" has its first answer for pass 1b to measure.
+**Pass 1b ran the same evening** (`blind-runs/pass-1b-report.md`): the
+reading's new head was reached for unprompted and raised one real question;
+what a complete script does with the homes for "I don't know" is the pass's
+finding — only an open change line and an open place reach the page, and a
+maybe cannot be written — and the decisions it leaves are at the foot of
+`docs/to-do-pass-1b.md`. Goal 1's "reached when" has both scripts now; what
+the app says of the result is R74 and the held decisions.
 
 **The pass, 1a — a script from a treatment.** A blind run in the practice's
 shape, through the hosted door: build "Ninety-Nine" as round fourteen did,
@@ -198,7 +205,7 @@ mockup or their alternatives before they are built.
 | Pass | What | Branch | Where it stands |
 | --- | --- | --- | --- |
 | 1a | Ninety-Nine to a complete script, edited across its length | `claude/pass-1a` | **run 2026-09-22**: 114 entries (`blind-runs/pass-1a-report.md`), 38 fixes built as it ran (`docs/to-do-pass-1a.md`), R74 proposed — the pages read against the wall — **built 2026-09-26** on Robert's word, from its mockup |
-| 1b | Doyle's to a complete script, from notes | `claude/pass-1b` | **cued 2026-09-26**: the prompt is `blind-runs/prompt.md` (1a's archived as `pass-1a-prompt.md`), the stdio block is out of `~/.claude.json`, the door carries 0.1.53 with R74; waiting on Robert to paste it into a no-folder session with the connector on |
+| 1b | Doyle's to a complete script, from notes | `claude/pass-1b` | **run 2026-09-26**: 82 entries (`blind-runs/pass-1b-report.md`), 32 fixes built as it ran in twenty pull requests (`docs/to-do-pass-1b.md`), 27 held for Robert in one list at its foot — what a script carries of the wall's opens, the page's form for a maybe, the word checks' threshold, what the reading of the whole should also say |
 | 2a | The morning after: a person reads the wall the agent left | — | not started |
 | 2b | Jumping in for the agent: the person answers, the agent resumes | — | not started |
 | 3a | Measure the size; a project past the window; three directions | — | not started |

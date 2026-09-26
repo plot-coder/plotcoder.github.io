@@ -133,8 +133,11 @@ only when the server is started with `PLOTCODER_JSON=1`.
   where is it first seen, or where does it come out. Once scenes are written
   it also reads **the pages against the wall**, under their own head: a
   payoff whose page has not a word of what the fold planted, a written card
-  whose page carries fewer than half its change line's words, a person's want
-  no page of theirs says. Those read words, never sense — a page can say a
+  whose page carries fewer than a third of its change line's words (a line
+  under four words is not read), a person's want no page of theirs says.
+  Two facts beside them, never questions: who speaks on the written pages,
+  by cue, against their cards, and which stretch of the film is written and
+  which is still guess. Those read words, never sense — a page can say a
   thing in other words, and can name a thing to deny it — so each question
   says the words it counted; every setup quotes the page's sentence where
   the plant's word lands, so "the chime does not play" is read in the reading;
@@ -517,6 +520,18 @@ card of another board is not asked about as uncast here.
   treatment.
 
 ### Pages
+
+What a script carries of the wall's opens: two things, both drawn
+from the wall at export and never stored in the text, so neither goes
+stale. A card that holds someone as "Name?" prints one line under its
+heading — *Declan Doyle? Priya Nair? — not decided whether they are
+here.* — in every format and in `read_pages`, so a page cannot read as
+deciding who is in the room; it goes when the cast is decided. And every
+script ends with a page, **What is not decided**: the writer's words for
+what is open, in the reading's order — about the film, about the people,
+scene by scene — and a line each for a scene held two ways and a scene set
+aside. It is on by default; `set_title_page` with `undecidedPage: false`
+sends a draft out clean, on the writer's word, and `true` puts it back.
 
 - `export_fountain` — the open board as a Fountain screenplay in story order
   (beats as sections, one scene per card, the scene's text or — marked

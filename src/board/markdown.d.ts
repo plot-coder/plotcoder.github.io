@@ -1,8 +1,9 @@
+import type { UndecidedPage } from "./undecided";
 import type { Line } from "./paginate";
 import type { BoardState } from "./reducer";
 
 /** What a document carries above the script: the board's name, the project's when it has several boards, the premise. */
-export type TakeOptions = { title?: string; /** The writer's words for a title not decided, printed under the stand-in (pass 1b, entry 40). */ titleOpen?: string; episode?: string; premise?: string; /** The byline and contact under the title (pass 1a, entry 50). */ author?: string; contact?: string };
+export type TakeOptions = { /** The last page, "What is not decided" (R75), from undecidedPage(); omitted or null prints none. */ undecided?: UndecidedPage | null; title?: string; /** The writer's words for a title not decided, printed under the stand-in (pass 1b, entry 40). */ titleOpen?: string; episode?: string; premise?: string; /** The byline and contact under the title (pass 1a, entry 50). */ author?: string; contact?: string };
 
 /** The wall as Markdown (R54): title, premise, logline, beats as headings, a heading per scene, the text or the change line. */
 export declare function toMarkdown(state: BoardState, options?: TakeOptions): string;

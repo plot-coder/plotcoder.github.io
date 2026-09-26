@@ -64,7 +64,8 @@ import { shapeNote } from "../src/board/shape.js";
 import { segmentBrief, WORKFLOWS } from "../src/board/workflows.js";
 import { DEFAULT_REMINDERS, titleFromBody } from "../src/board/reminders.js";
 import crypto from "node:crypto";
-import { describePage, describeRuns, describeSetups, describeUndecided, openOutsideFilm, readWall } from "../src/board/readWall.js";
+import { describePage, describePages, describeRuns, describeSetups, describeUndecided, openOutsideFilm, readWall } from "../src/board/readWall.js";
+import { undecidedPage } from "../src/board/undecided.js";
 import { compareStructure, describeComparison, MATCH_PAGES } from "../src/board/compareStructure.js";
 import { GAP, ROW_WIDTH, organizePoses } from "../src/board/organize.js";
 import { parseScene, sceneLineCount } from "../src/board/paginate.js";
@@ -1249,6 +1250,15 @@ function isSampleWall(state) {
   const sample = seedState().notes.map((note) => note.headline).sort().join("\n");
   return state.notes.map((note) => note.headline).sort().join("\n") === sample;
 }
+/** The last page of every script, "What is not decided" (R75), unless the writer switched it off on the title page. */
+function lastPage(project, state) {
+  if (project?.undecidedPage === false) return null;
+  return undecidedPage(state, {
+    project: [...(project?.nameOpen ? [{ label: "The title", words: project.nameOpen }] : []), ...(project?.premiseOpen ? [{ label: "The premise", words: project.premiseOpen }] : [])],
+    date: new Date().toISOString(),
+  });
+}
+
 /** Every check read_wall runs, so silence can be named. */
 const CHECKS = ["unmarked", "sag", "empty", "unwritten", "unlinked", "duplicate", "sequence", "uncast", "nobody", "absent", "backwards", "unpaid", "unplanted", "unplaced", "loose", "unsaid", "behind", "unvoiced"];
 /** The checks that read the pages against the wall (R74): words, never sense, and only once a scene is written. */
@@ -2374,6 +2384,8 @@ server.registerTool(
         : [reading.paidBy.length ? "  (no setup arrow on this board; what pays off a fold of another board is listed below)" : "  (no arrow is marked as a setup)"]),
       ...reading.later.map((item) => `  - "${state.notes.find((note) => note.id === item.id)?.headline ?? item.id}" is folded and pays off later, on "${boardById(projectForRead, item.boardId)?.name ?? item.boardId}"${item.noteId ? `, at ${episodeLabel(projectForRead, boardsNow, item.boardId, item.noteId)} "${boardsNow[item.boardId]?.notes?.find((note) => note.id === item.noteId)?.headline ?? item.noteId}"` : " — no scene there claims it yet"}`),
       ...reading.paidBy.map((item) => `  - "${state.notes.find((note) => note.id === item.id)?.headline ?? item.id}" pays off "${item.fromHeadline}" from "${item.fromBoardName}" (${episodeLabel(projectForRead, boardsNow, item.fromBoardId, item.fromNoteId)}), one board earlier`),
+      // The pages' two fact lines (R74, on Robert's word after pass 1b): who speaks on the written pages, and which stretch is written.
+      ...describePages(reading, state),
       ...(undecided.open.length
         ? ["open, by the writer's word (listed, not asked about while the words stand; words shared by several cards first, as one line, then each card once with what is particular to it; set_open with \"\" closes a card, the field's own tool with open \"\" a field; \"whether someone is in it\" is decided by cast, with their name without the question mark or left off; a card not in the film is marked):", ...undecided.open]
         : []),
@@ -2975,7 +2987,7 @@ server.registerTool(
     const { project } = await readProject();
     const board = project.boards.find((item) => item.id === project.activeBoardId);
     const titles = scriptTitles(project, board);
-    const text = toFountain(state, { ...titles, premise: project.premise || undefined, draftDate: new Date().toISOString() });
+    const text = toFountain(state, { ...titles, premise: project.premise || undefined, draftDate: new Date().toISOString(), undecided: lastPage(project, state) });
     if (args.path) {
       fs.mkdirSync(path.dirname(path.resolve(args.path)), { recursive: true });
       fs.writeFileSync(args.path, text);
@@ -2998,7 +3010,7 @@ server.registerTool(
     const { project } = await readProject();
     const board = project.boards.find((item) => item.id === project.activeBoardId);
     const titles = scriptTitles(project, board);
-    const text = toMarkdown(state, { ...titles, premise: project.premise || undefined });
+    const text = toMarkdown(state, { ...titles, premise: project.premise || undefined, undecided: lastPage(project, state) });
     if (args.path) {
       fs.mkdirSync(path.dirname(path.resolve(args.path)), { recursive: true });
       fs.writeFileSync(args.path, text);
@@ -3021,7 +3033,7 @@ server.registerTool(
     const { project } = await readProject();
     const board = project.boards.find((item) => item.id === project.activeBoardId);
     const titles = scriptTitles(project, board);
-    const text = toPlainText(state, titles);
+    const text = toPlainText(state, { ...titles, undecided: lastPage(project, state) });
     if (args.path) {
       fs.mkdirSync(path.dirname(path.resolve(args.path)), { recursive: true });
       fs.writeFileSync(args.path, text);
@@ -3324,7 +3336,7 @@ server.registerTool(
     const { project } = await readProject();
     const board = project.boards.find((item) => item.id === project.activeBoardId);
     const titles = scriptTitles(project, board);
-    const xml = toFdx(state, { ...titles, draftDate: new Date().toISOString() });
+    const xml = toFdx(state, { ...titles, draftDate: new Date().toISOString(), undecided: lastPage(project, state) });
     // The file's name, so an agent writing it by hand has one (round fifteen, entry 34).
     const filename = `${titles.title}${titles.episode ? ` - ${board?.name ?? ""}` : ""}`.replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim() + ".fdx";
     if (args.path) {
@@ -4830,17 +4842,17 @@ server.registerTool(
   {
     title: "Set the title page",
     description:
-      "The title page's byline and contact, on the project — every script it sends out carries them, in Fountain, Final Draft, Markdown and plain text, with the draft date of the day it goes out: \"Written by …\" under the title, and the contact lines (an address, an agent, an email; several lines are fine) where a title page keeps them. The title itself is the project's name (rename_project); the account holds no name for the writer, so \"by me\" is a question for them — ask how the byline should print; a series' episode line comes from the board. Pass author, contact, or both; \"\" clears one; leaving one out leaves it as it is. Nothing is claimed until the writer says who it is by.",
-    inputSchema: { author: z.string().optional().describe("The byline as it should print after \"Written by\", or \"\" for none."), contact: z.string().optional().describe("The contact lines under the byline, newline-separated, or \"\" for none.") },
+      "The title page's byline and contact, on the project — every script it sends out carries them, in Fountain, Final Draft, Markdown and plain text, with the draft date of the day it goes out: \"Written by …\" under the title, and the contact lines (an address, an agent, an email; several lines are fine) where a title page keeps them. The title itself is the project's name (rename_project); the account holds no name for the writer, so \"by me\" is a question for them — ask how the byline should print; a series' episode line comes from the board. Pass author, contact, or both; \"\" clears one; leaving one out leaves it as it is. Nothing is claimed until the writer says who it is by. undecidedPage false leaves the last page — \"What is not decided\", the wall's opens in the writer's words after the last scene — off a draft that goes out clean; on by default, and true puts it back.",
+    inputSchema: { author: z.string().optional().describe("The byline as it should print after \"Written by\", or \"\" for none."), contact: z.string().optional().describe("The contact lines under the byline, newline-separated, or \"\" for none."), undecidedPage: z.boolean().optional().describe("Whether every script ends with the page \"What is not decided\" — the wall's opens in the writer's words, a scene held two ways, a scene set aside. On by default; false sends a draft out clean, on the writer's word.") },
   },
   async (args) => {
-    if (args.author === undefined && args.contact === undefined) return ok("Say which: author (the byline), contact (the lines under it), or both; \"\" clears one.");
+    if (args.author === undefined && args.contact === undefined && args.undecidedPage === undefined) return ok("Say which: author (the byline), contact (the lines under it), undecidedPage (whether the last page prints), or several; \"\" clears a line.");
     const { project, boards, rev, base, live } = await readProject();
-    const next = setTitlePage(project, { author: args.author, contact: args.contact });
+    const next = setTitlePage(project, { author: args.author, contact: args.contact, undecidedPage: args.undecidedPage });
     if (next === project) return ok("Title page unchanged.");
     await writeProject(next, boards, rev, base);
     const front = [next.author ? `Written by ${next.author}` : "no byline", next.contact ? `contact: ${next.contact.split("\n").map((line) => line.trim()).filter(Boolean).join(" / ")}` : "no contact"].join("; ");
-    return ok(`Title page: ${front}${where(live)}. Every export of "${next.name}" now carries it under the title, with the draft date of the day it goes out.`, { author: next.author, contact: next.contact });
+    return ok(`Title page: ${front}; the last page, "What is not decided", ${next.undecidedPage === false ? "off — a draft goes out clean" : "on"}${where(live)}. Every export of "${next.name}" now carries it under the title, with the draft date of the day it goes out.`, { author: next.author, contact: next.contact, undecidedPage: next.undecidedPage !== false });
   },
 );
 

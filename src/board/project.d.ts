@@ -28,6 +28,8 @@ export type ProjectRecord = {
   author: string;
   /** The title page's contact lines under the byline; empty is none. */
   contact: string;
+  /** The last page of every script, "What is not decided" (R75): true unless the writer says a draft goes out clean. */
+  undecidedPage: boolean;
   boards: BoardMeta[];
   activeBoardId: string;
   /** A writer's own structures, saved from a wall's beats (Roadmap 2, item 7). */
@@ -78,7 +80,7 @@ export declare function setActiveBoard(project: ProjectRecord, id: string, now?:
 export declare function renameProject(project: ProjectRecord, name: string, now?: string): ProjectRecord;
 export declare function setPremise(project: ProjectRecord, premise: string, now?: string): ProjectRecord;
 /** The title page's byline and contact; undefined leaves a field, "" clears it. */
-export declare function setTitlePage(project: ProjectRecord, fields: { author?: string; contact?: string }, now?: string): ProjectRecord;
+export declare function setTitlePage(project: ProjectRecord, fields: { author?: string; contact?: string; undecidedPage?: boolean }, now?: string): ProjectRecord;
 /** The writer's words for why there is no premise yet (R61); words clear the premise, "" takes them back. */
 export declare function setPremiseOpen(project: ProjectRecord, words: string, now?: string): ProjectRecord;
 /** The writer's words for why a board's name is not decided (R61); the name stands meanwhile. */

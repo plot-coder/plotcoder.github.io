@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from "react";
 import { WORKFLOWS } from "./board/workflows";
-import { describePage, describeRuns, describeSetups, readWall } from "./board/readWall";
+import { describePage, describePages, describeRuns, describeSetups, readWall } from "./board/readWall";
 import { type BoardState } from "./board/reducer";
 import {
   createReminder,
@@ -25,6 +25,8 @@ export function RemindersModal({ open, board, onOpen, onClose }: RemindersModalP
   const reading = useMemo(() => (open ? readWall(board) : null), [open, board]);
   const runs = reading ? describeRuns(reading, board) : [];
   const setups = reading ? describeSetups(reading, board) : [];
+  // The pages' two fact lines (R74, on Robert's word after pass 1b): who speaks on the written pages, and which stretch is written.
+  const pageFacts = reading ? describePages(reading, board) : [];
   const closeRef = useRef<HTMLButtonElement>(null);
   const [reminders, setReminders] = useState<Reminder[]>(readReminders);
   const [draft, setDraft] = useState("");
@@ -221,6 +223,13 @@ export function RemindersModal({ open, board, onOpen, onClose }: RemindersModalP
                         </li>
                       );
                     })}
+                  </ul>
+                ) : null}
+                {pageFacts.length > 0 ? (
+                  <ul className="wall-read__runs" aria-label="The pages">
+                    {pageFacts.map((line) => (
+                      <li key={line}>{line}</li>
+                    ))}
                   </ul>
                 ) : null}
                 {reading.findings.length > 0 ? (

@@ -102,7 +102,20 @@ export type WallReading = {
   /** The sag not read yet, and why (pass 1a, entry 21): how many cards in the runs are unsized and unwritten, of how many; null once half are sized or written. */
   sagWaiting: { unsized: number; total: number } | null;
   /** The pages, against the wall (R74): how many of the film's cards are written, and what the page checks could not read. */
-  pages: { written: number; of: number; foldsWithoutWords: number; payoffsUnwritten: number; /** Written cards whose change line is still open by the writer's word: a page and no turn (pass 1b, entry 55). */ changeOpen: string[] };
+  pages: {
+    written: number;
+    of: number;
+    foldsWithoutWords: number;
+    payoffsUnwritten: number;
+    /** Written cards whose change line is still open by the writer's word: a page and no turn (pass 1b, entry 55). */
+    changeOpen: string[];
+    /** Who speaks on the written pages, against the cards: a cue is a word (Robert, 2026-09-26). */
+    cues: Array<{ id: string; name: string; spoke: number; of: number; silent: string[]; maybeOn: string[] }>;
+    /** Which stretch is written and which is guess, run by run. */
+    stretches: Array<{ from: string | null; to: string | null; cards: number; written: number }>;
+    beatsWritten: number;
+    beats: number;
+  };
   /** Where the logline's words land on the pages (R74): a fact, never a question; null with no logline, an open one, or nothing written. */
   logline: { words: string[]; last: { id: string; headline: string; landed: string[]; of: number } | null; turns: { landed: number; of: number } | null } | null;
   /** The questions the wall asks now. A left one (R53) is not here while its words hold. */
@@ -130,6 +143,8 @@ export declare function describeRuns(reading: WallReading, state: BoardState): s
 export declare function describeSetups(reading: WallReading, state: BoardState): string[];
 /** What a payoff's page says of its plant (R74), for the line under a setup; empty when the page could not be read. */
 export declare function describePage(setup: Setup): string;
+/** The two fact lines of the pages head: who speaks on the written pages, and which stretch is written. Empty until a scene is written. */
+export declare function describePages(reading: WallReading, state: BoardState): string[];
 
 /** Everything undecided on the wall: the writer's open things (project fields, shared words grouped, then each card once) and what is simply not said, by field. */
 export declare function describeUndecided(

@@ -166,3 +166,21 @@ describe("a title not decided prints its candidates (pass 1b, entry 40)", () => 
     expect(toMarkdown(state, { title: "Doyle's" })).not.toContain("Title not decided");
   });
 });
+
+describe("the maybe's line and the last page (R75)", () => {
+  it("print in Markdown and plain text, from the card and the wall", () => {
+    let state = applyCommand(seedState(), { type: "add_character", id: "d", name: "Declan Doyle" }, NOW).state;
+    state = applyCommand(state, { type: "set_cast", ids: ["maya-letter"], characterIds: [], maybeCharacterIds: ["d"] }, NOW).state;
+    state = applyCommand(state, { type: "set_text", id: "maya-letter", text: "INT. THE PIANO SHOP - DAY\n\nMaya finds the letter." }, NOW).state;
+    const page = { date: "2026-09-26", film: ["Acts: not decided."], people: [], scenes: ["1 · Maya finds the letter — whether Declan Doyle is in it"], outside: [] };
+    const md = toMarkdown(state, { title: "The Lie", undecided: page });
+    expect(md).toContain("*Declan Doyle? — not decided whether they are here.*");
+    expect(md.indexOf("not decided whether they are here")).toBeLessThan(md.indexOf("Maya finds the letter."));
+    expect(md.trimEnd().endsWith("## What is not decided\n\n*In the writer's words, from the wall, 2026-09-26. Nothing here is on the pages.*\n\n**About the film**\n- Acts: not decided.\n\n**Scene by scene**\n- 1 · Maya finds the letter — whether Declan Doyle is in it")).toBe(true);
+    const text = toPlainText(state, { title: "The Lie", undecided: page });
+    expect(text).toContain("Declan Doyle? — not decided whether they are here.");
+    expect(text).toContain("WHAT IS NOT DECIDED");
+    expect(text).toContain("- Acts: not decided.");
+    expect(toMarkdown(state, { title: "The Lie" })).not.toContain("What is not decided");
+  });
+});

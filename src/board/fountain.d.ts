@@ -1,3 +1,4 @@
+import type { UndecidedPage } from "./undecided";
 // Type surface for fountain.js — Fountain out (R23, slice a).
 
 import type { BoardNote, BoardState } from "./reducer";
@@ -30,6 +31,8 @@ export declare function titlePage(titles: {
 }): string;
 
 export type FountainOptions = {
+  /** The last page, "What is not decided" (R75). */
+  undecided?: UndecidedPage | null;
   /** The board's name. */
   title?: string;
   /** The writer's words for a title not decided, on the title page (pass 1b, entry 40). */

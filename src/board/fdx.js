@@ -13,6 +13,7 @@
 import { parseScene, TRANSITION } from "./paginate.js";
 import { storyOrder } from "./readWall.js";
 import { sceneHeading, standInFor } from "./fountain.js";
+import { maybeLine, undecidedLines } from "./undecided.js";
 import { REVISION_HEX, revisionLine, revisionMarks, sceneNumbers } from "./numbering.js";
 
 function escapeXml(text) {
@@ -68,7 +69,9 @@ export function toFdx(state, options = {}) {
       (_m, attr) => `<SceneProperties Length="" Page="" Title="${escapeXml(note.headline)}" />\n      <Text${attr ?? ""}>`,
     );
     // Unwritten: the change line stands in as action, marked as every export marks it.
-    const elements = parseScene(note.text && note.text.trim() ? note.text : standInFor(note));
+    // The maybe's line (R75) as the scene's first action paragraph, from the card.
+    const maybe = maybeLine(note, state);
+    const elements = parseScene(note.text && note.text.trim() ? (maybe ? `${maybe}\n\n${note.text}` : note.text) : standInFor(note));
     for (let i = 0; i < elements.length; i += 1) {
       const element = elements[i];
       if (element.kind === "action") content += paragraph("Action", element.text, "", revisedAt(element.at));
@@ -85,6 +88,13 @@ export function toFdx(state, options = {}) {
       }
     }
   });
+
+  // The last page (R75): what is not decided, after the last scene, as general paragraphs.
+  if (options.undecided) {
+    const lines = undecidedLines(options.undecided);
+    content += paragraph("General", lines[0], ' Alignment="Center"');
+    for (const line of lines.slice(1)) if (line) content += paragraph("General", line);
+  }
 
   const title = [];
   if (options.title) title.push(paragraph("General", options.title, ' Alignment="Center"'));

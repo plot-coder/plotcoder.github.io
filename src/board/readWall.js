@@ -215,10 +215,15 @@ export function readWall(state, options = {}) {
 
   // Step 2 has not been done, so step 4 cannot read runs. A fact, not a nudge.
   if (state.notes.length > 0 && beats.length === 0) {
+    // Turns proposed and not yet kept (R71) are scenes until the writer keeps one; the question says so rather than
+    // reading as if nothing were proposed (pass 1b, entry 20).
+    const proposedCount = order.filter((note) => note.proposedBeat === true).length;
     findings.push({
       kind: "unmarked",
       ids: [],
-      text: "No card is marked as a beat, so the runs between turns cannot be read yet.",
+      text: proposedCount
+        ? `No card is kept as a beat yet — ${proposedCount} proposed, waiting on the writer to keep or strike ${proposedCount === 1 ? "it" : "them"} — so the runs between turns cannot be read yet.`
+        : "No card is marked as a beat, so the runs between turns cannot be read yet.",
     });
   }
 

@@ -101,7 +101,7 @@ Not the app's; the prompt's next head says so.
 
 ## The build and the reading (entries 13 to 25)
 
-- [ ] **13 · `create_cards` summarises each card in a line and leaves out
+- [x] **13 · `create_cards` summarises each card in a line and leaves out
   the fold, the open cast, the open change line and the open when.** "The
   man from the chain" came back as its cast and not a word of its fold;
   only the last card's reply is in full; `list_board` had to confirm the
@@ -109,11 +109,11 @@ Not the app's; the prompt's next head says so.
   counts questions), no create reply said whether an open field landed.
   *Plan:* each card's line in the reply names its fold and every open on
   it, in the words that landed. Server, with a test.
-- [ ] **14 · "Made 8 of 8 cards, each wired after the one before it"** when
+- [x] **14 · "Made 8 of 8 cards, each wired after the one before it"** when
   the eighth was born set aside and has no follows arrow. *Plan:* the
   sentence counts the wired ones and names the ones born aside or as a
   version. Server, with a test.
-- [ ] **15 · A cut scene needs a change line.** The bank scene's notes never
+- [x] **15 · A cut scene needs a change line.** The bank scene's notes never
   say what changes in it; the writer's cut sentence was parked in the
   change-line slot. "There is no way to say unstated that is not
   undecided." *Plan:* a card born set aside, or set aside later, needs no
@@ -142,7 +142,7 @@ Not the app's; the prompt's next head says so.
   says so once 10 is done, and `choose_version` should not carry a setup
   arrow whose payoff the writer drew onto the other version. Check the
   carry rule with a test.
-- [ ] **20 · "No card is marked as a beat" above five proposed turns.**
+- [x] **20 · "No card is marked as a beat" above five proposed turns.**
   *Plan:* the unmarked question says "5 proposed, none kept yet: set_rank
   beat keeps one" when proposals stand. Kernel, with a test.
 - [ ] **22 · The manager, on the aside card only, is "(on no card)" in the
@@ -164,7 +164,19 @@ Not the app's; the prompt's next head says so.
   carries only what is particular to it; the head could say "each card
   once, after the shared lines".
 
+## The directions (entries 26 on)
+
+- [ ] **26 · Keep and strike are two calls, and neither reply says what
+  the two beats now bound.** "The tail names the shape change after a
+  move or a cut, not after a rank." *Plan:* a rank's reply says the runs
+  the kept beat now bounds, as a move's does. Server, with a test. Held
+  until the run's end, with the other tails.
+- [x] **27 · `set_order` on an order that is already the order tears out
+  and redraws every follows arrow with new ids, and says a reordering
+  happened.** *Fixed:* an order that is already the order changes nothing;
+  the reply says so and that the arrows and their ids stand. Test.
+
 ## Every entry, accounted for
 
 1 → decided against (the prompt's) · 2 → held · 3 → fixed · 4 → held · 5 →
-decided against · 6 → fixed · 7 → fixed · 8 → held · 9 → held · 10 → guide, planned · 11 → held · 12 → held · 13 → planned · 14 → planned · 15 → planned · 16 → decided against · 17 → held · 18 → decided against · 19 → with 10 · 20 → planned · 21 → with 13 · 22 → planned · 23 → decided · 24 → decided against · 25 → held.
+decided against · 6 → fixed · 7 → fixed · 8 → held · 9 → held · 10 → guide, planned · 11 → held · 12 → held · 13 → fixed · 14 → fixed · 15 → fixed · 16 → decided against · 17 → held · 18 → decided against · 19 → with 10 · 20 → fixed · 21 → fixed with 13 · 22 → planned · 23 → decided · 24 → decided against · 25 → held · 26 → held · 27 → fixed.

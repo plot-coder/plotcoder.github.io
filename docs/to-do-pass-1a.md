@@ -47,7 +47,7 @@ reads right; the block comes out before pass 1b.
   tools an "I don't know" lands in.
   *Built:* 1923 characters.
 
-- [~] **D2 · The pages read against the wall** (entries 68, 71, 72, 73;
+- [x] **D2 · The pages read against the wall** (entries 68, 71, 72, 73;
   the pass's own question). With every scene written and the ending
   rewritten, the wall still said the chime pays off, the logline stood
   unchecked, and the eighth turn was undone by the ninth on the page
@@ -74,7 +74,11 @@ reads right; the block comes out before pass 1b.
   honest about being words, and they ask what a writer would want asked.
   A person sees them in Read the wall, so a mockup first and Robert's
   word; the checks themselves are pure and testable.
-  *Not built:* waiting on the word. **Mockup drawn 2026-09-26:**
+  **Built 2026-09-26** on Robert's word ("build R74 as drawn, logline as a
+  fact line"): `readWall.js` (three checks, the quoted page line, the logline
+  facts, with tests), the server's reading and checks line, the sheet's
+  section, the Reminders tab, the three guides and `writers.html`; looked
+  at in the app. **Mockup drawn 2026-09-26:**
   `docs/mockups/r74-the-pages-against-the-wall.html` — three questions
   ([unsaid] a payoff not on the page, [behind] the card behind its page,
   [unvoiced] a want no page says), the logline as a fact line and not a

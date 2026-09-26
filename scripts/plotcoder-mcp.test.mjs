@@ -1827,7 +1827,7 @@ describe("round sixteen", () => {
     expect(read).toContain('threads (the writer\'s strings through the story; a loose end is asked about below):');
     expect(read).toContain('  - "the bucket": "The night of the break-in" — starts nowhere yet');
     expect(read).toMatch(/\[loose\] "the bucket" starts nowhere yet: it runs to "The night of the break-in"\. Where is it first seen\?/);
-    expect(read).toMatch(/checks: 15 run/);
+    expect(read).toMatch(/checks: 18 run/);
     expect(await six.callTool("list_board")).toContain('  - "the bucket" (');
     const tied = await six.callTool("update_thread", { thread: "the bucket", add: ["Declan wants Con to move to Naas"], startOpen: false });
     expect(tied).toContain("Tied its start; the reading stops asking about it.");
@@ -2213,7 +2213,7 @@ describe("after the blind run", () => {
     expect(read).not.toMatch(/checked and clean:.*unwritten/);
     expect(read).toContain("pages: all estimates — no scene is written yet");
     expect(read).toContain("(distances in estimated pages)");
-    expect(read).toMatch(/checks: 15 run — asking (nothing|\d+ questions? of \d+ kinds?: [a-z ×0-9, ]+); checked and clean:/);
+    expect(read).toMatch(/checks: 18 run — asking (nothing|\d+ questions? of \d+ kinds?: [a-z ×0-9, ]+); checked and clean:/);
   });
 
   it("names the card's id and casts it in one call, adding a role-named person to the roster", async () => {
@@ -3605,5 +3605,66 @@ describe("a reply says what the change did to the story's shape (round twenty-th
     expect(reordered).toContain('nothing runs from "The chapel" to "The chapel again" now');
     // A write that changes none of it says none of it.
     expect(await door.callTool("update_note", { id: ids["The concert"], headline: "The concert, at night" })).not.toMatch(/the runs between|last card of the story|out of the story's order/);
+  });
+});
+
+describe("the pages, against the wall (R74)", () => {
+  let root;
+  let client;
+  let yard;
+  let end;
+
+  beforeAll(async () => {
+    root = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-pages-"));
+    client = new McpClient(root);
+    await client.start();
+    for (const seeded of ["maya-letter", "tom-lies", "letter-aloud"]) await client.callTool("delete_note", { id: seeded });
+    yard = (await client.callToolData("create_note", { headline: "The yard: the letter from the bank", change: "Joe reads the letter twice.", rank: "beat", plantsWhat: "the chime", x: 100, y: 100 })).id;
+    end = (await client.callToolData("create_note", { headline: "Noreen's yard: Joe takes the two thousand", change: "Noreen starts the van and the chime plays; Joe laughs.", rank: "beat", x: 330, y: 100 })).id;
+    await client.callTool("create_arrow", { from: yard, to: end, kind: "follows" });
+    await client.callTool("create_arrow", { from: yard, to: end, kind: "setup" });
+    await client.callTool("set_logline", { logline: "Can Joe let the van go without losing the last of what it carried?" });
+  }, 30000);
+
+  afterAll(() => {
+    client?.stop();
+    if (root) fs.rmSync(root, { recursive: true, force: true });
+  });
+
+  it("does not read the pages until a scene is written, and says so once", async () => {
+    const read = await client.callTool("read_wall");
+    expect(read).toContain("the pages, against the wall: not read yet — no scene is written");
+    expect(read).not.toContain("the pages, against the wall (words");
+    expect(read).toMatch(/logline: "Can Joe let the van go without losing the last of what it carried\?"\n/);
+  });
+
+  it("quotes the payoff's page where the plant's word lands, counts the logline's words, and asks about the card behind its page", async () => {
+    await client.callTool("write_scene", { id: yard, text: "EXT. THE YARD - DAY\n\nJoe reads the letter twice. He tries the chime. It does not play." });
+    await client.callTool("write_scene", { id: end, text: "EXT. NOREEN'S YARD - DAY\n\nNoreen starts the van to move it in. The chime does not play. Joe hands her the keys." });
+    const read = await client.callTool("read_wall");
+    expect(read).toContain('sets up "Noreen\'s yard: Joe takes the two thousand" — the chime, ');
+    expect(read).toContain('; on the page: "The chime does not play."');
+    expect(read).toContain("its words land on 2 of the 2 written turns' pages, and the last page, \"Noreen's yard: Joe takes the two thousand\", carries 2 of its 10 (joe, van); words, not sense");
+    expect(read).not.toContain("the pages, against the wall (words, not sense");
+    expect(read).not.toContain("[behind]");
+    expect(read).not.toContain("[unsaid]");
+    expect(read).toMatch(/since your last reading: 2 changes \(the page of "The yard: the letter from the bank", the page of "Noreen's yard: Joe takes the two thousand"\)/);
+    expect(read).toContain("every payoff's page has a word of what its fold planted");
+  });
+
+  it("asks about a payoff whose page has not a word of the plant, under the pages' head, and leave_question takes it", async () => {
+    await client.callTool("write_scene", { id: end, text: "EXT. NOREEN'S YARD - DAY\n\nNoreen walks round the van once more and says two thousand. Joe hands her the keys." });
+    const read = await client.callTool("read_wall");
+    expect(read).toContain("; on the page: not a word of the plant — asked below");
+    expect(read).toContain('[unsaid] "The yard: the letter from the bank" plants the chime, and its arrow lands on "Noreen\'s yard: Joe takes the two thousand", whose page has not a word of it.');
+    expect(read).toContain("the pages, against the wall (words, not sense");
+    expect(read).toContain('[behind] "Noreen\'s yard: Joe takes the two thousand" says on its card "Noreen starts the van and the chime plays; Joe laughs.", and its page carries 3 of those 7 words (noreen, van, joe).');
+    const short = await client.callTool("read_wall", { only: "questions" });
+    expect(short).toContain("the pages, against the wall (words, not sense");
+    expect(short).toContain("[unsaid]");
+    const left = await client.callTool("leave_question", { kind: "unsaid", ids: [yard, end], why: "the chime never plays now; the arrow comes off next" });
+    expect(left).not.toMatch(/no such question/i);
+    const again = await client.callTool("read_wall");
+    expect(again).toMatch(/left, for now[\s\S]*\[unsaid\]/);
   });
 });

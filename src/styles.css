@@ -544,6 +544,14 @@ body {
   color: var(--muted);
 }
 
+/* The payoff's page under its setup (R74): the sentence where the plant's word lands, or that none did. */
+.wall-read__page {
+  display: block;
+  margin-top: 0.1rem;
+  font-size: 0.92em;
+  opacity: 0.8;
+}
+
 .wall-read__findings {
   margin: 0.8rem 0 0;
   padding-left: 1.2rem;

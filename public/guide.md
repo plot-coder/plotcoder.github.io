@@ -121,7 +121,18 @@ only when the server is started with `PLOTCODER_JSON=1`.
   back to back with nothing
   between them (a chain of them is one question naming every turn), cards
   that say no place once any card has one, and a thread with a loose end —
-  where is it first seen, or where does it come out. It also lists every
+  where is it first seen, or where does it come out. Once scenes are written
+  it also reads **the pages against the wall** (R74), under their own head: a
+  payoff whose page has not a word of what the fold planted, a written card
+  whose page carries fewer than half its change line's words, a person's want
+  no page of theirs says. Those read words, never sense — a page can say a
+  thing in other words, and can name a thing to deny it — so each question
+  says the words it counted; every setup quotes the page's sentence where
+  the plant's word lands, so "the chime does not play" is read in the reading;
+  and the logline's line counts the turns' pages that carry its words, a fact
+  and never a question. A turn undone by the one after it is yours to read:
+  after a rewrite, read the turn against the one before it, and "since your
+  last reading" names the pages rewritten. It also lists every
   setup with the distance to its payoff, and every thread with its cards. The tool's own description carries the same list,
   and a reply names each question's kind. Put the questions to the writer. Do
   not act on them unasked, and do not add an opinion about the number of beats.

@@ -44,10 +44,16 @@ export const KIND_NAMES: Record<FindingKind, string> = {
   nobody: "Nobody in the scene",
   unplaced: "No place",
   loose: "A thread with a loose end",
+  unsaid: "A payoff not on the page",
+  behind: "The card behind its page",
+  unvoiced: "A want no page says",
 };
 
+/** The kinds that read the pages against the wall (R74): under their own head, since they are about pages and not cards. */
+const PAGE_KINDS: ReadonlySet<FindingKind> = new Set(["unsaid", "behind", "unvoiced"]);
+
 /** The kinds a debt is: shown warm. */
-const WARM: ReadonlySet<FindingKind> = new Set(["unpaid", "backwards"]);
+const WARM: ReadonlySet<FindingKind> = new Set(["unpaid", "backwards", "unsaid"]);
 
 export function AsksSheet({ open, findings, left, proposed, onKeep, onStrike, onClose, onShow, onLeave, onAskAgain }: AsksSheetProps) {
   const titleId = useId();
@@ -64,6 +70,35 @@ export function AsksSheet({ open, findings, left, proposed, onKeep, onStrike, on
   }, [open, onClose]);
 
   if (!open) return null;
+  const wallFindings = findings.filter((finding) => !PAGE_KINDS.has(finding.kind));
+  const pageFindings = findings.filter((finding) => PAGE_KINDS.has(finding.kind));
+
+  const question = (finding: Finding, index: number) => (
+    <li key={`${finding.kind}-${index}`} className="asks__q">
+      <p className={`cast-lens__kicker ${WARM.has(finding.kind) ? "asks__kind--warm" : ""}`}>{KIND_NAMES[finding.kind]}</p>
+      <p className="asks__text">
+        {finding.text}
+        {finding.ids.length > 0 ? (
+          <>
+            {" "}
+            <button
+              type="button"
+              className="words__show"
+              onClick={() => {
+                onClose();
+                onShow(finding.ids);
+              }}
+            >
+              show me
+            </button>
+          </>
+        ) : null}{" "}
+        <button type="button" className="words__show asks__leave" onClick={() => onLeave(finding)}>
+          leave it
+        </button>
+      </p>
+    </li>
+  );
 
   return (
     <div className="modal-root">
@@ -114,40 +149,23 @@ export function AsksSheet({ open, findings, left, proposed, onKeep, onStrike, on
             </ul>
           </div>
         ) : null}
-        {findings.length === 0 ? (
+        {wallFindings.length === 0 ? (
           <p className="project-copy asks__none">
-            {left.length ? "Nothing to ask that you have not left." : "Nothing to ask. The wall answers every question it knows how to put."}
+            {left.length ? "Nothing to ask that you have not left." : pageFindings.length ? "Nothing of the wall's to ask." : "Nothing to ask. The wall answers every question it knows how to put."}
           </p>
         ) : (
-          <ol className="asks__list">
-            {findings.map((finding, index) => (
-              <li key={`${finding.kind}-${index}`} className="asks__q">
-                <p className={`cast-lens__kicker ${WARM.has(finding.kind) ? "asks__kind--warm" : ""}`}>{KIND_NAMES[finding.kind]}</p>
-                <p className="asks__text">
-                  {finding.text}
-                  {finding.ids.length > 0 ? (
-                    <>
-                      {" "}
-                      <button
-                        type="button"
-                        className="words__show"
-                        onClick={() => {
-                          onClose();
-                          onShow(finding.ids);
-                        }}
-                      >
-                        show me
-                      </button>
-                    </>
-                  ) : null}{" "}
-                  <button type="button" className="words__show asks__leave" onClick={() => onLeave(finding)}>
-                    leave it
-                  </button>
-                </p>
-              </li>
-            ))}
-          </ol>
+          <ol className="asks__list">{wallFindings.map(question)}</ol>
         )}
+        {pageFindings.length > 0 ? (
+          <div className="asks__left">
+            <p className="cast-lens__kicker cast-lens__section">The pages, against the wall · {pageFindings.length}</p>
+            <ol className="asks__list">{pageFindings.map(question)}</ol>
+            <p className="project-copy project-door__hint">
+              Read from the words on the page, not their sense: a page can say a thing in other words, and can name a
+              thing to deny it. Read once a scene is written.
+            </p>
+          </div>
+        ) : null}
         {left.length > 0 ? (
           <div className="asks__left">
             <p className="cast-lens__kicker cast-lens__section">Left, for now · {left.length}</p>

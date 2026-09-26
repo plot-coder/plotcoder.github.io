@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from "react";
 import { WORKFLOWS } from "./board/workflows";
-import { describeRuns, describeSetups, readWall } from "./board/readWall";
+import { describePage, describeRuns, describeSetups, readWall } from "./board/readWall";
 import { type BoardState } from "./board/reducer";
 import {
   createReminder,
@@ -211,9 +211,16 @@ export function RemindersModal({ open, board, onOpen, onClose }: RemindersModalP
                 ) : null}
                 {setups.length > 0 ? (
                   <ul className="wall-read__runs" aria-label="Setups and payoffs">
-                    {setups.map((line) => (
-                      <li key={line}>{line}</li>
-                    ))}
+                    {setups.map((line, index) => {
+                      // What the payoff's page says of the plant (R74), under the setup it belongs to.
+                      const page = reading ? describePage(reading.setups[index]) : "";
+                      return (
+                        <li key={line}>
+                          {line}
+                          {page ? <span className="wall-read__page">{page}</span> : null}
+                        </li>
+                      );
+                    })}
                   </ul>
                 ) : null}
                 {reading.findings.length > 0 ? (
@@ -227,7 +234,8 @@ export function RemindersModal({ open, board, onOpen, onClose }: RemindersModalP
                 ) : (
                   <p className="wall-read__quiet">
                     Nothing this reading can see. It looks at the runs between beats, change
-                    lines, arrows, repeated headlines, and long groups — and it only asks.
+                    lines, arrows, repeated headlines, and long groups — and, once scenes are
+                    written, at the pages against the wall — and it only asks.
                   </p>
                 )}
               </section>

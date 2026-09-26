@@ -2039,3 +2039,15 @@ describe("a proposed turn (round twenty-three, entry 32)", () => {
     expect(normalizeState(before).notes.every((note) => note.proposedBeat === false)).toBe(true);
   });
 });
+
+describe("a place or a when set through update_note decides it (pass 1b, entry 69)", () => {
+  it("clears the open words, as set_location and set_when do", () => {
+    let state = applyCommand(emptyState(), { type: "create_note", id: "m", x: 0, y: 0, headline: "The morning after", change: "She opens.", locationOpen: "I don't know yet", whenOpen: "not decided" }, NOW).state;
+    state = applyCommand(state, { type: "update_note", id: "m", location: "Doyle's", when: "first light" }, NOW).state;
+    const card = state.notes.find((note) => note.id === "m")!;
+    expect(card.location).toBe("Doyle's");
+    expect(card.locationOpen).toBe("");
+    expect(card.when).toBe("first light");
+    expect(card.whenOpen).toBe("");
+  });
+});

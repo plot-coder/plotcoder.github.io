@@ -881,8 +881,15 @@ export function applyCommand(state, command, now = nowIso()) {
           patch.changeOpen = cleanOpen(command.changeOpen);
           if (patch.changeOpen) patch.change = "What changes?";
         }
-        if (command.location !== undefined) patch.location = cleanPlace(command.location);
-        if (command.when !== undefined) patch.when = cleanWhen(command.when);
+        // A place or a when decides it, whichever tool sets it (pass 1b, entry 69): the open words go, as set_location's do.
+        if (command.location !== undefined) {
+          patch.location = cleanPlace(command.location);
+          if (patch.location) patch.locationOpen = "";
+        }
+        if (command.when !== undefined) {
+          patch.when = cleanWhen(command.when);
+          if (patch.when) patch.whenOpen = "";
+        }
         updated = bump(note, patch, now);
         return updated;
       });

@@ -3658,7 +3658,8 @@ describe("the pages, against the wall (R74)", () => {
     expect(read).toContain("; on the page: not a word of the plant — asked below");
     expect(read).toContain('[unsaid] "The yard: the letter from the bank" plants the chime, and its arrow lands on "Noreen\'s yard: Joe takes the two thousand", whose page has not a word of it.');
     expect(read).toContain("the pages, against the wall (words, not sense");
-    expect(read).toContain('[behind] "Noreen\'s yard: Joe takes the two thousand" says on its card "Noreen starts the van and the chime plays; Joe laughs.", and its page carries 3 of those 7 words (noreen, van, joe).');
+    // 3 of 7 is under half and not under a third (Robert, 2026-09-26): not asked.
+    expect(read).not.toContain("[behind]");
     const short = await client.callTool("read_wall", { only: "questions" });
     expect(short).toContain("the pages, against the wall (words, not sense");
     expect(short).toContain("[unsaid]");
@@ -4021,5 +4022,49 @@ describe("a rank's reply names the runs the changed turns now bound (pass 1b, en
     const text = await client.callTool("set_rank", { ids: [id("The first Friday"), id("The last night")], rank: "beat" });
     expect(text).toContain("The board holds 2 beats and 2 scenes.");
     expect(text).toContain('Runs now: "The first Friday" → "The last night": about 2 pages, 2 cards, estimated.');
+  });
+});
+
+describe("the last page and the title page's switch (R75)", () => {
+  let root;
+  let client;
+
+  beforeAll(async () => {
+    root = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-last-page-"));
+    client = new McpClient(root);
+    await client.start();
+    for (const seeded of ["maya-letter", "tom-lies", "letter-aloud"]) await client.callTool("delete_note", { id: seeded });
+    await client.callTool("create_cards", { cards: [{ headline: "The first Friday", change: "Eleven.", castOpen: "whether Declan is here" }, { headline: "The tea", changeOpen: "I don't know what changes yet" }, { headline: "The bank", aside: true }] });
+    await client.callTool("add_open_line", { text: "Acts: I have not decided how it divides." });
+  }, 30000);
+
+  afterAll(() => {
+    client?.stop();
+    if (root) fs.rmSync(root, { recursive: true, force: true });
+  });
+
+  it("ends every export with what is not decided, and set_title_page leaves it off a clean draft", async () => {
+    const md = await client.callTool("export_markdown");
+    expect(md).toContain("## What is not decided");
+    expect(md).toContain("- Acts: I have not decided how it divides.");
+    expect(md).toContain("- 2 · The tea — what changes: I don't know what changes yet");
+    expect(md).toContain('- "The bank" — set aside, not in the film');
+    const text = await client.callTool("export_text");
+    expect(text).toContain("WHAT IS NOT DECIDED");
+    const off = await client.callTool("set_title_page", { undecidedPage: false });
+    expect(off).toContain('the last page, "What is not decided", off — a draft goes out clean');
+    expect(await client.callTool("export_markdown")).not.toContain("What is not decided");
+    expect(await client.callTool("set_title_page", { undecidedPage: true })).toContain('"What is not decided", on');
+  });
+
+  it("read_wall says who speaks on the written pages and which stretch is written", async () => {
+    const notes = (await client.callToolData("list_board")).notes;
+    const friday = notes.find((note) => note.headline === "The first Friday").id;
+    await client.callTool("cast", { noteIds: [friday], characters: ["Mairead Doyle"] });
+    await client.callTool("set_rank", { ids: [friday], rank: "beat" });
+    await client.callTool("write_scene", { id: friday, text: "INT. DOYLE'S - NIGHT\n\nThe bell.\n\nMAIREAD\nNine. Ten." });
+    const read = await client.callTool("read_wall");
+    expect(read).toContain("on the pages (cues, against the cards): Mairead Doyle speaks on 1 of 1 written scene of theirs");
+    expect(read).toContain("written, by stretch: the 1 beat: 1 written");
   });
 });

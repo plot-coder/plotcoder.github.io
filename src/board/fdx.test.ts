@@ -188,3 +188,15 @@ describe("a title not decided on the Final Draft title page (pass 1b, entry 40)"
     expect(xml).toContain("<Text>Title not decided: Doyle's, or Last Orders</Text>");
   });
 });
+
+describe("the maybe's line and the last page in Final Draft (R75)", () => {
+  it("print as an action paragraph and as general paragraphs after the last scene", () => {
+    let state = applyCommand(seedState(), { type: "add_character", id: "d", name: "Declan Doyle" }, NOW).state;
+    state = applyCommand(state, { type: "set_cast", ids: ["maya-letter"], characterIds: [], maybeCharacterIds: ["d"] }, NOW).state;
+    state = applyCommand(state, { type: "set_text", id: "maya-letter", text: "INT. THE PIANO SHOP - DAY\n\nMaya finds the letter." }, NOW).state;
+    const xml = toFdx(state, { title: "The Lie", undecided: { date: "2026-09-26", film: ["Acts: not decided."], people: [], scenes: [], outside: [] } });
+    expect(xml).toContain("<Text>Declan Doyle? — not decided whether they are here.</Text>");
+    expect(xml).toContain("<Text>WHAT IS NOT DECIDED</Text>");
+    expect(xml).toContain("<Text>- Acts: not decided.</Text>");
+  });
+});

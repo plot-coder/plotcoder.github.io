@@ -345,3 +345,14 @@ describe("a title not decided on the Fountain title page (pass 1b, entry 40)", (
     expect(toFountain(seedState(), { title: "Untitled", titleOpen: "Doyle's, or Last Orders" })).toContain("Title not decided: Doyle's, or Last Orders");
   });
 });
+
+describe("the maybe's line and the last page in Fountain (R75)", () => {
+  it("print under the heading and as a section after the last scene", () => {
+    let state = applyCommand(seedState(), { type: "add_character", id: "d", name: "Declan Doyle" }, NOW).state;
+    state = applyCommand(state, { type: "set_cast", ids: ["maya-letter"], characterIds: [], maybeCharacterIds: ["d"] }, NOW).state;
+    state = applyCommand(state, { type: "set_text", id: "maya-letter", text: "INT. THE PIANO SHOP - DAY\n\nMaya finds the letter." }, NOW).state;
+    const text = toFountain(state, { title: "The Lie", undecided: { date: "2026-09-26", film: ["Acts: not decided."], people: [], scenes: [], outside: ['"The bank" — set aside, not in the film'] } });
+    expect(text).toContain("Declan Doyle? — not decided whether they are here.\n\nINT. THE PIANO SHOP - DAY");
+    expect(text).toContain("# What is not decided\n\n= In the writer's words, from the wall, 2026-09-26. Nothing here is on the pages.\n\n= About the film\n= - Acts: not decided.\n\n= Not in the film\n= - \"The bank\" — set aside, not in the film");
+  });
+});

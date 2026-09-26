@@ -39,6 +39,8 @@ export function emptyProject(now = nowIso()) {
     // The title page's byline and contact (pass 1a, entry 50): the project's, since every board's script goes out under them.
     author: "",
     contact: "",
+    // The last page of every script, "What is not decided" (R75): on unless the writer says a draft goes out clean.
+    undecidedPage: true,
     boards: [board],
     activeBoardId: board.id,
     createdAt: now,
@@ -99,6 +101,8 @@ export function normalizeProject(value, now = nowIso()) {
     // A project written before pass 1a has no byline: blank, which claims nothing.
     author: typeof value.author === "string" ? value.author.trim() : "",
     contact: typeof value.contact === "string" ? value.contact.trim() : "",
+    // A project written before R75 prints the last page: the default that claims nothing is the one that hides nothing.
+    undecidedPage: value.undecidedPage !== false,
     boards,
     activeBoardId,
     structures,
@@ -390,8 +394,10 @@ export function setPremiseOpen(project, words, now = nowIso()) {
 export function setTitlePage(project, fields, now = nowIso()) {
   const author = typeof fields?.author === "string" ? fields.author.trim().replace(/\s+/g, " ") : project.author ?? "";
   const contact = typeof fields?.contact === "string" ? fields.contact.trim() : project.contact ?? "";
-  if (author === (project.author ?? "") && contact === (project.contact ?? "")) return project;
-  return touch(project, { author, contact }, now);
+  // The last page's switch (R75): true prints "What is not decided" after the last scene, false sends a draft out clean.
+  const undecidedPage = typeof fields?.undecidedPage === "boolean" ? fields.undecidedPage : project.undecidedPage !== false;
+  if (author === (project.author ?? "") && contact === (project.contact ?? "") && undecidedPage === (project.undecidedPage !== false)) return project;
+  return touch(project, { author, contact, undecidedPage }, now);
 }
 
 /**

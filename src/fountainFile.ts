@@ -7,6 +7,20 @@ import { fromFountain, mergeFountain, toFountain } from "./board/fountain";
 import { toMarkdown, toPlainText } from "./board/markdown";
 import { boardById, scriptTitles } from "./board/project";
 import { boardStore } from "./board/store";
+import { undecidedPage } from "./board/undecided";
+import type { ProjectRecord } from "./board/project";
+
+/** The last page (R75), unless the writer switched it off on the title page. */
+function lastPage(project: ProjectRecord) {
+  if (project.undecidedPage === false) return null;
+  return undecidedPage(boardStore.getState(), {
+    project: [
+      ...(project.nameOpen ? [{ label: "The title", words: project.nameOpen }] : []),
+      ...(project.premiseOpen ? [{ label: "The premise", words: project.premiseOpen }] : []),
+    ],
+    date: new Date().toISOString(),
+  });
+}
 
 export function fountainText(): string {
   const project = boardStore.getProject();
@@ -15,6 +29,7 @@ export function fountainText(): string {
     ...scriptTitles(project, board),
     premise: project.premise || undefined,
     draftDate: new Date().toISOString(),
+    undecided: lastPage(project),
   });
 }
 
@@ -51,13 +66,14 @@ export function markdownText(): string {
   return toMarkdown(boardStore.getState(), {
     ...scriptTitles(project, board),
     premise: project.premise || undefined,
+    undecided: lastPage(project),
   });
 }
 
 export function plainText(): string {
   const project = boardStore.getProject();
   const board = boardById(project, project.activeBoardId);
-  return toPlainText(boardStore.getState(), scriptTitles(project, board));
+  return toPlainText(boardStore.getState(), { ...scriptTitles(project, board), undecided: lastPage(project) });
 }
 
 export function downloadMarkdown(): void {
@@ -86,6 +102,7 @@ export function fdxText(): string {
   return toFdx(boardStore.getState(), {
     ...scriptTitles(project, board),
     draftDate: new Date().toISOString(),
+    undecided: lastPage(project),
   });
 }
 

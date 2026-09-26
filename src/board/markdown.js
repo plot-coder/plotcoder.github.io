@@ -19,6 +19,7 @@
 
 import { storyOrder } from "./readWall.js";
 import { headlineHeadsScene, sceneHeading, standInFor, UNWRITTEN_MARK } from "./fountain.js";
+import { maybeLine, undecidedLines } from "./undecided.js";
 import { paginate, parseScene, WIDTH } from "./paginate.js";
 import { revisionLine, revisionMarks, sceneNumbers } from "./numbering.js";
 
@@ -87,10 +88,22 @@ export function toMarkdown(state, options = {}) {
     if (note.rank !== "beat" && note.headline && !headlineHeadsScene(note)) out.push(`*${note.headline.trim()}*`, "");
     // A place left open: the writer's words for why, beneath the heading, never in it (round twenty-two, entry 70).
     if ((note.locationOpen ?? "").trim()) out.push(`*place open, by the writer's word: ${note.locationOpen.trim()}*`, "");
+    // The maybe's line (R75): the people the card holds as "Name?", under the heading, from the card and never the text.
+    const maybe = maybeLine(note, state);
+    if (maybe) out.push(`*${maybe}*`, "");
     if (note.text && note.text.trim()) out.push(...sceneMarkdown(note.text));
     // Unwritten: the change line stands in after the mark in bold, a plain
     // paragraph so it never reads as a second synopsis line (round fourteen, 30).
     else out.push(`**${UNWRITTEN_MARK}**${standInFor(note).slice(UNWRITTEN_MARK.length)}`, "");
+  }
+  // The last page (R75): what is not decided, in the writer's words, after the last scene.
+  if (options.undecided) {
+    const page = options.undecided;
+    out.push("---", "", "## What is not decided", "", `*In the writer's words, from the wall${page.date ? `, ${page.date}` : ""}. Nothing here is on the pages.*`, "");
+    for (const [title, lines] of [["About the film", page.film], ["About the people", page.people], ["Scene by scene", page.scenes], ["Not in the film", page.outside]]) {
+      if (!lines.length) continue;
+      out.push(`**${title}**`, ...lines.map((line) => `- ${line}`), "");
+    }
   }
   return `${out.join("\n").trimEnd()}\n`;
 }
@@ -174,7 +187,8 @@ export function toPlainText(state, options = {}) {
     order.map((note) => ({
       id: note.id,
       heading: sceneHeading(note).slice(1),
-      text: note.text,
+      // The maybe's line (R75) prints as the scene's first action line.
+      text: maybeLine(note, state) && note.text && note.text.trim() ? `${maybeLine(note, state)}\n\n${note.text}` : note.text,
       change: standInFor(note),
       written: Boolean(note.text && note.text.trim()),
       number: numbers.get(note.id) ?? undefined,
@@ -206,6 +220,12 @@ export function toPlainText(state, options = {}) {
       const star = Boolean(mark) && (line.kind === "heading" ? mark.revised && mark.lines.size === 0 : typeof line.src === "number" && mark.lines.has(line.src));
       out.push(setLine(line, star));
     }
+  }
+  // The last page (R75), after the script: what is not decided, in the writer's words.
+  if (options.undecided) {
+    const lines = undecidedLines(options.undecided);
+    out.push("", "", centred(lines[0]), "");
+    for (const line of lines.slice(1)) out.push(line ? `${" ".repeat(GUTTER)}${line}` : "");
   }
   return `${out.join("\n").replace(/\n{4,}/g, "\n\n\n").trimEnd()}\n`;
 }

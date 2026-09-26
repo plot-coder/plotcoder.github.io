@@ -10,6 +10,16 @@ done and merged, what is left, and the order I would take it in.
 
 ## Next, for whoever picks this up (2026-09-26, late, after pass 2a)
 
+**2026-09-26, later: the four decisions from pass 1b are built** on
+Robert's word ("build all four as recommended") — R75, what a script
+carries of the wall's opens (the maybe's line, the last page), and R74
+refined (a third with four words to count; who speaks on the written
+pages and which stretch is written, as facts). Released as 0.1.56; the
+handover's next line says whether the door has it. What waits on Robert
+now: pass 2a's mockup page (`docs/mockups/pass-2a-the-morning-after.html`,
+to draw), the echo check (1b's 47), and the smaller 1b items.
+
+
 **Pass 2a has run** — the morning after: the driving session as the person,
 in the app on the dev server at 0.1.55, on "Last Orders" as pass 1b left
 it: 22 entries (`blind-runs/pass-2a-report.md`), two fixed, the rest one

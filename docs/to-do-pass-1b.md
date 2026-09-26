@@ -198,7 +198,7 @@ Not the app's; the prompt's next head says so.
   eight marks across four scenes landed on notes holding the word
   "decided", the agent's word for what the writer had not decided. *Fixed:*
   a note is not the page; the camera never reads it. Test.
-- [ ] **31, 32 · Two of four written scenes questioned for not doing what
+- [x] **31, 32 · Two of four written scenes questioned for not doing what
   their cards say** — "she knows the number now" against "Nine. Ten.
   Eleven."; "leaves" against "lays". Words, not sense, as the head says;
   still half the written scenes asked. *Held for Robert:* the threshold
@@ -208,7 +208,7 @@ Not the app's; the prompt's next head says so.
 - [x] **33 · "PLACE NOT DECIDED: THE MORNING AFTER - THE MORNING AFTER".**
   A placeless card whose when is its own headline's words printed them
   twice. *Fixed:* once. Test.
-- [ ] **34 · A maybe on the cast cannot be written**: the page has no
+- [x] **34 · A maybe on the cast cannot be written**: the page has no
   question mark the way the card does; the only home was a note. Pass 1a's
   34 and 35 again. *Held for Robert:* the page's form for a person who may
   or may not be in the scene.
@@ -218,7 +218,7 @@ Not the app's; the prompt's next head says so.
   agent read it once and applied it. Nothing to change.
 - [x] **36 · "2 lines the camera cannot see (decided)"** read as a status,
   not the offending word. *Fixed:* the reply says "by the word "decided"".
-- [ ] **37 · A when left open prints a heading with no time, the same as a
+- [x] **37 · A when left open prints a heading with no time, the same as a
   when nobody said.** In Fountain the difference is only in the note.
   *Held for Robert:* whether an open when prints a mark on the heading as
   an open place does ("TIME NOT DECIDED"), or stays a note.
@@ -239,7 +239,7 @@ Not the app's; the prompt's next head says so.
   decided: Doyle's, or Last Orders, or The Dead Letter" — on the Fountain
   and Final Draft title pages, under the Markdown title, and centred in
   plain text. Tests.
-- [ ] **41, 42 · Of everything held open on the wall, only an open change
+- [x] **41, 42 · Of everything held open on the wall, only an open change
   line and an open place reach the page; the rest vanish silently, and the
   version behind and the cut scene are in no file and unmentioned.** *Held
   for Robert:* what a script should carry of the wall's opens — a page at
@@ -253,7 +253,7 @@ Not the app's; the prompt's next head says so.
   a synopsis line for scenes and none for beats.** *Held for Robert:* one
   numbering (the scene's) on both, and the beat's headline as its heading
   is the reason there is no synopsis; the description says so.
-- [ ] **45 · "What the app says of the script against the wall" is two
+- [x] **45 · "What the app says of the script against the wall" is two
   word-count questions; nothing says who is on the pages, what recurs, or
   which half of the film is written.** With **46** (the absence check
   counts cards, so a person on no written page is clean) and **47** (the
@@ -442,7 +442,7 @@ Not the app's; the prompt's next head says so.
 ## Every entry, accounted for
 
 1 → decided against (the prompt's) · 2 → fixed after the run · 3 → fixed · 4 → held · 5 →
-decided against · 6 → fixed · 7 → fixed · 8 → held · 9 → held · 10 → guide, fixed · 11 → held · 12 → fixed after the run · 13 → fixed · 14 → fixed · 15 → fixed · 16 → decided against · 17 → held · 18 → decided against · 19 → guide, with 10 · 20 → fixed · 21 → fixed with 13 · 22 → planned · 23 → decided · 24 → decided against · 25 → fixed after the run · 26 → fixed after the run · 27 → fixed · 28 → fixed · 29 → decided against · 30 → fixed · 31, 32 → fixed after the run · 33 → fixed · 34 → held · 35 → decided · 36 → fixed · 37 → held · 38 → decided against · 39 → held · 40 → fixed · 41, 42 → fixed after the run · 43 → decided against · 44 → fixed after the run · 45, 46, 47 → planned for Robert · 48 → fixed · 49 → held · 50 → planned for Robert · 51 → fixed with 15 · 52 → fixed after the run · 53 → fixed · 54 → decided · 55 → fixed · 56 → fixed · 57 → decided · 58 → decided against · 59 → fixed with 55 · 60 → fixed with 55 · 61 → guide, with 10 · 62 → fixed with 30 · 63 → fixed · 64 → fixed · 65 → guide · 66 → decided against · 67 → fixed · 68 → decided with 15 · 69 → fixed · 70 → decided · 71 → fixed · 72 → fixed · 73 → decided, said · 74 → fixed · 75 → planned for Robert · 76 → fixed · 77 → planned for Robert, with 50 · 78 → fixed · 79 → fixed, in the .fdx comment · 80, 81 → held for Robert, with 39 · 82 → fixed.
+decided against · 6 → fixed · 7 → fixed · 8 → held · 9 → held · 10 → guide, fixed · 11 → held · 12 → fixed after the run · 13 → fixed · 14 → fixed · 15 → fixed · 16 → decided against · 17 → held · 18 → decided against · 19 → guide, with 10 · 20 → fixed · 21 → fixed with 13 · 22 → planned · 23 → decided · 24 → decided against · 25 → fixed after the run · 26 → fixed after the run · 27 → fixed · 28 → fixed · 29 → decided against · 30 → fixed · 31, 32 → fixed after the run · 33 → fixed · 34 → built (R75) · 35 → decided · 36 → fixed · 37 → decided with R75 (the last page, not the heading) · 38 → decided against · 39 → held · 40 → fixed · 41, 42 → fixed after the run · 43 → decided against · 44 → fixed after the run · 45, 46 → built (the fact lines) · 47 → held (the echo check) · 48 → fixed · 49 → held · 50 → planned for Robert · 51 → fixed with 15 · 52 → fixed after the run · 53 → fixed · 54 → decided · 55 → fixed · 56 → fixed · 57 → decided · 58 → decided against · 59 → fixed with 55 · 60 → fixed with 55 · 61 → guide, with 10 · 62 → fixed with 30 · 63 → fixed · 64 → fixed · 65 → guide · 66 → decided against · 67 → fixed · 68 → decided with 15 · 69 → fixed · 70 → decided · 71 → fixed · 72 → fixed · 73 → decided, said · 74 → fixed · 75 → planned for Robert · 76 → fixed · 77 → planned for Robert, with 50 · 78 → fixed · 79 → fixed, in the .fdx comment · 80, 81 → held for Robert, with 39 · 82 → fixed.
 
 ## The report's sections 3 to 6, against the list
 
@@ -467,7 +467,9 @@ pass's own finding and the material for the decisions below.
 
 ## Held for Robert, in one place
 
-**The four large ones are drawn, 2026-09-26, late:**
+**The four large ones are built, 2026-09-26, late, on Robert's word ("build all four as recommended"):** R75 (the last page in every export, with `set_title_page`'s switch; the maybe's line under the heading), and R74 refined (a third with four words to count; the two fact lines in the pages head). Entries 31, 32, 34, 37, 41, 42, 45, 46 → built; 47 (the echo check over pages) stays held as its own item.
+
+**They were drawn first, 2026-09-26, late:**
 `docs/mockups/pass-1b-decisions.html` — each as it ships beside what it
 could be, with a recommendation: the last page "What is not decided" in
 every export (1A); the card's maybe printed as one line under the

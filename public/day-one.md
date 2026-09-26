@@ -106,8 +106,11 @@ only when the server is started with `PLOTCODER_JSON=1`.
   where is it first seen, or where does it come out. Once scenes are written
   it also reads **the pages against the wall**, under their own head: a
   payoff whose page has not a word of what the fold planted, a written card
-  whose page carries fewer than half its change line's words, a person's want
-  no page of theirs says. Those read words, never sense — a page can say a
+  whose page carries fewer than a third of its change line's words (a line
+  under four words is not read), a person's want no page of theirs says.
+  Two facts beside them, never questions: who speaks on the written pages,
+  by cue, against their cards, and which stretch of the film is written and
+  which is still guess. Those read words, never sense — a page can say a
   thing in other words, and can name a thing to deny it — so each question
   says the words it counted; every setup quotes the page's sentence where
   the plant's word lands, so "the chime does not play" is read in the reading;

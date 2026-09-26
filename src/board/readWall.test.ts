@@ -7,7 +7,7 @@ import {
   type BoardState,
   type Command,
 } from "./reducer";
-import { describePage, describeRuns, describeSetups, describeUndecided, openOutsideFilm, readingOrder, readWall, storyOrder } from "./readWall";
+import { describePage, describePages, describeRuns, describeSetups, describeUndecided, openOutsideFilm, readingOrder, readWall, storyOrder } from "./readWall";
 
 const NOW = "2026-01-01T00:00:00.000Z";
 
@@ -238,7 +238,7 @@ describe("findings", () => {
 
   it("returns nothing at all for an empty board", () => {
     const reading = readWall(emptyState());
-    expect(reading).toEqual({ order: [], sagWaiting: null, beats: [], runs: [], setups: [], payoffs: {}, later: [], paidBy: [], open: [], proposed: [], unlinked: [], openLines: [], openFields: [], versions: [], openPeople: [], wired: { linked: 0, of: 0 }, aside: [], threads: [], pages: { written: 0, of: 0, foldsWithoutWords: 0, payoffsUnwritten: 0, changeOpen: [] }, logline: null, findings: [], left: [] });
+    expect(reading).toEqual({ order: [], sagWaiting: null, beats: [], runs: [], setups: [], payoffs: {}, later: [], paidBy: [], open: [], proposed: [], unlinked: [], openLines: [], openFields: [], versions: [], openPeople: [], wired: { linked: 0, of: 0 }, aside: [], threads: [], pages: { written: 0, of: 0, foldsWithoutWords: 0, payoffsUnwritten: 0, changeOpen: [], cues: [], stretches: [], beatsWritten: 0, beats: 0 }, logline: null, findings: [], left: [] });
   });
 
   it("notes that runs cannot be read until a beat is marked, and passes no judgement on the count", () => {
@@ -1259,7 +1259,7 @@ describe("the pages, against the wall (R74)", () => {
     let reading = readWall(unwritten);
     expect(reading.findings.map((finding) => finding.kind)).not.toContain("unsaid");
     expect(reading.setups[0].page).toEqual({ state: "unwritten" });
-    expect(reading.pages).toEqual({ written: 1, of: 2, foldsWithoutWords: 0, payoffsUnwritten: 1, changeOpen: [] });
+    expect(reading.pages).toMatchObject({ written: 1, of: 2, foldsWithoutWords: 0, payoffsUnwritten: 1, changeOpen: [] });
     const wordless = run(ninetyNine("EXT. NOREEN'S YARD - DAY\n\nJoe hands her the keys."), { type: "set_plant", ids: ["yard"], plants: false }, { type: "set_plant", ids: ["yard"], plants: true });
     reading = readWall(wordless);
     expect(reading.findings.map((finding) => finding.kind)).not.toContain("unsaid");
@@ -1324,7 +1324,7 @@ describe("the pages, against the wall (R74)", () => {
   it("is not read on a wall with nothing written, and a left page question keeps its word while the count moves", () => {
     const blank = wall({ id: "a", rank: "beat" }, { id: "b" });
     const reading = readWall(blank);
-    expect(reading.pages).toEqual({ written: 0, of: 2, foldsWithoutWords: 0, payoffsUnwritten: 0, changeOpen: [] });
+    expect(reading.pages).toMatchObject({ written: 0, of: 2, foldsWithoutWords: 0, payoffsUnwritten: 0, changeOpen: [] });
     expect(reading.logline).toBeNull();
     expect(reading.findings.map((finding) => finding.kind).filter((kind) => ["unsaid", "behind", "unvoiced"].includes(kind))).toEqual([]);
     const state = ninetyNine("EXT. NOREEN'S YARD - DAY\n\nNoreen walks round the van once more and says two thousand. Joe hands her the keys.");
@@ -1368,5 +1368,50 @@ describe("a setup whose page question the writer left (pass 1b, entry 78)", () =
     expect(reading.setups[0].page).toEqual({ state: "left" });
     expect(describePage(reading.setups[0])).toBe("on the page: not a word of the plant — left by the writer, with their reason below");
     expect(reading.findings.some((finding) => finding.kind === "unsaid")).toBe(false);
+  });
+});
+
+describe("the word checks at a third, with four words to count (Robert, 2026-09-26)", () => {
+  it("is quiet at three of seven, asks at one of five, and reads no line under four words", () => {
+    let state = wall({ id: "a", headline: "The man", change: "He leaves his card on the counter and nobody says." }, { id: "b", headline: "The range", change: "It goes out." });
+    state = run(state, { type: "set_text", id: "a", text: "INT. DOYLE'S - NIGHT\n\nThe card is laid on the counter. Neither of them speaks." }, { type: "set_text", id: "b", text: "INT. DOYLE'S - NIGHT\n\nThe fat goes cold." });
+    // "he leaves card counter nobody says" against "card counter": 2 of 6 — a third exactly, not under it.
+    expect(readWall(state).findings.filter((finding) => finding.kind === "behind")).toEqual([]);
+    const behind = run(state, { type: "update_note", id: "a", change: "He leaves his card on the counter and nobody says what it is for." });
+    // 2 of 7 asks ("for" is filler).
+    expect(readWall(behind).findings.find((finding) => finding.kind === "behind")?.text).toContain("carries 2 of those 7 words (card, counter)");
+    // "It goes out." is three words: not read.
+    expect(readWall(behind).findings.filter((finding) => finding.kind === "behind").map((finding) => finding.ids[0])).toEqual(["a"]);
+  });
+});
+
+describe("who speaks on the written pages, and which stretch is written (Robert, 2026-09-26)", () => {
+  it("counts cues by whole name or a unique word, against the cards, and says which runs are written", () => {
+    let state = wall({ id: "f", headline: "The first Friday", change: "Eleven.", rank: "beat" }, { id: "tea", headline: "The tea", change: "Nothing." }, { id: "last", headline: "The last night", change: "Out the door.", rank: "beat" });
+    state = run(
+      state,
+      { type: "create_arrow", from: "f", to: "tea", kind: "follows" },
+      { type: "create_arrow", from: "tea", to: "last", kind: "follows" },
+      { type: "add_character", id: "m", name: "Mairead Doyle" },
+      { type: "add_character", id: "l", name: "Father Lyons" },
+      { type: "add_character", id: "p", name: "Priya Nair" },
+      { type: "set_cast", ids: ["f"], characterIds: ["m"], maybeCharacterIds: ["p"] },
+      { type: "set_cast", ids: ["tea"], characterIds: ["m", "l"] },
+      { type: "set_text", id: "f", text: "INT. DOYLE'S - NIGHT\n\nThe bell.\n\nMAIREAD\nNine. Ten." },
+      { type: "set_text", id: "tea", text: "INT. THE HARBOUR BAR - DAY\n\nCoats.\n\nMAIREAD DOYLE\n(under her breath)\nSorry for your trouble." },
+    );
+    const reading = readWall(state);
+    expect(reading.pages.cues).toEqual([
+      { id: "m", name: "Mairead Doyle", spoke: 2, of: 2, silent: [], maybeOn: [] },
+      { id: "l", name: "Father Lyons", spoke: 0, of: 1, silent: ["tea"], maybeOn: [] },
+      { id: "p", name: "Priya Nair", spoke: 0, of: 0, silent: [], maybeOn: ["f"] },
+    ]);
+    expect(reading.pages.stretches).toEqual([{ from: "f", to: "last", cards: 1, written: 1 }]);
+    expect(reading.pages.beats).toBe(2);
+    expect(reading.pages.beatsWritten).toBe(1);
+    const lines = describePages(reading, state);
+    expect(lines[0]).toBe('on the pages (cues, against the cards): Mairead Doyle speaks on 2 of 2 written scenes of theirs; Father Lyons speaks on 0 of 1 written scene of theirs (no cue on "The tea"); Priya Nair: on no written card for certain, and a maybe on 1 written page');
+    expect(lines[1]).toBe('written, by stretch: the 2 beats: 1 written; "The first Friday" → "The last night": 1 of 1 written');
+    expect(describePages(readWall(wall({ id: "x" })), wall({ id: "x" }))).toEqual([]);
   });
 });

@@ -390,3 +390,15 @@ describe("scriptTitles with a title not decided (pass 1b, entry 40)", () => {
     expect(scriptTitles({ ...(project as object), name: "Doyle's", nameOpen: "" } as never, { id: "b", name: "Board 1" } as never)).toEqual({ title: "Doyle's" });
   });
 });
+
+describe("the last page's switch on the title page (R75)", () => {
+  it("is on by default, and set_title_page turns it off and back", () => {
+    const project = emptyProject(NOW);
+    expect(project.undecidedPage).toBe(true);
+    const off = setTitlePage(project, { undecidedPage: false }, NOW);
+    expect(off.undecidedPage).toBe(false);
+    expect(setTitlePage(off, { undecidedPage: false }, NOW)).toBe(off);
+    expect(setTitlePage(off, { undecidedPage: true }, NOW).undecidedPage).toBe(true);
+    expect(normalizeProject({ ...project, undecidedPage: undefined } as never).undecidedPage).toBe(true);
+  });
+});

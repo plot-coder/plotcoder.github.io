@@ -43,6 +43,10 @@ const ABSENCE_FLOOR_EIGHTHS = 10 * EIGHTHS_PER_PAGE;
 // are the same scene — and as overlap with the shorter headline, so a headline
 // that contains another counts.
 const DUPLICATE_OVERLAP = 0.75;
+// The pages' word checks (R74) ask when fewer than a third of a claim's words land on the page, and read no claim
+// shorter than four words (Robert, 2026-09-26, on pass 1b's 31 and 32).
+const WORD_CHECK_SHARE = 3;
+const WORD_CHECK_MIN = 4;
 const FILLER = new Set([
   "a", "an", "the", "and", "or", "of", "to", "in", "on", "at", "for", "with",
   "about", "into", "from", "by", "his", "her", "hers", "its", "their", "is", "it",
@@ -614,10 +618,13 @@ export function readWall(state, options = {}) {
     const change = (note.change ?? "").trim();
     if (!change || change === PLACEHOLDER_CHANGE) continue;
     const changeW = claimWords(change);
-    if (!changeW.length) continue;
+    // Fewer than a third, with at least four words to count (Robert, 2026-09-26, on pass 1b's 31 and 32): half asked
+    // two of four written scenes for "counts" against "Nine. Ten. Eleven."; a third asks the card that stayed behind
+    // a rewrite and not those. A line of three words or fewer is decided by one word either way, so it is not read.
+    if (changeW.length < WORD_CHECK_MIN) continue;
     const page = pageWords(note);
     const landed = changeW.filter((word) => page.has(word));
-    if (landed.length * 2 >= changeW.length) continue;
+    if (landed.length * WORD_CHECK_SHARE >= changeW.length) continue;
     findings.push({
       kind: "behind",
       ids: [note.id],
@@ -628,18 +635,54 @@ export function readWall(state, options = {}) {
   // want is listed blank by the door, never asked (pass 1a, entry 88).
   for (const person of state.characters ?? []) {
     const wantW = claimWords(person.wants ?? "");
-    if (!wantW.length) continue;
+    if (wantW.length < WORD_CHECK_MIN) continue;
     const scenes = order.filter((note) => askable(note) && (note.characterIds ?? []).includes(person.id) && isMeasured(note));
     if (!scenes.length) continue;
     const page = new Set(scenes.flatMap((note) => [...pageWords(note)]));
     const landed = wantW.filter((word) => page.has(word));
-    if (landed.length * 2 >= wantW.length) continue;
+    if (landed.length * WORD_CHECK_SHARE >= wantW.length) continue;
     findings.push({
       kind: "unvoiced",
       ids: [person.id, ...scenes.map((note) => note.id)],
       text: `${person.name}'s page says they want "${person.wants.trim()}", and their ${scenes.length === 1 ? "one page carries" : `${countWord(scenes.length)} pages carry`} ${landed.length} of those ${wantW.length} word${wantW.length === 1 ? "" : "s"}${landed.length ? ` (${landed.join(", ")})` : ""}. Does their want show in other words, or is it not on the page yet?`,
     });
   }
+  // Who speaks on the written pages, against the cards (Robert, 2026-09-26, on pass 1b's 45 and 46): a cue is a
+  // word, so this is the absence check's page-side twin and never asks. A cue names a person by their whole name,
+  // or by one word of it when only one person in the cast has that word, as the pages cue people.
+  const cast = state.characters ?? [];
+  const cuesOf = (note) => {
+    const lines = pageText(note).split("\n");
+    const found = new Set();
+    for (let i = 0; i < lines.length; i += 1) {
+      const line = lines[i].trim();
+      if (!line || line.length > 40 || line.startsWith(".") || line.startsWith("(") || /[.!?]$/.test(line)) continue;
+      const letters = line.replace(/[^\p{L}]/gu, "");
+      if (letters.length < 2 || letters !== letters.toUpperCase()) continue;
+      if (!(lines[i + 1] ?? "").trim()) continue;
+      found.add(line.replace(/\s*\(.*\)\s*$/, "").trim().toLowerCase());
+    }
+    return found;
+  };
+  const speaks = (person, cues) => {
+    const whole = person.name.trim().toLowerCase();
+    if (cues.has(whole)) return true;
+    return [...cues].some((cue) => cast.filter((other) => other.name.toLowerCase().split(/\s+/).includes(cue)).length === 1 && whole.split(/\s+/).includes(cue));
+  };
+  const cueFacts = [];
+  for (const person of cast) {
+    const on = order.filter((note) => (note.characterIds ?? []).includes(person.id) && isMeasured(note));
+    const maybeOn = order.filter((note) => (note.maybeCharacterIds ?? []).includes(person.id) && isMeasured(note));
+    if (!on.length && !maybeOn.length) continue;
+    const spoke = on.filter((note) => speaks(person, cuesOf(note)));
+    cueFacts.push({ id: person.id, name: person.name, spoke: spoke.length, of: on.length, silent: on.filter((note) => !spoke.includes(note)).map((note) => note.id), maybeOn: maybeOn.map((note) => note.id) });
+  }
+  pagesRead.cues = cueFacts;
+  // Which stretch is written and which is guess, run by run (pass 1b, entry 45; pass 2a, entry 7).
+  pagesRead.stretches = runs.map((run) => ({ from: run.from, to: run.to, cards: run.cards, written: run.ids.filter((id) => isMeasured(byId.get(id) ?? {})).length }));
+  pagesRead.beatsWritten = beats.filter((note) => isMeasured(note)).length;
+  pagesRead.beats = beats.length;
+
   // The logline is a fact line and never a question (Robert, 2026-09-26): its
   // words are rarely a page's words, and a check that asks on the treatment's
   // own ending is noise. The count says where they land; the reader decides.
@@ -919,6 +962,38 @@ export function describeSetups(reading, state) {
     const byRows = setup.eighths !== null && setup.eighths !== undefined && !state.arrows.some((arrow) => arrow.kind !== "setup") ? ", by the rows: the story order is not set" : "";
     return `"${name(setup.from)}" sets up "${name(setup.to)}"${what ? ` — ${what}` : ""}, ${distance}${byRows}`;
   });
+}
+
+/**
+ * The two fact lines of the pages head (R74, on Robert's word after pass 1b): who speaks on the written pages against
+ * their cards, and which stretch is written and which is guess. Facts, never questions; empty until a scene is written.
+ */
+export function describePages(reading, state) {
+  const pages = reading.pages;
+  if (!pages || !pages.written) return [];
+  const byId = new Map(state.notes.map((note) => [note.id, note]));
+  const name = (id) => `"${byId.get(id)?.headline ?? id}"`;
+  const lines = [];
+  if (pages.cues?.length) {
+    lines.push(
+      `on the pages (cues, against the cards): ${pages.cues
+        .map((fact) => {
+          const silent = fact.silent.length ? ` (no cue on ${fact.silent.map(name).join(", ")})` : "";
+          const maybe = fact.maybeOn.length ? `, and a maybe on ${fact.maybeOn.length} written ${fact.maybeOn.length === 1 ? "page" : "pages"}` : "";
+          return fact.of ? `${fact.name} speaks on ${fact.spoke} of ${fact.of} written ${fact.of === 1 ? "scene" : "scenes"} of theirs${silent}${maybe}` : `${fact.name}: on no written card for certain${maybe}`;
+        })
+        .join("; ")}`,
+    );
+  }
+  if (pages.stretches?.length || pages.beats) {
+    const parts = (pages.stretches ?? []).map((run) => {
+      const span = run.from === null ? `before ${name(run.to)}` : run.to === null ? `after ${name(run.from)}` : `${name(run.from)} → ${name(run.to)}`;
+      return `${span}: ${run.written} of ${run.cards} written`;
+    });
+    if (pages.beats) parts.unshift(`the ${pages.beats} beat${pages.beats === 1 ? "" : "s"}: ${pages.beatsWritten} written`);
+    lines.push(`written, by stretch: ${parts.join("; ")}${pages.written === pages.of ? " — every scene is written; the runs are measured, not guessed" : ""}`);
+  }
+  return lines;
 }
 
 /** What a payoff's page says of its plant (R74), for the line under a setup: the page's sentence, or that not a word landed. Empty when the page could not be read. */

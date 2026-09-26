@@ -14,6 +14,7 @@
 
 import { formatPages, boardEighths, targetWords } from "./reducer.js";
 import { PLACEHOLDER_CHANGE, storyOrder } from "./readWall.js";
+import { maybeLine, undecidedLines } from "./undecided.js";
 import { revisionLine, revisionMarks } from "./numbering.js";
 import { parseScene } from "./paginate.js";
 
@@ -225,7 +226,17 @@ export function toFountain(state, options = {}) {
     }
     // The scene's text when it is written; the change line stands in until
     // then, marked so a printed page never passes a placeholder off as a scene.
+    // The maybe's line (R75), under the heading, from the card.
+    const maybeCue = maybeLine(note, state);
+    if (maybeCue && note.text && note.text.trim()) body.push(maybeCue, "");
     body.push(note.text && note.text.trim() ? note.text.trim() : standInFor(note));
+    body.push("");
+  }
+  // The last page (R75): a section after the last scene, what is not decided in the writer's words.
+  if (options.undecided) {
+    const lines = undecidedLines(options.undecided);
+    body.push("# What is not decided", "");
+    for (const line of lines.slice(1)) body.push(line ? `= ${line}` : "");
     body.push("");
   }
 

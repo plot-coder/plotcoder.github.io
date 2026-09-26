@@ -3786,11 +3786,16 @@ server.registerTool(
     title: "Set a card aside, or bring it back",
     description:
       "Set cards aside, by id or headline: on the wall where the writer can see them, and not in the film. A card set aside keeps its words, its cast, its fold and its place on the wall, and leaves the order, the count, the pages and every export; its follows arrows go and the story closes over it where it stood between two cards (setup arrows stay); a beat set aside is a scene. read_wall lists what is set aside and asks nothing of it; organize leaves it where it is. For a scene the writer cuts and will not throw away, an idea with no place in the story yet, the version not chosen that they may come back to (choose_version with keep does this itself). aside false brings a card back as a plain unwired card, and the wall asks where it goes. Only on the writer's word: cutting a scene is theirs.",
-    inputSchema: { ids: z.array(z.string()).min(1), aside: z.boolean().optional() },
+    inputSchema: { ids: z.array(z.string()).min(1), aside: z.boolean().optional(), after: z.string().optional().describe("Bringing one card back (aside false): wire it into the story after this card (id or headline) in the same call, so it is never the unwired last card for a moment (pass 1b, entry 67)."), before: z.string().optional().describe("Or before this card.") },
   },
   async (args) => {
     const current = (await readBoard()).state;
     const refs = cardsByRef(current, args.ids);
+    // A card brought back and placed in one call (pass 1b, entry 67): the place is taken after the return below.
+    const placing = args.aside === false && (args.after || args.before) ? { ref: args.after ?? args.before, after: Boolean(args.after) } : null;
+    if ((args.after || args.before) && args.aside !== false) return ok("after and before place a card brought back: pass aside false with one of them.");
+    if (placing && refs.found.length !== 1) return ok("after and before place one card: pass one id with aside false.");
+    if (args.after && args.before) return ok("Say where: after one card, or before one, not both.");
     if (refs.missing.length) return ok(`Nothing changed: not on the board — ${refs.missing.map((ref) => `"${ref}"`).join(", ")}. Call list_board for the ids or the exact headlines.`);
     const behind = refs.found.map((id) => current.notes.find((note) => note.id === id)).filter((note) => note?.alternativeOf);
     if (behind.length && args.aside !== false) return ok(`Nothing changed: ${behind.map((note) => `"${note.headline}"`).join(", ")} ${behind.length === 1 ? "is" : "are"} already out of the film, behind another card as its other version. choose_version with keep sets the one not chosen aside.`);
@@ -3802,6 +3807,24 @@ server.registerTool(
     const headlineOf = (id) => after.notes.find((note) => note.id === id)?.headline ?? id;
     const closing = (after?.arrows ?? []).filter((arrow) => !had.has(arrow.id) && arrow.kind !== "setup").map((arrow) => `"${headlineOf(arrow.from)}" → "${headlineOf(arrow.to)}"`);
     const names = result.ids.map((id) => `"${current.notes.find((note) => note.id === id)?.headline ?? id}"`).join(", ");
+    if (!result.aside && placing) {
+      const backId = result.ids[0];
+      const target = cardsByRef(after, [placing.ref]).found[0] ? after.notes.find((note) => note.id === cardsByRef(after, [placing.ref]).found[0]) : null;
+      if (!target) return ok(`Brought back ${names}${where(live)}, but not placed: no card matches "${placing.ref}". move_scene places it; the wall asks what comes before and after it until then.`);
+      if (target.id === backId) return ok(`Brought back ${names}${where(live)}, but not placed: a card cannot be placed next to itself. move_scene places it.`);
+      const isFollows = (arrow) => arrow.kind !== "setup";
+      const { state: placed, live: liveAfter } = await commitAll(`placed "${headlineOf(backId)}" ${placing.after ? "after" : "before"} "${target.headline}"`, (step, cur) => {
+        const run = (command) => step(command);
+        if (!cur().arrows.some(isFollows)) {
+          const rows = storyOrder(cur());
+          for (let index = 1; index < rows.length; index += 1) step({ type: "create_arrow", from: rows[index - 1].id, to: rows[index].id, kind: "follows" });
+        }
+        landBeside(run, cur, backId, target, placing.after);
+        run({ type: "move_note", id: backId, ...besidePlace(cur(), backId, cur().notes.find((note) => note.id === target.id) ?? target, placing.after) });
+      });
+      const order = storyOrder(placed);
+      return ok(`Brought back ${names} and placed it ${placing.after ? "after" : "before"} "${target.headline}"${where(liveAfter)}: in the film again, in the count and the pages, wired into the story. The story now runs: ${order.map((note) => `"${note.headline}"`).join(" → ")}.${shapeNote(current, placed).length ? ` ${shapeNote(current, placed).join("; ")}.` : ""} Two steps for undo: the placing, then the return.`, { ...result, order: order.map((note) => note.id) });
+    }
     if (!result.aside) return ok(`Brought back ${names}${where(live)}: in the film again, as ${result.ids.length === 1 ? "a plain unwired card" : "plain unwired cards"} — in the count and the pages, and the wall will ask what comes before and after ${result.ids.length === 1 ? "it" : "them"}; create_arrow or move_scene says.`, result);
     return ok(
       // What was done first, then where it landed and what it did to the wall: the tail read as part of the sentence when it sat in the middle of it.

@@ -3829,7 +3829,7 @@ describe("undo names the page and the version it moves (pass 1b, entries 63, 64)
     await client.callTool("choose_version", { id: knife, keep: true });
     const back = await client.callTool("undo");
     expect(back).toMatch(/^Undid choose_version/);
-    expect(back).toContain('"The pier: alone, the man\'s card" is the scene again');
+    expect(back).toContain('"The pier: alone, the man\'s card" is back in the film');
     expect(back).toContain('"The pier: with Priya, the fish knife" is behind "The pier: alone, the man\'s card" again');
   });
 });

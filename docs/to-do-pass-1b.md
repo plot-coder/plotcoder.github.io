@@ -76,7 +76,7 @@ Not the app's; the prompt's next head says so.
   the agent asked about all of them. *Plan:* the hint says to ask it once,
   of the whole film — which whens matter here (a night, a day count, a
   year) — and then only those per scene. *Held* until the list's end.
-- [ ] **10 · A plant true of only one version of a scene has no stated
+- [x] **10 · A plant true of only one version of a scene has no stated
   home.** The man's card pays off only in the "alone" pier. The guide says
   a plant true either way goes on the front card and the chosen version
   inherits its arrows; a plant true of one version it does not mention. The
@@ -135,7 +135,7 @@ Not the app's; the prompt's next head says so.
   writer's word and is asked as every loose start is; the reply's "asks
   nothing of that end" was about the tied end on the card out of the film.
   The reply could say both halves in one sentence.
-- [ ] **19 · Nothing on the wall can say "true of one version only".** The
+- [x] **19 · Nothing on the wall can say "true of one version only".** The
   man's card pays off on the front pier only, and choosing the other
   version would carry the payoff onto a scene where no card is thrown.
   *Same as 10:* the setup arrow may land on the version behind; the guide
@@ -325,7 +325,17 @@ Not the app's; the prompt's next head says so.
   pages-against-the-wall reading**; "written" and "change line open"
   never meet in one sentence. *Fixed with 55 and 59.*
 
+- [x] **61 · Entry 19 came due: choosing the version carried the man's-card
+  payoff over, the reply asked "true of the scene either way, or of that
+  version only?", and answering cost an arrow and raised an unpaid fold.**
+  The reply did its job. *Fixed, with 10:* the guide's versions paragraph
+  now says a payoff true of one version only is a setup arrow onto that
+  version's own card, which the other never inherits.
+- [ ] **62 · Every camera mark this session was on a note.** *Fixed with
+  30*, which the run did not see: the door carries 0.1.53 and the fix
+  lands with the release after the run.
+
 ## Every entry, accounted for
 
 1 → decided against (the prompt's) · 2 → held · 3 → fixed · 4 → held · 5 →
-decided against · 6 → fixed · 7 → fixed · 8 → held · 9 → held · 10 → guide, planned · 11 → held · 12 → held · 13 → fixed · 14 → fixed · 15 → fixed · 16 → decided against · 17 → held · 18 → decided against · 19 → with 10 · 20 → fixed · 21 → fixed with 13 · 22 → planned · 23 → decided · 24 → decided against · 25 → held · 26 → held · 27 → fixed · 28 → fixed · 29 → decided against · 30 → fixed · 31, 32 → held · 33 → fixed · 34 → held · 35 → decided · 36 → fixed · 37 → held · 38 → decided against · 39 → held · 40 → fixed · 41, 42 → held · 43 → decided against · 44 → held · 45, 46, 47 → planned for Robert · 48 → fixed · 49 → held · 50 → planned for Robert · 51 → fixed with 15 · 52 → held · 53 → fixed · 54 → decided · 55 → fixed · 56 → fixed · 57 → decided · 58 → decided against · 59 → fixed with 55 · 60 → fixed with 55.
+decided against · 6 → fixed · 7 → fixed · 8 → held · 9 → held · 10 → guide, fixed · 11 → held · 12 → held · 13 → fixed · 14 → fixed · 15 → fixed · 16 → decided against · 17 → held · 18 → decided against · 19 → guide, with 10 · 20 → fixed · 21 → fixed with 13 · 22 → planned · 23 → decided · 24 → decided against · 25 → held · 26 → held · 27 → fixed · 28 → fixed · 29 → decided against · 30 → fixed · 31, 32 → held · 33 → fixed · 34 → held · 35 → decided · 36 → fixed · 37 → held · 38 → decided against · 39 → held · 40 → fixed · 41, 42 → held · 43 → decided against · 44 → held · 45, 46, 47 → planned for Robert · 48 → fixed · 49 → held · 50 → planned for Robert · 51 → fixed with 15 · 52 → held · 53 → fixed · 54 → decided · 55 → fixed · 56 → fixed · 57 → decided · 58 → decided against · 59 → fixed with 55 · 60 → fixed with 55 · 61 → guide, with 10 · 62 → fixed with 30.

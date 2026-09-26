@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<title>R74 — the pages read against the wall</title>
+<!-- The app's own paper: the source stylesheet, so the link never goes stale. -->
+<link rel="stylesheet" href="../../src/styles.css">
+<style>
+  html, body { height: auto; min-height: 100%; }
+  body { margin: 0; padding: 2rem 2.5rem 4rem; font-family: ui-sans-serif, system-ui, sans-serif; }
+  h1 { font: 600 1.05rem/1.3 ui-serif, Georgia, serif; margin: 0 0 0.25rem; }
+  h2.sec { font: 600 0.95rem/1.3 ui-serif, Georgia, serif; margin: 3rem 0 0.2rem; padding-top: 1.2rem; border-top: 1px solid rgba(127,127,127,0.25); }
+  .lede { font-size: 0.85rem; opacity: 0.78; margin: 0 0 1.2rem; max-width: 78ch; line-height: 1.5; }
+  .said { font-size: 0.82rem; line-height: 1.5; margin: 0.4rem 0 1.3rem; max-width: 80ch; padding: 0.6rem 0.9rem; border-left: 3px solid var(--over); background: rgba(127,127,127,0.08); }
+  .said b { font-weight: 600; }
+  .row { display: flex; gap: 2.2rem; flex-wrap: wrap; align-items: flex-start; }
+  .opt { width: 520px; max-width: 100%; }
+  .opt h3 { font: 700 0.62rem/1.3 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; margin: 0 0 0.6rem; }
+  .opt h3 em { font-style: normal; color: var(--over); }
+  .opt p { font-size: 0.8rem; line-height: 1.45; opacity: 0.82; margin: 0.7rem 0 0; max-width: 62ch; }
+  pre.read { font: 0.66rem/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; background: rgba(127,127,127,0.12); padding: 0.75rem 0.95rem; border-radius: 6px; white-space: pre-wrap; margin: 0.7rem 0; }
+  pre.read b { color: var(--over); font-weight: 600; }
+  pre.read i { font-style: normal; opacity: 0.55; }
+  pre.read u { text-decoration: none; background: rgba(255,130,80,0.18); border-radius: 2px; }
+  /* The sheet as the app draws it, standing on the page instead of over the wall. */
+  .stand { position: relative; }
+  .stand .modal { position: static; max-height: none; box-shadow: none; }
+  .stand .asks__why { opacity: 0.7; font-style: italic; }
+  .page-line { display: block; margin-top: 0.15rem; font-size: 0.86em; opacity: 0.75; }
+  table.rules { border-collapse: collapse; font-size: 0.76rem; line-height: 1.45; max-width: 100%; margin: 0.8rem 0 0; }
+  table.rules th, table.rules td { text-align: left; vertical-align: top; padding: 0.45rem 0.7rem 0.45rem 0; border-top: 1px solid rgba(127,127,127,0.25); }
+  table.rules th { font: 700 0.6rem/1.3 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; border-top: 0; }
+  table.rules td:first-child { white-space: nowrap; font-weight: 600; }
+  .ask { margin-top: 1.2rem; max-width: 82ch; font-size: 0.86rem; line-height: 1.55; }
+  .ask b { font-weight: 600; }
+  .words { font-size: 0.82rem; line-height: 1.55; background: rgba(127,127,127,0.12); border-radius: 6px; padding: 0.7rem 0.95rem; max-width: 80ch; }
+  .words li { margin: 0.25rem 0; }
+  .honest { font-size: 0.82rem; line-height: 1.5; max-width: 80ch; margin: 0.6rem 0 0; padding: 0.6rem 0.9rem; border-left: 3px solid rgba(127,127,127,0.5); background: rgba(127,127,127,0.06); }
+  .honest b { font-weight: 600; }
+</style>
+</head>
+<body>
+<h1>R74: the pages read against the wall</h1>
+<p class="lede">Drawn 2026-09-26 from pass 1a (`blind-runs/pass-1a-report.md`, section 6 and entries 68, 71, 72, 73, 85, 88). With all eighteen scenes of "Ninety-Nine" written and the ending rewritten on the writer's word — Noreen scraps it, Joe takes the two thousand, the chime never plays — the wall still said the chime pays off, printed the logline and moved on, and could not see that the ninth turn undid the eighth. Every question about the film as a whole was answered by the agent reading ten pages beside the wall, because no tool reads the one against the other. What follows is the reading's new head as it would print in <code>read_wall</code> and stand in the app's sheet, on the wall as the pass left it, beside what ships; then the rules each check reads by; then the question. Everything here is a question and never a verdict (D21): the app counts words and asks, it does not read for sense.</p>
+
+<!-- ───────────── 1 ───────────── -->
+<h2 class="sec">1 · The moment: after "new ending", what the reading says</h2>
+<div class="said"><b>As it ships.</b> The agent rewrote the last scene with <code>write_scene</code> and gave the card a new headline. The wall's reading afterwards: the chime's setup arrow still stands and the setups line still says it pays off on that card; the logline prints; the only question is a duplicate, because the new headline shares its place and its sum with the refusal card. Nothing the app said touched the page.</div>
+<div class="said"><b>With R74.</b> Once a scene is written, the reading holds its page against what the wall claims of it, and says what it found in the wall's own idiom: a fact where the words land, a question where they do not. The questions are findings like any other — they carry ids, <code>leave_question</code> leaves them, <code>only: "questions"</code> counts them, the sheet has show me on them — printed under their own head so a reader knows they are about pages, not cards.</div>
+
+<div class="row">
+  <div class="opt">
+    <h3>As it ships · <em>the reading after the rewrite, abridged</em></h3>
+<pre class="read">PlotCoder wall (the account, as test@test.com, working "Ninety-Nine", the only project on the account)
+this wall: 1 question asked · 7 things left open by the writer's word · 0 of 17 scenes unwritten
+since your last reading: 2 changes (write_scene, update_note); it was about 8 1/8 pages then and is about 8 2/8 pages now (1/8 longer)
+board: "Feature"
+logline: "Can Joe let the van go without losing the last of what it carried?"
+<i>cast, places, runtime, groups …</i>
+pages: measured — every scene is written
+<i>story order, beats, runs …</i>
+setups and payoffs:
+  - "The yard: the letter from the bank" sets up "Noreen's yard: Joe takes the two thousand" — the chime, about 8 pages later (p. 1 → p. 10)
+  - "The mechanic's yard, in the van: the glove box" sets up "The pier at Fenit: the letter, opened" — Maeve's letter, about 2 4/8 pages later (p. 4 → p. 7)
+  - "The fair at Kilmallock: they make the difference" sets up "The bus station in Tralee: Ciara gets on" — the boy's ten-euro note, about 3 pages later (p. 4 → p. 8)
+<i>open, blank, set aside …</i>
+questions the wall raises (each stands on every reading until the wall changes to answer it, or the writer leaves it — leave_question, with their reason):
+  - [duplicate] "Noreen's yard: Joe refuses the price" and "Noreen's yard: Joe takes the two thousand" read like the same scene: their headlines share "joe two thousand", and the cast's names are not counted. Are they doing the same job? (ids: n17, n18)
+left, for now (…):
+  - [duplicate] "The mechanic's yard, in the van: the fair tomorrow" and … (left 2026-09-22, "two scenes on purpose"; ids: n6, n7)
+checks: 15 run — asking 1 question of 1 kind: duplicate, 1 left by the writer; …</pre>
+    <p>The wall reads its fifteen things and is content. The page under the last card says nothing about a chime; the card's change line still says the chime plays and Joe laughs; the last page carries one word of the question the film asks. None of that is anywhere in the reply.</p>
+  </div>
+
+  <div class="opt">
+    <h3>With R74 · <em>the same reading</em></h3>
+<pre class="read">PlotCoder wall (the account, as test@test.com, working "Ninety-Nine", the only project on the account)
+this wall: <b>4 questions asked</b> · 7 things left open by the writer's word · 0 of 17 scenes unwritten
+since your last reading: 2 changes (write_scene, update_note); it was about 8 1/8 pages then and is about 8 2/8 pages now (1/8 longer)
+board: "Feature"
+logline: "Can Joe let the van go without losing the last of what it carried?"<b> — its words land on 4 of the 9 turns' pages, and the last page carries 1 of its 6 (van)</b>
+<i>cast, places, runtime, groups …</i>
+pages: measured — every scene is written
+<i>story order, beats, runs …</i>
+setups and payoffs<b> (each payoff's page, where the plant's words land)</b>:
+  - "The yard: the letter from the bank" sets up "Noreen's yard: Joe takes the two thousand" — the chime, about 8 pages later (p. 1 → p. 10)<b>; on the page: not a word of "chime" — asked below</b>
+  - "The mechanic's yard, in the van: the glove box" sets up "The pier at Fenit: the letter, opened" — Maeve's letter, about 2 4/8 pages later (p. 4 → p. 7)<b>; on the page: "She takes the letter out of her coat and holds it where he can see it."</b>
+  - "The fair at Kilmallock: they make the difference" sets up "The bus station in Tralee: Ciara gets on" — the boy's ten-euro note, about 3 pages later (p. 4 → p. 8)<b>; on the page: "In her coat pocket she finds the boy's ten-euro note."</b>
+<i>open, blank, set aside …</i>
+questions the wall raises (each stands on every reading until the wall changes to answer it, or the writer leaves it — leave_question, with their reason):
+  - [duplicate] "Noreen's yard: Joe refuses the price" and "Noreen's yard: Joe takes the two thousand" read like the same scene: … (ids: n17, n18)
+<b>  the pages, against the wall (words, not sense: a page can say a thing in other words, and can name a thing to deny it):
+  - [unsaid] "The yard: the letter from the bank" plants the chime, and its arrow lands on "Noreen's yard: Joe takes the two thousand", whose page has not a word of it. Does it pay off there in other words, is the plant unpaid now, or does the payoff live on another page? (ids: n1, n18)
+  - [behind] "Noreen's yard: Joe takes the two thousand" says on its card "Noreen starts the van and the chime plays; Joe laughs", and its page carries 1 of those 5 words (van). Does the page do what the card says, or has the card fallen behind the scene? (ids: n18)
+  - [unvoiced] Noreen Blaney's page says she wants "to pay less than the van is worth", and her two pages carry 1 of those 4 words (van). Does her want show in other words, or is it not on the page yet? (ids: n17, n18)</b>
+left, for now (…):
+  - [duplicate] … (left 2026-09-22, "two scenes on purpose"; ids: n6, n7)
+checks: <b>18</b> run — asking <b>4 questions of 4 kinds: duplicate, unsaid, behind, unvoiced</b>, 1 left by the writer; …; checked and clean: … <b>every written change line is on its page (except 1, asked); every want with words is on its person's pages (except 1, asked; Ciara Deasy and Joe Deasy have no want on the page, listed blank above)</b></pre>
+    <p>Three questions and two facts, all from words. The chime is asked about because its word is nowhere on the payoff's page. The last card is asked about because its change line stayed behind the rewrite. Noreen's want is asked about because her pages do not carry it. The logline is a fact line and not a question — see 3 for why. What the eighth turn's page does to the ninth is not here: that is sense, and section 3 says whose it stays.</p>
+  </div>
+</div>
+
+<h3 style="font: 700 0.62rem/1.3 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; margin: 1.6rem 0 0.4rem;">The same rewrite, as the pass actually had it</h3>
+<div class="honest"><b>Honest about the words.</b> In the pass, the rewritten page did name the chime — it said <i>"the chime does not play"</i> (entry 71). A word check finds "chime" on that page and asks nothing; the plan's example in `docs/to-do-pass-1a.md` ("its page does not say chime") was wrong on that point. What R74 does with that page is the fact line, not the question:</div>
+<pre class="read">  - "The yard: the letter from the bank" sets up "Noreen's yard: Joe takes the two thousand" — the chime, about 8 pages later (p. 1 → p. 10)<b>; on the page: "Noreen starts the van to move it in. The chime does not play."</b></pre>
+<p class="lede" style="margin-top:0.4rem">The setups line quotes the page's own sentence where the plant's word lands, so an agent or a person reads "does not play" in the reading itself, in one call, and decides. The app found the word; the person reads the sense. That is the whole of what R74 claims to do, and it is what the pass lacked: the join of wall and page made by hand, ten pages at a time.</p>
+
+<!-- ───────────── 2 ───────────── -->
+<h2 class="sec">2 · In the app: the sheet, and Read the wall</h2>
+<p class="lede">The Asks sheet ("What the wall asks", from the readout's Read the wall) is the same reading a person sees. The page questions stand under their own kicker between the wall's questions and "Left, for now", with show me and leave it as every question has. In Reminders › Read the wall, the setups list carries the quoted page line under each setup.</p>
+<div class="row">
+  <div class="opt stand">
+    <div class="modal modal--narrow account asks">
+      <div class="modal__header">
+        <div>
+          <p class="modal__kicker">PlotCoder</p>
+          <h2 class="modal__title">What the wall asks</h2>
+        </div>
+        <button type="button" class="modal__close">Close</button>
+      </div>
+      <p class="project-copy">Read the way the method reads it: the sag, the setup with no payoff, the person who disappears, two scenes doing one job. Questions, not fixes.</p>
+      <ol class="asks__list">
+        <li class="asks__q">
+          <p class="cast-lens__kicker">Two scenes, one job</p>
+          <p class="asks__text">“Noreen's yard: Joe refuses the price” and “Noreen's yard: Joe takes the two thousand” read like the same scene: their headlines share "joe two thousand", and the cast's names are not counted. Are they doing the same job? <button type="button" class="words__show">show me</button> <button type="button" class="words__show asks__leave">leave it</button></p>
+        </li>
+      </ol>
+      <div class="asks__left">
+        <p class="cast-lens__kicker cast-lens__section">The pages, against the wall · 3</p>
+        <ol class="asks__list">
+          <li class="asks__q">
+            <p class="cast-lens__kicker asks__kind--warm">A payoff not on the page</p>
+            <p class="asks__text">“The yard: the letter from the bank” plants the chime, and its arrow lands on “Noreen's yard: Joe takes the two thousand”, whose page has not a word of it. Does it pay off there in other words, is the plant unpaid now, or does the payoff live on another page? <button type="button" class="words__show">show me</button> <button type="button" class="words__show asks__leave">leave it</button></p>
+          </li>
+          <li class="asks__q">
+            <p class="cast-lens__kicker">The card behind its page</p>
+            <p class="asks__text">“Noreen's yard: Joe takes the two thousand” says on its card “Noreen starts the van and the chime plays; Joe laughs”, and its page carries 1 of those 5 words (van). Does the page do what the card says, or has the card fallen behind the scene? <button type="button" class="words__show">show me</button> <button type="button" class="words__show asks__leave">leave it</button></p>
+          </li>
+          <li class="asks__q">
+            <p class="cast-lens__kicker">A want no page says</p>
+            <p class="asks__text">Noreen Blaney's page says she wants “to pay less than the van is worth”, and her two pages carry 1 of those 4 words (van). Does her want show in other words, or is it not on the page yet? <button type="button" class="words__show">show me</button> <button type="button" class="words__show asks__leave">leave it</button></p>
+          </li>
+        </ol>
+        <p class="project-copy project-door__hint">Read from the words on the page, not their sense: a page can say a thing in other words, and can name a thing to deny it. Read once a scene is written.</p>
+      </div>
+      <div class="asks__left">
+        <p class="cast-lens__kicker cast-lens__section">Left, for now · 1</p>
+        <ol class="asks__list">
+          <li class="asks__q asks__q--left">
+            <p class="cast-lens__kicker">Two scenes, one job · left 2026-09-22</p>
+            <p class="asks__text">“The mechanic's yard, in the van: the fair tomorrow” and “The mechanic's yard, in the van: the glove box” read like the same scene … <button type="button" class="words__show">ask again</button></p>
+            <p class="asks__text asks__why">“two scenes on purpose”</p>
+          </li>
+        </ol>
+        <p class="project-copy project-door__hint">A left question is written on the wall, and comes back on its own the moment it would read differently.</p>
+      </div>
+      <p class="project-copy project-door__hint">The same reading an agent gets from read_wall. Nothing here moves a card.</p>
+    </div>
+    <p>The sheet as it ships, with the one new section. "A payoff not on the page" is warm like the setup debts are; the other two are plain. Show me lights the fold and the payoff card, or the card, or the person's cards. Leave it takes the writer's reason and holds until the page or the claim changes — a rewrite of the page, a new change line, a new want — as R53 already does for every question.</p>
+  </div>
+
+  <div class="opt">
+    <h3>Reminders › Read the wall · <em>the setups list</em></h3>
+    <div class="modal" style="position:static; max-height:none; box-shadow:none;">
+      <section class="wall-read">
+        <p class="modal__kicker">Your board</p>
+        <h3 class="wall-read__title">Read the wall</h3>
+        <ul class="wall-read__runs" aria-label="Setups and payoffs">
+          <li>"The yard: the letter from the bank" sets up "Noreen's yard: Joe takes the two thousand" — the chime, about 8 pages later<span class="page-line">on the page: not a word of "chime" — asked below</span></li>
+          <li>"The mechanic's yard, in the van: the glove box" sets up "The pier at Fenit: the letter, opened" — Maeve's letter, about 2 4/8 pages later<span class="page-line">on the page: "She takes the letter out of her coat and holds it where he can see it."</span></li>
+          <li>"The fair at Kilmallock: they make the difference" sets up "The bus station in Tralee: Ciara gets on" — the boy's ten-euro note, about 3 pages later<span class="page-line">on the page: "In her coat pocket she finds the boy's ten-euro note."</span></li>
+        </ul>
+        <ol class="wall-read__findings">
+          <li class="wall-read__finding">"Noreen's yard: Joe refuses the price" and "Noreen's yard: Joe takes the two thousand" read like the same scene …</li>
+          <li class="wall-read__finding">"The yard: the letter from the bank" plants the chime, and its arrow lands on "Noreen's yard: Joe takes the two thousand", whose page has not a word of it. Does it pay off there in other words, is the plant unpaid now, or does the payoff live on another page?</li>
+          <li class="wall-read__finding">"Noreen's yard: Joe takes the two thousand" says on its card "Noreen starts the van and the chime plays; Joe laughs", and its page carries 1 of those 5 words (van). Does the page do what the card says, or has the card fallen behind the scene?</li>
+          <li class="wall-read__finding">Noreen Blaney's page says she wants "to pay less than the van is worth", and her two pages carry 1 of those 4 words (van). Does her want show in other words, or is it not on the page yet?</li>
+        </ol>
+      </section>
+    </div>
+    <p>The Reminders tab is the flat list it is today; the quoted line rides under each setup, and the page questions join the findings. The one visible change beyond the words: an unwritten wall says nothing new here, and the checks line says "the pages: not read yet — no scene is written".</p>
+  </div>
+</div>
+
+<!-- ───────────── 3 ───────────── -->
+<h2 class="sec">3 · The rules: what each check reads, when it asks, when it is quiet, when it cannot read</h2>
+<p class="lede">All four read words the way the duplicate check does (<code>words()</code> in `readWall.js`): lower-cased, punctuation out, the filler list out, the cast's names out, and no stemming — "plays" and "play" are two words to this reading, and the question says so by listing the words it found. Only a written scene is read. Each is pure, in the kernel, with a test.</p>
+<table class="rules">
+  <tr><th>Check</th><th>Reads</th><th>Asks when</th><th>Quiet when</th><th>Cannot read when</th></tr>
+  <tr><td>[unsaid]<br>A payoff not on the page</td><td>The fold's words (<code>plantsWhat</code>, R62) against the page of the card its setup arrow lands on.</td><td>None of the fold's words is on the payoff's page. One question per arrow, ids the fold and the payoff.</td><td>Any word lands: the setups line quotes the page's sentence where the first one does.</td><td>The fold has no words (folded, no <code>set_plant</code> words): the checks line says "N folds have no words to read by; set_plant names them". The payoff is unwritten: not read, said in the checks line.</td></tr>
+  <tr><td>[behind]<br>The card behind its page</td><td>The card's change line against its own page.</td><td>The page carries fewer than half of the change line's words. The question lists the count and the words found.</td><td>Half or more land. A change line left open (R67) or a placeholder is not read; the wall asks about those already.</td><td>The card is unwritten. A change line of one word that lands is quiet; one that does not is asked.</td></tr>
+  <tr><td>[unvoiced]<br>A want no page says</td><td>A person's want (their page, <code>wants</code>) against the pages of the film's cards they are on.</td><td>Fewer than half the want's words are on any of their pages together. Ids: their written cards.</td><td>Half or more land somewhere in their pages. A person on no written card is not read.</td><td>The want is empty: listed blank already (pass 1a, N32), never asked. A person only as a maybe on a card: that card is not theirs to read.</td></tr>
+  <tr><td>the logline<br>a fact, not a question</td><td>The logline's words against the last written scene's page, and against each turn's page.</td><td>Never. The logline line says "its words land on N of the M turns' pages, and the last page carries K of its J (the words)".</td><td>—</td><td>No logline, or the logline open, or no turn written: the line says nothing new.</td></tr>
+</table>
+<div class="honest" style="margin-top:1rem"><b>Why the logline is a fact line and not the fourth question.</b> R74 as proposed asks about "a logline whose words the last scene does not touch". Run on the treatment's own ending — Joe hands over the keys, the chime plays, Joe laughs, which answers the question the film asks — the check finds one word of six (van) and would ask. A logline is a question about the film and its words are rarely a page's words; the check would ask on most finished scripts, and a question that is always asked is noise. So the logline gets the count and the words found, printed where the logline prints, and the person or agent reads the sense from there. If Robert wants it asked anyway, it is one line to make it a finding with the [unanswered] kind.</div>
+<div class="honest"><b>What R74 does not read, on purpose.</b> A turn undone by the next one (entry 73) is sense, not words: the eighth turn's page and the ninth's share every word that matters. No word check can ask it and no check should pretend to. What the app can do is make the join one call — the change lines of consecutive turns are already on the wall; the guide gets a line that says, after a rewrite, read the turn against the one before it yourself, and read_wall's "since your last reading" names the rewritten cards so you know which. That is the agent's reading; R74 gives it the pages' facts to read from.</div>
+<div class="honest"><b>Where it prints.</b> One head, "the pages, against the wall", inside "questions the wall raises" in <code>read_wall</code>, and the same head as a section on the sheet — not a separate tool. The questions are findings, so everything that handles a finding handles these unchanged: the at-a-glance count, <code>only: "questions"</code>, <code>leave_question</code>, <code>ask_again</code>, the sheet's show me, the write tails' "the wall's questions have changed since your last read_wall". The kinds go into <code>CHECKS</code>, <code>CHECK_WORDS</code>, <code>ASK_WORDS</code> and the sheet's <code>KIND_NAMES</code>, and the guide's list of what the reading asks grows three lines and the two fact lines.</div>
+
+<!-- ───────────── the ask ───────────── -->
+<h2 class="sec">The question</h2>
+<p class="ask"><b>Is this the best we can do?</b> The alternatives, and why they lose: <b>leave it to the agent</b> — what happened in the pass, and the friction the pass was for: ten pages read beside the wall by hand for every question about the whole, with nothing in the app to check the answer against. <b>A judgement of meaning</b> — an agent inside the app reading pages for sense; not the app's: it counts and asks (D21), and a verdict it cannot show its working for is one a writer cannot trust or leave. <b>A record of rewrites</b> — a flag on a card whose page was rewritten under a claim, asked until left: it would have caught the chime and the ninth turn, but it asks about every rewrite of every claimed card forever until the writer says leave it, and it needs a new field for what the reading last saw; the "since your last reading" line already names the rewritten cards, which is the fact it carries. I recommend the word checks: three questions, two fact lines, the page's own sentence quoted under each setup. They are the duplicate check's kind of reading, honest about being words, pure and testable, and they turn the pass's ten-page join into one call.</p>
+<div class="words"><b>What Robert decides:</b>
+  <ul>
+    <li>the three questions' words, and their names on the sheet — "A payoff not on the page", "The card behind its page", "A want no page says";</li>
+    <li>the logline as a fact line and not a question (I say fact: see 3); or asked as [unanswered] on his word;</li>
+    <li>"fewer than half" as the line for the change line and the want (the sag's kind of threshold, relative; the question always prints the count, so the writer sees the reading); or "none of its words", which is quieter and would have missed the last card here;</li>
+    <li>whether the quoted page line under each setup is wanted in the app's Read the wall tab as well as in <code>read_wall</code> (I say both: the tab is the person's copy of the same reading);</li>
+    <li>whether a turn read against the one before it stays the agent's reading, with the guide's line and the "since" line's names, or waits for a design of its own.</li>
+  </ul>
+</div>
+</body>
+</html>

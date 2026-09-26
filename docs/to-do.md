@@ -16,8 +16,9 @@ carries of the wall's opens (the maybe's line, the last page), and R74
 refined (a third with four words to count; who speaks on the written
 pages and which stretch is written, as facts). Released as 0.1.56: npm, the
 pin, the function redeployed and the door checked live. What waits on Robert
-now: pass 2a's mockup page (`docs/mockups/pass-2a-the-morning-after.html`,
-to draw), the echo check (1b's 47), and the smaller 1b items.
+now: pass 2a's mockup page, drawn (`docs/mockups/pass-2a-the-morning-after.html`
+— the record of a session first), the echo check (1b's 47), and the
+smaller 1b items.
 
 
 **Pass 2a has run** — the morning after: the driving session as the person,

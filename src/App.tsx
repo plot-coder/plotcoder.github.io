@@ -1119,6 +1119,7 @@ export function App() {
         onStructure={() => setStructureOpen(true)}
         onWords={() => setWordsOpen(true)}
         asks={reading.findings.length}
+        openCount={reading.open.length + reading.openFields.length + (reading.openLines?.length ?? 0) + (reading.openPeople?.length ?? 0)}
         onAsks={() => setAsksOpen(true)}
         canBrief={selectedIds.length > 0}
         onBrief={() => setBriefOpen(true)}

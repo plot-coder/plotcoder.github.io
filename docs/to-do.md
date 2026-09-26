@@ -8,7 +8,22 @@ done and merged, what is left, and the order I would take it in.
 
 ---
 
-## Next, for whoever picks this up (2026-09-26, night, after pass 1b)
+## Next, for whoever picks this up (2026-09-26, late, after pass 2a)
+
+**Pass 2a has run** — the morning after: the driving session as the person,
+in the app on the dev server at 0.1.55, on "Last Orders" as pass 1b left
+it: 22 entries (`blind-runs/pass-2a-report.md`), two fixed, the rest one
+mockup page for Robert (`docs/to-do-pass-2a.md`). **Its finding is goal
+2's and goal 3's at once: the wall has no memory of a session** — a person
+cannot tell what the agent did or is waiting on, and a fresh agent cannot
+tell what the person did. The small batch after 1b (four held items) went
+out as 0.1.55 first. **Next, in order:** Robert's word on the four large
+1b decisions (`docs/mockups/pass-1b-decisions.html`) and on 2a's plans
+(`docs/mockups/pass-2a-the-morning-after.html`, to draw); then the record
+of a session on the project (2a's 4, 19, 21), the first build toward goals
+2 and 3 together; then 2b.
+
+## Before it (2026-09-26, night, after pass 1b)
 
 **Pass 1b has run** — "Doyle's" to a complete script from notes, through
 the desktop connector at 0.1.53: 82 entries in `blind-runs/pass-1b-report.md`,

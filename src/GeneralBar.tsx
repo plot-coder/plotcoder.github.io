@@ -48,6 +48,8 @@ type GeneralBarProps = {
   canFit: boolean;
   /** What the wall asks right now (R22), and the door to it. */
   asks: number;
+  /** Everything open by the writer's word, on the cards and about the film (pass 2a, entry 22): the head's count is the film's lines only, and this says the rest. */
+  openCount: number;
   onAsks: () => void;
   beats: number;
   /** Light the beat cards or the scene cards on the wall; with no beats, open Structure. */
@@ -80,6 +82,7 @@ export function GeneralBar({
   onStructure,
   onWords,
   asks,
+  openCount,
   onAsks,
   canBrief,
   onBrief,
@@ -236,6 +239,11 @@ export function GeneralBar({
               <span className="readout__k">Asks</span>
               <span className="readout__v">
                 {asks === 0 ? "nothing to ask" : `${asks} ${asks === 1 ? "question" : "questions"}`}
+                {openCount > 0 ? (
+                  <span className="readout__note" title="Open by your word: on the cards, on the people's pages, and the lines under the logline. The wall lists them and does not ask.">
+                    {" "}· {openCount} open, by your word
+                  </span>
+                ) : null}
               </span>
               <span className="readout__acts">
                 <button type="button" className={`readout__act ${asks > 0 ? "is-warm" : ""}`} onClick={onAsks}>

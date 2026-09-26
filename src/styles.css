@@ -4866,6 +4866,14 @@ body {
   gap: 0.2rem;
   width: 100%;
   margin-top: 0.15rem;
+  /* On its own paper, above the wall (pass 2a, entries 5, 15): the lines printed straight over the top row of cards and took their taps. */
+  position: relative;
+  z-index: 30;
+  padding: 0.35rem 0.9rem 0.5rem;
+  border: 1px solid var(--bar-border);
+  border-radius: 0.9rem;
+  background: var(--bar);
+  box-shadow: var(--bar-shadow);
 }
 
 .open-lines__toggle {

@@ -87,7 +87,7 @@ export declare function setBoardNameOpen(project: ProjectRecord, id: string, wor
 export declare function setProjectNameOpen(project: ProjectRecord, words: string, now?: string): ProjectRecord;
 export declare function boardById(project: ProjectRecord, id: string): BoardMeta | null;
 /** What a script going out is called: a named project is the title, its board beside it only when the project has several. */
-export declare function scriptTitles(project: ProjectRecord, board: BoardMeta | null | undefined): { title: string; episode?: string; author?: string; contact?: string };
+export declare function scriptTitles(project: ProjectRecord, board: BoardMeta | null | undefined): { title: string; /** The writer's words for a title not decided (pass 1b, entry 40). */ titleOpen?: string; episode?: string; author?: string; contact?: string };
 export declare function findBoard(project: ProjectRecord, key: string): BoardMeta | null;
 export declare function reidentifyProject(
   project: ProjectRecord,

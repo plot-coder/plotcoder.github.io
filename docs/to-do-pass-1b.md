@@ -267,7 +267,28 @@ Not the app's; the prompt's next head says so.
   in the checks line at the foot.** *Fixed:* the setup's own line says
   "not read — the payoff is unwritten", or that the fold has no words.
 
+## What the writer must decide (entries 49 to 52)
+
+- [ ] **49 · The reading lists opens in storage order, not in any order of
+  dependence.** "Nothing says that now-or-1987 gates the man from the
+  chain." *Held for Robert:* an order of dependence is a reading of sense;
+  the app's list is by where things live. The agent's ordering was the
+  work the pass measured.
+- [ ] **50 · "What is still open" is answered in three places of one
+  reading**: under open, under "two versions, not chosen", and the thread
+  ends under the questions. *Plan for Robert:* the at-a-glance head counts
+  the versions not chosen and the loose ends beside the open things, so
+  one line says how many decisions stand, and where each kind is listed.
+- [x] **51 · The bank scene's change line listed among things not decided,
+  though the writer decided it by cutting it.** *Fixed with 15:* a card
+  born set aside needs no change line, so nothing is parked there.
+- [ ] **52 · No tool says which opens stop the pen and which do not.** "A
+  scene can be written with its opens standing." *Held for Robert:* a
+  card's open change line, open cast and open place are what stop a
+  page; a when, a maybe, a length do not. Whether the reading should say
+  "N of the unwritten scenes wait on a decision" is a design of its own.
+
 ## Every entry, accounted for
 
 1 → decided against (the prompt's) · 2 → held · 3 → fixed · 4 → held · 5 →
-decided against · 6 → fixed · 7 → fixed · 8 → held · 9 → held · 10 → guide, planned · 11 → held · 12 → held · 13 → fixed · 14 → fixed · 15 → fixed · 16 → decided against · 17 → held · 18 → decided against · 19 → with 10 · 20 → fixed · 21 → fixed with 13 · 22 → planned · 23 → decided · 24 → decided against · 25 → held · 26 → held · 27 → fixed · 28 → fixed · 29 → decided against · 30 → fixed · 31, 32 → held · 33 → fixed · 34 → held · 35 → decided · 36 → fixed · 37 → held · 38 → decided against · 39 → held · 40 → fixed · 41, 42 → held · 43 → decided against · 44 → held · 45, 46, 47 → planned for Robert · 48 → fixed.
+decided against · 6 → fixed · 7 → fixed · 8 → held · 9 → held · 10 → guide, planned · 11 → held · 12 → held · 13 → fixed · 14 → fixed · 15 → fixed · 16 → decided against · 17 → held · 18 → decided against · 19 → with 10 · 20 → fixed · 21 → fixed with 13 · 22 → planned · 23 → decided · 24 → decided against · 25 → held · 26 → held · 27 → fixed · 28 → fixed · 29 → decided against · 30 → fixed · 31, 32 → held · 33 → fixed · 34 → held · 35 → decided · 36 → fixed · 37 → held · 38 → decided against · 39 → held · 40 → fixed · 41, 42 → held · 43 → decided against · 44 → held · 45, 46, 47 → planned for Robert · 48 → fixed · 49 → held · 50 → planned for Robert · 51 → fixed with 15 · 52 → held.

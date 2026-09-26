@@ -18,6 +18,8 @@ export declare function unmark(text: string | null | undefined): { text: string;
 export declare function sameOnThePage(a: string, b: string): boolean;
 export declare function titlePage(titles: {
   title?: string;
+  /** The writer's words for a title not decided (pass 1b, entry 40). */
+  titleOpen?: string;
   episode?: string;
   credit?: string;
   author?: string;
@@ -30,6 +32,8 @@ export declare function titlePage(titles: {
 export type FountainOptions = {
   /** The board's name. */
   title?: string;
+  /** The writer's words for a title not decided, on the title page (pass 1b, entry 40). */
+  titleOpen?: string;
   /** The project's name, when the board is one of several. */
   episode?: string;
   premise?: string;

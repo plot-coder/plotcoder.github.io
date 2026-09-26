@@ -102,7 +102,7 @@ export type WallReading = {
   /** The sag not read yet, and why (pass 1a, entry 21): how many cards in the runs are unsized and unwritten, of how many; null once half are sized or written. */
   sagWaiting: { unsized: number; total: number } | null;
   /** The pages, against the wall (R74): how many of the film's cards are written, and what the page checks could not read. */
-  pages: { written: number; of: number; foldsWithoutWords: number; payoffsUnwritten: number };
+  pages: { written: number; of: number; foldsWithoutWords: number; payoffsUnwritten: number; /** Written cards whose change line is still open by the writer's word: a page and no turn (pass 1b, entry 55). */ changeOpen: string[] };
   /** Where the logline's words land on the pages (R74): a fact, never a question; null with no logline, an open one, or nothing written. */
   logline: { words: string[]; last: { id: string; headline: string; landed: string[]; of: number } | null; turns: { landed: number; of: number } | null } | null;
   /** The questions the wall asks now. A left one (R53) is not here while its words hold. */

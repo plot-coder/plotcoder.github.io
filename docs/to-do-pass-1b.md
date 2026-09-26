@@ -301,7 +301,13 @@ Not the app's; the prompt's next head says so.
   twenty); a paragraph is what it is. The wall shows it above the logline
   and every script prints it.
 
+- [x] **55 · No state for "written, change undecided": a page with no
+  change line counts like any other and leaves the unwritten count, while
+  the open words stand on its edge.** *Fixed:* the reading's pages line
+  names every written scene whose change line is still open — "a page and
+  no turn" — and the reading carries their ids. Tests.
+
 ## Every entry, accounted for
 
 1 → decided against (the prompt's) · 2 → held · 3 → fixed · 4 → held · 5 →
-decided against · 6 → fixed · 7 → fixed · 8 → held · 9 → held · 10 → guide, planned · 11 → held · 12 → held · 13 → fixed · 14 → fixed · 15 → fixed · 16 → decided against · 17 → held · 18 → decided against · 19 → with 10 · 20 → fixed · 21 → fixed with 13 · 22 → planned · 23 → decided · 24 → decided against · 25 → held · 26 → held · 27 → fixed · 28 → fixed · 29 → decided against · 30 → fixed · 31, 32 → held · 33 → fixed · 34 → held · 35 → decided · 36 → fixed · 37 → held · 38 → decided against · 39 → held · 40 → fixed · 41, 42 → held · 43 → decided against · 44 → held · 45, 46, 47 → planned for Robert · 48 → fixed · 49 → held · 50 → planned for Robert · 51 → fixed with 15 · 52 → held · 53 → fixed · 54 → decided.
+decided against · 6 → fixed · 7 → fixed · 8 → held · 9 → held · 10 → guide, planned · 11 → held · 12 → held · 13 → fixed · 14 → fixed · 15 → fixed · 16 → decided against · 17 → held · 18 → decided against · 19 → with 10 · 20 → fixed · 21 → fixed with 13 · 22 → planned · 23 → decided · 24 → decided against · 25 → held · 26 → held · 27 → fixed · 28 → fixed · 29 → decided against · 30 → fixed · 31, 32 → held · 33 → fixed · 34 → held · 35 → decided · 36 → fixed · 37 → held · 38 → decided against · 39 → held · 40 → fixed · 41, 42 → held · 43 → decided against · 44 → held · 45, 46, 47 → planned for Robert · 48 → fixed · 49 → held · 50 → planned for Robert · 51 → fixed with 15 · 52 → held · 53 → fixed · 54 → decided · 55 → fixed.

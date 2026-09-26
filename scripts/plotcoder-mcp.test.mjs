@@ -3773,3 +3773,28 @@ describe("tying a thread names the open lines that name the same thing (pass 1b,
     expect(read).toContain("The sign at the end: lit, or down");
   });
 });
+
+describe("the pages line names a written scene whose change line is open (pass 1b, entry 55)", () => {
+  let root;
+  let client;
+
+  beforeAll(async () => {
+    root = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-noturn-"));
+    client = new McpClient(root);
+    await client.start();
+    for (const seeded of ["maya-letter", "tom-lies", "letter-aloud"]) await client.callTool("delete_note", { id: seeded });
+  }, 30000);
+
+  afterAll(() => {
+    client?.stop();
+    if (root) fs.rmSync(root, { recursive: true, force: true });
+  });
+
+  it("says a page and no turn", async () => {
+    const tea = (await client.callToolData("create_note", { headline: "The funeral tea", changeOpen: "I don't know what changes yet", x: 100, y: 100 })).id;
+    await client.callToolData("create_note", { headline: "The pier", change: "She throws it in.", x: 330, y: 100 });
+    await client.callTool("write_scene", { id: tea, text: "INT. THE HARBOUR BAR, UPSTAIRS - DAY\n\nHalf the town, and Mairead among them." });
+    const read = await client.callTool("read_wall");
+    expect(read).toContain('pages: estimates — 1 of 2 cards are written ("The funeral tea"), the rest are guesses; one written scene has a page and no turn — the change line still open by the writer\'s word: "The funeral tea"');
+  });
+});

@@ -2328,7 +2328,7 @@ server.registerTool(
               .join("; ")
           : "(none)"
       }`,
-      `pages: ${written === 0 ? "all estimates — no scene is written yet, so every card is the writer's guess" : written === filmCards.length ? "measured — every scene is written" : `estimates — ${written} of ${filmCards.length} cards are written${written <= 5 ? ` (${filmCards.filter((note) => isMeasured(note)).map((note) => `"${note.headline}"`).join(", ")})` : ""}, the rest are guesses`}`,
+      `pages: ${written === 0 ? "all estimates — no scene is written yet, so every card is the writer's guess" : written === filmCards.length ? "measured — every scene is written" : `estimates — ${written} of ${filmCards.length} cards are written${written <= 5 ? ` (${filmCards.filter((note) => isMeasured(note)).map((note) => `"${note.headline}"`).join(", ")})` : ""}, the rest are guesses`}${reading.pages.changeOpen.length ? `; ${reading.pages.changeOpen.length === 1 ? "one written scene has" : `${reading.pages.changeOpen.length} written scenes have`} a page and no turn — the change line still open by the writer's word: ${reading.pages.changeOpen.map((id) => `"${state.notes.find((note) => note.id === id)?.headline ?? id}"`).join(", ")}` : ""}`,
       // A wall with cards and no follows arrows has no story order yet; say so rather than read the rows as one (round seventeen, entries 10, 11).
       `story order: ${state.notes.length > 1 && !state.arrows.some((arrow) => arrow.kind !== "setup") ? "unset — no follows arrows, so the rows stand in for it; create_arrow the sequence and the reading, the numbers and every export follow the arrows" : "the follows arrows, and the rows where they say nothing"}`,
       `beats in wall order: ${

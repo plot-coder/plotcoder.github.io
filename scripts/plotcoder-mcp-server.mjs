@@ -1408,7 +1408,7 @@ function twoHomes(note) {
 function cameraReply(text) {
   const found = cameraLines(text ?? "");
   return found.length
-    ? ` — ${found.length} line${found.length === 1 ? "" : "s"} the camera cannot see (${cameraVerbs(found).join(", ")}): the reminder "Write for the camera" is the house's; show it or cut it, on the writer's word — a mark on the page, not a question on the wall`
+    ? ` — ${found.length} line${found.length === 1 ? "" : "s"} the camera cannot see, by the word${cameraVerbs(found).length === 1 ? "" : "s"} ${cameraVerbs(found).map((verb) => `"${verb}"`).join(", ")}: the reminder "Write for the camera" is the house's; show it or cut it, on the writer's word — a mark on the page, not a question on the wall`
     : " — the camera check read the action lines and marked none (it looks for a short list of interior verbs — knows, feels, thinks, remembers and the like — so it can miss a line and mark a fair one; it never asks)";
 }
 

@@ -1167,10 +1167,10 @@ describe("open fields (R61): the logline, the premise, a when and a board's name
     // A three-line scene on an unsized card is a sketch, and the reading carries the second number.
     const wrote = await client.callTool("write_scene", { id: "maya-letter", text: "Maya finds the letter on the mat. She knows what it is.\n\nShe feels the cold." });
     expect(wrote).toContain("a sketch: shorter than the page it was read as");
-    expect(wrote).toContain("2 lines the camera cannot see (knows, feels)");
+    expect(wrote).toContain('2 lines the camera cannot see, by the words "knows", "feels"');
     // An edit says it too, and a write with nothing marked says the check ran (round twenty-two, entries 72, 75).
     const editedCamera = await client.callTool("edit_scene", { id: "maya-letter", find: "She feels the cold.", replace: "She shivers." });
-    expect(editedCamera).toContain("1 line the camera cannot see (knows)");
+    expect(editedCamera).toContain('1 line the camera cannot see, by the word "knows"');
     await client.callTool("undo");
     const listed = await client.callTool("list_board");
     expect(listed).toContain("written (a sketch: under the page it was read as)");
@@ -2368,7 +2368,7 @@ describe("after the blind run", () => {
       const lines = Number(/Wrote "[^"]+": (\d+) line/.exec(wrote)[1]);
       const inserted = await door.callTool("edit_scene", { id: "tom-lies", insert: "She knows every passenger by their stop. She does not know him.", after: "TOMÁS gets on" });
       expect(inserted).toContain('Inserted a paragraph after "The bus stops. TOMÁS gets on."');
-      expect(inserted).toContain("1 line the camera cannot see (knows)");
+      expect(inserted).toContain('1 line the camera cannot see, by the word "knows"');
       const { notes } = await door.callToolData("list_board");
       expect(notes.find((note) => note.id === "tom-lies").text).toBe("The bus stops. TOMÁS gets on.\n\nShe knows every passenger by their stop. She does not know him.\n\nHe counts the fare out of a jar.");
       // The anchor must occur once, and the tool says which of its two uses it wants.

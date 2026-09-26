@@ -329,3 +329,11 @@ describe("the scene note says what is not decided about who is in it (round twen
     expect(toFountain(bare, { title: "The Letter" })).toContain("[[who is in it, not decided: I don't know yet");
   });
 });
+
+describe("a placeless card whose when is its headline (pass 1b, entry 33)", () => {
+  it("prints the words once", () => {
+    expect(sceneHeading({ headline: "The morning after", when: "the morning after", locationOpen: "I don't know yet" })).toBe(".PLACE NOT DECIDED: THE MORNING AFTER");
+    expect(sceneHeading({ headline: "The morning after", when: "dawn", locationOpen: "I don't know yet" })).toBe(".PLACE NOT DECIDED: THE MORNING AFTER - DAWN");
+    expect(sceneHeading({ headline: "The morning after", when: "the morning after", location: "Doyle's" })).toBe(".DOYLE'S - THE MORNING AFTER");
+  });
+});

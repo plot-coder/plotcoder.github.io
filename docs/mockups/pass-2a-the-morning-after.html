@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<title>Pass 2a — the morning after</title>
+<!-- The app's own paper: the source stylesheet, so the link never goes stale. -->
+<link rel="stylesheet" href="../../src/styles.css">
+<style>
+  html, body { height: auto; min-height: 100%; }
+  body { margin: 0; padding: 2rem 2.5rem 4rem; font-family: ui-sans-serif, system-ui, sans-serif; }
+  h1 { font: 600 1.05rem/1.3 ui-serif, Georgia, serif; margin: 0 0 0.25rem; }
+  h2.sec { font: 600 0.95rem/1.3 ui-serif, Georgia, serif; margin: 3rem 0 0.2rem; padding-top: 1.2rem; border-top: 1px solid rgba(127,127,127,0.25); }
+  .lede { font-size: 0.85rem; opacity: 0.78; margin: 0 0 1.2rem; max-width: 80ch; line-height: 1.5; }
+  .said { font-size: 0.82rem; line-height: 1.5; margin: 0.4rem 0 1.3rem; max-width: 80ch; padding: 0.6rem 0.9rem; border-left: 3px solid var(--over); background: rgba(127,127,127,0.08); }
+  .said b { font-weight: 600; }
+  .row { display: flex; gap: 2.2rem; flex-wrap: wrap; align-items: flex-start; }
+  .opt { width: 460px; max-width: 100%; }
+  .opt.narrow { width: 250px; }
+  .opt h3 { font: 700 0.62rem/1.3 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; margin: 0 0 0.6rem; }
+  .opt h3 em { font-style: normal; color: var(--over); }
+  .opt p { font-size: 0.8rem; line-height: 1.45; opacity: 0.82; margin: 0.7rem 0 0; max-width: 58ch; }
+  pre.read { font: 0.66rem/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; background: rgba(127,127,127,0.12); padding: 0.75rem 0.95rem; border-radius: 6px; white-space: pre-wrap; margin: 0.7rem 0; }
+  pre.read b { color: var(--over); font-weight: 600; }
+  pre.read i { font-style: normal; opacity: 0.55; }
+  .stand { position: relative; }
+  .stand .modal { position: static; max-height: none; box-shadow: none; }
+  .paper { position: relative; height: 250px; }
+  .paper .note { position: absolute; left: 0; top: 0; }
+  /* The drag handle: a band of paper across the card's top, drawn as it would show under the hand. */
+  .note .mock-handle { position: absolute; left: 0; right: 0; top: 0; height: 18px; background: rgba(31, 24, 16, 0.06); border-bottom: 1px dashed rgba(31, 24, 16, 0.18); cursor: grab; }
+  .note .mock-handle::after { content: "· · ·"; position: absolute; left: 50%; top: 1px; transform: translateX(-50%); font-size: 0.55rem; letter-spacing: 0.15em; color: rgba(31, 24, 16, 0.45); }
+  /* A faint corner mark on every card, as the fold's flap is when planted. */
+  .note .mock-corner { position: absolute; left: 0; top: 0; width: 0; height: 0; border-top: 14px solid rgba(31, 24, 16, 0.22); border-right: 14px solid transparent; }
+  .note .mock-foot { position: absolute; right: 0.5rem; bottom: 0.35rem; font: 600 0.48rem/1.2 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(42, 38, 24, 0.7); }
+  .note .mock-foot.is-guess { color: rgba(42, 38, 24, 0.45); font-style: italic; text-transform: none; letter-spacing: 0.02em; }
+  .note.mock-aside { opacity: 0.55; filter: grayscale(0.6); }
+  .toast { display: inline-block; font: 0.7rem/1.4 ui-sans-serif, system-ui, sans-serif; background: var(--bar); border: 1px solid var(--bar-border); border-radius: 0.6rem; padding: 0.35rem 0.7rem; box-shadow: var(--bar-shadow); }
+  .toast b { color: var(--over); }
+  .head { display: flex; flex-direction: column; align-items: center; gap: 0.2rem; padding: 0.6rem 1rem; border: 1px solid var(--bar-border); border-radius: 0.9rem; background: var(--bar); width: 440px; max-width: 100%; }
+  .head .premise { font: 0.62rem/1.35 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; text-align: center; opacity: 0.85; }
+  .head .premise.cut { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
+  .head .open { font: italic 0.82rem/1.3 ui-serif, Georgia, serif; color: var(--over); }
+  .ask { margin-top: 1.2rem; max-width: 82ch; font-size: 0.86rem; line-height: 1.55; }
+  .ask b { font-weight: 600; }
+  .words { font-size: 0.82rem; line-height: 1.55; background: rgba(127,127,127,0.12); border-radius: 6px; padding: 0.7rem 0.95rem; max-width: 80ch; }
+  .words li { margin: 0.25rem 0; }
+  .rec { font-size: 0.82rem; line-height: 1.5; max-width: 80ch; margin: 0.8rem 0 0; padding: 0.6rem 0.9rem; border-left: 3px solid rgba(127,127,127,0.5); background: rgba(127,127,127,0.06); }
+  .rec b { font-weight: 600; }
+</style>
+</head>
+<body>
+<h1>Pass 2a: the morning after, drawn</h1>
+<p class="lede">Drawn 2026-09-26, late, from `docs/to-do-pass-2a.md` — the driving session as the person on the wall pass 1b left. Twenty-two entries; two fixed the same night; the rest are things a person sees, so they are here on the app's own paper beside what ships, with the question. The largest first: <b>the wall has no memory of a session</b> (entries 4, 19, 21), which is goal 2's and goal 3's finding at once. Then the wall as the agent leaves it (1, 12, 13, 16, 17, 7), and the head and the Pages panel (2, 3, 18, 9, 20).</p>
+
+<!-- ───────────── 1 ───────────── -->
+<h2 class="sec">1 · A record of a session: what was done, by whom, and what waits (4, 19, 21, 9, 20)</h2>
+<div class="said"><b>As it ships.</b> A person opening the wall after the agent has worked cannot tell what the agent did last, what it is waiting on, or which turns were the writer's and which the agent proposed; the agent's questions lived in a chat the wall never saw. A fresh agent reading the wall cannot tell what the person did either: the reading is of the wall as it is, and "since your last reading" is one session's own memory. Undo holds ten steps and names none to a person.</div>
+<div class="said"><b>What it could be.</b> The project keeps a short <b>record</b>: the last changes to the wall, one line each in the person's terms — the card, what changed, who (the signed-in writer, or "an agent") and when — written by the kernel's own commands as they land, so every door writes it and no one has to remember to. The sheet shows it as <b>Since you looked</b>, above the questions; a fresh agent's <code>read_wall</code> opens with the same lines. Beside it, a turn the agent proposed and the writer kept says so on the record, so "whose turn was it" has an answer. It is board data, not viewport (D18): a bounded list, the last fifty changes, on the project record.</div>
+<div class="row">
+  <div class="opt stand">
+    <h3>A · the sheet: "Since you looked", above the questions</h3>
+    <div class="modal modal--narrow account asks">
+      <div class="modal__header">
+        <div>
+          <p class="modal__kicker">PlotCoder</p>
+          <h2 class="modal__title">What the wall asks</h2>
+        </div>
+        <button type="button" class="modal__close">Close</button>
+      </div>
+      <div class="asks__left" style="margin-top:0">
+        <p class="cast-lens__kicker cast-lens__section">Since you looked · an agent, tonight 21:30 to 22:27 · 41 changes</p>
+        <ol class="asks__list">
+          <li class="asks__q"><p class="asks__text">Wrote every scene: eight pages, all under a page each. <button type="button" class="words__show">show me</button></p></li>
+          <li class="asks__q"><p class="asks__text">Chose “The pier: with Priya, her husband's fish knife” over the alone version and set that one aside; took the man's card's payoff off it, which the wall now asks about. <button type="button" class="words__show">show me</button></p></li>
+          <li class="asks__q"><p class="asks__text">Brought “The bank: Declan and the manager” back into the film after the man from the chain, and wrote it.</p></li>
+          <li class="asks__q"><p class="asks__text">Decided: it is now, not 1987 (in the premise); the sign is first seen on the first Friday and pays off on the morning after; the title is Last Orders. Struck three lines about the film.</p></li>
+          <li class="asks__q"><p class="asks__text">Proposed five turns; you kept the first Friday and the last night. <span class="is-open-field">The two beats on the wall are yours.</span></p></li>
+          <li class="asks__q"><p class="asks__text">Left the sign's page question with your reason.</p></li>
+        </ol>
+        <p class="project-copy project-door__hint">Waiting on you: the 2 questions below, and 15 things open by your word. The agent's last word: <i>“I have done nothing to the unpaid card; whether the man's card comes back is yours.”</i></p>
+      </div>
+      <ol class="asks__list">
+        <li class="asks__q"><p class="cast-lens__kicker asks__kind--warm">A setup with no payoff</p><p class="asks__text">“The man from the chain” plants the man's card, and no arrow pays it off. Where does the man's card come back? <button type="button" class="words__show">show me</button> <button type="button" class="words__show asks__leave">leave it</button></p></li>
+        <li class="asks__q"><p class="cast-lens__kicker">A thread with a loose end</p><p class="asks__text">“her husband's fish knife” starts nowhere yet … <button type="button" class="words__show">show me</button> <button type="button" class="words__show asks__leave">leave it</button></p></li>
+      </ol>
+    </div>
+    <p>The record in the person's terms: cards by headline, changes as verbs, the agent's proposals and the writer's keeps told apart. Grouped by session — one head per stretch of changes by one hand — so forty-one changes read as six lines, and "show me" lights the cards. "The agent's last word" is one sentence the agent leaves with a small tool, <code>hand_over</code>, when it stops: what it did not do and what it needs; it stands until the writer's next change.</p>
+  </div>
+  <div class="opt">
+    <h3>B · the same record for a fresh agent, and on the account sheet</h3>
+<pre class="read">PlotCoder wall (the account, as test@test.com, working "Last Orders", the only project on the account)
+this wall: 2 questions asked · 15 things left open by the writer's word · 0 of 7 scenes unwritten
+<b>since anyone last read this wall: 5 changes by test@test.com in the app, 2026-09-26 22:40 to 22:52 — set "The bank: Declan and the manager" aside; moved "The bank" on the wall; struck "Acts: I have not decided how it divides."; wrote a line into "The first Friday of the winter" (5/8 pages, unchanged); 41 by an agent before that, 21:30 to 22:27 (read_project lists the record). The writer's last word: none.</b>
+<i>board, premise, logline …</i></pre>
+<pre class="read"><i>the account sheet, under the project's name:</i>
+<b>Last read by an agent 2026-09-26 22:27 · last changed by you 22:52 · an agent sees your changes the next time it reads the wall.</b></pre>
+    <p>The since line stops being one session's memory: it is the record's, and says whose the changes were. "Does the agent see it?" is answered where a person looks — the account sheet — from the same record: when an agent last read, and when the writer last changed. Nothing is claimed about presence that presence does not show.</p>
+  </div>
+</div>
+<div class="rec"><b>Recommend A and B together, as one build.</b> The record is the kernel's: every command that changes the board appends a line (card, verb, who, when) to a bounded list on the project; the sheet, the reading and the account sheet read it. <code>hand_over</code> is one optional sentence on the same record. Cost: a project field and its shape repair, a describe function shared by the sheet and the server, a tool, tests; and goal 3's first need — an agent picking up past its own context — is the same record.</div>
+
+<!-- ───────────── 2 ───────────── -->
+<h2 class="sec">2 · The wall as the agent leaves it: a handle, a corner, a foot, and the tidy (1, 12, 13, 16, 17, 7)</h2>
+<div class="said"><b>As it ships.</b> The agent's wall had the bank card over the man's and the piers stacked; Organize laid a row per beat and left a six-card run overlapping at this width; a full card had no paper to drag by, and a drag on its headline selected the words; the corner does everything a card can claim and shows nothing until tapped; a set-aside card went somewhere off the edge; and whether a scene is written shows only in a button's label.</div>
+<div class="row">
+  <div class="opt narrow">
+    <h3>As it ships</h3>
+    <div class="paper"><article class="note note--yellow" style="transform:rotate(-0.4deg)">
+      <button class="note__fold"><span class="note__fold-flap"></span></button>
+      <span class="note__edge"><span>3</span></span>
+      <div class="note__headline">The range goes out</div>
+      <div class="note__change">It goes out in the middle of a Friday and it is Priya, not Mairead, who gets it lit.</div>
+      <button class="note__with">with Priya Nair, Mairead Doyle?, Declan Doyle?</button>
+      <button class="note__with note__at"><span class="note__with-prefix">at</span> Doyle's · the middle of a Friday</button>
+      <span class="mock-foot" style="text-transform:none;letter-spacing:0.02em">p. 3</span>
+    </article></div>
+    <p>Nothing says the corner opens a picker; the foot says "p. 3" and no more; the paper to drag by is whatever is left between the lines.</p>
+  </div>
+  <div class="opt narrow">
+    <h3>A · a handle, a corner mark, a foot that says written</h3>
+    <div class="paper"><article class="note note--yellow" style="transform:rotate(-0.4deg)">
+      <span class="mock-handle"></span>
+      <span class="mock-corner"></span>
+      <button class="note__fold"><span class="note__fold-flap"></span></button>
+      <span class="note__edge" style="top:1.4rem"><span>3</span></span>
+      <div class="note__headline" style="margin-top:0.8rem">The range goes out</div>
+      <div class="note__change">It goes out in the middle of a Friday and it is Priya, not Mairead, who gets it lit.</div>
+      <button class="note__with">with Priya Nair, Mairead Doyle?, Declan Doyle?</button>
+      <button class="note__with note__at"><span class="note__with-prefix">at</span> Doyle's · the middle of a Friday</button>
+      <span class="mock-foot">written · p. 3 · 5/8</span>
+    </article></div>
+    <p>A band of paper across the top is always the handle: drag it and the card moves, whatever the lines below. A faint corner mark on every card says the corner does something, as the fold's flap does once it is planted. The foot says <i>written · p. 3 · 5/8</i>, or <i>1 page, a guess</i> on an unwritten card.</p>
+  </div>
+  <div class="opt narrow">
+    <h3>A · an unwritten card's foot, for the contrast</h3>
+    <div class="paper"><article class="note note--yellow" style="transform:rotate(0.3deg)">
+      <span class="mock-handle"></span>
+      <span class="mock-corner"></span>
+      <button class="note__fold"><span class="note__fold-flap"></span></button>
+      <span class="note__edge" style="top:1.4rem"><span>7</span></span>
+      <div class="note__headline" style="margin-top:0.8rem">The morning after</div>
+      <div class="note__change"><span class="is-open-field">I don't know what changes yet.</span></div>
+      <button class="note__with">with Mairead Doyle</button>
+      <button class="note__with note__at"><span class="note__with-prefix">at</span> Doyle's · the morning after</button>
+      <span class="mock-foot is-guess">1 page, a guess</span>
+    </article></div>
+    <p>Pass 2a's person could not tell from the wall that the film was written without opening Pages. With the foot, the wall says which cards are pages and which are guesses, card by card, and the readout's "7 of 7 written" has something to point at.</p>
+  </div>
+</div>
+<div class="row" style="margin-top:1.6rem">
+  <div class="opt">
+    <h3>A · Organize wraps a wide run; a card set aside slides to its row and says so</h3>
+<pre class="read"><i>Organize, at 1400 px, a run of six after the first beat:</i>
+row 1   [1 The first Friday]  [2 The man]  [3 The bank]  [4 The range]
+        [5 The tea]  [6 The pier]                          ← the run wraps, no card over another
+row 2   [7 The last night]  [8 The morning after]
+below   [The pier: alone, the man's card · set aside]      ← the row beneath the story, as today</pre>
+    <p>A run wider than the view wraps onto a second line of its own row, so Organize never leaves a card over another. And when a card is set aside from the corner, it slides down to the row beneath the story instead of staying where it was or vanishing off the edge, and the wall says for a moment:</p>
+    <p><span class="toast"><b>Set aside:</b> "The bank: Declan and the manager" is on the row beneath the story, out of the film. Undo brings it back.</span></p>
+    <p>An agent's <code>create_cards</code> and <code>set_aside</code> with a place run the tidy after themselves unless told not to, so the wall the agent leaves is one a person can read.</p>
+  </div>
+  <div class="opt">
+    <h3>B · leave the layout to the person · <em>not recommended</em></h3>
+    <p>Organize as it is, no handle, no corner mark: the person tidies by hand and learns the corner from the guide. That is what pass 2a did, and it cost eleven of its twenty-two entries before a single change landed. The wall the agent leaves is the person's first sight of the film; it has to read.</p>
+  </div>
+</div>
+<div class="rec"><b>Recommend A.</b> Four small things on the card and two on the tidy, none of them a new model: the handle and the corner mark are CSS on the card; the foot's words are the card's own length button saying which kind it is; the wrap is in <code>organize.js</code>; the slide and the toast are the corner's set-aside gesture; the agent's tidy is one call after two tools.</div>
+
+<!-- ───────────── 3 ───────────── -->
+<h2 class="sec">3 · The head and the Pages panel (2, 3, 18)</h2>
+<div class="row">
+  <div class="opt">
+    <h3>As it ships · the premise cut off</h3>
+    <div class="head">
+      <div class="premise cut">A chip shop on the front of a seaside town that has been closing for twenty years. Doyle's. This is its last winter. It is now, not 1987. Nobody in this film says the word sell to her face until the very end. Tommy Reardon is dead before the film starts and is never seen.</div>
+      <div class="open">Open · I don't know yet — leave it open.</div>
+    </div>
+    <p>The one sentence that says what the film is, in small capitals, one line, cut at the right. A person reads nine cards to learn what a premise would have told them.</p>
+  </div>
+  <div class="opt">
+    <h3>A · the premise wraps to two lines, and opens whole on tap</h3>
+    <div class="head">
+      <div class="premise" style="max-height:2.7em;overflow:hidden">A chip shop on the front of a seaside town that has been closing for twenty years. Doyle's. This is its last winter. It is now, not 1987. Nobody in this film says the word sell to her face until the very end. Tommy Reardon is dead before the film starts and is never seen.</div>
+      <div class="open">Open · I don't know yet — leave it open.</div>
+    </div>
+    <p>Two lines at the head, and a tap opens the whole premise on its own paper, as the "Not decided yet" list now does. A premise of five sentences is what pass 1b's writer made; the head should hold it.</p>
+  </div>
+</div>
+<div class="row" style="margin-top:1.6rem">
+  <div class="opt">
+    <h3>A · Pages: the end key goes to the end of the scene, and the caret shows where it is</h3>
+<pre class="read">1. THE FIRST FRIDAY OF THE WINTER                      5/8 pages · measured
+…
+MAIREAD
+Eleven.
+
+<i>She says it to the fryer. Salt. Vinegar. Paper. The queue goes out.</i>
+
+[[Whether Declan or Priya is here is not decided. Neither is on this page, and that is not a decision.]]
+<b>▍</b>                                        ← the caret, at the scene's end, kept in view</pre>
+    <p>Pass 2a's person pressed the key that goes to the end and typed, and the words went in ahead of the last sentence and its note, because the box's end and the scene's end were not the same place and nothing showed the caret. The end key goes to the scene's last line; the panel scrolls the caret's paragraph into view as the person types.</p>
+  </div>
+</div>
+
+<!-- ───────────── the ask ───────────── -->
+<h2 class="sec">The question</h2>
+<p class="ask"><b>Is this the best we can do?</b> The record (1) over two alternatives: a transcript the agent writes into a reminder (the agent has to remember, and a person cannot trust what it left out) and undo's trail shown to the person (ten steps, named by tool, one session's). The record is written by the kernel as commands land, so it is complete, it is in the person's terms because it names cards and verbs, and the same list is what a fresh agent, and later a hands-off one, reads first. The card's handle, corner mark and foot (2) over leaving the layout to the person, for the reason above. The premise's two lines and the caret (3) are small and have no real alternative.</p>
+<div class="words"><b>What Robert decides:</b>
+  <ul>
+    <li>1 — the record on the project, grouped by session, in the person's terms, with <code>hand_over</code> for the agent's last word; and whether the account sheet says when an agent last read the wall;</li>
+    <li>2 — the handle band, the corner mark, the foot's words ("written · p. 3 · 5/8" and "1 page, a guess"), the wrap in Organize, the slide and the toast on set aside, and the agent's tidy after <code>create_cards</code>;</li>
+    <li>3 — the premise at two lines opening on tap; the end key and the caret in Pages.</li>
+  </ul>
+</div>
+</body>
+</html>

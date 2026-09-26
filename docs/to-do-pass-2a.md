@@ -18,7 +18,15 @@ list is mostly plans; the two that are not are fixed.
   questions, with a label saying where the opens live; the head's button
   keeps its count of the film's lines.
 
-## Planned, for Robert's word — one mockup page, `docs/mockups/pass-2a-the-morning-after.html`
+## Planned, for Robert's word — drawn 2026-09-26, late: `docs/mockups/pass-2a-the-morning-after.html`
+
+The page shows each as it ships beside what it could be, with a
+recommendation: the record of a session on the project with `hand_over`
+for the agent's last word (1); the card's handle band, corner mark and a
+foot that says written or a guess, Organize wrapping a wide run, a
+set-aside card sliding to its row with a word, and the agent's tidy after
+`create_cards` (2); the premise at two lines opening on tap, and the end
+key and the caret in Pages (3). Waiting on Robert's word.
 
 - [ ] **4, 19, 21 · What the agent did last, what it is waiting on, and
   which turns were whose.** The largest finding, and goal 2's: the wall

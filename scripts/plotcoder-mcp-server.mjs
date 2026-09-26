@@ -1380,7 +1380,11 @@ function runtimeBlock(state) {
       : `against the ${formatPages(state.targetEighths)}-page target the writer set (set_target changes it): ${over > 0 ? `${formatPages(over)} over` : over < 0 ? `${formatPages(-over)} under` : "on it"}${unsizedWord(state)}`;
   return [
     // One number for "how long is it", said first and said to be the one (round twenty-three, entry 62): an agent handed the writer three.
-    `how long it is: about ${formatPages(total)} pages. Say this one to the writer: the film by its cards, a page about a minute, counted in eighths as a production does. The other figures below are what it is made of and what it is read against, not other answers`,
+    // Once every scene is written the number to say is the script as it prints, page_count's, and the reading says
+    // so here rather than leaving two tools each claiming the one (pass 1b, entry 74).
+    wholeScript(state)
+      ? `how long it is: about ${formatPages(total)} pages by its cards, measured. Every scene is written, so the number to say to the writer is the script as it prints — page_count's — and this one is what it is made of: the pages in eighths, a page about a minute`
+      : `how long it is: about ${formatPages(total)} pages. Say this one to the writer: the film by its cards, a page about a minute, counted in eighths as a production does. The other figures below are what it is made of and what it is read against, not other answers`,
     ...(made ? [`  made of: ${made}`] : []),
     `  ${target}`,
     // Once every scene is written there is nothing left to guess about: the sketches are a fact about the draft, not a second length (pass 1a, entry 45).

@@ -7,7 +7,7 @@ import {
   type BoardState,
   type Command,
 } from "./reducer";
-import { describeRuns, describeSetups, describeUndecided, openOutsideFilm, readingOrder, readWall, storyOrder } from "./readWall";
+import { describePage, describeRuns, describeSetups, describeUndecided, openOutsideFilm, readingOrder, readWall, storyOrder } from "./readWall";
 
 const NOW = "2026-01-01T00:00:00.000Z";
 
@@ -238,7 +238,7 @@ describe("findings", () => {
 
   it("returns nothing at all for an empty board", () => {
     const reading = readWall(emptyState());
-    expect(reading).toEqual({ order: [], sagWaiting: null, beats: [], runs: [], setups: [], payoffs: {}, later: [], paidBy: [], open: [], proposed: [], unlinked: [], openLines: [], openFields: [], versions: [], openPeople: [], wired: { linked: 0, of: 0 }, aside: [], threads: [], findings: [], left: [] });
+    expect(reading).toEqual({ order: [], sagWaiting: null, beats: [], runs: [], setups: [], payoffs: {}, later: [], paidBy: [], open: [], proposed: [], unlinked: [], openLines: [], openFields: [], versions: [], openPeople: [], wired: { linked: 0, of: 0 }, aside: [], threads: [], pages: { written: 0, of: 0, foldsWithoutWords: 0, payoffsUnwritten: 0 }, logline: null, findings: [], left: [] });
   });
 
   it("notes that runs cannot be read until a beat is marked, and passes no judgement on the count", () => {
@@ -490,7 +490,7 @@ describe("findings", () => {
     );
     const reading = readWall(state);
     expect(reading.setups).toEqual([
-      { id: state.arrows[0].id, from: "b1", to: "b2", eighths: 6 * 8 },
+      { id: state.arrows[0].id, from: "b1", to: "b2", eighths: 6 * 8, page: { state: "unwritten" } },
     ]);
     expect(describeSetups(reading, state)).toEqual([
       '"The gun on the wall" sets up "The gun goes off", about 6 pages later',
@@ -1204,5 +1204,132 @@ describe("a person's empty want is listed as blank (pass 1a, entry 88)", () => {
     expect(readWall(state).findings.some((f) => f.text.includes("want"))).toBe(false);
     const wanting = applyCommand(state, { type: "update_character", id: "ciara", wants: "to be told the truth" }, NOW).state;
     expect(describeUndecided(wanting, readWall(wanting)).blank.some((line) => line.includes("no want"))).toBe(false);
+  });
+});
+
+describe("the pages, against the wall (R74)", () => {
+  const PLANT = "The yard: the letter from the bank";
+  const PAYOFF = "Noreen's yard: Joe takes the two thousand";
+  function ninetyNine(payoffText: string) {
+    let state = wall({ id: "yard", headline: PLANT, change: "Joe reads the letter twice.", rank: "beat" }, { id: "end", headline: PAYOFF, change: "Noreen starts the van and the chime plays; Joe laughs.", rank: "beat" });
+    state = run(
+      state,
+      { type: "set_plant", ids: ["yard"], what: "the chime" },
+      { type: "create_arrow", from: "yard", to: "end", kind: "setup" },
+      { type: "create_arrow", from: "yard", to: "end", kind: "follows" },
+      { type: "add_character", id: "joe", name: "Joe Deasy" },
+      { type: "add_character", id: "noreen", name: "Noreen Blaney" },
+      { type: "set_cast", ids: ["yard", "end"], characterIds: ["joe"] },
+      { type: "set_cast", ids: ["end"], characterIds: ["joe", "noreen"] },
+      { type: "set_text", id: "yard", text: "EXT. THE YARD - DAY\n\nJoe reads the letter twice and folds it into his shirt. He tries the chime. It does not play." },
+      { type: "set_text", id: "end", text: payoffText },
+    );
+    return state;
+  }
+  const kinds = (state: BoardState) => readWall(state).findings.map((finding) => finding.kind);
+
+  it("asks about a payoff whose page has not a word of what the fold planted, and names both cards", () => {
+    const state = ninetyNine("EXT. NOREEN'S YARD - DAY\n\nNoreen walks round the van once more and says two thousand. Joe hands her the keys.");
+    const reading = readWall(state);
+    const unsaid = reading.findings.find((finding) => finding.kind === "unsaid");
+    expect(unsaid).toEqual({
+      kind: "unsaid",
+      ids: ["yard", "end"],
+      text: `"${PLANT}" plants the chime, and its arrow lands on "${PAYOFF}", whose page has not a word of it. Does it pay off there in other words, is the plant unpaid now, or does the payoff live on another page?`,
+    });
+    expect(reading.setups[0].page).toEqual({ state: "asked" });
+    expect(describePage(reading.setups[0])).toBe("on the page: not a word of the plant — asked below");
+  });
+
+  it("quotes the page's sentence where the plant's word lands, and asks nothing — a page can name a thing to deny it", () => {
+    const state = ninetyNine("EXT. NOREEN'S YARD - DAY\n\nNoreen starts the van to move it in. The chime does not play. Joe does not laugh.");
+    const reading = readWall(state);
+    expect(kinds(state)).not.toContain("unsaid");
+    expect(reading.setups[0].page).toEqual({ state: "quoted", quote: "The chime does not play." });
+    expect(describePage(reading.setups[0])).toBe('on the page: "The chime does not play."');
+  });
+
+  it("does not read a [[note]] as the page's words", () => {
+    const state = ninetyNine("EXT. NOREEN'S YARD - DAY\n\n[[the chime pays off here]]\n\nNoreen walks round the van once more and says two thousand.");
+    expect(kinds(state)).toContain("unsaid");
+  });
+
+  it("cannot read a payoff that is unwritten, or a fold with no words, and says which", () => {
+    const unwritten = ninetyNine("");
+    let reading = readWall(unwritten);
+    expect(reading.findings.map((finding) => finding.kind)).not.toContain("unsaid");
+    expect(reading.setups[0].page).toEqual({ state: "unwritten" });
+    expect(reading.pages).toEqual({ written: 1, of: 2, foldsWithoutWords: 0, payoffsUnwritten: 1 });
+    const wordless = run(ninetyNine("EXT. NOREEN'S YARD - DAY\n\nJoe hands her the keys."), { type: "set_plant", ids: ["yard"], plants: false }, { type: "set_plant", ids: ["yard"], plants: true });
+    reading = readWall(wordless);
+    expect(reading.findings.map((finding) => finding.kind)).not.toContain("unsaid");
+    expect(reading.setups[0].page).toEqual({ state: "no words" });
+    expect(reading.pages.foldsWithoutWords).toBe(1);
+    expect(describePage(reading.setups[0])).toBe("");
+  });
+
+  it("asks about a card whose page carries fewer than half its change line's words, counting them, and the cast's names are not counted", () => {
+    const state = ninetyNine("EXT. NOREEN'S YARD - DAY\n\nNoreen walks round the van once more and says two thousand. Joe hands her the keys. Joe Deasy looks at the yard.");
+    const behind = readWall(state).findings.find((finding) => finding.kind === "behind");
+    expect(behind).toEqual({
+      kind: "behind",
+      ids: ["end"],
+      text: `"${PAYOFF}" says on its card "Noreen starts the van and the chime plays; Joe laughs.", and its page carries 1 of those 5 words (van). Does the page do what the card says, or has the card fallen behind the scene?`,
+    });
+    // The yard's page carries "reads", "letter" and "twice": all three of its change line's words.
+    expect(readWall(state).findings.filter((finding) => finding.kind === "behind")).toHaveLength(1);
+  });
+
+  it("is quiet at half, and does not read an unwritten card, an open change line or a placeholder", () => {
+    const half = run(ninetyNine("EXT. NOREEN'S YARD - DAY\n\nNoreen starts the van. It plays nothing; the chime is dead."), { type: "update_note", id: "end", change: "Noreen starts the van; the chime plays." });
+    expect(kinds(half)).not.toContain("behind");
+    const open = run(ninetyNine("EXT. NOREEN'S YARD - DAY\n\nJoe hands her the keys."), { type: "update_note", id: "end", changeOpen: "I don't know what changes here" });
+    expect(kinds(open)).not.toContain("behind");
+    const placeholder = run(ninetyNine("EXT. NOREEN'S YARD - DAY\n\nJoe hands her the keys."), { type: "update_note", id: "end", change: "What changes?" });
+    expect(kinds(placeholder).filter((kind) => kind === "behind")).toHaveLength(0);
+    const unwritten = run(ninetyNine(""), { type: "update_note", id: "yard", change: "Something else entirely happens." });
+    expect(kinds(unwritten)).toContain("behind");
+    expect(readWall(unwritten).findings.find((finding) => finding.kind === "behind")?.ids).toEqual(["yard"]);
+  });
+
+  it("asks about a want no page of that person's says, and is quiet when their pages carry it", () => {
+    const state = run(ninetyNine("EXT. NOREEN'S YARD - DAY\n\nNoreen walks round the van once more and says two thousand. Joe hands her the keys."), { type: "update_character", id: "noreen", wants: "to pay less than the van is worth" });
+    const unvoiced = readWall(state).findings.find((finding) => finding.kind === "unvoiced");
+    expect(unvoiced).toEqual({
+      kind: "unvoiced",
+      ids: ["noreen", "end"],
+      text: `Noreen Blaney's page says they want "to pay less than the van is worth", and their one page carries 1 of those 5 words (van). Does their want show in other words, or is it not on the page yet?`,
+    });
+    const voiced = run(state, { type: "update_character", id: "noreen", wants: "the keys, the van" });
+    expect(kinds(voiced)).not.toContain("unvoiced");
+    // Joe's want is empty: listed blank by the door, never asked here. On no written card: not read.
+    const elsewhere = run(state, { type: "update_character", id: "joe", wants: "to keep the last of what the van carried" }, { type: "set_text", id: "yard", text: "" }, { type: "set_text", id: "end", text: "" });
+    expect(kinds(elsewhere)).not.toContain("unvoiced");
+  });
+
+  it("counts the logline's words on the last page and the turns' pages as a fact, never a question", () => {
+    const state = run(ninetyNine("EXT. NOREEN'S YARD - DAY\n\nNoreen walks round the van once more and says two thousand. Joe hands her the keys."), { type: "set_logline", logline: "Can Joe let the van go without losing the last of what it carried?" });
+    const reading = readWall(state);
+    expect(reading.logline).toEqual({
+      words: ["can", "let", "van", "go", "without", "losing", "last", "what", "carried"],
+      last: { id: "end", headline: PAYOFF, landed: ["van"], of: 9 },
+      turns: { landed: 1, of: 2 },
+    });
+    expect(reading.findings.map((finding) => finding.kind)).not.toContain("unanswered");
+    expect(readWall(run(state, { type: "set_logline", logline: "", open: "not yet" })).logline).toBeNull();
+    expect(readWall(run(ninetyNine(""), { type: "set_logline", logline: "Can Joe let the van go?" })).logline).toEqual({ words: ["can", "let", "van", "go"], last: null, turns: { landed: 0, of: 1 } });
+  });
+
+  it("is not read on a wall with nothing written, and a left page question keeps its word while the count moves", () => {
+    const blank = wall({ id: "a", rank: "beat" }, { id: "b" });
+    const reading = readWall(blank);
+    expect(reading.pages).toEqual({ written: 0, of: 2, foldsWithoutWords: 0, payoffsUnwritten: 0 });
+    expect(reading.logline).toBeNull();
+    expect(reading.findings.map((finding) => finding.kind).filter((kind) => ["unsaid", "behind", "unvoiced"].includes(kind))).toEqual([]);
+    const state = ninetyNine("EXT. NOREEN'S YARD - DAY\n\nNoreen walks round the van once more and says two thousand. Joe hands her the keys.");
+    const behind = readWall(state).findings.find((finding) => finding.kind === "behind")!;
+    const left = run(state, { type: "leave_question", kind: behind.kind, ids: behind.ids, text: behind.text, why: "the card is the old ending; I will fix it" });
+    expect(readWall(left).findings.map((finding) => finding.kind)).not.toContain("behind");
+    expect(readWall(left).left.map((finding) => finding.kind)).toContain("behind");
   });
 });

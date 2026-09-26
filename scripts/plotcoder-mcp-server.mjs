@@ -64,7 +64,7 @@ import { shapeNote } from "../src/board/shape.js";
 import { segmentBrief, WORKFLOWS } from "../src/board/workflows.js";
 import { DEFAULT_REMINDERS, titleFromBody } from "../src/board/reminders.js";
 import crypto from "node:crypto";
-import { describeRuns, describeSetups, describeUndecided, openOutsideFilm, readWall } from "../src/board/readWall.js";
+import { describePage, describeRuns, describeSetups, describeUndecided, openOutsideFilm, readWall } from "../src/board/readWall.js";
 import { compareStructure, describeComparison, MATCH_PAGES } from "../src/board/compareStructure.js";
 import { GAP, ROW_WIDTH, organizePoses } from "../src/board/organize.js";
 import { parseScene, sceneLineCount } from "../src/board/paginate.js";
@@ -1115,7 +1115,8 @@ async function commit(command) {
   const live = await writeBoard(next, rev, base, boardId, "exact");
   trail.push({ before: state, after: canon(next), what: describeCommand(command) });
   queueUndo(state, next, describeCommand(command), boardId);
-  sinceRead.push(describeCommand(command));
+  // A page written or rewritten is named by its card (R74), so "since your last reading" says which pages to read again.
+  sinceRead.push(command.type === "set_text" && result?.headline ? `the page of "${result.headline}"` : describeCommand(command));
   noteChange(state, next, boardId);
   if (trail.length > TRAIL_CAP) trail.shift();
   undone.length = 0;
@@ -1247,7 +1248,9 @@ function isSampleWall(state) {
   return state.notes.map((note) => note.headline).sort().join("\n") === sample;
 }
 /** Every check read_wall runs, so silence can be named. */
-const CHECKS = ["unmarked", "sag", "empty", "unwritten", "unlinked", "duplicate", "sequence", "uncast", "nobody", "absent", "backwards", "unpaid", "unplanted", "unplaced", "loose"];
+const CHECKS = ["unmarked", "sag", "empty", "unwritten", "unlinked", "duplicate", "sequence", "uncast", "nobody", "absent", "backwards", "unpaid", "unplanted", "unplaced", "loose", "unsaid", "behind", "unvoiced"];
+/** The checks that read the pages against the wall (R74): words, never sense, and only once a scene is written. */
+const PAGE_CHECKS = new Set(["unsaid", "behind", "unvoiced"]);
 /** What each check looks for, in words, so "clean" says what was checked rather than a kind's name. */
 const CHECK_WORDS = {
   unmarked: "a beat is marked",
@@ -1265,6 +1268,9 @@ const CHECK_WORDS = {
   unplanted: "no payoff without its fold",
   unplaced: "no card without a place",
   loose: "no thread with a loose end",
+  unsaid: "every payoff's page has a word of what its fold planted",
+  behind: "every written card's page carries half its change line's words",
+  unvoiced: "every want with words is on its person's pages",
 };
 /** What an open card would be asked once closed, as the question and not the check's clean form (round nineteen, entry 31). */
 const ASK_WORDS = {
@@ -1278,6 +1284,9 @@ const ASK_WORDS = {
   unpaid: "where its fold pays off (create_arrow, kind setup)",
   unplanted: "what plants its payoff (set_plant on the card that does)",
   unplaced: "where it happens (set_location)",
+  unsaid: "whether its page pays off what the fold planted",
+  behind: "whether its page does what its change line says",
+  unvoiced: "whether the want shows on its pages",
 };
 const SAMPLE_NOTE = "sample: this is the wall PlotCoder starts with (Maya, Tom, the letter); nothing here is the writer's. Replace it, or new_board.";
 
@@ -2194,7 +2203,7 @@ server.registerTool(
   {
     title: "Read the wall",
     description:
-      "Read the board back: the beats in wall order (rows top to bottom, cards left to right), the pages of scenes between consecutive beats with the cards in each, every setup with the distance to its payoff, and the questions the wall raises — no beat marked yet; a run out of proportion with the others; beats back to back with nothing between them (a chain of them is one question); a card with a placeholder headline or no change line; a card no arrow touches; two headlines that read like the same scene; a group too long to be one sequence; a person in the cast on no card; a person gone for more than a third of the story and ten pages; a payoff before its setup on the wall; a folded card no setup arrow pays off; a setup arrow leaving a card that is not folded; a card with nobody in it once the wall has a cast; cards that say no place once any card has one. These are questions, not fixes: put them to the writer and do not act on them unasked. A question the writer answers with \"leave it\" is left with leave_question and listed under \"left, for now\" instead, until it would read differently. It says nothing about how many beats there should be, and neither should you. The prose carries every id; PLOTCODER_JSON=1 in the server's environment adds the same reading as JSON after it, for a program.",
+      "Read the board back: the beats in wall order (rows top to bottom, cards left to right), the pages of scenes between consecutive beats with the cards in each, every setup with the distance to its payoff, and the questions the wall raises — no beat marked yet; a run out of proportion with the others; beats back to back with nothing between them (a chain of them is one question); a card with a placeholder headline or no change line; a card no arrow touches; two headlines that read like the same scene; a group too long to be one sequence; a person in the cast on no card; a person gone for more than a third of the story and ten pages; a payoff before its setup on the wall; a folded card no setup arrow pays off; a setup arrow leaving a card that is not folded; a card with nobody in it once the wall has a cast; cards that say no place once any card has one — and, once scenes are written, the pages against the wall: a payoff whose page has not a word of what the fold planted; a written card whose page carries fewer than half its change line's words; a person's want no page of theirs says. Those read words, never sense — a page can say a thing in other words, and can name a thing to deny it — so each says the words it counted, every setup quotes the page's sentence where the plant's word lands, and the logline line counts the turns' pages that carry its words as a fact and never a question. A turn undone by the one after it is yours to read: the since line names the pages rewritten. These are questions, not fixes: put them to the writer and do not act on them unasked. A question the writer answers with \"leave it\" is left with leave_question and listed under \"left, for now\" instead, until it would read differently. It says nothing about how many beats there should be, and neither should you. The prose carries every id; PLOTCODER_JSON=1 in the server's environment adds the same reading as JSON after it, for a program.",
     inputSchema: { only: z.enum(["questions", "length"]).optional().describe("\"questions\": the short read — the three counts, what the wall asks, and what the writer has left, and nothing else. For \"is there anything I owe the writer?\" and \"did that raise a question?\". \"length\": how long it is, only — the one number first, then what it is made of and what it is read against. The full reading is for reading the wall back.") },
   },
   async (args = {}) => {
@@ -2254,7 +2263,7 @@ server.registerTool(
           atAGlance(state, reading, projectForRead, readBoardMeta),
           ...((reading.proposed ?? []).length ? [`waiting on the writer: ${reading.proposed.length} turn${reading.proposed.length === 1 ? "" : "s"} you proposed, not yet kept or struck — ${reading.proposed.map((id) => `"${state.notes.find((note) => note.id === id)?.headline ?? id}"`).join(", ")}`] : []),
           "questions the wall raises:",
-          ...(reading.findings.length ? reading.findings.map((finding) => `  - [${finding.kind}] ${finding.text}${finding.ids.length ? ` (ids: ${finding.ids.join(", ")})` : ""}`) : [reading.left.length ? "  (none the writer has not left)" : "  (none that this reading can see)"]),
+          ...questionLines(reading),
           ...(reading.left.length ? ["left, for now:", ...reading.left.map((finding) => `  - [${finding.kind}] ${finding.text}${finding.why ? ` ("${finding.why}")` : ""}`)] : []),
         ].join("\n"),
         { findings: reading.findings, left: reading.left },
@@ -2269,7 +2278,7 @@ server.registerTool(
       ...(projectForRead.nameOpen ? [`project: "${projectForRead.name}" — its name is open, by the writer's word: "${projectForRead.nameOpen}"`] : []),
       // A set premise is read back with the wall: it is where a fact about the whole film lives (rounds twenty 9, 20; twenty-two 13, 74).
       ...(projectForRead.premiseOpen ? [`premise: open, by the writer's word — "${projectForRead.premiseOpen}"`] : (projectForRead.premise ?? "").trim() ? [`premise: "${projectForRead.premise.trim()}"`] : []),
-      `logline: ${state.loglineOpen ? `open, by the writer's word — "${state.loglineOpen}"` : state.logline ? `"${state.logline}"` : "(none yet)"}`,
+      `logline: ${state.loglineOpen ? `open, by the writer's word — "${state.loglineOpen}"` : state.logline ? `"${state.logline}"${loglineOnPages(reading)}` : "(none yet)"}`,
       // Who is in the film and where it happens, so "read it back to me" is one call (round twenty-two, entry 29). list_board has each person's page and every card's cast.
       ...(() => {
         const film = state.notes.filter((note) => !note.alternativeOf && !note.aside);
@@ -2311,9 +2320,9 @@ server.registerTool(
       }`,
       `runs between beats (the scenes between two turns; a beat's own pages are in no run${reading.beats.length ? ` — the ${reading.beats.length} beat${reading.beats.length === 1 ? "'s" : "s'"} own pages, about ${formatPages(beatEighths)}, are in no run` : ""}${written < state.notes.length ? "; pages are estimates" : ""}):`,
       ...(runs.length ? runs.map((line) => `  - ${line}`) : ["  (none)"]),
-      `setups and payoffs${written < state.notes.length ? " (distances in estimated pages)" : ""}:`,
+      `setups and payoffs${written < state.notes.length ? " (distances in estimated pages)" : ""}${reading.pages.written ? " — and on each written payoff's page, where the plant's words land" : ""}:`,
       ...(reading.setups.length
-        ? describeSetups(reading, state).map((line, index) => `  - ${line}${pageSpan(state, reading.setups[index])}`)
+        ? describeSetups(reading, state).map((line, index) => `  - ${line}${pageSpan(state, reading.setups[index])}${describePage(reading.setups[index]) ? `; ${describePage(reading.setups[index])}` : ""}`)
         : [reading.paidBy.length ? "  (no setup arrow on this board; what pays off a fold of another board is listed below)" : "  (no arrow is marked as a setup)"]),
       ...reading.later.map((item) => `  - "${state.notes.find((note) => note.id === item.id)?.headline ?? item.id}" is folded and pays off later, on "${boardById(projectForRead, item.boardId)?.name ?? item.boardId}"${item.noteId ? `, at ${episodeLabel(projectForRead, boardsNow, item.boardId, item.noteId)} "${boardsNow[item.boardId]?.notes?.find((note) => note.id === item.noteId)?.headline ?? item.noteId}"` : " — no scene there claims it yet"}`),
       ...reading.paidBy.map((item) => `  - "${state.notes.find((note) => note.id === item.id)?.headline ?? item.id}" pays off "${item.fromHeadline}" from "${item.fromBoardName}" (${episodeLabel(projectForRead, boardsNow, item.fromBoardId, item.fromNoteId)}), one board earlier`),
@@ -2337,9 +2346,7 @@ server.registerTool(
         : []),
       ...((reading.proposed ?? []).length ? ["turns proposed and not yet kept or struck (yours, said on the wall; scenes until the writer keeps one — set_rank beat keeps, scene strikes):", ...reading.proposed.map((id) => `  - "${state.notes.find((note) => note.id === id)?.headline ?? id}" (${id})`)] : []),
       "questions the wall raises (each stands on every reading until the wall changes to answer it, or the writer leaves it — leave_question, with their reason):",
-      ...(reading.findings.length
-        ? reading.findings.map((finding) => `  - [${finding.kind}] ${finding.text}${finding.ids.length ? ` (ids: ${finding.ids.join(", ")})` : ""}`)
-        : [reading.left.length ? "  (none the writer has not left)" : "  (none that this reading can see)"]),
+      ...questionLines(reading),
       ...(reading.left.length
         ? [
             "left, for now (the writer's word; kept until the question would read differently, and ask_again brings one back):",
@@ -2367,8 +2374,11 @@ server.registerTool(
         const except = [hiddenBy ? `${hiddenBy} open card${hiddenBy === 1 ? "" : "s"}` : "", placesOpen ? `${placesOpen} with ${placesOpen === 1 ? "its" : "their"} place open` : ""].filter(Boolean).join(" and ");
         if (except) return `${CHECK_WORDS[kind]} (except ${except}, not asked)`;
         if (kind === "sag" && reading.sagWaiting) return `no run out of proportion — not read yet: ${reading.sagWaiting.unsized} of ${reading.sagWaiting.total} cards in the runs read as a page each, and the sag is read once half are sized or written`;
+        // The pages are read once a scene is written (R74); until then the three page checks are one phrase, not three clean lines.
+        if (PAGE_CHECKS.has(kind) && !reading.pages.written) return kind === "unsaid" ? "the pages, against the wall: not read yet — no scene is written" : null;
+        if (kind === "unsaid" && (reading.pages.foldsWithoutWords || reading.pages.payoffsUnwritten)) return `${CHECK_WORDS[kind]} (except ${[reading.pages.foldsWithoutWords ? `${reading.pages.foldsWithoutWords} fold${reading.pages.foldsWithoutWords === 1 ? "" : "s"} with no words to read by — set_plant names ${reading.pages.foldsWithoutWords === 1 ? "it" : "them"}` : "", reading.pages.payoffsUnwritten ? `${reading.pages.payoffsUnwritten} payoff${reading.pages.payoffsUnwritten === 1 ? "" : "s"} unwritten` : ""].filter(Boolean).join(", and ")}, not read)`;
         return CHECK_WORDS[kind];
-      }).join("; ") || "(nothing — every check found something)"}`,
+      }).filter(Boolean).join("; ") || "(nothing — every check found something)"}`,
     ];
     if (isSampleWall(state)) lines.unshift(SAMPLE_NOTE);
     return ok(lines.join("\n"), { ...reading, sample: isSampleWall(state) });
@@ -3114,6 +3124,27 @@ function pageSpan(state, setup) {
   const to = starts.get(setup?.to);
   const written = (id) => (state.notes.find((note) => note.id === id)?.text ?? "").trim();
   return from && to && written(setup.from) && written(setup.to) ? ` (p. ${from} → p. ${to})` : "";
+}
+
+/** The wall's questions, then the pages' under their own head (R74): the same findings, so leave_question and the counts see one list. */
+function questionLines(reading) {
+  const line = (finding) => `  - [${finding.kind}] ${finding.text}${finding.ids.length ? ` (ids: ${finding.ids.join(", ")})` : ""}`;
+  const wall = reading.findings.filter((finding) => !PAGE_CHECKS.has(finding.kind));
+  const pages = reading.findings.filter((finding) => PAGE_CHECKS.has(finding.kind));
+  return [
+    ...(wall.length ? wall.map(line) : [reading.left.length ? "  (none the writer has not left)" : pages.length ? "  (none of the wall's)" : "  (none that this reading can see)"]),
+    ...(pages.length ? ["  the pages, against the wall (words, not sense: a page can say a thing in other words, and can name a thing to deny it):", ...pages.map(line)] : []),
+  ];
+}
+
+/** Where the logline's words land on the pages (R74): a fact on the logline's line, never a question. */
+function loglineOnPages(reading) {
+  const fact = reading.logline;
+  if (!fact) return "";
+  const parts = [];
+  if (fact.turns) parts.push(`its words land on ${fact.turns.landed} of the ${fact.turns.of} written turn${fact.turns.of === 1 ? "'s" : "s'"} page${fact.turns.of === 1 ? "" : "s"}`);
+  if (fact.last) parts.push(`the last page, "${fact.last.headline}", carries ${fact.last.landed.length} of its ${fact.last.of}${fact.last.landed.length ? ` (${fact.last.landed.join(", ")})` : ""}`);
+  return parts.length ? ` — ${parts.join(", and ")}; words, not sense` : "";
 }
 
 /** The plants a moved card carries and where they pay off now, with the new distance (pass 1a, entry 69). */

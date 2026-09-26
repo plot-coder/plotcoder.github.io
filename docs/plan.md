@@ -60,6 +60,10 @@ revisions with starred lines, locked numbers. The runtime figure moves the
 wrong way while a film is half written (a written scene is measured, an
 unwritten card reads as a page: twenty 52, twenty-four 46). The reading
 checks the wall's fifteen things and nothing on the pages but the camera.
+**2026-09-26:** R74 is built — once scenes are written the reading reads the
+pages against the wall (three word checks as questions, the page's sentence
+quoted under each setup, the logline's words counted as a fact), so "what
+can the app say of the whole" has its first answer for pass 1b to measure.
 
 **The pass, 1a — a script from a treatment.** A blind run in the practice's
 shape, through the hosted door: build "Ninety-Nine" as round fourteen did,
@@ -193,7 +197,7 @@ mockup or their alternatives before they are built.
 
 | Pass | What | Branch | Where it stands |
 | --- | --- | --- | --- |
-| 1a | Ninety-Nine to a complete script, edited across its length | `claude/pass-1a` | **run 2026-09-22**: 114 entries (`blind-runs/pass-1a-report.md`), 38 fixes built as it ran (`docs/to-do-pass-1a.md`), R74 proposed — the pages read against the wall — waiting on Robert's word |
+| 1a | Ninety-Nine to a complete script, edited across its length | `claude/pass-1a` | **run 2026-09-22**: 114 entries (`blind-runs/pass-1a-report.md`), 38 fixes built as it ran (`docs/to-do-pass-1a.md`), R74 proposed — the pages read against the wall — **built 2026-09-26** on Robert's word, from its mockup |
 | 1b | Doyle's to a complete script, from notes | — | ready to claim: the steps are item 2 of `docs/to-do.md`'s head (take the stdio block out of `~/.claude.json` first, so it runs through the connector) |
 | 2a | The morning after: a person reads the wall the agent left | — | not started |
 | 2b | Jumping in for the agent: the person answers, the agent resumes | — | not started |

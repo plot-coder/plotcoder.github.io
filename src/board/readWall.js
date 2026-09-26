@@ -63,6 +63,21 @@ function words(text) {
     .filter((word) => word && !FILLER.has(word));
 }
 
+/** A scene's text as it prints: a [[note]] is the writer's aside and never the page's words (R74). */
+function pageText(note) {
+  return String(note?.text ?? "").replace(/\[\[[^\]]*\]\]/g, " ");
+}
+/** The sentence on the page where a word first lands, clipped, for the setups line to quote (R74). */
+function sentenceWith(text, word) {
+  const pattern = new RegExp(`(^|[^\\p{L}\\p{N}])${word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![\\p{L}\\p{N}])`, "iu");
+  const sentences = text
+    .split(/\n+/)
+    .flatMap((line) => line.split(/(?<=[.!?])\s+/))
+    .map((piece) => piece.trim())
+    .filter(Boolean);
+  const hit = sentences.find((sentence) => pattern.test(sentence)) ?? "";
+  return hit.length > 140 ? `${hit.slice(0, 137).trimEnd()}…` : hit;
+}
 function sameScene(a, b, ignore = new Set()) {
   const wa = words(a).filter((word) => !ignore.has(word));
   const wb = words(b).filter((word) => !ignore.has(word));
@@ -543,6 +558,97 @@ export function readWall(state, options = {}) {
     }
   }
 
+  // The pages, against the wall (R74). Once a scene is written, its page is
+  // read against what the wall claims of it — words, never sense (D21): a
+  // page can say a thing in other words, and can name a thing to deny it, so
+  // every question says the words it counted and the writer reads the rest.
+  // Pass 1a read ten pages beside the wall by hand for every question about
+  // the whole film, because nothing joined the one to the other.
+  const pageWords = (note) => new Set(words(pageText(note)).filter((word) => !nameWords.has(word)));
+  const claimWords = (text) => [...new Set(words(text).filter((word) => !nameWords.has(word)))];
+  const pagesRead = { written: order.filter((note) => isMeasured(note)).length, of: order.length, foldsWithoutWords: 0, payoffsUnwritten: 0 };
+  // A payoff whose page has not a word of what the fold planted. The fold's
+  // words (R62) are what the arrow claims; when one lands, the setups line
+  // quotes the page's own sentence there, so "does not play" is read in the
+  // reading and not on page ten.
+  for (const setup of setups) {
+    const fold = byId.get(setup.from);
+    const payoff = byId.get(setup.to);
+    if (!fold || !payoff) continue;
+    if (!isMeasured(payoff)) {
+      pagesRead.payoffsUnwritten += 1;
+      setup.page = { state: "unwritten" };
+      continue;
+    }
+    const plantW = claimWords(fold.plantsWhat ?? "");
+    if (!plantW.length) {
+      pagesRead.foldsWithoutWords += 1;
+      setup.page = { state: "no words" };
+      continue;
+    }
+    const page = pageWords(payoff);
+    const landed = plantW.filter((word) => page.has(word));
+    if (landed.length) {
+      setup.page = { state: "quoted", quote: sentenceWith(pageText(payoff), landed[0]) };
+      continue;
+    }
+    setup.page = { state: "asked" };
+    if (!askable(payoff)) continue;
+    findings.push({
+      kind: "unsaid",
+      ids: [fold.id, payoff.id],
+      text: `${quote(fold)} plants ${fold.plantsWhat}, and its arrow lands on ${quote(payoff)}, whose page has not a word of it. Does it pay off there in other words, is the plant unpaid now, or does the payoff live on another page?`,
+    });
+  }
+  // A card whose page carries fewer than half its change line's words: the
+  // card fell behind the rewrite, or the page does not do what the card says.
+  for (const note of order) {
+    if (!askable(note) || !isMeasured(note)) continue;
+    if ((note.changeOpen ?? "").trim()) continue;
+    const change = (note.change ?? "").trim();
+    if (!change || change === PLACEHOLDER_CHANGE) continue;
+    const changeW = claimWords(change);
+    if (!changeW.length) continue;
+    const page = pageWords(note);
+    const landed = changeW.filter((word) => page.has(word));
+    if (landed.length * 2 >= changeW.length) continue;
+    findings.push({
+      kind: "behind",
+      ids: [note.id],
+      text: `${quote(note)} says on its card "${change}", and its page carries ${landed.length} of those ${changeW.length} word${changeW.length === 1 ? "" : "s"}${landed.length ? ` (${landed.join(", ")})` : ""}. Does the page do what the card says, or has the card fallen behind the scene?`,
+    });
+  }
+  // A person's want (their page) that no page of their scenes says. An empty
+  // want is listed blank by the door, never asked (pass 1a, entry 88).
+  for (const person of state.characters ?? []) {
+    const wantW = claimWords(person.wants ?? "");
+    if (!wantW.length) continue;
+    const scenes = order.filter((note) => askable(note) && (note.characterIds ?? []).includes(person.id) && isMeasured(note));
+    if (!scenes.length) continue;
+    const page = new Set(scenes.flatMap((note) => [...pageWords(note)]));
+    const landed = wantW.filter((word) => page.has(word));
+    if (landed.length * 2 >= wantW.length) continue;
+    findings.push({
+      kind: "unvoiced",
+      ids: [person.id, ...scenes.map((note) => note.id)],
+      text: `${person.name}'s page says they want "${person.wants.trim()}", and their ${scenes.length === 1 ? "one page carries" : `${countWord(scenes.length)} pages carry`} ${landed.length} of those ${wantW.length} word${wantW.length === 1 ? "" : "s"}${landed.length ? ` (${landed.join(", ")})` : ""}. Does their want show in other words, or is it not on the page yet?`,
+    });
+  }
+  // The logline is a fact line and never a question (Robert, 2026-09-26): its
+  // words are rarely a page's words, and a check that asks on the treatment's
+  // own ending is noise. The count says where they land; the reader decides.
+  let logline = null;
+  if (!(state.loglineOpen ?? "").trim() && (state.logline ?? "").trim()) {
+    const logW = claimWords(state.logline);
+    if (logW.length) {
+      const lastCard = order.length ? order[order.length - 1] : null;
+      const last = lastCard && isMeasured(lastCard) ? { id: lastCard.id, headline: lastCard.headline, landed: logW.filter((word) => pageWords(lastCard).has(word)), of: logW.length } : null;
+      const writtenBeats = beats.filter((note) => isMeasured(note));
+      const turns = writtenBeats.length ? { landed: writtenBeats.filter((note) => logW.some((word) => pageWords(note).has(word))).length, of: writtenBeats.length } : null;
+      if (last || turns) logline = { words: logW, last, turns };
+    }
+  }
+
   // A question the writer has left (R53) is held back while it is still the
   // same question — same kind, same cards, same words. The moment it would
   // read differently (a page moved, a headline changed, the median shifted)
@@ -595,6 +701,10 @@ export function readWall(state, options = {}) {
     // Set aside (R66): on the wall and not in the film. Listed, never asked.
     aside: state.notes.filter((note) => note.aside === true).map((note) => note.id),
     threads,
+    // The pages, against the wall (R74): how many scenes are written, and what the page checks could not read.
+    pages: pagesRead,
+    // The logline's words on the pages (R74): a fact, never a question; null with no logline, or nothing written.
+    logline,
     findings: asked,
     left,
   };
@@ -798,6 +908,15 @@ export function describeSetups(reading, state) {
     const byRows = setup.eighths !== null && setup.eighths !== undefined && !state.arrows.some((arrow) => arrow.kind !== "setup") ? ", by the rows: the story order is not set" : "";
     return `"${name(setup.from)}" sets up "${name(setup.to)}"${what ? ` — ${what}` : ""}, ${distance}${byRows}`;
   });
+}
+
+/** What a payoff's page says of its plant (R74), for the line under a setup: the page's sentence, or that not a word landed. Empty when the page could not be read. */
+export function describePage(setup) {
+  const page = setup?.page;
+  if (!page) return "";
+  if (page.state === "quoted") return page.quote ? `on the page: "${page.quote}"` : "on the page: the plant's word is there";
+  if (page.state === "asked") return "on the page: not a word of the plant — asked below";
+  return "";
 }
 
 /** The reading as prose lines, shared by the modal and the MCP tool. */

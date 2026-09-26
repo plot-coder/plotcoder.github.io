@@ -13,9 +13,13 @@ done and merged, what is left, and the order I would take it in.
 **Pass 1b has run** — "Doyle's" to a complete script from notes, through
 the desktop connector at 0.1.53: 82 entries in `blind-runs/pass-1b-report.md`,
 thirty-two fixes built with tests as it ran in twenty pull requests (#161
-to #180; `docs/to-do-pass-1b.md`), 764 unit tests. **Released as 0.1.54**
-(npm, the door's pin); the function's redeploy is Robert's hand, as
-before, and the handover's next line says whether it is done. **What is
+to #180; `docs/to-do-pass-1b.md`), 764 unit tests. **Released as 0.1.54** and on
+the door: npm, the pin (#182), the function redeployed (the permission
+layer let it through this time) and **checked live** as the test account —
+`initialize` answers 0.1.54, and `read_wall` on "Last Orders", the run's
+wall still on the account, prints the new lines: the number to say once
+the script is whole, two scenes with a page and no turn, the sign's left
+question on its setup line, 18 checks. **What is
 next, in order:** (1) **Robert's word on the twenty-seven held decisions**,
 in one list at the foot of `docs/to-do-pass-1b.md` — the largest are what a
 script carries of the wall's opens (41, 42, 37), the page's form for a

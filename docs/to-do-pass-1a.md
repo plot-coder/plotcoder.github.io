@@ -74,8 +74,14 @@ reads right; the block comes out before pass 1b.
   honest about being words, and they ask what a writer would want asked.
   A person sees them in Read the wall, so a mockup first and Robert's
   word; the checks themselves are pure and testable.
-  *Not built:* waiting on the word. Mockup to draw: the reading's new
-  head beside the wall's, on the app's own paper.
+  *Not built:* waiting on the word. **Mockup drawn 2026-09-26:**
+  `docs/mockups/r74-the-pages-against-the-wall.html` — three questions
+  ([unsaid] a payoff not on the page, [behind] the card behind its page,
+  [unvoiced] a want no page says), the logline as a fact line and not a
+  question, and each setup quoting the page's sentence where the plant's
+  word lands. Honest correction to the example above: in the pass the
+  rewritten page said "the chime does not play", so a word check finds
+  "chime" and is quiet there; the quoted line is what carries that case.
 
 - [~] **D3 · A proposed cut** (entry 92). "Nothing on the wall can hold a
   proposed cut: set_rank proposed is for turns only, and set_aside cuts

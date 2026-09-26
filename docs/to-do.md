@@ -22,7 +22,13 @@ a session runs it itself now; if the permission layer declines a step,
 `.claude/settings.local.json` is missing from that checkout and Robert
 copies it in).
 
-1. **R74 — the pages read against the wall.** Proposed in
+1. **R74 — the pages read against the wall.** **2026-09-26: the mockup is
+   drawn** (`docs/mockups/r74-the-pages-against-the-wall.html`), looked at
+   on the dev server; waiting on Robert's word. It proposes three word
+   checks as questions and the logline as a fact line, with the reasons on
+   the page. Next for this item: his word, then the checks in `readWall.js`
+   with tests, the words in the server, the sheet's section, the guides, a
+   release. As planned: Proposed in
    `REQUIREMENTS.md`; the plan with its alternatives is D2 of
    `docs/to-do-pass-1a.md`. Pass 1a found that with every scene written
    the app can say nothing of the whole: the logline stands unchecked, a

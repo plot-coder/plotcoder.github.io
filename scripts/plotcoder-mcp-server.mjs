@@ -1113,10 +1113,12 @@ async function commit(command) {
   if (!changed) return { state: next, changed, result, live: base !== null };
 
   const live = await writeBoard(next, rev, base, boardId, "exact");
-  trail.push({ before: state, after: canon(next), what: describeCommand(command) });
-  queueUndo(state, next, describeCommand(command), boardId);
-  // A page written or rewritten is named by its card (R74), so "since your last reading" says which pages to read again.
-  sinceRead.push(command.type === "set_text" && result?.headline ? `the page of "${result.headline}"` : describeCommand(command));
+  // A page written or rewritten is named by its card (R74; pass 1b, entry 63), so "since your last reading", the
+  // undo's preview and the undo itself all say which page, not "set_text".
+  const what = command.type === "set_text" && result?.headline ? `the page of "${result.headline}"` : describeCommand(command);
+  trail.push({ before: state, after: canon(next), what });
+  queueUndo(state, next, what, boardId);
+  sinceRead.push(what);
   noteChange(state, next, boardId);
   if (trail.length > TRAIL_CAP) trail.shift();
   undone.length = 0;
@@ -3657,7 +3659,20 @@ server.registerTool(
     const groupsChanged = last.before.groups
       .filter((group) => { const now = state.groups.find((item) => item.id === group.id); return !now || now.noteIds.length !== group.noteIds.length; })
       .map((group) => `"${group.title}" (${group.noteIds.length} cards)`);
+    // A version or a card set aside that moved with the undo (pass 1b, entry 64): which card is the scene again,
+    // which is behind, which is set aside or back in the film — the undo of a choose_version said nothing.
+    const versionsMoved = last.before.notes.flatMap((was) => {
+      const now = state.notes.find((note) => note.id === was.id);
+      if (!now) return [];
+      const lines = [];
+      if (was.alternativeOf && !now.alternativeOf) lines.push(`"${was.headline}" is behind "${headlineIn(last.before, was.alternativeOf)}" again`);
+      if (!was.alternativeOf && now.alternativeOf) lines.push(`"${was.headline}" is the scene again`);
+      if (was.aside && !now.aside) lines.push(`"${was.headline}" is set aside again`);
+      if (!was.aside && now.aside) lines.push(`"${was.headline}" is back in the film`);
+      return lines;
+    });
     const withIt = [
+      versionsMoved.length ? versionsMoved.join("; ") : null,
       arrowsBack.length ? `${arrowsBack.length} arrow(s) back: ${arrowsBack.join(", ")}` : null,
       arrowsGone.length ? `${arrowsGone.length} arrow(s) gone: ${arrowsGone.join(", ")}` : null,
       groupsChanged.length ? `groups as they were: ${groupsChanged.join(", ")}` : null,

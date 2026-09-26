@@ -3800,3 +3800,36 @@ describe("the pages line names a written scene whose change line is open (pass 1
     expect(read).toContain('pages: estimates — 1 of 2 cards are written ("The funeral tea"), the rest are guesses; one written scene has a page and no turn — the change line still open by the writer\'s word: "The funeral tea"');
   });
 });
+
+describe("undo names the page and the version it moves (pass 1b, entries 63, 64)", () => {
+  let root;
+  let client;
+
+  beforeAll(async () => {
+    root = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-undo-names-"));
+    client = new McpClient(root);
+    await client.start();
+    for (const seeded of ["maya-letter", "tom-lies", "letter-aloud"]) await client.callTool("delete_note", { id: seeded });
+  }, 30000);
+
+  afterAll(() => {
+    client?.stop();
+    if (root) fs.rmSync(root, { recursive: true, force: true });
+  });
+
+  it("previews and undoes a written page by its card, and says which card is the scene again after a version choice is undone", async () => {
+    const pier = (await client.callToolData("create_note", { headline: "The pier: alone, the man's card", change: "She throws the card in.", x: 100, y: 100 })).id;
+    const knife = (await client.callToolData("create_note", { headline: "The pier: with Priya, the fish knife", change: "She throws the knife in.", of: pier })).id;
+    await client.callTool("write_scene", { id: pier, text: "EXT. THE PIER - NIGHT\n\nMairead throws the card into the dark." });
+    const preview = await client.callTool("undo", { preview: true });
+    expect(preview).toContain('the page of "The pier: alone, the man\'s card"');
+    expect(preview).not.toContain("set_text");
+    const undid = await client.callTool("undo");
+    expect(undid).toMatch(/^Undid the page of "The pier: alone, the man's card"/);
+    await client.callTool("choose_version", { id: knife, keep: true });
+    const back = await client.callTool("undo");
+    expect(back).toMatch(/^Undid choose_version/);
+    expect(back).toContain('"The pier: alone, the man\'s card" is the scene again');
+    expect(back).toContain('"The pier: with Priya, the fish knife" is behind "The pier: alone, the man\'s card" again');
+  });
+});

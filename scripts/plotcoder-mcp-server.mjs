@@ -2443,7 +2443,11 @@ server.registerTool(
     const reading = readWall(state, readOptions_);
     const replies = [];
     const toLeave = [];
+    // A card may be named by its headline as well as its id (pass 1b, entry 72): a writer says "leave the sign question",
+    // and the agent need not fetch a reading to find the ids. A thread, a person or an arrow id passes through as given.
+    const byHeadline = (ref) => state.notes.find((note) => note.id === ref)?.id ?? state.notes.find((note) => note.headline.trim().toLowerCase() === String(ref).trim().toLowerCase())?.id ?? ref;
     for (const want of wanted) {
+      if (Array.isArray(want.ids)) want.ids = want.ids.map(byHeadline);
       const already = reading.left.filter((finding) => finding.kind === want.kind && (!want.ids || sameList(finding.ids, want.ids)));
       const matches = reading.findings.filter((finding) => finding.kind === want.kind && (!want.ids || sameList(finding.ids, want.ids)));
       if (matches.length === 0) {
@@ -4805,7 +4809,7 @@ server.registerTool(
   {
     title: "Set the title page",
     description:
-      "The title page's byline and contact, on the project — every script it sends out carries them, in Fountain, Final Draft, Markdown and plain text, with the draft date of the day it goes out: \"Written by …\" under the title, and the contact lines (an address, an agent, an email; several lines are fine) where a title page keeps them. The title itself is the project's name (rename_project); a series' episode line comes from the board. Pass author, contact, or both; \"\" clears one; leaving one out leaves it as it is. Nothing is claimed until the writer says who it is by.",
+      "The title page's byline and contact, on the project — every script it sends out carries them, in Fountain, Final Draft, Markdown and plain text, with the draft date of the day it goes out: \"Written by …\" under the title, and the contact lines (an address, an agent, an email; several lines are fine) where a title page keeps them. The title itself is the project's name (rename_project); the account holds no name for the writer, so \"by me\" is a question for them — ask how the byline should print; a series' episode line comes from the board. Pass author, contact, or both; \"\" clears one; leaving one out leaves it as it is. Nothing is claimed until the writer says who it is by.",
     inputSchema: { author: z.string().optional().describe("The byline as it should print after \"Written by\", or \"\" for none."), contact: z.string().optional().describe("The contact lines under the byline, newline-separated, or \"\" for none.") },
   },
   async (args) => {

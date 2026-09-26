@@ -10,7 +10,16 @@ done and merged, what is left, and the order I would take it in.
 
 ## Next, for whoever picks this up (2026-09-22, after pass 1a)
 
-Everything is merged and released: `main`, npm and the hosted door carry
+**2026-09-26: R74 is built and released as 0.1.53** — `main` and npm carry
+it and the door's pin says 0.1.53 (#156, #157), but **the function is not
+redeployed**: the session's permission layer declines the deploy, as it did
+before. Robert's hand: `supabase functions deploy mcp --no-verify-jwt
+--use-api --project-ref kmpahjsggbleygsnuwug`, then check the live door
+with one `initialize` (0.1.53) and a `read_wall` on a throwaway project
+with a written scene (the checks line ends with the three page checks).
+Until then the hosted door reads at 0.1.52 and knows nothing of the pages.
+
+Everything else is merged and released: `main`, npm and the hosted door carry
 **0.1.52**, which is pass 1a's thirty-eight fixes. No pull request is open.
 Read `docs/plan.md` (the three goals and the claim board), then
 `blind-runs/pass-1a-report.md` (its head and sections 3 to 6), then

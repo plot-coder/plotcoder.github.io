@@ -69,7 +69,37 @@ Not the app's; the prompt's next head says so.
   guide still gets the rules — but each could say in a line that the
   other two say the same, so the third read is a choice.
 
+## The asking (entries 9 to 12)
+
+- [ ] **9 · "When a scene happens, where that matters."** The treatment
+  question's hint says nothing about which whens matter to a writer, so
+  the agent asked about all of them. *Plan:* the hint says to ask it once,
+  of the whole film — which whens matter here (a night, a day count, a
+  year) — and then only those per scene. *Held* until the list's end.
+- [ ] **10 · A plant true of only one version of a scene has no stated
+  home.** The man's card pays off only in the "alone" pier. The guide says
+  a plant true either way goes on the front card and the chosen version
+  inherits its arrows; a plant true of one version it does not mention. The
+  home exists — a setup arrow may land on a card behind another, since a
+  setup arrow is a claim and not a place in the story — and the guide does
+  not say so. *Plan:* one sentence in the guide's versions paragraph.
+- [ ] **11 · Whether a thing seen early is a card or a plant inside one.**
+  "Your notes don't say the sign is a scene at all." The guide reads "seen
+  early, not decided where" as an unlinked card; the app's vocabulary
+  forced the question. *Held:* see what the build does with the answer
+  ("I don't know yet — leave it open") — a thread (R60) with its start
+  open is the home the guide names for a thing whose first sighting is
+  not known, and the agent may reach it.
+- [ ] **12 · A dead man whose funeral is a scene.** The guide sends him to
+  the film's open lines "until the writer knows whom he matters to"; he
+  may be wholly decided and merely never on screen, and the app has
+  nowhere for him but a person's notes or an undecided list. *Held:* the
+  premise is the home for what is true before the film starts, and a
+  person's notes for whom he matters to once known; whether the guide
+  should say "a person never seen goes in the notes of the person he
+  matters to, or the premise" is the decision.
+
 ## Every entry, accounted for
 
 1 → decided against (the prompt's) · 2 → held · 3 → fixed · 4 → held · 5 →
-decided against · 6 → fixed · 7 → fixed · 8 → held.
+decided against · 6 → fixed · 7 → fixed · 8 → held · 9 → held · 10 → guide, planned · 11 → held · 12 → held.

@@ -88,6 +88,8 @@ export function toFdx(state, options = {}) {
 
   const title = [];
   if (options.title) title.push(paragraph("General", options.title, ' Alignment="Center"'));
+  // A title not decided: its candidates in the writer's words, under the stand-in (pass 1b, entry 40).
+  if (options.titleOpen) title.push(paragraph("General", `Title not decided: ${options.titleOpen}`, ' Alignment="Center"'));
   if (options.episode) title.push(paragraph("General", options.episode, ' Alignment="Center"'));
   if (options.author) title.push(paragraph("General", `Written by ${options.author}`, ' Alignment="Center"'));
   // Labelled, so a reader does not take the export's day for a draft they know (pass 1a, entry 55).

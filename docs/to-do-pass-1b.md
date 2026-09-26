@@ -225,7 +225,49 @@ Not the app's; the prompt's next head says so.
   pass 1a:* the reply says which one to tell the writer; the other two are
   what it is made of and what it is read against.
 
+## The exports and the reading of the whole (entries 39 to 48)
+
+- [ ] **39 · No disk on this door: three whole files in replies, saved by
+  the agent; "name it for the project" gives three files called Untitled.**
+  *Held for Robert:* whether the hosted door's exports answer with a link,
+  as `export_project` does, with its warning that the link dies with the
+  account.
+- [x] **40 · The title page is "Untitled" and a date; nothing says the title
+  is open or names the candidates.** *Fixed:* a title not decided prints
+  the writer's words under the stand-in in every export — "Title not
+  decided: Doyle's, or Last Orders, or The Dead Letter" — on the Fountain
+  and Final Draft title pages, under the Markdown title, and centred in
+  plain text. Tests.
+- [ ] **41, 42 · Of everything held open on the wall, only an open change
+  line and an open place reach the page; the rest vanish silently, and the
+  version behind and the cut scene are in no file and unmentioned.** *Held
+  for Robert:* what a script should carry of the wall's opens — a page at
+  the end, "what is not decided", in the producer's Markdown at least; and
+  whether the Markdown should say a scene is held two ways.
+- [ ] **43 · The export replies do not relay the lock advice; the
+  descriptions say to.** *Decided against, as pass 1a decided:* the
+  descriptions carry it once and the agent relayed it, which is what
+  happened.
+- [ ] **44 · Markdown numbers beats "## 1." and scenes "### 1 ·", and prints
+  a synopsis line for scenes and none for beats.** *Held for Robert:* one
+  numbering (the scene's) on both, and the beat's headline as its heading
+  is the reason there is no synopsis; the description says so.
+- [ ] **45 · "What the app says of the script against the wall" is two
+  word-count questions; nothing says who is on the pages, what recurs, or
+  which half of the film is written.** With **46** (the absence check
+  counts cards, so a person on no written page is clean) and **47** (the
+  duplicate check reads headlines, not pages). *Plan for Robert:* two fact
+  lines in the reading's pages head — who is on the written pages, by cue,
+  against their cards ("Declan: on 0 of 4 written pages; his cards
+  unwritten"), and which stretch of the film is written and which is
+  guess. Words, not sense, like R74's lines. A duplicate check over pages
+  is a design of its own.
+- [x] **48 · The setups line promises "where the plant's words land" and
+  lists a setup with nothing when the payoff is unwritten; the reason was
+  in the checks line at the foot.** *Fixed:* the setup's own line says
+  "not read — the payoff is unwritten", or that the fold has no words.
+
 ## Every entry, accounted for
 
 1 → decided against (the prompt's) · 2 → held · 3 → fixed · 4 → held · 5 →
-decided against · 6 → fixed · 7 → fixed · 8 → held · 9 → held · 10 → guide, planned · 11 → held · 12 → held · 13 → fixed · 14 → fixed · 15 → fixed · 16 → decided against · 17 → held · 18 → decided against · 19 → with 10 · 20 → fixed · 21 → fixed with 13 · 22 → planned · 23 → decided · 24 → decided against · 25 → held · 26 → held · 27 → fixed · 28 → fixed · 29 → decided against · 30 → fixed · 31, 32 → held · 33 → fixed · 34 → held · 35 → decided · 36 → fixed · 37 → held · 38 → decided against.
+decided against · 6 → fixed · 7 → fixed · 8 → held · 9 → held · 10 → guide, planned · 11 → held · 12 → held · 13 → fixed · 14 → fixed · 15 → fixed · 16 → decided against · 17 → held · 18 → decided against · 19 → with 10 · 20 → fixed · 21 → fixed with 13 · 22 → planned · 23 → decided · 24 → decided against · 25 → held · 26 → held · 27 → fixed · 28 → fixed · 29 → decided against · 30 → fixed · 31, 32 → held · 33 → fixed · 34 → held · 35 → decided · 36 → fixed · 37 → held · 38 → decided against · 39 → held · 40 → fixed · 41, 42 → held · 43 → decided against · 44 → held · 45, 46, 47 → planned for Robert · 48 → fixed.

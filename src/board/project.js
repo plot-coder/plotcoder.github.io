@@ -407,7 +407,9 @@ export function scriptTitles(project, board) {
   // A film whose title is not decided goes out as "Untitled", never as "Board 1": the board's default name is the app's word, not a title (round twenty-three, entry 53).
   // The byline and contact ride with the title on every export (pass 1a, entry 50).
   const front = { ...(project?.author ? { author: project.author } : {}), ...(project?.contact ? { contact: project.contact } : {}) };
-  if (!named) return { title: /^Board \d+$/.test(boardName) && (project?.boards ?? []).length <= 1 ? "Untitled" : boardName, ...front };
+  // A title not decided goes out as "Untitled" with the writer's words for the candidates beside it (pass 1b, entry 40).
+  const open = typeof project?.nameOpen === "string" && project.nameOpen.trim() ? { titleOpen: project.nameOpen.trim() } : {};
+  if (!named) return { title: /^Board \d+$/.test(boardName) && (project?.boards ?? []).length <= 1 ? "Untitled" : boardName, ...open, ...front };
   const boards = project.boards ?? [];
   if (boards.length > 1) {
     // A series: the project is the title and the board is the episode line,

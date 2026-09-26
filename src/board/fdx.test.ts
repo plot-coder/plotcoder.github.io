@@ -181,3 +181,10 @@ describe("revisions in Final Draft out (round fourteen, entry 45)", () => {
     expect(fromFdx(xml).setAside.revisedParagraphs).toBe(2);
   });
 });
+
+describe("a title not decided on the Final Draft title page (pass 1b, entry 40)", () => {
+  it("prints the candidates under the title", () => {
+    const xml = toFdx(seedState(), { title: "Untitled", titleOpen: "Doyle's, or Last Orders" });
+    expect(xml).toContain("<Text>Title not decided: Doyle's, or Last Orders</Text>");
+  });
+});

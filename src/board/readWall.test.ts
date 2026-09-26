@@ -1265,7 +1265,8 @@ describe("the pages, against the wall (R74)", () => {
     expect(reading.findings.map((finding) => finding.kind)).not.toContain("unsaid");
     expect(reading.setups[0].page).toEqual({ state: "no words" });
     expect(reading.pages.foldsWithoutWords).toBe(1);
-    expect(describePage(reading.setups[0])).toBe("");
+    expect(describePage(reading.setups[0])).toBe("on the page: not read — the fold has no words (set_plant names what it plants)");
+    expect(describePage(readWall(unwritten).setups[0])).toBe("on the page: not read — the payoff is unwritten");
   });
 
   it("asks about a card whose page carries fewer than half its change line's words, counting them, and the cast's names are not counted", () => {

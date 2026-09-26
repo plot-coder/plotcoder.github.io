@@ -1333,3 +1333,15 @@ describe("the pages, against the wall (R74)", () => {
     expect(readWall(left).left.map((finding) => finding.kind)).toContain("behind");
   });
 });
+
+describe("the unmarked question with turns proposed (pass 1b, entry 20)", () => {
+  it("says the proposals are waiting on the writer instead of reading as if nothing were proposed", () => {
+    let state = wall({ id: "a" }, { id: "b" }, { id: "c" });
+    expect(readWall(state).findings.find((finding) => finding.kind === "unmarked")?.text).toBe("No card is marked as a beat, so the runs between turns cannot be read yet.");
+    state = run(state, { type: "propose_beat", ids: ["a", "c"] });
+    expect(readWall(state).proposed).toEqual(["a", "c"]);
+    expect(readWall(state).findings.find((finding) => finding.kind === "unmarked")?.text).toBe("No card is kept as a beat yet — 2 proposed, waiting on the writer to keep or strike them — so the runs between turns cannot be read yet.");
+    state = run(state, { type: "set_rank", ids: ["a"], rank: "beat" });
+    expect(readWall(state).findings.some((finding) => finding.kind === "unmarked")).toBe(false);
+  });
+});

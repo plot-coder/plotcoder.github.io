@@ -69,7 +69,114 @@ Not the app's; the prompt's next head says so.
   guide still gets the rules — but each could say in a line that the
   other two say the same, so the third read is a choice.
 
+## The asking (entries 9 to 12)
+
+- [ ] **9 · "When a scene happens, where that matters."** The treatment
+  question's hint says nothing about which whens matter to a writer, so
+  the agent asked about all of them. *Plan:* the hint says to ask it once,
+  of the whole film — which whens matter here (a night, a day count, a
+  year) — and then only those per scene. *Held* until the list's end.
+- [ ] **10 · A plant true of only one version of a scene has no stated
+  home.** The man's card pays off only in the "alone" pier. The guide says
+  a plant true either way goes on the front card and the chosen version
+  inherits its arrows; a plant true of one version it does not mention. The
+  home exists — a setup arrow may land on a card behind another, since a
+  setup arrow is a claim and not a place in the story — and the guide does
+  not say so. *Plan:* one sentence in the guide's versions paragraph.
+- [ ] **11 · Whether a thing seen early is a card or a plant inside one.**
+  "Your notes don't say the sign is a scene at all." The guide reads "seen
+  early, not decided where" as an unlinked card; the app's vocabulary
+  forced the question. *Held:* see what the build does with the answer
+  ("I don't know yet — leave it open") — a thread (R60) with its start
+  open is the home the guide names for a thing whose first sighting is
+  not known, and the agent may reach it.
+- [ ] **12 · A dead man whose funeral is a scene.** The guide sends him to
+  the film's open lines "until the writer knows whom he matters to"; he
+  may be wholly decided and merely never on screen, and the app has
+  nowhere for him but a person's notes or an undecided list. *Held:* the
+  premise is the home for what is true before the film starts, and a
+  person's notes for whom he matters to once known; whether the guide
+  should say "a person never seen goes in the notes of the person he
+  matters to, or the premise" is the decision.
+
+## The build and the reading (entries 13 to 25)
+
+- [x] **13 · `create_cards` summarises each card in a line and leaves out
+  the fold, the open cast, the open change line and the open when.** "The
+  man from the chain" came back as its cast and not a word of its fold;
+  only the last card's reply is in full; `list_board` had to confirm the
+  opens landed. With 21 (a write's tail before the first reading only
+  counts questions), no create reply said whether an open field landed.
+  *Plan:* each card's line in the reply names its fold and every open on
+  it, in the words that landed. Server, with a test.
+- [x] **14 · "Made 8 of 8 cards, each wired after the one before it"** when
+  the eighth was born set aside and has no follows arrow. *Plan:* the
+  sentence counts the wired ones and names the ones born aside or as a
+  version. Server, with a test.
+- [x] **15 · A cut scene needs a change line.** The bank scene's notes never
+  say what changes in it; the writer's cut sentence was parked in the
+  change-line slot. "There is no way to say unstated that is not
+  undecided." *Plan:* a card born set aside, or set aside later, needs no
+  change line and is not asked for one — it is out of the film. Kernel
+  and server, with tests; the guide says so.
+- [ ] **16 · A thread's open ends are the writer's word, and the reading
+  asks about them** while every other "I don't know" is listed and not
+  asked. *Decided against, by R60:* the loose end is the one question a
+  fold cannot ask, and it is asked from the end the writer left open on
+  purpose — the thread is where a thing is known to pay off before it is
+  known to be first seen. The reading's line could say why in a clause.
+- [ ] **17 · The sign, held as a thread through no card and two open
+  lines: one thing in two places.** *Held:* an empty thread with both
+  ends open asks what the open line already says; whether the thread
+  should wait for a card is the decision.
+- [ ] **18 · The fish knife's thread runs only through the version behind;
+  the reply said the reading asks nothing of that end, and the reading
+  asked about the other end.** *Decided against:* the start is open by the
+  writer's word and is asked as every loose start is; the reply's "asks
+  nothing of that end" was about the tied end on the card out of the film.
+  The reply could say both halves in one sentence.
+- [ ] **19 · Nothing on the wall can say "true of one version only".** The
+  man's card pays off on the front pier only, and choosing the other
+  version would carry the payoff onto a scene where no card is thrown.
+  *Same as 10:* the setup arrow may land on the version behind; the guide
+  says so once 10 is done, and `choose_version` should not carry a setup
+  arrow whose payoff the writer drew onto the other version. Check the
+  carry rule with a test.
+- [x] **20 · "No card is marked as a beat" above five proposed turns.**
+  *Plan:* the unmarked question says "5 proposed, none kept yet: set_rank
+  beat keeps one" when proposals stand. Kernel, with a test.
+- [ ] **22 · The manager, on the aside card only, is "(on no card)" in the
+  cast line and clean in the checks.** The cast line has words for this
+  case ("on no card in the film: only on a card set aside…") and did not
+  use them. *Plan:* find why — a test on a person cast only on a card born
+  aside.
+- [ ] **23 · Mairead's husband: not a card, not about the film.** Held in
+  her open words, "a guess at a home". *Decided:* the right home; the
+  guide's line on a person's open says "anything undecided about them,
+  including someone who belongs to them".
+- [ ] **24 · Organize with five proposed turns: "no beats yet, so nothing
+  sets the rows".** *Decided against:* a proposed turn is a scene until
+  kept (R71). The reply should say "5 proposed turns are scenes until
+  kept" rather than "no beats yet".
+- [ ] **25 · A card appears twice under open**: in the grouped line ("the
+  change line, on 3 cards") and again with its other opens. *Held:* the
+  grouping is on purpose (round twenty, entry 22) and the card's own line
+  carries only what is particular to it; the head could say "each card
+  once, after the shared lines".
+
+## The directions (entries 26 on)
+
+- [ ] **26 · Keep and strike are two calls, and neither reply says what
+  the two beats now bound.** "The tail names the shape change after a
+  move or a cut, not after a rank." *Plan:* a rank's reply says the runs
+  the kept beat now bounds, as a move's does. Server, with a test. Held
+  until the run's end, with the other tails.
+- [x] **27 · `set_order` on an order that is already the order tears out
+  and redraws every follows arrow with new ids, and says a reordering
+  happened.** *Fixed:* an order that is already the order changes nothing;
+  the reply says so and that the arrows and their ids stand. Test.
+
 ## Every entry, accounted for
 
 1 → decided against (the prompt's) · 2 → held · 3 → fixed · 4 → held · 5 →
-decided against · 6 → fixed · 7 → fixed · 8 → held.
+decided against · 6 → fixed · 7 → fixed · 8 → held · 9 → held · 10 → guide, planned · 11 → held · 12 → held · 13 → fixed · 14 → fixed · 15 → fixed · 16 → decided against · 17 → held · 18 → decided against · 19 → with 10 · 20 → fixed · 21 → fixed with 13 · 22 → planned · 23 → decided · 24 → decided against · 25 → held · 26 → held · 27 → fixed.

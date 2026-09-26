@@ -1921,6 +1921,20 @@ server.registerTool(
 /** The card create_note made last, for a caller that made several (create_cards). */
 let lastMadeCard = null;
 
+/** What a card was born holding beyond its lines (pass 1b, entry 13): its fold, and every open on it in the writer's words, so a create reply says whether they landed. */
+function bornWith(note) {
+  const parts = [];
+  if (note.plants) parts.push(`plants ${note.plantsWhat ? note.plantsWhat : "something (unnamed)"}`);
+  if ((note.open ?? "").trim()) parts.push(`open: "${note.open.trim()}"`);
+  if ((note.changeOpen ?? "").trim()) parts.push(`change line open: "${note.changeOpen.trim()}"`);
+  if ((note.castOpen ?? "").trim()) parts.push(`cast open: "${note.castOpen.trim()}"`);
+  if ((note.whenOpen ?? "").trim()) parts.push(`when open: "${note.whenOpen.trim()}"`);
+  if ((note.locationOpen ?? "").trim()) parts.push(`place open: "${note.locationOpen.trim()}"`);
+  if (note.aside) parts.push("set aside, not in the film");
+  if (note.alternativeOf) parts.push("a version behind another card");
+  return parts.length ? ` — ${parts.join("; ")}` : "";
+}
+
 async function createNoteCall(args) {
     const { state } = await readBoard();
     // A card born as a version, or born set aside (round twenty-three, entry 20): neither is in the order, so neither is wired.
@@ -1944,7 +1958,8 @@ async function createNoteCall(args) {
     // one ⌘Z on the wall takes back the whole call and not just the cast.
     if (args.after && args.before) return ok("Say where: after one card, or before one, not both.");
     // A card needs its change line — unless it is born open (round eighteen, entry 13): the writer had no consequence yet.
-    if (!(args.change ?? "").trim() && !(args.open ?? "").trim() && !(args.changeOpen ?? "").trim())
+    // A card born set aside (pass 1b, entry 15) needs no change line either: it is out of the film, and the wall never asks it for one.
+    if (!(args.change ?? "").trim() && !(args.open ?? "").trim() && !(args.changeOpen ?? "").trim() && !args.aside)
       return ok("A card needs its change line: what is different when the scene ends. If the writer has not decided it, pass changeOpen with their words: the change line waits and the wall still asks the card's other questions. (open, with their words, says the whole card is undecided and silences all of them.)");
     // The card beside which the new scene goes (round sixteen, entry 36): by id or headline, on this board.
     const besideKey = (args.after ?? args.before ?? "").trim();
@@ -2084,13 +2099,16 @@ server.registerTool(
       if (lastMadeCard?.id) {
         made += 1;
         const it = lastMadeCard;
-        lines.push(`${index + 1}. "${it.headline}" (${it.id}) — ${it.rank === "beat" ? "a beat" : "a scene"}, ${it.lengthEighths === null && !(it.text ?? "").trim() ? "unsized" : `${formatPages(noteEighths(it))} pages`}${it.location ? `, ${atPlaceWords(it.location)}` : it.locationOpen ? ", place open" : ", no place yet"}${it.when ? `, ${it.when}` : ""}${(it.characterIds ?? []).length || (it.maybeCharacterIds ?? []).length ? `, cast ${castLine(it.characterIds, it.maybeCharacterIds, (await readBoard()).state.characters)}` : ""}`);
+        lines.push(`${index + 1}. "${it.headline}" (${it.id}) — ${it.rank === "beat" ? "a beat" : "a scene"}, ${it.lengthEighths === null && !(it.text ?? "").trim() ? "unsized" : `${formatPages(noteEighths(it))} pages`}${it.location ? `, ${atPlaceWords(it.location)}` : it.locationOpen ? ", place open" : ", no place yet"}${it.when ? `, ${it.when}` : ""}${(it.characterIds ?? []).length || (it.maybeCharacterIds ?? []).length ? `, cast ${castLine(it.characterIds, it.maybeCharacterIds, (await readBoard()).state.characters)}` : ""}${bornWith(it)}`);
         if (!own) previous = it.id;
       } else {
         lines.push(`${index + 1}. "${card.headline}" — not made: ${text.split("\n")[0]}`);
       }
     }
-    return ok(`Made ${made} of ${args.cards.length} card${args.cards.length === 1 ? "" : "s"}${args.after ? ` after "${args.after}"` : ""}, each wired after the one before it:\n${lines.join("\n")}\n\nAfter the last card: ${lastReply}`);
+    // What was wired and what was born outside the order (pass 1b, entry 14): a card born set aside or as a version takes no arrow.
+    const outside = args.cards.filter((card) => card.of || card.aside).length;
+    const wired = made - Math.min(outside, made);
+    return ok(`Made ${made} of ${args.cards.length} card${args.cards.length === 1 ? "" : "s"}${args.after ? ` after "${args.after}"` : ""}${outside ? `: ${wired} wired in order, each after the one before it, and ${outside} born outside the order (set aside, or a version behind another), on no follows arrow` : ", each wired after the one before it"}:\n${lines.join("\n")}\n\nAfter the last card: ${lastReply}`);
   },
 );
 
@@ -2691,6 +2709,11 @@ server.registerTool(
     const outside = ids.map((id) => state.notes.find((note) => note.id === id)).filter((note) => note.alternativeOf || note.aside);
     if (outside.length) return ok(`Nothing changed: ${outside.map((note) => `"${note.headline}"`).join(", ")} ${outside.length === 1 ? "is" : "are"} not in the film (${outside.map((note) => (note.aside ? "set aside" : "a version behind another card")).join(", ")}), and the order is the film's.`);
     const named = new Set(ids);
+    // An order that is already the order changes nothing (pass 1b, entry 27): the arrows stand, their ids stand,
+    // and the reply says so rather than tearing every arrow out and drawing it again.
+    const follows = state.arrows.filter((item) => item.kind !== "setup" && (named.has(item.from) || named.has(item.to)));
+    const already = follows.length === ids.length - 1 && ids.slice(1).every((id, index) => follows.some((item) => item.from === ids[index] && item.to === id));
+    if (already) return ok(`Nothing changed: that is already the order — ${ids.map((id) => `"${state.notes.find((note) => note.id === id)?.headline ?? id}"`).join(" → ")}. The ${follows.length} follows arrow${follows.length === 1 ? "" : "s"} and their ids stand.`, { order: storyOrder(state).map((note) => note.id) });
     let removed = 0;
     let drawn = 0;
     const drawnPairs = [];

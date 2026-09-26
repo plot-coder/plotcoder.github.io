@@ -3519,7 +3519,7 @@ describe("a person who may or may not be in a scene (round twenty-two, H9)", () 
     expect(listed).toMatch(/beats: 0/);
     const read = await door.callTool("read_wall");
     expect(read).toContain("turns proposed and not yet kept or struck");
-    expect(read).toContain("[unmarked] No card is marked as a beat");
+    expect(read).toContain("[unmarked] No card is kept as a beat yet — 2 proposed, waiting on the writer to keep or strike them");
     expect(await door.callTool("read_wall", { only: "questions" })).toContain("waiting on the writer: 2 turns you proposed");
     // Keep one, strike the other.
     expect(await door.callTool("set_rank", { ids: [depot.id], rank: "beat" })).toContain('1 card(s) are now beat: "The depot, after hours"');
@@ -3666,5 +3666,77 @@ describe("the pages, against the wall (R74)", () => {
     expect(left).not.toMatch(/no such question/i);
     const again = await client.callTool("read_wall");
     expect(again).toMatch(/left, for now[\s\S]*\[unsaid\]/);
+  });
+});
+
+describe("create_cards says what each card was born holding (pass 1b, entries 13 to 15)", () => {
+  let root;
+  let client;
+
+  beforeAll(async () => {
+    root = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-born-"));
+    client = new McpClient(root);
+    await client.start();
+    for (const seeded of ["maya-letter", "tom-lies", "letter-aloud"]) await client.callTool("delete_note", { id: seeded });
+  }, 30000);
+
+  afterAll(() => {
+    client?.stop();
+    if (root) fs.rmSync(root, { recursive: true, force: true });
+  });
+
+  it("names the fold and every open on each card's line, counts what was wired, and lets a card born set aside skip the change line", async () => {
+    const text = await client.callTool("create_cards", {
+      cards: [
+        { headline: "The man from the chain", change: "He leaves his card.", plantsWhat: "the man's card", whenOpen: "I don't know yet" },
+        { headline: "The funeral tea", changeOpen: "I don't know what changes yet", castOpen: "half the town, I could not tell you who" },
+        { headline: "The bank", aside: true },
+      ],
+    });
+    expect(text).toMatch(/^Made 3 of 3 cards: 2 wired in order, each after the one before it, and 1 born outside the order \(set aside, or a version behind another\), on no follows arrow:/);
+    expect(text).toContain('"The man from the chain" (');
+    expect(text).toMatch(/"The man from the chain" \([^)]+\) — a scene, unsized, no place yet — plants the man's card; when open: "I don't know yet"/);
+    expect(text).toMatch(/"The funeral tea" \([^)]+\) — a scene, unsized, no place yet — change line open: "I don't know what changes yet"; cast open: "half the town, I could not tell you who"/);
+    expect(text).toMatch(/"The bank" \([^)]+\) — a scene, unsized, no place yet — set aside, not in the film/);
+    expect(text).not.toContain("not made");
+    const board = await client.callToolData("list_board");
+    const bank = board.notes.find((note) => note.headline === "The bank");
+    expect(bank.aside).toBe(true);
+    // The placeholder stands on a card out of the film, and the wall never asks it (storyOrder leaves it out).
+    expect(bank.change).toBe("What changes?");
+  });
+
+  it("still asks a card in the film for its change line", async () => {
+    const text = await client.callTool("create_note", { headline: "The range goes out", x: 100, y: 900 });
+    expect(text).toMatch(/^A card needs its change line/);
+  });
+});
+
+describe("set_order on an order that is already the order (pass 1b, entry 27)", () => {
+  let root;
+  let client;
+
+  beforeAll(async () => {
+    root = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-order-"));
+    client = new McpClient(root);
+    await client.start();
+    for (const seeded of ["maya-letter", "tom-lies", "letter-aloud"]) await client.callTool("delete_note", { id: seeded });
+    await client.callTool("create_cards", { cards: [{ headline: "One", change: "A." }, { headline: "Two", change: "B." }, { headline: "Three", change: "C." }] });
+  }, 30000);
+
+  afterAll(() => {
+    client?.stop();
+    if (root) fs.rmSync(root, { recursive: true, force: true });
+  });
+
+  it("changes nothing, keeps the arrows' ids, and says so", async () => {
+    const before = await client.callToolData("list_board");
+    const ids = before.arrows.map((arrow) => arrow.id).sort();
+    const text = await client.callTool("set_order", { cards: ["One", "Two", "Three"] });
+    expect(text).toMatch(/^Nothing changed: that is already the order — "One" → "Two" → "Three"\. The 2 follows arrows and their ids stand\./);
+    const after = await client.callToolData("list_board");
+    expect(after.arrows.map((arrow) => arrow.id).sort()).toEqual(ids);
+    const moved = await client.callTool("set_order", { cards: ["Two", "One", "Three"] });
+    expect(moved).toMatch(/^The story now runs: "Two" → "One" → "Three"/);
   });
 });

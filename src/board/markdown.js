@@ -68,6 +68,8 @@ export function toMarkdown(state, options = {}) {
   const numbers = sceneNumbers(order, state.lock);
   const marks = revisionMarks(state);
   const out = [`# ${documentTitle(options)}`, ""];
+  // A title not decided: its candidates in the writer's words, under the stand-in (pass 1b, entry 40).
+  if (options.titleOpen) out.push(`*Title not decided: ${options.titleOpen}*`, "");
   // The byline and contact under the title, as the title page carries them (pass 1a, entry 50).
   if (options.author) out.push(`*Written by ${options.author}*`, "");
   if (options.contact) out.push(...String(options.contact).split("\n").filter((line) => line.trim()).map((line) => `${line.trim()}  `), "");
@@ -188,6 +190,7 @@ export function toPlainText(state, options = {}) {
   } else {
     out.push(centred(upper(title)));
   }
+  if (options.titleOpen) out.push("", centred(`(TITLE NOT DECIDED: ${upper(options.titleOpen)})`));
   if (options.author) out.push("", centred(`Written by ${options.author}`));
   if (state.revision) out.push("", centred(revisionLine(state).toUpperCase()));
   // The lock's date, as lock_numbers promises of every script out (pass 1a, entry 108).

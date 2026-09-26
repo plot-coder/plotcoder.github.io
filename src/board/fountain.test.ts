@@ -338,3 +338,10 @@ describe("a placeless card whose when is its headline (pass 1b, entry 33)", () =
     expect(sceneHeading(card({ headline: "The morning after", when: "the morning after", location: "Doyle's" }))).toBe(".DOYLE'S - THE MORNING AFTER");
   });
 });
+
+describe("a title not decided on the Fountain title page (pass 1b, entry 40)", () => {
+  it("prints the candidates under the title", () => {
+    expect(titlePage({ title: "Untitled", titleOpen: "Doyle's, or Last Orders" })).toBe("Title: Untitled\nTitle not decided: Doyle's, or Last Orders");
+    expect(toFountain(seedState(), { title: "Untitled", titleOpen: "Doyle's, or Last Orders" })).toContain("Title not decided: Doyle's, or Last Orders");
+  });
+});

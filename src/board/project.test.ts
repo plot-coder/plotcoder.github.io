@@ -382,3 +382,11 @@ describe("the title page (pass 1a, entry 50)", () => {
     expect(scriptTitles(emptyProject(), emptyProject().boards[0])).toEqual({ title: "Untitled" });
   });
 });
+
+describe("scriptTitles with a title not decided (pass 1b, entry 40)", () => {
+  it("carries the writer's words beside Untitled", () => {
+    const project = { ...emptyProject(), name: "Untitled project", nameOpen: "Doyle's, or Last Orders", boards: [{ id: "b", name: "Board 1" }] } as never;
+    expect(scriptTitles(project, { id: "b", name: "Board 1" } as never)).toEqual({ title: "Untitled", titleOpen: "Doyle's, or Last Orders" });
+    expect(scriptTitles({ ...(project as object), name: "Doyle's", nameOpen: "" } as never, { id: "b", name: "Board 1" } as never)).toEqual({ title: "Doyle's" });
+  });
+});

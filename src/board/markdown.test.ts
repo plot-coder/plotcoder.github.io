@@ -155,3 +155,14 @@ describe("the lock's date on the plain text's title (pass 1a, entry 108)", () =>
     expect(toPlainText(state, { title: "Pilot" })).toContain("SCENE NUMBERS LOCKED 2026-09-22");
   });
 });
+
+describe("a title not decided prints its candidates (pass 1b, entry 40)", () => {
+  it("under Untitled, in Markdown and plain text", () => {
+    const state = seedState();
+    const md = toMarkdown(state, { title: "Untitled", titleOpen: "Doyle's, or Last Orders, or The Dead Letter" });
+    expect(md.startsWith("# Untitled\n\n*Title not decided: Doyle's, or Last Orders, or The Dead Letter*\n\n")).toBe(true);
+    const text = toPlainText(state, { title: "Untitled", titleOpen: "Doyle's, or Last Orders, or The Dead Letter" });
+    expect(text).toContain("(TITLE NOT DECIDED: DOYLE'S, OR LAST ORDERS, OR THE DEAD LETTER)");
+    expect(toMarkdown(state, { title: "Doyle's" })).not.toContain("Title not decided");
+  });
+});

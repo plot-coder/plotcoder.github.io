@@ -921,6 +921,9 @@ export function describePage(setup) {
   if (!page) return "";
   if (page.state === "quoted") return page.quote ? `on the page: "${page.quote}"` : "on the page: the plant's word is there";
   if (page.state === "asked") return "on the page: not a word of the plant — asked below";
+  // Why a page was not read, said on the setup's own line (pass 1b, entry 48), not only in the checks line at the foot.
+  if (page.state === "unwritten") return "on the page: not read — the payoff is unwritten";
+  if (page.state === "no words") return "on the page: not read — the fold has no words (set_plant names what it plants)";
   return "";
 }
 

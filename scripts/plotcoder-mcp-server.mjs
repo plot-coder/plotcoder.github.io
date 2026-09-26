@@ -1924,6 +1924,18 @@ server.registerTool(
 /** The card create_note made last, for a caller that made several (create_cards). */
 let lastMadeCard = null;
 
+/** What a card still holds open after a write (pass 1b, entry 71), so "close whatever I left open on it" needs no read to check: each open field with its words and the tool that decides it. */
+function stillOpenOn(note) {
+  const fields = [
+    (note.open ?? "").trim() ? `the whole card ("${note.open.trim()}"; set_open "" closes it)` : null,
+    (note.locationOpen ?? "").trim() ? `its place ("${note.locationOpen.trim()}"; set_location decides it)` : null,
+    (note.whenOpen ?? "").trim() ? `its when ("${note.whenOpen.trim()}"; set_when decides it)` : null,
+    (note.castOpen ?? "").trim() ? `its cast ("${note.castOpen.trim()}"; cast decides it)` : null,
+    (note.maybeCharacterIds ?? []).length ? `${note.maybeCharacterIds.length} maybe${note.maybeCharacterIds.length === 1 ? "" : "s"} on its cast line (cast, without the question mark, decides)` : null,
+  ].filter(Boolean);
+  return fields.length ? ` Still open on this card, by the writer's word: ${fields.join("; ")}.` : "";
+}
+
 /** What a card was born holding beyond its lines (pass 1b, entry 13): its fold, and every open on it in the writer's words, so a create reply says whether they landed. */
 function bornWith(note) {
   const parts = [];
@@ -3019,7 +3031,7 @@ server.registerTool(
     const landedLines = String(args.text ?? "").split("\n").map((line) => line.trim()).filter(Boolean);
     const landed = landedLines.length ? ` First line as it landed: "${clip(landedLines[0], 80)}"${landedLines.length > 1 ? `; last: "${clip(landedLines[landedLines.length - 1], 80)}"` : ""}.` : "";
     return ok(
-      `Wrote "${result.headline}": ${printed} line(s) as they print${once("write-lines", " (headings, blank lines and wrapped dialogue counted; a [[note]] neither prints nor counts)")}, measured at ${formatPages(noteEighths(result))} of a 55-line page${once("write-measure", ", rounded to the nearest eighth and never below one eighth")}${noteEighths(result) < (result.lengthEighths ?? DEFAULT_NOTE_EIGHTHS) ? ` — a sketch: shorter than ${result.lengthEighths !== null ? "the writer's pages for it" : "the page it was read as"}${once("write-sketch", "; the wall counts the measure and says so")}` : ""}${cameraReply(result.text)}${where(live)}.${(result.changeOpen ?? "").trim() ? ` A page and no turn: its change line is still open by the writer's word ("${result.changeOpen.trim()}"); the reading counts it written and says so.` : ""}${twoHomes(result)}${revisionMark(state, result.id)}${once("heading-from-place", " The heading comes from the card's place and when, so the text starts with the action.")} While the text stands the wall reads the measure, not the estimate${(() => {
+      `Wrote "${result.headline}": ${printed} line(s) as they print${once("write-lines", " (headings, blank lines and wrapped dialogue counted; a [[note]] neither prints nor counts)")}, measured at ${formatPages(noteEighths(result))} of a 55-line page${once("write-measure", ", rounded to the nearest eighth and never below one eighth")}${noteEighths(result) < (result.lengthEighths ?? DEFAULT_NOTE_EIGHTHS) ? ` — a sketch: shorter than ${result.lengthEighths !== null ? "the writer's pages for it" : "the page it was read as"}${once("write-sketch", "; the wall counts the measure and says so")}` : ""}${cameraReply(result.text)}${where(live)}.${(result.changeOpen ?? "").trim() ? ` A page and no turn: its change line is still open by the writer's word ("${result.changeOpen.trim()}"); the reading counts it written and says so.` : ""}${stillOpenOn(result)}${twoHomes(result)}${revisionMark(state, result.id)}${once("heading-from-place", " The heading comes from the card's place and when, so the text starts with the action.")} While the text stands the wall reads the measure, not the estimate${(() => {
         // How far the measure sits from what the card was read as before (round eighteen, entry 43): the writer's estimate, or the page an unsized card is read as.
         // A card already written measures against its last measure, not the estimate under it (pass 1a, entries 66, 74).
         const wasWritten = beforeWrite && isMeasured(beforeWrite);

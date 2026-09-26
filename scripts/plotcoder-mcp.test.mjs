@@ -3794,8 +3794,10 @@ describe("the pages line names a written scene whose change line is open (pass 1
     const tea = (await client.callToolData("create_note", { headline: "The funeral tea", changeOpen: "I don't know what changes yet", x: 100, y: 100 })).id;
     await client.callToolData("create_note", { headline: "The pier", change: "She throws it in.", x: 330, y: 100 });
     await client.callTool("write_scene", { id: tea, text: "INT. THE HARBOUR BAR, UPSTAIRS - DAY\n\nHalf the town, and Mairead among them." });
+    await client.callTool("set_location", { ids: [tea], open: "I don't know yet — leave it open" });
     const wrote = await client.callTool("write_scene", { id: tea, text: "INT. THE HARBOUR BAR, UPSTAIRS - DAY\n\nHalf the town, and Mairead among them. She looks at the door." });
     expect(wrote).toContain('A page and no turn: its change line is still open by the writer\'s word ("I don\'t know what changes yet"); the reading counts it written and says so.');
+    expect(wrote).toContain('Still open on this card, by the writer\'s word: its place ("I don\'t know yet — leave it open"; set_location decides it).');
     const read = await client.callTool("read_wall");
     expect(read).toContain('pages: estimates — 1 of 2 cards are written ("The funeral tea"), the rest are guesses; one written scene has a page and no turn — the change line still open by the writer\'s word: "The funeral tea"');
   });

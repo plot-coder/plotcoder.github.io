@@ -1819,7 +1819,13 @@ server.registerTool(
     const { beats, scenes } = countRanks(state);
     return ok(
       // By name, so a wrong reading of "strike 3" is caught at a glance (round twenty-three, entry 35).
-      `${result?.length ?? 0} card(s) are now ${args.rank}: ${(result ?? []).map((note) => `"${note.headline}"`).join(", ")}${struck.length ? ` — the proposal${struck.length === 1 ? "" : "s"} struck: ${struck.map((note) => `"${note.headline}"`).join(", ")}` : ""}${where(live)}. The board holds ${beats} beats and ${scenes} scenes. The rows are as they were.${once("rank-rows", " organize lays a row per beat, when the writer wants the wall laid out.")}`,
+      `${result?.length ?? 0} card(s) are now ${args.rank}: ${(result ?? []).map((note) => `"${note.headline}"`).join(", ")}${struck.length ? ` — the proposal${struck.length === 1 ? "" : "s"} struck: ${struck.map((note) => `"${note.headline}"`).join(", ")}` : ""}${where(live)}. The board holds ${beats} beats and ${scenes} scenes.${(() => {
+        // The runs the changed turns now bound (pass 1b, entry 26): a rank changes the shape as a move does, and says so.
+        const changedIds = new Set((result ?? []).map((note) => note.id));
+        const reading = readWall(state);
+        const lines = describeRuns(reading, state).filter((line, index) => { const run = reading.runs[index]; return run && (changedIds.has(run.from) || changedIds.has(run.to)); });
+        return lines.length ? ` Runs now: ${lines.join("; ")}.` : "";
+      })()} The rows are as they were.${once("rank-rows", " organize lays a row per beat, when the writer wants the wall laid out.")}`,
       result,
     );
   },
@@ -2369,7 +2375,7 @@ server.registerTool(
       ...reading.later.map((item) => `  - "${state.notes.find((note) => note.id === item.id)?.headline ?? item.id}" is folded and pays off later, on "${boardById(projectForRead, item.boardId)?.name ?? item.boardId}"${item.noteId ? `, at ${episodeLabel(projectForRead, boardsNow, item.boardId, item.noteId)} "${boardsNow[item.boardId]?.notes?.find((note) => note.id === item.noteId)?.headline ?? item.noteId}"` : " — no scene there claims it yet"}`),
       ...reading.paidBy.map((item) => `  - "${state.notes.find((note) => note.id === item.id)?.headline ?? item.id}" pays off "${item.fromHeadline}" from "${item.fromBoardName}" (${episodeLabel(projectForRead, boardsNow, item.fromBoardId, item.fromNoteId)}), one board earlier`),
       ...(undecided.open.length
-        ? ["open, by the writer's word (listed, not asked about while the words stand; each card once, with everything open on it; set_open with \"\" closes a card, the field's own tool with open \"\" a field; \"whether someone is in it\" is decided by cast, with their name without the question mark or left off; a card not in the film is marked):", ...undecided.open]
+        ? ["open, by the writer's word (listed, not asked about while the words stand; words shared by several cards first, as one line, then each card once with what is particular to it; set_open with \"\" closes a card, the field's own tool with open \"\" a field; \"whether someone is in it\" is decided by cast, with their name without the question mark or left off; a card not in the film is marked):", ...undecided.open]
         : []),
       ...(undecided.blank.length
         ? ["blank on the wall (no value here, and no words of the writer's on the wall to say why. That is a fact about the wall, not about the writer: they may have told you, and a when, a length or who is in a scene with nobody named has no open of its own to hold it. The wall asks about some of these above, and says nothing of the rest):", ...undecided.blank]

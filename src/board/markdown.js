@@ -76,12 +76,9 @@ export function toMarkdown(state, options = {}) {
   if (options.premise) out.push(`*${options.premise}*`, "");
   if (state.logline) out.push(`**${state.logline}**`, "");
   if (state.revision) out.push(`*${revisionLine(state)} · a scene changed since it began has \\* after its heading*`, "");
-  let beat = 0;
   for (const note of order) {
-    if (note.rank === "beat") {
-      beat += 1;
-      out.push(`## ${beat}. ${note.headline || "Untitled beat"}`, "");
-    }
+    // A beat's heading carries the scene's own number, so the file has one numbering (pass 1b, entry 44).
+    if (note.rank === "beat") out.push(`## ${numbers.get(note.id) ? `${numbers.get(note.id)} · ` : ""}${note.headline || "Untitled beat"}`, "");
     const heading = sceneHeading(note).slice(1);
     const star = marks.get(note.id)?.revised ? " \\*" : "";
     out.push(`### ${numbers.get(note.id) ?? ""} · ${heading}${star}`.replace(/^###  · /, "### "), "");

@@ -27,7 +27,7 @@ Not the app's; the prompt's next head says so.
   writer's word wins, and the agent did what it said. Decided against
   changing the app; the next prompt says "the on-ramp's first calls, then
   your own project" in one line.
-- [ ] **2 · Tool descriptions invisible until a tool is loaded by name.**
+- [x] **2 · Tool descriptions invisible until a tool is loaded by name.**
   "The on-ramp says the tool descriptions carry the rest, and know the
   server by its tools; in this session a tool's description is invisible
   until I load that tool by name." The desktop app defers a connector's
@@ -159,7 +159,7 @@ Not the app's; the prompt's next head says so.
   sets the rows".** *Decided against:* a proposed turn is a scene until
   kept (R71). The reply should say "5 proposed turns are scenes until
   kept" rather than "no beats yet".
-- [ ] **25 · A card appears twice under open**: in the grouped line ("the
+- [x] **25 · A card appears twice under open**: in the grouped line ("the
   change line, on 3 cards") and again with its other opens. *Held:* the
   grouping is on purpose (round twenty, entry 22) and the card's own line
   carries only what is particular to it; the head could say "each card
@@ -167,7 +167,7 @@ Not the app's; the prompt's next head says so.
 
 ## The directions (entries 26 on)
 
-- [ ] **26 · Keep and strike are two calls, and neither reply says what
+- [x] **26 · Keep and strike are two calls, and neither reply says what
   the two beats now bound.** "The tail names the shape change after a
   move or a cut, not after a rank." *Plan:* a rank's reply says the runs
   the kept beat now bounds, as a move's does. Server, with a test. Held
@@ -249,7 +249,7 @@ Not the app's; the prompt's next head says so.
   descriptions say to.** *Decided against, as pass 1a decided:* the
   descriptions carry it once and the agent relayed it, which is what
   happened.
-- [ ] **44 · Markdown numbers beats "## 1." and scenes "### 1 ·", and prints
+- [x] **44 · Markdown numbers beats "## 1." and scenes "### 1 ·", and prints
   a synopsis line for scenes and none for beats.** *Held for Robert:* one
   numbering (the scene's) on both, and the beat's headline as its heading
   is the reason there is no synopsis; the description says so.
@@ -441,8 +441,8 @@ Not the app's; the prompt's next head says so.
 
 ## Every entry, accounted for
 
-1 → decided against (the prompt's) · 2 → held · 3 → fixed · 4 → held · 5 →
-decided against · 6 → fixed · 7 → fixed · 8 → held · 9 → held · 10 → guide, fixed · 11 → held · 12 → held · 13 → fixed · 14 → fixed · 15 → fixed · 16 → decided against · 17 → held · 18 → decided against · 19 → guide, with 10 · 20 → fixed · 21 → fixed with 13 · 22 → planned · 23 → decided · 24 → decided against · 25 → held · 26 → held · 27 → fixed · 28 → fixed · 29 → decided against · 30 → fixed · 31, 32 → held · 33 → fixed · 34 → held · 35 → decided · 36 → fixed · 37 → held · 38 → decided against · 39 → held · 40 → fixed · 41, 42 → held · 43 → decided against · 44 → held · 45, 46, 47 → planned for Robert · 48 → fixed · 49 → held · 50 → planned for Robert · 51 → fixed with 15 · 52 → held · 53 → fixed · 54 → decided · 55 → fixed · 56 → fixed · 57 → decided · 58 → decided against · 59 → fixed with 55 · 60 → fixed with 55 · 61 → guide, with 10 · 62 → fixed with 30 · 63 → fixed · 64 → fixed · 65 → guide · 66 → decided against · 67 → fixed · 68 → decided with 15 · 69 → fixed · 70 → decided · 71 → fixed · 72 → fixed · 73 → decided, said · 74 → fixed · 75 → planned for Robert · 76 → fixed · 77 → planned for Robert, with 50 · 78 → fixed · 79 → fixed, in the .fdx comment · 80, 81 → held for Robert, with 39 · 82 → fixed.
+1 → decided against (the prompt's) · 2 → fixed after the run · 3 → fixed · 4 → held · 5 →
+decided against · 6 → fixed · 7 → fixed · 8 → held · 9 → held · 10 → guide, fixed · 11 → held · 12 → fixed after the run · 13 → fixed · 14 → fixed · 15 → fixed · 16 → decided against · 17 → held · 18 → decided against · 19 → guide, with 10 · 20 → fixed · 21 → fixed with 13 · 22 → planned · 23 → decided · 24 → decided against · 25 → fixed after the run · 26 → fixed after the run · 27 → fixed · 28 → fixed · 29 → decided against · 30 → fixed · 31, 32 → fixed after the run · 33 → fixed · 34 → held · 35 → decided · 36 → fixed · 37 → held · 38 → decided against · 39 → held · 40 → fixed · 41, 42 → fixed after the run · 43 → decided against · 44 → fixed after the run · 45, 46, 47 → planned for Robert · 48 → fixed · 49 → held · 50 → planned for Robert · 51 → fixed with 15 · 52 → fixed after the run · 53 → fixed · 54 → decided · 55 → fixed · 56 → fixed · 57 → decided · 58 → decided against · 59 → fixed with 55 · 60 → fixed with 55 · 61 → guide, with 10 · 62 → fixed with 30 · 63 → fixed · 64 → fixed · 65 → guide · 66 → decided against · 67 → fixed · 68 → decided with 15 · 69 → fixed · 70 → decided · 71 → fixed · 72 → fixed · 73 → decided, said · 74 → fixed · 75 → planned for Robert · 76 → fixed · 77 → planned for Robert, with 50 · 78 → fixed · 79 → fixed, in the .fdx comment · 80, 81 → held for Robert, with 39 · 82 → fixed.
 
 ## The report's sections 3 to 6, against the list
 
@@ -463,6 +463,8 @@ version's payoff (61), the create replies (13, 21), the kept file (80).
 **Section 6** — what each undecided thing became on the page — is the
 pass's own finding and the material for the decisions below.
 
+**Done after the run (2026-09-26, night), the small batch before pass 2a:** 2 (the on-ramp's sentence for a session that shows names only), 25 (the open list's head says shared words first, then each card once), 26 (a rank's reply names the runs the changed turns now bound), 44 (Markdown's beat heading carries the scene's number, one numbering).
+
 ## Held for Robert, in one place
 
 - **What a script carries of the wall's opens** (41, 42, 37): a page at
@@ -480,10 +482,8 @@ pass's own finding and the material for the decisions below.
 - **"Since the writer last asked"** (75): a named mark to measure from.
 - **The hosted door's exports** (39, 80, 81): a link with its warning, and
   the kept file's name.
-- **The smaller ones:** a rank's reply naming the runs it bounds (26);
-  the treatment question on whens (9); a thread through no card beside
-  an open line (17); a never-seen person's home (12); a thing seen as a
-  card or a plant (11); a card listed twice under open (25); Markdown's
-  two numberings (44); the tool descriptions unseen until loaded (2); a
-  thread's start shown on the card (29).
+- **The smaller ones:** the treatment question on whens (9); a thread
+  through no card beside an open line (17); a never-seen person's home
+  (12); a thing seen as a card or a plant (11); a thread's start shown on
+  the card (29).
 

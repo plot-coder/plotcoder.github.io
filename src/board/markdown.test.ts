@@ -26,7 +26,7 @@ describe("Markdown out (R54)", () => {
         "",
         "**Can Maya forgive a useful lie?**",
         "",
-        "## 1. Maya finds the letter",
+        "## 1 · Maya finds the letter",
         "",
         "### 1 · THE PIANO SHOP",
         "",

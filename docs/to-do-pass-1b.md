@@ -467,6 +467,15 @@ pass's own finding and the material for the decisions below.
 
 ## Held for Robert, in one place
 
+**The four large ones are drawn, 2026-09-26, late:**
+`docs/mockups/pass-1b-decisions.html` — each as it ships beside what it
+could be, with a recommendation: the last page "What is not decided" in
+every export (1A); the card's maybe printed as one line under the
+heading (2A); the word checks at a third with four words to count (3);
+two fact lines in the pages head, the echo check after (4A, 4B). Waiting
+on Robert's word.
+
+
 - **What a script carries of the wall's opens** (41, 42, 37): a page at
   the end of the producer's Markdown, "what is not decided"; whether a
   scene held two ways or cut says so in a file; whether an open when marks

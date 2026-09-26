@@ -332,8 +332,9 @@ describe("the scene note says what is not decided about who is in it (round twen
 
 describe("a placeless card whose when is its headline (pass 1b, entry 33)", () => {
   it("prints the words once", () => {
-    expect(sceneHeading({ headline: "The morning after", when: "the morning after", locationOpen: "I don't know yet" })).toBe(".PLACE NOT DECIDED: THE MORNING AFTER");
-    expect(sceneHeading({ headline: "The morning after", when: "dawn", locationOpen: "I don't know yet" })).toBe(".PLACE NOT DECIDED: THE MORNING AFTER - DAWN");
-    expect(sceneHeading({ headline: "The morning after", when: "the morning after", location: "Doyle's" })).toBe(".DOYLE'S - THE MORNING AFTER");
+    const card = (fields: Record<string, string>) => ({ ...seedState().notes[0], location: "", locationOpen: "", when: "", ...fields }) as never;
+    expect(sceneHeading(card({ headline: "The morning after", when: "the morning after", locationOpen: "I don't know yet" }))).toBe(".PLACE NOT DECIDED: THE MORNING AFTER");
+    expect(sceneHeading(card({ headline: "The morning after", when: "dawn", locationOpen: "I don't know yet" }))).toBe(".PLACE NOT DECIDED: THE MORNING AFTER - DAWN");
+    expect(sceneHeading(card({ headline: "The morning after", when: "the morning after", location: "Doyle's" }))).toBe(".DOYLE'S - THE MORNING AFTER");
   });
 });

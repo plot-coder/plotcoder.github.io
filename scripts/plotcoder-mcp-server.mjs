@@ -3323,7 +3323,10 @@ server.registerTool(
       fs.writeFileSync(args.path, xml);
       return ok(`Wrote a Final Draft file with ${state.notes.length} scene(s), titled "${titles.title}"${titles.episode ? ` (${titles.episode})` : ""}, to ${args.path}; the app's own name for it is "${filename}".${state.lock ? " The title page says when the numbers were locked." : ""}${state.revision ? ` The ${state.revision.color} revision is declared in the file and its changed paragraphs marked.` : ""}`);
     }
-    return ok(xml.replace(/^(<\?xml[^>]*\?>\n)/, `$1<!-- Save as: ${filename.replace(/--/g, "- -")} -->\n`));
+    // The lock's advice rides the file's own comment line (pass 1b, entry 79): the reply is the file and nothing else,
+    // and a description is read once; the comment is read every time the file goes out unlocked.
+    const unlocked = state.lock ? "" : " Scene numbers follow the wall until lock_numbers keeps them; start_revision marks what changes after this draft.";
+    return ok(xml.replace(/^(<\?xml[^>]*\?>\n)/, `$1<!-- Save as: ${filename.replace(/--/g, "- -")}.${unlocked} -->\n`));
   },
 );
 

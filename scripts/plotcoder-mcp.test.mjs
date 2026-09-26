@@ -3946,3 +3946,28 @@ describe("striking an open line names the pages whose notes carry it (pass 1b, e
     expect(struck).toContain('A [[note]] on one page carries the line\'s words and may be stale now: "The first Friday" — read_pages shows the note; edit_scene takes it off.');
   });
 });
+
+describe("the Final Draft file's comment line carries the lock's advice while unlocked (pass 1b, entry 79)", () => {
+  let root;
+  let client;
+
+  beforeAll(async () => {
+    root = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-fdx-advice-"));
+    client = new McpClient(root);
+    await client.start();
+  }, 30000);
+
+  afterAll(() => {
+    client?.stop();
+    if (root) fs.rmSync(root, { recursive: true, force: true });
+  });
+
+  it("says the numbers follow the wall until lock_numbers, and stops once they are locked", async () => {
+    const before = await client.callTool("export_fdx");
+    expect(before).toMatch(/^<\?xml[^\n]*\n<!-- Save as: [^\n]*\.fdx\. Scene numbers follow the wall until lock_numbers keeps them; start_revision marks what changes after this draft\. -->\n/);
+    await client.callTool("lock_numbers");
+    const after = await client.callTool("export_fdx");
+    expect(after).toMatch(/^<\?xml[^\n]*\n<!-- Save as: [^\n]*\.fdx\. -->\n/);
+    expect(after).not.toContain("follow the wall");
+  });
+});

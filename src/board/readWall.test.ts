@@ -238,7 +238,7 @@ describe("findings", () => {
 
   it("returns nothing at all for an empty board", () => {
     const reading = readWall(emptyState());
-    expect(reading).toEqual({ order: [], sagWaiting: null, beats: [], runs: [], setups: [], payoffs: {}, later: [], paidBy: [], open: [], proposed: [], unlinked: [], openLines: [], openFields: [], versions: [], openPeople: [], wired: { linked: 0, of: 0 }, aside: [], threads: [], pages: { written: 0, of: 0, foldsWithoutWords: 0, payoffsUnwritten: 0 }, logline: null, findings: [], left: [] });
+    expect(reading).toEqual({ order: [], sagWaiting: null, beats: [], runs: [], setups: [], payoffs: {}, later: [], paidBy: [], open: [], proposed: [], unlinked: [], openLines: [], openFields: [], versions: [], openPeople: [], wired: { linked: 0, of: 0 }, aside: [], threads: [], pages: { written: 0, of: 0, foldsWithoutWords: 0, payoffsUnwritten: 0, changeOpen: [] }, logline: null, findings: [], left: [] });
   });
 
   it("notes that runs cannot be read until a beat is marked, and passes no judgement on the count", () => {
@@ -1259,7 +1259,7 @@ describe("the pages, against the wall (R74)", () => {
     let reading = readWall(unwritten);
     expect(reading.findings.map((finding) => finding.kind)).not.toContain("unsaid");
     expect(reading.setups[0].page).toEqual({ state: "unwritten" });
-    expect(reading.pages).toEqual({ written: 1, of: 2, foldsWithoutWords: 0, payoffsUnwritten: 1 });
+    expect(reading.pages).toEqual({ written: 1, of: 2, foldsWithoutWords: 0, payoffsUnwritten: 1, changeOpen: [] });
     const wordless = run(ninetyNine("EXT. NOREEN'S YARD - DAY\n\nJoe hands her the keys."), { type: "set_plant", ids: ["yard"], plants: false }, { type: "set_plant", ids: ["yard"], plants: true });
     reading = readWall(wordless);
     expect(reading.findings.map((finding) => finding.kind)).not.toContain("unsaid");
@@ -1324,7 +1324,7 @@ describe("the pages, against the wall (R74)", () => {
   it("is not read on a wall with nothing written, and a left page question keeps its word while the count moves", () => {
     const blank = wall({ id: "a", rank: "beat" }, { id: "b" });
     const reading = readWall(blank);
-    expect(reading.pages).toEqual({ written: 0, of: 2, foldsWithoutWords: 0, payoffsUnwritten: 0 });
+    expect(reading.pages).toEqual({ written: 0, of: 2, foldsWithoutWords: 0, payoffsUnwritten: 0, changeOpen: [] });
     expect(reading.logline).toBeNull();
     expect(reading.findings.map((finding) => finding.kind).filter((kind) => ["unsaid", "behind", "unvoiced"].includes(kind))).toEqual([]);
     const state = ninetyNine("EXT. NOREEN'S YARD - DAY\n\nNoreen walks round the van once more and says two thousand. Joe hands her the keys.");
@@ -1344,5 +1344,15 @@ describe("the unmarked question with turns proposed (pass 1b, entry 20)", () => 
     expect(readWall(state).findings.find((finding) => finding.kind === "unmarked")?.text).toBe("No card is kept as a beat yet — 2 proposed, waiting on the writer to keep or strike them — so the runs between turns cannot be read yet.");
     state = run(state, { type: "set_rank", ids: ["a"], rank: "beat" });
     expect(readWall(state).findings.some((finding) => finding.kind === "unmarked")).toBe(false);
+  });
+});
+
+describe("a page written while its change line is open (pass 1b, entry 55)", () => {
+  it("is counted as written and named as a page with no turn", () => {
+    const state = run(wall({ id: "tea", headline: "The funeral tea" }), { type: "update_note", id: "tea", changeOpen: "I don't know what changes yet" }, { type: "set_text", id: "tea", text: "INT. THE HARBOUR BAR, UPSTAIRS - DAY\n\nHalf the town, and Mairead among them." });
+    const reading = readWall(state);
+    expect(reading.pages.written).toBe(1);
+    expect(reading.pages.changeOpen).toEqual(["tea"]);
+    expect(reading.findings.some((finding) => finding.kind === "behind")).toBe(false);
   });
 });

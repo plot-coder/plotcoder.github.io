@@ -571,7 +571,8 @@ export function readWall(state, options = {}) {
   // the whole film, because nothing joined the one to the other.
   const pageWords = (note) => new Set(words(pageText(note)).filter((word) => !nameWords.has(word)));
   const claimWords = (text) => [...new Set(words(text).filter((word) => !nameWords.has(word)))];
-  const pagesRead = { written: order.filter((note) => isMeasured(note)).length, of: order.length, foldsWithoutWords: 0, payoffsUnwritten: 0 };
+  // A page written while its change line is still open (pass 1b, entry 55): counted as written, and said, so a scene with a page and no turn is not lost in the count.
+  const pagesRead = { written: order.filter((note) => isMeasured(note)).length, of: order.length, foldsWithoutWords: 0, payoffsUnwritten: 0, changeOpen: order.filter((note) => isMeasured(note) && (note.changeOpen ?? "").trim()).map((note) => note.id) };
   // A payoff whose page has not a word of what the fold planted. The fold's
   // words (R62) are what the arrow claims; when one lands, the setups line
   // quotes the page's own sentence there, so "does not play" is read in the

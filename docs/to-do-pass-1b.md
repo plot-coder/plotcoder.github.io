@@ -176,7 +176,22 @@ Not the app's; the prompt's next head says so.
   happened.** *Fixed:* an order that is already the order changes nothing;
   the reply says so and that the arrows and their ids stand. Test.
 
+- [x] **28 · One sentence decided two things held in two places** — the
+  thread's open start and the open line about whether the sign is a scene
+  at all — "and nothing links them, so I had to remember the line
+  existed". *Fixed:* tying a thread's end names the open lines about the
+  film that carry the thread's words, and says strike_open_line if the
+  decision closed one. Words, not sense; the striking stays the writer's.
+  Test.
+- [ ] **29 · The first Friday's corner is not folded for the sign** though
+  the thread starts there: "a card that plainly plants the sign shows no
+  plant until the end is chosen". *Decided against, by the combine log:*
+  a fold asks where it pays off and the thread already asks where it
+  comes out; folding the start would ask the one question twice. The
+  card could show the thread's start on the wall (R60's yarn) — a drawing
+  for Robert, not a rule.
+
 ## Every entry, accounted for
 
 1 → decided against (the prompt's) · 2 → held · 3 → fixed · 4 → held · 5 →
-decided against · 6 → fixed · 7 → fixed · 8 → held · 9 → held · 10 → guide, planned · 11 → held · 12 → held · 13 → fixed · 14 → fixed · 15 → fixed · 16 → decided against · 17 → held · 18 → decided against · 19 → with 10 · 20 → fixed · 21 → fixed with 13 · 22 → planned · 23 → decided · 24 → decided against · 25 → held · 26 → held · 27 → fixed.
+decided against · 6 → fixed · 7 → fixed · 8 → held · 9 → held · 10 → guide, planned · 11 → held · 12 → held · 13 → fixed · 14 → fixed · 15 → fixed · 16 → decided against · 17 → held · 18 → decided against · 19 → with 10 · 20 → fixed · 21 → fixed with 13 · 22 → planned · 23 → decided · 24 → decided against · 25 → held · 26 → held · 27 → fixed · 28 → fixed · 29 → decided against.

@@ -1742,7 +1742,7 @@ server.registerTool(
     const command = typeof args.line === "number" ? { type: "strike_open_line", index: args.line - 1 } : { type: "strike_open_line", text: args.line };
     const { state, changed, result, live } = await commit(command);
     if (!changed) return ok(`Nothing struck: no such line. ${(state.openLines ?? []).length ? `The film's list: ${state.openLines.map((line, index) => `${index + 1}. ${line}`).join(" ")}` : "Nothing is held as not decided about the film."}`);
-    return ok(`Struck, as decided: "${result.line}"${where(live)}. ${result.openLines.length} still not decided about the film. Where what they decided belongs is that field's own tool.`, result);
+    return ok(`Struck, as decided: "${result.line}"${where(live)}. ${result.openLines.length} still not decided about the film. Where what they decided belongs: a fact true of the whole film in the premise (set_premise); a when on its cards (set_when); the acts as groups (create_group); a plant on its card (set_plant); a thing about a person on their page (update_character).`, result);
   },
 );
 

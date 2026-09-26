@@ -4429,8 +4429,13 @@ server.registerTool(
     if (!changed) return ok(`Nothing changed: "${thread.name}" already reads that way.`);
     const tied = [result.before.startOpen && !result.thread.startOpen ? "its start" : null, result.before.endOpen && !result.thread.endOpen ? "its end" : null].filter(Boolean);
     const reopened = [!result.before.startOpen && result.thread.startOpen ? "its start" : null, !result.before.endOpen && result.thread.endOpen ? "its end" : null].filter(Boolean);
+    // A decision about a thread may close a line about the film that names the same thing (pass 1b, entry 28): the
+    // reply names those lines, by their words, so the agent need not remember them; whether one is closed is the writer's.
+    const nameWords = new Set(String(result.thread.name ?? "").toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, " ").split(/\s+/).filter((word) => word.length > 2));
+    const namedLines = tied.length && nameWords.size ? (state.openLines ?? []).filter((line) => line.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, " ").split(/\s+/).some((word) => nameWords.has(word))) : [];
+    const namedLine = namedLines.length ? ` ${namedLines.length === 1 ? "An open line about the film names it too" : `${namedLines.length} open lines about the film name it too`}: ${namedLines.map((line) => `"${line}"`).join("; ")} — strike_open_line if this decided ${namedLines.length === 1 ? "it" : "one"}.` : "";
     return ok(
-      `Now ${threadLine(state, result.thread)}${where(live)}.${heldLine(state, result.thread)}${tied.length ? ` Tied ${tied.join(" and ")}; the reading stops asking about ${tied.length === 1 ? "it" : "them"}.` : ""}${reopened.length ? ` Opened ${reopened.join(" and ")}; the reading asks about ${reopened.length === 1 ? "it" : "them"} again.` : ""}${foldLine(state, result.fold, result.thread)}`,
+      `Now ${threadLine(state, result.thread)}${where(live)}.${heldLine(state, result.thread)}${tied.length ? ` Tied ${tied.join(" and ")}; the reading stops asking about ${tied.length === 1 ? "it" : "them"}.` : ""}${namedLine}${reopened.length ? ` Opened ${reopened.join(" and ")}; the reading asks about ${reopened.length === 1 ? "it" : "them"} again.` : ""}${foldLine(state, result.fold, result.thread)}`,
       result.thread,
     );
   },

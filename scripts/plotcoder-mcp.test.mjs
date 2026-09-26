@@ -3740,3 +3740,36 @@ describe("set_order on an order that is already the order (pass 1b, entry 27)", 
     expect(moved).toMatch(/^The story now runs: "Two" → "One" → "Three"/);
   });
 });
+
+describe("tying a thread names the open lines that name the same thing (pass 1b, entry 28)", () => {
+  let root;
+  let client;
+
+  beforeAll(async () => {
+    root = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-thread-lines-"));
+    client = new McpClient(root);
+    await client.start();
+    for (const seeded of ["maya-letter", "tom-lies", "letter-aloud"]) await client.callTool("delete_note", { id: seeded });
+    await client.callTool("create_cards", { cards: [{ headline: "The first Friday", change: "Eleven in the queue." }, { headline: "The last night", change: "The queue is out the door." }] });
+    await client.callTool("create_thread", { name: "the sign", startOpen: true, endOpen: true });
+    await client.callTool("add_open_line", { text: "Whether the sign is a scene of its own or a thing seen inside one" });
+    await client.callTool("add_open_line", { text: "The sign at the end: lit, or down" });
+    await client.callTool("add_open_line", { text: "Now, or 1987" });
+  }, 30000);
+
+  afterAll(() => {
+    client?.stop();
+    if (root) fs.rmSync(root, { recursive: true, force: true });
+  });
+
+  it("says which lines about the film name the thread, and leaves striking them to the writer", async () => {
+    const text = await client.callTool("update_thread", { thread: "the sign", add: ["The first Friday"], startOpen: false });
+    expect(text).toContain("Tied its start; the reading stops asking about it.");
+    expect(text).toContain('2 open lines about the film name it too: "Whether the sign is a scene of its own or a thing seen inside one"; "The sign at the end: lit, or down" — strike_open_line if this decided one.');
+    expect(text).not.toContain("1987");
+    // Nothing struck: the three lines still stand on the wall.
+    const read = await client.callTool("read_wall");
+    expect(read).toContain("Now, or 1987");
+    expect(read).toContain("The sign at the end: lit, or down");
+  });
+});

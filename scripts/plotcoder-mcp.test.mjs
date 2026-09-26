@@ -3997,3 +3997,29 @@ describe("edit_scene replacing a note with nothing closes the gap (pass 1b, entr
     expect(board.notes.find((note) => note.id === id).text).toBe("EXT. DOYLE'S - NIGHT\n\nDOYLE'S in red neon, the Y dead.\n\nMairead counts the queue.");
   });
 });
+
+describe("a rank's reply names the runs the changed turns now bound (pass 1b, entry 26)", () => {
+  let root;
+  let client;
+
+  beforeAll(async () => {
+    root = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-rank-runs-"));
+    client = new McpClient(root);
+    await client.start();
+    for (const seeded of ["maya-letter", "tom-lies", "letter-aloud"]) await client.callTool("delete_note", { id: seeded });
+    await client.callTool("create_cards", { cards: [{ headline: "The first Friday", change: "Eleven." }, { headline: "The man", change: "The card." }, { headline: "The range", change: "Lit." }, { headline: "The last night", change: "Out the door." }] });
+  }, 30000);
+
+  afterAll(() => {
+    client?.stop();
+    if (root) fs.rmSync(root, { recursive: true, force: true });
+  });
+
+  it("says what runs between the kept beats", async () => {
+    const notes = (await client.callToolData("list_board")).notes;
+    const id = (headline) => notes.find((note) => note.headline === headline).id;
+    const text = await client.callTool("set_rank", { ids: [id("The first Friday"), id("The last night")], rank: "beat" });
+    expect(text).toContain("The board holds 2 beats and 2 scenes.");
+    expect(text).toContain('Runs now: "The first Friday" → "The last night": about 2 pages, 2 cards, estimated.');
+  });
+});

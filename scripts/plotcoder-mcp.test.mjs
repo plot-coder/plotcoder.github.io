@@ -3875,7 +3875,8 @@ describe("leave_question takes a card by its headline (pass 1b, entry 72)", () =
     await client.start();
     for (const seeded of ["maya-letter", "tom-lies", "letter-aloud"]) await client.callTool("delete_note", { id: seeded });
     await client.callTool("create_cards", { cards: [{ headline: "The first Friday", change: "Eleven in the queue.", plantsWhat: "the sign" }, { headline: "The morning after", change: "She opens." }] });
-    await client.callTool("create_arrow", { from: "The first Friday", to: "The morning after", kind: "setup" });
+    const notes = (await client.callToolData("list_board")).notes;
+    await client.callTool("create_arrow", { from: notes.find((note) => note.headline === "The first Friday").id, to: notes.find((note) => note.headline === "The morning after").id, kind: "setup" });
   }, 30000);
 
   afterAll(() => {
@@ -3891,5 +3892,31 @@ describe("leave_question takes a card by its headline (pass 1b, entry 72)", () =
     expect(left).toMatch(/^Left/);
     const read = await client.callTool("read_wall");
     expect(read).toMatch(/left, for now[\s\S]*\[unsaid\][\s\S]*the sign is on the page as DOYLE'S, lit/);
+  });
+});
+
+describe("how long it is, once every scene is written (pass 1b, entry 74)", () => {
+  let root;
+  let client;
+
+  beforeAll(async () => {
+    root = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-whole-"));
+    client = new McpClient(root);
+    await client.start();
+    for (const seeded of ["maya-letter", "tom-lies", "letter-aloud"]) await client.callTool("delete_note", { id: seeded });
+  }, 30000);
+
+  afterAll(() => {
+    client?.stop();
+    if (root) fs.rmSync(root, { recursive: true, force: true });
+  });
+
+  it("says the script as it prints is the number to say, and the cards' figure is what it is made of", async () => {
+    const one = (await client.callToolData("create_note", { headline: "One", change: "A.", x: 100, y: 100 })).id;
+    expect(await client.callTool("read_wall", { only: "length" })).toContain("Say this one to the writer: the film by its cards");
+    await client.callTool("write_scene", { id: one, text: "INT. DOYLE'S - NIGHT\n\nThe bell over the door." });
+    const whole = await client.callTool("read_wall", { only: "length" });
+    expect(whole).toContain("Every scene is written, so the number to say to the writer is the script as it prints — page_count's — and this one is what it is made of");
+    expect(whole).not.toContain("Say this one to the writer");
   });
 });

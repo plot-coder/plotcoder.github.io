@@ -59,7 +59,10 @@ export function sceneHeading(note) {
   // No place: a mark, then the headline. Which mark says whether the writer
   // has left the place open or nobody has said; neither reads as a slugline.
   const words = place || `${placeOpen ? OPEN_PLACE_HEADING : NO_PLACE_HEADING} ${note.headline || "UNTITLED"}`;
-  return `.${upper(words)}${when ? ` - ${upper(when)}` : ""}`;
+  // A placeless card whose when is its own headline's words prints them once (pass 1b, entry 33):
+  // "PLACE NOT DECIDED: THE MORNING AFTER - THE MORNING AFTER" said nothing twice.
+  const whenTwice = !place && when && when.toLowerCase() === String(note.headline ?? "").trim().toLowerCase();
+  return `.${upper(words)}${when && !whenTwice ? ` - ${upper(when)}` : ""}`;
 }
 
 /**

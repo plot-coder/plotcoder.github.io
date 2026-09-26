@@ -31,7 +31,9 @@ function isCue(line) {
  * cues, dialogue and parentheticals are skipped.
  */
 export function cameraLines(text) {
-  const lines = (text ?? "").split("\n");
+  // A [[note]] never prints, so the camera never sees it (pass 1b, entry 30): its words are blanked and its
+  // line numbers kept, so a mark's `at` still points at the page's own line.
+  const lines = String(text ?? "").replace(/\[\[[\s\S]*?\]\]/g, (note) => note.replace(/[^\n]/g, " ")).split("\n");
   const found = [];
   let inDialogue = false;
   for (const [at, line] of lines.entries()) {

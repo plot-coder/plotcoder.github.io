@@ -191,7 +191,41 @@ Not the app's; the prompt's next head says so.
   card could show the thread's start on the wall (R60's yarn) — a drawing
   for Robert, not a rule.
 
+## The writing (entries 30 to 38)
+
+- [x] **30 · The camera check reads the [[notes]], which never print.** All
+  eight marks across four scenes landed on notes holding the word
+  "decided", the agent's word for what the writer had not decided. *Fixed:*
+  a note is not the page; the camera never reads it. Test.
+- [ ] **31, 32 · Two of four written scenes questioned for not doing what
+  their cards say** — "she knows the number now" against "Nine. Ten.
+  Eleven."; "leaves" against "lays". Words, not sense, as the head says;
+  still half the written scenes asked. *Held for Robert:* the threshold
+  (fewer than half, on change lines of seven or eight words) is the
+  question; "none of its words" would have asked neither. The mockup named
+  both; the run is the measure.
+- [x] **33 · "PLACE NOT DECIDED: THE MORNING AFTER - THE MORNING AFTER".**
+  A placeless card whose when is its own headline's words printed them
+  twice. *Fixed:* once. Test.
+- [ ] **34 · A maybe on the cast cannot be written**: the page has no
+  question mark the way the card does; the only home was a note. Pass 1a's
+  34 and 35 again. *Held for Robert:* the page's form for a person who may
+  or may not be in the scene.
+- [ ] **35 · The two-places warning** (a note and the card's open words for
+  one undecided thing) "is true of every scene I wrote. It was said once."
+  *Decided:* once a session is the rule for advice (round twenty-two); the
+  agent read it once and applied it. Nothing to change.
+- [x] **36 · "2 lines the camera cannot see (decided)"** read as a status,
+  not the offending word. *Fixed:* the reply says "by the word "decided"".
+- [ ] **37 · A when left open prints a heading with no time, the same as a
+  when nobody said.** In Fountain the difference is only in the note.
+  *Held for Robert:* whether an open when prints a mark on the heading as
+  an open place does ("TIME NOT DECIDED"), or stays a note.
+- [ ] **38 · One "how long" gives three numbers.** *Decided against, as in
+  pass 1a:* the reply says which one to tell the writer; the other two are
+  what it is made of and what it is read against.
+
 ## Every entry, accounted for
 
 1 → decided against (the prompt's) · 2 → held · 3 → fixed · 4 → held · 5 →
-decided against · 6 → fixed · 7 → fixed · 8 → held · 9 → held · 10 → guide, planned · 11 → held · 12 → held · 13 → fixed · 14 → fixed · 15 → fixed · 16 → decided against · 17 → held · 18 → decided against · 19 → with 10 · 20 → fixed · 21 → fixed with 13 · 22 → planned · 23 → decided · 24 → decided against · 25 → held · 26 → held · 27 → fixed · 28 → fixed · 29 → decided against.
+decided against · 6 → fixed · 7 → fixed · 8 → held · 9 → held · 10 → guide, planned · 11 → held · 12 → held · 13 → fixed · 14 → fixed · 15 → fixed · 16 → decided against · 17 → held · 18 → decided against · 19 → with 10 · 20 → fixed · 21 → fixed with 13 · 22 → planned · 23 → decided · 24 → decided against · 25 → held · 26 → held · 27 → fixed · 28 → fixed · 29 → decided against · 30 → fixed · 31, 32 → held · 33 → fixed · 34 → held · 35 → decided · 36 → fixed · 37 → held · 38 → decided against.

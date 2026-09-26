@@ -25,3 +25,12 @@ describe("the lines the camera cannot see (the handover's call 6)", () => {
     expect(cameraLines("")).toEqual([]);
   });
 });
+
+describe("a [[note]] is not the page (pass 1b, entry 30)", () => {
+  it("never marks the words of a note, and keeps the line numbers of the page's own lines", () => {
+    const text = ".DOYLE'S - NIGHT\n\n[[Declan and Priya are not on the page; that is not a decision, the writer has not decided.]]\n\nMairead counts the queue. She knows the number now.\n\n[[the sign: lit, or down — not decided]]";
+    const found = cameraLines(text);
+    expect(found).toEqual([{ at: 4, line: "Mairead counts the queue. She knows the number now.", verbs: ["knows"] }]);
+    expect(cameraLines("[[she decided\nto go]]")).toEqual([]);
+  });
+});

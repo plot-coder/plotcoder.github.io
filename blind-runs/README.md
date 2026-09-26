@@ -133,14 +133,19 @@ directions phase. Each round's findings are itemised in `REQUIREMENTS.md`,
   from it as it ran (`docs/to-do-pass-1a.md`) and what waits on a word:
   R74, the pages read against the wall. The next session on goal 1 starts
   here; pass 1b's prompt is the next thing to write.
-- `prompt.md` — **pass 1a**, as it ran 2026-09-22: the first
-  pass of goal 1 in `docs/plan.md`, a complete script. "Ninety-Nine" through
-  the desktop connector alone against 0.1.51: the wall as round fourteen
-  built it, then every scene written, the script out three ways and the
-  Final Draft file back in, then the film edited across its length on the
-  writer's word, and what the app can say of the whole. The writer's
-  answers and the eighteen directions sit above the divider. Paste
-  everything below its divider.
+- `prompt.md` — **pass 1b**, cued 2026-09-26: the second pass of goal 1
+  in `docs/plan.md`, a complete script **from notes**. "Doyle's" through
+  the desktop connector alone against 0.1.53: the wall as round twenty-four
+  built it, with the writer answering as that round's writer did, then
+  every scene the writer will let the agent write, the script out three
+  ways, and then the film decided one undecided thing at a time — what an
+  open change line, an open cast, a when true of the whole film, a version
+  behind, a cut scene and an open card each print as, whether the agent
+  reaches for the pages read against the wall (R74), and an undo through
+  the door on a written script. The writer's answers and the twenty
+  directions sit above the divider. Paste everything below its divider.
+- `pass-1a-prompt.md` — pass 1a's own instructions, as they ran
+  2026-09-22, without their copy of the treatment.
 - `round-twenty-four-prompt.md` — round twenty-four's own instructions, as
   they ran, without their copy of the notes.
 - `round-twenty-four-idea.md` — "Doyle's", the notes: six scenes the writer

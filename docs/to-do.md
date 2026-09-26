@@ -56,7 +56,14 @@ copies it in).
    the checks in `readWall.js` (pure, tested), the words in the server, the
    tab in the app, the guide and `public/writers.html`; then a release.
 2. **Pass 1b — "Doyle's" to a complete script, from notes** (the claim
-   board in `docs/plan.md`). **Before the run:** take the user-scope
+   board in `docs/plan.md`). **Cued 2026-09-26** on the branch
+   `claude/pass-1b`: the prompt is written (`blind-runs/prompt.md`, twenty
+   directions; 1a's archived as `blind-runs/pass-1a-prompt.md`), the stdio
+   block is out of `~/.claude.json` (backup
+   `~/.claude/backups/claude.json.before-pass-1b`), the door carries 0.1.53.
+   Waiting on Robert to paste it into a no-folder session with the
+   connector on; the driving session relays the writer. **Before the run,
+   as planned:** take the user-scope
    `plotcoder-board` stdio block out of `~/.claude.json` on this Mac (copy
    the file to `~/.claude/backups/claude.json.before-pass-1b` first), so
    the fresh session goes in through the desktop connector `plot-coder`

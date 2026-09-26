@@ -427,7 +427,18 @@ Not the app's; the prompt's next head says so.
   the numbers are unlocked. Test. Plain text and Markdown have no such
   line and keep the description's word.
 
+- [ ] **80, 81 · The project's copy through the link leaves a file on the
+  account nobody asked for, named by a timestamp.** *Held for Robert, with
+  39:* whether a copy taken as a link should be kept with the project's
+  files or be a one-hour link and nothing more; and whether the kept
+  file's name should be the project's with a date, not a timestamp.
+
+- [x] **82 · Removing a note is "replace it with nothing", and the reply
+  cannot say whether a blank paragraph remains.** *Fixed:* replacing with
+  nothing takes the line out and closes the gap, and the reply says so.
+  Test.
+
 ## Every entry, accounted for
 
 1 → decided against (the prompt's) · 2 → held · 3 → fixed · 4 → held · 5 →
-decided against · 6 → fixed · 7 → fixed · 8 → held · 9 → held · 10 → guide, fixed · 11 → held · 12 → held · 13 → fixed · 14 → fixed · 15 → fixed · 16 → decided against · 17 → held · 18 → decided against · 19 → guide, with 10 · 20 → fixed · 21 → fixed with 13 · 22 → planned · 23 → decided · 24 → decided against · 25 → held · 26 → held · 27 → fixed · 28 → fixed · 29 → decided against · 30 → fixed · 31, 32 → held · 33 → fixed · 34 → held · 35 → decided · 36 → fixed · 37 → held · 38 → decided against · 39 → held · 40 → fixed · 41, 42 → held · 43 → decided against · 44 → held · 45, 46, 47 → planned for Robert · 48 → fixed · 49 → held · 50 → planned for Robert · 51 → fixed with 15 · 52 → held · 53 → fixed · 54 → decided · 55 → fixed · 56 → fixed · 57 → decided · 58 → decided against · 59 → fixed with 55 · 60 → fixed with 55 · 61 → guide, with 10 · 62 → fixed with 30 · 63 → fixed · 64 → fixed · 65 → guide · 66 → decided against · 67 → fixed · 68 → decided with 15 · 69 → fixed · 70 → decided · 71 → fixed · 72 → fixed · 73 → decided, said · 74 → fixed · 75 → planned for Robert · 76 → fixed · 77 → planned for Robert, with 50 · 78 → fixed · 79 → fixed, in the .fdx comment.
+decided against · 6 → fixed · 7 → fixed · 8 → held · 9 → held · 10 → guide, fixed · 11 → held · 12 → held · 13 → fixed · 14 → fixed · 15 → fixed · 16 → decided against · 17 → held · 18 → decided against · 19 → guide, with 10 · 20 → fixed · 21 → fixed with 13 · 22 → planned · 23 → decided · 24 → decided against · 25 → held · 26 → held · 27 → fixed · 28 → fixed · 29 → decided against · 30 → fixed · 31, 32 → held · 33 → fixed · 34 → held · 35 → decided · 36 → fixed · 37 → held · 38 → decided against · 39 → held · 40 → fixed · 41, 42 → held · 43 → decided against · 44 → held · 45, 46, 47 → planned for Robert · 48 → fixed · 49 → held · 50 → planned for Robert · 51 → fixed with 15 · 52 → held · 53 → fixed · 54 → decided · 55 → fixed · 56 → fixed · 57 → decided · 58 → decided against · 59 → fixed with 55 · 60 → fixed with 55 · 61 → guide, with 10 · 62 → fixed with 30 · 63 → fixed · 64 → fixed · 65 → guide · 66 → decided against · 67 → fixed · 68 → decided with 15 · 69 → fixed · 70 → decided · 71 → fixed · 72 → fixed · 73 → decided, said · 74 → fixed · 75 → planned for Robert · 76 → fixed · 77 → planned for Robert, with 50 · 78 → fixed · 79 → fixed, in the .fdx comment · 80, 81 → held for Robert, with 39 · 82 → fixed.

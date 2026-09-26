@@ -3971,3 +3971,29 @@ describe("the Final Draft file's comment line carries the lock's advice while un
     expect(after).not.toContain("follow the wall");
   });
 });
+
+describe("edit_scene replacing a note with nothing closes the gap (pass 1b, entry 82)", () => {
+  let root;
+  let client;
+
+  beforeAll(async () => {
+    root = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-note-off-"));
+    client = new McpClient(root);
+    await client.start();
+    for (const seeded of ["maya-letter", "tom-lies", "letter-aloud"]) await client.callTool("delete_note", { id: seeded });
+  }, 30000);
+
+  afterAll(() => {
+    client?.stop();
+    if (root) fs.rmSync(root, { recursive: true, force: true });
+  });
+
+  it("says the note is gone and leaves no blank paragraph", async () => {
+    const id = (await client.callToolData("create_note", { headline: "The first Friday", change: "Eleven in the queue.", x: 100, y: 100 })).id;
+    await client.callTool("write_scene", { id, text: "EXT. DOYLE'S - NIGHT\n\nDOYLE'S in red neon, the Y dead.\n\n[[the sign's end is not decided]]\n\nMairead counts the queue." });
+    const text = await client.callTool("edit_scene", { id, find: "[[the sign's end is not decided]]", replace: "" });
+    expect(text).toMatch(/^Took it out of "The first Friday": "\[\[the sign's end is not decided\]\]" is gone, and no blank paragraph stands where it was/);
+    const board = await client.callToolData("list_board");
+    expect(board.notes.find((note) => note.id === id).text).toBe("EXT. DOYLE'S - NIGHT\n\nDOYLE'S in red neon, the Y dead.\n\nMairead counts the queue.");
+  });
+});

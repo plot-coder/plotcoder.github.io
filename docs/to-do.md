@@ -14,8 +14,8 @@ done and merged, what is left, and the order I would take it in.
 Robert's word ("build all four as recommended") — R75, what a script
 carries of the wall's opens (the maybe's line, the last page), and R74
 refined (a third with four words to count; who speaks on the written
-pages and which stretch is written, as facts). Released as 0.1.56; the
-handover's next line says whether the door has it. What waits on Robert
+pages and which stretch is written, as facts). Released as 0.1.56: npm, the
+pin, the function redeployed and the door checked live. What waits on Robert
 now: pass 2a's mockup page (`docs/mockups/pass-2a-the-morning-after.html`,
 to draw), the echo check (1b's 47), and the smaller 1b items.
 

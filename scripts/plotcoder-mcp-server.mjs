@@ -101,6 +101,7 @@ import {
 } from "../src/board/project.js";
 import { selectStretch, stretchState } from "../src/board/stretch.js";
 import { findCards } from "../src/board/find.js";
+import { PLACE_FIELDS, placeKey, placeLine, placePage, renamePlacePage, updatePlace } from "../src/board/places.js";
 
 /**
  * One PlotCoder server, with its own doors and its own trail: the stdio door
@@ -2426,7 +2427,7 @@ server.registerTool(
         const places = [...byPlace.values()].sort((a, b) => b.on - a.on);
         return [
           `cast: ${cast.length ? cast.map((person) => `${person.name} (${person.on === 0 ? (person.maybe ? "on no card for certain" : state.notes.some((note) => (note.alternativeOf || note.aside) && (note.characterIds ?? []).includes(person.id)) ? "on no card in the film: only on a card set aside or a version behind, so not asked about" : "on no card") : `${person.on} scene${person.on === 1 ? "" : "s"}`}${person.maybe ? `, and maybe ${person.maybe} more` : ""})`).join(", ") : "(nobody yet)"}`,
-          `places: ${places.length ? places.map((item) => `${item.place} (${item.on})`).join(", ") : "(none yet)"}`,
+          `places: ${places.length ? places.map((item) => `${item.place} (${item.on}${placePage(projectForRead, item.place) ? ", page" : ""})`).join(", ") : "(none yet)"}`,
           // The film's days, once any card holds one (R78): the calendar read off the wall, never asked for.
           ...(() => {
             const days = new Map();
@@ -3457,7 +3458,7 @@ server.registerTool(
       const held = meta.id === openId ? state : isBoardState(boards[meta.id]) ? normalizeState(boards[meta.id]) : emptyState();
       return { id: meta.id, name: meta.name, order: storyOrder(held).map((note) => ({ id: note.id, headline: note.headline })) };
     });
-    const brief = segmentBrief(state, args.ids, { title: board?.name, episode: project.boards.findIndex((meta) => meta.id === openId) + 1, episodes: project.boards.length, premise: project.premise || undefined, boards: withOrder });
+    const brief = segmentBrief(state, args.ids, { title: board?.name, episode: project.boards.findIndex((meta) => meta.id === openId) + 1, episodes: project.boards.length, premise: project.premise || undefined, places: project.places ?? [], boards: withOrder });
     if (!brief) return ok(`No cards with ids ${args.ids.join(", ")}. Call list_board.`);
     return ok(brief);
   },
@@ -3665,7 +3666,7 @@ server.registerTool(
       const held = meta.id === openId ? state : isBoardState(boards[meta.id]) ? normalizeState(boards[meta.id]) : emptyState();
       return { id: meta.id, name: meta.name, order: storyOrder(held).map((note) => ({ id: note.id, headline: note.headline })) };
     });
-    const brief = segmentBrief(state, args.ids, { title: board?.name, episode: project.boards.findIndex((meta) => meta.id === openId) + 1, episodes: project.boards.length, premise: project.premise || undefined, boards: withOrder });
+    const brief = segmentBrief(state, args.ids, { title: board?.name, episode: project.boards.findIndex((meta) => meta.id === openId) + 1, episodes: project.boards.length, premise: project.premise || undefined, places: project.places ?? [], boards: withOrder });
     if (!brief) return ok(`No cards with ids ${args.ids.join(", ")}. Call list_board.`);
     const provider = env.PLOTCODER_VIDEO_PROVIDER;
     if (!provider) {
@@ -3741,15 +3742,22 @@ server.registerTool(
 server.registerTool(
   "add_picture",
   {
-    title: "Add a picture to a person's page",
+    title: "Add a picture to a person's page or a place's",
     description:
-      "Through the account door: put a picture — an image file by path — on a person's page, by the character's id or name. The writer sees it in the page's gallery; the first picture is the face on their page.",
-    inputSchema: { character: z.string().min(1), path: z.string().min(1) },
+      "Through the account door: put a picture — an image file by path — on a person's page, by the character's id or name, or on a place's page, by its phrase as the cards carry it (place). The writer sees it in the page's gallery; the first picture is the face of the person or the place.",
+    inputSchema: { character: z.string().optional(), place: z.string().optional(), path: z.string().min(1) },
   },
   async (args) => {
+    if (!args.character?.trim() && !args.place?.trim()) return ok("Say whose page: character (an id or a name) or place (its phrase).");
     const account = await findAccount();
     if (!account) return shut("No account door: pictures are files on the project, and need PLOTCODER_EMAIL and PLOTCODER_PASSWORD to add.");
     if (!account.projectId) return ok(noProjectYet());
+    // A place's pictures live under its phrase, spelt any way (R79), as the app's gallery keeps them.
+    if (args.place?.trim()) {
+      const filed = await fileAsset(account, "picture", `place:${placeKey(args.place)}`, args.path);
+      if (filed.error) return ok(filed.error);
+      return ok(`Added "${filed.name}" to the page of "${args.place.trim()}" (saved to the account; the writer's gallery has it).`, { id: filed.id, place: args.place.trim() });
+    }
     const { state } = await readBoard();
     const wanted = args.character.trim().toLowerCase();
     const person = state.characters.find((item) => item.id === args.character) ?? state.characters.find((item) => item.name.trim().toLowerCase() === wanted);
@@ -4429,6 +4437,119 @@ server.registerTool(
     }
     lines.push(`open_board and read_pages with scene for a card's page; the ids are the boards' own.`);
     return ok(lines.join("\n"), { found: shown.map((item) => ({ board: item.boardId, id: item.id, headline: item.headline, where: item.where })) });
+  },
+);
+
+// A place's page (R79): kept on the project, keyed by the phrase the cards
+// carry, one page for every board. Written with update_place, read with
+// read_place, and renamed with rename_place, which moves the cards through
+// the kernel board by board and the page with them.
+function placeScenes(project, boards, openId, openState, name) {
+  return project.boards.map((meta) => {
+    const held = meta.id === openId ? openState : isBoardState(boards[meta.id]) ? normalizeState(boards[meta.id]) : emptyState();
+    return { meta, on: storyOrder(held).filter((note) => placeKey(note.location ?? "") === placeKey(name)) };
+  });
+}
+
+server.registerTool(
+  "read_place",
+  {
+    title: "Read a place's page",
+    description:
+      "A place's page, by its phrase as the cards carry it (case and spacing aside): what the camera sees there, what is heard when nobody speaks, notes, and what is open about it by the writer's word — or \"no page yet\" — and every card at that place across every board, in story order, with its change line. One page for the project, as a person has one. The reading never asks for a page.",
+    inputSchema: { name: z.string().min(1).describe("The place's phrase, as a card's place line carries it.") },
+  },
+  async (args) => {
+    const { state, boardId, live, base } = await readBoard();
+    const { project, boards } = await readProject();
+    const openId = boardId ?? project.activeBoardId;
+    const page = placePage(project, args.name);
+    const parts = placeScenes(project, boards, openId, state, args.name);
+    const total = parts.reduce((sum, part) => sum + part.on.length, 0);
+    const name = page?.name ?? parts.flatMap((part) => part.on)[0]?.location ?? args.name.trim();
+    if (!page && !total) return ok(`No card is at "${args.name.trim()}" and it has no page. read_wall lists the places; update_place writes a page for a place before any card is there.`);
+    const lines = [
+      `PlotCoder place (${door(live, base)})`,
+      `${name} — on ${total} card${total === 1 ? "" : "s"} across ${project.boards.length} board${project.boards.length === 1 ? "" : "s"} of the project`,
+      ...(page
+        ? [...PLACE_FIELDS.map((field) => `  ${field}: ${page[field] || "(empty)"}`), ...(page.open ? [`  not decided yet, by the writer's word: ${page.open}`] : [])]
+        : ["  no page yet — nothing written, nothing invented; update_place writes a line"]),
+      ...parts.flatMap((part) =>
+        part.on.length
+          ? [`  "${part.meta.name}", ${part.on.length} card${part.on.length === 1 ? "" : "s"} in story order:`, ...part.on.map((note, index) => `    ${index + 1}. ${note.id} "${note.headline}"${note.when ? ` (${note.when})` : ""} — ${note.change}`)]
+          : [],
+      ),
+    ];
+    return ok(lines.join("\n"), { page, boards: parts.map((part) => ({ id: part.meta.id, name: part.meta.name, cards: part.on.map((note) => note.id) })) });
+  },
+);
+
+server.registerTool(
+  "update_place",
+  {
+    title: "Write a place's page",
+    description:
+      "Write lines on a place's page, by its phrase: looks (what the camera sees first), sound (what is heard there when nobody speaks), notes, any subset, in the writer's words; open holds what is not decided about it, listed and never asked. \"\" clears a line; a page with no line left is gone. The first line written makes the page, keyed by the phrase the cards carry, one page for every board. Ask the writer before inventing a look: a video tool will be handed it.",
+    inputSchema: {
+      name: z.string().min(1),
+      looks: z.string().optional(),
+      sound: z.string().optional(),
+      notes: z.string().optional(),
+      open: z.string().optional(),
+    },
+  },
+  async (args) => {
+    const fields = Object.fromEntries([...PLACE_FIELDS, "open"].filter((field) => typeof args[field] === "string").map((field) => [field, args[field]]));
+    if (!Object.keys(fields).length) return ok("Say which lines: looks, sound, notes or open, in the writer's words (\"\" clears one).");
+    const { project, boards, rev, base, live } = await readProject();
+    const next = updatePlace(project, args.name, fields);
+    if (next === project) return ok(`Nothing changed on the page of "${args.name.trim()}".`);
+    await writeProject(next, boards, rev, base);
+    const page = placePage(next, args.name);
+    if (!page) return ok(`The page of "${args.name.trim()}" is empty now, and gone${where(live)}; its cards stand.`);
+    const written = PLACE_FIELDS.filter((field) => page[field]);
+    return ok(`The page of "${page.name}" holds ${written.length ? written.join(", ") : "no line"}${page.open ? `, and is open by the writer's word: "${page.open}"` : ""}${where(live)}. The brief prints it under PLACES; read_place reads it back.`, page);
+  },
+);
+
+server.registerTool(
+  "rename_place",
+  {
+    title: "Rename a place",
+    description:
+      "Rename a place on every card that carries it, on every board of the project, and its page with it: \"INT. THE HARBOUR OFFICE\" to \"INT. THE HARBOURMASTER'S OFFICE\". Two spellings are two places until renamed; renaming one to the other makes them one, and their pages merge line by line, the line already written on the new one standing.",
+    inputSchema: { name: z.string().min(1), to: z.string().min(1) },
+  },
+  async (args) => {
+    const to = args.to.trim().replace(/\s+/g, " ");
+    const held = await readProject();
+    const open = await readBoard();
+    const openId = open.boardId ?? held.project.activeBoardId;
+    const parts = placeScenes(held.project, held.boards, openId, open.state, args.name).filter((part) => part.on.length);
+    const hadPage = Boolean(placePage(held.project, args.name));
+    if (!parts.length && !hadPage) return ok(`No card is at "${args.name.trim()}" and it has no page. read_wall lists the places.`);
+    let cards = 0;
+    let current = openId;
+    // Each board through the kernel: open it, set the place, and come back — one change on each board's record.
+    for (const part of parts) {
+      const now = await readProject();
+      if (part.meta.id !== current) {
+        await openBoardEverywhere(now.project, now.boards, now.rev, now.base, part.meta.id);
+        current = part.meta.id;
+      }
+      const { changed } = await commitAll(`rename_place "${args.name.trim()}"`, (step) => {
+        step({ type: "set_location", ids: part.on.map((note) => note.id), location: to });
+      });
+      if (changed) cards += part.on.length;
+    }
+    if (current !== openId) {
+      const back = await readProject();
+      await openBoardEverywhere(back.project, back.boards, back.rev, back.base, openId);
+    }
+    const after = await readProject();
+    const moved = renamePlacePage(after.project, args.name, to);
+    if (moved !== after.project) await writeProject(moved, after.boards, after.rev, after.base);
+    return ok(`Renamed "${args.name.trim()}" to "${to}" on ${cards} card${cards === 1 ? "" : "s"} across ${parts.length} board${parts.length === 1 ? "" : "s"}${hadPage ? "; the page followed" : ""}. The open board is the one you were on.`, { to, cards, boards: parts.map((part) => part.meta.id) });
   },
 );
 

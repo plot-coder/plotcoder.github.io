@@ -10,6 +10,7 @@
 // MCP server share one idea of what a project is. Keep it free of `window`.
 
 import { PERSON_TEXT_FIELDS, fillCharacter, isCharacter, newId, normalizeState, noteEighths, nowIso, sameName } from "./reducer.js";
+import { normalizePlaces } from "./places.js";
 
 export const PROJECT_VERSION = 2;
 export const DEFAULT_PROJECT_NAME = "Untitled project";
@@ -114,6 +115,9 @@ export function normalizeProject(value, now = nowIso()) {
   // next load boundary; so absent stays absent, and never becomes [].
   if (Array.isArray(value.characters)) record.characters = value.characters.filter(isCharacter).map(fillCharacter);
   else delete record.characters;
+  // A place's page (R79): a project written before it has none, and absent stays absent, claiming nothing.
+  if (Array.isArray(value.places)) record.places = normalizePlaces(value.places);
+  else delete record.places;
   return record;
 }
 

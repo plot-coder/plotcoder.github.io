@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import type { PlaceField } from "./board/places";
 import { CastLens } from "./CastLens";
 import { resolveCast } from "./castNames";
 import { GeneralBar, type BarLayer } from "./GeneralBar";
@@ -647,6 +648,11 @@ export function App() {
     boardStore.dispatch({ type: "update_character", id, ...patch });
   }
 
+  // A place's page (R79): on the project, keyed by the phrase.
+  function updatePlace(name: string, fields: Partial<Record<PlaceField | "open", string>>) {
+    boardStore.updatePlace(name, fields);
+  }
+
   function removeCharacter(id: string) {
     // The cast is the project's (R51): a person on another board's cards stays.
     if (castElsewhereMap[id]?.length) return;
@@ -935,6 +941,8 @@ export function App() {
           onAdd={addCharacter}
           onRename={renameCharacter}
           onUpdate={updateCharacter}
+          placePages={project.places ?? []}
+          onUpdatePlace={updatePlace}
           onRemove={removeCharacter}
           onJump={jumpTo}
         />
@@ -1039,6 +1047,7 @@ export function App() {
         board={board}
         ids={selectedIds}
         title={project.boards.find((item) => item.id === project.activeBoardId)?.name ?? ""}
+        briefOptions={{ premise: project.premise || undefined, places: project.places ?? [], episode: project.boards.findIndex((item) => item.id === project.activeBoardId) + 1, episodes: project.boards.length }}
         onClose={() => setBriefOpen(false)}
         onTakes={() => {
           setTakesIds(selectedIds);
@@ -1051,6 +1060,7 @@ export function App() {
         board={board}
         ids={takesIds}
         title={project.boards.find((item) => item.id === project.activeBoardId)?.name ?? ""}
+        briefOptions={{ premise: project.premise || undefined, places: project.places ?? [], episode: project.boards.findIndex((item) => item.id === project.activeBoardId) + 1, episodes: project.boards.length }}
         takes={account.user ? account.assets : null}
         uploading={account.uploading}
         onClose={() => setTakesOpen(false)}

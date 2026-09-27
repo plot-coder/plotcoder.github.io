@@ -24,6 +24,7 @@ import {
 import { EditableText } from "./EditableText";
 import type { Asset } from "./board/account";
 import type { CastElsewhere } from "./board/project";
+import { placeKey, type PlaceField, type PlacePage } from "./board/places";
 
 type CastLensProps = {
   open: boolean;
@@ -53,11 +54,21 @@ type CastLensProps = {
   placeHeld: string | null;
   onPlaceHover: (name: string | null) => void;
   onPlaceHold: (name: string | null) => void;
+  /** A place's page (R79): the project's pages, and the writer's lines on one. */
+  placePages: PlacePage[];
+  onUpdatePlace: (name: string, fields: Partial<Record<PlaceField | "open", string>>) => void;
   /** The cast is the project's (R51): its name, how many boards it has, and who is on a card of another board. */
   projectName: string;
   boardCount: number;
   elsewhere: CastElsewhere;
 };
+
+// A place's page asks the questions a place answers (R79): no wants, no needs.
+const PLACE_LINES: Array<{ field: PlaceField; label: string; ask: string }> = [
+  { field: "looks", label: "Looks", ask: "What would the camera see first?" },
+  { field: "sound", label: "Sound", ask: "What is heard here when nobody speaks?" },
+  { field: "notes", label: "Notes", ask: "What does the treatment say of it?" },
+];
 
 // A blank line asks the question the field exists for (R18), rather than
 // naming itself. Filled, the answer reads as a paragraph under the label.
@@ -135,6 +146,8 @@ export function CastLens({
   placeHeld,
   onPlaceHover,
   onPlaceHold,
+  placePages,
+  onUpdatePlace,
   projectName,
   boardCount,
   elsewhere,
@@ -146,6 +159,10 @@ export function CastLens({
   // The writer has just chosen to leave something open about this person: the caret waits for their words.
   const [leavingOpen, setLeavingOpen] = useState<string | null>(null);
   const page = pageId ? characters.find((character) => character.id === pageId) ?? null : null;
+  // Which place's page is open, if any, by its phrase (R79). The page holds the place on the wall.
+  const [placeName, setPlaceName] = useState<string | null>(null);
+  const placeRow = placeName ? places.find((place) => placeKey(place.name) === placeKey(placeName)) ?? null : null;
+  const placeSaved = placeName ? placePages.find((item) => placeKey(item.name) === placeKey(placeName)) ?? null : null;
 
   useEffect(() => {
     if (!open) return;
@@ -160,6 +177,10 @@ export function CastLens({
   useEffect(() => {
     if (!open || (pageId && !page)) setPageId(null);
   }, [open, pageId, page]);
+  // A place no card carries any more, or a lens that closed, is no place page.
+  useEffect(() => {
+    if (!open || (placeName && !placeRow && !placeSaved)) setPlaceName(null);
+  }, [open, placeName, placeRow, placeSaved]);
 
   const focusId = heldId ?? hoverId;
   const focus = characters.find((character) => character.id === focusId) ?? null;
@@ -191,6 +212,17 @@ export function CastLens({
     onHold(null);
   }
 
+  function openPlace(name: string) {
+    setPageId(null);
+    setPlaceName(name);
+    onPlaceHold(name);
+  }
+
+  function closePlace() {
+    setPlaceName(null);
+    onPlaceHold(null);
+  }
+
   function add(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const name = draft.trim();
@@ -219,7 +251,77 @@ export function CastLens({
         Cast
       </button>
 
-      {open && page ? (
+      {open && placeName ? (
+        <section id={titleId} className="cast-lens cast-lens--page" aria-label={`The page of ${placeName}`}>
+          <PanelHead
+            title=""
+            lead={
+              <button type="button" className="cast-lens__action cast-lens__back" onClick={closePlace}>
+                ‹ Cast
+              </button>
+            }
+            onClose={onClose}
+          />
+          <div className="cast-page">
+            <h3 className="cast-page__name">{placeRow?.name ?? placeSaved?.name ?? placeName}</h3>
+            <p className="cast-page__meta">
+              {placeRow
+                ? `${placeRow.cards} of ${notes.length} card${notes.length === 1 ? "" : "s"} · about ${formatPages(placeRow.eighths)} pages`
+                : "on no card of this board"}
+            </p>
+            {PLACE_LINES.map((line) => (
+              <div key={line.field} className="cast-page__line">
+                <p className="cast-lens__kicker">{line.label}</p>
+                <EditableText
+                  className="cast-page__text"
+                  value={placeSaved?.[line.field] ?? ""}
+                  onCommit={(text) => {
+                    if (text.trim() !== (placeSaved?.[line.field] ?? "")) onUpdatePlace(placeRow?.name ?? placeName, { [line.field]: text });
+                  }}
+                  ariaLabel={`${line.label} of ${placeName}`}
+                  placeholder={line.ask}
+                />
+              </div>
+            ))}
+            {/* What is not decided about this place, in the writer's words: listed, never asked. */}
+            {(placeSaved?.open ?? "").trim() || leavingOpen === `place:${placeKey(placeName)}` ? (
+              <div className="cast-page__line">
+                <p className="cast-lens__kicker">Not decided yet</p>
+                <span className="open-field">
+                  <span className="open-mark" aria-hidden="true">
+                    Open
+                  </span>
+                  <EditableText
+                    className="cast-page__text is-open-field"
+                    value={placeSaved?.open ?? ""}
+                    onCommit={(words) => {
+                      setLeavingOpen(null);
+                      if (words.trim() !== (placeSaved?.open ?? "")) onUpdatePlace(placeRow?.name ?? placeName, { open: words });
+                    }}
+                    ariaLabel={`What is not decided about ${placeName}`}
+                    placeholder="not decided: say what, in your words"
+                    autoFocus={leavingOpen === `place:${placeKey(placeName)}`}
+                  />
+                </span>
+              </div>
+            ) : (
+              <button type="button" className="field-offer cast-page__offer" onClick={() => setLeavingOpen(`place:${placeKey(placeName)}`)}>
+                Something not decided yet…
+              </button>
+            )}
+            <PagePictures
+              name={placeRow?.name ?? placeName}
+              pictures={pictures === null ? null : pictures.filter((asset) => asset.subject === `place:${placeKey(placeName)}` && asset.kind === "picture")}
+              uploading={uploading}
+              onAdd={(files) => onAddPictures(`place:${placeKey(placeName)}`, files)}
+              onRemove={onRemovePicture}
+              onDownload={() => onDownloadPictures(`place:${placeKey(placeName)}`, placeRow?.name ?? placeName)}
+            />
+            <PlaceScenes name={placeName} notes={notes} reading={reading} onJump={onJump} />
+            <p className="cast-lens__foot">One page for the project: the phrase on any board's card is this place, spelt any way.</p>
+          </div>
+        </section>
+      ) : open && page ? (
         <section
           id={titleId}
           className="cast-lens cast-lens--page"
@@ -307,7 +409,7 @@ export function CastLens({
             )}
 
             <PagePictures
-              character={page}
+              name={page.name}
               pictures={pictures === null ? null : pictures.filter((asset) => asset.subject === page.id && asset.kind === "picture")}
               uploading={uploading}
               onAdd={(files) => onAddPictures(page.id, files)}
@@ -434,6 +536,18 @@ export function CastLens({
                       <span className="cast-lens__count">
                         {place.cards === 1 ? "1 card" : `${place.cards} cards`} · {formatPages(place.eighths)} pp
                       </span>
+                      <button
+                        type="button"
+                        className={`cast-lens__open ${placePages.some((item) => placeKey(item.name) === placeKey(place.name)) ? "has-page" : ""}`}
+                        aria-label={`Open the page of ${place.name}`}
+                        title={`The page of ${place.name}`}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          openPlace(place.name);
+                        }}
+                      >
+                        ›
+                      </button>
                     </li>
                   );
                 })}
@@ -518,14 +632,14 @@ function PageScenes({
 // the project — drop them in or pick several, remove one, or take them all
 // as one package. Signed out, the line says where pictures would live.
 function PagePictures({
-  character,
+  name,
   pictures,
   uploading,
   onAdd,
   onRemove,
   onDownload,
 }: {
-  character: BoardCharacter;
+  name: string;
   pictures: Asset[] | null;
   uploading: number;
   onAdd: (files: File[]) => void;
@@ -538,7 +652,7 @@ function PagePictures({
     return (
       <div className="cast-page__line">
         <p className="cast-lens__kicker">Pictures</p>
-        <p className="cast-page__text cast-page__text--muted">Sign in and pictures of {character.name} live on the project, on every device.</p>
+        <p className="cast-page__text cast-page__text--muted">Sign in and pictures of {name} live on the project, on every device.</p>
       </div>
     );
   }
@@ -597,6 +711,38 @@ function PagePictures({
           </button>
         ) : null}
       </div>
+    </div>
+  );
+}
+
+/** The place's scenes on this board, in story order with a page number, click to jump the wall there (R79). */
+function PlaceScenes({ name, notes, reading, onJump }: { name: string; notes: BoardNote[]; reading: WallReading | null; onJump: (noteId: string) => void }) {
+  const byId = new Map(notes.map((note) => [note.id, note]));
+  const order = reading ? (reading.order.map((id) => byId.get(id)).filter(Boolean) as BoardNote[]) : notes;
+  let cursor = 0;
+  const here: Array<{ note: BoardNote; page: number }> = [];
+  for (const note of order) {
+    if (placeKey(note.location ?? "") === placeKey(name)) here.push({ note, page: Math.floor(cursor / EIGHTHS_PER_PAGE) + 1 });
+    cursor += noteEighths(note);
+  }
+  return (
+    <div className="cast-page__scenes">
+      <p className="cast-lens__kicker">Its scenes</p>
+      {here.length ? (
+        <ol className="cast-page__list">
+          {here.map((scene, index) => (
+            <li key={scene.note.id} className="cast-page__scene">
+              <button type="button" className="cast-page__jump" onClick={() => onJump(scene.note.id)}>
+                <span className="cast-page__n">{index + 1}</span>
+                <span className="cast-page__headline">{scene.note.headline || "Untitled"}</span>
+                <span className="cast-page__pg">p. {scene.page}</span>
+              </button>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <p className="cast-lens__empty">No card on this board is here. Type the place on a card's "at" line.</p>
+      )}
     </div>
   );
 }

@@ -460,6 +460,17 @@ card of another board is not asked about as uncast here.
   card on every board; removing takes them off every card here and leaves the
   cards, and is refused while another board has them on a card — cast them
   off there first, or leave them.
+- `read_place`, `update_place`, `rename_place` — **a place's page**, as a
+  person has one, keyed by the phrase the cards carry (case aside), one page
+  for every board: `looks` (what the camera sees first), `sound` (what is
+  heard there when nobody speaks), `notes`, and `open` for what is not
+  decided about it, listed and never asked. `read_place` gives the page, or
+  "no page yet", and every card at that place across the project with its
+  change line; the brief prints the page under PLACES. `rename_place` moves
+  the phrase on every card of every board and the page with it; two
+  spellings are two places until one is renamed to the other. Ask the writer
+  before writing a look: a video tool will be handed it. `add_picture` takes
+  `place` for a place's gallery.
 - `read_character` — a person's page back, by id or name, across every
   board of the project (one cast, one page): the five lines as
   they stand and the cards they are on, each with its change line, so a

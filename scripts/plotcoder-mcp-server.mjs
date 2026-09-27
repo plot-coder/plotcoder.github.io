@@ -663,6 +663,17 @@ function boardName(project, boardId) {
   const meta = boardById(project, boardId);
   return meta ? `"${meta.name}"` : `a board this project does not have (${boardId}; set_payoff_board with a board of this project, or null to take the claim back)`;
 }
+/** "three boards earlier": how far back in the writer's order a fold's board is from the board that pays it off (pass 3a, entry 34: it said "one board earlier" of any distance). */
+function boardsApart(project, fromBoardId, hereId) {
+  const from = project.boards.findIndex((meta) => meta.id === fromBoardId);
+  const here = project.boards.findIndex((meta) => meta.id === hereId);
+  if (from < 0 || here < 0) return "on a board this project does not have";
+  const apart = here - from;
+  if (apart === 0) return "on this board";
+  const count = Math.abs(apart);
+  const words = ["", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"][count] ?? String(count);
+  return `${words} board${count === 1 ? "" : "s"} ${apart > 0 ? "earlier" : "later"}`;
+}
 function episodeLabel(project, boards, boardId, noteId) {
   const index = project.boards.findIndex((meta) => meta.id === boardId);
   if (index < 0) return "no episode of this project";
@@ -1465,7 +1476,8 @@ function cameraReply(text) {
   return found.length
     // What the check is, said the first time it speaks either way (pass 1b, entry 56), not only when it marks nothing.
     ? ` — ${found.length} line${found.length === 1 ? "" : "s"} the camera cannot see, by the word${cameraVerbs(found).length === 1 ? "" : "s"} ${cameraVerbs(found).map((verb) => `"${verb}"`).join(", ")}: the reminder "Write for the camera" is the house's; show it or cut it, on the writer's word — a mark on the page, not a question on the wall${once("camera-what", " (the check looks for a short list of interior verbs — knows, feels, thinks, remembers and the like — in the action lines, never in a cue, a speech or a [[note]], so it can miss a line and mark a fair one; it never asks)")}`
-    : ` — the camera check read the action lines and marked none${once("camera-what", " (it looks for a short list of interior verbs — knows, feels, thinks, remembers and the like — never in a cue, a speech or a [[note]], so it can miss a line and mark a fair one; it never asks)")}`;
+    // Marking nothing is said once a session (pass 3a, entry 38): after that a clean page needs no line.
+    : once("camera-none", " — the camera check read the action lines and marked none (it looks for a short list of interior verbs — knows, feels, thinks, remembers and the like — never in a cue, a speech or a [[note]], so it can miss a line and mark a fair one; it never asks)");
 }
 
 /**
@@ -2434,7 +2446,7 @@ server.registerTool(
         ? describeSetups(reading, state).map((line, index) => `  - ${line}${pageSpan(state, reading.setups[index])}${describePage(reading.setups[index]) ? `; ${describePage(reading.setups[index])}` : ""}`)
         : [reading.paidBy.length ? "  (no setup arrow on this board; what pays off a fold of another board is listed below)" : "  (no arrow is marked as a setup)"]),
       ...reading.later.map((item) => `  - "${state.notes.find((note) => note.id === item.id)?.headline ?? item.id}" is folded and pays off later, on ${boardName(projectForRead, item.boardId)}${item.noteId ? `, at ${episodeLabel(projectForRead, boardsNow, item.boardId, item.noteId)} "${boardsNow[item.boardId]?.notes?.find((note) => note.id === item.noteId)?.headline ?? item.noteId}"` : " — no scene there claims it yet"}`),
-      ...reading.paidBy.map((item) => `  - "${state.notes.find((note) => note.id === item.id)?.headline ?? item.id}" pays off "${item.fromHeadline}" from "${item.fromBoardName}" (${episodeLabel(projectForRead, boardsNow, item.fromBoardId, item.fromNoteId)}), one board earlier`),
+      ...reading.paidBy.map((item) => `  - "${state.notes.find((note) => note.id === item.id)?.headline ?? item.id}" pays off "${item.fromHeadline}" from "${item.fromBoardName}" (${episodeLabel(projectForRead, boardsNow, item.fromBoardId, item.fromNoteId)}), ${boardsApart(projectForRead, item.fromBoardId, readId)}`),
       // The pages' two fact lines (R74, on Robert's word after pass 1b): who speaks on the written pages, and which stretch is written.
       ...describePages(reading, state),
       ...(undecided.open.length

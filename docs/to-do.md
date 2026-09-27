@@ -15,7 +15,9 @@ done and merged, what is left, and the order I would take it in.
 changes in the person's terms, by whom and when, from every door; Since
 you looked on the sheet, read_wall's since-anyone line, read_record,
 hand_over, the account sheet's last-changed line. Released as 0.1.57 and
-on the door. **Next: pass 2b**, jumping in for the agent, on a fresh
+on the door (the function redeployed once npm had it; `initialize` answers
+0.1.57 and `read_record` on "Last Orders" says the record is empty, as
+it should before the next change). **Next: pass 2b**, jumping in for the agent, on a fresh
 session Robert opened; its prompt is `blind-runs/prompt.md` once written
 (1b's archived as `pass-1b-prompt.md`). Then the rest of 2a's mockup on
 Robert's word: the card's handle, corner mark and foot, the tidy, the

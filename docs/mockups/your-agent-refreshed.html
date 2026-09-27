@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<title>Your agent — refreshed</title>
+<link rel="stylesheet" href="../../src/styles.css">
+<style>
+  :root { --canvas: #000; --ink: #f4f1ea; --muted: #9a9589; --bar: #1c1c1a; --over: #e08b52; --bar-border: rgba(244,241,234,0.18); --live: #3f9b5f; }
+  html, body { height: auto; min-height: 100%; background: #0b0b0a; color: var(--ink); }
+  body { margin: 0; padding: 2rem 2.5rem 4rem; font-family: ui-sans-serif, system-ui, sans-serif; }
+  h1 { font: 600 1.05rem/1.3 ui-serif, Georgia, serif; margin: 0 0 0.25rem; }
+  h2.sec { font: 600 0.95rem/1.3 ui-serif, Georgia, serif; margin: 2.6rem 0 0.2rem; padding-top: 1.2rem; border-top: 1px solid rgba(127,127,127,0.25); }
+  .lede { font-size: 0.85rem; opacity: 0.78; margin: 0 0 1.2rem; max-width: 80ch; line-height: 1.5; }
+  .cap { font: 700 0.62rem/1.3 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; margin: 0 0 0.6rem; }
+  .cap em { font-style: normal; color: var(--over); }
+  .note { font-size: 0.8rem; line-height: 1.45; opacity: 0.82; margin: 0.7rem 0 0; max-width: 62ch; }
+  .honest { font-size: 0.82rem; line-height: 1.5; max-width: 82ch; margin: 0.6rem 0 0; padding: 0.6rem 0.9rem; border-left: 3px solid rgba(127,127,127,0.5); background: rgba(127,127,127,0.06); }
+  .honest b, .ask b { font-weight: 600; }
+  .ask { margin-top: 1.2rem; max-width: 84ch; font-size: 0.86rem; line-height: 1.55; }
+  .row { display: flex; gap: 2.4rem; flex-wrap: wrap; align-items: flex-start; }
+  .col { width: 520px; max-width: 100%; }
+
+  .sheet { border: 1px solid var(--bar-border); border-radius: 1.2rem; background: var(--bar); padding: 1.2rem 1.3rem 1.2rem; }
+  .head { display: flex; justify-content: space-between; align-items: flex-start; }
+  .title { font: 400 1.5rem/1.2 ui-serif, Georgia, serif; margin: 0 0 0.8rem; }
+  .close { font: 600 0.62rem/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+  .status { display: grid; grid-template-columns: auto 1fr; gap: 0.1rem 0.7rem; align-items: center; padding: 0.8rem 0.9rem; border: 1px solid var(--bar-border); border-radius: 0.8rem; }
+  .status .dot { grid-row: 1 / span 2; width: 0.8rem; height: 0.8rem; border-radius: 50%; background: var(--muted); }
+  .status.here { border-color: rgba(63,155,95,0.6); }
+  .status.here .dot { background: var(--live); box-shadow: 0 0 0 4px rgba(63,155,95,0.2); }
+  .status.never .dot { background: none; border: 1.5px solid var(--over); }
+  .status b { font: 1.05rem/1.25 ui-serif, Georgia, serif; font-weight: 400; }
+  .status span { font-size: 0.74rem; color: var(--muted); }
+  .k { font: 600 0.6rem/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); margin: 1.2rem 0 0.5rem; }
+  .say { font-size: 0.8rem; line-height: 1.45; margin: 0 0 0.5rem; }
+  .say small { color: var(--muted); font-size: 0.74rem; }
+  .line { display: flex; gap: 0.5rem; align-items: flex-start; margin: 0 0 0.5rem; }
+  .text { flex: 1; font: 0.7rem/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; background: rgba(244,241,234,0.08); border-radius: 0.4rem; padding: 0.5rem 0.65rem; }
+  .btn { font: 600 0.62rem/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.5rem 0.75rem; border-radius: 999px; border: 1px solid var(--bar-border); white-space: nowrap; }
+  .btn.main { border-color: var(--ink); background: var(--ink); color: #111; }
+  .btn.off { opacity: 0.4; }
+  .chips { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+  .chip { font-size: 0.74rem; padding: 0.4rem 0.7rem; border-radius: 999px; border: 1px solid var(--bar-border); }
+  .fold { display: flex; justify-content: space-between; align-items: center; padding: 0.7rem 0 0; margin-top: 1.1rem; border-top: 1px solid var(--bar-border); font-size: 0.82rem; }
+  .fold small { color: var(--muted); margin-left: 0.5rem; font-size: 0.72rem; }
+  .fold span:last-child { color: var(--muted); }
+  .step { display: grid; grid-template-columns: 1.6rem 1fr; gap: 0 0.7rem; padding: 0.8rem 0; border-top: 1px solid var(--bar-border); }
+  .step .n { width: 1.5rem; height: 1.5rem; border-radius: 50%; border: 1px solid var(--bar-border); font: 700 0.68rem/1.5rem ui-sans-serif, system-ui, sans-serif; text-align: center; color: var(--muted); }
+  .step.done .n { background: var(--live); border-color: var(--live); color: #111; }
+  .step.now .n { border-color: var(--over); color: var(--over); }
+  .step h4 { font: 1rem/1.5rem ui-serif, Georgia, serif; font-weight: 400; margin: 0; }
+  .step.done h4 { color: var(--muted); }
+  .step h4 small { font: 0.72rem/1 ui-sans-serif, system-ui, sans-serif; color: var(--muted); margin-left: 0.5rem; }
+  .step .body { grid-column: 2; padding-top: 0.5rem; }
+  .field { display: grid; grid-template-columns: 5.2rem 1fr auto; gap: 0.5rem; align-items: center; margin-bottom: 0.4rem; }
+  .field label { font: 600 0.58rem/1.2 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  .field .in { font: 0.7rem/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; background: rgba(244,241,234,0.08); border-radius: 0.4rem; padding: 0.45rem 0.6rem; }
+  .field .in.type { border: 1px solid var(--bar-border); background: none; color: var(--muted); font-family: ui-serif, Georgia, serif; font-size: 0.82rem; }
+  .foot { margin-top: 1rem; font-size: 0.74rem; color: var(--muted); }
+  .foot u { color: var(--ink); }
+</style>
+</head>
+<body>
+<h1>Your agent: a refresh</h1>
+<p class="lede">Drawn 2026-09-27 for Robert, from his screenshot of the sheet with an agent that had been there an hour before: "I don't love this page." What it shows today is the same four steps whatever the state: the writer in the screenshot had done all of them, and was still shown how to do them.</p>
+
+<h2 class="sec">1 · What is wrong with it</h2>
+<div class="honest"><b>It does not know where you are.</b> Signed in, connected, an agent here an hour ago: and the sheet is still a setup guide. The thing that writer needs is what to say next.</div>
+<div class="honest"><b>Step 4 is not a step.</b> "Watch the line at the top of this sheet" is the sheet explaining itself.</div>
+<div class="honest"><b>Step 2 is two paragraphs of small grey type</b> around a password field, with a button that looks pressable and is not.</div>
+<div class="honest"><b>The status is the quietest thing on it.</b> A grey dot and a sentence, above a paragraph three times its size.</div>
+
+<h2 class="sec">2 · The refresh: the sheet shows the state you are in</h2>
+<div class="row">
+  <div class="col">
+    <p class="cap">Connected, or has been · <em>what to say, first</em></p>
+    <div class="sheet">
+      <div class="head"><p class="title">Your agent</p><span class="close">Close</span></div>
+      <div class="status here"><span class="dot"></span><b>Here now</b><span>on "Harbour Three" · last change: made "The wall, first light"</span></div>
+
+      <p class="k">Start a session</p>
+      <p class="say">Paste this as the first message of a new chat in Claude, with PlotCoder turned on.</p>
+      <div class="line"><span class="text">I am working in PlotCoder on my project "Harbour Three", and I have it open on my screen. Use the PlotCoder tools: call list_projects, open_project with "Harbour Three", then read_project…</span><span class="btn main">Copy</span></div>
+
+      <p class="k">Or ask for something</p>
+      <div class="chips"><span class="chip">Break my notes into a wall</span><span class="chip">Read the wall and raise questions</span><span class="chip">Draft a sequence</span><span class="chip">Break a scene into shots</span></div>
+      <p class="say" style="margin-top:0.5rem"><small>Each copies the sentence to say. They are the app's own asks, from Reminders.</small></p>
+
+      <div class="fold"><span>Set it up again<small>another computer, or a new connector</small></span><span>›</span></div>
+      <p class="foot">It acts when you speak to it in Claude. This sheet shows when it was last here, never that it is waiting.</p>
+    </div>
+    <p class="note">The same sheet when the agent was last here an hour ago: the dot is grey and the head reads <b>Last here an hour ago</b>. Everything under it is the same.</p>
+  </div>
+
+  <div class="col">
+    <p class="cap">Never connected · <em>three steps, one open at a time</em></p>
+    <div class="sheet">
+      <div class="head"><p class="title">Your agent</p><span class="close">Close</span></div>
+      <div class="status never"><span class="dot"></span><b>Not connected yet</b><span>Three steps. About two minutes.</span></div>
+
+      <div class="step done" style="margin-top:0.9rem"><span class="n">✓</span><h4>Sign in here<small>test@test.com</small></h4></div>
+      <div class="step now"><span class="n">2</span><h4>Add PlotCoder to Claude</h4>
+        <div class="body">
+          <p class="say">In the Claude app: <b>Settings › Connectors › Add custom connector</b>. Choose <b>No sign-in</b>. Then copy these three in.</p>
+          <div class="field"><label>Address</label><span class="in">https://mcp.plotcoder.com</span><span class="btn">Copy</span></div>
+          <div class="field"><label>Header name</label><span class="in">Authorization</span><span class="btn">Copy</span></div>
+          <div class="field"><label>Header value</label><span class="in type">Type your PlotCoder password</span><span class="btn off">Copy</span></div>
+          <p class="say"><small>The value is made on this device from your email and what you type. Nothing is sent or kept. Anyone who has it can work your walls as you.</small></p>
+          <span class="btn main">Done, next</span>
+        </div>
+      </div>
+      <div class="step"><span class="n">3</span><h4>Say hello<small>paste one message</small></h4></div>
+      <p class="foot">Setting up Claude Code, Cursor or your own server? <u>Agents</u></p>
+    </div>
+    <p class="note">A step that is done folds to a line with a tick. The open step is the one to do. When the agent first reads the wall, the head turns green and the sheet becomes the one on the left, by itself.</p>
+  </div>
+</div>
+
+<h2 class="sec">3 · Is this the best we can do?</h2>
+<div class="honest"><b>The asks.</b> The four chips are the app's workflows, which already exist in Reminders with their sentences. Putting them here means a writer with an agent never has to wonder what to say. It is the part of this I would keep if everything else were cut.</div>
+<div class="honest"><b>"Done, next" is the writer's word, not a check.</b> The app cannot see into Claude's settings. The only proof is the agent arriving, which is what turns the head green.</div>
+<div class="honest"><b>Still the header.</b> Step 2 is three things to copy where it should be one button. That is the door's sign-in (R72), which waits on the dashboard setting. This refresh makes the header as plain as it can be; it does not make it go away.</div>
+<div class="honest"><b>The password field stays.</b> Without it a newcomer has to make the header's value by hand, which is worse. The field is labelled for what it makes, and the Copy beside it wakes only when there is something to copy.</div>
+
+<p class="ask"><b>What a yes means.</b> The sheet as drawn: the head as the state, what to say and the four asks when an agent has been, three steps with one open when none has, step 4 gone.</p>
+</body>
+</html>

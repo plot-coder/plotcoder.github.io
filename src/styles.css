@@ -5972,3 +5972,223 @@ body {
   font-size: 0.76rem;
   color: var(--muted);
 }
+
+/* Your agent, refreshed (2026-09-27): the head is the state; what to say when an agent has been, three steps when none has. */
+.agent-sheet__status {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.1rem 0.8rem;
+  align-items: center;
+  margin: 0;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--bar-border);
+  border-radius: 0.8rem;
+}
+
+.agent-sheet__status b {
+  font-size: 1.15rem;
+  font-weight: 400;
+}
+
+.agent-sheet__status > span:last-child {
+  grid-column: 2;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.76rem;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agent-sheet__dot {
+  grid-row: 1 / span 2;
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 50%;
+  background: var(--muted);
+}
+
+.agent-sheet__status.is-here {
+  border-color: color-mix(in srgb, #3f9b5f 60%, transparent);
+}
+
+.agent-sheet__status.is-here .agent-sheet__dot {
+  background: #3f9b5f;
+  box-shadow: 0 0 0 4px color-mix(in srgb, #3f9b5f 22%, transparent);
+}
+
+.agent-sheet__status.is-never .agent-sheet__dot {
+  border: 1.5px solid var(--over);
+  background: transparent;
+}
+
+.agent-sheet__main {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--canvas);
+}
+
+.agent-sheet__asks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0 0 0.5rem;
+}
+
+.agent-sheet__ask {
+  min-height: 1.9rem;
+  padding: 0 0.8rem;
+  border: 1px solid var(--bar-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.agent-sheet__ask:hover,
+.agent-sheet__ask:focus-visible {
+  border-color: var(--over);
+  color: var(--over);
+  outline: none;
+}
+
+.agent-sheet__fold {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-top: 1.1rem;
+  padding: 0.7rem 0 0;
+  border: 0;
+  border-top: 1px solid var(--bar-border);
+  background: transparent;
+  color: var(--ink);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.86rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.agent-sheet__fold small,
+.agent-sheet__step-head small {
+  margin-left: 0.5rem;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.agent-sheet__fold > span:last-child {
+  color: var(--muted);
+}
+
+.agent-sheet__steps {
+  margin: 0.9rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.agent-sheet__step {
+  padding: 0.7rem 0;
+  border-top: 1px solid var(--bar-border);
+}
+
+.agent-sheet__step-head {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 1.05rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.agent-sheet__step.is-done .agent-sheet__step-head {
+  color: var(--muted);
+}
+
+.agent-sheet__n {
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 1px solid var(--bar-border);
+  border-radius: 50%;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.5rem;
+  text-align: center;
+  color: var(--muted);
+}
+
+.agent-sheet__step.is-now .agent-sheet__n {
+  border-color: var(--over);
+  color: var(--over);
+}
+
+.agent-sheet__step.is-done .agent-sheet__n {
+  border-color: #3f9b5f;
+  background: #3f9b5f;
+  color: var(--canvas);
+}
+
+.agent-sheet__body {
+  padding: 0.6rem 0 0.2rem 2.2rem;
+}
+
+.agent-sheet__field {
+  display: grid;
+  grid-template-columns: 5.6rem minmax(0, 1fr) auto;
+  gap: 0.5rem;
+  align-items: center;
+  margin: 0 0 0.4rem;
+}
+
+.agent-sheet__label {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.agent-sheet__input {
+  min-width: 0;
+  min-height: 2rem;
+  padding: 0 0.6rem;
+  border: 1px solid var(--bar-border);
+  border-radius: 0.4rem;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.86rem;
+}
+
+.agent-sheet__next {
+  margin-top: 0.7rem;
+}
+
+.agent-sheet__foot {
+  margin: 1.1rem 0 0;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.74rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+@media (max-width: 30rem) {
+  .agent-sheet__field {
+    grid-template-columns: 1fr auto;
+  }
+
+  .agent-sheet__label {
+    grid-column: 1 / -1;
+  }
+}

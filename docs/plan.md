@@ -146,6 +146,17 @@ where they are asked, not only in a tab; the person's word back to the
 agent from the app; a mark on an unlinked card (already asked for by round
 twenty-four's list).
 
+**The way in, and whether an agent is there (Robert, 2026-09-27; R81).**
+Goal 2 assumed the person already had an agent connected. A newcomer did
+not know how: nothing on the site said what to copy into Claude, and
+nothing said whether an agent had ever reached the wall. Built: **Your
+agent**, a button under the wordmark that says "here", "12 min" or "add
+your agent", and a sheet of four steps. **Not the best we can do until
+R72**, the door's sign-in, replaces the header: that waits on Robert
+turning the OAuth server on in the dashboard and a cold walk with him.
+The test story with Robert is its first measure: whether a person gets
+from the site to an agent reading their wall without being told how.
+
 **Reached when** a person who did not watch the agent can say from the
 screen what the film is, what is open, what the agent did and what it
 wants, and can change any of it and be understood.

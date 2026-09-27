@@ -107,23 +107,24 @@ export function StoryMap({
     >
       <button type="button" className="story-map__tab" onClick={onToggle} aria-expanded={open}>
         Story map · {open ? "hide" : "show"}
+        {open ? (
+          <span className="story-map__readout">
+            {board.targetOpen ? (
+              <>
+                ≈{formatPages(layout.totalEighths)} pages · <span className="is-open-field">target open: {board.targetOpen}</span>
+              </>
+            ) : (
+              <>
+                ≈{formatPages(layout.totalEighths)} of {formatPages(layout.targetEighths)} pages
+                {/* The target in the writer's word, when they gave a kind and not a number (round twenty-two, entry 91). */}
+                {targetWords(board) ? ` · ${targetWords(board)}` : ""}
+              </>
+            )}
+            {over > 0 ? ` · ${formatPages(over)} over` : ""}
+          </span>
+        ) : null}
       </button>
-      {open ? (
-        <p className="story-map__readout">
-          {board.targetOpen ? (
-            <>
-              ≈{formatPages(layout.totalEighths)} pages · <span className="is-open-field">target open: {board.targetOpen}</span>
-            </>
-          ) : (
-            <>
-              ≈{formatPages(layout.totalEighths)} of {formatPages(layout.targetEighths)} pages
-              {/* The target in the writer's word, when they gave a kind and not a number (round twenty-two, entry 91). */}
-              {targetWords(board) ? ` · ${targetWords(board)}` : ""}
-            </>
-          )}
-          {over > 0 ? ` · ${formatPages(over)} over` : ""}
-        </p>
-      ) : null}
+      {/* The card under the pointer, read over the wall's foot and only while there is one: the map keeps no row for it, and reading a card moves nothing. */}
       {open ? (
         <p className="story-map__scrub" aria-live="polite">
           {readCard ? (
@@ -140,11 +141,7 @@ export function StoryMap({
                 {readCard.when ? `${readCard.location ? ", " : " · "}${readCard.when}` : ""}
               </span>
             </>
-          ) : (
-            <span className="story-map__scrub-meta">
-              {layout.cards.length ? "Move along the strip to read the story" : "No cards yet"}
-            </span>
-          )}
+          ) : null}
         </p>
       ) : null}
       {width > 0 ? (

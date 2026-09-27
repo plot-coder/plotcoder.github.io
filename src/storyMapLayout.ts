@@ -234,15 +234,18 @@ export const MAP_RULER = 22;
 /**
  * How tall the story map stands, and where its rows sit, from what it has to
  * show (Robert, 2026-09-27: the room kept above the blocks was empty on a
- * wall with no beats and no groups). From the top: the line that reads the
- * card under the pointer; the structure's marks, when one is set over the
- * strip; the groups' brackets, when there are groups; the beats' names and
- * the pages between them, when there are beats; the blocks; the page numbers.
- * A row that has nothing to show takes no room.
+ * wall with no beats and no groups). From the top: the structure's marks,
+ * when one is set over the strip; the groups' brackets, when there are
+ * groups; the beats' names and the pages between them, when there are beats;
+ * the blocks; the page numbers. A row that has nothing to show takes no
+ * room. The line that reads the card under the pointer has no row: it floats
+ * over the wall's foot while there is a card to read, so reading one moves
+ * nothing (drawn in docs/mockups/story-map-the-reading-line.html, A).
  */
 export function storyMapRows({ open, structure, groups, beats }: { open: boolean; structure: boolean; groups: boolean; beats: boolean }) {
   if (!open) return { height: MAP_RULER, axisY: MAP_RULER - 8, beatTop: MAP_RULER - 16, blockTop: MAP_RULER - 12, labelY: 0, groupY: 0, structureY: 0 };
-  const READ = 30;
+  // The tab straddles the map's top edge and hangs a few pixels into it: a row of names clears it, the bare blocks already do.
+  const READ = structure || groups || beats ? 6 : 0;
   const STRUCTURE = 34;
   const GROUPS = 18;
   const LABELS = 14;
@@ -253,5 +256,5 @@ export function storyMapRows({ open, structure, groups, beats }: { open: boolean
   const beatTop = axisY - BLOCKS;
   const labelY = beatTop - 6;
   const groupY = beatTop - (beats ? LABELS : 0) - 4;
-  return { height, axisY, beatTop, blockTop: axisY - 14, labelY, groupY, structureY: READ + 4 };
+  return { height, axisY, beatTop, blockTop: axisY - 14, labelY, groupY, structureY: READ + 10 };
 }

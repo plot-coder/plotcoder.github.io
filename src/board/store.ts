@@ -16,6 +16,7 @@ import { isReminderList, readReminders, writeReminders } from "../reminderStore"
 import { toFountain } from "./fountain";
 import { toMarkdown, toPlainText } from "./markdown";
 import { History } from "./history";
+import { describeChange, withRecord } from "./record";
 import {
   addBoard as addBoardTo,
   DEFAULT_PROJECT_NAME,
@@ -324,9 +325,19 @@ class BoardStore {
 
   // --- the open board ------------------------------------------------------
 
+  /** Who is at the keyboard, for the record (R76): the signed-in writer's name, or the app's own words when signed out. */
+  private who: () => string = () => "the writer, in the app";
+  setWho = (who: () => string): void => {
+    this.who = who;
+  };
+
   dispatch = (command: Command, options: DispatchOptions = {}): unknown => {
     const before = this.state;
-    const { state, changed, result } = applyCommand(before, command);
+    const applied = applyCommand(before, command);
+    // The record of a session (R76): what the person did, in their terms, by whom and when; a change of the
+    // writer's own takes the agent's last word down, since it stood until their next change.
+    const state = applied.changed && command.type !== "hand_over" ? withRecord({ ...applied.state, handOver: null }, { at: new Date().toISOString(), by: this.who(), ...describeChange(before, applied.state) }) : applied.state;
+    const { changed, result } = applied;
     if (options.sync === false) {
       // Mid-gesture (a drag): the whole gesture becomes one step at commit.
       this.history.beginGesture(before);

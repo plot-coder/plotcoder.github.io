@@ -10,6 +10,17 @@ done and merged, what is left, and the order I would take it in.
 
 ## Next, for whoever picks this up (2026-09-26, late, after pass 2a)
 
+**2026-09-27: R76, the record of a session, is built** on Robert's word
+("build the record of a session as recommended") — the wall's last fifty
+changes in the person's terms, by whom and when, from every door; Since
+you looked on the sheet, read_wall's since-anyone line, read_record,
+hand_over, the account sheet's last-changed line. Released as 0.1.57 and
+on the door. **Next: pass 2b**, jumping in for the agent, on a fresh
+session Robert opened; its prompt is `blind-runs/prompt.md` once written
+(1b's archived as `pass-1b-prompt.md`). Then the rest of 2a's mockup on
+Robert's word: the card's handle, corner mark and foot, the tidy, the
+premise, the caret.
+
 **2026-09-26, later: the four decisions from pass 1b are built** on
 Robert's word ("build all four as recommended") — R75, what a script
 carries of the wall's opens (the maybe's line, the last page), and R74

@@ -161,7 +161,14 @@ export type BoardState = {
   revision: import("./numbering").Revision | null;
   /** Questions the writer has left, for now (R53): kept until the question would read differently. */
   left: LeftQuestion[];
+  /** The record of a session (R76): the last fifty changes, each in the person's terms, by whom and when. */
+  record: RecordEntry[];
+  /** The agent's last word to the writer (R76), until the writer's next change; null when none. */
+  handOver: { at: string; by: string; words: string } | null;
 };
+
+/** One change on the record (R76). */
+export type RecordEntry = { at: string; by: string; lines: string[]; ids: string[] };
 
 /** A thread (R60): a name, the cards it runs through, and whether either end is still open. */
 export type BoardThread = {
@@ -264,6 +271,7 @@ export type Command =
   | { type: "unlock_numbers" }
   | { type: "start_revision"; name: string; color?: string }
   | { type: "end_revision" }
+  | { type: "hand_over"; words: string; by?: string }
   | { type: "leave_question"; kind: string; ids: string[]; text: string; why?: string }
   | { type: "ask_again"; kind: string; ids?: string[] };
 

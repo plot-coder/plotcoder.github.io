@@ -12,6 +12,8 @@ import { accountStore, openedWhen, savedAgo } from "./board/account";
 import { NameDoor } from "./NameDoor";
 
 type AccountSheetProps = {
+  /** Who last changed the open wall, and when, from the record (R76); "" when the record is empty. */
+  lastChange?: string;
   open: boolean;
   onClose: () => void;
   /** The open project's id, so the list can mark it. */
@@ -22,7 +24,7 @@ type AccountSheetProps = {
 
 type Mode = "none" | "name" | "password" | "share" | "delete";
 
-export function AccountSheet({ open, onClose, currentProjectId, onAgents }: AccountSheetProps) {
+export function AccountSheet({ open, onClose, currentProjectId, onAgents, lastChange }: AccountSheetProps) {
   const titleId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
   const account = useSyncExternalStore(accountStore.subscribe, accountStore.getAccount);
@@ -301,6 +303,7 @@ export function AccountSheet({ open, onClose, currentProjectId, onAgents }: Acco
             {project ? (
               <section className="account__group" aria-label="People">
                 <p className="cast-lens__kicker">People on {project.name}</p>
+                {lastChange ? <p className="project-copy project-door__hint">{lastChange}</p> : null}
                 <ul className="account__list">
                   {account.people.map((person) => (
                     <li key={person.userId} className="account__row account__row--person">

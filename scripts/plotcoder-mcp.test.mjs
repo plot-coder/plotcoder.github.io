@@ -168,6 +168,7 @@ describe("plotcoder MCP server", () => {
       "export_fountain",
       "export_markdown",
       "export_text",
+      "hand_over",
       "export_project",
       "import_fdx",
       "import_fountain",
@@ -196,6 +197,7 @@ describe("plotcoder MCP server", () => {
       "read_character",
       "read_pages",
       "read_project",
+      "read_record",
       "read_wall",
       "recolor_note",
       "redo",
@@ -4066,5 +4068,41 @@ describe("the last page and the title page's switch (R75)", () => {
     const read = await client.callTool("read_wall");
     expect(read).toContain("on the pages (cues, against the cards): Mairead Doyle speaks on 1 of 1 written scene of theirs");
     expect(read).toContain("written, by stretch: the 1 beat: 1 written");
+  });
+});
+
+describe("the record of a session through the server (R76)", () => {
+  let root;
+  let client;
+
+  beforeAll(async () => {
+    root = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-record-"));
+    client = new McpClient(root);
+    await client.start();
+    for (const seeded of ["maya-letter", "tom-lies", "letter-aloud"]) await client.callTool("delete_note", { id: seeded });
+  }, 30000);
+
+  afterAll(() => {
+    client?.stop();
+    if (root) fs.rmSync(root, { recursive: true, force: true });
+  });
+
+  it("writes every change as an agent's, tells the record as sessions, opens read_wall with it, and holds the last word", async () => {
+    const friday = (await client.callToolData("create_note", { headline: "The first Friday", change: "Eleven.", x: 100, y: 100 })).id;
+    await client.callTool("write_scene", { id: friday, text: "INT. DOYLE'S - NIGHT\n\nThe bell over the door." });
+    const record = await client.callTool("read_record");
+    expect(record).toMatch(/^The record \(the file at [^)]*\), newest first — the last \d+ changes:\n- an agent, (today|\d{4}-\d{2}-\d{2}) \d{2}:\d{2}( to \d{2}:\d{2})? — \d+ changes?:/);
+    expect(record).toContain('    made "The first Friday"');
+    expect(record).toContain('    wrote "The first Friday" (1/8 pages)');
+    const read = await client.callTool("read_wall");
+    expect(read).toMatch(/since anyone last changed this wall: \d+ changes? by an agent, (today|\d{4}-\d{2}-\d{2}) \d{2}:\d{2}.*made "The first Friday"/);
+    // An undo takes the undone change's line off the record with it.
+    await client.callTool("undo");
+    expect(await client.callTool("read_record")).not.toContain('wrote "The first Friday"');
+    const word = await client.callTool("hand_over", { words: "I have written the first Friday; whether Declan is in it is yours." });
+    expect(word).toMatch(/^Your last word is on the wall/);
+    expect(await client.callTool("read_wall")).toContain("the agent's last word, ");
+    expect(await client.callTool("read_record")).toContain("The agent's last word, ");
+    expect(await client.callTool("hand_over", { words: "" })).toMatch(/^The last word is taken back/);
   });
 });

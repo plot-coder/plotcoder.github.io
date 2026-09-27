@@ -470,6 +470,24 @@ export function reidentifyProject(project, now = nowIso()) {
 }
 
 /**
+ * A board's state with its folds moved along with the boards (pass 3a, the
+ * blind half's entry 7): a fold that paid off on another board names that
+ * board by id, and under fresh ids the old id names nothing. An id the map
+ * does not know is left as it is.
+ */
+export function reidentifyBoard(state, renamed) {
+  if (!state || !renamed) return state;
+  let changed = false;
+  const notes = (state.notes ?? []).map((note) => {
+    const next = note.payoffBoardId ? renamed[note.payoffBoardId] : undefined;
+    if (!next || next === note.payoffBoardId) return note;
+    changed = true;
+    return { ...note, payoffBoardId: next };
+  });
+  return changed ? { ...state, notes } : state;
+}
+
+/**
  * A structure's beats from a wall (Roadmap 2, item 7): each beat card in
  * reading order, its headline as the beat's name, its change line as the
  * prompt, and where it falls as a share of the wall's length. Empty when the

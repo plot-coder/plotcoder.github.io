@@ -122,3 +122,27 @@ question came and went between the two calls.
   the description says a blank line inside `insert` makes two paragraphs.
 - [ ] **26 · A two-part direction shows a question between the calls.**
   *Decided against, as pass 1b's 66:* the wall reads the wall as it is.
+
+## Direction 3: the fish knife's first sighting (entries 27 to 30)
+
+The thread's start tied and a line on the page; the wall asks nothing now.
+
+- [ ] **27 · The wall checks a fold's payoff page for the plant's words, and
+  not a thread's start page for the thread's.** *Plan for Robert, with R74:*
+  a thread's tied ends read the same way — the start's page and the end's
+  page against the thread's name — as facts under the threads list, and a
+  question when neither lands.
+- [ ] **28 · Placement on the page is the agent's.** *Decided, as 23.*
+- [ ] **29 · The pages' notes go stale when the wall moves on.** *With pass
+  1b's 76:* striking an open line names the pages whose notes carry it;
+  tying a thread's end should do the same. *Plan:* update_thread's reply
+  names the pages whose notes carry the thread's words, as strike_open_line
+  does.
+- [ ] **30 · A tied thread gets no distance and no "pays off" line, where a
+  setup arrow does.** *Decided by R60's combine rule:* a thread tied at both
+  ends between cards that exist is a plant, and the guide says fold it — but
+  the first Friday's one fold is the sign's, so the knife stays a thread (a
+  card has one fold: R62). *Held for Robert:* the reading's threads line
+  could carry the distance ("both ends tied, about 4 pages apart") — it
+  already does when both ends are in the film; the "pays off" words on the
+  card are the fold's alone.

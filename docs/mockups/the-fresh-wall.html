@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<title>The fresh wall</title>
+<!-- The app's own paper: the source stylesheet, so the link never goes stale. -->
+<link rel="stylesheet" href="../../src/styles.css">
+<style>
+  :root { --canvas: #000; --ink: #f4f1ea; --muted: #9a9589; --bar: #1c1c1a; --over: #e08b52; --bar-border: rgba(244,241,234,0.18); --live: #3f9b5f; }
+  html, body { height: auto; min-height: 100%; background: #0b0b0a; color: var(--ink); }
+  body { margin: 0; padding: 2rem 2.5rem 4rem; font-family: ui-sans-serif, system-ui, sans-serif; }
+  h1 { font: 600 1.05rem/1.3 ui-serif, Georgia, serif; margin: 0 0 0.25rem; }
+  h2.sec { font: 600 0.95rem/1.3 ui-serif, Georgia, serif; margin: 2.6rem 0 0.2rem; padding-top: 1.2rem; border-top: 1px solid rgba(127,127,127,0.25); }
+  .lede { font-size: 0.85rem; opacity: 0.78; margin: 0 0 1.2rem; max-width: 80ch; line-height: 1.5; }
+  .cap { font: 700 0.62rem/1.3 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; margin: 1.2rem 0 0.6rem; }
+  .cap em { font-style: normal; color: var(--over); }
+  .note { font-size: 0.8rem; line-height: 1.45; opacity: 0.82; margin: 0.7rem 0 0; max-width: 80ch; }
+  .honest { font-size: 0.82rem; line-height: 1.5; max-width: 82ch; margin: 0.6rem 0 0; padding: 0.6rem 0.9rem; border-left: 3px solid rgba(127,127,127,0.5); background: rgba(127,127,127,0.06); }
+  .honest b, .ask b { font-weight: 600; }
+  .ask { margin-top: 1.2rem; max-width: 84ch; font-size: 0.86rem; line-height: 1.55; }
+
+  .win { position: relative; width: 1000px; max-width: 100%; height: 520px; border: 1px solid var(--bar-border); border-radius: 8px; overflow: hidden; background: var(--canvas); }
+  .mark { position: absolute; left: 18px; top: 16px; font: 600 0.6rem/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.22em; text-transform: uppercase; color: var(--muted); }
+  .mark b { font: 400 0.95rem/1 ui-serif, Georgia, serif; letter-spacing: 0; text-transform: none; color: var(--ink); margin-left: 0.5rem; }
+  .log { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); font: italic 0.9rem/1 ui-serif, Georgia, serif; color: var(--muted); opacity: 0.6; }
+  .tops { position: absolute; right: 14px; top: 10px; display: flex; gap: 6px; }
+  .tops span, .pill { font: 600 0.58rem/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; padding: 8px 12px; border-radius: 999px; border: 1px solid var(--bar-border); background: var(--bar); }
+  .pill { position: absolute; left: 18px; top: 42px; display: inline-flex; gap: 6px; align-items: center; }
+  .pill i { width: 7px; height: 7px; border-radius: 50%; background: var(--live); display: inline-block; }
+  .pill.cut { left: 12px; border-top-color: transparent; border-radius: 0 0 999px 999px / 0 0 100% 100%; padding-top: 5px; }
+  .map { position: absolute; left: 0; right: 0; bottom: 0; height: 40px; border-top: 1px solid var(--bar-border); }
+  .map span { position: absolute; left: 14px; top: -10px; font: 600 0.52rem/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.14em; text-transform: uppercase; padding: 5px 9px; border: 1px solid var(--bar-border); border-radius: 999px; background: var(--bar); color: var(--muted); }
+  .map hr { position: absolute; left: 22px; right: 22px; bottom: 14px; border: 0; border-top: 1px solid var(--ink); margin: 0; }
+  .old { position: absolute; left: 18px; bottom: 60px; width: 230px; font-size: 0.7rem; line-height: 1.4; color: var(--muted); }
+  .old u { color: var(--ink); }
+  .old small { display: block; margin-top: 0.6rem; font-size: 0.64rem; opacity: 0.8; }
+
+  .start { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -54%); width: 660px; text-align: center; }
+  .start h3 { font: 400 1.7rem/1.2 ui-serif, Georgia, serif; margin: 0 0 0.3rem; }
+  .start p.sub { font: 0.92rem/1.5 ui-serif, Georgia, serif; color: var(--muted); margin: 0 0 1.3rem; }
+  .ways { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.7rem; text-align: left; }
+  .way { border: 1px solid var(--bar-border); border-radius: 0.8rem; padding: 0.85rem 0.95rem 0.95rem; background: var(--bar); }
+  .way.on { border-color: var(--over); }
+  .way h4 { font: 1rem/1.25 ui-serif, Georgia, serif; margin: 0 0 0.25rem; display: flex; gap: 0.4rem; align-items: center; }
+  .way h4 i { width: 7px; height: 7px; border-radius: 50%; background: var(--live); display: inline-block; }
+  .way p { font-size: 0.72rem; line-height: 1.45; color: var(--muted); margin: 0 0 0.7rem; min-height: 3.1em; }
+  .btn { font: 600 0.6rem/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; padding: 0.5rem 0.75rem; border-radius: 999px; border: 1px solid var(--bar-border); display: inline-block; }
+  .btn.main { border-color: var(--over); color: var(--over); }
+  .foot { margin-top: 1rem; font-size: 0.72rem; color: var(--muted); }
+  .foot u { color: var(--ink); }
+  .sayit { font: 0.64rem/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; background: rgba(244,241,234,0.08); border-radius: 0.4rem; padding: 0.4rem 0.5rem; margin: 0 0 0.6rem; color: var(--ink); }
+</style>
+</head>
+<body>
+<h1>The fresh wall</h1>
+<p class="lede">Drawn 2026-09-27 for Robert, from his screenshot of a new project with an agent connected: "I don't love how these look on a fresh tab." Two areas: the agent's button under the wordmark, and the words at the wall's foot.</p>
+
+<h2 class="sec">1 · As it ships</h2>
+<div class="win">
+  <span class="mark">PlotCoder · <b>Board 1 ▾</b></span><span class="log">What is this story arguing?</span>
+  <div class="tops"><span>Pages</span><span>Cast</span><span>Reminders</span><span>Help</span></div>
+  <span class="pill cut"><i></i>Agent · here</span>
+  <p class="old">No cards yet. Add one, <u>start from a structure</u><br>, or read <u>what these words mean</u>.<small>Are you an agent? <u>Start here.</u></small></p>
+  <div class="map"><span>Story map · hide</span><hr></div>
+</div>
+<p class="note"><b>What is wrong with it.</b> The button's top edge is cut off: the title band sits over it. That is a fault and it is fixed already, with the button moved to stand under the wordmark's first letter. The words at the foot are small, grey, in a corner, and break before a comma. They offer three things and none of them looks like something to press. And the whole wall is empty, so the one place a new writer looks, the middle, says nothing.</p>
+
+<h2 class="sec">2 · A, recommended: the wall itself says how to begin</h2>
+<p class="cap">With an agent connected · <em>as in your screenshot</em></p>
+<div class="win">
+  <span class="mark">PlotCoder · <b>Board 1 ▾</b></span><span class="log">What is this story arguing?</span>
+  <div class="tops"><span>Pages</span><span>Cast</span><span>Reminders</span><span>Help</span></div>
+  <span class="pill"><i></i>Agent · here</span>
+  <div class="start">
+    <h3>An empty wall</h3>
+    <p class="sub">A card is a scene. Begin with one, with a shape, or with your agent.</p>
+    <div class="ways">
+      <div class="way on"><h4><i></i>Tell your agent</h4><p>It is here. Paste your notes or a treatment into its window after this.</p><div class="sayit">Here is my story. Break it into a wall…</div><span class="btn main">Copy what to say</span></div>
+      <div class="way"><h4>Add a card</h4><p>One scene: a headline, and what changes in it.</p><span class="btn">New card</span></div>
+      <div class="way"><h4>Start from a structure</h4><p>The turns of a known shape, laid out as cards to write over.</p><span class="btn">Choose one</span></div>
+    </div>
+    <p class="foot">New to the words here? <u>What these words mean</u></p>
+  </div>
+  <div class="map"><span>Story map · hide</span><hr></div>
+</div>
+
+<p class="cap">With no agent yet · <em>a first visit</em></p>
+<div class="win">
+  <span class="mark">PlotCoder</span><span class="log">What is this story arguing?</span>
+  <div class="tops"><span>Pages</span><span>Cast</span><span>Reminders</span><span>Help</span></div>
+  <span class="pill" style="border-color:var(--over);color:var(--over)"><i style="background:none;border:1px solid var(--over)"></i>Add your agent</span>
+  <div class="start">
+    <h3>An empty wall</h3>
+    <p class="sub">A card is a scene. Begin with one, with a shape, or with your agent.</p>
+    <div class="ways">
+      <div class="way"><h4>Add a card</h4><p>One scene: a headline, and what changes in it.</p><span class="btn main">New card</span></div>
+      <div class="way"><h4>Start from a structure</h4><p>The turns of a known shape, laid out as cards to write over.</p><span class="btn">Choose one</span></div>
+      <div class="way"><h4>Bring in your agent</h4><p>An agent such as Claude builds the wall from your notes while you watch.</p><span class="btn">Your agent</span></div>
+    </div>
+    <p class="foot">New to the words here? <u>What these words mean</u></p>
+  </div>
+  <div class="map"><span>Story map · hide</span><hr></div>
+</div>
+<p class="note">The three ways are the three the corner offered, made things to press, in the middle where the eye lands. The agent's card comes first and is lit when one is connected, and last when none is. It goes the moment the wall has a card. "Are you an agent?" leaves the wall: an agent reads the page at llms.txt, and the Agents sheet is one tap from Your agent.</p>
+
+<h2 class="sec">3 · B: the corner, tidied</h2>
+<div class="win" style="height:300px">
+  <span class="mark">PlotCoder · <b>Board 1 ▾</b></span><span class="log">What is this story arguing?</span>
+  <div class="tops"><span>Pages</span><span>Cast</span><span>Reminders</span><span>Help</span></div>
+  <span class="pill"><i></i>Agent · here</span>
+  <p class="old" style="width:300px;font-size:0.76rem">No cards yet. <u>Add one</u>, <u>start from a structure</u>, or read <u>what these words mean</u>.</p>
+  <div class="map"><span>Story map · hide</span><hr></div>
+</div>
+<p class="note">The smallest change: the line no longer breaks before its comma, "Add one" is a thing to press, and the agent's line goes. The wall stays empty in the middle.</p>
+
+<h2 class="sec">4 · Is this the best we can do?</h2>
+<div class="honest"><b>A tour was decided against</b> when the on-ramp was first built (R43): a door, not a tour. A is not a tour: it is three buttons on a wall that has nothing else on it, and it is gone with the first card.</div>
+<div class="honest"><b>What to say to the agent.</b> The sentence on the first card is the app's own workflow, "Break a treatment into a wall", which an agent already knows by name. The card copies it; the writer adds their notes.</div>
+<div class="honest"><b>What it does not fix.</b> The agent's button stays a small pill under the wordmark. With the cut edge mended and the left edge lined up, I think it is right at that size: it is a status, and A gives the agent its weight on an empty wall.</div>
+
+<p class="ask"><b>What a yes means.</b> "Build A" builds the three ways in the middle of an empty wall, the agent's card first and lit when one is here, and takes the corner's words away. "Build B" tidies the corner and leaves the middle empty. The button's cut edge is mended either way.</p>
+</body>
+</html>

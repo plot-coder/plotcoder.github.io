@@ -69,3 +69,39 @@ agent's (6).
 - [ ] **15 · "No want on the page" cannot say whether the writer declined
   or nobody asked.** *Decided:* blank is nobody's word (D21); the record
   will show whether a page was ever changed.
+
+## Direction 1: what the agent before did (entries 16 to 22)
+
+The agent rebuilt the night from the export file's timestamps by hand,
+found the record empty and the hand-over null, and found the hosted
+door's undo stack was the last agent's.
+
+- [ ] **16 · The hosted door's undo stack is shared with the agent before:**
+  undo's preview named the last agent's `set_text`, and had the board not
+  changed since, an undo would have taken back their work. *With 6:* the
+  door's session is the connector's, kept by the desktop app across its
+  own sessions. *Plan for Robert:* a session that begins with a fresh
+  agent — the door cannot tell agents apart behind one connector, so the
+  undo trail and the since-line should expire when the wall was last
+  changed by another hand (the record says), or the on-ramp says "your
+  undo is the connector's: it may hold the last agent's changes".
+- [ ] **17 · The undo preview names "set_text", not the page.** *Fixed in
+  0.1.54* for new changes; the stored trail was the old door's. Nothing
+  more to do.
+- [ ] **18 · The export carries `record: []` and `handOver: null`, the
+  fields the guide promises, empty.** The record began at 0.1.57, after
+  every change on this wall; the pass's head says so. Once the connector
+  is refreshed, the tools show. *Held:* the guide could say "the record
+  begins with the release that brought it; a wall worked before it has
+  none".
+- [ ] **19 · No tool reports timestamps.** *Fixed by R76* (the record
+  carries when), once the connector sees `read_record`; `list_boards`'s
+  last-changed line stands meanwhile.
+- [ ] **20 · Two pages carry a doubled blank line where a note was taken
+  out.** *Fixed in 0.1.56* (edit_scene closes the gap) for edits after
+  it; these two were made before. Nothing more to do.
+- [ ] **21 · `undecidedPage: true` on the project, unexplained in the
+  export.** *Plan:* the export's reply names the field once ("the last
+  page prints; set_title_page turns it off").
+- [ ] **22 · export_project inline: the reply did not say no file was
+  written.** *Plan:* the inline reply says "no file kept on the account".

@@ -8,7 +8,23 @@ done and merged, what is left, and the order I would take it in.
 
 ---
 
-## Next, for whoever picks this up (2026-09-26, late, after pass 2a)
+## Next, for whoever picks this up (2026-09-27, after pass 2b)
+
+**Pass 2b has run** — a fresh agent on "Last Orders" from the wall alone,
+in a session Robert opened, driven from here: 36 entries
+(`blind-runs/pass-2b-report.md`), worked in `docs/to-do-pass-2b.md`. The
+record (R76) did its job for the changes made after it existed; what the
+pass could not measure was the record of pass 1b's changes, since the
+record began after them, and **the desktop app had cached the connector's
+tool list** without `read_record` and `hand_over` — the on-ramp now says
+to turn the connector off and on when the guide names a tool the session
+does not show. **The largest thing held for Robert:** the hosted door's
+session is the connector's, so a fresh agent inherits the last agent's
+since-line and undo trail (2b's 6 and 16); the plan is in the list. Then
+the rest of 2a's mockup on his word (the card's handle, corner mark and
+foot, the tidy, the premise, the caret), and 3a.
+
+## Before it (2026-09-26, late, after pass 2a)
 
 **2026-09-27: R76, the record of a session, is built** on Robert's word
 ("build the record of a session as recommended") — the wall's last fifty

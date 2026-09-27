@@ -60,6 +60,7 @@ into a story (Robert, 2026-09-17).
 | **Pass 1a** | The desktop connector alone, at 0.1.51: **a complete script** — all seventeen scenes written, out three ways and back, then edited across the whole film (a plant moved, the ending changed, a plant and its payoff cut, a rename, ten pages out, the ending put back), and what the app can say of the whole | "Ninety-Nine" (`round-thirteen-treatment.md`) | **The complete script:** eighteen scenes written, out three ways and back; a plant moved, the ending replaced and put back, a plant and its payoff cut, a rename, four pages measured by hand, the ferry aside and the fair halved, a revision and a lock, the copy, who is here | 114 (`pass-1a-report.md`); thirty-eight fixed as it ran, R74 proposed |
 | **Pass 1b** | The desktop connector alone, at 0.1.53 with R74: **a complete script from notes** — "Doyle's" built with the writer answering, every scene the writer allowed written, the film decided one undecided thing at a time, an undo through the door on a written script | "Doyle's" (`round-twenty-four-idea.md`) | Eight scenes written; the three exports and what each home for "I don't know" printed as; the pages read against the wall reached for; a version stepping forward, a cut scene back, an open card closed; three undos and a redo by hand | 82 (`pass-1b-report.md`); 32 fixed as it ran, 27 held for Robert (`docs/to-do-pass-1b.md`) |
 | **Pass 2a** | The person's side, in the app on the dev server at 0.1.55: the driving session opens the wall pass 1b left and answers five questions from the screen, makes five changes by gesture, and has an agent read the wall after | "Last Orders", as 1b left it | Five questions, two unanswerable from the screen; the five changes, one of them impossible (no proposed turn to strike); the agent's reading says nothing of what the person did | 22 (`pass-2a-report.md`); 2 fixed, the rest a mockup page for Robert (`docs/to-do-pass-2a.md`) |
+| **Pass 2b** | The desktop connector alone, at 0.1.57 with the record of a session: **a fresh agent picks up "Last Orders" from the wall alone** and says what it can tell before asking; then pays off the man's card, ties the knife's start, strikes a stale note, reads its changes back from the wall, and is told to stop | "Last Orders", as 1b and 2a left it | The film, the opens and the written scenes from the wall; the agent before it not told (the record began after; the connector's tool list cached without read_record and hand_over); the door's session shared behind one connector; its own changes read back from the record | 36 (`pass-2b-report.md`); the session's fixes in 0.1.58, the rest held (`docs/to-do-pass-2b.md`) |
 
 ## What the rounds keep finding
 
@@ -142,7 +143,11 @@ directions phase. Each round's findings are itemised in `REQUIREMENTS.md`,
 - `pass-1a-report.md` — the agent's report from pass 1a, verbatim, under a
   head saying what the pass measured, what was fixed from it as it ran
   (`docs/to-do-pass-1a.md`) and what it asked for: R74, built 2026-09-26.
-- `prompt.md` — **pass 2b**, cued 2026-09-27: jumping in for the agent —
+- `pass-2b-report.md` — **the open queue for goal 2's second pass.** The
+  agent's report from pass 2b, verbatim, under a head saying what the pass
+  measured, what the third hand read from the record, and what became of
+  it (`docs/to-do-pass-2b.md`).
+- `prompt.md` — **pass 2b**, as it ran 2026-09-27: jumping in for the agent —
   a fresh agent picks up "Last Orders" from the wall alone, through the
   desktop connector at 0.1.57 with the record of a session (R76), and the
   pass measures what it had to be told again. The writer's answers and six

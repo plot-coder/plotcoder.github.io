@@ -2,8 +2,9 @@
 
 Pass 2b ran 2026-09-27 (`blind-runs/prompt.md`, jumping in for the agent:
 a fresh agent picks up "Last Orders" from the wall alone, through the
-desktop connector, the door at 0.1.57 with the record of a session). Kept
-as the run goes; every entry accounted for as it arrives.
+desktop connector, the door at 0.1.57 with the record of a session). The report is
+`blind-runs/pass-2b-report.md`, thirty-six entries; every one accounted
+for below, as it arrived.
 
 ## The first reading (entries 1 to 15)
 
@@ -171,3 +172,45 @@ them back from that line rather than from memory.
   should not touch the rest. *Check:* the insert path's spacing.
 - [ ] **35 · edit_scene's description never says an empty replace removes
   the paragraph.** *Plan:* one clause in the description.
+
+## The stop (entry 36)
+
+- [ ] **36 · No hand_over tool; left nothing on the wall.** *With 4:* the
+  connector's cached tool list; the tool is on the door. The agent handed
+  its report instead, which is the right fallback.
+
+## The report's sections 3 to 6, against the list
+
+Section 3 is the pass's answer: the wall told the film, the opens and the
+written scenes; it could not tell what the agent before did (18, 31: the
+record began after) or was waiting on (36: no last word, no tool in the
+session). Section 4: the record by hand (19), no hand-over (36), the
+on-ramp by raw fetch (1). Section 5: whether the driving session read its
+messages — the relay's, not the app's; the two 22:25 edits (16, the shared
+session); the blank lines (20, 34). Section 6 is the next hand's list, and
+the record now carries it.
+
+## Held for Robert, in one place
+
+- **The door's session behind one connector** (6, 16): the hosted door
+  cannot tell agents apart behind a connector the desktop app keeps, so a
+  fresh agent inherits the last one's since-line and undo trail. The
+  record says who changed the wall and when from the wall itself; the
+  session's memory should defer to it — a since-line from the record when
+  the session's last reading is older than the record's last change by
+  another hand, and an undo trail that expires the same way — or the
+  on-ramp says plainly that undo is the connector's.
+- **A hand and a time on a page's notes** (9, 11, 29): a [[note]] is the
+  writer's aside by the guide's rule, and an agent's note reads as the
+  writer's; the record now says who wrote a page and when, and a note
+  inside it is still anyone's.
+- **A thread's pages read like a fold's** (27): the start's and the end's
+  page against the thread's name, as facts under the threads list and a
+  question when neither lands.
+- **The smaller:** the sketch's threshold in the reply (7); "no want" as
+  blank (15, decided); a tied thread's distance and words on the card
+  (30); the export's `undecidedPage` named in its reply (21).
+
+## Every entry, accounted for
+
+1, 2 → the agent's tools · 3 → nothing to do · 4 → on-ramp, fixed after · 5 → decided · 6 → held · 7 → held · 8 → fixed after · 9 → held · 10 → R76 · 11 → held · 12 → decided · 13 → fixed after · 14 → fixed after · 15 → decided · 16 → held · 17 → fixed in 0.1.54 · 18 → guide, fixed after · 19 → R76 · 20 → fixed in 0.1.56 · 21 → held · 22 → fixed after · 23 → decided · 24 → fixed after · 25 → fixed after · 26 → decided · 27 → held · 28 → decided · 29 → fixed after (update_thread names stale notes) · 30 → held · 31 → guide, with 18 · 32 → fixed after · 33 → fixed after · 34 → nothing to do · 35 → fixed after · 36 → with 4.

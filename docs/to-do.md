@@ -21,7 +21,8 @@ questions it would have asked (`blind-runs/pass-3b-report.md`), six fixed
 as it ran (#215: a thread is one board's, the record and the last word are
 the open board's, the title page reads back, the reading names tools),
 the rest held in `docs/to-do-pass-3b.md`. **Every pass on the claim board
-has run.** **Next:** release 0.1.62; then Robert's word on what is held —
+has run.** **Released as 0.1.62** (npm, the pin, the function redeployed, the live door
+answering). **Next:** Robert's word on what is held —
 R77 (b) and (c) (a person's scenes with text; a card found across boards,
 wanted by both 3a and 3b), the "[still]" question, the standing answers'
 tie-break — and then a real story with the writer in the room, the first

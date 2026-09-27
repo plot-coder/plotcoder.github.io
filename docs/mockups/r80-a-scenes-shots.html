@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<title>R80 — a scene's shots</title>
+<!-- The app's own paper: the source stylesheet, so the link never goes stale. -->
+<link rel="stylesheet" href="../../src/styles.css">
+<style>
+  html, body { height: auto; min-height: 100%; }
+  body { margin: 0; padding: 2rem 2.5rem 4rem; font-family: ui-sans-serif, system-ui, sans-serif; }
+  h1 { font: 600 1.05rem/1.3 ui-serif, Georgia, serif; margin: 0 0 0.25rem; }
+  h2.sec { font: 600 0.95rem/1.3 ui-serif, Georgia, serif; margin: 3rem 0 0.2rem; padding-top: 1.2rem; border-top: 1px solid rgba(127,127,127,0.25); }
+  .lede { font-size: 0.85rem; opacity: 0.78; margin: 0 0 1.2rem; max-width: 78ch; line-height: 1.5; }
+  .said { font-size: 0.82rem; line-height: 1.5; margin: 0.4rem 0 1.3rem; max-width: 80ch; padding: 0.6rem 0.9rem; border-left: 3px solid var(--over); background: rgba(127,127,127,0.08); }
+  .said b { font-weight: 600; }
+  .row { display: flex; gap: 2.2rem; flex-wrap: wrap; align-items: flex-start; }
+  .opt { width: 470px; max-width: 100%; }
+  .opt.wide { width: 640px; }
+  .opt h3 { font: 700 0.62rem/1.3 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; margin: 0 0 0.6rem; }
+  .opt h3 em { font-style: normal; color: var(--over); }
+  .opt p { font-size: 0.8rem; line-height: 1.45; opacity: 0.82; margin: 0.7rem 0 0; max-width: 62ch; }
+  pre.read { font: 0.66rem/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; background: rgba(127,127,127,0.12); padding: 0.75rem 0.95rem; border-radius: 6px; white-space: pre-wrap; margin: 0.7rem 0; }
+  pre.read b { color: var(--over); font-weight: 600; }
+  .ask { margin-top: 1.2rem; max-width: 82ch; font-size: 0.86rem; line-height: 1.55; }
+  .ask b { font-weight: 600; }
+  .honest { font-size: 0.82rem; line-height: 1.5; max-width: 80ch; margin: 0.6rem 0 0; padding: 0.6rem 0.9rem; border-left: 3px solid rgba(127,127,127,0.5); background: rgba(127,127,127,0.06); }
+  .honest b { font-weight: 600; }
+
+  /* The page as Pages sets it, standing on this sheet. */
+  .page { font: 0.78rem/1.55 "Courier Prime", Courier, monospace; background: rgba(127,127,127,0.07); border: 1px solid rgba(127,127,127,0.25); border-radius: 4px; padding: 1.1rem 1.3rem; }
+  .page .head { font-weight: 700; margin: 0 0 0.8rem; }
+  .page .act { margin: 0 0 0.8rem; }
+  .page .cue { margin: 0 0 0 38%; }
+  .page .say { margin: 0 18% 0.8rem 22%; }
+  .page .raw { opacity: 0.6; margin: 0 0 0.8rem; }
+  .chip { display: flex; align-items: center; gap: 0.55rem; font: 0.7rem/1.3 ui-sans-serif, system-ui, sans-serif; margin: 0 0 0.7rem -0.5rem; padding: 0.28rem 0.5rem; border-left: 3px solid var(--over); background: rgba(127,127,127,0.1); border-radius: 0 4px 4px 0; }
+  .chip .n { font-weight: 700; color: var(--over); }
+  .chip .what { flex: 1; }
+  .chip .sec { opacity: 0.6; white-space: nowrap; }
+  .thumb { width: 54px; height: 30px; border-radius: 3px; flex: none; background: linear-gradient(135deg, rgba(90,120,110,0.9), rgba(40,55,60,0.9)); }
+  .thumb.none { background: none; border: 1px dashed rgba(127,127,127,0.6); }
+
+  /* The sheet. */
+  .sheet { border: 1px solid rgba(127,127,127,0.3); border-radius: 10px; padding: 1rem 1.1rem 1.1rem; background: rgba(127,127,127,0.06); }
+  .sheet .top { display: flex; justify-content: space-between; align-items: baseline; margin: 0 0 0.2rem; }
+  .sheet .title { font: 600 0.98rem/1.3 ui-serif, Georgia, serif; }
+  .sheet .close { font: 700 0.6rem/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.6; }
+  .sheet .meta { font-size: 0.72rem; opacity: 0.7; margin: 0 0 0.9rem; }
+  .look { font-size: 0.74rem; margin: 0 0 0.9rem; padding: 0.45rem 0.6rem; border: 1px solid rgba(127,127,127,0.25); border-radius: 6px; }
+  .look .k, .shot .k { font: 700 0.56rem/1.3 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.6; display: block; margin-bottom: 0.15rem; }
+  .shot { display: grid; grid-template-columns: 128px 1fr; gap: 0.8rem; padding: 0.7rem 0; border-top: 1px solid rgba(127,127,127,0.2); }
+  .frame { width: 128px; height: 72px; border-radius: 5px; background: linear-gradient(135deg, rgba(90,120,110,0.9), rgba(40,55,60,0.9)); position: relative; }
+  .frame.two { background: linear-gradient(135deg, rgba(130,110,80,0.9), rgba(50,40,35,0.9)); }
+  .frame.none { background: none; border: 1px dashed rgba(127,127,127,0.6); display: flex; align-items: center; justify-content: center; font-size: 0.66rem; opacity: 0.75; text-align: center; padding: 0 0.4rem; box-sizing: border-box; }
+  .frame .count { position: absolute; right: 4px; bottom: 4px; font: 700 0.56rem/1 ui-sans-serif, system-ui, sans-serif; background: rgba(0,0,0,0.6); color: #fff; padding: 2px 4px; border-radius: 3px; }
+  .shot .what { font: 0.84rem/1.4 ui-serif, Georgia, serif; margin: 0 0 0.2rem; }
+  .shot .sub { font-size: 0.72rem; opacity: 0.75; margin: 0 0 0.45rem; }
+  .shot .id { font: 0.64rem/1 ui-monospace, Menlo, monospace; opacity: 0.6; }
+  .btns { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+  .btn { font: 600 0.66rem/1 ui-sans-serif, system-ui, sans-serif; padding: 0.38rem 0.6rem; border-radius: 999px; border: 1px solid rgba(127,127,127,0.45); }
+  .btn.main { border-color: var(--over); color: var(--over); }
+  .drop { margin-top: 0.8rem; border: 1px dashed rgba(127,127,127,0.6); border-radius: 8px; padding: 0.8rem; font-size: 0.74rem; text-align: center; opacity: 0.85; }
+  .fact { font-size: 0.72rem; opacity: 0.7; margin: 0.7rem 0 0; }
+</style>
+</head>
+<body>
+<h1>R80: a scene's shots</h1>
+<p class="lede">Drawn 2026-09-27 on Robert's need: take the script, and make every shot that goes into a scene. Decided with him the same day: a shot is <b>a line of the script</b>, its files hang off the shot's id, the agent's breakdown stands and the record says whose, and the stills are made outside the app from a prompt the app hands over. The agent's half is built; this page is the person's half, for his word before it is built.</p>
+
+<!-- ───────────── 1 ───────────── -->
+<h2 class="sec">1 · The moment: a scene with shots on it, as it ships today</h2>
+<div class="said"><b>As it ships.</b> The agent's tools write the shot lines into the scene's text. In the app a person sees them as they are typed: a note in double brackets, in the scene editor and in Pages. Nothing prints, nothing is measured, and nothing on the screen says there is a still.</div>
+<div class="row">
+  <div class="opt">
+    <h3>Pages · <em>as it ships</em></h3>
+    <div class="page">
+      <p class="head">INT. THE HARBOUR OFFICE - NIGHT</p>
+      <p class="raw">[[shot k3f9: wide on the office, rain on the window · 5s]]</p>
+      <p class="act">Rain on the one window. NELL sets the ledger on the desk.</p>
+      <p class="raw">[[shot m7pw: close on Nell's hand on the ledger · slow push in · 4s]]</p>
+      <p class="cue">ADA</p>
+      <p class="say">You kept it.</p>
+      <p class="cue">NELL</p>
+      <p class="say">Somebody had to.</p>
+    </div>
+    <p>Honest, and unkind to read. The id is where a person can break it by typing over it.</p>
+  </div>
+</div>
+
+<!-- ───────────── 2 ───────────── -->
+<h2 class="sec">2 · In Pages: the shot line drawn as a mark</h2>
+<div class="row">
+  <div class="opt">
+    <h3>A · <em>a mark in the margin, with its frame</em> (recommended)</h3>
+    <div class="page">
+      <p class="head">INT. THE HARBOUR OFFICE - NIGHT</p>
+      <div class="chip"><span class="thumb"></span><span class="n">1</span><span class="what">wide on the office, rain on the window</span><span class="sec">5s</span></div>
+      <p class="act">Rain on the one window. NELL sets the ledger on the desk.</p>
+      <div class="chip"><span class="thumb none"></span><span class="n">2</span><span class="what">close on Nell's hand on the ledger · slow push in</span><span class="sec">4s</span></div>
+      <p class="cue">ADA</p>
+      <p class="say">You kept it.</p>
+      <p class="cue">NELL</p>
+      <p class="say">Somebody had to.</p>
+    </div>
+    <p>The line is still in the text; the app draws it. Numbered by its place in the scene, the id kept out of sight, a small frame when a still is filed and a dashed box when none is. Click the mark and the sheet opens on that shot. In the scene editor the line stays as text, greyed, so the script is still one thing to type in.</p>
+  </div>
+  <div class="opt">
+    <h3>B · <em>no mark: shots live only in the sheet</em></h3>
+    <div class="page">
+      <p class="head">INT. THE HARBOUR OFFICE - NIGHT</p>
+      <p class="act">Rain on the one window. NELL sets the ledger on the desk.</p>
+      <p class="cue">ADA</p>
+      <p class="say">You kept it.</p>
+      <p class="cue">NELL</p>
+      <p class="say">Somebody had to.</p>
+    </div>
+    <p>Pages reads as a script and nothing else. Quieter; and a person reading the scene cannot see where one shot ends and the next begins, which is the thing the line is for.</p>
+  </div>
+</div>
+
+<!-- ───────────── 3 ───────────── -->
+<h2 class="sec">3 · The sheet: one scene's shots, and the way the pictures come back</h2>
+<div class="said"><b>One sheet, opened from the card</b> as Brief and Takes are: select a card, <b>Shots</b> in the bar. Everything a person does to a shot is here, so nothing new is added to the card or the wall.</div>
+<div class="row">
+  <div class="opt wide">
+    <h3>The Shots sheet · <em>two of three stills in</em></h3>
+    <div class="sheet">
+      <div class="top"><span class="title">Ada's column</span><span class="close">Close</span></div>
+      <p class="meta">3 shots · 9 seconds said of about 52 the scene runs · 1 with no length</p>
+      <div class="look"><span class="k">The look, for every still of the project</span>35mm, overcast, desaturated greens --sref 1234</div>
+
+      <div class="shot">
+        <div class="frame"><span class="count">2 stills</span></div>
+        <div>
+          <p class="what">wide on the office, rain on the window</p>
+          <p class="sub">no move said · 5 seconds · <span class="id">k3f9</span></p>
+          <div class="btns"><span class="btn">Copy the prompt</span><span class="btn">Add a still</span><span class="btn">Choose the frame</span></div>
+        </div>
+      </div>
+      <div class="shot">
+        <div class="frame none">no still yet<br>drop one here</div>
+        <div>
+          <p class="what">close on Nell's hand on the ledger</p>
+          <p class="sub">slow push in · 4 seconds · <span class="id">m7pw</span></p>
+          <div class="btns"><span class="btn main">Copy the prompt</span><span class="btn">Add a still</span></div>
+        </div>
+      </div>
+      <div class="shot">
+        <div class="frame two"></div>
+        <div>
+          <p class="what">over Ada's shoulder, the ledger turning</p>
+          <p class="sub">no move said · no length said · <span class="id">t2ha</span></p>
+          <div class="btns"><span class="btn">Copy the prompt</span><span class="btn">Add a still</span></div>
+        </div>
+      </div>
+
+      <div class="drop">Drop stills here. A file named for a shot goes to it: <b>m7pw.png</b>, <b>m7pw-2.png</b>. Any other file asks which shot.</div>
+      <p class="fact">The words of a shot are typed here as anywhere: tap and type. Copy all three prompts copies them as a numbered list.</p>
+    </div>
+  </div>
+  <div class="opt">
+    <h3>What "Copy the prompt" puts on the clipboard</h3>
+    <pre class="read">close on Nell's hand on the ledger. INT. THE HARBOUR OFFICE: One room over the slip, a desk under the window. Nell Carrow: Forty, oilskin, a burn on the left wrist. night, rain, one lamp. <b>35mm, overcast, desaturated greens --sref 1234</b>.</pre>
+    <p>Every word is the wall's: the shot's line, the place's page, the person's looks, the light, the look. When the wall holds no looks for someone in the shot, the sheet says so under the shot and leaves them out; it invents nothing.</p>
+    <h3 style="margin-top:1.4rem">The pictures coming back</h3>
+    <p style="margin-top:0"><b>One way in, to start:</b> the sheet. Drop a file on a shot, or drop several on the sheet and the ones named for a shot find it. The app keeps them on the project as it keeps a person's pictures. Nothing to connect, no second place to look.</p>
+    <p><b>Held until the size asks for it:</b> pictures kept somewhere else and linked. A project's files sit in one bucket with a 200 MB limit a file; a still is two or three, so a film of a thousand stills is two or three gigabytes, which is when to decide where they go.</p>
+  </div>
+</div>
+
+<!-- ───────────── 4 ───────────── -->
+<h2 class="sec">4 · What is not drawn, and why</h2>
+<div class="honest"><b>No strip of frames on the wall or the card.</b> A card is a scene; eight frames on forty cards is a wall nobody can read. The card gets nothing new. If the takes' mark on a card (the small film mark it has today) should also say "has shots", that is one glyph, and yours to ask for.</div>
+<div class="honest"><b>No editing of a still.</b> The edit is made in the tool that made it; the edited file comes back as another still on the same shot, and the newest is the first frame unless you choose.</div>
+<div class="honest"><b>No video from the sheet yet.</b> The video tool is still question 26. When there is one, a shot with a still gets one more button, and its takes show under its frame as a scene's do in Takes.</div>
+
+<p class="ask"><b>What a yes means.</b> "2 A and the sheet" builds the mark in Pages and the Shots sheet as drawn, with the drop by file name, and writes the writer's guide for both. "2 B and the sheet" builds the sheet alone. Anything else, say what, and it is drawn again first.</p>
+</body>
+</html>

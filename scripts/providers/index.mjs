@@ -7,7 +7,7 @@
 // A provider module exports:
 //
 //   name: string
-//   makeTake({ brief, subject, seconds, references, env, outDir })
+//   makeTake({ brief, subject, seconds, references, firstFrame, env, outDir })
 //     -> Promise<{ path: string, note?: string }>
 //
 //   brief       the segment's brief, as segment_brief prints it
@@ -15,6 +15,9 @@
 //   seconds     the segment's length, a page a minute
 //   references  [{ kind: "person" | "place", name, url }] — the first picture
 //               on each page in the segment that has one; signed, an hour
+//   firstFrame  for one shot (R80): { name, url } — the still filed as the
+//               shot's first frame, signed, an hour; the clip starts on it.
+//               Absent for a scene or a run, which is built from references
 //   env         the server's environment: PLOTCODER_VIDEO_KEY is the
 //               provider's key — on the hosted door a function secret
 //               (`supabase secrets set PLOTCODER_VIDEO_KEY=…`), locally the

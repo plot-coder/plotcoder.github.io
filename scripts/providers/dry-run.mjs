@@ -9,7 +9,7 @@ import path from "node:path";
 
 export const name = "dry-run";
 
-export async function makeTake({ brief, subject, seconds, references, outDir }) {
+export async function makeTake({ brief, subject, seconds, references, firstFrame, outDir }) {
   fs.mkdirSync(outDir, { recursive: true });
   const safe = String(subject).replace(/[^A-Za-z0-9._-]+/g, "-").slice(0, 60) || "segment";
   const file = path.join(outDir, `dry-run-${safe}-${Date.now()}.txt`);
@@ -17,7 +17,8 @@ export async function makeTake({ brief, subject, seconds, references, outDir }) 
     "DRY RUN — no video was made. This is what a video tool would have been handed.",
     "",
     `SUBJECT: ${subject}`,
-    `SECONDS: ${seconds}`,
+    `SECONDS: ${seconds ?? "(not said)"}`,
+    ...(firstFrame ? [`FIRST FRAME: "${firstFrame.name}"`] : []),
     `REFERENCES: ${references.length ? references.map((item) => `${item.kind} "${item.name}"`).join("; ") : "(none: no page in this segment has a picture)"}`,
     "",
     brief,

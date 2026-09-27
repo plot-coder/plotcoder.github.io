@@ -26,6 +26,8 @@ export type ProjectRecord = {
   premise: string;
   /** The writer's words for why there is no premise yet (R61), or empty. */
   premiseOpen: string;
+  /** The look every shot's still shares (R80): style words and an image tool's codes, or empty. */
+  look: string;
   /** The title page's byline — "Written by …" — on every script out (pass 1a, entry 50); empty claims nothing. */
   author: string;
   /** The title page's contact lines under the byline; empty is none. */
@@ -81,6 +83,8 @@ export declare function moveBoard(
 export declare function setActiveBoard(project: ProjectRecord, id: string, now?: string): ProjectRecord;
 export declare function renameProject(project: ProjectRecord, name: string, now?: string): ProjectRecord;
 export declare function setPremise(project: ProjectRecord, premise: string, now?: string): ProjectRecord;
+/** The project's look (R80); "" clears it. */
+export declare function setLook(project: ProjectRecord, look: string, now?: string): ProjectRecord;
 /** The title page's byline and contact; undefined leaves a field, "" clears it. */
 export declare function setTitlePage(project: ProjectRecord, fields: { author?: string; contact?: string; undecidedPage?: boolean }, now?: string): ProjectRecord;
 /** The writer's words for why there is no premise yet (R61); words clear the premise, "" takes them back. */

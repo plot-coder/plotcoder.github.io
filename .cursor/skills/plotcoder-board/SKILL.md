@@ -554,7 +554,11 @@ sends a draft out clean, on the writer's word, and `true` puts it back.
   writer's word:"; never the app's own "What changes?"), the cast and the fold as
   notes, a changed scene noted under a revision). Pass `path` to write a
   `.fountain` file.
-- `read_pages` — the same script with each card's id beside its heading and
+- `read_pages` — takes `scene` (one card), `from` and `to` (a stretch, as
+  `measure` takes them) or `group` (an act by its title), and prints only
+  that part with a line saying what it is of the whole; the three text
+  exports take the same, so a project past any window is read a stretch at
+  a time. Without them, the same script with each card's id beside its heading and
   whether it is measured (written) or estimated. Read it before writing.
   A card with no place prints `NO PLACE YET:` and then its headline where
   the place would go, on every page and in every export, so a headline in

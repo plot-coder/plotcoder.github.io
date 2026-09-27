@@ -118,6 +118,13 @@ async function main() {
       await measure("read_wall only length", "read_wall", { only: "length" }, meta.name);
       await measure("list_board", "list_board", {}, meta.name);
       await measure("read_pages", "read_pages", {}, meta.name);
+      // The selecting reads (R77 a): one scene, a stretch of ten, an act — beside the whole board's pages.
+      const ids = [...(await door.call("list_board")).matchAll(/^  - ([0-9a-f-]{36}) \[/gm)].map((match) => match[1]);
+      if (ids.length) {
+        await measure("read_pages one scene", "read_pages", { scene: ids[0] }, meta.name);
+        await measure("read_pages a stretch of ten", "read_pages", { from: ids[0], to: ids[Math.min(9, ids.length - 1)] }, meta.name);
+        await measure('read_pages the group "Act Two"', "read_pages", { group: "Act Two" }, meta.name);
+      }
       await measure("page_count", "page_count", {}, meta.name);
       await measure("read_record", "read_record", {}, meta.name);
       await measure("export_fountain", "export_fountain", {}, meta.name);

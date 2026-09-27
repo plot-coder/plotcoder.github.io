@@ -99,6 +99,7 @@ import {
   scriptTitles,
   withRoster,
 } from "../src/board/project.js";
+import { selectStretch, stretchState } from "../src/board/stretch.js";
 
 /**
  * One PlotCoder server, with its own doors and its own trail: the stdio door
@@ -3074,21 +3075,25 @@ server.registerTool(
   {
     title: "Export the wall as Fountain",
     description:
-      "The script for a Fountain editor, with the wall's notes — the open board as a Fountain screenplay: a title page (with the premise and logline in its notes), beats as sections, one scene per card in wall order — a forced heading from the card's place (or its headline), the headline as a synopsis, the cast and the fold as notes, the change line as action after the mark [Unwritten] until the scene is written. Titled for the project, a one-board film being its project. Plain text a writer can open in any Fountain editor. Pass a path (relative to the server's folder) to write a .fountain file; otherwise the text comes back. Before a draft goes out to anyone: lock_numbers keeps these scene numbers for the next file (an added scene gets a letter), and start_revision marks what changes after it — say both to the writer at the first export, since nothing here will (pass 1a, entries 98, 99).",
-    inputSchema: { path: z.string().optional() },
+      "The script for a Fountain editor, with the wall's notes — the open board as a Fountain screenplay: a title page (with the premise and logline in its notes), beats as sections, one scene per card in wall order — a forced heading from the card's place (or its headline), the headline as a synopsis, the cast and the fold as notes, the change line as action after the mark [Unwritten] until the scene is written. Titled for the project, a one-board film being its project. Plain text a writer can open in any Fountain editor. Pass a path (relative to the server's folder) to write a .fountain file; otherwise the text comes back. Before a draft goes out to anyone: lock_numbers keeps these scene numbers for the next file (an added scene gets a letter), and start_revision marks what changes after it — say both to the writer at the first export, since nothing here will (pass 1a, entries 98, 99). Pass scene (one card), from and to (a stretch, inclusive, in story order, as measure takes them) or group (an act or a sequence by its title) to read only that part: the reply is that stretch and nothing else, with a line saying what it is of the whole. Without them, the whole board; a stretch written to a file is that stretch.",
+    inputSchema: { path: z.string().optional(), scene: z.string().optional().describe("One card, by id or headline: its page alone."), from: z.string().optional().describe("The first card of a stretch, by id or headline, in story order; alone, to the end."), to: z.string().optional().describe("The last card of a stretch, by id or headline; alone, from the start."), group: z.string().optional().describe("A group — an act, a sequence — by id or title: its cards in story order.") },
   },
   async (args) => {
-    const { state } = await readBoard();
+    const { state: whole } = await readBoard();
     const { project } = await readProject();
+    const picked = selectStretch(whole, args);
+    if (picked.error) return ok(picked.error);
+    const state = picked.whole ? whole : stretchState(whole, picked.cards);
+    const stretchWords = picked.whole ? "" : `, ${picked.words} (${picked.cards.length} of ${storyOrder(whole).length} cards)`;
     const board = project.boards.find((item) => item.id === project.activeBoardId);
     const titles = scriptTitles(project, board);
     const text = toFountain(state, { ...titles, premise: project.premise || undefined, draftDate: new Date().toISOString(), undecided: lastPage(project, state) });
     if (args.path) {
       fs.mkdirSync(path.dirname(path.resolve(args.path)), { recursive: true });
       fs.writeFileSync(args.path, text);
-      return ok(`Wrote ${text.split("\n").length} lines of Fountain, titled "${titles.title}", to ${args.path}.`);
+      return ok(`Wrote ${text.split("\n").length} lines of Fountain, titled "${titles.title}"${stretchWords}, to ${args.path}.`);
     }
-    return ok(text);
+    return ok(picked.whole ? text : `${picked.words}: ${picked.cards.length} of ${storyOrder(whole).length} cards in the film; the rest is not printed here.\n\n${text}`);
   },
 );
 
@@ -3097,21 +3102,25 @@ server.registerTool(
   {
     title: "Export the wall as Markdown",
     description:
-      "The open board as Markdown, for a collaborator who lives in Google Docs or the like: titled for the project — a one-board film is its project, and the board's name follows only when the project has several boards — the byline and contact under the title when set_title_page has set them, then the premise and the logline, beats as second-level headings, a third-level heading per scene from its place with its scene number, the headline as a synopsis line under a scene (a beat's headline is its own heading, not printed twice), then the scene's text — a speech as its cue in bold with the lines under it — or, unwritten, its change line after the mark [Unwritten] in bold, so a reader can tell a placeholder from a page. Carries the beats and every headline; does not carry the cast or the fold (Fountain's notes do). In Google Docs, Paste from Markdown keeps the headings. Pass a path (relative to the server's folder) to write a .md file; otherwise the text comes back. Before a draft goes out to anyone: lock_numbers keeps these scene numbers for the next file (an added scene gets a letter), and start_revision marks what changes after it — say both to the writer at the first export, since nothing here will (pass 1a, entries 98, 99).",
-    inputSchema: { path: z.string().optional() },
+      "The open board as Markdown, for a collaborator who lives in Google Docs or the like: titled for the project — a one-board film is its project, and the board's name follows only when the project has several boards — the byline and contact under the title when set_title_page has set them, then the premise and the logline, beats as second-level headings, a third-level heading per scene from its place with its scene number, the headline as a synopsis line under a scene (a beat's headline is its own heading, not printed twice), then the scene's text — a speech as its cue in bold with the lines under it — or, unwritten, its change line after the mark [Unwritten] in bold, so a reader can tell a placeholder from a page. Carries the beats and every headline; does not carry the cast or the fold (Fountain's notes do). In Google Docs, Paste from Markdown keeps the headings. Pass a path (relative to the server's folder) to write a .md file; otherwise the text comes back. Before a draft goes out to anyone: lock_numbers keeps these scene numbers for the next file (an added scene gets a letter), and start_revision marks what changes after it — say both to the writer at the first export, since nothing here will (pass 1a, entries 98, 99). Pass scene (one card), from and to (a stretch, inclusive, in story order, as measure takes them) or group (an act or a sequence by its title) to read only that part: the reply is that stretch and nothing else, with a line saying what it is of the whole. Without them, the whole board; a stretch written to a file is that stretch.",
+    inputSchema: { path: z.string().optional(), scene: z.string().optional().describe("One card, by id or headline: its page alone."), from: z.string().optional().describe("The first card of a stretch, by id or headline, in story order; alone, to the end."), to: z.string().optional().describe("The last card of a stretch, by id or headline; alone, from the start."), group: z.string().optional().describe("A group — an act, a sequence — by id or title: its cards in story order.") },
   },
   async (args) => {
-    const { state } = await readBoard();
+    const { state: whole } = await readBoard();
     const { project } = await readProject();
+    const picked = selectStretch(whole, args);
+    if (picked.error) return ok(picked.error);
+    const state = picked.whole ? whole : stretchState(whole, picked.cards);
+    const stretchWords = picked.whole ? "" : `, ${picked.words} (${picked.cards.length} of ${storyOrder(whole).length} cards)`;
     const board = project.boards.find((item) => item.id === project.activeBoardId);
     const titles = scriptTitles(project, board);
     const text = toMarkdown(state, { ...titles, premise: project.premise || undefined, undecided: lastPage(project, state) });
     if (args.path) {
       fs.mkdirSync(path.dirname(path.resolve(args.path)), { recursive: true });
       fs.writeFileSync(args.path, text);
-      return ok(`Wrote ${text.split("\n").length} lines of Markdown, titled "${titles.title}", to ${path.resolve(args.path)}.`);
+      return ok(`Wrote ${text.split("\n").length} lines of Markdown, titled "${titles.title}"${stretchWords}, to ${path.resolve(args.path)}.`);
     }
-    return ok(text);
+    return ok(picked.whole ? text : `${picked.words}: ${picked.cards.length} of ${storyOrder(whole).length} cards in the film; the rest is not printed here.\n\n${text}`);
   },
 );
 
@@ -3120,21 +3129,25 @@ server.registerTool(
   {
     title: "Export the script as plain text",
     description:
-      "The script to read, as it prints — the open board's script as plain text: the paginator's lines at Courier's columns kept with spaces, scene numbers in both margins (the wall's order, or as locked), a page turn as the new page's number in the right margin between two blank lines (the first page unnumbered), the byline and contact under the title when set_title_page has set them, an unwritten scene's change line as action after the mark [Unwritten], a revision's stars in the right margin. Without a path the reply is the file itself and nothing else, to save as is: name it for the project (a series: the board), .txt. The script and nothing else: no headlines, no beats, no cast — the heading is the place and the when. Titled for the project, a one-board film being its project. Pastes into anything and reads as a script wherever the font is monospaced. Pass a path (relative to the server's folder) to write a .txt file; otherwise the text comes back. Before a draft goes out to anyone: lock_numbers keeps these scene numbers for the next file (an added scene gets a letter), and start_revision marks what changes after it — say both to the writer at the first export, since nothing here will (pass 1a, entries 98, 99).",
-    inputSchema: { path: z.string().optional() },
+      "The script to read, as it prints — the open board's script as plain text: the paginator's lines at Courier's columns kept with spaces, scene numbers in both margins (the wall's order, or as locked), a page turn as the new page's number in the right margin between two blank lines (the first page unnumbered), the byline and contact under the title when set_title_page has set them, an unwritten scene's change line as action after the mark [Unwritten], a revision's stars in the right margin. Without a path the reply is the file itself and nothing else, to save as is: name it for the project (a series: the board), .txt. The script and nothing else: no headlines, no beats, no cast — the heading is the place and the when. Titled for the project, a one-board film being its project. Pastes into anything and reads as a script wherever the font is monospaced. Pass a path (relative to the server's folder) to write a .txt file; otherwise the text comes back. Before a draft goes out to anyone: lock_numbers keeps these scene numbers for the next file (an added scene gets a letter), and start_revision marks what changes after it — say both to the writer at the first export, since nothing here will (pass 1a, entries 98, 99). Pass scene (one card), from and to (a stretch, inclusive, in story order, as measure takes them) or group (an act or a sequence by its title) to read only that part: the reply is that stretch and nothing else, with a line saying what it is of the whole. Without them, the whole board; a stretch written to a file is that stretch.",
+    inputSchema: { path: z.string().optional(), scene: z.string().optional().describe("One card, by id or headline: its page alone."), from: z.string().optional().describe("The first card of a stretch, by id or headline, in story order; alone, to the end."), to: z.string().optional().describe("The last card of a stretch, by id or headline; alone, from the start."), group: z.string().optional().describe("A group — an act, a sequence — by id or title: its cards in story order.") },
   },
   async (args) => {
-    const { state } = await readBoard();
+    const { state: whole } = await readBoard();
     const { project } = await readProject();
+    const picked = selectStretch(whole, args);
+    if (picked.error) return ok(picked.error);
+    const state = picked.whole ? whole : stretchState(whole, picked.cards);
+    const stretchWords = picked.whole ? "" : `, ${picked.words} (${picked.cards.length} of ${storyOrder(whole).length} cards)`;
     const board = project.boards.find((item) => item.id === project.activeBoardId);
     const titles = scriptTitles(project, board);
     const text = toPlainText(state, { ...titles, undecided: lastPage(project, state) });
     if (args.path) {
       fs.mkdirSync(path.dirname(path.resolve(args.path)), { recursive: true });
       fs.writeFileSync(args.path, text);
-      return ok(`Wrote ${text.split("\n").length} lines of plain text, titled "${titles.title}", to ${path.resolve(args.path)}.`);
+      return ok(`Wrote ${text.split("\n").length} lines of plain text, titled "${titles.title}"${stretchWords}, to ${path.resolve(args.path)}.`);
     }
-    return ok(text);
+    return ok(picked.whole ? text : `${picked.words}: ${picked.cards.length} of ${storyOrder(whole).length} cards in the film; the rest is not printed here.\n\n${text}`);
   },
 );
 
@@ -3232,13 +3245,18 @@ server.registerTool(
   {
     title: "Read the pages",
     description:
-      "The open board as a script in wall order, with each card's id beside its heading and whether its length is measured (written) or estimated. The same text export_fountain writes, plus the ids, so a scene can be written back with write_scene.",
-    inputSchema: {},
+      "The open board as a script in wall order, with each card's id beside its heading and whether its length is measured (written) or estimated. The same text export_fountain writes, plus the ids, so a scene can be written back with write_scene. Pass scene (one card), from and to (a stretch, inclusive, in story order, as measure takes them) or group (an act or a sequence by its title) to read only that part: the reply is that stretch and nothing else, with a line saying what it is of the whole. Without them, the whole board.",
+    inputSchema: { scene: z.string().optional().describe("One card, by id or headline: its page alone."), from: z.string().optional().describe("The first card of a stretch, by id or headline, in story order; alone, to the end."), to: z.string().optional().describe("The last card of a stretch, by id or headline; alone, from the start."), group: z.string().optional().describe("A group — an act, a sequence — by id or title: its cards in story order.") },
   },
-  async () => {
-    const { state } = await readBoard();
+  async (args) => {
+    const { state: whole } = await readBoard();
     const { project } = await readProject();
     const board = project.boards.find((item) => item.id === project.activeBoardId);
+    // A stretch, when one is named (R77 a): the board narrowed to it, so the pages are those and nothing else.
+    const picked = selectStretch(whole, args);
+    if (picked.error) return ok(picked.error);
+    const state = picked.whole ? whole : stretchState(whole, picked.cards);
+    const stretchLine = picked.whole ? [] : [`the pages of ${picked.words}: ${picked.cards.length} of ${storyOrder(whole).length} card${storyOrder(whole).length === 1 ? "" : "s"} in the film, about ${formatPages(picked.cards.reduce((sum, note) => sum + noteEighths(note), 0))} pages; the rest of the board is not printed here`];
     const text = toFountain(state, { ...scriptTitles(project, board), premise: project.premise || undefined });
     const parsed = fromFountain(text);
     const marks = revisionMarks(state);
@@ -3271,7 +3289,7 @@ server.registerTool(
     }
     // The film's own facts at the head, for whoever writes a scene from these pages: a card cannot show what is true of the whole film (round twenty-two, entry 74).
     const film = (project.premise ?? "").trim() ? [`the film (the premise, true of every scene): "${project.premise.trim()}"`] : [];
-    return ok([...film, ...lines].join("\n"));
+    return ok([...stretchLine, ...film, ...lines].join("\n"));
   },
 );
 

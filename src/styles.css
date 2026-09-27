@@ -122,15 +122,56 @@ body {
   font-style: italic;
 }
 
+/* In the ink's own colour, thinned: white under the words made them unreadable on the dark canvas. */
 .logline__premise:hover,
 .logline__question:hover {
-  background: rgba(255, 255, 255, 0.45);
+  background: color-mix(in srgb, var(--ink) 7%, transparent);
 }
 
 .logline__premise:focus,
 .logline__question:focus {
-  background: rgba(255, 255, 255, 0.78);
-  box-shadow: 0 1px 10px rgba(31, 24, 16, 0.1);
+  background: color-mix(in srgb, var(--ink) 11%, transparent);
+  box-shadow: inset 0 0 0 1px var(--bar-border);
+}
+
+.logline__offers {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem 0.7rem;
+  width: 100%;
+}
+
+/* The title band: the canvas's own colour behind the wordmark, the logline and
+   the buttons, so a card panned to the top passes under them and nothing is
+   read through anything. It takes no taps: the wall beneath still pans. */
+.top-band {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 8;
+  height: 6.4rem;
+  background: linear-gradient(to bottom, var(--canvas) 0, var(--canvas) 80%, transparent 100%);
+  pointer-events: none;
+}
+
+/* The logline can run taller than the band — a premise, a long logline, the
+   offers — and carries the band down with it, edge to edge. */
+.logline {
+  padding-bottom: 0.5rem;
+}
+
+.logline::before {
+  content: "";
+  position: absolute;
+  top: -1rem;
+  bottom: 0;
+  left: 50%;
+  z-index: -1;
+  width: 100vw;
+  transform: translateX(-50%);
+  background: var(--canvas);
+  pointer-events: none;
 }
 
 .logline__add-premise {

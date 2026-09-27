@@ -926,6 +926,7 @@ export function App() {
         onAddOpenLine={(text) => boardStore.dispatch({ type: "add_open_line", text })}
         onStrikeOpenLine={(index) => boardStore.dispatch({ type: "strike_open_line", index })}
       />
+      <div className="top-band" aria-hidden="true" />
       {/* Under the wordmark, clear of the logline and the buttons: whether an agent is on the wall, and the way to bring one (R81). */}
       <button
         type="button"

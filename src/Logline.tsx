@@ -140,23 +140,26 @@ export function Logline({
           />
         </span>
       )}
-      {!logline && !loglineOpen && leaving !== "logline" ? (
-        <button type="button" className="field-offer" onClick={() => setLeaving("logline")}>
-          Not decided yet…
-        </button>
-      ) : null}
+      {/* The offers on one line under the logline, so reaching for it shows a row to choose from and not a column over the wall. */}
+      <div className="logline__offers">
+        {!logline && !loglineOpen && leaving !== "logline" ? (
+          <button type="button" className="field-offer" onClick={() => setLeaving("logline")}>
+            Not decided yet…
+          </button>
+        ) : null}
 
-      <OpenLines lines={openLines} onAdd={onAddOpenLine} onStrike={onStrikeOpenLine} />
+        <OpenLines lines={openLines} onAdd={onAddOpenLine} onStrike={onStrikeOpenLine} />
 
-      {showPremise ? null : (
-        <button
-          type="button"
-          className="logline__add-premise"
-          onClick={() => setPremiseShown(true)}
-        >
-          Add a series premise
-        </button>
-      )}
+        {showPremise ? null : (
+          <button
+            type="button"
+            className="logline__add-premise"
+            onClick={() => setPremiseShown(true)}
+          >
+            Add a series premise
+          </button>
+        )}
+      </div>
     </div>
   );
 }

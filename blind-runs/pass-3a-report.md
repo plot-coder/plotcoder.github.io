@@ -126,6 +126,10 @@ counter is `scripts/measure-reads.mjs`; both are kept, so the size can be
 rebuilt and counted again after any change. The second half — a fresh
 agent handed "Low Water" and three directions that need the whole film —
 has its prompt in `blind-runs/pass-3a-prompt.md` and waits on a session.
+(Both halves ran; the second is above. R77 (a) was built the same night:
+on the series, `read_pages` of one scene is about 800 tokens, a stretch
+of ten about 5,000, an act of twenty about 11,400, against the board's
+21,000 — `scripts/measure-reads.mjs` counts them beside the whole.)
 
 **Tokens are an estimate** at three and a half characters each, checked
 once against a public tokenizer on these very replies: prose ran 3.5 to

@@ -1190,6 +1190,27 @@ describe("open fields (R61): the logline, the premise, a when and a board's name
     await client.callTool("write_scene", { id: "maya-letter", text: "" });
   });
 
+  it("reads one scene, a stretch or a group of the pages, and exports the same (R77 a)", async () => {
+    const { notes } = await client.callToolData("list_board");
+    const [first, second, third] = notes;
+    const one = await client.callTool("read_pages", { scene: first.headline });
+    expect(one).toContain(`the pages of "${first.headline}": 1 of ${notes.length} cards in the film`);
+    expect(one).toContain(`[[id: ${first.id}`);
+    expect(one).not.toContain(`[[id: ${second.id}`);
+    const stretch = await client.callTool("read_pages", { from: third.id, to: second.headline });
+    expect(stretch).toContain(`the pages of "${second.headline}" to "${third.headline}": 2 of ${notes.length} cards`);
+    expect(stretch).not.toContain(`[[id: ${first.id}`);
+    expect(await client.callTool("read_pages", { scene: "No such scene" })).toContain('No card with id or headline "No such scene" in the film\'s order');
+    const grouped = await client.callToolData("create_group", { noteIds: [first.id, second.id], title: "Act One" });
+    const act = await client.callTool("export_fountain", { group: "act one" });
+    expect(act).toMatch(/^the group "Act One": 2 of \d+ cards in the film; the rest is not printed here\./);
+    expect(act).not.toContain(third.headline.toUpperCase());
+    expect(await client.callTool("export_text", { group: "Act Nine" })).toContain('No group with id or title "Act Nine"');
+    await client.callTool("ungroup", { id: grouped.id });
+    // Nothing named is the whole board, as before.
+    expect(await client.callTool("read_pages")).not.toContain("the pages of ");
+  });
+
   it("holds two versions of one scene behind each other and chooses one (R65)", async () => {
     const ending = await client.callToolData("create_note", { headline: "They lose the plots", change: "The plots are gone." });
     const other = await client.callToolData("create_note", { headline: "Con dies", change: "Ruth plants the crowns." });

@@ -16,6 +16,18 @@ export const UNDO_TABLE = "agent_undo";
 export const UNDO_KEPT = 10;
 /** A session not touched for a day is gone: the next one through the door sweeps it. */
 export const SESSION_LIFE_MS = 24 * 60 * 60 * 1000;
+/**
+ * The door cannot tell one agent from the next behind one connector (pass 2b, entries 6, 16): the desktop app keeps
+ * a connector, and its session id, across its own sessions. A gap of half an hour is a new session: the memory
+ * before it is not this agent's, and a step on the trail older than it is not this agent's to undo.
+ */
+export const SESSION_GAP_MS = 30 * 60 * 1000;
+/** Whether a time is far enough back to be another session's. */
+export function sessionGapBefore(touchedAt, now = Date.now()) {
+  if (typeof touchedAt !== "string") return false;
+  const at = Date.parse(touchedAt);
+  return Number.isFinite(at) && now - at > SESSION_GAP_MS;
+}
 /** Enough to say "n changes landed since"; a build of hundreds of writes keeps the newest. */
 const SINCE_READ_KEPT = 200;
 
@@ -61,9 +73,10 @@ export function normalizeMemory(raw) {
 export function accountSessionStore(client, userId, now = () => Date.now()) {
   return {
     async load(id) {
-      const { data, error } = await client.from(SESSION_TABLE).select("memory").eq("id", id).maybeSingle();
+      const { data, error } = await client.from(SESSION_TABLE).select("memory, updated_at").eq("id", id).maybeSingle();
       if (error) return null;
-      return data ? { memory: normalizeMemory(data.memory), fresh: false } : { memory: emptyMemory(), fresh: true };
+      // When the row was last touched, so the server can see a session boundary (SESSION_GAP_MS).
+      return data ? { memory: normalizeMemory(data.memory), fresh: false, touchedAt: typeof data.updated_at === "string" ? data.updated_at : null } : { memory: emptyMemory(), fresh: true, touchedAt: null };
     },
     async save(id, memory, fresh) {
       const stamp = new Date(now()).toISOString();
@@ -88,10 +101,10 @@ export function accountSessionStore(client, userId, now = () => Date.now()) {
     },
     /** The newest step and how many there are, or null when there is none (or the trail cannot be read). */
     async peekUndo(id) {
-      const { data, error, count } = await client.from(UNDO_TABLE).select("seq, project_id, board_id, what, before, after_hash", { count: "exact" }).eq("session_id", id).order("seq", { ascending: false }).limit(1);
+      const { data, error, count } = await client.from(UNDO_TABLE).select("seq, project_id, board_id, what, before, after_hash, created_at", { count: "exact" }).eq("session_id", id).order("seq", { ascending: false }).limit(1);
       if (error || !data?.length) return null;
       const row = data[0];
-      return { seq: row.seq, projectId: row.project_id, boardId: row.board_id, what: row.what, before: row.before, afterHash: row.after_hash, steps: count ?? 1 };
+      return { seq: row.seq, projectId: row.project_id, boardId: row.board_id, what: row.what, before: row.before, afterHash: row.after_hash, steps: count ?? 1, at: typeof row.created_at === "string" ? row.created_at : null };
     },
     /** Take a step off the trail once it has been undone. */
     async popUndo(id, seq) {

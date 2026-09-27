@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SESSION_LIFE_MS, SESSION_TABLE, UNDO_KEPT, accountSessionStore, emptyMemory, isSessionId, normalizeMemory } from "./agentSession";
+import { SESSION_GAP_MS, SESSION_LIFE_MS, SESSION_TABLE, UNDO_KEPT, accountSessionStore, emptyMemory, isSessionId, normalizeMemory, sessionGapBefore } from "./agentSession";
 
 /** A client that answers from a map of rows and keeps what it was asked. */
 function fakeClient(rows: Record<string, unknown>, fail = false) {
@@ -54,7 +54,7 @@ describe("what a door remembers of one agent's session (the to-do's B1)", () => 
 
   it("treats an id with no row as a new session, and a store it cannot read as no session", async () => {
     const { client } = fakeClient({});
-    expect(await accountSessionStore(client, "writer").load(ID)).toEqual({ memory: emptyMemory(), fresh: true });
+    expect(await accountSessionStore(client, "writer").load(ID)).toEqual({ memory: emptyMemory(), fresh: true, touchedAt: null });
     const broken = fakeClient({}, true);
     expect(await accountSessionStore(broken.client, "writer").load(ID)).toBeNull();
     expect(await accountSessionStore(broken.client, "writer").save(ID, emptyMemory(), true)).toBe(false);
@@ -67,7 +67,7 @@ describe("what a door remembers of one agent's session (the to-do's B1)", () => 
     expect(await store.save(ID, { ...emptyMemory(), readOnce: true, said: ["paper"] }, true)).toBe(true);
     expect(asked[0]).toMatchObject({ table: SESSION_TABLE, op: "upsert", row: { id: ID, user_id: "writer", updated_at: "2026-09-20T12:00:00.000Z" } });
     expect(asked[1]).toMatchObject({ op: "delete", user_id: "writer", "updated_at <": new Date(Date.parse("2026-09-20T12:00:00Z") - SESSION_LIFE_MS).toISOString() });
-    expect(await store.load(ID)).toEqual({ memory: { ...emptyMemory(), readOnce: true, said: ["paper"] }, fresh: false });
+    expect(await store.load(ID)).toEqual({ memory: { ...emptyMemory(), readOnce: true, said: ["paper"] }, fresh: false, touchedAt: null });
     // The old sessions' undo trails are swept with them (the working list's X2).
     expect(asked[2]).toMatchObject({ table: "agent_undo", op: "delete", user_id: "writer" });
     // A session already begun saves without sweeping.
@@ -130,5 +130,16 @@ describe("a session's undo trail through the hosted door (the working list's X2)
     expect((await store.peekUndo!(ID))!.what).toBe(`change ${UNDO_KEPT + 2}`);
     expect(await store.peekUndo!("9b1d2c3e-4f5a-4b6c-8d7e-0f1a2b3c4d5e")).toBeNull();
     expect(rows.every((row) => row.user_id === "writer")).toBe(true);
+  });
+});
+
+describe("a session boundary behind one connector (pass 2b, entries 6, 16)", () => {
+  it("is a gap of half an hour, and nothing shorter or unknown", () => {
+    const now = Date.parse("2026-09-27T01:00:00.000Z");
+    expect(sessionGapBefore("2026-09-27T00:20:00.000Z", now)).toBe(true);
+    expect(sessionGapBefore("2026-09-27T00:45:00.000Z", now)).toBe(false);
+    expect(sessionGapBefore(new Date(now - SESSION_GAP_MS).toISOString(), now)).toBe(false);
+    expect(sessionGapBefore(null, now)).toBe(false);
+    expect(sessionGapBefore("not a time", now)).toBe(false);
   });
 });

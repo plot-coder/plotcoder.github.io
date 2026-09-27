@@ -1,5 +1,9 @@
 export declare const SESSION_TABLE: string;
 export declare const SESSION_LIFE_MS: number;
+/** A gap of half an hour behind one connector is a new session (pass 2b, entries 6, 16). */
+export declare const SESSION_GAP_MS: number;
+/** Whether a time is far enough back to be another session's. */
+export declare function sessionGapBefore(touchedAt: string | null | undefined, now?: number): boolean;
 /** What a door remembers of one agent's session. */
 export interface SessionMemory {
   readOnce: boolean;

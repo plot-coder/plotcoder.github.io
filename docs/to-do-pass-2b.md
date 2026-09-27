@@ -25,7 +25,7 @@ agent's (6).
   the guide names a tool your session does not show, turn the connector
   off and on: the app keeps the list it first saw"). Plan: one sentence
   on the on-ramp and in the guide's doors section.
-- [ ] **6 · "since your last reading" on a first reading.** The hosted
+- [x] **6 · "since your last reading" on a first reading.** **Built 2026-09-27:** after the gap the reading starts fresh and says so, and the record says what changed since. The hosted
   door's session is the connector's `mcp-session-id`, which the desktop
   app keeps across its own sessions, so a fresh agent inherits the last
   agent's session memory: its last reading, its since-line. *Plan:* the
@@ -77,7 +77,7 @@ The agent rebuilt the night from the export file's timestamps by hand,
 found the record empty and the hand-over null, and found the hosted
 door's undo stack was the last agent's.
 
-- [ ] **16 · The hosted door's undo stack is shared with the agent before:**
+- [x] **16 · The hosted door's undo stack is shared with the agent before:** **Built 2026-09-27:** a gap of half an hour behind one connector is a session boundary — a step on the trail older than it is refused as another agent's, with the reason.
   undo's preview named the last agent's `set_text`, and had the board not
   changed since, an undo would have taken back their work. *With 6:* the
   door's session is the connector's, kept by the desktop app across its
@@ -192,14 +192,12 @@ the record now carries it.
 
 ## Held for Robert, in one place
 
-- **The door's session behind one connector** (6, 16): the hosted door
-  cannot tell agents apart behind a connector the desktop app keeps, so a
-  fresh agent inherits the last one's since-line and undo trail. The
-  record says who changed the wall and when from the wall itself; the
-  session's memory should defer to it — a since-line from the record when
-  the session's last reading is older than the record's last change by
-  another hand, and an undo trail that expires the same way — or the
-  on-ramp says plainly that undo is the connector's.
+- ~~**The door's session behind one connector** (6, 16)~~ **Built
+  2026-09-27:** a gap of half an hour is a session boundary the door can
+  see — the memory before it is not this agent's (the reading starts
+  fresh and says so; the record says what changed), and a step on the
+  trail older than it is not this agent's to undo (refused, with the
+  reason). The guide's undo paragraph says so.
 - **A hand and a time on a page's notes** (9, 11, 29): a [[note]] is the
   writer's aside by the guide's rule, and an agent's note reads as the
   writer's; the record now says who wrote a page and when, and a note

@@ -57,7 +57,7 @@ import { readingOrder, storyOrder } from "../src/board/readWall.js";
 import { REVISION_COLORS, revisionMarks, sceneNumbers } from "../src/board/numbering.js";
 import { sceneHeading, standInFor } from "../src/board/fountain.js";
 import { describePresence, presenceTail } from "../src/board/presence.js";
-import { accountSessionStore, isSessionId, normalizeMemory } from "../src/board/agentSession.js";
+import { accountSessionStore, isSessionId, normalizeMemory, sessionGapBefore } from "../src/board/agentSession.js";
 import { agentsInstructions } from "../src/board/agents.js";
 import { castLine, readMaybe } from "../src/board/castMaybe.js";
 import { shapeNote } from "../src/board/shape.js";
@@ -1016,10 +1016,16 @@ async function recallSession() {
     }
     const held = await store.load(id);
     if (!held) return;
-    readOnce = held.memory.readOnce;
-    for (const key of held.memory.said) saidOnce.add(key);
-    lastReading = held.memory.lastReading;
-    sinceRead.splice(0, sinceRead.length, ...held.memory.sinceRead);
+    // A session boundary the door can see (pass 2b, entries 6, 16): behind one connector every agent is one session
+    // id, so a memory not touched for half an hour is another agent's, and this one starts fresh. The reading says so.
+    if (!held.fresh && sessionGapBefore(held.touchedAt)) {
+      sessionGap = held.touchedAt;
+    } else {
+      readOnce = held.memory.readOnce;
+      for (const key of held.memory.said) saidOnce.add(key);
+      lastReading = held.memory.lastReading;
+      sinceRead.splice(0, sinceRead.length, ...held.memory.sinceRead);
+    }
     sessionFresh = held.fresh;
     sessionWas = JSON.stringify(sessionMemory());
     sessionStore = store;
@@ -1027,6 +1033,9 @@ async function recallSession() {
     log("session:", error instanceof Error ? error.message : String(error));
   }
 }
+
+/** When this connector's last session was, if a gap of half an hour stood before this request: said on the first reading, then forgotten. */
+let sessionGap = null;
 
 /** Steps this request made, waiting to be kept on the session's trail once the tool has answered (the working list's X2). */
 const undoQueue = [];
@@ -2300,6 +2309,8 @@ server.registerTool(
     const countWords = (session) => `${session.count} change${session.count === 1 ? "" : "s"}${things(session) > session.count ? ` (${things(session)} things)` : ""}`;
     const recordLines = sessions.slice(0, 2).map((session) => `${session === sessions[0] ? "since anyone last changed this wall" : "before that"}: ${countWords(session)} by ${session.by}, ${spanWords(session.from, session.to)} — ${session.lines.map((item) => item.line).join("; ")}${session.more ? `; and ${session.more} more (read_record has the whole record)` : ""}`);
     if (state.handOver) recordLines.push(`the agent's last word, ${spanWords(state.handOver.at, state.handOver.at)}: "${state.handOver.words}" (it stands until the writer's next change)`);
+    const gapLine = sessionGap ? `this connector's last reading was ${spanWords(sessionGap, sessionGap)}, more than half an hour ago: the door cannot tell one agent from the next behind one connector, so this session starts fresh — its undo trail is not yours, and the record below says what changed since` : null;
+    sessionGap = null;
     lastReading = { findings: reading.findings, eighths: boardEighths(state) };
     sinceRead.length = 0;
     readOnce = true;
@@ -2353,6 +2364,7 @@ server.registerTool(
     const lines = [
       `PlotCoder wall (${door(live, base)})`,
       atAGlance(state, reading, projectForRead, readBoardMeta),
+      ...(gapLine ? [gapLine] : []),
       ...(sinceLine ? [sinceLine] : []),
       ...recordLines,
       ...(state.lock ? [`numbers: locked since ${String(state.lock.at).slice(0, 10)}; read_pages shows each scene's number`] : []),
@@ -3727,6 +3739,10 @@ server.registerTool(
     let kept = null;
     if (!last && hosted() && sessionStore?.peekUndo) {
       kept = await sessionStore.peekUndo(env.PLOTCODER_SESSION_ID);
+      // A step older than the session gap is another agent's, behind the same connector (pass 2b, entry 16): not this one's to undo.
+      if (kept && sessionGapBefore(kept.at)) {
+        return ok(`Nothing of this session's to undo: the last change on this connector's trail (${kept.what}) is from ${spanWords(kept.at, kept.at)}, more than half an hour ago — the door cannot tell one agent from the next behind one connector, and that change is not yours. read_record says what it was; the writer can take any change back from the wall with ⌘Z.`);
+      }
       if (kept) last = { before: normalizeState(kept.before), afterHash: kept.afterHash, what: kept.what, boardId: kept.boardId };
     }
     if (!last && hosted() && sessionStore?.peekUndo) return ok("Nothing of this session's to undo: no change of yours is on its trail. The writer can take any change back from the wall with ⌘Z.");

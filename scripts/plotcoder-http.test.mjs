@@ -158,6 +158,21 @@ describe("a session through the hosted door", () => {
     });
     afterAll(() => fs.rmSync(root, { recursive: true, force: true }));
 
+    it("starts fresh after half an hour behind one connector, and refuses to undo a step from before the gap (pass 2b, entries 6, 16)", async () => {
+      const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+      const stale = {
+        ...store,
+        save: async () => true,
+        load: async () => ({ memory: { ...emptyMemory(), readOnce: true, said: ["write-lines"], lastReading: { findings: [], eighths: 8 }, sinceRead: ["set_text"] }, fresh: false, touchedAt: twoHoursAgo }),
+        peekUndo: async () => ({ seq: 1, projectId: "", boardId: "", what: 'the page of "The last night"', before: {}, afterHash: "x", steps: 1, at: twoHoursAgo }),
+      };
+      const read = await request("read_wall", {}, { session: "0a0a0a0a-0a0a-4a0a-8a0a-0a0a0a0a0a0a", sessionStore: stale });
+      expect(read).toMatch(/this connector's last reading was [^,]+, more than half an hour ago: the door cannot tell one agent from the next behind one connector, so this session starts fresh/);
+      expect(read).not.toContain("since your last reading");
+      const undo = await request("undo", {}, { session: "0a0a0a0a-0a0a-4a0a-8a0a-0a0a0a0a0a0a", sessionStore: stale });
+      expect(undo).toMatch(/^Nothing of this session's to undo: the last change on this connector's trail \(the page of "The last night"\) is from .*, more than half an hour ago/);
+    });
+
     it("counts the wall's questions until the session's first reading, then quotes them, and says its advice once", async () => {
       const first = await request("create_note", { headline: "The depot", change: "The keys are on the hook.", x: 2000, y: 2000 });
       expect(first).toContain("the wall's questions have changed since your last read_wall");

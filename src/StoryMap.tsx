@@ -12,7 +12,7 @@
 // pans to the card; nothing on the wall moves.
 
 import { useEffect, useRef, useState } from "react";
-import { EIGHTHS_PER_PAGE, formatPages, targetWords, type BoardState } from "./board/reducer";
+import { EIGHTHS_PER_PAGE, TARGET_KINDS, formatMinutes, formatPages, targetChosen, targetWords, type BoardState } from "./board/reducer";
 import type { WallReading } from "./board/readWall";
 import { beatLabels, pageTicks, storyMapLayout, storyMapRows, xFor } from "./storyMapLayout";
 import type { TemplateBeat } from "./board/templates";
@@ -33,6 +33,8 @@ type StoryMapProps = {
   visibleIds: ReadonlySet<string>;
   onToggle: () => void;
   onJump: (id: string) => void;
+  /** The board's length, by the writer's choice: a kind, a number of pages, or their words for why it is not decided. */
+  onSetTarget: (choice: TargetChoice) => void;
   /** A structure set over the strip (R52): its beats as marks at their pages. Null shows none. */
   structure: { name: string; beats: ReadonlyArray<Pick<TemplateBeat, "name" | "at">> } | null;
 };
@@ -47,6 +49,8 @@ const PAPER: Record<string, string> = {
 
 const PAD = 28;
 
+export type TargetChoice = { kind: "feature" | "hour" | "half-hour" } | { pages: number } | { open: string };
+
 export function StoryMap({
   board,
   reading,
@@ -58,8 +62,31 @@ export function StoryMap({
   visibleIds,
   onToggle,
   onJump,
+  onSetTarget,
   structure,
 }: StoryMapProps) {
+  const [lengthOpen, setLengthOpen] = useState(false);
+  const [ownPages, setOwnPages] = useState("");
+  const [ownWords, setOwnWords] = useState("");
+  const chosen = targetChosen(board);
+
+  useEffect(() => {
+    if (!lengthOpen) return;
+    setOwnPages(chosen && !board.targetKind && !board.targetOpen ? String(Math.round(board.targetEighths / EIGHTHS_PER_PAGE)) : "");
+    setOwnWords(board.targetOpen ?? "");
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setLengthOpen(false);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // The fields take the board's length as the menu opens, and are the writer's until it closes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lengthOpen]);
+
+  function choose(choice: TargetChoice) {
+    onSetTarget(choice);
+    setLengthOpen(false);
+  }
   const hostRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
   const [scrubId, setScrubId] = useState<string | null>(null);
@@ -80,7 +107,7 @@ export function StoryMap({
   const { height, axisY, blockTop, beatTop } = rows;
   const x = (eighths: number) => xFor(eighths, layout.spanEighths, width, PAD);
   const labels = open ? beatLabels(layout.beats, layout.spanEighths, width, PAD) : [];
-  const over = layout.totalEighths - layout.targetEighths;
+  const over = targetChosen(board) && !board.targetOpen ? layout.totalEighths - layout.targetEighths : 0;
 
   // The scrub reads the card under the cursor on the strip, or the one under
   // the pointer on the wall, or the selected one.
@@ -105,25 +132,87 @@ export function StoryMap({
       aria-label="Story map"
       onMouseLeave={() => setScrubId(null)}
     >
-      <button type="button" className="story-map__tab" onClick={onToggle} aria-expanded={open}>
-        Story map · {open ? "hide" : "show"}
+      <div className="story-map__tabs">
+        <button type="button" className="story-map__tab" onClick={onToggle} aria-expanded={open}>
+          Story map · {open ? "hide" : "show"}
+        </button>
         {open ? (
-          <span className="story-map__readout">
+          <button
+            type="button"
+            className={`story-map__tab story-map__length ${chosen ? "" : "is-asking"}`}
+            aria-expanded={lengthOpen}
+            aria-haspopup="dialog"
+            onClick={() => setLengthOpen((now) => !now)}
+            title="How long is this board? Each board of a project has its own length."
+          >
             {board.targetOpen ? (
               <>
-                ≈{formatPages(layout.totalEighths)} pages · <span className="is-open-field">target open: {board.targetOpen}</span>
+                ≈{formatPages(layout.totalEighths)} {formatPages(layout.totalEighths) === "1" ? "page" : "pages"} · <span className="is-open-field">length not decided</span>
               </>
-            ) : (
+            ) : chosen ? (
               <>
                 ≈{formatPages(layout.totalEighths)} of {formatPages(layout.targetEighths)} pages
                 {/* The target in the writer's word, when they gave a kind and not a number (round twenty-two, entry 91). */}
-                {targetWords(board) ? ` · ${targetWords(board)}` : ""}
+                {targetWords(board) ? <small>{targetWords(board)}</small> : null}
+                {over > 0 ? ` · ${formatPages(over)} over` : ""}
               </>
+            ) : (
+              <>{layout.totalEighths > 0 ? `≈${formatPages(layout.totalEighths)} ${formatPages(layout.totalEighths) === "1" ? "page" : "pages"} · ` : ""}Set a length</>
             )}
-            {over > 0 ? ` · ${formatPages(over)} over` : ""}
-          </span>
+          </button>
         ) : null}
-      </button>
+      </div>
+      {open && lengthOpen ? (
+        <>
+          <button type="button" className="story-map__length-away" aria-label="Close the length menu" onClick={() => setLengthOpen(false)} />
+          <div className="story-map__menu" role="dialog" aria-label="How long is this board?">
+            <p className="story-map__menu-k">How long is this board?</p>
+            {(Object.keys(TARGET_KINDS) as Array<keyof typeof TARGET_KINDS>).map((kind) => {
+              const pages = TARGET_KINDS[kind].eighths / EIGHTHS_PER_PAGE;
+              const words = TARGET_KINDS[kind].words;
+              return (
+                <button key={kind} type="button" className={`story-map__opt ${board.targetKind === kind ? "is-on" : ""}`} onClick={() => choose({ kind })}>
+                  <span>{words.charAt(0).toUpperCase() + words.slice(1)}</span>
+                  <small>
+                    {pages} pages · about {formatMinutes(TARGET_KINDS[kind].eighths)}
+                  </small>
+                </button>
+              );
+            })}
+            <form
+              className={`story-map__own ${chosen && !board.targetKind && !board.targetOpen ? "is-on" : ""}`}
+              onSubmit={(event) => {
+                event.preventDefault();
+                const pages = Number(ownPages.replace(/[^0-9]/g, ""));
+                if (!pages) return;
+                // A hundred and twenty is a feature, by the app's own word for it; any other number is the writer's own.
+                choose(pages === TARGET_KINDS.feature.eighths / EIGHTHS_PER_PAGE ? { kind: "feature" } : { pages });
+              }}
+            >
+              <label htmlFor="story-map-own">My own</label>
+              <input id="story-map-own" inputMode="numeric" value={ownPages} placeholder="45" onChange={(event) => setOwnPages(event.target.value)} />
+              <small>pages</small>
+              <button type="submit" className="story-map__set" disabled={!ownPages.replace(/[^0-9]/g, "")}>
+                Set
+              </button>
+            </form>
+            <form
+              className={`story-map__own ${board.targetOpen ? "is-on" : ""}`}
+              onSubmit={(event) => {
+                event.preventDefault();
+                if (ownWords.trim() || board.targetOpen) choose({ open: ownWords.trim() });
+              }}
+            >
+              <label htmlFor="story-map-open">Not decided</label>
+              <input id="story-map-open" className="is-wide" value={ownWords} placeholder="say why, in your words" onChange={(event) => setOwnWords(event.target.value)} />
+              <button type="submit" className="story-map__set" disabled={!ownWords.trim() && !board.targetOpen}>
+                {board.targetOpen && !ownWords.trim() ? "Clear" : "Hold"}
+              </button>
+            </form>
+            <p className="story-map__menu-note">This board's length. Each board of a project has its own, so each episode can have one. A page runs about a minute.</p>
+          </div>
+        </>
+      ) : null}
       {/* The card under the pointer, read over the wall's foot and only while there is one: the map keeps no row for it, and reading a card moves nothing. */}
       {open ? (
         <p className="story-map__scrub" aria-live="polite">
@@ -153,7 +242,7 @@ export function StoryMap({
             </pattern>
           </defs>
           {/* Past the target: warm ground, the same note the bar makes. */}
-          {layout.totalEighths > layout.targetEighths ? (
+          {chosen && !board.targetOpen && layout.totalEighths > layout.targetEighths ? (
             <rect
               className="story-map__overrun"
               x={x(layout.targetEighths)}
@@ -256,7 +345,7 @@ export function StoryMap({
               <line className="story-map__tick" x1={x(tick)} y1={axisY} x2={x(tick)} y2={axisY + 4} />
               {/* A page number gives way to the target label when the target is
                   still ahead and the two would share the axis's end (Robert, 2026-09-13). */}
-              {open && !(!layout.targetInRange && x(layout.spanEighths) - x(tick) < 72) ? (
+              {open && !(chosen && !board.targetOpen && !layout.targetInRange && x(layout.spanEighths) - x(tick) < 72) ? (
                 <text className="story-map__page" x={x(tick)} y={axisY + 15}>
                   {tick / EIGHTHS_PER_PAGE}
                 </text>
@@ -267,7 +356,7 @@ export function StoryMap({
 
           {/* The target: a line when the story is near it, a marker at the end of
               the axis while the story is still well short of it. */}
-          {layout.targetInRange ? (
+          {!chosen || board.targetOpen ? null : layout.targetInRange ? (
             <>
               <line
                 className="story-map__target"

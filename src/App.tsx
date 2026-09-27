@@ -26,6 +26,8 @@ import {
   type BoardState,
   atPlace,
   noteEighths,
+  TARGET_KINDS,
+  targetChosen,
 } from "./board/reducer";
 import { organizePoses } from "./board/organize";
 import { ProjectModal } from "./ProjectModal";
@@ -50,7 +52,7 @@ import { describeRecord, spanWords } from "./board/record";
 import { AgentsSheet } from "./AgentsSheet";
 import type { WordTarget } from "./board/words";
 import { ProjectPicker } from "./ProjectPicker";
-import { StoryMap } from "./StoryMap";
+import { StoryMap, type TargetChoice } from "./StoryMap";
 import {
   applyTheme,
   nextClockChange,
@@ -741,10 +743,15 @@ export function App() {
   }
 
   function setTarget(pages: number) {
-    boardStore.dispatch({
-      type: "set_target",
-      targetEighths: pages * EIGHTHS_PER_PAGE,
-    });
+    // A hundred and twenty is a feature, by the app's own word for it: said as a kind, the board's length reads as chosen.
+    boardStore.dispatch(pages * EIGHTHS_PER_PAGE === TARGET_KINDS.feature.eighths ? { type: "set_target", kind: "feature" } : { type: "set_target", targetEighths: pages * EIGHTHS_PER_PAGE });
+  }
+
+  // The board's length from the story map: a kind, a number of pages, or the writer's words for why it is not decided.
+  function chooseTarget(choice: TargetChoice) {
+    if ("kind" in choice) boardStore.dispatch({ type: "set_target", kind: choice.kind });
+    else if ("pages" in choice) setTarget(choice.pages);
+    else boardStore.dispatch({ type: "set_target", open: choice.open });
   }
 
   function editNote(id: string, patch: { headline?: string; change?: string; changeOpen?: string }) {
@@ -1242,6 +1249,7 @@ export function App() {
         visibleIds={visibleIds}
         onToggle={toggleMap}
         onJump={jumpTo}
+        onSetTarget={chooseTarget}
       />
       <GeneralBar
         layer={barLayer}
@@ -1279,6 +1287,7 @@ export function App() {
         runtimeEighths={boardEighths(board)}
         targetEighths={board.targetEighths}
         onSetTarget={setTarget}
+        targetChosen={targetChosen(board)}
         onFit={fitToWall}
         onZoomIn={() => zoomBy(1.25)}
         onZoomOut={() => zoomBy(0.8)}

@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<title>Set a length</title>
+<link rel="stylesheet" href="../../src/styles.css">
+<style>
+  :root { --canvas: #000; --ink: #f4f1ea; --muted: #9a9589; --bar: #1c1c1a; --over: #e08b52; --bar-border: rgba(244,241,234,0.18); }
+  html, body { height: auto; min-height: 100%; background: #0b0b0a; color: var(--ink); }
+  body { margin: 0; padding: 2rem 2.5rem 4rem; font-family: ui-sans-serif, system-ui, sans-serif; }
+  h1 { font: 600 1.05rem/1.3 ui-serif, Georgia, serif; margin: 0 0 0.25rem; }
+  h2.sec { font: 600 0.95rem/1.3 ui-serif, Georgia, serif; margin: 2.6rem 0 0.2rem; padding-top: 1.2rem; border-top: 1px solid rgba(127,127,127,0.25); }
+  .lede { font-size: 0.85rem; opacity: 0.78; margin: 0 0 1.2rem; max-width: 80ch; line-height: 1.5; }
+  .cap { font: 700 0.62rem/1.3 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; margin: 1.4rem 0 0.6rem; }
+  .cap em { font-style: normal; color: var(--over); }
+  .note { font-size: 0.8rem; line-height: 1.45; opacity: 0.82; margin: 0.7rem 0 0; max-width: 80ch; }
+  .honest { font-size: 0.82rem; line-height: 1.5; max-width: 82ch; margin: 0.6rem 0 0; padding: 0.6rem 0.9rem; border-left: 3px solid rgba(127,127,127,0.5); background: rgba(127,127,127,0.06); }
+  .honest b, .ask b { font-weight: 600; }
+  .ask { margin-top: 1.2rem; max-width: 84ch; font-size: 0.86rem; line-height: 1.55; }
+
+  .win { position: relative; width: 900px; max-width: 100%; border: 1px solid var(--bar-border); border-radius: 8px; background: var(--canvas); overflow: hidden; }
+  .wall { height: 60px; }
+  .wall.tall { height: 290px; }
+  .map { position: relative; height: 52px; border-top: 1px solid var(--bar-border); }
+  .tabs { position: absolute; left: 14px; top: -12px; display: flex; gap: 6px; }
+  .tab { font: 600 0.55rem/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.14em; text-transform: uppercase; padding: 6px 10px; border: 1px solid var(--bar-border); border-radius: 999px; background: var(--bar); color: var(--muted); }
+  .tab b { color: var(--ink); font-weight: 600; letter-spacing: 0.04em; text-transform: none; margin-left: 0.6rem; }
+  .tab.len { color: var(--ink); letter-spacing: 0.04em; text-transform: none; }
+  .tab.len.ask { border-color: var(--over); color: var(--over); }
+  .tab.len.on { border-color: var(--ink); }
+  .tab.len small { color: var(--muted); margin-left: 0.3rem; font-size: 0.9em; }
+  svg text { font: 0.56rem ui-sans-serif, system-ui, sans-serif; fill: var(--muted); }
+  .menu { position: absolute; left: 150px; bottom: 66px; width: 300px; border: 1px solid var(--bar-border); border-radius: 0.8rem; background: var(--bar); box-shadow: 0 18px 48px rgba(0,0,0,0.6); padding: 0.5rem; }
+  .menu h4 { font: 600 0.58rem/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin: 0.4rem 0.5rem 0.5rem; }
+  .opt { display: flex; justify-content: space-between; align-items: baseline; padding: 0.45rem 0.6rem; border-radius: 0.4rem; font: 0.95rem/1.2 ui-serif, Georgia, serif; }
+  .opt small { font: 0.7rem/1 ui-sans-serif, system-ui, sans-serif; color: var(--muted); }
+  .opt.on { background: rgba(244,241,234,0.08); }
+  .opt.on::before { content: "✓"; color: var(--over); margin-right: 0.5rem; }
+  .opt.on span:first-child { flex: 1; }
+  .own { display: flex; gap: 0.4rem; align-items: center; padding: 0.35rem 0.6rem; font: 0.95rem/1.2 ui-serif, Georgia, serif; }
+  .own .in { width: 3.4rem; border: 1px solid var(--bar-border); border-radius: 0.3rem; padding: 0.2rem 0.4rem; font: 0.8rem ui-monospace, Menlo, monospace; color: var(--muted); }
+  .own .wide { flex: 1; width: auto; font: 0.8rem ui-serif, Georgia, serif; }
+  .own small { font: 0.7rem/1 ui-sans-serif, system-ui, sans-serif; color: var(--muted); }
+  .menu p { font-size: 0.68rem; line-height: 1.4; color: var(--muted); margin: 0.5rem 0.6rem 0.3rem; padding-top: 0.5rem; border-top: 1px solid var(--bar-border); }
+</style>
+</head>
+<body>
+<h1>Set a length</h1>
+<p class="lede">Drawn 2026-09-27 for Robert: "Where does a user set the target of one hundred and twenty? 'Cause maybe they want to do episodes?" Today: in the bar of icons, when it is open, as a number typed over. A new wall says 120 as if the writer had chosen it; the kinds an agent can set — a feature, an hour, a half-hour — and "not decided yet" are out of a person's reach.</p>
+
+<h2 class="sec">1 · As it ships</h2>
+<div class="win"><div class="wall"></div>
+  <div class="map"><div class="tabs"><span class="tab">Story map · hide <b>≈0 of 120 pages</b></span></div>
+    <svg width="900" height="52" style="display:block"><line x1="22" y1="28" x2="878" y2="28" stroke="#f4f1ea"/><text x="22" y="43">0</text><text x="240" y="43">2</text><text x="450" y="43">4</text><text x="660" y="43">6</text><text x="878" y="43" text-anchor="end" style="fill:#e08b52">target 120 →</text></svg>
+  </div>
+</div>
+<p class="note">A board nobody has given a length says "of 120 pages" and "target 120". The number is the app's, not the writer's.</p>
+
+<h2 class="sec">2 · The refresh</h2>
+<p class="cap">A new board · <em>it asks, and claims nothing</em></p>
+<div class="win"><div class="wall"></div>
+  <div class="map"><div class="tabs"><span class="tab">Story map · hide</span><span class="tab len ask">Set a length</span></div>
+    <svg width="900" height="52" style="display:block"><line x1="22" y1="28" x2="878" y2="28" stroke="#f4f1ea"/><text x="22" y="43">0</text><text x="240" y="43">2</text><text x="450" y="43">4</text><text x="660" y="43">6</text><text x="870" y="43">8</text></svg>
+  </div>
+</div>
+
+<p class="cap">Pressed · <em>the choices an agent already has</em></p>
+<div class="win"><div class="wall tall"></div>
+  <div class="menu">
+    <h4>How long is this board?</h4>
+    <div class="opt"><span>A feature</span><small>120 pages · about 2 hours</small></div>
+    <div class="opt on"><span>An hour</span><small>60 pages</small></div>
+    <div class="opt"><span>A half-hour</span><small>30 pages</small></div>
+    <div class="own"><span>My own</span><span class="in">45</span><small>pages</small></div>
+    <div class="own"><span>Not decided</span><span class="in wide">say why, in your words</span></div>
+    <p>This board's length. Each board of a project has its own, so each episode can have one. A page runs about a minute.</p>
+  </div>
+  <div class="map"><div class="tabs"><span class="tab">Story map · hide</span><span class="tab len on">≈0 of 60 pages <small>an hour</small></span></div>
+    <svg width="900" height="52" style="display:block"><line x1="22" y1="28" x2="878" y2="28" stroke="#f4f1ea"/><text x="22" y="43">0</text><text x="240" y="43">2</text><text x="450" y="43">4</text><text x="660" y="43">6</text><text x="878" y="43" text-anchor="end" style="fill:#e08b52">an hour · 60 →</text></svg>
+  </div>
+</div>
+<p class="note">The count beside the tab is the control. Once a length is chosen it reads as it did, with the writer's word beside it; press it again to change it. "Not decided" holds the writer's own words, as every open field does, and the map then reads "≈12 pages · length not decided".</p>
+
+<h2 class="sec">3 · Is this the best we can do?</h2>
+<div class="honest"><b>How the app knows nobody chose.</b> A board holds a number, 120 by default, and nothing says whether a person put it there. So the board gains one fact, whether its length was chosen. A board made before this that still holds exactly 120, with no kind and no open words, reads as not chosen: a writer who typed 120 by hand will be asked once more. One press of "A feature" answers it.</div>
+<div class="honest"><b>The agent's side still says 120.</b> The readings an agent gets say "of 120 pages" on a board with no length chosen. The same honesty belongs there; it is a change to the server's words and goes with the next release. Not in this build.</div>
+<div class="honest"><b>The bar's number stays.</b> The readout in the bar of icons keeps its number to type over; on a board with no length chosen it shows the pages alone. Two ways to the same fact, both in view when they are in view.</div>
+<div class="honest"><b>Not drawn: a length for the whole series.</b> Six episodes of an hour is six boards of sixty pages. The project's total is already read out by an agent's read_project; nothing in the app sums it for a person yet.</div>
+
+<p class="ask"><b>What a yes means.</b> The count beside the story map's tab becomes the control, with the five choices; a board with no length chosen says "Set a length" and shows no target; the writer's guide says where.</p>
+</body>
+</html>

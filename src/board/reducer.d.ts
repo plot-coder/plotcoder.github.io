@@ -19,6 +19,8 @@ export declare const DEFAULT_TARGET_EIGHTHS: number;
 /** A target said as a kind, in the writer's word, and the pages it is read as. */
 export declare const TARGET_KINDS: Record<"feature" | "hour" | "half-hour", { words: string; eighths: number }>;
 /** "a feature", or "" when the target is a number or nothing. */
+/** Whether the board's length is the writer's own: a kind, a number that is not the default, or their words for why not. */
+export declare function targetChosen(state: Pick<BoardState, "targetKind" | "targetOpen" | "targetEighths"> | null | undefined): boolean;
 export declare function targetWords(state: Pick<BoardState, "targetKind"> | null | undefined): string;
 /** Total estimated length of the board, in eighths. */
 export declare const LINES_PER_PAGE: number;

@@ -16,6 +16,8 @@ export type BoardMeta = {
 
 /** A project: many boards under one premise. Board states live elsewhere, one per id. */
 export type ProjectRecord = {
+  /** A place's page (R79), keyed by the phrase the cards carry; absent until one is written. */
+  places?: import("./places").PlacePage[];
   version: number;
   id: string;
   name: string;

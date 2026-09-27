@@ -13,6 +13,7 @@
 //   3. window.plotcoder, so the same commands can be driven from the console.
 
 import { isReminderList, readReminders, writeReminders } from "../reminderStore";
+import { updatePlace as updatePlaceOn, type PlaceField } from "./places";
 import { toFountain } from "./fountain";
 import { toMarkdown, toPlainText } from "./markdown";
 import { History } from "./history";
@@ -484,6 +485,11 @@ class BoardStore {
 
   setPremise = (premise: string): void => {
     this.setProject(setPremiseOn(this.project, premise));
+  };
+
+  /** Lines on a place's page (R79), keyed by the phrase the cards carry; "" clears a line. */
+  updatePlace = (name: string, fields: Partial<Record<PlaceField | "open", string>>): void => {
+    this.setProject(updatePlaceOn(this.project, name, fields));
   };
 
   /** The writer's words for why there is no premise yet (R61); "" takes them back. */

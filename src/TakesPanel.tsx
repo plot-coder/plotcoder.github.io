@@ -20,6 +20,8 @@ type TakesPanelProps = {
   board: BoardState;
   ids: string[];
   title: string;
+  /** What the brief carries beyond the board: the premise, the episode, the places' pages (R79). */
+  briefOptions?: Omit<NonNullable<Parameters<typeof segmentBrief>[2]>, "title">;
   takes: Asset[] | null;
   uploading: number;
   onClose: () => void;
@@ -30,7 +32,7 @@ export function takeSubject(ids: string[]): string {
   return ids.length === 1 ? ids[0] : `run:${ids.join("+")}`;
 }
 
-export function TakesPanel({ open, board, ids, title, takes, uploading, onClose }: TakesPanelProps) {
+export function TakesPanel({ open, board, ids, title, briefOptions, takes, uploading, onClose }: TakesPanelProps) {
   const titleId = useId();
   const inputId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -52,7 +54,7 @@ export function TakesPanel({ open, board, ids, title, takes, uploading, onClose 
   const wanted = new Set(ids);
   const ordered = readingOrder(board.notes).filter((note) => wanted.has(note.id)).map((note) => note.id);
   const subject = takeSubject(ordered);
-  const brief = segmentBrief(board, ordered, { title }) ?? "";
+  const brief = segmentBrief(board, ordered, { ...briefOptions, title }) ?? "";
   const first = board.notes.find((note) => note.id === ordered[0]);
   const mine = takes === null ? null : takes.filter((asset) => asset.kind === "take" && asset.subject === subject);
   const chosen = mine?.find((asset) => asset.note === "chosen") ?? null;

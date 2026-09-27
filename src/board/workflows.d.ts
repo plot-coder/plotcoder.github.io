@@ -22,5 +22,5 @@ export declare function workflowById(id: string): Workflow | null;
 export declare function segmentBrief(
   state: BoardState,
   ids: string[],
-  options?: { title?: string; episode?: number; episodes?: number; premise?: string; boards?: { id: string; name: string; order?: { id: string; headline: string }[] }[] },
+  options?: { title?: string; episode?: number; episodes?: number; premise?: string; places?: import("./places").PlacePage[]; boards?: { id: string; name: string; order?: { id: string; headline: string }[] }[] },
 ): string | null;

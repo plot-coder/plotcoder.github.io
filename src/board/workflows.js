@@ -1,5 +1,6 @@
 import { formatMinutes, formatPages, isMeasured, noteEighths, storyOrder } from "./reducer.js";
 import { sceneNumbers } from "./numbering.js";
+import { placeLine, placePage } from "./places.js";
 // Workflows (R27, closing open question 24) and the first step toward the
 // horizon (R28): the brief.
 //
@@ -147,10 +148,13 @@ export function segmentBrief(state, ids, options = {}) {
   // What the writer has left open about the whole film rides with every segment (pass 4a, entry 46): a tool that reads "not decided" does not invent.
   if ((state.openLines ?? []).length) lines.push(`OPEN ABOUT THE FILM, BY THE WRITER'S WORD: ${state.openLines.map((line) => `"${line}"`).join("; ")}`);
   lines.push(`PEOPLE: ${people.size ? [...people.values()].map(personLine).join(" | ") : "(nobody cast)"}`);
-  lines.push(`PLACES: ${places.length ? places.join("; ") : "(none set)"}`);
+  // Each place with its page when the writer has written one (R79), or said to have none, so a gap is the wall's and never invented.
+  const pageOf = (name) => placePage({ places: options.places ?? [] }, name);
+  lines.push(`PLACES: ${places.length ? places.map((name) => `${name}${pageOf(name) ? ` — ${placeLine(pageOf(name))}` : " — (no page yet)"}`).join(" | ") : "(none set)"}`);
   // What no wall holds, said once so a reader knows the gap is the wall's and not this brief's.
   const dayMissing = notes.some((note) => !(note.day ?? "").trim() && !(note.dayOpen ?? "").trim());
-  lines.push(`NOT ON THE WALL: ${dayMissing ? "which day of the film's time a scene falls on (set_day holds it, or the writer's words for why not); " : ""}what a place looks like beyond its name; a face, a build or a voice beyond the page's line. Ask the writer, or leave it open.`);
+  const placeMissing = places.some((name) => !pageOf(name));
+  lines.push(`NOT ON THE WALL: ${dayMissing ? "which day of the film's time a scene falls on (set_day holds it, or the writer's words for why not); " : ""}${placeMissing ? "what a place looks like where it has no page (update_place writes one); " : ""}a face, a build or a voice beyond the page's line. Ask the writer, or leave it open.`);
   for (const note of notes) {
     const number = position(note);
     lines.push("");

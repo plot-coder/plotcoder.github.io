@@ -13,12 +13,14 @@ type BriefSheetProps = {
   board: BoardState;
   ids: string[];
   title: string;
+  /** What the brief carries beyond the board: the premise, the episode, the places' pages (R79). */
+  briefOptions?: Omit<NonNullable<Parameters<typeof segmentBrief>[2]>, "title">;
   onClose: () => void;
   /** Open the takes for this segment (item 9). */
   onTakes?: () => void;
 };
 
-export function BriefSheet({ open, board, ids, title, onClose, onTakes }: BriefSheetProps) {
+export function BriefSheet({ open, board, ids, title, briefOptions, onClose, onTakes }: BriefSheetProps) {
   const titleId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
   const [copied, setCopied] = useState(false);
@@ -37,7 +39,7 @@ export function BriefSheet({ open, board, ids, title, onClose, onTakes }: BriefS
   if (!open) return null;
   const wanted = new Set(ids);
   const ordered = readingOrder(board.notes).filter((note) => wanted.has(note.id)).map((note) => note.id);
-  const brief = segmentBrief(board, ordered, { title }) ?? "";
+  const brief = segmentBrief(board, ordered, { ...briefOptions, title }) ?? "";
   const first = board.notes.find((note) => note.id === ordered[0]);
 
   async function copy() {

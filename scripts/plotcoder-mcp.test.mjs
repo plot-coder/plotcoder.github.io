@@ -197,6 +197,7 @@ describe("plotcoder MCP server", () => {
       "page_count",
       "read_character",
       "read_pages",
+      "read_place",
       "read_project",
       "read_record",
       "read_wall",
@@ -209,6 +210,7 @@ describe("plotcoder MCP server", () => {
       "rename_board",
       "rename_character",
       "rename_group",
+      "rename_place",
       "rename_project",
       "save_structure",
       "segment_brief",
@@ -236,6 +238,7 @@ describe("plotcoder MCP server", () => {
       "unlock_numbers",
       "update_character",
       "update_note",
+      "update_place",
       "update_thread",
       "who_is_here",
       "write_scene",
@@ -1719,6 +1722,32 @@ describe("move_scene across boards", () => {
     await series.callTool("set_when", { ids: ["maya-letter"], when: "night" });
     await series.callTool("set_rank", { ids: ["maya-letter"], rank: "beat" });
     expect(await series.callTool("read_character", { name: "Maya" })).toContain('"Maya finds the letter" (night · beat)');
+  });
+
+  it("writes a place's page, reads it back across every board, and renames the place on every card (R79)", async () => {
+    await series.callTool("open_board", { board: "1" });
+    await series.callTool("set_location", { ids: ["tom-lies"], location: "the piano shop" });
+    await series.callTool("open_board", { board: "Episode 2" });
+    await series.callTool("set_location", { ids: ["maya-letter"], location: "The Piano Shop" });
+    expect(await series.callTool("read_place", { name: "the piano shop" })).toContain("no page yet — nothing written, nothing invented");
+    const written = await series.callTool("update_place", { name: "the piano shop", looks: "Dust on the lids.", open: "which street — not decided — R." });
+    expect(written).toContain('The page of "the piano shop" holds looks, and is open by the writer\'s word: "which street — not decided — R."');
+    const read = await series.callTool("read_place", { name: "THE PIANO SHOP" });
+    expect(read).toContain("on 2 cards across 2 boards of the project");
+    expect(read).toContain("  looks: Dust on the lids.");
+    expect(read).toContain("  not decided yet, by the writer's word: which street — not decided — R.");
+    expect(read).toMatch(/"Board 1", 1 card in story order:\n    1\. tom-lies "Tom lies about the job"/);
+    expect(await series.callTool("read_wall")).toMatch(/places: [^\n]*The Piano Shop \(1, page\)/);
+    expect(await series.callTool("segment_brief", { ids: ["maya-letter"] })).toContain("PLACES: The Piano Shop — looks: Dust on the lids.; not decided, by the writer's word: which street — not decided — R.");
+    const renamed = await series.callTool("rename_place", { name: "the piano shop", to: "the music shop" });
+    expect(renamed).toContain('Renamed "the piano shop" to "the music shop" on 2 cards across 2 boards; the page followed. The open board is the one you were on.');
+    expect(await series.callTool("list_boards")).toMatch(/"Episode 2"[^\n]*\(open\)/);
+    expect(await series.callTool("read_place", { name: "the music shop" })).toContain("  looks: Dust on the lids.");
+    expect(await series.callTool("read_record")).toContain('placed "Maya finds the letter" at the music shop');
+    await series.callTool("open_board", { board: "1" });
+    expect((await series.callToolData("list_board")).notes.find((note) => note.id === "tom-lies").location).toBe("the music shop");
+    await series.callTool("open_board", { board: "Episode 2" });
+    expect(await series.callTool("update_place", { name: "the music shop", looks: "", open: "" })).toContain("is empty now, and gone");
   });
 
   it("list_structures names every built-in structure's beats in prose (round fifteen, entry 24)", async () => {

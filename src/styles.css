@@ -76,7 +76,9 @@ body {
   left: 50%;
   transform: translateX(-50%);
   z-index: 10;
-  width: min(46rem, calc(100vw - 26rem));
+  /* Between the wordmark's side and the buttons' side, and no wider: the buttons take about twenty-five rem, and
+     the logline is centred, so it has the window less twice that. At 26rem a long logline ran under Pages and Cast. */
+  width: min(46rem, calc(100vw - 53rem));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -199,7 +201,7 @@ body {
   opacity: 0.75;
 }
 
-@media (max-width: 60rem) {
+@media (max-width: 69rem) {
   /* Not enough room to sit between the wordmark and the buttons. */
   .logline {
     display: none;
@@ -6384,7 +6386,7 @@ body {
 .logline__hint {
   display: none;
   /* Narrow enough to stand between the wordmark and the buttons at any width the logline shows at. */
-  max-width: min(26rem, calc(100vw - 40rem));
+  max-width: 100%;
   margin: 0.1rem 0 0;
   font-family: ui-sans-serif, system-ui, sans-serif;
   font-size: 0.74rem;

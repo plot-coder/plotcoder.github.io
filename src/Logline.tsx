@@ -132,14 +132,18 @@ export function Logline({
           <OpenField className="logline__question" words={loglineOpen} ariaLabel="Logline, left open" onCommit={leaveLogline} autoFocus={leaving === "logline"} />
         </span>
       ) : (
-        <span className="logline__tip has-tip" data-tip={wordSentence("logline")}>
-          <EditableText as="p" className="logline__question" value={logline} onCommit={onSetLogline} ariaLabel="Logline" placeholder="What is this story arguing?" />
-        </span>
+        // No tooltip here: a tip opens above its field, and above the logline is off the top of the window, where
+        // nobody could read it (Robert, 2026-09-27). What a logline is stands under it, in the hint below.
+        <EditableText as="p" className="logline__question" value={logline} onCommit={onSetLogline} ariaLabel="Logline" placeholder="What is this story arguing?" />
       )}
       {/* What the field is, and an example, while it is empty and the writer is reaching for it. */}
       {loglineEmpty ? (
         <p className="logline__hint">
           <b>The logline:</b> the story's central question, in a sentence. For example, "Can a man who lies for a living tell the truth once, when it costs him the job?"
+        </p>
+      ) : logline ? (
+        <p className="logline__hint">
+          <b>The logline:</b> {wordSentence("logline")}
         </p>
       ) : null}
 

@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<title>The story panel</title>
+<link rel="stylesheet" href="../../src/styles.css">
+<style>
+  :root { --canvas: #000; --ink: #f4f1ea; --muted: #9a9589; --bar: #1c1c1a; --over: #e08b52; --bar-border: rgba(244,241,234,0.18); }
+  html, body { height: auto; min-height: 100%; background: #0b0b0a; color: var(--ink); }
+  body { margin: 0; padding: 2rem 2.5rem 4rem; font-family: ui-sans-serif, system-ui, sans-serif; }
+  h1 { font: 600 1.05rem/1.3 ui-serif, Georgia, serif; margin: 0 0 0.25rem; }
+  h2.sec { font: 600 0.95rem/1.3 ui-serif, Georgia, serif; margin: 2.6rem 0 0.2rem; padding-top: 1.2rem; border-top: 1px solid rgba(127,127,127,0.25); }
+  .lede { font-size: 0.85rem; opacity: 0.78; margin: 0 0 1.2rem; max-width: 80ch; line-height: 1.5; }
+  .cap { font: 700 0.62rem/1.3 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; margin: 1.4rem 0 0.6rem; }
+  .cap em { font-style: normal; color: var(--over); }
+  .note { font-size: 0.8rem; line-height: 1.45; opacity: 0.82; margin: 0.7rem 0 0; max-width: 80ch; }
+  .honest { font-size: 0.82rem; line-height: 1.5; max-width: 82ch; margin: 0.6rem 0 0; padding: 0.6rem 0.9rem; border-left: 3px solid rgba(127,127,127,0.5); background: rgba(127,127,127,0.06); }
+  .honest b, .ask b { font-weight: 600; }
+  .ask { margin-top: 1.2rem; max-width: 84ch; font-size: 0.86rem; line-height: 1.55; }
+  table.t { border-collapse: collapse; font-size: 0.78rem; margin: 0.6rem 0 0; }
+  table.t th, table.t td { text-align: left; padding: 0.35rem 1rem 0.35rem 0; border-top: 1px solid rgba(127,127,127,0.25); vertical-align: top; }
+  table.t th { font: 700 0.6rem/1.3 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; border-top: 0; }
+
+  .win { position: relative; width: 940px; max-width: 100%; border: 1px solid var(--bar-border); border-radius: 8px; background: var(--canvas); overflow: hidden; }
+  .top { position: relative; height: 56px; }
+  .mark { position: absolute; left: 18px; top: 18px; font: 600 0.6rem/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.22em; text-transform: uppercase; color: var(--muted); }
+  .tops { position: absolute; right: 14px; top: 12px; display: flex; gap: 6px; }
+  .tops span { font: 600 0.58rem/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; padding: 8px 12px; border-radius: 999px; border: 1px solid var(--bar-border); background: var(--bar); }
+  .line { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); max-width: 420px; display: flex; gap: 0.6rem; align-items: baseline; padding: 0.25rem 0.8rem; border-radius: 999px; border: 1px solid transparent; }
+  .line.hover { border-color: var(--bar-border); background: var(--bar); }
+  .line.on { border-color: var(--over); background: var(--bar); }
+  .line .q { font: 0.98rem/1.35 ui-serif, Georgia, serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .line .q.ph { font-style: italic; color: var(--muted); }
+  .line small { font-size: 0.68rem; color: var(--over); white-space: nowrap; }
+  .line i { font-style: normal; color: var(--muted); font-size: 0.7rem; }
+  .wall { position: relative; height: 90px; }
+  .wall.tall { height: 470px; }
+  .card { position: absolute; width: 130px; height: 100px; border-radius: 3px; background: #ffe56a; left: 40px; top: 20px; transform: rotate(-1deg); }
+  .card.p { background: #ffb6c8; left: 200px; top: 40px; transform: rotate(1deg); }
+  .panel { position: absolute; left: 50%; top: 6px; transform: translateX(-50%); width: 480px; border: 1px solid var(--bar-border); border-radius: 0.9rem; background: var(--bar); box-shadow: 0 18px 48px rgba(0,0,0,0.6); padding: 0.9rem 1.1rem 1rem; }
+  .panel .x { position: absolute; right: 0.7rem; top: 0.5rem; color: var(--muted); font-size: 1.1rem; }
+  .panel h3 { font: 400 1.15rem/1.2 ui-serif, Georgia, serif; margin: 0 0 0.7rem; }
+  .f { padding: 0.65rem 0; border-top: 1px solid var(--bar-border); }
+  .f .k { font: 600 0.6rem/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin: 0 0 0.2rem; display: flex; justify-content: space-between; }
+  .f .k span { letter-spacing: 0; text-transform: none; font-weight: 500; border-bottom: 1px solid var(--bar-border); }
+  .f .say { font-size: 0.72rem; line-height: 1.4; color: var(--muted); margin: 0 0 0.4rem; }
+  .f .in { font: 0.95rem/1.4 ui-serif, Georgia, serif; border: 1px solid var(--bar-border); border-radius: 0.4rem; padding: 0.4rem 0.6rem; }
+  .f .in.ph { color: var(--muted); font-style: italic; }
+  .f .row { display: flex; justify-content: space-between; font: 0.92rem/1.4 ui-serif, Georgia, serif; color: var(--over); padding: 0.1rem 0; }
+  .f .row small { font: 600 0.56rem/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); align-self: center; }
+</style>
+</head>
+<body>
+<h1>The story panel: one place for what the story is</h1>
+<p class="lede">Drawn 2026-09-27 for Robert, who found a tip above the logline running off the top of the window: "Please test this better and come up with a better way to present all of this." The tip is gone and the logline no longer runs under the buttons; both are fixed. This page is the better way.</p>
+
+<h2 class="sec">1 · What testing it properly found</h2>
+<p class="note">The title area in seven states at three window widths, each checked for anything off the window or under another control.</p>
+<table class="t">
+  <tr><th>Found</th><th>Where</th><th>State</th></tr>
+  <tr><td>A tip above the logline, off the top of the window</td><td>Every width</td><td>Fixed: the tip is gone; what a logline is stands under it</td></tr>
+  <tr><td>A long logline ran under Pages and Cast</td><td>1300 pixels and below</td><td>Fixed: the logline keeps between the two sides</td></tr>
+  <tr><td>A long premise and logline stand 412 pixels tall and blank the wall beneath</td><td>1120 pixels</td><td>Not fixed by a patch: it is what this page is for</td></tr>
+  <tr><td>Below 1104 pixels wide there is no logline at all</td><td>Narrow windows</td><td>The same</td></tr>
+  <tr><td>Links that appear under the pointer and move what is below them</td><td>Every width</td><td>The same</td></tr>
+</table>
+
+<h2 class="sec">2 · The better way: one line at rest, one panel when you want it</h2>
+<p class="cap">At rest · <em>one line, never more, never under anything</em></p>
+<div class="win"><div class="top"><span class="mark">PlotCoder</span><div class="tops"><span>Pages</span><span>Cast</span><span>Reminders</span><span>Help</span></div>
+  <div class="line"><span class="q">Can a harbourmaster who has signed for the sea wall for twenty years tell the to…</span><small>2 open</small></div></div>
+  <div class="wall"><div class="card"></div><div class="card p"></div></div>
+</div>
+<p class="note">A long logline is cut with an ellipsis, not wrapped. "2 open" is the count of open questions, in the colour of what is open. With no logline the line reads <i>What is this story arguing?</i></p>
+
+<p class="cap">Pressed · <em>the story panel, over the wall, on its own paper</em></p>
+<div class="win"><div class="top"><span class="mark">PlotCoder</span><div class="tops"><span>Pages</span><span>Cast</span><span>Reminders</span><span>Help</span></div>
+  <div class="line on"><span class="q">Can a harbourmaster who has signed for the sea wall…</span><small>2 open</small></div></div>
+  <div class="wall tall"><div class="card"></div><div class="card p"></div>
+    <div class="panel"><span class="x">×</span>
+      <h3>The story</h3>
+      <div class="f" style="border-top:0;padding-top:0"><p class="k">Logline <span>Not decided? Say why</span></p><p class="say">The story's central question, in a sentence.</p><div class="in">Can a harbourmaster who has signed for the sea wall for twenty years tell the town that the ground under it is sand?</div></div>
+      <div class="f"><p class="k">Premise</p><p class="say">What is true before the story starts, or a rule the whole of it keeps. For a series, what the series is about.</p><div class="in ph">Five days in August. Nobody says "sell" to her face until the end.</div></div>
+      <div class="f"><p class="k">Open questions · 2</p><p class="say">What you have not decided that belongs to no one scene. The wall lists them and never asks you about them.</p><div class="row"><span>Whether it has acts, and where they break.</span><small>Decided</small></div><div class="row"><span>When it happens: now, or 1987.</span><small>Decided</small></div><div class="in ph" style="margin-top:0.4rem">Another, in your words</div></div>
+    </div>
+  </div>
+</div>
+<p class="note">Everything the title area held is here, each with its name and a sentence saying what it is, all in view at once and none of it moving. Escape, the ×, or a press on the wall closes it. The full logline wraps inside the panel, where there is room.</p>
+
+<p class="cap">A narrow window · <em>a button where there is no room for the line</em></p>
+<div class="win" style="width:560px"><div class="top"><span class="mark">PlotCoder</span><div class="tops"><span style="border-color:var(--over);color:var(--over)">Story · 2 open</span><span>Pages</span><span>Cast</span></div></div>
+  <div class="wall"><div class="card"></div></div>
+</div>
+<p class="note">Today a window under 1104 pixels has no logline at all. A button beside Pages opens the same panel.</p>
+
+<h2 class="sec">3 · Is this the best we can do?</h2>
+<div class="honest"><b>What is lost.</b> Typing a logline straight onto the wall's head, without opening anything. It becomes one press and then type. I think that is a fair price for a title that can never cover the wall or run off it.</div>
+<div class="honest"><b>What the three links were for.</b> I built them two changes ago to make the fields say what they are. They did, and they still appeared and vanished under the pointer. The panel keeps their words and drops the hiding.</div>
+<div class="honest"><b>How it would be tested.</b> The same seven states at the same widths, by the check that found the faults above, before it is merged, and the panel seen with a filled logline, a premise and open questions in it.</div>
+
+<p class="ask"><b>What a yes means.</b> "Build the panel" makes the title area one line that opens the story panel as drawn, with a Story button on narrow windows, and takes out the links and the boxes under the logline.</p>
+</body>
+</html>

@@ -1378,6 +1378,13 @@ function unsizedWord(state) {
   return unsized ? ` — ${unsized} of ${cards.length} cards unsized, read as a page each, so this number is mostly the default until they are sized or written` : "";
 }
 
+/** The script as it prints, in pages (pass 2b, entry 13): page_count's number, said in the reading once the script is whole. */
+function paginatedPages(state) {
+  const order = storyOrder(state);
+  const numbers = sceneNumbers(order, state.lock);
+  return paginate(order.map((note) => ({ id: note.id, heading: sceneHeading(note).slice(1), text: note.text, change: standInFor(note), written: Boolean(note.text && note.text.trim()), number: numbers.get(note.id) ?? undefined }))).pages.length;
+}
+
 /** Every card in the film written: the script is whole, and its length is the paginated count (pass 1a, entries 42, 45). */
 function wholeScript(state) {
   const cards = state.notes.filter((note) => inStory(note));
@@ -1402,7 +1409,7 @@ function runtimeBlock(state) {
     // Once every scene is written the number to say is the script as it prints, page_count's, and the reading says
     // so here rather than leaving two tools each claiming the one (pass 1b, entry 74).
     wholeScript(state)
-      ? `how long it is: about ${formatPages(total)} pages by its cards, measured. Every scene is written, so the number to say to the writer is the script as it prints — page_count's — and this one is what it is made of: the pages in eighths, a page about a minute`
+      ? `how long it is: ${paginatedPages(state)} pages as it prints — the number to say to the writer, since every scene is written; about ${formatPages(total)} pages by its cards, measured, which is what it is made of: the pages in eighths, a page about a minute`
       : `how long it is: about ${formatPages(total)} pages. Say this one to the writer: the film by its cards, a page about a minute, counted in eighths as a production does. The other figures below are what it is made of and what it is read against, not other answers`,
     ...(made ? [`  made of: ${made}`] : []),
     `  ${target}`,
@@ -2289,7 +2296,9 @@ server.registerTool(
     // The record's own since (R76): the last session of changes by another hand, so a fresh agent — or one past its
     // context — knows what the writer did, and what the agent before it did, from the wall alone.
     const sessions = describeRecord(state, { limit: 6 });
-    const recordLines = sessions.slice(0, 2).map((session) => `${session === sessions[0] ? "since anyone last changed this wall" : "before that"}: ${session.count} change${session.count === 1 ? "" : "s"} by ${session.by}, ${spanWords(session.from, session.to)} — ${session.lines.map((item) => item.line).join("; ")}${session.more ? `; and ${session.more} more (read_record has the whole record)` : ""}`);
+    const things = (session) => session.lines.length + session.more;
+    const countWords = (session) => `${session.count} change${session.count === 1 ? "" : "s"}${things(session) > session.count ? ` (${things(session)} things)` : ""}`;
+    const recordLines = sessions.slice(0, 2).map((session) => `${session === sessions[0] ? "since anyone last changed this wall" : "before that"}: ${countWords(session)} by ${session.by}, ${spanWords(session.from, session.to)} — ${session.lines.map((item) => item.line).join("; ")}${session.more ? `; and ${session.more} more (read_record has the whole record)` : ""}`);
     if (state.handOver) recordLines.push(`the agent's last word, ${spanWords(state.handOver.at, state.handOver.at)}: "${state.handOver.words}" (it stands until the writer's next change)`);
     lastReading = { findings: reading.findings, eighths: boardEighths(state) };
     sinceRead.length = 0;
@@ -2408,7 +2417,7 @@ server.registerTool(
         ? ["blank on the wall (no value here, and no words of the writer's on the wall to say why. That is a fact about the wall, not about the writer: they may have told you, and a when, a length or who is in a scene with nobody named has no open of its own to hold it. The wall asks about some of these above, and says nothing of the rest):", ...undecided.blank]
         : []),
       ...(reading.aside.length
-        ? ["set aside, not in the film (on the wall; out of the order, the count, the pages and every export; never asked; set_aside with aside false brings one back):", ...reading.aside.map((id) => `  - "${state.notes.find((note) => note.id === id)?.headline ?? id}"`)]
+        ? ["set aside, not in the film (on the wall; out of the order, the count, the pages and every export; never asked; set_aside with aside false brings one back):", ...reading.aside.map((id) => { const card = state.notes.find((note) => note.id === id); return `  - "${card?.headline ?? id}"${card ? (isMeasured(card) ? " — written" : " — unwritten") : ""}`; })]
         : []),
       ...((reading.unlinked ?? []).length
         ? [`unlinked (on no follows arrow while the film has them: in the film and its length, in no run, printed last; asked where ${reading.unlinked.length === 1 ? "it goes" : "they go"} below):`, ...reading.unlinked.map((id) => `  - "${state.notes.find((note) => note.id === id)?.headline ?? id}" (${id})`)]
@@ -2491,7 +2500,7 @@ server.registerTool(
     const { state, live, base } = await readBoard();
     const sessions = describeRecord(state, { limit: 50 }).slice(0, args.sessions ?? undefined);
     if (!sessions.length) return ok(`The record is empty: nothing has changed on this wall since the record began (${door(live, base)}).`, { sessions: [], handOver: state.handOver ?? null });
-    const lines = sessions.map((session) => `- ${session.by}, ${spanWords(session.from, session.to)} — ${session.count} change${session.count === 1 ? "" : "s"}:\n${session.lines.map((item) => `    ${item.line}${item.ids.length ? ` (${item.ids.join(", ")})` : ""}`).join("\n")}`);
+    const lines = sessions.map((session) => `- ${session.by}, ${spanWords(session.from, session.to)} — ${session.count} change${session.count === 1 ? "" : "s"}${session.lines.length + session.more > session.count ? ` (${session.lines.length + session.more} things)` : ""}:\n${session.lines.map((item) => `    ${item.line}${item.ids.length ? ` (${item.ids.join(", ")})` : ""}`).join("\n")}`);
     return ok([`The record (${door(live, base)}), newest first — the last ${Math.min(50, (state.record ?? []).length)} changes:`, ...lines, ...(state.handOver ? [`The agent's last word, ${spanWords(state.handOver.at, state.handOver.at)}: "${state.handOver.words}"`] : [])].join("\n"), { sessions, handOver: state.handOver ?? null });
   },
 );
@@ -3135,7 +3144,7 @@ server.registerTool(
   {
     title: "Change a line of a scene",
     description:
-      "Change one line of a card's scene text without resending the scene: the exact text to find, and what replaces it. Or add to it: insert with after (or before) puts a new paragraph after (or before) the paragraph that holds that text, set off by a blank line, leaving the rest as it stands — \"add a line after he gets on\". The text to find, or the anchor, must occur once in the scene — or pass all: true with find and replace to change every occurrence at once (a cue that recurs, a name in the action; pass 1a, entry 83). The card is measured again and, under a revision, the changed line is marked. For a new scene or a rewrite, write_scene.",
+      "Change one line of a card's scene text without resending the scene: the exact text to find, and what replaces it — \"\" takes the line out and closes the gap, no blank paragraph left. Or add to it: insert with after (or before) puts a new paragraph after (or before) the paragraph that holds that text, set off by a blank line (a blank line inside insert makes two paragraphs), leaving the rest as it stands — \"add a line after he gets on\". The text to find, or the anchor, must occur once in the scene — or pass all: true with find and replace to change every occurrence at once (a cue that recurs, a name in the action; pass 1a, entry 83). The card is measured again and, under a revision, the changed line is marked. For a new scene or a rewrite, write_scene.",
     inputSchema: { id: z.string(), find: z.string().min(1).optional(), replace: z.string().optional(), insert: z.string().min(1).optional(), after: z.string().min(1).optional(), before: z.string().min(1).optional(), all: z.boolean().optional().describe("With find and replace: change every occurrence in the scene, not one.") },
   },
   async (args) => {
@@ -4571,8 +4580,11 @@ server.registerTool(
     const nameWords = new Set(String(result.thread.name ?? "").toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, " ").split(/\s+/).filter((word) => word.length > 2));
     const namedLines = tied.length && nameWords.size ? (state.openLines ?? []).filter((line) => line.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, " ").split(/\s+/).some((word) => nameWords.has(word))) : [];
     const namedLine = namedLines.length ? ` ${namedLines.length === 1 ? "An open line about the film names it too" : `${namedLines.length} open lines about the film name it too`}: ${namedLines.map((line) => `"${line}"`).join("; ")} — strike_open_line if this decided ${namedLines.length === 1 ? "it" : "one"}.` : "";
+    // A [[note]] on a page that said where the thread was not yet seen goes stale when an end is tied (pass 2b, entry 29).
+    const staleNotes = tied.length && nameWords.size ? state.notes.filter((note) => inStory(note) && [...String(note.text ?? "").matchAll(/\[\[([^\]]*)\]\]/g)].some((match) => match[1].toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, " ").split(/\s+/).filter((word) => nameWords.has(word)).length >= 1)) : [];
+    const staleLine = staleNotes.length ? ` A [[note]] on ${staleNotes.length === 1 ? "one page carries" : `${staleNotes.length} pages carry`} the thread's words and may be stale now: ${staleNotes.map((note) => `"${note.headline}"`).join(", ")} — read_pages shows the note; edit_scene takes it off.` : "";
     return ok(
-      `Now ${threadLine(state, result.thread)}${where(live)}.${heldLine(state, result.thread)}${tied.length ? ` Tied ${tied.join(" and ")}; the reading stops asking about ${tied.length === 1 ? "it" : "them"}.` : ""}${namedLine}${reopened.length ? ` Opened ${reopened.join(" and ")}; the reading asks about ${reopened.length === 1 ? "it" : "them"} again.` : ""}${foldLine(state, result.fold, result.thread)}`,
+      `Now ${threadLine(state, result.thread)}${where(live)}.${heldLine(state, result.thread)}${tied.length ? ` Tied ${tied.join(" and ")}; the reading stops asking about ${tied.length === 1 ? "it" : "them"}.` : ""}${namedLine}${staleLine}${reopened.length ? ` Opened ${reopened.join(" and ")}; the reading asks about ${reopened.length === 1 ? "it" : "them"} again.` : ""}${foldLine(state, result.fold, result.thread)}`,
       result.thread,
     );
   },
@@ -5302,7 +5314,7 @@ server.registerTool(
   {
     title: "The writers' questions",
     description:
-      "The questions writers asked from the app's Help sheet that the guide did not answer, waiting first: who asked, when, the words. Maintainer only — needs the service role in the server's environment. Answer one with answer_question after the answer is in public/writers.html.",
+      "The Help sheet's questions, not the wall's (read_wall has those): what writers asked from the app's Help sheet that the guide did not answer, waiting first: who asked, when, the words. Maintainer only — needs the service role in the server's environment. Answer one with answer_question after the answer is in public/writers.html.",
     inputSchema: { all: z.boolean().optional() },
   },
   async (args) => {
@@ -5418,8 +5430,8 @@ server.registerTool(
       }
     }
     // The file is the reply's payload, not a tail: it comes whether or not PLOTCODER_JSON is on (round twenty-two, entry 4).
-    if (whyInline) return { content: [{ type: "text", text: `The project as a file — ${what}.${whyInline} The JSON below is the file; write it to a .json for Open project or import_project.\n\n${JSON.stringify(file, null, 2)}` }] };
-    return { content: [{ type: "text", text: `The project as a file — ${what}. The JSON below is the file; write it to a .json for Open project or import_project.\n\n${JSON.stringify(file, null, 2)}` }] };
+    if (whyInline) return { content: [{ type: "text", text: `The project as a file — ${what}.${whyInline} No file is kept on the account for an inline reply. The JSON below is the file; write it to a .json for Open project or import_project.\n\n${JSON.stringify(file, null, 2)}` }] };
+    return { content: [{ type: "text", text: `The project as a file — ${what}. No file is kept on the account for an inline reply. The JSON below is the file; write it to a .json for Open project or import_project.\n\n${JSON.stringify(file, null, 2)}` }] };
   },
 );
 

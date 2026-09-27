@@ -3919,7 +3919,7 @@ describe("how long it is, once every scene is written (pass 1b, entry 74)", () =
     expect(await client.callTool("read_wall", { only: "length" })).toContain("Say this one to the writer: the film by its cards");
     await client.callTool("write_scene", { id: one, text: "INT. DOYLE'S - NIGHT\n\nThe bell over the door." });
     const whole = await client.callTool("read_wall", { only: "length" });
-    expect(whole).toContain("Every scene is written, so the number to say to the writer is the script as it prints — page_count's — and this one is what it is made of");
+    expect(whole).toMatch(/how long it is: \d+ pages as it prints — the number to say to the writer, since every scene is written; about [\d /]+ pages by its cards, measured, which is what it is made of/);
     expect(whole).not.toContain("Say this one to the writer");
   });
 });

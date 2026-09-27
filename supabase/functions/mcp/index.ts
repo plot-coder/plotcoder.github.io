@@ -74,6 +74,12 @@ function envFor(headers: Headers): Record<string, string> | null {
     PLOTCODER_PASSWORD: creds.password,
     PLOTCODER_PROJECT: headers.get("x-plotcoder-project") ?? "",
   };
+  // The video tool (pass 4b's seam): its name and its key are the function's own secrets, set with
+  // `supabase secrets set`, never in the client and never in the repo; build_segment reads them.
+  for (const name of ["PLOTCODER_VIDEO_PROVIDER", "PLOTCODER_VIDEO_KEY"]) {
+    const value = Deno.env.get(name);
+    if (value) env[name] = value;
+  }
   const session = headers.get("mcp-session-id") ?? "";
   if (SESSION_ID.test(session)) env.PLOTCODER_SESSION_ID = session;
   const url = Deno.env.get("VITE_SUPABASE_URL") ?? Deno.env.get("SUPABASE_URL");

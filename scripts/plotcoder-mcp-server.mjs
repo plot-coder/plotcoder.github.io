@@ -12,6 +12,7 @@
 // MCP frames; diagnostics go to stderr.
 
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
@@ -101,6 +102,7 @@ import {
 } from "../src/board/project.js";
 import { selectStretch, stretchState } from "../src/board/stretch.js";
 import { findCards } from "../src/board/find.js";
+import { loadProvider, providerNames } from "./providers/index.mjs";
 import { PLACE_FIELDS, placeKey, placeLine, placePage, renamePlacePage, updatePlace } from "../src/board/places.js";
 
 /**
@@ -3653,7 +3655,7 @@ server.registerTool(
   {
     title: "Build a segment",
     description:
-      "Hand a segment's brief — one card, or several in wall order — to the video tool. No tool is chosen yet: until one is, this returns the brief with a note saying so, and a take built elsewhere is filed with add_take. When a provider exists it will be a tool behind this same surface; the wall's records are what it is handed. The writer approves the brief before anything is made.",
+      "Hand a segment's brief — one card, or several in wall order — to the video tool named in the server's PLOTCODER_VIDEO_PROVIDER, with its length (a page a minute) and the first picture on each person's and place's page in it; file what it makes as a take on the card, or run:<ids joined by +>, for the writer to choose in the Takes panel. With no tool named, it returns the brief and says so, and a take built elsewhere is filed with add_take. The dry-run provider makes no video: it files what a tool would have been handed, to rehearse the path. The writer approves the brief before anything is made; nothing the brief leaves open is invented.",
     inputSchema: { ids: z.array(z.string()).min(1) },
   },
   async (args) => {
@@ -3672,7 +3674,42 @@ server.registerTool(
     if (!provider) {
       return ok(`No video tool is configured (PLOTCODER_VIDEO_PROVIDER is unset). Hand this brief to one, then file what it makes with add_take.\n\n${brief}`);
     }
-    return ok(`The video tool "${provider}" is named but not wired yet; this surface is where it goes. The brief:\n\n${brief}`);
+    const tool = loadProvider(provider);
+    if (!tool) return ok(`The video tool "${provider}" has no module here; the known ones are ${providerNames().join(", ")}. A provider is a module under scripts/providers/. The brief:\n\n${brief}`);
+    // A take lives on the project, so the tool runs only where the account is (pass 4b's seam).
+    const account = await findAccount();
+    if (!account) return shut(`The video tool "${tool.name}" is named, but a take is a file on the project: set PLOTCODER_EMAIL and PLOTCODER_PASSWORD so it can be filed. The brief:\n\n${brief}`);
+    if (!account.projectId) return ok(noProjectYet());
+    const cards = args.ids.map((id) => state.notes.find((note) => note.id === id)).filter(Boolean);
+    const inOrder = storyOrder(state).filter((note) => cards.includes(note));
+    const subject = inOrder.length === 1 ? inOrder[0].id : `run:${inOrder.map((note) => note.id).join("+")}`;
+    const seconds = Math.round((inOrder.reduce((sum, note) => sum + noteEighths(note), 0) / EIGHTHS_PER_PAGE) * 60);
+    // The first picture on each page in the segment, signed for an hour: a person by id, a place by its phrase.
+    const people = [...new Set(inOrder.flatMap((note) => note.characterIds ?? []))].map((id) => state.characters.find((person) => person.id === id)).filter(Boolean);
+    const places = [...new Map(inOrder.filter((note) => (note.location ?? "").trim()).map((note) => [placeKey(note.location), note.location.trim()])).entries()];
+    const { data: pictures } = await account.client.from("assets").select("subject, path, created_at").eq("project_id", account.projectId).eq("kind", "picture").order("created_at");
+    const firstOf = (subjectKey) => (pictures ?? []).find((row) => row.subject === subjectKey) ?? null;
+    const references = [];
+    const missing = [];
+    for (const [who, key, kind] of [...people.map((person) => [person.name, person.id, "person"]), ...places.map(([key, spelt]) => [spelt, `place:${key}`, "place"])]) {
+      const row = firstOf(key);
+      if (!row) { missing.push(`${kind === "person" ? "" : "the place "}${who}`); continue; }
+      const signed = await account.client.storage.from("projects").createSignedUrl(row.path, 3600);
+      if (signed.data?.signedUrl) references.push({ kind, name: who, url: signed.data.signedUrl });
+      else missing.push(who);
+    }
+    let made;
+    try {
+      made = await tool.makeTake({ brief, subject, seconds, references, env, outDir: path.join(os.tmpdir(), "plotcoder-takes") });
+    } catch (error) {
+      return ok(`The video tool "${tool.name}" failed: ${error instanceof Error ? error.message : String(error)}. Nothing was filed. The brief:\n\n${brief}`);
+    }
+    const filed = await fileAsset(account, "take", subject, made.path, made.note ?? "");
+    if (filed.error) return ok(`The video tool "${tool.name}" made ${path.basename(made.path)}, but it could not be filed: ${filed.error}`);
+    return ok(
+      `Built a take with "${tool.name}" and filed it as "${filed.name}" on ${subject} (saved to the account; the writer's Takes panel has it, to choose or not): ${seconds} seconds, handed ${references.length ? references.map((item) => `${item.kind === "place" ? "the place " : ""}${item.name}`).join(", ") : "no pictures"}${missing.length ? `; no picture yet for ${missing.join(", ")}, so the tool had the page's words alone` : ""}.`,
+      { id: filed.id, subject, seconds, provider: tool.name, references: references.map((item) => ({ kind: item.kind, name: item.name })), missing },
+    );
   },
 );
 

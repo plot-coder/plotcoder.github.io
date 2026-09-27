@@ -99,3 +99,22 @@ The Takes panel and `list_takes` already show what lands.
 
 Nothing else: no shot model, no timeline, no reading of takes yet. That
 reading is drawn after the ten rows say what it should look for.
+
+## Built, 2026-09-27
+
+The seam is built (0.1.66): `scripts/providers/index.mjs` names the
+providers and documents the module each one is — `makeTake({ brief,
+subject, seconds, references, env, outDir })` returning the file it made —
+and `build_segment` loads the one named in `PLOTCODER_VIDEO_PROVIDER`,
+hands it the brief, the length (a page a minute) and the first picture on
+each person's and place's page in the segment (signed for an hour), and
+files what comes back as a take with the code `add_take` runs, saying which
+pages had no picture. The key is `PLOTCODER_VIDEO_KEY`: on the hosted door a
+function secret the door passes through, locally the shell's.
+
+**The rehearsal needs no key.** `PLOTCODER_VIDEO_PROVIDER=dry-run` makes no
+video: it files a text take holding exactly what a provider would have been
+handed, so the path from the wall to the Takes panel can be walked on the
+ten segments now, and the pictures each one would carry counted. **What is
+left is one module and one secret:** the provider Robert chooses, written as
+`scripts/providers/<name>.mjs` against its API, and its key set as a secret.

@@ -1096,6 +1096,7 @@ export function App() {
         seen={agent}
         email={account.user?.name ?? null}
         projectName={project.name}
+        boards={project.boards.length}
         onClose={closeAgent}
         onSignIn={() => {
           setAgentOpen(false);

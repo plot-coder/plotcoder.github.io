@@ -19,6 +19,8 @@ type AgentWelcomeSheetProps = {
   /** The signed-in writer's email, or null when signed out. */
   email: string | null;
   projectName: string;
+  /** How many boards the project has: more than one is read whole first. */
+  boards: number;
   onClose: () => void;
   /** Open the door to sign in. */
   onSignIn: () => void;
@@ -28,7 +30,7 @@ type AgentWelcomeSheetProps = {
   onLook: () => void;
 };
 
-export function AgentWelcomeSheet({ open, seen, email, projectName, onClose, onSignIn, onAgents, onLook }: AgentWelcomeSheetProps) {
+export function AgentWelcomeSheet({ open, seen, email, projectName, boards, onClose, onSignIn, onAgents, onLook }: AgentWelcomeSheetProps) {
   const titleId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
   const [copied, setCopied] = useState<string | null>(null);
@@ -63,7 +65,7 @@ export function AgentWelcomeSheet({ open, seen, email, projectName, onClose, onS
     }
   }
 
-  const message = firstMessage(projectName);
+  const message = firstMessage(projectName, boards);
 
   return (
     <div className="modal-root">

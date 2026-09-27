@@ -77,8 +77,13 @@ export function basicHeader(email, password) {
   return `Basic ${btoa(binary)}`;
 }
 
-/** The first message to an agent: which project, what to read, and to change nothing yet. */
-export function firstMessage(projectName) {
+/**
+ * The first message to an agent: which project, what to read, and to change
+ * nothing yet. A project of several boards is read whole first (the first
+ * walk, 2026-09-27: the agent read one board of two).
+ */
+export function firstMessage(projectName, boards = 1) {
   const name = String(projectName ?? "").trim();
-  return `I am working in PlotCoder${name ? ` on my project "${name}"` : ""}, and I have it open on my screen. Use the PlotCoder tools: call list_projects${name ? `, open_project with "${name}"` : ""}, then read_wall, and tell me in a few sentences what is on the wall and what it asks. Change nothing until I say.`;
+  const read = boards > 1 ? `then read_project, since it has ${boards} boards, and tell me in a few sentences what is on each and what it asks` : "then read_wall, and tell me in a few sentences what is on the wall and what it asks";
+  return `I am working in PlotCoder${name ? ` on my project "${name}"` : ""}, and I have it open on my screen. Use the PlotCoder tools: call list_projects${name ? `, open_project with "${name}"` : ""}, ${read}. Change nothing until I say.`;
 }

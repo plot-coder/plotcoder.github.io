@@ -1198,7 +1198,9 @@ export function App() {
         onDayLight={setDayLight}
         onStructure={() => setStructureOpen(true)}
         onWords={() => setWordsOpen(true)}
-        onAgents={() => setAgentsOpen(true)}
+        agent={agent}
+        onAgent={() => setAgentOpen(true)}
+        onNewNote={addNote}
         onHoverNote={setHoverNoteId}
         selectedIds={selectedIds}
         selectedArrowId={selectedArrowId}

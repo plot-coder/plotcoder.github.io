@@ -1,3 +1,5 @@
+import { formatMinutes, formatPages, isMeasured, noteEighths, storyOrder } from "./reducer.js";
+import { sceneNumbers } from "./numbering.js";
 // Workflows (R27, closing open question 24) and the first step toward the
 // horizon (R28): the brief.
 //
@@ -99,17 +101,28 @@ function personLine(character) {
   if (character.wants) lines.push(`wants: ${character.wants}`);
   if (character.needs) lines.push(`needs: ${character.needs}`);
   if (character.notes) lines.push(`notes: ${character.notes}`);
+  if ((character.open ?? "").trim()) lines.push(`not decided, by the writer's word: ${character.open.trim()}`);
   return `${character.name}${lines.length ? ` — ${lines.join("; ")}` : " — (no page yet)"}`;
 }
 
 /**
  * The brief for one card, or for several in order (a run between beats).
- * Returns plain text with headed lines, and nothing the wall does not hold.
+ * Returns plain text with headed lines: everything the wall holds, in the
+ * order a video tool would need it, and — said in words, never left out —
+ * what the wall does not hold (pass 4a: a reader who has to shoot from the
+ * brief needs to know a gap is the wall's, not the brief's). `options`:
+ * `title` (the board's name), `episode`/`episodes` (its place in the
+ * project), `premise` (the film's), `boards` (every board of the project
+ * with `id`, `name` and its `order` of { id, headline }, so a fold's payoff
+ * on another board is named to the scene).
  */
 export function segmentBrief(state, ids, options = {}) {
   const byId = new Map(state.notes.map((note) => [note.id, note]));
   const notes = ids.map((id) => byId.get(id)).filter(Boolean);
   if (notes.length === 0) return null;
+  const order = storyOrder(state);
+  const numbers = sceneNumbers(order, state.lock);
+  const position = (note) => numbers.get(note.id) ?? (order.indexOf(note) >= 0 ? String(order.indexOf(note) + 1) : null);
   const people = new Map();
   for (const note of notes) {
     for (const id of note.characterIds ?? []) {
@@ -118,30 +131,71 @@ export function segmentBrief(state, ids, options = {}) {
     }
   }
   const places = [...new Set(notes.map((note) => note.location).filter(Boolean))];
+  const eighths = notes.reduce((sum, note) => sum + noteEighths(note), 0);
+  const where = options.title ? ` on "${options.title}"${options.episode && options.episodes ? ` (episode ${options.episode} of ${options.episodes})` : ""}` : "";
+  const first = position(notes[0]);
+  const last = position(notes.at(-1));
   const lines = [];
-  lines.push(`SEGMENT: ${notes.length === 1 ? notes[0].headline : `${notes.length} scenes, from "${notes[0].headline}" to "${notes.at(-1).headline}"`}`);
-  if (options.title) lines.push(`FROM: ${options.title}`);
+  lines.push(
+    notes.length === 1
+      ? `SEGMENT: "${notes[0].headline}"${notes[0].rank === "beat" ? " — a beat" : ""}${first ? ` — scene ${first} of ${order.length}` : ""}${where}`
+      : `SEGMENT: ${notes.length} scenes, from "${notes[0].headline}" to "${notes.at(-1).headline}"${first && last ? ` — scenes ${first} to ${last} of ${order.length}` : ""}${where}`,
+  );
+  lines.push(`LENGTH: about ${formatPages(eighths)} page${formatPages(eighths) === "1" ? "" : "s"}, about ${formatMinutes(eighths)} — ${notes.every((note) => isMeasured(note)) ? "measured from the script" : notes.some((note) => isMeasured(note)) ? "part measured, part the writer's estimate" : "the writer's estimate"}`);
+  if (options.premise) lines.push(`THE FILM: ${options.premise}`);
   if (state.logline) lines.push(`STORY: ${state.logline}`);
+  // What the writer has left open about the whole film rides with every segment (pass 4a, entry 46): a tool that reads "not decided" does not invent.
+  if ((state.openLines ?? []).length) lines.push(`OPEN ABOUT THE FILM, BY THE WRITER'S WORD: ${state.openLines.map((line) => `"${line}"`).join("; ")}`);
   lines.push(`PEOPLE: ${people.size ? [...people.values()].map(personLine).join(" | ") : "(nobody cast)"}`);
   lines.push(`PLACES: ${places.length ? places.join("; ") : "(none set)"}`);
+  // What no wall holds, said once so a reader knows the gap is the wall's and not this brief's.
+  lines.push("NOT ON THE WALL: which day of the film's time a scene falls on (a card holds a time of day, never a day); what a place looks like beyond its name; a face, a build or a voice beyond the page's line. Ask the writer, or leave it open.");
   for (const note of notes) {
+    const number = position(note);
     lines.push("");
-    lines.push(`SCENE: ${note.headline}${note.location ? ` — at ${note.location}` : ""}`);
-    lines.push(`WHAT CHANGES: ${note.change}`);
-    if (note.plants) {
-      const heads = state.arrows.filter((arrow) => arrow.kind === "setup" && arrow.from === note.id).map((arrow) => byId.get(arrow.to)?.headline).filter(Boolean);
-      const later = note.payoffBoardId ? (options.boards ?? []).find((board) => board.id === note.payoffBoardId)?.name ?? "a later board" : null;
-      const where = heads.length ? `pays off at ${heads.map((headline) => `"${headline}"`).join(" and ")}` : later ? `pays off later, on "${later}"` : "pays off later, nowhere yet";
-      lines.push(`PLANTS: something here ${where}; keep it visible.`);
-    }
+    // The card's id rides on the scene line so a take can be filed against it (pass 4a, the run's entries).
+    lines.push(`SCENE${number ? ` ${number}` : ""}: "${note.headline}" [[id: ${note.id}]]${note.rank === "beat" ? " — a beat" : ""}${note.location ? ` — at ${note.location}` : note.locationOpen ? ` — the place open, by the writer's word: "${note.locationOpen}"` : " — no place set"} — ${note.when ? note.when : note.whenOpen ? `when open, by the writer's word: "${note.whenOpen}"` : "no time of day set"} — about ${formatPages(noteEighths(note))} page${formatPages(noteEighths(note)) === "1" ? "" : "s"}, ${isMeasured(note) ? "measured" : note.lengthEighths !== null ? "the writer's estimate" : "unsized, read as a page"}`);
+    // Who is in this scene, by name, so a run's reader does not scroll to the header to learn who "Mira" is (pass 4a, entry 39).
+    const cast = (note.characterIds ?? []).map((id) => state.characters.find((item) => item.id === id)?.name).filter(Boolean);
+    const maybes = (note.maybeCharacterIds ?? []).map((id) => state.characters.find((item) => item.id === id)?.name).filter(Boolean).map((name) => `${name}?`);
+    lines.push(`WHO: ${[...cast, ...maybes].join(", ") || "(nobody cast)"}${(note.castOpen ?? "").trim() ? `; open, by the writer's word: "${note.castOpen.trim()}"` : ""}`);
+    lines.push(`WHAT CHANGES: ${note.change}${note.changeOpen ? ` (open, by the writer's word: "${note.changeOpen}")` : ""}`);
     if (note.text && note.text.trim()) {
       lines.push("SCRIPT:");
       lines.push(note.text.trim());
     } else {
       lines.push("SCRIPT: (unwritten — build from the change line)");
     }
+    if (note.plants) {
+      const heads = state.arrows.filter((arrow) => arrow.kind === "setup" && arrow.from === note.id).map((arrow) => byId.get(arrow.to)).filter(Boolean);
+      const board = note.payoffBoardId ? (options.boards ?? []).find((item) => item.id === note.payoffBoardId) : null;
+      const there = board && note.payoffNoteId ? (board.order ?? []).findIndex((item) => item.id === note.payoffNoteId) : -1;
+      const scene = there >= 0 ? board.order[there] : null;
+      const what = (note.plantsWhat ?? "").trim() || "something";
+      const payoff = heads.length
+        ? `pays off at ${heads.map((card) => `"${card.headline}"${position(card) ? ` (scene ${position(card)})` : ""}`).join(" and ")}`
+        : scene
+          ? `pays off at "${scene.headline}" (scene ${there + 1} on "${board.name}")`
+          : board
+            ? `pays off later, on "${board.name}", no scene named yet`
+            : note.payoffBoardId
+              ? "pays off later, on a board this project does not have"
+              : "pays off later, nowhere yet";
+      lines.push(`PLANTS: ${what} — ${payoff}; keep it visible.`);
+    }
+    const open = [(note.open ?? "").trim() ? `the scene: "${note.open.trim()}"` : ""].filter(Boolean);
+    if (open.length) lines.push(`OPEN, BY THE WRITER'S WORD: ${open.join("; ")}`);
   }
   lines.push("");
-  lines.push(`AFTER: ${notes.at(-1).change}${notes.length === 1 ? " (the change line, until the scene is written)" : ""}`);
+  const lastNote = notes.at(-1);
+  const after = [`AFTER: ${lastNote.change}`];
+  if (!(lastNote.text ?? "").trim()) after.push("(the change line; the scene is unwritten)");
+  // A run has an end state per scene, not one (pass 4a, entry 24): each WHAT CHANGES above stood by the end of its scene.
+  if (notes.length > 1) after.push(`— on the way, each scene's WHAT CHANGES stood by its end: ${notes.slice(0, -1).map((note, index) => `${index + 1}. ${note.change}`).join("; ")}`);
+  const carried = notes.filter((note) => note.plants).map((note) => (note.plantsWhat ?? "").trim() || "what the fold plants");
+  if (carried.length) after.push(`— still visible: ${carried.join("; ")}`);
+  const opens = [...people.values()].filter((person) => (person.open ?? "").trim()).map((person) => `${person.name}: "${person.open.trim()}"`);
+  if (opens.length) after.push(`— open about the people, by the writer's word: ${opens.join("; ")}`);
+  lines.push(after.join(" "));
   return lines.join("\n");
 }

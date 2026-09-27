@@ -2745,7 +2745,7 @@ describe("the premise and reminders (roadmap item 6)", () => {
   it("hands a brief to a video tool that is not there yet, and says so", async () => {
     const text = await door.callTool("build_segment", { ids: ["maya-letter"] });
     expect(text).toContain("No video tool is configured");
-    expect(text).toContain("SEGMENT: Maya finds the letter");
+    expect(text).toContain('SEGMENT: "Maya finds the letter"');
     expect(await door.callTool("list_takes")).toContain("No account door");
   });
 
@@ -2759,7 +2759,7 @@ describe("the premise and reminders (roadmap item 6)", () => {
     expect(listed).toContain("break-a-treatment — Break a treatment into a wall");
     expect(listed).toContain("keep: Wait for the writer; propose, do not fix.");
     const brief = await door.callTool("segment_brief", { ids: ["maya-letter"] });
-    expect(brief).toContain("SEGMENT: Maya finds the letter");
+    expect(brief).toContain('SEGMENT: "Maya finds the letter"');
     expect(brief).toContain("PEOPLE: Maya");
     expect(await door.callTool("segment_brief", { ids: ["nope"] })).toContain("No cards with ids nope");
   });

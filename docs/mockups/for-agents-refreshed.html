@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<title>For agents — refreshed</title>
+<!-- The app's own paper: the source stylesheet, so the link never goes stale. -->
+<link rel="stylesheet" href="../../src/styles.css">
+<style>
+  :root { --canvas: #000; --ink: #f4f1ea; --muted: #9a9589; --bar: #1c1c1a; --over: #e08b52; --bar-border: rgba(244,241,234,0.18); }
+  html, body { height: auto; min-height: 100%; background: #0b0b0a; color: var(--ink); }
+  body { margin: 0; padding: 2rem 2.5rem 4rem; font-family: ui-sans-serif, system-ui, sans-serif; }
+  h1 { font: 600 1.05rem/1.3 ui-serif, Georgia, serif; margin: 0 0 0.25rem; }
+  h2.sec { font: 600 0.95rem/1.3 ui-serif, Georgia, serif; margin: 2.6rem 0 0.2rem; padding-top: 1.2rem; border-top: 1px solid rgba(127,127,127,0.25); }
+  .lede { font-size: 0.85rem; opacity: 0.78; margin: 0 0 1.2rem; max-width: 80ch; line-height: 1.5; }
+  .cap { font: 700 0.62rem/1.3 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; margin: 0 0 0.6rem; }
+  .cap em { font-style: normal; color: var(--over); }
+  .note { font-size: 0.8rem; line-height: 1.45; opacity: 0.82; margin: 0.7rem 0 0; max-width: 62ch; }
+  .honest { font-size: 0.82rem; line-height: 1.5; max-width: 82ch; margin: 0.6rem 0 0; padding: 0.6rem 0.9rem; border-left: 3px solid rgba(127,127,127,0.5); background: rgba(127,127,127,0.06); }
+  .honest b, .ask b { font-weight: 600; }
+  .ask { margin-top: 1.2rem; max-width: 84ch; font-size: 0.86rem; line-height: 1.55; }
+  .row { display: flex; gap: 2.4rem; flex-wrap: wrap; align-items: flex-start; }
+  .col { width: 540px; max-width: 100%; }
+  .col.small { width: 380px; }
+
+  .sheet { border: 1px solid var(--bar-border); border-radius: 1.2rem; background: var(--bar); padding: 1.2rem 1.3rem 1.1rem; }
+  .head { display: flex; justify-content: space-between; align-items: flex-start; }
+  .kick { font: 600 0.62rem/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); margin: 0 0 0.3rem; }
+  .title { font: 400 1.5rem/1.2 ui-serif, Georgia, serif; margin: 0 0 0.6rem; }
+  .close { font: 600 0.62rem/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+  .k { font: 600 0.6rem/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); margin: 1.1rem 0 0.45rem; }
+  .rule { border: 0; border-top: 1px solid var(--bar-border); margin: 1rem 0 0; }
+  .copy { font: 0.92rem/1.5 ui-serif, Georgia, serif; color: var(--muted); margin: 0; }
+  .wall { font: 0.72rem/1.5 ui-serif, Georgia, serif; color: var(--muted); margin: 0 0 0.5rem; }
+  .wall b { color: var(--ink); }
+  pre.code { font: 0.66rem/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; background: rgba(244,241,234,0.08); border-radius: 0.4rem; padding: 0.5rem 0.6rem; margin: 0.3rem 0 0.7rem; white-space: pre-wrap; position: relative; }
+  .btn { font: 600 0.62rem/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; padding: 0.5rem 0.75rem; border-radius: 999px; border: 1px solid var(--bar-border); white-space: nowrap; }
+  .btn.main { border-color: var(--over); color: var(--over); }
+
+  .who { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin: 0.4rem 0 0; }
+  .card { border: 1px solid var(--bar-border); border-radius: 0.7rem; padding: 0.75rem 0.85rem; }
+  .card.on { border-color: var(--over); }
+  .card h4 { font: 1rem/1.25 ui-serif, Georgia, serif; margin: 0 0 0.25rem; }
+  .card p { font-size: 0.74rem; line-height: 1.45; color: var(--muted); margin: 0 0 0.6rem; }
+  .tabs { display: flex; gap: 0.35rem; flex-wrap: wrap; margin: 0.2rem 0 0.7rem; }
+  .tab { font: 600 0.68rem/1 ui-sans-serif, system-ui, sans-serif; padding: 0.45rem 0.7rem; border-radius: 999px; border: 1px solid var(--bar-border); }
+  .tab.on { border-color: var(--over); color: var(--over); }
+  .line { display: flex; gap: 0.5rem; align-items: flex-start; margin: 0.3rem 0 0.6rem; }
+  .line .text { flex: 1; font: 0.68rem/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; background: rgba(244,241,234,0.08); border-radius: 0.4rem; padding: 0.45rem 0.6rem; overflow-wrap: anywhere; }
+  .say { font-size: 0.78rem; line-height: 1.45; margin: 0 0 0.3rem; }
+  .say small { color: var(--muted); }
+  .more { font-size: 0.72rem; color: var(--muted); border-bottom: 1px solid var(--bar-border); padding-bottom: 1px; }
+  .fold { display: flex; justify-content: space-between; align-items: center; padding: 0.55rem 0; border-top: 1px solid var(--bar-border); font-size: 0.82rem; }
+  .fold span:last-child { color: var(--muted); font-size: 0.9rem; }
+  .fold small { color: var(--muted); margin-left: 0.5rem; font-size: 0.7rem; }
+</style>
+</head>
+<body>
+<h1>The page behind "Start here": for agents, refreshed</h1>
+<p class="lede">Drawn 2026-09-27 for Robert: "On the page behind <i>Your agent can work this account too. Start here.</i> I think we could present this better as well." That page is the sheet <b>For agents</b> (R43). Its words are the on-ramp an agent reads at plotcoder.com/llms.txt, set in a sheet a person opens.</p>
+
+<h2 class="sec">1 · As it ships, beside the refresh</h2>
+<div class="row">
+  <div class="col small">
+    <p class="cap">As it ships · <em>about 900 words in one column</em></p>
+    <div class="sheet">
+      <div class="head"><div><p class="kick">PlotCoder</p><p class="title" style="font-size:1.25rem">For agents</p></div><span class="close">Close</span></div>
+      <p class="wall">A storyline wall. Cards are scenes, beats are the big turns, arrows say what follows or pays off what. An agent driven by a person has every tool a person here has; the person directs, the agent operates. Call the tools; never fake a mouse. Already have PlotCoder's tools in front of you — list_words, read_wall and the rest, under whatever name your session gives the server or the connector…</p>
+      <p class="k" style="margin-top:0.6rem">The doors</p>
+      <p class="wall"><b>MCP, for the next session</b> — For Cursor or Claude Code, once, from any folder — nothing to clone: claude mcp add plotcoder-board -s user -- npx -y plotcoder-board@latest — then start the session again. A server added from inside a session connects only on the next one…</p>
+      <pre class="code">{
+  "mcpServers": {
+    "plotcoder-board": { "command": "npx", … }
+  }
+}</pre>
+      <p class="wall"><b>The shell, for this session</b> — No MCP in this session, and a shell? npx -y plotcoder-board@latest call list_words makes one call and prints the reply…</p>
+      <p class="wall"><b>The hosted door, with nothing installed</b> — Where someone runs PlotCoder's server for you — npx -y plotcoder-board@latest serve puts it on a port, and the repo has a Dockerfile — an MCP client connects over HTTP with the writer's sign-in on the request…</p>
+      <p class="wall"><b>The account</b> — … <b>The page</b> — … <b>Where the wall lives, without an account</b> — …</p>
+      <p class="k">Call these first</p>
+      <p class="wall">1. list_words — … 2. list_workflows — … 3. list_projects — … 4. read_wall — … 5. list_reminders — … 6. list_board — …</p>
+      <p class="k">The rules</p>
+      <p class="wall">Questions, not fixes, until the writer says. No opinions about how many beats there should be…</p>
+      <p class="k">For the person</p>
+      <p class="wall">Give your agent the account door only on a machine you trust… The same text lives at plotcoder.com/llms.txt — send that link to any agent.</p>
+    </div>
+    <p class="note"><b>What is wrong with it.</b> It is written to an agent and shown to a person. The reader has to find which of six "doors" is theirs by reading all six. The part for the person is last. The one thing most people need, a link to hand their agent, is in the final sentence.</p>
+  </div>
+
+  <div class="col">
+    <p class="cap">The refresh · <em>who are you, then one way in at a time</em></p>
+    <div class="sheet">
+      <div class="head"><div><p class="kick">PlotCoder</p><p class="title">Agents</p></div><span class="close">Close</span></div>
+      <p class="copy">An agent works this wall with the same tools you have. You direct; it operates; what it does shows here as it lands.</p>
+
+      <div class="who">
+        <div class="card on">
+          <h4>I have an agent</h4>
+          <p>Sign in, add PlotCoder to Claude, paste one message. Three steps.</p>
+          <span class="btn main">Your agent</span>
+        </div>
+        <div class="card">
+          <h4>I am an agent</h4>
+          <p>Everything you need is one page of text. Read it before your first call.</p>
+          <span class="btn">Copy the link</span>
+        </div>
+      </div>
+
+      <p class="k">Hand your agent this</p>
+      <div class="line"><span class="text">https://plotcoder.com/llms.txt</span><span class="btn main">Copy</span></div>
+      <p class="say"><small>Send it as a message. An agent reads a page of text better than it reads this sheet.</small></p>
+
+      <hr class="rule">
+      <p class="k">Setting it up yourself</p>
+      <div class="tabs"><span class="tab on">Claude app</span><span class="tab">Claude Code · Cursor</span><span class="tab">A shell, no setup</span><span class="tab">Your own server</span></div>
+      <p class="say">Settings, Connectors, Add custom connector. Give it this address and choose <b>No sign-in</b>.</p>
+      <div class="line"><span class="text">https://mcp.plotcoder.com</span><span class="btn">Copy</span></div>
+      <p class="say">Then one header, named Authorization. <u>Your agent</u> makes its value from your password.</p>
+      <p class="say"><span class="more">The whole of it, as the on-ramp says it</span></p>
+
+      <div class="fold" style="margin-top:0.9rem"><span>What an agent calls first<small>six reads that change nothing</small></span><span>›</span></div>
+      <div class="fold"><span>The rules it keeps<small>questions, not fixes, until you say</small></span><span>›</span></div>
+      <div class="fold" style="border-bottom:1px solid var(--bar-border)"><span>Before you trust it with your account<small>it signs in as you</small></span><span>›</span></div>
+    </div>
+  </div>
+</div>
+
+<h2 class="sec">2 · The other ways in, one tab each</h2>
+<div class="row">
+  <div class="col">
+    <p class="cap">Claude Code · Cursor</p>
+    <div class="sheet">
+      <div class="tabs"><span class="tab">Claude app</span><span class="tab on">Claude Code · Cursor</span><span class="tab">A shell, no setup</span><span class="tab">Your own server</span></div>
+      <p class="say">Once, from any folder. Then start the session again: a server added inside a session connects on the next one.</p>
+      <div class="line"><span class="text">claude mcp add plotcoder-board -s user -- npx -y plotcoder-board@latest</span><span class="btn main">Copy</span></div>
+      <p class="say">To work your account and not a folder, give it your sign-in in its environment.</p>
+      <div class="line"><span class="text">PLOTCODER_EMAIL=you@example.com<br>PLOTCODER_PASSWORD=…</span><span class="btn">Copy</span></div>
+      <p class="say"><span class="more">The whole of it, as the on-ramp says it</span></p>
+    </div>
+  </div>
+  <div class="col">
+    <p class="cap">A fold, opened · <em>the rules it keeps</em></p>
+    <div class="sheet">
+      <div class="fold" style="border-top:0"><span>The rules it keeps<small>questions, not fixes, until you say</small></span><span>⌄</span></div>
+      <p class="say">Questions, not fixes, until you say.</p>
+      <p class="say">No opinions about how many beats there should be.</p>
+      <p class="say">Page counts are estimates.</p>
+      <p class="say">It asks before it deletes a board, a project or the account, unlocks the numbers, or removes a file.</p>
+      <p class="say">It invents no person and no logline.</p>
+      <p class="say"><span class="more">All of them, in the agent's words</span></p>
+    </div>
+    <p class="note">The folds hold the on-ramp's own sentences, shortened to one line each for a person, with the agent's full text one tap further. Nothing is said in the sheet that the on-ramp does not say.</p>
+  </div>
+</div>
+
+<h2 class="sec">3 · Is this the best we can do?</h2>
+<div class="honest"><b>One sheet or two.</b> "Your agent" (the three steps) and this sheet could be one. Kept apart: most people need the three steps and nothing here, and folding this into that would put six kinds of setup in front of someone who wanted one. This sheet's first card sends them there.</div>
+<div class="honest"><b>The words stay the agent's.</b> The on-ramp at llms.txt is what an agent reads, and every round of testing has tuned it. The refresh changes what a person is shown, not what an agent is told: the full text is one tap away in each tab, word for word.</div>
+<div class="honest"><b>What it costs.</b> Each door needs one short sentence for a person, beside the paragraph it has for an agent. That is six new sentences to keep true when the doors change. A test can hold each to its door.</div>
+<div class="honest"><b>Not drawn.</b> The sign-in for the door (R72). When it exists, the Claude app tab is an address and two buttons, and the header goes.</div>
+<div class="honest"><b>The name.</b> "For agents" becomes "Agents": the sheet is for the person as much as the agent.</div>
+
+<p class="ask"><b>What a yes means.</b> "Build it as drawn" builds the two cards, the link to hand over, the four tabs with a short line and a Copy each, the three folds, and the full on-ramp text behind each "the whole of it". "One sheet" folds Your agent's three steps into this sheet as its first tab, and the button under the wordmark opens it. Anything else, say what, and it is drawn again first.</p>
+</body>
+</html>

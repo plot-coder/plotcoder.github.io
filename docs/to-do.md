@@ -8,7 +8,29 @@ done and merged, what is left, and the order I would take it in.
 
 ---
 
-## Next, for whoever picks this up (2026-09-27, after pass 2b)
+## Next, for whoever picks this up (2026-09-27, later, after pass 3a's first half)
+
+**Pass 3a's first half has run** — no agent: `scripts/measure-reads.mjs`
+counted every read on "Ninety-Nine" (pass 1a's wall, recovered from the
+inline export pass 1b's agent made before emptying the account — the
+desktop app had written the over-cap reply to a file), on "Last Orders",
+and on "Low Water", a series `scripts/generate-series.mjs` builds through
+the kernel: six hour-long boards, forty written cards each, one cast,
+folds across boards, and three things put in for the blind half (a want
+dropped after episode two, a fold never paid, second acts that run long).
+Ten findings in `blind-runs/pass-3a-report.md`, worked in
+`docs/to-do-pass-3a.md`: a feature fits in a window and a series does not
+(a board's pages are 18,000 to 21,000 tokens; six boards' pages 126,000;
+the tool list 25,700 on every turn); `list_board` is ids; **R77 proposed**,
+reads that select. Nothing built beyond the two scripts and their test.
+**Next:** the second half — Robert opens a fresh no-folder session with
+the PlotCoder connector on at 0.1.59 (off and on if it had it before),
+and the driving session pastes `blind-runs/pass-3a-prompt.md` and relays
+the answers in its head; "Low Water" is on the test account beside "Last
+Orders". Then R77's alternatives with the blind half's evidence, and
+the held items in `docs/to-do-pass-3a.md`.
+
+## Before it (2026-09-27, after pass 2b)
 
 **Released as 0.1.58** (pass 2b's fixes): npm, the pin, the function
 redeployed and the live door answering 0.1.58.

@@ -96,6 +96,8 @@ export type Account = {
   assets: Asset[];
   /** Files on their way up: how many. */
   uploading: number;
+  /** When an agent's session last touched this account (R81), or null: none has, or none in the last day. */
+  agentSeenAt: string | null;
 };
 
 export type NameStatus = "free" | "taken" | "invalid" | "unknown";
@@ -223,6 +225,7 @@ class AccountStore {
     people: [],
     present: [],
     needsPick: false,
+    agentSeenAt: null,
     busy: false,
     recovering: false,
     resetSentTo: null,
@@ -311,7 +314,7 @@ class AccountStore {
       this.leaveChannel();
       this.books = null;
       this.saveBooks();
-      this.set({ ready: true, user: null, status: "idle", lastSavedAt: null, notice: null, projects: [], people: [], present: [], needsPick: false });
+      this.set({ ready: true, user: null, status: "idle", lastSavedAt: null, notice: null, projects: [], people: [], present: [], needsPick: false, agentSeenAt: null });
       return;
     }
     const metaName = typeof session?.user?.user_metadata?.name === "string" ? session.user.user_metadata.name : "";
@@ -633,6 +636,20 @@ class AccountStore {
 
   // --- people (R41) ---------------------------------------------------------
 
+  /**
+   * When an agent's session last touched the account (R81): the newest of the writer's own rows in
+   * agent_sessions, which the door writes on every call. Asked for as the channel is joined, when a
+   * board changes, when presence moves, and by the sheet while it is open. Signed out, nothing runs.
+   */
+  loadAgentSeen = async (): Promise<void> => {
+    if (!this.client || !this.account.user) return;
+    const { data, error } = await this.client.from("agent_sessions").select("updated_at").order("updated_at", { ascending: false }).limit(1);
+    if (error) return;
+    const at = (data ?? [])[0]?.updated_at;
+    const next = typeof at === "string" ? at : null;
+    if (next !== this.account.agentSeenAt) this.set({ agentSeenAt: next });
+  };
+
   private async loadPeople(): Promise<void> {
     if (!this.client || !this.books) return;
     const { data, error } = await this.client.rpc("project_people", { p_project: this.books.projectId });
@@ -807,11 +824,13 @@ class AccountStore {
     if (!this.client || !this.account.user) return;
     this.leaveChannel();
     void this.loadAssets();
+    void this.loadAgentSeen();
     const me = this.account.user;
     const channel = this.client.channel(`project:${projectId}`, { config: { presence: { key: me.id } } });
     channel
       .on("postgres_changes", { event: "*", schema: "public", table: BOARDS, filter: `project_id=eq.${projectId}` }, (payload) => {
         void this.onLiveBoard(payload.eventType, payload.new as Partial<BoardRow>);
+        void this.loadAgentSeen();
       })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: PROJECTS, filter: `id=eq.${projectId}` }, (payload) => {
         void this.onLiveProject(payload.new as Partial<ProjectRow>);
@@ -827,10 +846,11 @@ class AccountStore {
         const state = channel.presenceState<{ name: string }>();
         const present = new Set<string>();
         for (const [key, entries] of Object.entries(state)) {
-          if (key === me.id) continue;
-          for (const entry of entries) if (entry.name) present.add(entry.name);
+          // This writer's own screens are not news; their agent, signed in as them, is (R81).
+          for (const entry of entries) if (entry.name && (key !== me.id || /^an agent\b/i.test(entry.name))) present.add(entry.name);
         }
         this.set({ present: [...present] });
+        void this.loadAgentSeen();
       })
       .subscribe((status) => {
         if (status === "SUBSCRIBED") void channel.track({ name: me.name });

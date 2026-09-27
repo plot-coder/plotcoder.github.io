@@ -5372,3 +5372,100 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* Your agent (R81): whether one is on the wall, and when one last was. */
+.agent-launch {
+  position: fixed;
+  top: 3.5rem;
+  left: 1.1rem;
+  z-index: 9;
+  min-height: 1.8rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0 0.9rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.agent-launch.is-never {
+  border-color: var(--over);
+  color: var(--over);
+}
+
+.agent-welcome__dot {
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  border: 1px solid var(--muted);
+  background: transparent;
+}
+
+.is-seen > .agent-welcome__dot {
+  background: var(--muted);
+}
+
+.is-here > .agent-welcome__dot {
+  border-color: #3f9b5f;
+  background: #3f9b5f;
+}
+
+.is-never > .agent-welcome__dot {
+  border-color: var(--over);
+}
+
+.agent-welcome__seen {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.7rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--bar-border);
+  border-radius: 0.6rem;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.agent-welcome__steps {
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+}
+
+.agent-welcome__steps > li {
+  position: relative;
+  padding: 0.85rem 0 0.85rem 2.2rem;
+  border-top: 1px solid var(--bar-border);
+  counter-increment: step;
+}
+
+.agent-welcome__steps > li::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: 0.85rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 1px solid var(--bar-border);
+  border-radius: 50%;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.5rem;
+  text-align: center;
+  color: var(--muted);
+}
+
+.agent-welcome__steps .shots__copy {
+  margin: 0.35rem 0;
+}
+
+.agent-welcome .shots__btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}

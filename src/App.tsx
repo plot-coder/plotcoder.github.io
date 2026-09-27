@@ -37,6 +37,8 @@ import { PagesPanel } from "./PagesPanel";
 import { paginateBoard } from "./pagesLayout";
 import { BriefSheet } from "./BriefSheet";
 import { ShotsSheet } from "./ShotsSheet";
+import { AgentWelcomeSheet } from "./AgentWelcomeSheet";
+import { agentSeen } from "./board/agentSeen";
 import { TakeSheet } from "./TakeSheet";
 import { TakesPanel } from "./TakesPanel";
 import { AccountSheet } from "./AccountSheet";
@@ -131,6 +133,13 @@ export function App() {
   // The brief (R28, first step): for the selected card or cards.
   const [briefOpen, setBriefOpen] = useState(false);
   const [shotsOpen, setShotsOpen] = useState(false);
+  const [agentOpen, setAgentOpen] = useState(false);
+  // The minute, so "12 minutes ago" moves without anything else changing.
+  const [minute, setMinute] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = window.setInterval(() => setMinute(Date.now()), 60000);
+    return () => window.clearInterval(timer);
+  }, []);
   const [takeOpen, setTakeOpen] = useState(false);
   // Takes (R28, item 9): for the selected card or run.
   const [takesOpen, setTakesOpen] = useState(false);
@@ -219,6 +228,16 @@ export function App() {
   // What lands here from the other boards' folds, and every board's shape, for the reading and the corner (R58).
   const landings = useMemo(() => landingsOn(project, { ...otherBoards, [project.activeBoardId]: board }, project.activeBoardId), [project, otherBoards, board]);
   const boardsHeld = useMemo(() => laterBoards(project, { ...otherBoards, [project.activeBoardId]: board }), [project, otherBoards, board]);
+  // Whether an agent is on the wall, and when one last was (R81).
+  const agent = useMemo(
+    () => agentSeen({ present: account.present, sessionAt: account.agentSeenAt, record: board.record ?? [], now: new Date(minute).toISOString() }),
+    [account.present, account.agentSeenAt, board.record, minute],
+  );
+  const closeAgent = useCallback(() => setAgentOpen(false), []);
+  const lookForAgent = useCallback(() => {
+    setMinute(Date.now());
+    void accountStore.loadAgentSeen();
+  }, []);
   const reading = useMemo(
     () => readWall(board, { elsewhere: Object.keys(castElsewhereMap), laterBoards: boardsHeld, paidBy: landings.paid }),
     [board, castElsewhereMap, boardsHeld, landings],
@@ -907,6 +926,17 @@ export function App() {
         onAddOpenLine={(text) => boardStore.dispatch({ type: "add_open_line", text })}
         onStrikeOpenLine={(index) => boardStore.dispatch({ type: "strike_open_line", index })}
       />
+      {/* Under the wordmark, clear of the logline and the buttons: whether an agent is on the wall, and the way to bring one (R81). */}
+      <button
+        type="button"
+        className={`cast-launch agent-launch is-${agent.state} ${agentOpen ? "is-open" : ""}`}
+        aria-pressed={agentOpen}
+        onClick={() => setAgentOpen(true)}
+        title={agent.words}
+      >
+        <span className="agent-welcome__dot" aria-hidden="true" />
+        {agent.short}
+      </button>
       <div className="top-actions">
         <button
           type="button"
@@ -1060,6 +1090,19 @@ export function App() {
           setBriefOpen(false);
           setTakesOpen(true);
         }}
+      />
+      <AgentWelcomeSheet
+        open={agentOpen}
+        seen={agent}
+        email={account.user?.name ?? null}
+        projectName={project.name}
+        onClose={closeAgent}
+        onSignIn={() => {
+          setAgentOpen(false);
+          setAccountOpen(true);
+        }}
+        onAgents={() => setAgentsOpen(true)}
+        onLook={lookForAgent}
       />
       <ShotsSheet
         open={shotsOpen}

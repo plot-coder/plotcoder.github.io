@@ -8,7 +8,26 @@ done and merged, what is left, and the order I would take it in.
 
 ---
 
-## Next, for whoever picks this up (2026-09-27, night, after pass 3a)
+## Next, for whoever picks this up (2026-09-27, small hours, after pass 3b)
+
+**Pass 3b has run** — hands-off: the writer's list of eight directions and
+seven standing answers on "Low Water", nobody in the room, driven from
+here with nothing sent after the paste (`blind-runs/pass-3b-prompt.md`).
+The agent finished seven of eight alone by the wall's word, wrote nothing
+on a page, invented nothing, and stopped where the standing answers
+crossed — reporting Act Two's share on every board instead of choosing —
+which is goal 3's "reached when" met on this project: 24 entries and 11
+questions it would have asked (`blind-runs/pass-3b-report.md`), six fixed
+as it ran (#215: a thread is one board's, the record and the last word are
+the open board's, the title page reads back, the reading names tools),
+the rest held in `docs/to-do-pass-3b.md`. **Every pass on the claim board
+has run.** **Next:** release 0.1.62; then Robert's word on what is held —
+R77 (b) and (c) (a person's scenes with text; a card found across boards,
+wanted by both 3a and 3b), the "[still]" question, the standing answers'
+tie-break — and then a real story with the writer in the room, the first
+two sessions logged as the next round.
+
+## Before it (2026-09-27, night, after pass 3a)
 
 **Pass 3a has run, both halves.** The blind half: a fresh agent on "Low
 Water" through the desktop connector, driven from here on

@@ -8,6 +8,82 @@ done and merged, what is left, and the order I would take it in.
 
 ---
 
+## Start here (2026-09-27, afternoon — the session that ran passes 1b to 4a closed)
+
+Read this section, then `docs/plan.md`'s claim board, then the working
+list for whatever you pick up. Everything below this section is history.
+
+**Where things stand.** Every pass on the claim board has run: goals 1 to 3
+(a complete script, a person and an agent handing over, a project past the
+window worked hands-off) and goal 4's first pass (the brief read blind).
+`main`, npm and the hosted door carry **0.1.66**. What that release holds
+beyond 0.1.64: R78 (a scene's day and light, the card's fifth line), R79 (a
+place's page, in the cast lens and on the door), and pass 4b's seam
+(`build_segment` hands a provider module the brief and files a take; a
+`dry-run` provider rehearses it with no key).
+
+**The test account** (`test@test.com` / `test`, a marked throwaway; its
+header is in `blind-runs/pass-1b-prompt.md`) holds two projects, both
+wanted: **"Last Orders"** (pass 1b's wall) and **"Low Water"**, the
+generated six-episode series (`scripts/generate-series.mjs`) as pass 3b's
+hands-off agent left it — every episode under its hour by twenty-eight
+set-asides, Kit's open line on Kit's page, five cross-episode folds wired,
+"Ines on the wall" asking which Equinox scene pays it off, and a last word
+on episode one. Do not empty it. "Ninety-Nine" (pass 1a's wall) is not on
+the account; pass 3a's report says where its export came from.
+
+**Waiting on Robert** — nothing below the line moves without these:
+
+1. **The video provider for pass 4b, and its key** (question 26). The
+   test that decides it: does its API hold a reference image for a face
+   and a place across calls? Then write `scripts/providers/<name>.mjs`
+   against its API (the module's shape is at the top of
+   `scripts/providers/index.mjs`), set the key as a function secret —
+   `supabase secrets set PLOTCODER_VIDEO_KEY=… --project-ref kmpahjsggbleygsnuwug`
+   and `PLOTCODER_VIDEO_PROVIDER=<name>` — and run the ten segments and the
+   rubric in `blind-runs/pass-4b-plan.md`. Until then, rehearse with
+   `PLOTCODER_VIDEO_PROVIDER=dry-run`.
+2. **Held decisions**, each with alternatives written out: the "[still]"
+   question for a scene whose change line says nothing moves
+   (`docs/to-do-pass-3b.md`, 12); the standing answers' tie-break for the
+   next hands-off list (3b, 11); the page check satisfied by a pasted
+   change line, which goes with fixing the generator's pages
+   (`docs/to-do-pass-4a.md`, 32); the tool list's size and the day-one
+   guide's (`docs/to-do-pass-3a.md`, 1 and 2).
+3. **A real story**, with Robert in the room on his own account: the
+   recommendation after 3b is that its first two sessions are logged as
+   the next round, friction log and working list as always.
+
+**Small, and yours to do without asking** (each listed with a plan in its
+working list): `set_aside` naming cards in the order given and saying a
+card leaves its group; `leave_question` reading the wall itself when its
+memory is stale; `set_payoff`'s tail leading with the board's name; the
+record saying "(set aside)" when a headline is not unique; the duplicate
+check comparing identical change lines; one-letter tokens out of the word
+checks; the change line printed beside the id in `read_pages`; renaming a
+place from the app's place page (today the door's `rename_place` does it).
+
+**How to work here.** Plan, ask, build, test (`CLAUDE.md`); Robert wants
+finished work committed, pushed, PR'd and merged without asking. Gate every
+merge on `npx vitest run && npm run build` inside one `if`, never behind a
+pipe that hides the exit code. Blind runs: Robert opens a no-folder session
+with the PlotCoder connector, **turned off and on first** (the desktop app
+keeps a connector's tool list from the day it was added — passes 2b and 3a
+lost `hand_over` to this); the driving session pastes the prompt's body with
+`send_message` and relays the writer's answers from the prompt's head.
+
+**The release recipe.** From a detached `origin/main`: `npm version patch
+-m "%s"`, push `HEAD:main` and the tag; wait for `npm view plotcoder-board
+dist-tags.latest` to show it; a PR moving the pin in
+`supabase/functions/mcp/index.ts`, merged; then **deploy from a separate,
+clean checkout** (`git worktree add --detach <dir> origin/main`, deploy
+there, remove it) with `supabase functions deploy mcp --no-verify-jwt
+--use-api --project-ref kmpahjsggbleygsnuwug`; then `initialize` against
+`https://mcp.plotcoder.com` with the test account's header and read the
+version. Deploying from the working checkout is how 0.1.65 never reached
+the door: the checkout failed on an uncommitted edit and the deploy was
+skipped.
+
 ## Next, for whoever picks this up (2026-09-27, small hours, after pass 3b)
 
 **Pass 3b has run** — hands-off: the writer's list of eight directions and

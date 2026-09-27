@@ -168,6 +168,7 @@ describe("plotcoder MCP server", () => {
       "export_fountain",
       "export_markdown",
       "export_text",
+      "find_card",
       "hand_over",
       "export_project",
       "import_fdx",
@@ -1004,6 +1005,22 @@ describe("characters", () => {
     const page = await cast.callTool("read_character", { name: "maya" });
     expect(page).toContain("Maya (maya) — on 3 cards across 1 board of the project");
     expect(page).toContain('"Board 1", 3 cards in story order:\n    1. "Maya finds the letter"');
+    // Each card with its change line, and the person's pages on the open board on request (R77 b).
+    expect(page).toMatch(/    1\. "Maya finds the letter"[^\n]* — [^\n]+\n/);
+    await cast.callTool("write_scene", { id: "maya-letter", text: "Maya reads the letter twice." });
+    const pages = await cast.callTool("read_character", { name: "maya", pages: true });
+    expect(pages).toMatch(/the pages of Maya's 3 scenes on "Board 1", about [\d /]+ pages/);
+    expect(pages).toContain("[[id: maya-letter · measured");
+    expect(pages).toContain("Maya reads the letter twice.");
+    expect(pages).toContain("(unwritten; the change line:");
+    expect(await cast.callTool("read_character", { name: "maya", pages: true, board: "Nowhere" })).toContain('No board matches "Nowhere"');
+    // A card found by a phrase or an id (R77 c).
+    const found = await cast.callTool("find_card", { phrase: "letter twice" });
+    expect(found).toContain('1 card holds "letter twice"');
+    expect(found).toContain('- maya-letter "Maya finds the letter" — on the page: "Maya reads the letter twice."');
+    expect(await cast.callTool("find_card", { phrase: "maya-letter" })).toContain("— by id");
+    expect(await cast.callTool("find_card", { phrase: "no such words anywhere" })).toContain('Nothing holds "no such words anywhere"');
+    await cast.callTool("write_scene", { id: "maya-letter", text: "" });
     expect(page).toContain("  looks: Thirty-four, tall, a coat too good for the flat.");
     expect(page).toContain("  voice: (empty)");
     expect(await cast.callTool("read_character", { id: "nobody" })).toContain('Nobody called "nobody" in the cast');
@@ -1689,7 +1706,13 @@ describe("move_scene across boards", () => {
     const reply = await series.callTool("read_character", { name: "Maya" });
     expect(reply).toContain("across 2 boards of the project");
     expect(reply).toContain('"Board 1", 1 card in story order:\n    1. "Tom lies about the job"');
-    expect(reply).toContain('"Episode 2", 2 cards in story order:\n    1. "The letter is read aloud" (night)\n    2. "Maya finds the letter"');
+    expect(reply).toContain('"Episode 2", 2 cards in story order:\n    1. "The letter is read aloud" (night) — ');
+    expect(reply).toMatch(/\n    2\. "Maya finds the letter"/);
+    // find_card reads every board of the project, board by board (R77 c).
+    const found = await series.callTool("find_card", { phrase: "letter" });
+    expect(found).toContain('2 cards hold "letter"');
+    expect(found).toMatch(/  "Episode 2"[^\n]*:\n    - [^\n]+"The letter is read aloud"[^\n]+\n    - [^\n]+"Maya finds the letter"/);
+    expect(await series.callTool("find_card", { phrase: "letter", board: "Episode 2" })).not.toContain('"Board 1"');
     expect(reply).toMatch(/^PlotCoder cast \(the file at /);
     await series.callTool("set_when", { ids: ["maya-letter"], when: "night" });
     await series.callTool("set_rank", { ids: ["maya-letter"], rank: "beat" });

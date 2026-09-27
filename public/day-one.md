@@ -425,8 +425,14 @@ card of another board is not asked about as uncast here.
   off there first, or leave them.
 - `read_character` — a person's page back, by id or name, across every
   board of the project (one cast, one page): the five lines as
-  they stand and the cards they are on. `list_board` says which lines are
-  written; this says what they say.
+  they stand and the cards they are on, each with its change line, so a
+  want the story drops is read here; `pages: true` adds the text of their
+  scenes on the open board (or `board`), scene by scene with ids.
+  `list_board` says which lines are written; this says what they say.
+- `find_card` — a card found by a phrase or an id across every board:
+  every card whose id, headline, change line or page holds it, board by
+  board in story order, a page hit quoting the line. One call instead of
+  six boards of pages; `board` narrows it to one.
 - `update_character` — write a person's page by `id` or `name`: `looks`, `voice`, `wants`,
   `needs`, `notes`, any subset, all text. `list_board` says which lines each
   person has ("page: looks, wants" or "page: empty"). Looks and voice are what

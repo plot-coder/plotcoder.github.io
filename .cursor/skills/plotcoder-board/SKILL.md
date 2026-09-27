@@ -127,7 +127,9 @@ only when the server is started with `PLOTCODER_JSON=1`.
   another session worked, or past your own context, read the record before
   you ask the writer what happened. When you stop, `hand_over` leaves one
   sentence for the writer — what you did not do and what you need — at the
-  head of their Read the wall sheet, until their next change.
+  head of their Read the wall sheet, until their next change. The record
+  begins with the release that brought it: a wall worked before has no
+  record of those changes, and says so with an empty one.
 - `read_wall` — step 4 of the method. The beats in wall order, the pages of
   scenes between consecutive beats, and the **questions the wall raises**: a run
   out of proportion with the others, a card with no change line, a card no arrow

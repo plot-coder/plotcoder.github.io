@@ -74,3 +74,16 @@ describe("the record of a session (R76): what changed, in the person's terms", (
     expect(normalizeState({ ...emptyState(), handOver: { words: "   " } } as never).handOver).toBeNull();
   });
 });
+
+describe("a line changed and a note taken off are not a rewrite (pass 2b, entry 33)", () => {
+  it("says changed a line, took a note off, or rewrote, by how much of the page stands", () => {
+    const page = "INT. DOYLE'S - NIGHT\n\nThe bell over the door.\n\nSalt. Vinegar. Paper.\n\n[[Declan is not here: not decided.]]\n\nMairead counts the queue.";
+    const before = run(base(), { type: "set_text", id: "f", text: page });
+    const line = run(before, { type: "set_text", id: "f", text: page.replace("Salt. Vinegar. Paper.", "Salt. Vinegar. Paper. The queue moves.") });
+    expect(describeChange(before, line).lines).toEqual(['changed a line in "The first Friday" (1/8 pages)']);
+    const note = run(before, { type: "set_text", id: "f", text: page.replace("\n\n[[Declan is not here: not decided.]]", "") });
+    expect(describeChange(before, note).lines).toEqual(['took a note off "The first Friday"']);
+    const rewrite = run(before, { type: "set_text", id: "f", text: "INT. DOYLE'S - NIGHT\n\nNothing of the old page. Every line new. The end." });
+    expect(describeChange(before, rewrite).lines).toEqual(['rewrote "The first Friday" (1/8 pages)']);
+  });
+});

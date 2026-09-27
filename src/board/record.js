@@ -68,7 +68,18 @@ export function describeChange(before, after) {
     if (wroteBefore !== wroteAfter) {
       if (!wroteAfter) say(`took the page off ${quote(note)}`, note.id);
       else if (!wroteBefore) say(`wrote ${quote(note)}${isMeasured(note) ? ` (${formatPages(noteEighths(note))} pages)` : ""}`, note.id);
-      else say(`rewrote ${quote(note)}${isMeasured(note) ? ` (${formatPages(noteEighths(note))} pages)` : ""}`, note.id);
+      else {
+        // A line changed or a note taken off is not a rewrite (pass 2b, entry 33): most of the page's lines stand.
+        const linesOf = (text) => text.split("\n").map((line) => line.trim()).filter(Boolean);
+        const wasLines = linesOf(wroteBefore);
+        const nowSet = new Set(linesOf(wroteAfter));
+        const kept = wasLines.filter((line) => nowSet.has(line)).length;
+        const gone = wasLines.filter((line) => !nowSet.has(line));
+        const measure = isMeasured(note) ? ` (${formatPages(noteEighths(note))} pages)` : "";
+        if (gone.length && gone.every((line) => /^\[\[.*\]\]$/.test(line)) && nowSet.size <= wasLines.length) say(`took a note off ${quote(note)}`, note.id);
+        else if (kept * 10 >= wasLines.length * 7) say(`changed a line in ${quote(note)}${measure}`, note.id);
+        else say(`rewrote ${quote(note)}${measure}`, note.id);
+      }
     }
     if ((old.rank ?? "scene") !== (note.rank ?? "scene")) say(note.rank === "beat" ? `kept ${quote(note)} as a turn` : `struck ${quote(note)} back to a scene`, note.id);
     if (Boolean(old.proposedBeat) !== Boolean(note.proposedBeat) && note.proposedBeat) say(`proposed ${quote(note)} as a turn`, note.id);

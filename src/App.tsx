@@ -4,7 +4,7 @@ import type { PlaceField } from "./board/places";
 import { CastLens } from "./CastLens";
 import { resolveCast } from "./castNames";
 import { GeneralBar, type BarLayer } from "./GeneralBar";
-import { Logline } from "./Logline";
+import { Logline, storyOpenCount } from "./Logline";
 import { NoteBoard } from "./NoteBoard";
 import { ProjectCrumb } from "./ProjectCrumb";
 import { accountStore } from "./board/account";
@@ -137,6 +137,8 @@ export function App() {
   const [briefOpen, setBriefOpen] = useState(false);
   const [shotsOpen, setShotsOpen] = useState(false);
   const [agentOpen, setAgentOpen] = useState(false);
+  const [storyOpen, setStoryOpen] = useState(false);
+  const closeStory = useCallback(() => setStoryOpen(false), []);
   // The minute, so "12 minutes ago" moves without anything else changing.
   const [minute, setMinute] = useState(() => Date.now());
   useEffect(() => {
@@ -174,6 +176,7 @@ export function App() {
   const history = useSyncExternalStore(boardStore.subscribe, boardStore.getHistory);
   // The project (R35): the boards, the premise, which board is open.
   const project = useSyncExternalStore(boardStore.subscribe, boardStore.getProject);
+  const storyCount = storyOpenCount({ openLines: board.openLines ?? [], loglineOpen: board.loglineOpen ?? "", premiseOpen: project.premiseOpen ?? "" });
   // "Since you looked" (R76): when this viewer last closed the sheet, kept on the device; the record is the wall's.
   const lookedKey = `plotcoder.looked.${project.activeBoardId}`;
   const [lastLooked, setLastLooked] = useState<string | null>(() => {
@@ -938,8 +941,16 @@ export function App() {
         openLines={board.openLines}
         onAddOpenLine={(text) => boardStore.dispatch({ type: "add_open_line", text })}
         onStrikeOpenLine={(index) => boardStore.dispatch({ type: "strike_open_line", index })}
+        open={storyOpen}
+        onOpen={() => setStoryOpen(true)}
+        onClose={closeStory}
       />
       <div className="top-band" aria-hidden="true" />
+      {/* Where a window has no room for the logline's line, a button on the second row opens the same panel. */}
+      <button type="button" className={`cast-launch story-launch ${storyOpen ? "is-open" : ""}`} aria-expanded={storyOpen} onClick={() => setStoryOpen((now) => !now)}>
+        Story
+        {storyCount ? ` · ${storyCount} open` : ""}
+      </button>
       {/* Under the wordmark, clear of the logline and the buttons: whether an agent is on the wall, and the way to bring one (R81). */}
       <button
         type="button"

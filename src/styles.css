@@ -69,80 +69,86 @@ body {
 
 /* Step 1 of the method sits above the wall, not on it: the central question is
    screen chrome, so it stays put and stays legible while the board pans and
-   zooms underneath. Sized to leave the wordmark and the top actions alone. */
+   zooms underneath. One line, never more (2026-09-27): it cannot wrap over the
+   wall or run under the buttons, and a press opens the story panel. */
 .logline {
   position: absolute;
-  top: 1rem;
+  top: 0.8rem;
   left: 50%;
   transform: translateX(-50%);
   z-index: 10;
   /* Between the wordmark's side and the buttons' side, and no wider: the buttons take about twenty-five rem, and
-     the logline is centred, so it has the window less twice that. At 26rem a long logline ran under Pages and Cast. */
-  width: min(46rem, calc(100vw - 53rem));
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.1rem;
-  text-align: center;
+     the line is centred, so it has the window less twice that. */
+  max-width: min(46rem, calc(100vw - 53rem));
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  min-height: 2rem;
+  padding: 0.2rem 0.9rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
 }
 
-.logline__premise,
-.logline__question {
-  margin: 0;
-  max-width: 100%;
-  border-radius: 0.4rem;
-  padding: 0.1rem 0.5rem;
+.logline:hover,
+.logline:focus-visible {
+  border-color: var(--bar-border);
+  background: var(--bar);
   outline: none;
-  cursor: text;
 }
 
-.logline__premise {
-  font-family: ui-sans-serif, system-ui, sans-serif;
-  font-size: 0.62rem;
-  font-weight: 600;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--muted);
+.logline.is-open {
+  border-color: var(--over);
+  background: var(--bar);
 }
 
 .logline__question {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 1rem;
   line-height: 1.35;
-  color: var(--ink);
-}
-
-.logline__premise:empty::before,
-.logline__question:empty::before {
-  content: attr(data-placeholder);
-  color: var(--muted);
-  opacity: 0.6;
 }
 
 /* Nothing to read until you write one, so an unset logline is nearly invisible
    and only firms up when you reach for it. */
-.logline__question:empty {
+.logline__question:empty::before {
+  content: attr(data-placeholder);
   font-style: italic;
+  color: var(--muted);
+  opacity: 0.7;
 }
 
-/* In the ink's own colour, thinned: white under the words made them unreadable on the dark canvas. */
-.logline__premise:hover,
-.logline__question:hover {
-  background: color-mix(in srgb, var(--ink) 7%, transparent);
+.logline__count {
+  flex: none;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.7rem;
+  color: var(--over);
+  white-space: nowrap;
 }
 
-.logline__premise:focus,
-.logline__question:focus {
-  background: color-mix(in srgb, var(--ink) 11%, transparent);
-  box-shadow: inset 0 0 0 1px var(--bar-border);
+/* A window with no room for the line has a button on the second row, across from the agent's. */
+.story-launch {
+  display: none;
+  position: fixed;
+  top: 3.6rem;
+  right: 1.1rem;
+  z-index: 11;
 }
 
-.logline__offers {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 0.15rem 0.7rem;
-  width: 100%;
+@media (max-width: 69rem) {
+  .logline {
+    display: none;
+  }
+
+  .story-launch {
+    display: inline-flex;
+    align-items: center;
+  }
 }
 
 /* The title band: the canvas's own colour behind the wordmark, the logline and
@@ -157,55 +163,143 @@ body {
   pointer-events: none;
 }
 
-/* The logline can run taller than the band — a premise, a long logline, the
-   offers — and carries the band down with it, edge to edge. */
-.logline__head {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.1rem;
-  width: 100%;
-  padding-bottom: 0.5rem;
-}
-
-.logline__head::before {
-  content: "";
-  position: absolute;
-  top: -1rem;
-  bottom: 0;
-  left: 50%;
-  z-index: -1;
-  width: 100vw;
-  transform: translateX(-50%);
-  background: var(--canvas);
-  pointer-events: none;
-}
-
-.logline__add-premise {
+/* The story panel: everything the story is, each with its name and what it is, on its own paper over the wall. */
+.story-panel__away {
+  position: fixed;
+  inset: 0;
+  z-index: 29;
   border: 0;
-  background: none;
-  padding: 0.1rem 0.3rem;
+  background: transparent;
+  cursor: default;
+}
+
+.story-panel {
+  position: fixed;
+  top: 3.4rem;
+  left: 50%;
+  z-index: 30;
+  width: min(32rem, calc(100vw - 2rem));
+  max-height: calc(100vh - 5rem);
+  overflow: auto;
+  transform: translateX(-50%);
+  padding: 0.95rem 1.15rem 1.05rem;
+  border: 1px solid var(--bar-border);
+  border-radius: 0.9rem;
+  background: var(--bar);
+  color: var(--ink);
+  box-shadow: var(--bar-shadow);
+}
+
+.story-panel__head {
+  margin: 0 0 0.7rem;
+  padding-right: 1.8rem;
+  font-size: 1.2rem;
+  font-weight: 400;
+}
+
+.story-panel__field {
+  padding: 0.7rem 0;
+  border-top: 1px solid var(--bar-border);
+}
+
+.story-panel__field:first-of-type {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.story-panel__field:last-of-type {
+  padding-bottom: 0;
+}
+
+.story-panel__k {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin: 0 0 0.2rem;
   font-family: ui-sans-serif, system-ui, sans-serif;
-  font-size: 0.58rem;
+  font-size: 0.62rem;
+  font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--muted);
-  opacity: 0;
+}
+
+.story-panel__link {
+  padding: 0 0 1px;
+  border: 0;
+  border-bottom: 1px solid var(--bar-border);
+  background: transparent;
+  color: var(--muted);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.74rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
   cursor: pointer;
-  transition: opacity 120ms ease;
 }
 
-.logline:hover .logline__add-premise,
-.logline__add-premise:focus-visible {
-  opacity: 0.75;
+.story-panel__say {
+  margin: 0 0 0.45rem;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.74rem;
+  line-height: 1.45;
+  color: var(--muted);
 }
 
-@media (max-width: 69rem) {
-  /* Not enough room to sit between the wordmark and the buttons. */
-  .logline {
-    display: none;
-  }
+.story-panel__input {
+  margin: 0;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid var(--bar-border);
+  border-radius: 0.4rem;
+  font-size: 1rem;
+  line-height: 1.4;
+  outline: none;
+  cursor: text;
+}
+
+.story-panel__input:focus {
+  border-color: var(--ink);
+}
+
+.story-panel__input:empty::before {
+  content: attr(data-placeholder);
+  font-style: italic;
+  color: var(--muted);
+  opacity: 0.7;
+}
+
+.story-panel .story-panel__open {
+  display: flex;
+  width: 100%;
+  gap: 0.5rem;
+  align-items: baseline;
+}
+
+.story-panel__open .story-panel__input {
+  flex: 1;
+}
+
+.story-panel .open-lines__list {
+  margin: 0 0 0.35rem;
+  width: 100%;
+}
+
+.story-panel .open-lines__line {
+  justify-content: space-between;
+  font-size: 0.95rem;
+}
+
+.story-panel .open-lines__strike {
+  opacity: 0.8;
+}
+
+.story-panel .open-lines__input {
+  width: 100%;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid var(--bar-border);
+  border-radius: 0.4rem;
+  font-size: 0.95rem;
+  text-align: left;
 }
 
 .top-actions {
@@ -2223,17 +2317,10 @@ body {
   text-transform: none;
 }
 
-/* Not while typing: the logline's tip hides while its text has focus, and a
-   card's tips hide while the card is being edited. A button keeps its tip
-   after a click, or the badge would never say anything. */
-.logline__tip:focus-within::after,
+/* Not while typing: a card's tips hide while the card is being edited. A
+   button keeps its tip after a click, or the badge would never say anything. */
 .note.is-active .has-tip[data-tip]::after {
   opacity: 0;
-}
-
-.logline__tip {
-  position: relative;
-  display: block;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -4905,49 +4992,7 @@ body {
 }
 
 /* Not decided yet, about the film (round twenty-three, entries 15, 16): the
-   writer's own sentences under the logline, closed to a count until opened. */
-.open-lines {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.2rem;
-  width: 100%;
-  margin-top: 0.15rem;
-  /* On its own paper, above the wall (pass 2a, entries 5, 15): the lines printed straight over the top row of cards and took their taps. */
-  position: relative;
-  z-index: 30;
-  padding: 0.35rem 0.9rem 0.5rem;
-  border: 1px solid var(--bar-border);
-  border-radius: 0.9rem;
-  background: var(--bar);
-  box-shadow: var(--bar-shadow);
-}
-
-.open-lines__toggle {
-  border: 0;
-  background: none;
-  padding: 0.1rem 0.3rem;
-  font-family: ui-sans-serif, system-ui, sans-serif;
-  font-size: 0.58rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--muted);
-  opacity: 0;
-  cursor: pointer;
-  transition: opacity 120ms ease;
-}
-
-/* With lines held it is always in view, in the colour of what is open; with none it is an offer, as the others are. */
-.open-lines__toggle.has-lines {
-  opacity: 0.9;
-  color: var(--over);
-}
-
-.logline:hover .open-lines__toggle,
-.open-lines__toggle:focus-visible {
-  opacity: 0.9;
-}
-
+   writer's own sentences, a section of the story panel. */
 .open-lines__list {
   list-style: none;
   margin: 0.1rem 0 0;
@@ -6382,148 +6427,8 @@ body {
   bottom: calc(100% + 4.4rem);
 }
 
-/* The title area in plain words (2026-09-27): what each field is, and one open at a time. */
-.logline__hint {
-  display: none;
-  /* Narrow enough to stand between the wordmark and the buttons at any width the logline shows at. */
-  max-width: 100%;
-  margin: 0.1rem 0 0;
-  font-family: ui-sans-serif, system-ui, sans-serif;
-  font-size: 0.74rem;
-  line-height: 1.45;
-  color: var(--muted);
-}
-
-.logline__hint b {
-  font-weight: 500;
-  color: var(--ink);
-}
-
-.logline:hover .logline__hint,
-.logline:focus-within .logline__hint {
-  display: block;
-}
-
-.title-link {
-  padding: 0 0 1px;
-  border: 0;
-  border-bottom: 1px solid var(--bar-border);
-  background: transparent;
-  color: var(--muted);
-  font-family: ui-sans-serif, system-ui, sans-serif;
-  font-size: 0.74rem;
-  opacity: 0;
-  cursor: pointer;
-  transition: opacity 120ms ease;
-}
-
-.logline:hover .title-link,
-.logline:focus-within .title-link,
-.title-link:focus-visible,
-.title-link.is-on,
-.title-panel .title-link {
-  opacity: 1;
-}
-
-/* Open questions that are held are always in view, in the colour of what is open. */
-.title-link.has-lines,
-.title-link.is-on {
-  opacity: 1;
-  border-color: var(--over);
-  color: var(--over);
-}
-
-.title-panel {
-  position: relative;
-  z-index: 30;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 0.2rem;
-  width: min(30rem, 100%);
-  margin-top: 0.45rem;
-  padding: 0.75rem 0.95rem 0.85rem;
-  border: 1px solid var(--bar-border);
-  border-radius: 0.8rem;
-  background: var(--bar);
-  box-shadow: var(--bar-shadow);
-  text-align: left;
-}
-
-.title-panel__head {
-  margin: 0;
-  font-size: 1.02rem;
-  font-weight: 400;
-}
-
-.title-panel__say {
-  margin: 0 0 0.4rem;
-  font-family: ui-sans-serif, system-ui, sans-serif;
-  font-size: 0.74rem;
-  line-height: 1.45;
-  color: var(--muted);
-}
-
-.title-panel__field {
-  margin: 0 0 0.4rem;
-  padding: 0.4rem 0.6rem;
-  border: 1px solid var(--bar-border);
-  border-radius: 0.4rem;
-  outline: none;
-  cursor: text;
-}
-
-.title-panel__field:empty::before {
-  content: attr(data-placeholder);
-  font-style: italic;
-  color: var(--muted);
-  opacity: 0.7;
-}
-
-.title-panel .title-link {
-  align-self: flex-start;
-}
-
-.title-panel .open-lines__list {
-  width: 100%;
-}
-
-.title-field {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.1rem;
-}
-
-.title-field__k {
-  font-family: ui-sans-serif, system-ui, sans-serif;
-  font-size: 0.6rem;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
-.title-panel .open-lines__line {
-  justify-content: space-between;
-  font-size: 0.92rem;
-}
-
-.title-panel .open-lines__input {
-  width: 100%;
-  margin-top: 0.3rem;
-  padding: 0.4rem 0.6rem;
-  border: 1px solid var(--bar-border);
-  border-radius: 0.4rem;
-  font-size: 0.9rem;
-  text-align: left;
-}
-
-.title-panel .open-lines__strike {
-  opacity: 0.8;
-}
-
-.title-panel__close {
+/* The way out of the story panel. */
+.story-panel__close {
   position: absolute;
   top: 0.45rem;
   right: 0.55rem;
@@ -6539,13 +6444,10 @@ body {
   cursor: pointer;
 }
 
-.title-panel__close:hover,
-.title-panel__close:focus-visible {
+.story-panel__close:hover,
+.story-panel__close:focus-visible {
   background: var(--slot);
   color: var(--ink);
   outline: none;
 }
 
-.title-panel__head {
-  padding-right: 1.8rem;
-}

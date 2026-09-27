@@ -5512,3 +5512,253 @@ body {
 .story-map__scrub:empty {
   display: none;
 }
+
+/* Your projects, refreshed (2026-09-27): a row says what the project holds, and opens where it stands. */
+.modal--account {
+  width: min(34rem, 100%);
+  max-height: calc(100vh - 2.5rem);
+}
+
+.account__kicker {
+  display: flex;
+  justify-content: space-between;
+}
+
+.account__kicker span {
+  letter-spacing: 0.06em;
+  text-transform: none;
+  font-weight: 500;
+}
+
+.account__project {
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+}
+
+.account__project + .account__project {
+  margin-top: 2px;
+}
+
+.account__project.is-on {
+  background: var(--slot);
+}
+
+.account__project.is-editing {
+  border-color: var(--bar-border);
+}
+
+.account__project-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 0.6rem;
+  align-items: center;
+  padding: 0.2rem 0.5rem 0.2rem 0;
+}
+
+.account__project-open {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+  padding: 0.4rem 0.6rem;
+  border: 0;
+  border-radius: 0.4rem;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.account__project.is-on .account__project-open {
+  cursor: default;
+}
+
+.account__project:not(.is-on) .account__project-open:hover,
+.account__project-open:focus-visible {
+  background: var(--slot);
+  outline: none;
+}
+
+.account__project.is-on .account__name {
+  font-weight: 600;
+}
+
+.account__facts {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.72rem;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account__facts b {
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.account__facts .is-agent {
+  color: var(--over);
+}
+
+.account__dots {
+  width: 1.8rem;
+  height: 1.8rem;
+  padding: 0;
+  border: 1px solid var(--bar-border);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.account__dots[aria-expanded="true"] {
+  border-color: var(--over);
+  color: var(--over);
+}
+
+.account__edit {
+  padding: 0.5rem 0.8rem 0.8rem;
+  border-top: 1px solid var(--bar-border);
+}
+
+.account__rename {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.account__rename .door__input {
+  flex: 1;
+  min-width: 0;
+}
+
+.account__acts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 0.7rem;
+}
+
+.account__act {
+  min-height: 1.9rem;
+  padding: 0 0.8rem;
+  border: 1px solid var(--bar-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.account__act:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.account__act--main {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--canvas);
+}
+
+.account__act--danger {
+  border-color: color-mix(in srgb, var(--warm, #c0563f) 60%, transparent);
+  color: var(--warm, #c0563f);
+}
+
+.account__act--danger-solid {
+  border-color: var(--warm, #c0563f);
+  background: var(--warm, #c0563f);
+  color: var(--canvas);
+}
+
+.account__sub {
+  margin: 0.9rem 0 0.2rem;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.account__warn {
+  margin: 0.2rem 0 0;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.account__hint {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.account__agent {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0.2rem 0 0;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.84rem;
+}
+
+.account__you {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.4rem 1rem;
+}
+
+.account__links {
+  display: flex;
+  gap: 1rem;
+  margin: 0;
+}
+
+.account__links button,
+.account__delete {
+  padding: 0 0 1px;
+  border: 0;
+  border-bottom: 1px solid var(--bar-border);
+  background: transparent;
+  color: var(--ink);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.account__foot {
+  margin-top: 1.1rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--bar-border);
+}
+
+.account__foot-line {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.4rem 1rem;
+  margin: 0 0 0.6rem;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.74rem;
+  color: var(--muted);
+}
+
+.account__delete {
+  border-bottom-color: color-mix(in srgb, var(--warm, #c0563f) 45%, transparent);
+  color: var(--warm, #c0563f);
+}

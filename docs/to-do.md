@@ -34,7 +34,8 @@ scene's day and light) and **R79** (a place's page), proposed; 48 entries in
 Released as 0.1.64. **R78 and R79 drawn** (`docs/mockups/r78-a-scenes-day-and-light.html`,
 `docs/mockups/r79-a-places-page.html`, #226) and **4b planned**
 (`blind-runs/pass-4b-plan.md`: ten segments, the rubric, the seam).
-**Next:** Robert's word on the two mockups; the provider and its key for
+**R78 and R79 built** on Robert's word (#228, #229), released as 0.1.65.
+**Next:** the provider and its key for
 4b (question 26), chosen by whether its API holds a reference image for a
 face and a place; then the seam under `build_segment` and the ten takes;
 the page check's paste and the generator's pages together; and the rest

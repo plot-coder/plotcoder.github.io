@@ -17,7 +17,7 @@
 // logline yet, open questions, a premise — each to a field of its own that
 // says what it is, one open at a time.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { EditableText } from "./EditableText";
 import { OpenLines } from "./OpenLines";
 import { wordSentence } from "./board/words";
@@ -98,6 +98,18 @@ export function Logline({
     onSetPremiseOpen(words);
   }
 
+  // Escape closes whichever panel is open, wherever the caret is.
+  useEffect(() => {
+    if (!panel) return;
+    function onKey(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      setPanel(null);
+      setLeaving(null);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [panel]);
+
   const premiseHeld = premise.length > 0 || premiseOpen.length > 0;
   const loglineEmpty = !logline && !loglineOpen && leaving !== "logline";
 
@@ -150,9 +162,12 @@ export function Logline({
 
       </div>
 
-      {panel === "open" ? <OpenLines lines={openLines} onAdd={onAddOpenLine} onStrike={onStrikeOpenLine} /> : null}
+      {panel === "open" ? <OpenLines lines={openLines} onAdd={onAddOpenLine} onStrike={onStrikeOpenLine} onClose={() => setPanel(null)} /> : null}
       {panel === "premise" && !premiseHeld ? (
         <div className="title-panel">
+          <button type="button" className="title-panel__close" aria-label="Close the premise" onClick={() => setPanel(null)}>
+            ×
+          </button>
           <h3 className="title-panel__head">The premise</h3>
           <p className="title-panel__say">What is true before the story starts, or a rule the whole of it keeps. For a series, what the series is about.</p>
           <EditableText

@@ -15,13 +15,19 @@ type OpenLinesProps = {
   lines: string[];
   onAdd: (text: string) => void;
   onStrike: (index: number) => void;
+  /** Close the panel: its X, or Escape. */
+  onClose: () => void;
 };
 
-export function OpenLines({ lines, onAdd, onStrike }: OpenLinesProps) {
+export function OpenLines({ lines, onAdd, onStrike, onClose }: OpenLinesProps) {
   const [text, setText] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
+  /** Set as Escape leaves, so the field's leaving does not keep what was half typed. */
+  const escaping = useRef(false);
+
   function add() {
+    if (escaping.current) return;
     const line = text.trim();
     if (line) onAdd(line);
     setText("");
@@ -33,14 +39,20 @@ export function OpenLines({ lines, onAdd, onStrike }: OpenLinesProps) {
       add();
     }
     if (event.key === "Escape") {
+      // Out of the panel, and what was half typed is not kept: Escape is a way out, never a way to add.
       event.preventDefault();
+      event.stopPropagation();
+      escaping.current = true;
       setText("");
-      inputRef.current?.blur();
+      onClose();
     }
   }
 
   return (
     <div className="open-lines title-panel">
+      <button type="button" className="title-panel__close" aria-label="Close open questions" onClick={onClose}>
+        ×
+      </button>
       <h3 className="title-panel__head">Open questions about the story</h3>
       <p className="title-panel__say">What you have not decided that belongs to no one scene. The wall lists them and never asks you about them.</p>
       <ul className="open-lines__list" aria-label="Open questions about the story">

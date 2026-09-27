@@ -88,7 +88,9 @@ file**, at the end; with the tools in front of you, skip them.)
 a treatment should answer: the questions to ask the writer before building),
 `list_projects` (which wall is in hand; on an account, `new_project` or
 `open_project` comes next when it is not the writer's) — those three before
-anything else — then the three reads of the wall you are to work:
+anything else — then, when the project has more than one board (a series, a
+writer's stories), `read_project`, every board's reading in one call, and
+`open_board` for the one to work — then the three reads of the wall you are to work:
 `read_wall` (what is here and what it asks — a fresh folder holds a sample
 wall, Maya and Tom and the letter, and says so; it is not the writer's),
 `list_reminders` (the writer's principles), `list_board` (the records and

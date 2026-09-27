@@ -1132,6 +1132,13 @@ describe("open fields (R61): the logline, the premise, a when and a board's name
     expect(read).toMatch(/1\. "Board 1"[^\n]*\(open\) — \d+ cards?, \d+ beats?, about [\d /]+ of 120 pages; logline:/);
     expect(read).toContain("   - [unmarked]");
     expect(read).toMatch(/the whole project: \d+ cards?, about [\d /]+ of 120 pages across 1 board; \d+ questions? in all/);
+    // Which boards are written and which carry acts, without opening each (pass 3a, entries 11 and 25).
+    const { notes } = await client.callToolData("list_board");
+    await client.callTool("write_scene", { id: notes[0].id, text: "Maya reads the letter twice." });
+    await client.callTool("create_group", { noteIds: notes.slice(0, 2).map((note) => note.id), title: "Act One" });
+    expect(await client.callTool("read_project")).toMatch(/1\. "Board 1"[^\n]*, 1 of \d+ written; groups: "Act One" \(2 cards\); logline:/);
+    await client.callTool("undo");
+    await client.callTool("undo");
     await client.callTool("organize");
     const again = await client.callTool("organize");
     expect(again).toMatch(/^Nothing moved: the \d+ card\(s\) already lie along the arrows in /);

@@ -4850,6 +4850,19 @@ function describeBoards(project, boards, changedAt = null) {
  * same cross-board context — so this never says something read_wall would
  * not; it only says it for every board at once.
  */
+/** ", 38 of 40 written" for a board with pages, so a project read says which boards are written without opening each (pass 3a, entry 11). */
+function writtenWords(state) {
+  const film = state.notes.filter((note) => inStory(note));
+  const written = film.filter((note) => isMeasured(note)).length;
+  if (!written) return "";
+  return written === film.length ? ", every scene written" : `, ${written} of ${film.length} written`;
+}
+/** '; groups: "Act One" (10 cards), …' so a project read says which boards carry acts (pass 3a, entry 25). */
+function groupWords(state) {
+  if (!state.groups?.length) return "";
+  return `; groups: ${state.groups.map((group) => `"${group.title || "a group"}" (${group.noteIds.length} card${group.noteIds.length === 1 ? "" : "s"})`).join(", ")}`;
+}
+
 server.registerTool(
   "read_project",
   {
@@ -4874,7 +4887,7 @@ server.registerTool(
       const open = reading.open.length + reading.openFields.length + (meta.nameOpen ? 1 : 0);
       const headline = (id) => `"${state.notes.find((note) => note.id === id)?.headline ?? id}"`;
       lines.push(
-        `${index + 1}. "${meta.name}"${meta.nameOpen ? ` (name open: "${meta.nameOpen}")` : ""}${meta.id === project.activeBoardId ? " (open)" : ""} — ${state.notes.length} card${state.notes.length === 1 ? "" : "s"}, ${reading.beats.length} beat${reading.beats.length === 1 ? "" : "s"}, ${pagesOfTarget(state)}; logline: ${state.loglineOpen ? `open — "${state.loglineOpen}"` : state.logline ? `"${state.logline}"` : "(none yet)"}`,
+        `${index + 1}. "${meta.name}"${meta.nameOpen ? ` (name open: "${meta.nameOpen}")` : ""}${meta.id === project.activeBoardId ? " (open)" : ""} — ${state.notes.length} card${state.notes.length === 1 ? "" : "s"}, ${reading.beats.length} beat${reading.beats.length === 1 ? "" : "s"}, ${pagesOfTarget(state)}${writtenWords(state)}${groupWords(state)}; logline: ${state.loglineOpen ? `open — "${state.loglineOpen}"` : state.logline ? `"${state.logline}"` : "(none yet)"}`,
         ...(reading.findings.length ? reading.findings.map((finding) => `   - [${finding.kind}] ${finding.text}`) : [`   (asks nothing${reading.left.length ? `; ${reading.left.length} left by the writer` : ""}${state.notes.length ? "" : ": no cards yet"})`]),
         ...(open ? [`   open by the writer's word: ${[reading.open.length ? `${reading.open.length} card${reading.open.length === 1 ? "" : "s"}` : "", reading.openFields.length ? `${reading.openFields.length} field${reading.openFields.length === 1 ? "" : "s"}` : "", meta.nameOpen ? "the board's name" : ""].filter(Boolean).join(", ")} — read_wall there lists them`] : []),
         ...reading.threads.filter((thread) => thread.startOpen || thread.endOpen).map((thread) => `   thread "${thread.name}" — ${thread.startOpen ? "starts nowhere yet" : ""}${thread.startOpen && thread.endOpen ? ", " : ""}${thread.endOpen ? "ends nowhere yet" : ""}`),

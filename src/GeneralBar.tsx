@@ -7,6 +7,7 @@ import {
   OrganizeIcon,
   StructureIcon,
   BriefIcon,
+  ShotsIcon,
   TakesIcon,
   WallIcon,
   RedoIcon,
@@ -44,6 +45,8 @@ type GeneralBarProps = {
   canBrief: boolean;
   onBrief: () => void;
   onTakes: () => void;
+  /** The walkthrough for a scene's shots (R80): the look, the people, the places, the shots. */
+  onShots: () => void;
   zoom: number;
   canFit: boolean;
   /** What the wall asks right now (R22), and the door to it. */
@@ -87,6 +90,7 @@ export function GeneralBar({
   canBrief,
   onBrief,
   onTakes,
+  onShots,
   zoom,
   canFit,
   beats,
@@ -284,6 +288,9 @@ export function GeneralBar({
                 <button type="button" className="bar-icon" onClick={onStructure} aria-label="Start from a structure" data-tip="Start from a structure">
                   <StructureIcon className="bar-icon__svg" />
                 </button>
+                <button type="button" className="bar-icon" onClick={onShots} aria-label="Shots: the pictures for a scene's shots" data-tip="Shots: the pictures for a scene's shots">
+                  <ShotsIcon className="bar-icon__svg" />
+                </button>
                 <button type="button" className="bar-icon bar-icon--words" onClick={onWords} aria-label="What these words mean" data-tip="What these words mean">
                   ?
                 </button>
@@ -350,6 +357,9 @@ export function GeneralBar({
                 title="Start from a structure"
               >
                 <StructureIcon className="bar-icon__svg" />
+              </button>
+              <button type="button" className="bar-icon" onClick={onShots} aria-label="Shots: the pictures for a scene's shots" data-tip="Shots: the pictures for a scene's shots" title="Shots: the look, the people, the places, the shots">
+                <ShotsIcon className="bar-icon__svg" />
               </button>
               {canBrief ? (
                 <button

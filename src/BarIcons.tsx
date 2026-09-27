@@ -55,6 +55,17 @@ export function BriefIcon({ className }: IconProps) {
   );
 }
 
+/** Shots (R80): three frames in a row, the middle one filled. */
+export function ShotsIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="2.5" y="8" width="5.5" height="8" rx="1" fill="none" stroke="currentColor" strokeWidth="1.4" />
+      <rect x="9.25" y="8" width="5.5" height="8" rx="1" fill="currentColor" stroke="currentColor" strokeWidth="1.4" />
+      <rect x="16" y="8" width="5.5" height="8" rx="1" fill="none" stroke="currentColor" strokeWidth="1.4" />
+    </svg>
+  );
+}
+
 /** The wall's zoom: a magnifier. */
 export function WallIcon({ className }: IconProps) {
   return (

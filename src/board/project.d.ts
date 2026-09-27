@@ -28,6 +28,8 @@ export type ProjectRecord = {
   premiseOpen: string;
   /** The look every shot's still shares (R80): style words and an image tool's codes, or empty. */
   look: string;
+  /** The references kept outside the app, by the writer's tick (R80): a person's id, or place:<phrase>. */
+  referencesOutside: string[];
   /** The title page's byline — "Written by …" — on every script out (pass 1a, entry 50); empty claims nothing. */
   author: string;
   /** The title page's contact lines under the byline; empty is none. */
@@ -85,6 +87,8 @@ export declare function renameProject(project: ProjectRecord, name: string, now?
 export declare function setPremise(project: ProjectRecord, premise: string, now?: string): ProjectRecord;
 /** The project's look (R80); "" clears it. */
 export declare function setLook(project: ProjectRecord, look: string, now?: string): ProjectRecord;
+/** A reference kept outside the app (R80): tick it, or take the tick off. */
+export declare function setReferenceOutside(project: ProjectRecord, key: string, on: boolean, now?: string): ProjectRecord;
 /** The title page's byline and contact; undefined leaves a field, "" clears it. */
 export declare function setTitlePage(project: ProjectRecord, fields: { author?: string; contact?: string; undecidedPage?: boolean }, now?: string): ProjectRecord;
 /** The writer's words for why there is no premise yet (R61); words clear the premise, "" takes them back. */

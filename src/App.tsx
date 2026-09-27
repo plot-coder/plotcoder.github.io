@@ -36,6 +36,7 @@ import { TEMPLATES } from "./board/templates";
 import { PagesPanel } from "./PagesPanel";
 import { paginateBoard } from "./pagesLayout";
 import { BriefSheet } from "./BriefSheet";
+import { ShotsSheet } from "./ShotsSheet";
 import { TakeSheet } from "./TakeSheet";
 import { TakesPanel } from "./TakesPanel";
 import { AccountSheet } from "./AccountSheet";
@@ -129,6 +130,7 @@ export function App() {
   const [helpQuestions, setHelpQuestions] = useState<HelpQuestion[] | null>(null);
   // The brief (R28, first step): for the selected card or cards.
   const [briefOpen, setBriefOpen] = useState(false);
+  const [shotsOpen, setShotsOpen] = useState(false);
   const [takeOpen, setTakeOpen] = useState(false);
   // Takes (R28, item 9): for the selected card or run.
   const [takesOpen, setTakesOpen] = useState(false);
@@ -1059,6 +1061,24 @@ export function App() {
           setTakesOpen(true);
         }}
       />
+      <ShotsSheet
+        open={shotsOpen}
+        board={board}
+        order={storyOrder(board)}
+        projectName={project.name}
+        look={project.look ?? ""}
+        places={project.places ?? []}
+        outside={project.referencesOutside ?? []}
+        assets={account.user ? account.assets : null}
+        uploading={account.uploading}
+        onClose={() => setShotsOpen(false)}
+        onLook={(look) => boardStore.setLook(look)}
+        onTick={(key, on) => boardStore.setReferenceOutside(key, on)}
+        onLooks={(reference, looks) => {
+          if (reference.kind === "place") updatePlace(reference.name, { looks });
+          else updateCharacter(reference.key, { looks });
+        }}
+      />
       <TakesPanel
         open={takesOpen && takesIds.length > 0}
         board={board}
@@ -1190,6 +1210,7 @@ export function App() {
         openCount={reading.open.length + reading.openFields.length + (reading.openLines?.length ?? 0) + (reading.openPeople?.length ?? 0)}
         onAsks={() => setAsksOpen(true)}
         canBrief={selectedIds.length > 0}
+        onShots={() => setShotsOpen(true)}
         onBrief={() => setBriefOpen(true)}
         onTakes={() => {
           setTakesIds(selectedIds);

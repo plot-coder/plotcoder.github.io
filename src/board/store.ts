@@ -34,6 +34,8 @@ import {
   renameProject as renameProjectTo,
   setActiveBoard,
   setPremise as setPremiseOn,
+  setLook as setLookOn,
+  setReferenceOutside as setReferenceOutsideOn,
   setPremiseOpen as setPremiseOpenOn,
   setBoardNameOpen as setBoardNameOpenOn,
   setProjectNameOpen as setProjectNameOpenOn,
@@ -505,6 +507,16 @@ class BoardStore {
       if (ids.length) this.dispatchOn(board.id, { type: "set_location", ids, location: spelt });
     }
     this.setProject(renamePlacePage(this.project, from, spelt));
+  };
+
+  /** The look every shot's still shares (R80); "" clears it. */
+  setLook = (look: string): void => {
+    this.setProject(setLookOn(this.project, look));
+  };
+
+  /** A reference the writer keeps outside the app (R80): their tick, or the tick taken off. */
+  setReferenceOutside = (key: string, on: boolean): void => {
+    this.setProject(setReferenceOutsideOn(this.project, key, on));
   };
 
   /** The writer's words for why there is no premise yet (R61); "" takes them back. */

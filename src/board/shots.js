@@ -306,18 +306,22 @@ export function shotBrief(state, id, options = {}) {
   return lines.join("\n");
 }
 
-/** The prompt for a shot's still, one paragraph to copy: what the camera sees, the place, the people its line names, the light, the look. */
+/** The prompt for a shot's still, one paragraph to copy: what the camera sees, the place, the people its line names, the light, the look. `options.attached`: the ids of the people whose reference picture goes with the prompt. */
 export function shotPrompt(state, id, options = {}) {
   const found = findShot(state, id);
   if (!found) return "";
   const { note, shot } = found;
   const page = (note.location ?? "").trim() ? placePage({ places: options.places ?? [] }, note.location) : null;
   const stop = (text) => String(text ?? "").trim().replace(/[.\s]+$/, "");
+  const inFrame = peopleInFrame(state, note, shot);
+  const attached = new Set(options.attached ?? []);
   const parts = [
     stop(shot.what),
     (note.location ?? "").trim() ? `${stop(placeWords(note.location))}${page?.looks ? `: ${stop(page.looks)}` : ""}` : "",
-    ...peopleInFrame(state, note, shot).filter((person) => (person.looks ?? "").trim()).map((person) => `${person.name}: ${stop(person.looks)}`),
+    // A person whose reference picture is attached is left to the picture: their looks in words would argue with it (the walkthrough, 2026-09-27).
+    ...inFrame.filter((person) => !attached.has(person.id) && (person.looks ?? "").trim()).map((person) => `${person.name}: ${stop(person.looks)}`),
     [String(note.when ?? "").toLowerCase(), note.light].map(stop).filter(Boolean).join(", "),
+    inFrame.some((person) => attached.has(person.id)) ? `Identical face${inFrame.filter((person) => attached.has(person.id)).length === 1 ? "" : "s"} and build to the reference${inFrame.filter((person) => attached.has(person.id)).length === 1 ? "" : "s"}` : "",
     stop(options.look),
   ].filter(Boolean);
   return `${parts.join(". ")}.`;
@@ -360,4 +364,9 @@ export function shotReferences(state, cards, options = {}) {
       };
     }),
   ];
+}
+
+/** The people a shot's own line names: who is in its frame. */
+export function shotPeople(state, note, shot) {
+  return peopleInFrame(state, note, shot);
 }

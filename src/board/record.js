@@ -43,8 +43,11 @@ function joinNames(list) {
 export function describeChange(before, after) {
   const lines = [];
   const ids = new Set();
+  // Each line keeps the ids it names, so a reading can point at the card a line is about and not at every card the change touched (pass 3a, the third hand's read of the record).
+  const each = [];
   const say = (line, ...touched) => {
     lines.push(line);
+    each.push([...new Set(touched.filter(Boolean))]);
     for (const id of touched) if (id) ids.add(id);
   };
   const was = byId(before.notes);
@@ -102,6 +105,11 @@ export function describeChange(before, after) {
     if (Boolean(old.plants) !== Boolean(note.plants) || (old.plantsWhat ?? "") !== (note.plantsWhat ?? "")) {
       say(note.plants ? `folded ${quote(note)}: it plants ${(note.plantsWhat ?? "").trim() || "something"}` : `unfolded ${quote(note)}`, note.id);
     }
+    // A fold's payoff on another board (R50, R58): claimed, named to a scene, or taken back — the kernel knows the board by id only, so the words say "another board" (pass 3a, entry 37).
+    if ((old.payoffBoardId ?? null) !== (note.payoffBoardId ?? null) || (old.payoffNoteId ?? null) !== (note.payoffNoteId ?? null)) {
+      if (!note.payoffBoardId) say(`took back where ${quote(note)} pays off`, note.id);
+      else say(`said ${quote(note)} pays off on another board${note.payoffNoteId ? ", at a scene there" : ""}`, note.id);
+    }
     if ((old.lengthEighths ?? null) !== (note.lengthEighths ?? null)) say(note.lengthEighths === null ? `unsized ${quote(note)}` : `sized ${quote(note)} at ${formatPages(note.lengthEighths)} pages`, note.id);
     if ((old.x !== note.x || old.y !== note.y) && lines.every((line) => !line.includes(quote(note)))) say(`moved ${quote(note)} on the wall`, note.id);
   }
@@ -118,8 +126,8 @@ export function describeChange(before, after) {
       for (const arrow of addedFollows) say(`wired ${quote(now.get(arrow.to))} after ${quote(now.get(arrow.from))}`, arrow.from, arrow.to);
       for (const arrow of goneFollows) say(`unwired ${quote(was.get(arrow.to))} from ${quote(was.get(arrow.from))}`, arrow.from, arrow.to);
     } else {
-      const order = (after.notes ?? []).filter((note) => inStory(note));
-      say(`changed the order (${addedFollows.length + goneFollows.length} follows arrows)`, ...order.map((note) => note.id));
+      // The line names no card: every card in the film is on the order, and forty ids point at nothing (pass 3a).
+      say(`changed the order (${addedFollows.length + goneFollows.length} follows arrows)`);
     }
   }
   for (const arrow of (after.arrows ?? []).filter((arrow) => !follows(arrow) && !arrowsWere.has(arrow.id))) say(`${quote(now.get(arrow.to))} now pays off ${quote(now.get(arrow.from))}`, arrow.from, arrow.to);
@@ -177,11 +185,11 @@ export function describeChange(before, after) {
   if (!before.revision && after.revision) say(`started the ${after.revision.color} revision`);
   if (before.revision && !after.revision) say("ended the revision");
 
-  return { lines, ids: [...ids] };
+  return { lines, ids: [...ids], each };
 }
 
 /**
- * The wall with one more change on its record: `{ at, by, lines, ids }`.
+ * The wall with one more change on its record: `{ at, by, lines, ids, each }`.
  * The same lines from the same hand within five minutes are one change (a
  * drag lands a hundred moves; a line is typed key by key), and the record
  * keeps its last fifty. A change with no lines leaves the record as it is.
@@ -194,10 +202,13 @@ export function withRecord(state, entry) {
   const at = typeof entry.at === "string" ? entry.at : new Date().toISOString();
   const by = typeof entry.by === "string" && entry.by.trim() ? entry.by.trim() : "someone";
   const ids = [...new Set((entry.ids ?? []).filter((id) => typeof id === "string"))];
+  const each = Array.isArray(entry.each) && entry.each.length === (entry.lines ?? []).length
+    ? (entry.lines ?? []).map((line, index) => [line, entry.each[index]]).filter(([line]) => typeof line === "string" && line.trim()).map(([, own]) => (Array.isArray(own) ? own.filter((id) => typeof id === "string") : []))
+    : lines.map(() => ids);
   if (last && last.by === by && sameList(last.lines, lines) && Date.parse(at) - Date.parse(last.at) < MERGE_GAP_MS) {
-    record[record.length - 1] = { ...last, at, ids: [...new Set([...last.ids, ...ids])] };
+    record[record.length - 1] = { ...last, at, ids: [...new Set([...last.ids, ...ids])], each };
   } else {
-    record.push({ at, by, lines, ids });
+    record.push({ at, by, lines, ids, each });
   }
   while (record.length > RECORD_CAP) record.shift();
   return { ...state, record };
@@ -232,7 +243,7 @@ export function describeRecord(state, options = {}) {
       const ids = new Set();
       for (const entry of session.entries) {
         for (const id of entry.ids) ids.add(id);
-        for (const line of entry.lines) if (!seen.has(line)) { seen.add(line); lines.push({ line, ids: entry.ids }); }
+        for (const [index, line] of entry.lines.entries()) if (!seen.has(line)) { seen.add(line); lines.push({ line, ids: Array.isArray(entry.each?.[index]) ? entry.each[index] : entry.ids }); }
       }
       const shown = lines.slice(0, options.limit ?? 8);
       return { by: session.by, from: session.from, to: session.to, count: session.count, lines: shown, more: lines.length - shown.length, ids: [...ids] };

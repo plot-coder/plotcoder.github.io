@@ -168,7 +168,7 @@ export type BoardState = {
 };
 
 /** One change on the record (R76). */
-export type RecordEntry = { at: string; by: string; lines: string[]; ids: string[] };
+export type RecordEntry = { at: string; by: string; lines: string[]; ids: string[]; each?: string[][] };
 
 /** A thread (R60): a name, the cards it runs through, and whether either end is still open. */
 export type BoardThread = {

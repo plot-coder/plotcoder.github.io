@@ -23,6 +23,7 @@ import { isReminderList, readReminders, writeReminders, REMINDERS_EVENT } from "
 import { supabase, SUPABASE_KEY, SUPABASE_URL } from "../supabase";
 import { isProjectRecord, normalizeProject, type ProjectRecord } from "./project";
 import { isBoardState, normalizeState, nowIso, type BoardState } from "./reducer";
+import { movePlaceFiles } from "./placeFiles";
 import { boardStore } from "./store";
 import {
   deviceName,
@@ -739,6 +740,21 @@ class AccountStore {
     }
     await this.loadAssets();
     return added;
+  };
+
+  /**
+   * A place renamed (R79): its pictures follow, from the old phrase to the new. Renamed into a place that has
+   * pictures, both sets stand. Signed out there are no pictures, and nothing runs.
+   */
+  movePlaceFiles = async (from: string, to: string): Promise<number> => {
+    if (!this.client || !this.books) return 0;
+    const { moved, error } = await movePlaceFiles(this.client, this.books.projectId, from, to);
+    if (error) {
+      this.set({ error: `The place's pictures did not follow its new name: ${error}` });
+      return 0;
+    }
+    if (moved) await this.loadAssets();
+    return moved;
   };
 
   /** One take is the chosen one for its subject (Roadmap 2, item 9). */

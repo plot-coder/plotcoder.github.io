@@ -13,6 +13,19 @@ const text = (value) => (typeof value === "string" ? value.trim() : "");
 /** The key a place is found by: case and spacing aside, as the wall reads two spellings of one place. */
 export const placeKey = (name) => clean(name).toLowerCase();
 
+/** What a place's files are filed under on the account: "place:" and its key, so two spellings share one gallery. */
+export const placeSubject = (name) => `place:${placeKey(name)}`;
+
+/**
+ * Where a place's files go when it is renamed: the subject they leave and the
+ * one they join, or null when there is nothing to move — no new name, or the
+ * same place spelt another way, whose key has not changed.
+ */
+export function placeFilesMove(from, to) {
+  if (!placeKey(from) || !placeKey(to) || placeKey(from) === placeKey(to)) return null;
+  return { from: placeSubject(from), to: placeSubject(to) };
+}
+
 function hasLine(page) {
   return [...PLACE_FIELDS, "open"].some((field) => (page[field] ?? "").trim());
 }

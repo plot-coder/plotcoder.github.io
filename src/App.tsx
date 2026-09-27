@@ -943,7 +943,10 @@ export function App() {
           onUpdate={updateCharacter}
           placePages={project.places ?? []}
           onUpdatePlace={updatePlace}
-          onRenamePlace={(from, to) => boardStore.renamePlace(from, to)}
+          onRenamePlace={(from, to) => {
+            boardStore.renamePlace(from, to);
+            void accountStore.movePlaceFiles(from, to);
+          }}
           onRemove={removeCharacter}
           onJump={jumpTo}
         />

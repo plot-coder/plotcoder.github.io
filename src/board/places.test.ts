@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { emptyProject, normalizeProject } from "./project";
-import { normalizePlaces, placeCardIds, placeKey, placeLine, placePage, renamePlacePage, updatePlace } from "./places";
+import { normalizePlaces, placeCardIds, placeFilesMove, placeKey, placeSubject, placeLine, placePage, renamePlacePage, updatePlace } from "./places";
 
 const NOW = "2026-09-27T09:00:00.000Z";
 
@@ -43,5 +43,18 @@ describe("the cards a rename moves", () => {
     expect(placeCardIds(state, "Int. The Harbour Office")).toEqual(["a", "c"]);
     expect(placeCardIds(state, "  ")).toEqual([]);
     expect(placeCardIds(null, "the slip")).toEqual([]);
+  });
+});
+
+describe("where a place's files are filed, and where a rename moves them", () => {
+  it("files under the place's key, so two spellings share one gallery", () => {
+    expect(placeSubject(" The  Piano Shop ")).toBe("place:the piano shop");
+  });
+
+  it("moves from the old key to the new, and nothing when the key stands or there is no name", () => {
+    expect(placeFilesMove("The Piano Shop", "the music shop")).toEqual({ from: "place:the piano shop", to: "place:the music shop" });
+    expect(placeFilesMove("the piano shop", "THE  PIANO SHOP")).toBeNull();
+    expect(placeFilesMove("the piano shop", "  ")).toBeNull();
+    expect(placeFilesMove("", "the music shop")).toBeNull();
   });
 });

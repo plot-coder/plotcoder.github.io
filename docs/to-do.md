@@ -54,7 +54,7 @@ the account; pass 3a's report says where its export came from.
    recommendation after 3b is that its first two sessions are logged as
    the next round, friction log and working list as always.
 
-**The small list is built** (2026-09-27, `docs/to-do-small-items.md`): all eight, each with its plan and what the asking changed — the duplicate check asks once of a group and reads no line under four words; the one-letter rule is the page checks' only; `leave_question` already read the wall, and what changed is what it and the guides say. Not released: the door still carries 0.1.66. Left behind, in that file: a place's pictures do not follow a rename; a possible lost write through `window.plotcoder`.
+**The small list is built** (2026-09-27, `docs/to-do-small-items.md`): all eight, each with its plan and what the asking changed — the duplicate check asks once of a group and reads no line under four words; the one-letter rule is the page checks' only; `leave_question` already read the wall, and what changed is what it and the guides say. Not released: the door still carries 0.1.66. Left behind, in that file: a possible lost write through `window.plotcoder`. A place's pictures now follow a rename from both doors (item 9 there), tested against a stand-in and not yet looked at signed in.
 
 **How to work here.** Plan, ask, build, test (`CLAUDE.md`); Robert wants
 finished work committed, pushed, PR'd and merged without asking. Gate every

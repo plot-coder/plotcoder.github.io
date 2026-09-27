@@ -4328,6 +4328,10 @@ describe("a scene's shots through the server (R80)", () => {
     expect(brief).toContain("close on Nell's hand on the ledger. interior, the harbour office. night. 35mm, desaturated greens --sref 1234.");
     expect(brief).toContain("NOT ON THE WALL: what INT. THE HARBOUR OFFICE looks like.");
     expect(await client.callTool("segment_brief", {})).toContain("Say which: ids");
+    // The references come before the stills; the place has no page, so no prompt is made for it.
+    const listed = await client.callTool("list_shots", { id: "Ada's column", prompts: true });
+    expect(listed).toContain("references, to make before the stills");
+    expect(listed).toContain("the place INT. THE HARBOUR OFFICE — picture not known — the page holds no looks: update_place with looks");
     expect(await client.callTool("build_segment", { shot: scene.shots[1].id })).toContain(`then file what it makes with add_take, subject shot:${scene.shots[1].id}`);
   });
 

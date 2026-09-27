@@ -12,7 +12,7 @@
 // nowhere to hold one. Pure and DOM-free.
 
 import { EIGHTHS_PER_PAGE, formatPages, inStory, isMeasured, noteEighths } from "./reducer.js";
-import { placeLine, placePage } from "./places.js";
+import { placeKey, placeLine, placePage } from "./places.js";
 
 const SHOT_LINE = /^\s*\[\[\s*shot\s+([a-z0-9]{3,8})\s*:\s*(.*?)\s*\]\]\s*$/i;
 const SECONDS = /^(\d+(?:\.\d+)?)\s*s(?:ec(?:ond)?s?)?$/i;
@@ -259,7 +259,9 @@ function placeWords(location) {
  * words; what it does not hold is said, never filled. `options`: `look` (the
  * project's), `places` (its places' pages), `title` (the board's name),
  * `order` (the story order, for the scene's number), `frame` (the name of
- * the still filed as its first frame, when there is one).
+ * the still filed as its first frame, when there is one), `pictures` (the
+ * first picture's name by the key it is filed under — a person's id, or
+ * place:<phrase> — when the door can see the project's files).
  */
 export function shotBrief(state, id, options = {}) {
   const found = findShot(state, id);
@@ -269,6 +271,8 @@ export function shotBrief(state, id, options = {}) {
   const sceneAt = order.findIndex((item) => item.id === note.id);
   const people = peopleInShot(state, note, shot);
   const inFrame = peopleInFrame(state, note, shot);
+  // The first picture on the page of each person in the frame, and of the place: what holds a face from still to still.
+  const attach = [...inFrame.map((person) => ({ kind: "person", key: person.id, name: person.name })), ...((note.location ?? "").trim() ? [{ kind: "place", key: `place:${placeKey(note.location)}`, name: note.location.trim() }] : [])];
   const page = (note.location ?? "").trim() ? placePage({ places: options.places ?? [] }, note.location) : null;
   const look = String(options.look ?? "").trim();
   const when = [note.when, note.day, note.light].map((part) => (part ?? "").trim()).filter(Boolean);
@@ -282,6 +286,9 @@ export function shotBrief(state, id, options = {}) {
     `WHEN: ${when.length ? when.join(" · ") : "(no time, day or light set)"}`,
     `IN THE FRAME: ${inFrame.length ? inFrame.map((person) => person.name).join(", ") : "(the shot's line names nobody: the still shows nobody)"}`,
     `WHO: ${people.length ? people.map((person) => `${person.name}${(person.looks ?? "").trim() ? ` — looks: ${person.looks.trim()}` : " — (no looks on their page)"}`).join(" | ") : "(nobody cast)"}`,
+    ...(options.pictures
+      ? [`ATTACH, AS REFERENCES: ${attach.length ? attach.map((item) => `${item.kind === "place" ? "the place, " : ""}${item.name} — ${options.pictures[item.key] ? `"${options.pictures[item.key]}"` : "no picture yet: make it first"}`).join("; ") : "(the shot names nobody and is at no place)"}`]
+      : []),
     `FIRST FRAME: ${options.frame ? `"${options.frame}", filed on the shot` : "(no still filed yet)"}`,
     "THE SCRIPT IT COVERS:",
     shot.covers || "(nothing: the shot line is the last line of the scene)",
@@ -314,4 +321,43 @@ export function shotPrompt(state, id, options = {}) {
     stop(options.look),
   ].filter(Boolean);
   return `${parts.join(". ")}.`;
+}
+
+/**
+ * What to make before the shots (the rehearsal, 2026-09-27: without a
+ * picture of a person made first, no two stills held the same face). For the
+ * scenes given, each person a shot's line names and each place a shot is at,
+ * once: the key its pictures are filed under — the person's id, or
+ * place:<phrase> — and a prompt for a reference picture, made of the page's
+ * words with the framing in front. `prompt` is null when the page holds no
+ * looks: nothing is invented to fill it. People first, then places.
+ */
+export function shotReferences(state, cards, options = {}) {
+  const stop = (text) => String(text ?? "").trim().replace(/[.\s]+$/, "");
+  const look = stop(options.look);
+  const people = new Map();
+  const places = new Map();
+  for (const note of cards ?? []) {
+    const { shots } = shotsOfText(note.text);
+    if (!shots.length) continue;
+    for (const shot of shots) for (const person of peopleInFrame(state, note, shot)) people.set(person.id, person);
+    if ((note.location ?? "").trim() && !places.has(placeKey(note.location))) places.set(placeKey(note.location), note.location.trim());
+  }
+  return [
+    ...[...people.values()].map((person) => ({
+      kind: "person",
+      key: person.id,
+      name: person.name,
+      prompt: stop(person.looks) ? `Character reference, face and full figure, plain background, neutral light: ${person.name}, ${stop(person.looks)}.${look ? ` ${look}.` : ""}` : null,
+    })),
+    ...[...places.entries()].map(([key, name]) => {
+      const page = placePage({ places: options.places ?? [] }, name);
+      return {
+        kind: "place",
+        key: `place:${key}`,
+        name,
+        prompt: stop(page?.looks) ? `Location reference, wide, no people: ${placeWords(name)}: ${stop(page.looks)}.${look ? ` ${look}.` : ""}` : null,
+      };
+    }),
+  ];
 }

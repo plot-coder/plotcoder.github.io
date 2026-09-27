@@ -53,6 +53,26 @@ workflow; the app's side after a mockup.
 - [x] The workflow, the guide and the skill.
 - [x] Tests: `shots.test.ts`, the server's.
 
+## The rehearsal (2026-09-27)
+
+One scene, "Ada's column", ten shots, on a scratch copy of "Low Water";
+Robert made the stills in Grok. What it found, in the order it found it:
+
+- [x] **A still named people who are not in its frame.** Fixed (#239).
+- [x] **The slugline rode in the prompt as typed.** Fixed (#239).
+- [x] **Without a picture of a person made first, the stills do not hold a
+  face** (Robert). With three references made and attached — Ada, Nell,
+  the office — they held. *Built:* the references listed above the shots
+  with a prompt each, and the brief's ATTACH line.
+- [ ] **Getting a picture out of Grok and back in is a screenshot and a
+  repost** (Robert). Not the app's to fix inside Grok; the sheet's part is
+  to take a pasted image and to hold the references where they can be
+  copied out. With the redraw.
+- [ ] **The sheet redrawn**: paste, the count across the board and "next
+  without a still", the strip of frames, the references beside each shot.
+- [ ] Still to hear from the rehearsal: what Robert changed in each prompt
+  to get a still he would keep.
+
 ## Waiting on Robert — the person's half
 
 - [ ] **The mockup**, `docs/mockups/r80-a-scenes-shots.html`: the shot

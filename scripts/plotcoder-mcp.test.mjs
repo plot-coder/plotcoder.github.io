@@ -1701,7 +1701,8 @@ describe("move_scene across boards", () => {
     const there = await series.callToolData("list_board");
     const fails = there.notes.find((note) => note.headline === "The plate fails");
     expect(await series.callTool("list_board")).toContain(`pays off "Tom lies about the job" from "Board 1" (Ep 1, sc`);
-    expect(await series.callTool("read_wall")).toContain('"The plate fails" pays off "Tom lies about the job" from "Board 1" (Ep 1, sc');
+    // The distance in boards, said as it is (pass 3a, entry 34): one board back here, never "one board earlier" for any distance.
+    expect(await series.callTool("read_wall")).toMatch(/"The plate fails" pays off "Tom lies about the job" from "Board 1" \(Ep 1, sc \d+\), one board earlier/);
     // set_payoff from here: a second fold, the same claim; then take it back.
     await series.callTool("open_board", { board: "1" });
     await series.callTool("create_note", { headline: "The key", change: "She keeps it.", plants: true });

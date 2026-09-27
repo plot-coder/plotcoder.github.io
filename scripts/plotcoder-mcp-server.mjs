@@ -3424,14 +3424,20 @@ server.registerTool(
   {
     title: "Brief a segment",
     description:
-      "The brief for a segment of the movie: one card, or several in wall order for a run between beats. Everything the wall knows — the story, the people with their pages, the places, what changes, the script or 'unwritten', what must be true after — in the order a video tool would need it. Text only; nothing is generated or sent. Hand it to the writer to approve; fix a wrong brief on the cards.",
+      "The brief for a segment of the movie: one card, or several in wall order for a run between beats. Everything the wall knows — the film, the story, the people with their pages and what is open about them, the places, and each scene with its number and id, who is in it, its time of day and length, what changes, the script or 'unwritten', what it plants and where that pays off, and what must be true after — in the order a video tool would need it; and, said in words, what the wall does not hold (the day of the film's time, a place's look, a face beyond the page), so nothing is invented for a gap. Text only; nothing is generated or sent. Hand it to the writer to approve; fix a wrong brief on the cards.",
     inputSchema: { ids: z.array(z.string()).min(1) },
   },
   async (args) => {
-    const { state } = await readBoard();
-    const { project } = await readProject();
-    const board = project.boards.find((item) => item.id === project.activeBoardId);
-    const brief = segmentBrief(state, args.ids, { title: board?.name, boards: project.boards });
+    const { state, boardId } = await readBoard();
+    const { project, boards } = await readProject();
+    const openId = boardId ?? project.activeBoardId;
+    const board = project.boards.find((item) => item.id === openId);
+    // Every board's order travels with the brief so a fold's payoff on another episode is named to its scene (pass 4a, entry 11).
+    const withOrder = project.boards.map((meta) => {
+      const held = meta.id === openId ? state : isBoardState(boards[meta.id]) ? normalizeState(boards[meta.id]) : emptyState();
+      return { id: meta.id, name: meta.name, order: storyOrder(held).map((note) => ({ id: note.id, headline: note.headline })) };
+    });
+    const brief = segmentBrief(state, args.ids, { title: board?.name, episode: project.boards.findIndex((meta) => meta.id === openId) + 1, episodes: project.boards.length, premise: project.premise || undefined, boards: withOrder });
     if (!brief) return ok(`No cards with ids ${args.ids.join(", ")}. Call list_board.`);
     return ok(brief);
   },
@@ -3630,10 +3636,16 @@ server.registerTool(
     inputSchema: { ids: z.array(z.string()).min(1) },
   },
   async (args) => {
-    const { state } = await readBoard();
-    const { project } = await readProject();
-    const board = project.boards.find((item) => item.id === project.activeBoardId);
-    const brief = segmentBrief(state, args.ids, { title: board?.name, boards: project.boards });
+    const { state, boardId } = await readBoard();
+    const { project, boards } = await readProject();
+    const openId = boardId ?? project.activeBoardId;
+    const board = project.boards.find((item) => item.id === openId);
+    // Every board's order travels with the brief so a fold's payoff on another episode is named to its scene (pass 4a, entry 11).
+    const withOrder = project.boards.map((meta) => {
+      const held = meta.id === openId ? state : isBoardState(boards[meta.id]) ? normalizeState(boards[meta.id]) : emptyState();
+      return { id: meta.id, name: meta.name, order: storyOrder(held).map((note) => ({ id: note.id, headline: note.headline })) };
+    });
+    const brief = segmentBrief(state, args.ids, { title: board?.name, episode: project.boards.findIndex((meta) => meta.id === openId) + 1, episodes: project.boards.length, premise: project.premise || undefined, boards: withOrder });
     if (!brief) return ok(`No cards with ids ${args.ids.join(", ")}. Call list_board.`);
     const provider = env.PLOTCODER_VIDEO_PROVIDER;
     if (!provider) {

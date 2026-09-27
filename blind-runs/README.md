@@ -142,7 +142,14 @@ directions phase. Each round's findings are itemised in `REQUIREMENTS.md`,
 - `pass-1a-report.md` — the agent's report from pass 1a, verbatim, under a
   head saying what the pass measured, what was fixed from it as it ran
   (`docs/to-do-pass-1a.md`) and what it asked for: R74, built 2026-09-26.
-- `prompt.md` — **pass 1b**, as it ran 2026-09-26: the second pass of goal 1
+- `prompt.md` — **pass 2b**, cued 2026-09-27: jumping in for the agent —
+  a fresh agent picks up "Last Orders" from the wall alone, through the
+  desktop connector at 0.1.57 with the record of a session (R76), and the
+  pass measures what it had to be told again. The writer's answers and six
+  directions sit above the divider. Paste everything below its divider.
+- `pass-1b-prompt.md` — pass 1b's own instructions, as they ran
+  2026-09-26, without their copy of the notes.
+- Pass 1b's prompt, as it ran 2026-09-26: the second pass of goal 1
   in `docs/plan.md`, a complete script **from notes**. "Doyle's" through
   the desktop connector alone against 0.1.53: the wall as round twenty-four
   built it, with the writer answering as that round's writer did, then

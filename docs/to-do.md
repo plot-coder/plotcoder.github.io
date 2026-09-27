@@ -24,8 +24,11 @@ the rest held in `docs/to-do-pass-3b.md`. **Every pass on the claim board
 has run.** **Released as 0.1.62** (npm, the pin, the function redeployed, the live door
 answering). **R77 (b) and (c) built** on Robert's "do it": `read_character` with change
 lines and `pages`, and `find_card` across every board (#219), released as
-0.1.63. **Next:** Robert's word on the rest held — the "[still]" question,
-the standing answers' tie-break, the small reply changes — and then a real story with the writer in the room, the first
+0.1.63. **Goal 4 opened** (Robert, "let's do it"): the horizon's first step is
+the brief read blind, pass 4a (`docs/plan.md`, `blind-runs/pass-4a-prompt.md`),
+waiting on a fresh session. **Next:** run 4a; then Robert's word on the rest
+held — the "[still]" question, the standing answers' tie-break, the small
+reply changes — and then a real story with the writer in the room, the first
 two sessions logged as the next round.
 
 ## Before it (2026-09-27, night, after pass 3a)

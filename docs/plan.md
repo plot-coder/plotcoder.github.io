@@ -194,6 +194,40 @@ fix" means when nobody is there to say.
 sessions, from the project's own record, and finish a writer's list alone
 with nothing the writer would not have said yes to.
 
+## Goal 4 — the horizon's first step: the brief, read blind (Robert, 2026-09-27)
+
+Not the movie, and not a provider: the question before either is whether
+the wall already says enough for someone to shoot a scene from it. R28
+holds that a segment is a card or a run between beats, that
+`segment_brief` composes everything the wall knows in the order a video
+tool needs, and that no shot model is built beside the board. Nothing has
+tested the brief against a reader who has to make something from it.
+
+**The pass, 4a — the brief alone.** A fresh agent, the connector, and
+"Low Water": it is handed `segment_brief` for one scene and then for the
+run between two beats, and asked what it would shoot — the shots, the
+faces, the places, the sound, what must be true after — and, above all,
+**what the brief does not tell it that it would need before a frame**,
+and what it would ask the writer. Nothing is generated. The writer is in
+the room and answers from the wall or leaves it open. The friction log is
+the pass: every gap in the brief is a fact the wall should hold or a
+line the brief should print, before a provider costs anything.
+
+**The pass, 4b — one provider, ten segments, continuity only.** After 4a's
+gaps are on the wall: one video tool, ten segments of one board, judged
+on one thing — the same face, place and voice across takes. The choice
+of provider is question 26; this is how it gets answered.
+
+**Likely needs:** the brief saying what the wall does not hold rather than
+leaving it out; a person's page carrying what a camera needs (a picture,
+the voice in words); a place's page, which does not exist; a take read
+against its brief as the pages are read against the wall (R74's pattern);
+a budget line beside the length line in a hands-off list.
+
+**Reached when** a reader who has never seen the wall can say what they
+would shoot from the brief alone, and every question they ask is one the
+wall could hold.
+
 ## Order
 
 Goal 1 first: its wall is what goals 2 and 3 measure. 1a and 3a's
@@ -213,3 +247,5 @@ mockup or their alternatives before they are built.
 | 2b | Jumping in for the agent: the person answers, the agent resumes | `claude/pass-2b` | **run 2026-09-27**: 36 entries (`blind-runs/pass-2b-report.md`). The wall told a fresh agent the film, the opens and the written scenes; not what the agent before did or was waiting on — the record began after them, and the desktop app had cached the connector's tool list without `read_record` and `hand_over`. Its own five changes it read back from the record. Held: the door's session behind one connector (`docs/to-do-pass-2b.md`) |
 | 3a | Measure the size; a project past the window; three directions | `claude/pass-3a` | **run 2026-09-27**, both halves: every read counted on "Ninety-Nine" (recovered), "Last Orders" and "Low Water", a generated series of six boards × forty written cards (`scripts/generate-series.mjs`, `scripts/measure-reads.mjs`, kept) — a feature fits, a series does not (a board's pages 18,000 to 21,000 tokens, the tool list 25,700 on every turn); then a fresh agent on the series with three directions: found the dropped want and the unpaid plant, tightened an act on the word, and did it by saving six boards' pages to its own disk and scripting over them — 40 entries (`blind-runs/pass-3a-report.md`), 13 fixed as it ran in six pull requests, the rest held (`docs/to-do-pass-3a.md`); **R77 proposed**, reads that select |
 | 3b | Hands-off: a list of directions and standing answers | `claude/pass-3b` | **run 2026-09-27**: eight directions and seven standing answers on "Low Water", nobody in the room, the connector at 0.1.61 — seven of eight done alone by the wall's word (every episode under its hour by twenty-eight named set-asides, Kit's line, five of six stale folds wired and the sixth left asking, the title page, the record and a last word), nothing on a page, no fact invented; it stopped where the standing answers crossed and reported the share rather than choosing; a thread across boards does not exist, so it used a fold. 24 entries and 11 questions it would have asked (`blind-runs/pass-3b-report.md`), six fixed as it ran (#215), the rest held (`docs/to-do-pass-3b.md`) |
+| 4a | The brief alone: what a reader would shoot, and what it lacks | `claude/pass-4a` | **prompt written 2026-09-27** (`blind-runs/pass-4a-prompt.md`); waiting on a fresh session with the connector at 0.1.63 |
+| 4b | One provider, ten segments, continuity only | — | not started; after 4a's gaps are on the wall |

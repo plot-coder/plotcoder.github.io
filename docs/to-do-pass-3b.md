@@ -21,16 +21,16 @@ every item.
 - [ ] **11, and its question 1 · The two standing answers conflict on every forty-card board.** The pass's own finding, and the right outcome: the agent followed the order and reported the share instead of choosing. *Plan:* nothing in the app; the list was the writer's. For 3b's next run, the standing answers should say which rule wins when they cross. **Process**, recorded in the prompt's head for the next hands-off pass.
 - [ ] **12 · "The scene that moves nothing" is a judgment.** Read as a change line that itself says the thing did not happen, applied consistently, and said so. *Plan:* the wall could offer the reading — a change line whose verb is a refusal or a silence — as a question kind, "[still]", never a fix. **Held for Robert**; a mockup on the Asks sheet if wanted.
 - [ ] **13 · Cut two scenes on a board already under its hour.** The rule had no condition; the writer's to bring back. **Nothing to build**; the list's wording.
-- [ ] **14 · `set_aside`'s reply names the cards in a different order from the ids passed, and the arrows without their cards.** *Plan:* name the cards in the order given; list the closing arrows by headline (it does when it closes over — say "dropped" ones too). **Held**, small.
-- [ ] **15 · `leave_question` needs a `read_wall` between the edit and the leave.** Six extra reads. *Plan:* `leave_question` reads the wall itself when the memory is stale, once, and says so. **Held**, small; a server change with a test.
+- [x] **14 · `set_aside`'s reply names the cards in a different order from the ids passed, and the arrows without their cards.** *Plan:* name the cards in the order given; list the closing arrows by headline (it does when it closes over — say "dropped" ones too). **Held**, small.
+- [x] **15 · `leave_question` needs a `read_wall` between the edit and the leave.** Six extra reads. *Plan:* `leave_question` reads the wall itself when the memory is stale, once, and says so. **Held**, small; a server change with a test.
 - [ ] **16 · The last agent's line on a page, kept.** Right call; the record said whose. **Nothing to do.**
 - [x] **18 · No way to ask which board holds a scene id.** *R77 (c), built 2026-09-27:* `find_card` finds a card by id or phrase across every board, board by board, quoting the line a page hit lands on.
-- [ ] **19 · `set_payoff`'s tail counts the other board's questions.** The reply says which board; the count is that board's. *Plan:* "on 'The Survey', the wall's questions unchanged (8)" is what it says; make the board's name lead the count. **Held**, small.
+- [x] **19 · `set_payoff`'s tail counts the other board's questions.** The reply says which board; the count is that board's. *Plan:* "on 'The Survey', the wall's questions unchanged (8)" is what it says; make the board's name lead the count. **Held**, small.
 - [ ] **21, 22, and questions 5 to 7 · The fold's label from the list's heading; the ASCII @; Kit's line in the item's words.** All the agent's to decide under "hold it in my words", each said. **Nothing to do.**
 - [ ] **10 · Six boards of `list_board` and `read_wall` before the first write, 200 KB.** With pass 3a's held items and R77. **Held.**
 - [ ] **1, 6 · The brief said the record held last night's work; board one's held nothing.** True on the night: pass 3a's cross-board claim left no record until #206. **Nothing to do** now.
 - [ ] **2, 3 · The agent's fetch and the guide's size.** Not the app; with 3a's 2. **Noted.**
-- [ ] **Question 10 · `set_aside` takes a card out of its act group.** By design: a card out of the film is out of its act; the group's count line says so. Whether "do not regroup" was broken is the writer's reading. **Decided**; the tool's reply could say "and out of its group" — **held**, small, with 14.
+- [ ] **Question 10 · `set_aside` takes a card out of its act group.** By design: a card out of the film is out of its act; the group's count line says so. Whether "do not regroup" was broken is the writer's reading. **Decided**; the tool's reply says which group a card left — **built 2026-09-27** with 14 (`docs/to-do-small-items.md`).
 
 ## Held for Robert, in one list
 

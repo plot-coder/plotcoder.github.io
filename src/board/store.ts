@@ -13,7 +13,7 @@
 //   3. window.plotcoder, so the same commands can be driven from the console.
 
 import { isReminderList, readReminders, writeReminders } from "../reminderStore";
-import { updatePlace as updatePlaceOn, type PlaceField } from "./places";
+import { placeCardIds, renamePlacePage, updatePlace as updatePlaceOn, type PlaceField } from "./places";
 import { toFountain } from "./fountain";
 import { toMarkdown, toPlainText } from "./markdown";
 import { History } from "./history";
@@ -490,6 +490,21 @@ class BoardStore {
   /** Lines on a place's page (R79), keyed by the phrase the cards carry; "" clears a line. */
   updatePlace = (name: string, fields: Partial<Record<PlaceField | "open", string>>): void => {
     this.setProject(updatePlaceOn(this.project, name, fields));
+  };
+
+  /**
+   * A place renamed from its page (R79): every card that carries the phrase, on every board of the project, and
+   * the page with them — what the door's rename_place does. The open board's cards are one step of undo; the
+   * other boards' follow as a payoff claimed there does (dispatchOn), and the page follows the new phrase.
+   */
+  renamePlace = (from: string, to: string): void => {
+    const spelt = to.trim().replace(/\s+/g, " ");
+    if (!spelt || spelt === from) return;
+    for (const board of this.project.boards) {
+      const ids = placeCardIds(this.boardState(board.id), from);
+      if (ids.length) this.dispatchOn(board.id, { type: "set_location", ids, location: spelt });
+    }
+    this.setProject(renamePlacePage(this.project, from, spelt));
   };
 
   /** The writer's words for why there is no premise yet (R61); "" takes them back. */

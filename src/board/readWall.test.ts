@@ -1415,3 +1415,26 @@ describe("who speaks on the written pages, and which stretch is written (Robert,
     expect(describePages(readWall(wall({ id: "x" })), wall({ id: "x" }))).toEqual([]);
   });
 });
+
+describe("the small checks (pass 4a, entries 4 and 5)", () => {
+  const build = (...commands: Command[]) => commands.reduce((current, command) => applyCommand(current, command, "2026-09-27T12:00:00.000Z").state, emptyState());
+  it("asks of two cards whose change lines are the same word for word, whatever their headlines", () => {
+    const state = build(
+      { type: "create_note", id: "a", x: 0, y: 0, headline: "Nell opens the office", change: "The  ledger is gone." },
+      { type: "create_note", id: "b", x: 300, y: 0, headline: "Brandt on the slip", change: "the ledger is gone." },
+      { type: "create_note", id: "c", x: 600, y: 0, headline: "June's table", change: "What changes?" },
+      { type: "create_note", id: "d", x: 900, y: 0, headline: "The committee", change: "What changes?" },
+    );
+    const dupes = readWall(state).findings.filter((f) => f.kind === "duplicate");
+    expect(dupes.map((f) => f.ids)).toEqual([["a", "b"]]);
+    expect(dupes[0].text).toBe('"Nell opens the office" and "Brandt on the slip" say the same change, word for word: "The ledger is gone.". Are they doing the same job?');
+  });
+  it("counts no letter alone as a word: a possessive's s is not the logline's", () => {
+    const state = build(
+      { type: "set_logline", logline: "Nell's harbour floods" },
+      { type: "create_note", id: "a", x: 0, y: 0, headline: "The wall", change: "It cracks.", rank: "beat" },
+      { type: "set_text", id: "a", text: "EXT. THE SEA WALL - DAY\n\nBram's hand on the stone. It's cold." },
+    );
+    expect(readWall(state).logline?.words ?? ["harbour", "floods"]).not.toContain("s");
+  });
+});

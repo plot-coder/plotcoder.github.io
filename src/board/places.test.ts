@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { emptyProject, normalizeProject } from "./project";
-import { normalizePlaces, placeKey, placeLine, placePage, renamePlacePage, updatePlace } from "./places";
+import { normalizePlaces, placeCardIds, placeKey, placeLine, placePage, renamePlacePage, updatePlace } from "./places";
 
 const NOW = "2026-09-27T09:00:00.000Z";
 
@@ -34,5 +34,14 @@ describe("a place's page (R79)", () => {
     const project = emptyProject(NOW);
     expect("places" in normalizeProject(project, NOW)).toBe(false);
     expect(normalizeProject({ ...project, places: [{ name: "the slip", sound: "Gulls." }] }, NOW).places).toEqual([{ name: "the slip", looks: "", sound: "Gulls.", notes: "", open: "" }]);
+  });
+});
+
+describe("the cards a rename moves", () => {
+  it("finds a board's cards at a place by its phrase, case and spacing aside", () => {
+    const state = { notes: [{ id: "a", location: "INT. THE  HARBOUR OFFICE" }, { id: "b", location: "the slip" }, { id: "c", location: "int. the harbour office" }, { id: "d" }] };
+    expect(placeCardIds(state, "Int. The Harbour Office")).toEqual(["a", "c"]);
+    expect(placeCardIds(state, "  ")).toEqual([]);
+    expect(placeCardIds(null, "the slip")).toEqual([]);
   });
 });

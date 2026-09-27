@@ -18,7 +18,7 @@ const SESSION_GAP_MS = 30 * 60 * 1000;
 /** The same lines from the same hand inside this gap are one change (a drag, a line typed key by key). */
 const MERGE_GAP_MS = 5 * 60 * 1000;
 
-const quote = (note) => `"${(note?.headline ?? "").trim() || "a card"}"`;
+const plain = (note) => `"${(note?.headline ?? "").trim() || "a card"}"`;
 
 function byId(list) {
   return new Map((list ?? []).map((item) => [item.id, item]));
@@ -52,6 +52,15 @@ export function describeChange(before, after) {
   };
   const was = byId(before.notes);
   const now = byId(after.notes);
+  // Two cards under one headline are told apart (pass 4a, entry 3): the one out of the film says so, and one in it
+  // beside another in it gives the head of its id. A headline that is one card's stays as it is.
+  const headKey = (note) => (note?.headline ?? "").trim().toLowerCase();
+  const shared = new Map();
+  for (const note of new Map([...was, ...now]).values()) shared.set(headKey(note), (shared.get(headKey(note)) ?? 0) + 1);
+  const quote = (note) => {
+    if (!note || (shared.get(headKey(note)) ?? 0) < 2) return plain(note);
+    return `${plain(note)} (${note.aside ? "set aside" : note.alternativeOf ? "a version behind" : `id ${String(note.id).slice(0, 8)}`})`;
+  };
   const castBefore = before.characters ?? [];
   const castAfter = after.characters ?? [];
 
@@ -86,7 +95,7 @@ export function describeChange(before, after) {
     }
     if ((old.rank ?? "scene") !== (note.rank ?? "scene")) say(note.rank === "beat" ? `kept ${quote(note)} as a turn` : `struck ${quote(note)} back to a scene`, note.id);
     if (Boolean(old.proposedBeat) !== Boolean(note.proposedBeat) && note.proposedBeat) say(`proposed ${quote(note)} as a turn`, note.id);
-    if (Boolean(old.aside) !== Boolean(note.aside)) say(note.aside ? `set ${quote(note)} aside, out of the film` : `brought ${quote(note)} back into the film`, note.id);
+    if (Boolean(old.aside) !== Boolean(note.aside)) say(note.aside ? `set ${plain(note)} aside, out of the film` : `brought ${plain(note)} back into the film`, note.id);
     if ((old.alternativeOf ?? null) !== (note.alternativeOf ?? null)) {
       if (note.alternativeOf) say(`put ${quote(note)} behind ${quote(now.get(note.alternativeOf))} as another version`, note.id, note.alternativeOf);
       else if (!note.aside) say(`chose ${quote(note)} as the scene`, note.id);
@@ -115,7 +124,7 @@ export function describeChange(before, after) {
       else say(`said ${quote(note)} pays off on another board${note.payoffNoteId ? ", at a scene there" : ""}`, note.id);
     }
     if ((old.lengthEighths ?? null) !== (note.lengthEighths ?? null)) say(note.lengthEighths === null ? `unsized ${quote(note)}` : `sized ${quote(note)} at ${formatPages(note.lengthEighths)} pages`, note.id);
-    if ((old.x !== note.x || old.y !== note.y) && lines.every((line) => !line.includes(quote(note)))) say(`moved ${quote(note)} on the wall`, note.id);
+    if ((old.x !== note.x || old.y !== note.y) && lines.every((line) => !line.includes(plain(note)))) say(`moved ${quote(note)} on the wall`, note.id);
   }
   for (const old of before.notes ?? []) if (!now.has(old.id)) say(`deleted ${quote(old)}`, old.id);
 

@@ -2574,7 +2574,7 @@ server.registerTool(
   {
     title: "Leave a question, for now",
     description:
-      "Write the writer's word on a question the wall asks — \"leave it\" — so the reading stops asking it. Pass the question's kind as read_wall names it (sag, empty, unpaid, …) and its ids exactly as the reading lists them for that question (a sag's are the two beats either side of the run, not the cards in it; a thread's are the thread and its card); the refusal lists them when they differ. When that kind is asked more than once, its ids as read_wall lists them; `why` keeps the writer's reason with it, so the next reader sees why. Several at once: `questions`, a list of {kind, ids, why}, one step. A leave answers the reading in front of you: edits change the questions, so make the writer's changes first, read_wall, then leave what they still want left — a question that changed or went since the last reading is refused, with what it was. The reply says what the wall still asks, so no read after is needed. The wall keeps a left question and asks it again on its own the moment it would read differently — a card in it changes, a page moves, the median shifts — so a left question is never a dismissal; ask_again brings one back now. Only on the writer's word: never leave a question unasked.",
+      "Write the writer's word on a question the wall asks — \"leave it\" — so the reading stops asking it. Pass the question's kind as read_wall names it (sag, empty, unpaid, …) and its ids exactly as the reading lists them for that question (a sag's are the two beats either side of the run, not the cards in it; a thread's are the thread and its card); the refusal lists them when they differ. When that kind is asked more than once, its ids as read_wall lists them; `why` keeps the writer's reason with it, so the next reader sees why. Several at once: `questions`, a list of {kind, ids, why}, one step. A leave reads the wall itself, as it stands now, so no read_wall is needed between an edit and the leave: make the writer's changes first, then leave what they still want left. A question the edits left as it was is left, and the reply says changes landed since your last reading; one that changed or went is refused with what it was and what the wall asks now, ids and all, so the writer can be asked about the question as it reads. The reply says what the wall still asks, so no read after is needed. The wall keeps a left question and asks it again on its own the moment it would read differently — a card in it changes, a page moves, the median shifts — so a left question is never a dismissal; ask_again brings one back now. Only on the writer's word: never leave a question unasked.",
     inputSchema: {
       kind: z.string().optional(),
       ids: z.array(z.string()).optional(),
@@ -2609,10 +2609,10 @@ server.registerTool(
           const state_ = now.length
             ? `the wall now asks ${now.length === 1 ? "it differently" : `${now.length} questions of that kind`}: ${now.map((finding) => `${finding.text} (ids: ${finding.ids.join(", ")})`).join("; ")}`
             : "the wall no longer asks it — the cards answered it";
-          replies.push(`Not left. When you last read the wall it asked [${earlier.kind}] ${earlier.text}${earlier.ids.length ? ` (ids: ${earlier.ids.join(", ")})` : ""}; ${since}, and ${state_}. A leave answers the reading in front of you: make the writer's edits first, read_wall, then leave what they still want left.`);
+          replies.push(`Not left. When you last read the wall it asked [${earlier.kind}] ${earlier.text}${earlier.ids.length ? ` (ids: ${earlier.ids.join(", ")})` : ""}; ${since}, and ${state_}. That is the wall read now, so no read_wall is needed: ${now.length ? "put the question as it reads to the writer, and leave it with those ids on their word" : "there is nothing of that kind to leave"}.`);
           continue;
         }
-        replies.push(`The wall is not asking a question of kind "${want.kind}"${want.ids ? ` about ids ${want.ids.join(", ")}` : ""}.${now.length ? ` It asks ${now.length} of that kind, each with every id it lists — pass them all: ${now.map((finding) => `${finding.text} (ids: ${finding.ids.join(", ")})`).join("; ")}` : " It asks none of that kind now; read_wall lists the questions it asks, each with its kind and ids."}${sinceRead.length ? ` ${sinceRead.length} change(s) landed since the last read_wall, so read it again first.` : ""}`);
+        replies.push(`The wall is not asking a question of kind "${want.kind}"${want.ids ? ` about ids ${want.ids.join(", ")}` : ""}.${now.length ? ` It asks ${now.length} of that kind, each with every id it lists — pass them all: ${now.map((finding) => `${finding.text} (ids: ${finding.ids.join(", ")})`).join("; ")}` : " It asks none of that kind now; read_wall lists the questions it asks, each with its kind and ids."}${sinceRead.length ? ` ${sinceRead.length} change${sinceRead.length === 1 ? "" : "s"} landed since your last read_wall; this is the wall read now.` : ""}`);
         continue;
       }
       if (matches.length > 1) {
@@ -2623,6 +2623,8 @@ server.registerTool(
     }
     let live = null;
     let after = state;
+    // Said once a reply: the leave was read against the wall as it stands, not the reading the agent last saw (pass 3b, entry 15).
+    const staleLine = toLeave.length && lastReading && sinceRead.length ? ` Read against the wall as it stands now: ${sinceRead.length} change${sinceRead.length === 1 ? "" : "s"} landed since your last read_wall, and ${toLeave.length === 1 ? "the question reads" : "these questions read"} as quoted.` : "";
     if (toLeave.length) {
       const out = await commitAll(`leave_question ×${toLeave.length}`, (step) => {
         for (const item of toLeave) step({ type: "leave_question", kind: item.finding.kind, ids: item.finding.ids, text: item.finding.text, why: item.why });
@@ -2633,7 +2635,7 @@ server.registerTool(
     }
     const still = readWall(after, readOptions(leaveBoardId, after)).findings;
     const tail = toLeave.length
-      ? `${where(live)} ${once("leave-rule", "The wall keeps the writer's word and asks a left question again on its own when it would read differently; ask_again brings one back now. ")}The wall still asks ${still.length === 0 ? "nothing" : `${still.length}: ${still.map((finding) => `[${finding.kind}] ${finding.text}`).join(" ")}`}.`
+      ? `${where(live)}${staleLine} ${once("leave-rule", "The wall keeps the writer's word and asks a left question again on its own when it would read differently; ask_again brings one back now. ")}The wall still asks ${still.length === 0 ? "nothing" : `${still.length}: ${still.map((finding) => `[${finding.kind}] ${finding.text}`).join(" ")}`}.`
       : "";
     return ok(`${replies.join("\n")}${tail}`, toLeave.map((item) => ({ kind: item.finding.kind, ids: item.finding.ids, why: item.why })));
   },
@@ -3269,7 +3271,7 @@ server.registerTool(
   {
     title: "Read the pages",
     description:
-      "The open board as a script in wall order, with each card's id beside its heading and whether its length is measured (written) or estimated. The same text export_fountain writes, plus the ids, so a scene can be written back with write_scene. Pass scene (one card), from and to (a stretch, inclusive, in story order, as measure takes them) or group (an act or a sequence by its title) to read only that part: the reply is that stretch and nothing else, with a line saying what it is of the whole. Without them, the whole board.",
+      "The open board as a script in wall order, with each card's id beside its heading, whether its length is measured (written) or estimated, and the card's change line — what the wall claims the scene changes, which is the card's and may be on no line of the page. The same text export_fountain writes, plus the ids, so a scene can be written back with write_scene. Pass scene (one card), from and to (a stretch, inclusive, in story order, as measure takes them) or group (an act or a sequence by its title) to read only that part: the reply is that stretch and nothing else, with a line saying what it is of the whole. Without them, the whole board.",
     inputSchema: { scene: z.string().optional().describe("One card, by id or headline: its page alone."), from: z.string().optional().describe("The first card of a stretch, by id or headline, in story order; alone, to the end."), to: z.string().optional().describe("The last card of a stretch, by id or headline; alone, from the start."), group: z.string().optional().describe("A group — an act, a sequence — by id or title: its cards in story order.") },
   },
   async (args) => {
@@ -3305,7 +3307,9 @@ server.registerTool(
         const camera = note ? cameraLines(note.text ?? "") : [];
         cameraByText = new Map(camera.map((item) => [item.line, item.verbs]));
         const cameraNote = camera.length ? ` · camera: ${camera.length} line${camera.length === 1 ? "" : "s"} it cannot see (${cameraVerbs(camera).join(", ")}) — a mark, not a question: nothing is owed for it` : "";
-        lines.push(`${line}    [[id: ${note?.id ?? "?"} · ${note && isMeasured(note) ? "measured" : "estimated"} ${formatPages(note ? noteEighths(note) : 0)}pp${standIn}${numbered}${revised}${cameraNote}]]`);
+        // What the card claims changes, beside the id, so the page can be read against it and no line of the page is guessed to be it (pass 3a, entry 19).
+        const claim = !note ? "" : (note.changeOpen ?? "").trim() ? ` · what changes: open, by the writer's word: "${note.changeOpen.trim()}"` : (note.change ?? "").trim() && note.change !== "What changes?" ? ` · what changes: "${note.change.trim()}"` : " · what changes: not said";
+        lines.push(`${line}    [[id: ${note?.id ?? "?"} · ${note && isMeasured(note) ? "measured" : "estimated"} ${formatPages(note ? noteEighths(note) : 0)}pp${claim}${standIn}${numbered}${revised}${cameraNote}]]`);
       } else {
         const verbs = cameraByText.get(line.trim());
         lines.push(`${line}${changedTexts.has(line) ? "    *" : ""}${verbs ? `    ◂ ${verbs.join(", ")}` : ""}`);
@@ -4082,6 +4086,16 @@ server.registerTool(
     const headlineOf = (id) => after.notes.find((note) => note.id === id)?.headline ?? id;
     const closing = (after?.arrows ?? []).filter((arrow) => !had.has(arrow.id) && arrow.kind !== "setup").map((arrow) => `"${headlineOf(arrow.from)}" → "${headlineOf(arrow.to)}"`);
     const names = result.ids.map((id) => `"${current.notes.find((note) => note.id === id)?.headline ?? id}"`).join(", ");
+    // The arrows that went, by their cards, and the groups the cards left (pass 3b, entry 14 and question 10).
+    const kept = new Set((after?.arrows ?? []).map((arrow) => arrow.id));
+    const wasHeadline = (id) => current.notes.find((note) => note.id === id)?.headline ?? id;
+    const droppedArrows = current.arrows.filter((arrow) => !kept.has(arrow.id) && arrow.kind !== "setup").map((arrow) => `"${wasHeadline(arrow.from)}" → "${wasHeadline(arrow.to)}"`);
+    const leftGroups = (current.groups ?? [])
+      .map((group) => ({ title: group.title || "a group", gone: result.ids.filter((id) => group.noteIds.includes(id)), stands: (after?.groups ?? []).some((item) => item.id === group.id) }))
+      .filter((group) => group.gone.length);
+    const groupLine = result.aside && leftGroups.length
+      ? ` Out of the film is out of its group: ${leftGroups.map((group) => `${group.gone.map((id) => `"${wasHeadline(id)}"`).join(", ")} left "${group.title}"${group.stands ? "" : ", which had no other card and is gone"}`).join("; ")}; brought back, a card is in no group until add_to_group says.`
+      : "";
     if (!result.aside && placing) {
       const backId = result.ids[0];
       const target = cardsByRef(after, [placing.ref]).found[0] ? after.notes.find((note) => note.id === cardsByRef(after, [placing.ref]).found[0]) : null;
@@ -4103,7 +4117,7 @@ server.registerTool(
     if (!result.aside) return ok(`Brought back ${names}${where(live)}: in the film again, as ${result.ids.length === 1 ? "a plain unwired card" : "plain unwired cards"} — in the count and the pages, and the wall will ask what comes before and after ${result.ids.length === 1 ? "it" : "them"}; create_arrow or move_scene says.`, result);
     return ok(
       // What was done first, then where it landed and what it did to the wall: the tail read as part of the sentence when it sat in the middle of it.
-      `Set aside ${names}: on the wall and not in the film — out of the order, the count, the pages and every export${result.arrowsDropped ? `; ${result.arrowsDropped} follows arrow${result.arrowsDropped === 1 ? "" : "s"} dropped${result.closedOver ? `, and the story closed over ${result.closedOver === 1 ? "it" : "them"} (${result.closedOver} arrow${result.closedOver === 1 ? "" : "s"} drawn between the cards on either side${closing.length ? `: ${closing.join(", ")}` : ""})` : ""}` : ""}${where(live)}. The reading lists ${result.ids.length === 1 ? "it" : "them"} under "set aside" and asks nothing; set_aside with aside false brings ${result.ids.length === 1 ? "it" : "them"} back.${(result.onThreads ?? []).length ? ` ${result.onThreads.length === 1 ? "A thread still runs" : `${result.onThreads.length} threads still run`} through ${result.ids.length === 1 ? "it" : "them"} (${result.onThreads.map((id) => `"${(state.threads ?? []).find((thread) => thread.id === id)?.name ?? id}"`).join(", ")}): the string keeps the card, and the reading asks nothing of that end while the card is out of the film.` : ""}`,
+      `Set aside ${names}: on the wall and not in the film — out of the order, the count, the pages and every export${result.arrowsDropped ? `; ${result.arrowsDropped} follows arrow${result.arrowsDropped === 1 ? "" : "s"} dropped${droppedArrows.length ? ` (${droppedArrows.join(", ")})` : ""}${result.closedOver ? `, and the story closed over ${result.closedOver === 1 ? "it" : "them"} (${result.closedOver} arrow${result.closedOver === 1 ? "" : "s"} drawn between the cards on either side${closing.length ? `: ${closing.join(", ")}` : ""})` : ""}` : ""}${where(live)}. The reading lists ${result.ids.length === 1 ? "it" : "them"} under "set aside" and asks nothing; set_aside with aside false brings ${result.ids.length === 1 ? "it" : "them"} back.${groupLine}${(result.onThreads ?? []).length ? ` ${result.onThreads.length === 1 ? "A thread still runs" : `${result.onThreads.length} threads still run`} through ${result.ids.length === 1 ? "it" : "them"} (${result.onThreads.map((id) => `"${(state.threads ?? []).find((thread) => thread.id === id)?.name ?? id}"`).join(", ")}): the string keeps the card, and the reading asks nothing of that end while the card is out of the film.` : ""}`,
       result,
     );
   },
@@ -4303,7 +4317,8 @@ server.registerTool(
     const { live } = await openBoardEverywhere(back.project, back.boards, back.rev, back.base, hereId);
     // The write landed on the fold's board, so its change note is that board's (round sixteen, entry 16).
     const noteThere = changeNote();
-    const thereLine = noteThere ? ` On "${source.name}"${noteThere}.` : "";
+    // The count is the fold's board's, and says so before the count (pass 3b, entry 19).
+    const thereLine = noteThere ? ` Counted on "${source.name}", the fold's board, not this one${noteThere}.` : "";
     if (!changed) return ok(`No change: ${clearing ? "nothing was claimed" : `"${folds[0].headline}" already pays off at "${card.headline}"`}.`);
     return ok(
       clearing

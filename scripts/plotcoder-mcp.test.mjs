@@ -1403,7 +1403,8 @@ describe("open fields (R61): the logline, the premise, a when and a board's name
     const before = await client.callToolData("list_board");
     const aside = await client.callTool("set_aside", { ids: ["They sit it out till morning"] });
     expect(aside).toContain('Set aside "They sit it out till morning"');
-    expect(aside).toContain("2 follows arrows dropped, and the story closed over it");
+    // The arrows that went by their cards too (pass 3b, entry 14).
+    expect(aside).toContain('2 follows arrows dropped ("The depot" → "They sit it out till morning", "They sit it out till morning" → "The morning after"), and the story closed over it');
     // The closing arrow by its cards, not "the cards on either side" alone (round twenty-three, entry 49).
     expect(aside).toContain('"The depot" → "The morning after"');
     const listed = await client.callTool("list_board");
@@ -1793,6 +1794,8 @@ describe("move_scene across boards", () => {
     await series.callTool("set_plant", { ids: [(await series.callToolData("list_board")).notes.find((note) => note.headline === "The key").id], plants: true, later: "Episode 2" });
     await series.callTool("open_board", { board: "2" });
     const paid = await series.callTool("set_payoff", { id: fails.id, from: "Board 1", fold: "The key" });
+    // The count in the tail is the fold's board's, and says so before the count (pass 3b, entry 19).
+    expect(paid).toContain('Counted on "Board 1", the fold\'s board, not this one; ');
     expect(paid).toContain('"The plate fails" pays off "The key" from "Board 1"');
     expect(paid).toContain("This board is open again");
     expect(await series.callTool("read_wall")).toContain('"The plate fails" pays off "The key" from "Board 1"');
@@ -2732,8 +2735,8 @@ describe("the premise and reminders (roadmap item 6)", () => {
     expect(wrote).toMatch(/Wrote "Maya finds the letter": \d+ line\(s\) as they print.*measured at 1\/8 of a 55-line page/);
     expect(await door.callTool("list_board")).toContain("[scene, 1/8 pages, written");
     const pages = await door.callTool("read_pages");
-    expect(pages).toContain(".NO PLACE YET: MAYA FINDS THE LETTER    [[id: maya-letter · measured 1/8pp · no place: the headline heads the scene behind the mark, not a place]]");
-    expect(pages).toContain(".NO PLACE YET: TOM LIES ABOUT THE JOB    [[id: tom-lies · estimated 1pp · no place: the headline heads the scene behind the mark, not a place]]");
+    expect(pages).toContain('.NO PLACE YET: MAYA FINDS THE LETTER    [[id: maya-letter · measured 1/8pp · what changes: "She decides not to tell Tom." · no place: the headline heads the scene behind the mark, not a place]]');
+    expect(pages).toContain('.NO PLACE YET: TOM LIES ABOUT THE JOB    [[id: tom-lies · estimated 1pp · what changes: "Maya starts to doubt him." · no place: the headline heads the scene behind the mark, not a place]]');
     const imported = await door.callTool("import_fountain", {
       text: ".TOM LIES ABOUT THE JOB\n\nHe says the job is fine.\n\n.THE BANK\n\nThere is no loan.\n",
     });
@@ -3434,7 +3437,7 @@ describe("round twelve's decisions: leaving a question, a structure beside the w
     expect(refused).toContain("Not left. When you last read the wall it asked [sag] About 8 pages run");
     expect(refused).toContain("1 change landed since (set_length)");
     expect(refused).toContain("the wall no longer asks it");
-    expect(refused).toContain("make the writer's edits first, read_wall, then leave");
+    expect(refused).toContain("That is the wall read now, so no read_wall is needed: there is nothing of that kind to leave.");
     expect(await twelve.callTool("read_wall")).not.toContain("[sag]");
     await twelve.callTool("set_length", { ids: [s2.id, s3.id], pages: 4 });
   });
@@ -4218,5 +4221,49 @@ describe("the record of a session through the server (R76)", () => {
     expect(await client.callTool("read_wall")).toContain("the agent's last word, ");
     expect(await client.callTool("read_record")).toContain("The agent's last word, ");
     expect(await client.callTool("hand_over", { words: "" })).toMatch(/^The last word is taken back/);
+  });
+});
+
+describe("the small replies after pass 3b and 3a (3b 14, 15, question 10; 3a 19)", () => {
+  let root;
+  let client;
+
+  beforeAll(async () => {
+    root = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-small-"));
+    client = new McpClient(root);
+    await client.start();
+    for (const seeded of ["maya-letter", "tom-lies", "letter-aloud"]) await client.callTool("delete_note", { id: seeded });
+  }, 30000);
+
+  afterAll(() => {
+    client?.stop();
+    if (root) fs.rmSync(root, { recursive: true, force: true });
+  });
+
+  it("set_aside names the cards in the order given, the arrows that went by their cards, and the group a card left", async () => {
+    const a = (await client.callToolData("create_note", { headline: "The wall, first light", change: "A crack." })).id;
+    const b = (await client.callToolData("create_note", { headline: "Nell opens the office", change: "The ledger is out.", after: a })).id;
+    const c = (await client.callToolData("create_note", { headline: "A hand's width", change: "It has grown.", after: b })).id;
+    const d = (await client.callToolData("create_note", { headline: "Ada's column", change: "It is printed.", after: c })).id;
+    await client.callTool("create_group", { noteIds: [a, b, c, d], title: "Act One" });
+    const aside = await client.callTool("set_aside", { ids: [c, b] });
+    expect(aside).toMatch(/^Set aside "A hand's width", "Nell opens the office":/);
+    expect(aside).toContain('"The wall, first light" → "Nell opens the office"');
+    expect(aside).toContain('Out of the film is out of its group: "A hand\'s width", "Nell opens the office" left "Act One"; brought back, a card is in no group until add_to_group says.');
+    await client.callTool("set_aside", { ids: [b, c], aside: false });
+  });
+
+  it("read_pages prints the card's change line beside its id", async () => {
+    const pages = await client.callTool("read_pages", { scene: "Ada's column" });
+    expect(pages).toMatch(/\[\[id: [0-9a-f-]+ · estimated [^·]+pp · what changes: "It is printed\."/);
+  });
+
+  it("leave_question reads the wall itself after an edit, and says it did", async () => {
+    const read = await client.callTool("read_wall");
+    expect(read).toContain("[unmarked]");
+    await client.callTool("create_note", { headline: "The spring tide", change: "The wall goes." });
+    const left = await client.callTool("leave_question", { kind: "unmarked", why: "no turns yet" });
+    expect(left).toContain("Left, for now: [unmarked]");
+    expect(left).toMatch(/Read against the wall as it stands now: \d+ changes? landed since your last read_wall/);
   });
 });

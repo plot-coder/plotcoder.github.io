@@ -115,10 +115,53 @@ already behaves.
 dev server, signed out: two cards on one board and one on a second
 followed the new name, and the page's head with them.
 
+## 9 · A place's pictures follow its rename
+
+*From:* left behind by 8: the pictures are rows of the account's
+`assets`, filed under `place:` and the place's key, so a renamed place
+showed an empty gallery and `build_segment` handed the video tool no
+picture of it.
+*Plan:* when a rename changes the key, the project's rows under the old
+subject are given the new one — one update, from both doors, through
+one function. Renamed into a place that has pictures, the rows already
+there are left alone, so both sets stand, oldest first as the gallery
+already orders them. A change of spelling alone moves nothing.
+*Is it the best we can do?* The alternatives: **key the pictures by an
+id on the place's page** — a rename would then move nothing, but a
+place has a page only once a line is written on it, pictures can be
+filed on a place with none, and every row filed so far would need
+migrating; a second identity for a thing the phrase already names.
+**Read the gallery by every name the place has had** — nothing to
+update, but the project would carry a list of old names for ever and a
+later place given an old name would inherit strangers' pictures.
+**A database function or trigger** — atomic, but the rename is decided
+on the device and the door, not in the database, and it would be a
+migration for one update a member may already make (the table's
+"members change" policy). The update wins: no new model, no schema
+change, one function with a test. What the asking changed: a place
+with pictures and no card or page is renamed too (the door used to
+answer "no card is at"); the door's reply counts what followed and, if
+the account refuses, says where `list_files` still has them rather
+than failing a rename that has already moved the cards. Not a mockup:
+nothing new is drawn — the gallery that was empty after a rename is
+full. Known and left: undo takes the cards back on the open board and
+not the page or the pictures, as 8 already has it; the cards and the
+pictures are two writes, not one transaction, so a refusal between
+them leaves the pictures under the old phrase, said in words.
+*Built:* `placeSubject` and `placeFilesMove` in `src/board/places.js`;
+`movePlaceFiles` in `src/board/placeFiles.js`; `movePlaceFiles` on the
+account store, called from `src/App.tsx` beside `renamePlace`;
+`rename_place` in the server; the guide, `public/writers.html`, R79.
+*Test:* `places.test.ts` for the pure half; `placeFiles.test.ts`
+against a stand-in for the account (the move, the merge, nothing asked
+when the key stands or there is no account, a refusal in words); the
+server test for `rename_place` with no account door. No test touches
+the network. **Not yet looked at signed in, against the real
+account:** that wants a test account's credentials and a picture
+filed, and is the one step of this item still owed.
+
 ## Left behind
 
-- **A place's pictures do not follow a rename**, from the app or the
-  door: they are filed under the phrase. Found while building 8.
 - **`window.plotcoder`: a card made and a board switched in one
   synchronous run was not on the board afterwards.** Seen once while
   setting up the look at item 8; with a pause between, it held. Not

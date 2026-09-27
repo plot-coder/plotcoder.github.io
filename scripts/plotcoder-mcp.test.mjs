@@ -1742,6 +1742,10 @@ describe("move_scene across boards", () => {
     expect(await series.callTool("segment_brief", { ids: ["maya-letter"] })).toContain("PLACES: The Piano Shop — looks: Dust on the lids.; not decided, by the writer's word: which street — not decided — R.");
     const renamed = await series.callTool("rename_place", { name: "the piano shop", to: "the music shop" });
     expect(renamed).toContain('Renamed "the piano shop" to "the music shop" on 2 cards across 2 boards; the page followed. The open board is the one you were on.');
+    // Pictures are files on the account: with no account door there are none to follow, and the rename asks nothing of it.
+    expect(renamed).not.toMatch(/pictures? (followed|did not follow)/);
+    expect((await series.callToolData("rename_place", { name: "the music shop", to: "The Music  Shop" })).pictures).toBe(0);
+    await series.callTool("rename_place", { name: "The Music Shop", to: "the music shop" });
     expect(await series.callTool("list_boards")).toMatch(/"Episode 2"[^\n]*\(open\)/);
     expect(await series.callTool("read_place", { name: "the music shop" })).toContain("  looks: Dust on the lids.");
     expect(await series.callTool("read_record")).toContain('placed "Maya finds the letter" at the music shop');

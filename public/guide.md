@@ -460,7 +460,9 @@ card of another board is not asked about as uncast here.
   decided about it, listed and never asked. `read_place` gives the page, or
   "no page yet", and every card at that place across the project with its
   change line; the brief prints the page under PLACES. `rename_place` moves
-  the phrase on every card of every board and the page with it; two
+  the phrase on every card of every board and the page with it, and through
+  the account door its pictures, which join any the new place already has
+  (its reply says how many followed); two
   spellings are two places until one is renamed to the other. Ask the writer
   before writing a look: a video tool will be handed it. `add_picture` takes
   `place` for a place's gallery.

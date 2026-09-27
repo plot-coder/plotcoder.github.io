@@ -157,11 +157,17 @@ body {
 
 /* The logline can run taller than the band — a premise, a long logline, the
    offers — and carries the band down with it, edge to edge. */
-.logline {
+.logline__head {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  width: 100%;
   padding-bottom: 0.5rem;
 }
 
-.logline::before {
+.logline__head::before {
   content: "";
   position: absolute;
   top: -1rem;
@@ -6372,4 +6378,145 @@ body {
   left: auto;
   right: 1.1rem;
   bottom: calc(100% + 4.4rem);
+}
+
+/* The title area in plain words (2026-09-27): what each field is, and one open at a time. */
+.logline__hint {
+  display: none;
+  /* Narrow enough to stand between the wordmark and the buttons at any width the logline shows at. */
+  max-width: min(26rem, calc(100vw - 40rem));
+  margin: 0.1rem 0 0;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.74rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.logline__hint b {
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.logline:hover .logline__hint,
+.logline:focus-within .logline__hint {
+  display: block;
+}
+
+.title-link {
+  padding: 0 0 1px;
+  border: 0;
+  border-bottom: 1px solid var(--bar-border);
+  background: transparent;
+  color: var(--muted);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.74rem;
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 120ms ease;
+}
+
+.logline:hover .title-link,
+.logline:focus-within .title-link,
+.title-link:focus-visible,
+.title-link.is-on,
+.title-panel .title-link {
+  opacity: 1;
+}
+
+/* Open questions that are held are always in view, in the colour of what is open. */
+.title-link.has-lines,
+.title-link.is-on {
+  opacity: 1;
+  border-color: var(--over);
+  color: var(--over);
+}
+
+.title-panel {
+  position: relative;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.2rem;
+  width: min(30rem, 100%);
+  margin-top: 0.45rem;
+  padding: 0.75rem 0.95rem 0.85rem;
+  border: 1px solid var(--bar-border);
+  border-radius: 0.8rem;
+  background: var(--bar);
+  box-shadow: var(--bar-shadow);
+  text-align: left;
+}
+
+.title-panel__head {
+  margin: 0;
+  font-size: 1.02rem;
+  font-weight: 400;
+}
+
+.title-panel__say {
+  margin: 0 0 0.4rem;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.74rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.title-panel__field {
+  margin: 0 0 0.4rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--bar-border);
+  border-radius: 0.4rem;
+  outline: none;
+  cursor: text;
+}
+
+.title-panel__field:empty::before {
+  content: attr(data-placeholder);
+  font-style: italic;
+  color: var(--muted);
+  opacity: 0.7;
+}
+
+.title-panel .title-link {
+  align-self: flex-start;
+}
+
+.title-panel .open-lines__list {
+  width: 100%;
+}
+
+.title-field {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+}
+
+.title-field__k {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.title-panel .open-lines__line {
+  justify-content: space-between;
+  font-size: 0.92rem;
+}
+
+.title-panel .open-lines__input {
+  width: 100%;
+  margin-top: 0.3rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--bar-border);
+  border-radius: 0.4rem;
+  font-size: 0.9rem;
+  text-align: left;
+}
+
+.title-panel .open-lines__strike {
+  opacity: 0.8;
 }

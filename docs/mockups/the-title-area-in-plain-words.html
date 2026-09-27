@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<title>The title area, in plain words</title>
+<link rel="stylesheet" href="../../src/styles.css">
+<style>
+  :root { --canvas: #000; --ink: #f4f1ea; --muted: #9a9589; --bar: #1c1c1a; --over: #e08b52; --bar-border: rgba(244,241,234,0.18); }
+  html, body { height: auto; min-height: 100%; background: #0b0b0a; color: var(--ink); }
+  body { margin: 0; padding: 2rem 2.5rem 4rem; font-family: ui-sans-serif, system-ui, sans-serif; }
+  h1 { font: 600 1.05rem/1.3 ui-serif, Georgia, serif; margin: 0 0 0.25rem; }
+  h2.sec { font: 600 0.95rem/1.3 ui-serif, Georgia, serif; margin: 2.6rem 0 0.2rem; padding-top: 1.2rem; border-top: 1px solid rgba(127,127,127,0.25); }
+  .lede { font-size: 0.85rem; opacity: 0.78; margin: 0 0 1.2rem; max-width: 80ch; line-height: 1.5; }
+  .cap { font: 700 0.62rem/1.3 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; margin: 1.4rem 0 0.6rem; }
+  .cap em { font-style: normal; color: var(--over); }
+  .note { font-size: 0.8rem; line-height: 1.45; opacity: 0.82; margin: 0.7rem 0 0; max-width: 80ch; }
+  .honest { font-size: 0.82rem; line-height: 1.5; max-width: 82ch; margin: 0.6rem 0 0; padding: 0.6rem 0.9rem; border-left: 3px solid rgba(127,127,127,0.5); background: rgba(127,127,127,0.06); }
+  .honest b, .ask b { font-weight: 600; }
+  .ask { margin-top: 1.2rem; max-width: 84ch; font-size: 0.86rem; line-height: 1.55; }
+
+  .win { position: relative; width: 900px; max-width: 100%; min-height: 150px; border: 1px solid var(--bar-border); border-radius: 8px; background: var(--canvas); padding: 14px 0 22px; }
+  .mark { position: absolute; left: 18px; top: 16px; font: 600 0.6rem/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.22em; text-transform: uppercase; color: var(--muted); }
+  .tops { position: absolute; right: 14px; top: 10px; display: flex; gap: 6px; }
+  .tops span { font: 600 0.58rem/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; padding: 8px 12px; border-radius: 999px; border: 1px solid var(--bar-border); background: var(--bar); }
+  .mid { width: 520px; margin: 0 auto; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 0.25rem; }
+  .q { font: 1rem/1.35 ui-serif, Georgia, serif; }
+  .q.ph { font-style: italic; color: var(--muted); opacity: 0.7; }
+  .q.box { background: rgba(244,241,234,0.1); border-radius: 0.4rem; padding: 0.15rem 0.6rem; box-shadow: inset 0 0 0 1px var(--bar-border); }
+  .old { font: 600 0.55rem/1.4 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  .old.dash { border: 1px dashed rgba(127,127,127,0.5); border-radius: 3px; padding: 0.05rem 0.4rem; }
+  .oldpanel { width: 820px; max-width: 96%; border: 1px solid var(--bar-border); border-radius: 0.9rem; background: var(--bar); padding: 0.4rem 0.9rem 0.6rem; text-align: center; }
+  .oldpanel .t { font: 600 0.58rem/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.14em; text-transform: uppercase; color: var(--over); margin: 0.2rem 0 0.5rem; }
+  .oldpanel .i { font: italic 0.9rem ui-serif, Georgia, serif; color: var(--muted); border-bottom: 1px dashed var(--bar-border); display: inline-block; padding: 0 5rem 0.2rem; }
+  .hint { font-size: 0.72rem; color: var(--muted); max-width: 46ch; line-height: 1.4; }
+  .hint b { color: var(--ink); font-weight: 500; }
+  .links { display: flex; gap: 1.1rem; font-size: 0.74rem; margin-top: 0.2rem; }
+  .links span { color: var(--muted); border-bottom: 1px solid var(--bar-border); padding-bottom: 1px; }
+  .links span.on { color: var(--over); border-color: var(--over); }
+  .panel { width: 460px; border: 1px solid var(--bar-border); border-radius: 0.8rem; background: var(--bar); padding: 0.7rem 0.9rem 0.8rem; text-align: left; margin-top: 0.4rem; }
+  .panel h4 { font: 1rem/1.25 ui-serif, Georgia, serif; font-weight: 400; margin: 0 0 0.2rem; }
+  .panel p { font-size: 0.74rem; line-height: 1.45; color: var(--muted); margin: 0 0 0.6rem; }
+  .panel .in { font: 0.9rem ui-serif, Georgia, serif; border: 1px solid var(--bar-border); border-radius: 0.4rem; padding: 0.4rem 0.6rem; color: var(--muted); font-style: italic; }
+  .panel .row { display: flex; justify-content: space-between; font: 0.9rem ui-serif, Georgia, serif; color: var(--over); padding: 0.2rem 0; }
+  .panel .row small { font: 600 0.58rem/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+</style>
+</head>
+<body>
+<h1>The title area, in plain words</h1>
+<p class="lede">Drawn 2026-09-27 for Robert: "I don't totally understand this title section and what should be here." Four things live there: the logline, the writer's reason when there is none, what is not decided about the whole story, and the premise. Two of them carry the same label, none says what it is for, and all appear at once.</p>
+
+<h2 class="sec">1 · As it ships, with the pointer on it</h2>
+<div class="win"><span class="mark">PlotCoder</span><div class="tops"><span>Pages</span><span>Cast</span></div>
+  <div class="mid">
+    <span class="q ph">What is this story arguing?</span>
+    <span class="old dash">Not decided yet…</span>
+    <div class="oldpanel"><p class="t">Not decided yet, about the film</p><span class="i">in your words: whether it has acts; when it happens…</span></div>
+    <span class="old">Add a series premise</span>
+  </div>
+</div>
+
+<h2 class="sec">2 · The refresh</h2>
+<p class="cap">At rest · <em>one line, as now</em></p>
+<div class="win" style="min-height:70px"><span class="mark">PlotCoder</span><div class="tops"><span>Pages</span><span>Cast</span></div>
+  <div class="mid"><span class="q ph">What is this story arguing?</span></div>
+</div>
+
+<p class="cap">With the pointer on it, or the caret in it · <em>what it is, an example, and three plain ways on</em></p>
+<div class="win"><span class="mark">PlotCoder</span><div class="tops"><span>Pages</span><span>Cast</span></div>
+  <div class="mid">
+    <span class="q ph box">What is this story arguing?</span>
+    <span class="hint"><b>The logline:</b> the story's central question, in a sentence. "Can a man who lies for a living tell the truth once, when it costs him the job?"</span>
+    <div class="links"><span>No logline yet? Say why</span><span>Open questions</span><span>Add a premise</span></div>
+  </div>
+</div>
+<p class="note">The hint shows only while the logline is empty. Each of the three opens its own field, one at a time, and says what it is.</p>
+
+<p class="cap">"Open questions" pressed · <em>its own paper, its own words</em></p>
+<div class="win" style="min-height:250px"><span class="mark">PlotCoder</span><div class="tops"><span>Pages</span><span>Cast</span></div>
+  <div class="mid">
+    <span class="q">Can a harbourmaster save the town her family built?</span>
+    <div class="links"><span class="on">Open questions · 2</span><span>Add a premise</span></div>
+    <div class="panel">
+      <h4>Open questions about the story</h4>
+      <p>What you have not decided that belongs to no one scene. The wall lists them and never asks you about them.</p>
+      <div class="row"><span>Whether it has acts, and where they break.</span><small>Decided</small></div>
+      <div class="row"><span>When it happens: now, or 1987.</span><small>Decided</small></div>
+      <div class="in">Another, in your words: whether the flat is in it at all</div>
+    </div>
+  </div>
+</div>
+
+<p class="cap">"Add a premise" pressed · <em>and "No logline yet?"</em></p>
+<div class="win" style="min-height:230px"><span class="mark">PlotCoder</span><div class="tops"><span>Pages</span><span>Cast</span></div>
+  <div class="mid">
+    <div class="panel" style="margin-top:0">
+      <h4>The premise</h4>
+      <p>What is true before the story starts, or a rule the whole of it keeps. For a series, what the series is about.</p>
+      <div class="in">Five days in August. Nobody says "sell" to her face until the end.</div>
+    </div>
+    <div class="panel">
+      <h4>Why there is no logline yet</h4>
+      <p>Your reason, in your words, so nobody guesses one for you.</p>
+      <div class="in">Two versions: it is about the sister, or the town. Not chosen.</div>
+    </div>
+  </div>
+</div>
+
+<h2 class="sec">3 · Is this the best we can do?</h2>
+<div class="honest"><b>The words change, the things do not.</b> The logline, its open, the open lines and the premise are what they were, held where they were. "Not decided yet, about the film" becomes "Open questions about the story" on the wall; an agent's tools and the guide keep their own names for it.</div>
+<div class="honest"><b>"Not decided yet…" stays on the cards.</b> On a card's place, time and cast the phrase sits beside the one field it is about, and reads plainly there. It was only in the title area, with two of them a line apart, that it confused.</div>
+<div class="honest"><b>An example is a claim about what a logline is.</b> The one drawn is a question; a logline can be a statement. It is offered as "for example", on an empty field only, and goes the moment you type.</div>
+<div class="honest"><b>What it does not do.</b> It does not teach the method. The Help sheet and the writer's guide do that; this makes the four fields say what they are.</div>
+
+<p class="ask"><b>What a yes means.</b> The labels as drawn, the hint under an empty logline, the three ways on shown as plain links and opened one at a time, each field with a sentence saying what it is.</p>
+</body>
+</html>

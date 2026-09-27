@@ -1,26 +1,24 @@
 // Step 1 of the method (R18/R19): what is this story arguing?
 //
-// Two levels, answering open question 18. The board's central question is the
-// one you check every card against; the series premise sits above it and is
-// shared by every board in the project. A feature has no premise, so it stays
-// out of the way until asked for.
+// One line at rest, one panel when the writer wants it (drawn in
+// docs/mockups/the-story-panel.html; built on Robert's word, 2026-09-27).
+// The title area held the logline, its open, the premise and the film's
+// open questions as text typed on the head of the wall: a long logline ran
+// under the buttons, a premise and a logline together stood four hundred
+// pixels tall over the cards, a tip opened off the top of the window, and
+// the ways on appeared and vanished under the pointer. Now the head of the
+// wall is one line, never more, and a press opens the story panel: every
+// field with its name and a sentence saying what it is, all in view at once.
 //
-// Either line can be left open (R61): the writer's words for why there is no
-// logline or premise yet, drawn where the value would be in the debt colour
-// under a dashed line, the way an open card wears its words. A value decides
-// the field and the words go; clearing the words leaves the field blank.
-//
-// In plain words (2026-09-27, docs/mockups/the-title-area-in-plain-words.html):
-// the area held four things, two under one label and none saying what it
-// was. At rest it is the logline alone. Reached for, an empty logline says
-// what a logline is, with an example, and three plain links lead on — no
-// logline yet, open questions, a premise — each to a field of its own that
-// says what it is, one open at a time.
+// Two levels, answering open question 18: the board's central question is
+// the one every card is checked against; the premise sits above it and is
+// shared by every board of the project. Either can be left open (R61): the
+// writer's words for why there is none yet. A value decides the field and
+// the words go; clearing the words leaves it blank.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { EditableText } from "./EditableText";
 import { OpenLines } from "./OpenLines";
-import { wordSentence } from "./board/words";
 
 type LoglineProps = {
   logline: string;
@@ -37,33 +35,77 @@ type LoglineProps = {
   openLines: string[];
   onAddOpenLine: (text: string) => void;
   onStrikeOpenLine: (index: number) => void;
+  /** Whether the story panel is open; the app holds it, since a narrow window opens it from a button of its own. */
+  open: boolean;
+  onOpen: () => void;
+  onClose: () => void;
 };
 
-type OpenFieldProps = {
-  className: string;
-  words: string;
-  ariaLabel: string;
-  onCommit: (words: string) => void;
-  autoFocus: boolean;
+/** How many things are held open about the story: the open questions, and a logline or premise left open. */
+export function storyOpenCount({ openLines, loglineOpen, premiseOpen }: Pick<LoglineProps, "openLines" | "loglineOpen" | "premiseOpen">): number {
+  return openLines.length + (loglineOpen ? 1 : 0) + (premiseOpen ? 1 : 0);
+}
+
+type FieldProps = {
+  name: string;
+  say: string;
+  value: string;
+  openWords: string;
+  placeholder: string;
+  onSet: (text: string) => void;
+  onSetOpen: (words: string) => void;
 };
 
-/** A field left open: the mark, then the writer's words, typed in place. */
-function OpenField({ className, words, ariaLabel, onCommit, autoFocus }: OpenFieldProps) {
+/** One field of the panel: its name, what it is, the value or the writer's words for why there is none. */
+function StoryField({ name, say, value, openWords, placeholder, onSet, onSetOpen }: FieldProps) {
+  // The writer has just chosen to leave it open: the caret waits for their words; leaving them blank puts the field back.
+  const [leaving, setLeaving] = useState(false);
+  const isOpen = Boolean(openWords) || leaving;
   return (
-    <span className="open-field">
-      <span className="open-mark" aria-hidden="true">
-        Open
-      </span>
-      <EditableText
-        as="p"
-        className={`${className} is-open-field`}
-        value={words}
-        onCommit={onCommit}
-        ariaLabel={ariaLabel}
-        placeholder="not decided: say why, in your words"
-        autoFocus={autoFocus}
-      />
-    </span>
+    <section className="story-panel__field">
+      <p className="story-panel__k">
+        {name}
+        {isOpen ? (
+          <button
+            type="button"
+            className="story-panel__link"
+            onClick={() => {
+              setLeaving(false);
+              onSetOpen("");
+            }}
+          >
+            I have one now
+          </button>
+        ) : value ? null : (
+          <button type="button" className="story-panel__link" onClick={() => setLeaving(true)}>
+            Not decided? Say why
+          </button>
+        )}
+      </p>
+      <p className="story-panel__say">{say}</p>
+      {isOpen ? (
+        <span className="open-field story-panel__open">
+          <span className="open-mark" aria-hidden="true">
+            Open
+          </span>
+          <EditableText
+            as="p"
+            className="story-panel__input is-open-field"
+            value={openWords}
+            onCommit={(words) => {
+              setLeaving(false);
+              onSetOpen(words);
+            }}
+            ariaLabel={`${name}, left open`}
+            placeholder="not decided: say why, in your words"
+            autoFocus={leaving}
+            stopPointerDown={false}
+          />
+        </span>
+      ) : (
+        <EditableText as="p" className="story-panel__input" value={value} onCommit={onSet} ariaLabel={name} placeholder={placeholder} stopPointerDown={false} />
+      )}
+    </section>
   );
 }
 
@@ -79,124 +121,69 @@ export function Logline({
   openLines,
   onAddOpenLine,
   onStrikeOpenLine,
+  open,
+  onOpen,
+  onClose,
 }: LoglineProps) {
-  // A feature is one board and has no series above it, so the premise line only
-  // appears once it holds something or you ask for it.
-  // Which of the title area's panels is open: the open questions, or a premise being added. One at a time.
-  const [panel, setPanel] = useState<"open" | "premise" | null>(null);
-  // Which empty field the writer has just chosen to leave open (R61): the
-  // caret lands in it for their words; a blank commit puts the field back.
-  const [leaving, setLeaving] = useState<"logline" | "premise" | null>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const close = useRef(onClose);
+  close.current = onClose;
+  const count = storyOpenCount({ openLines, loglineOpen, premiseOpen });
 
-  function leaveLogline(words: string) {
-    setLeaving(null);
-    onSetLoglineOpen(words);
-  }
-
-  function leavePremise(words: string) {
-    setLeaving(null);
-    onSetPremiseOpen(words);
-  }
-
-  // Escape closes whichever panel is open, wherever the caret is.
+  // Escape closes the panel, wherever the caret is. Once, as it opens: see useSheet for why not on every render.
   useEffect(() => {
-    if (!panel) return;
+    if (!open) return;
     function onKey(event: KeyboardEvent) {
-      if (event.key !== "Escape") return;
-      setPanel(null);
-      setLeaving(null);
+      if (event.key === "Escape") close.current();
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [panel]);
-
-  const premiseHeld = premise.length > 0 || premiseOpen.length > 0;
-  const loglineEmpty = !logline && !loglineOpen && leaving !== "logline";
+  }, [open]);
 
   return (
-    <div className="logline">
-      {/* The head carries the title band; a panel opened below stands on its own paper, over the wall. */}
-      <div className="logline__head">
-      {/* A premise that is held stands above the logline, where it always has; one being added is a panel below. */}
-      {premiseHeld ? (
-        premiseOpen ? (
-          <OpenField className="logline__premise" words={premiseOpen} ariaLabel="Premise, left open" onCommit={leavePremise} autoFocus={false} />
-        ) : (
-          <EditableText as="p" className="logline__premise" value={premise} onCommit={onSetPremise} ariaLabel="Premise" placeholder="What is true before the story starts?" />
-        )
-      ) : null}
-
-      {loglineOpen || leaving === "logline" ? (
-        <span className="title-field">
-          <span className="title-field__k">Why there is no logline yet</span>
-          <OpenField className="logline__question" words={loglineOpen} ariaLabel="Logline, left open" onCommit={leaveLogline} autoFocus={leaving === "logline"} />
+    <>
+      <button type="button" className={`logline ${open ? "is-open" : ""}`} aria-expanded={open} aria-haspopup="dialog" title="The story: its logline, its premise, and what is not decided" onClick={open ? onClose : onOpen}>
+        {/* The words are the line's own text, so a reader of the page finds the logline where it has always been. */}
+        <span className={`logline__question ${loglineOpen ? "is-open-field" : ""}`} aria-label="Logline" data-placeholder="What is this story arguing?">
+          {logline || (loglineOpen ? `No logline yet: ${loglineOpen}` : "")}
         </span>
-      ) : (
-        // No tooltip here: a tip opens above its field, and above the logline is off the top of the window, where
-        // nobody could read it (Robert, 2026-09-27). What a logline is stands under it, in the hint below.
-        <EditableText as="p" className="logline__question" value={logline} onCommit={onSetLogline} ariaLabel="Logline" placeholder="What is this story arguing?" />
-      )}
-      {/* What the field is, and an example, while it is empty and the writer is reaching for it. */}
-      {loglineEmpty ? (
-        <p className="logline__hint">
-          <b>The logline:</b> the story's central question, in a sentence. For example, "Can a man who lies for a living tell the truth once, when it costs him the job?"
-        </p>
-      ) : logline ? (
-        <p className="logline__hint">
-          <b>The logline:</b> {wordSentence("logline")}
-        </p>
+        {count ? <span className="logline__count">{count} open</span> : null}
+      </button>
+
+      {open ? (
+        <>
+          <button type="button" className="story-panel__away" aria-label="Close the story panel" onClick={onClose} />
+          <div className="story-panel" role="dialog" aria-label="The story">
+            <button ref={closeRef} type="button" className="story-panel__close" aria-label="Close the story panel" onClick={onClose}>
+              ×
+            </button>
+            <h2 className="story-panel__head">The story</h2>
+            <StoryField
+              name="Logline"
+              say="The story's central question, in a sentence."
+              value={logline}
+              openWords={loglineOpen}
+              placeholder="Can a man who lies for a living tell the truth once, when it costs him the job?"
+              onSet={onSetLogline}
+              onSetOpen={onSetLoglineOpen}
+            />
+            <StoryField
+              name="Premise"
+              say="What is true before the story starts, or a rule the whole of it keeps. For a series, what the series is about."
+              value={premise}
+              openWords={premiseOpen}
+              placeholder="Five days in August. Nobody says “sell” to her face until the end."
+              onSet={onSetPremise}
+              onSetOpen={onSetPremiseOpen}
+            />
+            <section className="story-panel__field">
+              <p className="story-panel__k">Open questions{openLines.length ? ` · ${openLines.length}` : ""}</p>
+              <p className="story-panel__say">What you have not decided that belongs to no one scene. The wall lists them and never asks you about them.</p>
+              <OpenLines lines={openLines} onAdd={onAddOpenLine} onStrike={onStrikeOpenLine} onClose={onClose} />
+            </section>
+          </div>
+        </>
       ) : null}
-
-      {/* Three plain ways on, in one row; each opens its own field, one at a time. */}
-      <div className="logline__offers">
-        {loglineEmpty ? (
-          <button type="button" className="title-link" onClick={() => setLeaving("logline")}>
-            No logline yet? Say why
-          </button>
-        ) : null}
-        <button type="button" className={`title-link ${openLines.length ? "has-lines" : ""} ${panel === "open" ? "is-on" : ""}`} aria-expanded={panel === "open"} onClick={() => setPanel(panel === "open" ? null : "open")}>
-          Open questions{openLines.length ? ` · ${openLines.length}` : ""}
-        </button>
-        {premiseHeld ? null : (
-          <button type="button" className={`title-link ${panel === "premise" ? "is-on" : ""}`} aria-expanded={panel === "premise"} onClick={() => setPanel(panel === "premise" ? null : "premise")}>
-            Add a premise
-          </button>
-        )}
-      </div>
-
-      </div>
-
-      {panel === "open" ? <OpenLines lines={openLines} onAdd={onAddOpenLine} onStrike={onStrikeOpenLine} onClose={() => setPanel(null)} /> : null}
-      {panel === "premise" && !premiseHeld ? (
-        <div className="title-panel">
-          <button type="button" className="title-panel__close" aria-label="Close the premise" onClick={() => setPanel(null)}>
-            ×
-          </button>
-          <h3 className="title-panel__head">The premise</h3>
-          <p className="title-panel__say">What is true before the story starts, or a rule the whole of it keeps. For a series, what the series is about.</p>
-          <EditableText
-            as="p"
-            className="title-panel__field"
-            value=""
-            onCommit={(text) => {
-              if (text.trim()) {
-                onSetPremise(text);
-                setPanel(null);
-              }
-            }}
-            ariaLabel="Premise"
-            placeholder="Five days in August. Nobody says “sell” to her face until the end."
-            autoFocus
-            // Kept when the writer leaves the field or presses Enter, not as they type: once kept, the premise
-            // moves to its place above the logline, and that must not happen under the caret.
-            debounceMs={600000}
-          />
-          <button type="button" className="title-link" onClick={() => setLeaving("premise")}>
-            Not decided? Say why
-          </button>
-          {leaving === "premise" ? <OpenField className="title-panel__field" words="" ariaLabel="Premise, left open" onCommit={leavePremise} autoFocus /> : null}
-        </div>
-      ) : null}
-    </div>
+    </>
   );
 }

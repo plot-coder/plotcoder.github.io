@@ -88,7 +88,7 @@ import {
   setBoardNameOpen,
   setProjectNameOpen,
   structureBeats,
-  reidentifyProject,
+  reidentifyBoard, reidentifyProject,
   renameProject,
   castElsewhere,
   landingsOn,
@@ -658,8 +658,14 @@ function sceneLabel(state, noteId) {
   return index >= 0 ? String(index + 1) : "?";
 }
 /** "Ep 1, sc 4": a scene on another board, named by the board's place in the project and the scene's in its story (R58). */
+/** A board of the project in quotes, or the plain fact that the project has no board by that id (pass 3a, entry 7): never a raw id where a name should be. */
+function boardName(project, boardId) {
+  const meta = boardById(project, boardId);
+  return meta ? `"${meta.name}"` : `a board this project does not have (${boardId}; set_payoff_board with a board of this project, or null to take the claim back)`;
+}
 function episodeLabel(project, boards, boardId, noteId) {
   const index = project.boards.findIndex((meta) => meta.id === boardId);
+  if (index < 0) return "no episode of this project";
   const state = isBoardState(boards[boardId]) ? normalizeState(boards[boardId]) : null;
   return `Ep ${index + 1}${state && noteId ? `, sc ${sceneLabel(state, noteId)}` : ""}`;
 }
@@ -2309,7 +2315,7 @@ server.registerTool(
     const countWords = (session) => `${session.count} change${session.count === 1 ? "" : "s"}${things(session) > session.count ? ` (${things(session)} things)` : ""}`;
     const recordLines = sessions.slice(0, 2).map((session) => `${session === sessions[0] ? "since anyone last changed this wall" : "before that"}: ${countWords(session)} by ${session.by}, ${spanWords(session.from, session.to)} — ${session.lines.map((item) => item.line).join("; ")}${session.more ? `; and ${session.more} more (read_record has the whole record)` : ""}`);
     if (state.handOver) recordLines.push(`the agent's last word, ${spanWords(state.handOver.at, state.handOver.at)}: "${state.handOver.words}" (it stands until the writer's next change)`);
-    const gapLine = sessionGap ? `this connector's last reading was ${spanWords(sessionGap, sessionGap)}, more than half an hour ago: the door cannot tell one agent from the next behind one connector, so this session starts fresh — its undo trail is not yours, and the record below says what changed since` : null;
+    const gapLine = sessionGap ? `this connector's last reading was ${spanWords(sessionGap, sessionGap)}, more than half an hour ago: the door cannot tell one agent from the next behind one connector, so this session starts fresh — its undo trail is not yours, and ${recordLines.length ? "the record below says what changed since" : "the record holds nothing: no door has changed this wall since its record began"}` : null;
     sessionGap = null;
     lastReading = { findings: reading.findings, eighths: boardEighths(state) };
     sinceRead.length = 0;
@@ -2418,7 +2424,7 @@ server.registerTool(
       ...(reading.setups.length
         ? describeSetups(reading, state).map((line, index) => `  - ${line}${pageSpan(state, reading.setups[index])}${describePage(reading.setups[index]) ? `; ${describePage(reading.setups[index])}` : ""}`)
         : [reading.paidBy.length ? "  (no setup arrow on this board; what pays off a fold of another board is listed below)" : "  (no arrow is marked as a setup)"]),
-      ...reading.later.map((item) => `  - "${state.notes.find((note) => note.id === item.id)?.headline ?? item.id}" is folded and pays off later, on "${boardById(projectForRead, item.boardId)?.name ?? item.boardId}"${item.noteId ? `, at ${episodeLabel(projectForRead, boardsNow, item.boardId, item.noteId)} "${boardsNow[item.boardId]?.notes?.find((note) => note.id === item.noteId)?.headline ?? item.noteId}"` : " — no scene there claims it yet"}`),
+      ...reading.later.map((item) => `  - "${state.notes.find((note) => note.id === item.id)?.headline ?? item.id}" is folded and pays off later, on ${boardName(projectForRead, item.boardId)}${item.noteId ? `, at ${episodeLabel(projectForRead, boardsNow, item.boardId, item.noteId)} "${boardsNow[item.boardId]?.notes?.find((note) => note.id === item.noteId)?.headline ?? item.noteId}"` : " — no scene there claims it yet"}`),
       ...reading.paidBy.map((item) => `  - "${state.notes.find((note) => note.id === item.id)?.headline ?? item.id}" pays off "${item.fromHeadline}" from "${item.fromBoardName}" (${episodeLabel(projectForRead, boardsNow, item.fromBoardId, item.fromNoteId)}), one board earlier`),
       // The pages' two fact lines (R74, on Robert's word after pass 1b): who speaks on the written pages, and which stretch is written.
       ...describePages(reading, state),
@@ -4851,7 +4857,7 @@ server.registerTool(
         ...(reading.findings.length ? reading.findings.map((finding) => `   - [${finding.kind}] ${finding.text}`) : [`   (asks nothing${reading.left.length ? `; ${reading.left.length} left by the writer` : ""}${state.notes.length ? "" : ": no cards yet"})`]),
         ...(open ? [`   open by the writer's word: ${[reading.open.length ? `${reading.open.length} card${reading.open.length === 1 ? "" : "s"}` : "", reading.openFields.length ? `${reading.openFields.length} field${reading.openFields.length === 1 ? "" : "s"}` : "", meta.nameOpen ? "the board's name" : ""].filter(Boolean).join(", ")} — read_wall there lists them`] : []),
         ...reading.threads.filter((thread) => thread.startOpen || thread.endOpen).map((thread) => `   thread "${thread.name}" — ${thread.startOpen ? "starts nowhere yet" : ""}${thread.startOpen && thread.endOpen ? ", " : ""}${thread.endOpen ? "ends nowhere yet" : ""}`),
-        ...reading.later.map((item) => `   "${headline(item.id)}" is folded and pays off later, on "${boardById(project, item.boardId)?.name ?? item.boardId}"${item.noteId ? `, at "${boardsNow[item.boardId]?.notes?.find((note) => note.id === item.noteId)?.headline ?? item.noteId}"` : ", no scene there claimed yet"}`),
+        ...reading.later.map((item) => `   ${headline(item.id)} is folded and pays off later, on ${boardName(project, item.boardId)}${item.noteId ? `, at "${boardsNow[item.boardId]?.notes?.find((note) => note.id === item.noteId)?.headline ?? item.noteId}"` : ", no scene there claimed yet"}`),
       );
     }
     const pages = [...states.values()].reduce((sum, state) => sum + boardEighths(state), 0);
@@ -5481,7 +5487,8 @@ server.registerTool(
       if (inserted.error) return ok(`Could not import the project: ${inserted.error.message}`);
       for (const meta of record.boards) {
         const oldId = Object.keys(renamed).find((key) => renamed[key] === meta.id);
-        const state = oldId && isBoardState(opened.boards[oldId]) ? normalizeState(opened.boards[oldId]) : emptyState();
+        // The folds move with the boards: a payoff on another board names it by its new id (pass 3a, entry 7).
+        const state = oldId && isBoardState(opened.boards[oldId]) ? reidentifyBoard(normalizeState(opened.boards[oldId]), renamed) : emptyState();
         const board = await account.client.from("boards").insert({ id: meta.id, project_id: record.id, state, rev: 1, updated_by: null });
         if (board.error) return ok(`Imported "${record.name}" but could not make its board "${meta.name}": ${board.error.message}`);
       }

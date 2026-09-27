@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { emptyState } from "./reducer";
+import { applyCommand, emptyState } from "./reducer";
 import {
   castElsewhere,
   landingsOn,
@@ -22,6 +22,7 @@ import {
   setPremise,
   setTitlePage,
   type ProjectRecord,
+  reidentifyBoard,
   reidentifyProject,
   addStructure,
   removeStructure,
@@ -248,6 +249,21 @@ describe("reidentifyProject (R40)", () => {
     expect(fresh.updatedAt).toBe("2026-02-01T00:00:00.000Z");
     // The map is not part of the record once normalized.
     expect("renamed" in normalizeProject(fresh)).toBe(false);
+  });
+
+  it("moves a board's folds along with the boards (pass 3a, entry 7)", () => {
+    const project = addBoard(emptyProject("2026-01-01T00:00:00.000Z"), "Episode two").project;
+    const [one, two] = project.boards;
+    let state = emptyState();
+    ({ state } = applyCommand(state, { type: "create_note", headline: "The key", plantsWhat: "the brass key" }));
+    ({ state } = applyCommand(state, { type: "set_payoff_board", ids: [state.notes[0].id], boardId: two.id }));
+    const fresh = reidentifyProject(project, "2026-02-01T00:00:00.000Z");
+    const moved = reidentifyBoard(state, fresh.renamed);
+    expect(moved.notes[0].payoffBoardId).toBe(fresh.renamed[two.id]);
+    expect(moved.notes[0].payoffBoardId).not.toBe(two.id);
+    // A board the map does not know stays as it is, and a wall with no folds is the same object.
+    expect(reidentifyBoard(state, { [one.id]: "x" })).toBe(state);
+    expect(reidentifyBoard(emptyState(), fresh.renamed)).toEqual(emptyState());
   });
 });
 

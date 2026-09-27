@@ -26,6 +26,7 @@ import {
   normalizeProject,
   addStructure,
   removeStructure as removeStructureFrom,
+  reidentifyBoard,
   reidentifyProject,
   removeBoard as removeBoardFrom,
   renameBoard as renameBoardIn,
@@ -561,8 +562,10 @@ class BoardStore {
     // Every board's state moves to its new key; the open board's is in hand.
     for (const [oldId, newId] of Object.entries(renamed)) {
       const state = oldId === this.project.activeBoardId ? this.state : loadBoard(oldId);
-      if (state) saveBoard(newId, state);
+      // The folds move with the boards (pass 3a, entry 7).
+      if (state) saveBoard(newId, reidentifyBoard(state, renamed));
     }
+    this.state = reidentifyBoard(this.state, renamed);
     this.project = next;
     saveProject(next);
     pruneBoards(next);

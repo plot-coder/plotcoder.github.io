@@ -95,6 +95,7 @@ export declare function reidentifyProject(
   project: ProjectRecord,
   now?: string,
 ): ProjectRecord & { renamed: Record<string, string> };
+export declare function reidentifyBoard(state: BoardState, renamed: Record<string, string>): BoardState;
 
 /** A board's state composed with the project's cast (R51). */
 export declare function withRoster(state: BoardState, project: ProjectRecord): BoardState;

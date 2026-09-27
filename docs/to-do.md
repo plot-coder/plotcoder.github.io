@@ -54,14 +54,7 @@ the account; pass 3a's report says where its export came from.
    recommendation after 3b is that its first two sessions are logged as
    the next round, friction log and working list as always.
 
-**Small, and yours to do without asking** (each listed with a plan in its
-working list): `set_aside` naming cards in the order given and saying a
-card leaves its group; `leave_question` reading the wall itself when its
-memory is stale; `set_payoff`'s tail leading with the board's name; the
-record saying "(set aside)" when a headline is not unique; the duplicate
-check comparing identical change lines; one-letter tokens out of the word
-checks; the change line printed beside the id in `read_pages`; renaming a
-place from the app's place page (today the door's `rename_place` does it).
+**The small list is built** (2026-09-27, `docs/to-do-small-items.md`): all eight, each with its plan and what the asking changed — the duplicate check asks once of a group and reads no line under four words; the one-letter rule is the page checks' only; `leave_question` already read the wall, and what changed is what it and the guides say. Not released: the door still carries 0.1.66. Left behind, in that file: a place's pictures do not follow a rename; a possible lost write through `window.plotcoder`.
 
 **How to work here.** Plan, ask, build, test (`CLAUDE.md`); Robert wants
 finished work committed, pushed, PR'd and merged without asking. Gate every

@@ -378,6 +378,26 @@ export function readWall(state, options = {}) {
     }
   }
 
+  // The same change line word for word is the same job claimed twice, whatever the headlines say (pass 4a, entry 4):
+  // one question for the cards that share it, however many. A claim under four words is not read, as the page checks
+  // read none (R74): "He leaves." twice is two scenes.
+  const headlinePairs = new Set(findings.filter((finding) => finding.kind === "duplicate").map((finding) => [...finding.ids].sort().join(",")));
+  const byChange = new Map();
+  for (const note of order) {
+    const change = (note.change ?? "").trim();
+    if (!change || change === "What changes?" || change.split(/\s+/).length < 4) continue;
+    const key = change.replace(/\s+/g, " ").toLowerCase();
+    byChange.set(key, [...(byChange.get(key) ?? []), note]);
+  }
+  for (const same of byChange.values()) {
+    if (same.length < 2 || (same.length === 2 && headlinePairs.has(same.map((note) => note.id).sort().join(",")))) continue;
+    findings.push({
+      kind: "duplicate",
+      ids: same.map((note) => note.id),
+      text: `${same.length === 2 ? `${quote(same[0])} and ${quote(same[1])}` : `${same.length} cards — ${list(same)} —`} say the same change, word for word: "${same[0].change.trim().replace(/\s+/g, " ")}". Are they doing the same job?`,
+    });
+  }
+
   // A payoff that lands before its setup. The wall gives the order (D20), so
   // if the arrow and the wall disagree, one of them is wrong — ask which.
   for (const setup of setups) {
@@ -573,8 +593,11 @@ export function readWall(state, options = {}) {
   // every question says the words it counted and the writer reads the rest.
   // Pass 1a read ten pages beside the wall by hand for every question about
   // the whole film, because nothing joined the one to the other.
-  const pageWords = (note) => new Set(words(pageText(note)).filter((word) => !nameWords.has(word)));
-  const claimWords = (text) => [...new Set(words(text).filter((word) => !nameWords.has(word)))];
+  // A letter alone is no word on a page: "Nell's" left an "s" that any page carries (pass 4a, entry 5). A figure stands.
+  // The page checks only: a headline's "Plan A" and "Plan B" are told apart by their letter.
+  const whole = (word) => word.length > 1 || /\p{N}/u.test(word);
+  const pageWords = (note) => new Set(words(pageText(note)).filter((word) => whole(word) && !nameWords.has(word)));
+  const claimWords = (text) => [...new Set(words(text).filter((word) => whole(word) && !nameWords.has(word)))];
   // A page written while its change line is still open (pass 1b, entry 55): counted as written, and said, so a scene with a page and no turn is not lost in the count.
   const pagesRead = { written: order.filter((note) => isMeasured(note)).length, of: order.length, foldsWithoutWords: 0, payoffsUnwritten: 0, changeOpen: order.filter((note) => isMeasured(note) && (note.changeOpen ?? "").trim()).map((note) => note.id) };
   // A payoff whose page has not a word of what the fold planted. The fold's

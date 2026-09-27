@@ -57,6 +57,8 @@ type CastLensProps = {
   /** A place's page (R79): the project's pages, and the writer's lines on one. */
   placePages: PlacePage[];
   onUpdatePlace: (name: string, fields: Partial<Record<PlaceField | "open", string>>) => void;
+  /** Rename a place from its page: every card that carries it, on every board, and the page with them. */
+  onRenamePlace: (from: string, to: string) => void;
   /** The cast is the project's (R51): its name, how many boards it has, and who is on a card of another board. */
   projectName: string;
   boardCount: number;
@@ -148,6 +150,7 @@ export function CastLens({
   onPlaceHold,
   placePages,
   onUpdatePlace,
+  onRenamePlace,
   projectName,
   boardCount,
   elsewhere,
@@ -263,7 +266,20 @@ export function CastLens({
             onClose={onClose}
           />
           <div className="cast-page">
-            <h3 className="cast-page__name">{placeRow?.name ?? placeSaved?.name ?? placeName}</h3>
+            <EditableText
+              as="h3"
+              className="cast-page__name"
+              value={placeRow?.name ?? placeSaved?.name ?? placeName}
+              onCommit={(name) => {
+                const from = placeRow?.name ?? placeSaved?.name ?? placeName;
+                const to = name.trim().replace(/\s+/g, " ");
+                if (!to || to === from) return;
+                onRenamePlace(from, to);
+                setPlaceName(to);
+              }}
+              ariaLabel={`Name of ${placeName}`}
+              placeholder="The place"
+            />
             <p className="cast-page__meta">
               {placeRow
                 ? `${placeRow.cards} of ${notes.length} card${notes.length === 1 ? "" : "s"} · about ${formatPages(placeRow.eighths)} pages`

@@ -9,3 +9,4 @@ export declare function placePage(project: { places?: PlacePage[] }, name: strin
 export declare function updatePlace<P extends { places?: PlacePage[] }>(project: P, name: string, fields: Partial<Record<PlaceField | "open", string>>, now?: string): P;
 export declare function renamePlacePage<P extends { places?: PlacePage[] }>(project: P, from: string, to: string, now?: string): P;
 export declare function placeLine(page: PlacePage | null): string;
+export declare function placeCardIds(state: { notes?: { id: string; location?: string }[] } | null | undefined, name: string): string[];

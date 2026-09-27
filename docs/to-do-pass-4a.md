@@ -32,9 +32,9 @@ see gets a mockup on the app's paper.
 - [ ] **40, 12, 33, 27–31, 34–36 · The generated pages.** The pages were filled from one bank of lines; a scene on the slip written as a room; the change line pasted as the last action line. The generator's, not the app's: `scripts/generate-series.mjs` should write each scene's change into the dialogue rather than paste it, keep interior cues indoors, and not have a person speak alone. **Held**, the generator; the size numbers stand either way.
 - [ ] **32 · The page check is satisfied by a pasted change line.** The check counts the change line's words on the page; a line that is the change line verbatim counts. *Plan:* skip an action line equal to the change line. *Ask:* on the generated series every page pastes it, so the wall would ask [behind] on two hundred scenes at once — right, and loud; on a writer's wall a paste is rare. **Held for Robert** with the generator change above, so both land together.
 - [ ] **13 · Headline and change line appear inside the script as action lines.** The generator's. With 32.
-- [ ] **3 · A set-aside card shares a headline with a card in the film, and the since-line names it by headline.** *Plan:* the record's line says "(set aside)" or the id when a headline is not unique on the board. **Held**, small.
-- [ ] **4 · Two cards share a change line word for word and the duplicate check reads headlines only.** *Plan:* the duplicate check also compares change lines when they are identical. **Held**, small, with 3a's 8.
-- [ ] **5 · "s" counted as a logline word.** *Plan:* drop one-letter tokens from the word checks. **Held**, small — worth doing with the threshold work.
+- [x] **3 · A set-aside card shares a headline with a card in the film, and the since-line names it by headline.** *Plan:* the record's line says "(set aside)" or the id when a headline is not unique on the board. **Held**, small.
+- [x] **4 · Two cards share a change line word for word and the duplicate check reads headlines only.** *Plan:* the duplicate check also compares change lines when they are identical. **Held**, small, with 3a's 8.
+- [x] **5 · "s" counted as a logline word.** *Plan:* drop one-letter tokens from the word checks. **Held**, small — worth doing with the threshold work.
 - [ ] **6 · Two lengths for one board.** Long-standing (pass 1a, 3a's 13). **Held.**
 - [ ] **14, 21, 35 · The script's own contradictions and unset props.** The generator's. **Noted.**
 - [ ] **1, 2 · The agent's fetch; open_project on a project already in hand.** Not the app; the prompt's wording. **Noted.**

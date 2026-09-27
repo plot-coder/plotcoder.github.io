@@ -184,9 +184,9 @@ only when the server is started with `PLOTCODER_JSON=1`.
   now"; it asks again on its own the moment the question would read
   differently (a card in it changes, a page moves), and `ask_again` brings it
   back now. Only on the writer's word, never unasked; a left question is not
-  a dismissed one. **Edits first, then read, then leave:** a leave answers the
-  reading in front of you, and an edit changes the questions — so make the
-  writer's changes, `read_wall` again, then leave what they still want left.
+  a dismissed one. **Edits first, then leave:** an edit changes the questions, and a
+  leave reads the wall itself as it stands — so make the writer's changes,
+  then leave what they still want left, with no `read_wall` between.
   A leave the edits have overtaken is refused, with the question as it was
   and what the wall asks now. Give `why` — the writer's reason, in their
   words — so the next reader sees it on the wall; leave several at once with
@@ -355,7 +355,9 @@ only when the server is started with `PLOTCODER_JSON=1`.
   cast, its fold and its place on the wall, and leaves the order, the
   count, the pages and every export; its follows arrows go, and where it
   stood between two cards the story closes over it (setup arrows, being
-  claims, stay); a beat set aside is a scene. `read_wall` lists it under
+  claims, stay); a beat set aside is a scene. A card out of the film is
+  out of its group, and the reply says which group it left; the reply names
+  the cards in the order you gave them and every arrow that went by its cards. `read_wall` lists it under
   "set aside" and asks nothing of it, `list_board` lists it apart from the
   cards in story order, `organize` leaves it where the writer put it, and
   it takes no follows arrow and no thread while it is aside. `aside: false`
@@ -577,7 +579,9 @@ sends a draft out clean, on the writer's word, and `true` puts it back.
   that part with a line saying what it is of the whole; the three text
   exports take the same, so a project past any window is read a stretch at
   a time. Without them, the same script with each card's id beside its heading and
-  whether it is measured (written) or estimated. Read it before writing.
+  whether it is measured (written) or estimated. The heading's note also
+  carries the card's change line — `what changes: "…"` — which is the card's
+  claim and may be on no line of the page. Read it before writing.
   A card with no place prints `NO PLACE YET:` and then its headline where
   the place would go, on every page and in every export, so a headline in
   capitals is never read as a place; a place left open prints `PLACE NOT

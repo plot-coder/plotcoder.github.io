@@ -99,3 +99,10 @@ export function placeLine(page) {
     page.open ? `not decided, by the writer's word: ${page.open}` : "",
   ].filter(Boolean).join("; ");
 }
+
+/** The cards of one board at a place, by the phrase they carry (case and spacing aside): the ids a rename moves. */
+export function placeCardIds(state, name) {
+  const key = placeKey(name);
+  if (!key) return [];
+  return (state?.notes ?? []).filter((note) => placeKey(note.location ?? "") === key).map((note) => note.id);
+}

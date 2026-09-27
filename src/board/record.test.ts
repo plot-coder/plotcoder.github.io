@@ -115,3 +115,21 @@ describe("a line changed and a note taken off are not a rewrite (pass 2b, entry 
     expect(describeChange(before, rewrite).lines).toEqual(['rewrote "The first Friday" (1/8 pages)']);
   });
 });
+
+describe("two cards under one headline are told apart on the record (pass 4a, entry 3)", () => {
+  it("says which is set aside and gives the other the head of its id; a headline of one card's stays plain", () => {
+    const before = run(
+      base(),
+      { type: "create_note", id: "bank-two-long-id", x: 600, y: 0, headline: "The bank", change: "The figure, again." },
+      { type: "set_aside", ids: ["bank"], aside: true },
+    );
+    const after = run(before, { type: "set_length", ids: ["bank"], lengthEighths: 8 }, { type: "set_length", ids: ["bank-two-long-id"], lengthEighths: 4 }, { type: "set_length", ids: ["f"], lengthEighths: 4 });
+    expect(describeChange(before, after).lines).toEqual([
+      'sized "The first Friday" at 4/8 pages',
+      'sized "The bank" (set aside) at 1 pages',
+      'sized "The bank" (id bank-two) at 4/8 pages',
+    ]);
+    // The change that sets it aside says so once.
+    expect(describeChange(run(before, { type: "set_aside", ids: ["bank"], aside: false }), before).lines).toEqual(['set "The bank" aside, out of the film']);
+  });
+});

@@ -1294,7 +1294,8 @@ export function applyCommand(state, command, now = nowIso()) {
       return {
         state: { ...state, notes, arrows, groups, threads },
         changed: true,
-        result: { ids: [...movingIds], aside, arrowsDropped: dropped, closedOver: closed, onThreads },
+        // Named in the order the writer gave them, not the wall's (pass 3b, entry 14).
+        result: { ids: [...ids].filter((id) => movingIds.has(id)), aside, arrowsDropped: dropped, closedOver: closed, onThreads },
       };
     }
 

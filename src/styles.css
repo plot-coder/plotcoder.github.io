@@ -4006,20 +4006,15 @@ body {
   font-family: ui-sans-serif, system-ui, sans-serif;
 }
 
-.canvas.has-map .note-board {
-  bottom: 120px;
-}
-
+/* The wall and the bar stand on the map, however tall it is: it takes only the rows it has something to show in. */
+.canvas.has-map .note-board,
 .canvas.has-ruler .note-board {
-  bottom: 22px;
+  bottom: var(--map-height, 22px);
 }
 
-.canvas.has-map .general-bar {
-  bottom: calc(120px + 1.1rem);
-}
-
+.canvas.has-map .general-bar,
 .canvas.has-ruler .general-bar {
-  bottom: calc(22px + 1.1rem);
+  bottom: calc(var(--map-height, 22px) + 1.1rem);
 }
 
 .story-map__svg {

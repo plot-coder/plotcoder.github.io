@@ -14,7 +14,7 @@
 import { useEffect, useRef, useState } from "react";
 import { EIGHTHS_PER_PAGE, formatPages, targetWords, type BoardState } from "./board/reducer";
 import type { WallReading } from "./board/readWall";
-import { beatLabels, pageTicks, storyMapLayout, xFor } from "./storyMapLayout";
+import { beatLabels, pageTicks, storyMapLayout, storyMapRows, xFor } from "./storyMapLayout";
 import type { TemplateBeat } from "./board/templates";
 
 type StoryMapProps = {
@@ -37,9 +37,6 @@ type StoryMapProps = {
   structure: { name: string; beats: ReadonlyArray<Pick<TemplateBeat, "name" | "at">> } | null;
 };
 
-/** Room above the blocks for the structure's marks and names. */
-const STRUCTURE_ROW = 34;
-
 const PAPER: Record<string, string> = {
   yellow: "#ffe56a",
   pink: "#ffb6c8",
@@ -49,8 +46,6 @@ const PAPER: Record<string, string> = {
 };
 
 const PAD = 28;
-const HEIGHT_OPEN = 120;
-const HEIGHT_RULER = 22;
 
 export function StoryMap({
   board,
@@ -80,10 +75,9 @@ export function StoryMap({
   }, []);
 
   const layout = storyMapLayout(board, reading);
-  const height = (open ? HEIGHT_OPEN : HEIGHT_RULER) + (open && structure ? STRUCTURE_ROW : 0);
-  const axisY = open ? height - 24 : height - 8;
-  const blockTop = axisY - 14;
-  const beatTop = axisY - 24;
+  // Only the rows that have something to show take room.
+  const rows = storyMapRows({ open, structure: Boolean(structure), groups: layout.groups.length > 0, beats: layout.beats.length > 0 });
+  const { height, axisY, blockTop, beatTop } = rows;
   const x = (eighths: number) => xFor(eighths, layout.spanEighths, width, PAD);
   const labels = open ? beatLabels(layout.beats, layout.spanEighths, width, PAD) : [];
   const over = layout.totalEighths - layout.targetEighths;
@@ -107,6 +101,7 @@ export function StoryMap({
       ref={hostRef}
       className={`story-map ${open ? "is-open" : "is-ruler"}`}
       style={{ height }}
+      data-height={height}
       aria-label="Story map"
       onMouseLeave={() => setScrubId(null)}
     >
@@ -196,7 +191,7 @@ export function StoryMap({
                       <rect className="story-map__sag" x={left} y={axisY + 1} width={w} height={5} />
                     ) : null}
                     {w > 24 ? (
-                      <text className="story-map__run" x={left + w / 2} y={beatTop - 6}>
+                      <text className="story-map__run" x={left + w / 2} y={rows.labelY}>
                         {pages}
                       </text>
                     ) : null}
@@ -210,7 +205,7 @@ export function StoryMap({
             ? layout.groups.map((group) => {
                 const gx0 = x(group.start);
                 const gx1 = x(group.end);
-                const gy = beatTop - 18;
+                const gy = rows.groupY - 5;
                 return (
                   <g key={group.id}>
                     <path className="story-map__group" d={`M ${gx0} ${gy + 5} v -5 H ${gx1} v 5`} />
@@ -239,10 +234,10 @@ export function StoryMap({
                       if (labelled) lastLabelX = mx;
                       return (
                         <g key={mark.name}>
-                          <line className="story-map__structure-line" x1={mx} y1={38} x2={mx} y2={beatTop - 30} />
-                          <path className="story-map__structure-mark" d={`M ${mx - 3} 34 L ${mx + 3} 34 L ${mx} 39 Z`} />
+                          <line className="story-map__structure-line" x1={mx} y1={rows.structureY + 4} x2={mx} y2={beatTop - 2} />
+                          <path className="story-map__structure-mark" d={`M ${mx - 3} ${rows.structureY} L ${mx + 3} ${rows.structureY} L ${mx} ${rows.structureY + 5} Z`} />
                           {labelled ? (
-                            <text className="story-map__structure-label" x={mx + 5} y={37}>
+                            <text className="story-map__structure-label" x={mx + 5} y={rows.structureY + 3}>
                               {index === 0 ? `${structure.name} · ${mark.name}` : mark.name}
                             </text>
                           ) : null}
@@ -250,7 +245,7 @@ export function StoryMap({
                       );
                     })}
                     {past > 0 ? (
-                      <text className="story-map__structure-past" x={width - PAD} y={37}>
+                      <text className="story-map__structure-past" x={width - PAD} y={rows.structureY + 3}>
                         {past} more past the end of the story so far →
                       </text>
                     ) : null}
@@ -390,7 +385,7 @@ export function StoryMap({
               key={label.id}
               className="story-map__beat-label"
               x={label.x + 1}
-              y={beatTop - 6}
+              y={rows.labelY}
               onClick={() => onJump(label.id)}
             >
               {label.text}

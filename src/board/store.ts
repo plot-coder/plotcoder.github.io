@@ -120,6 +120,10 @@ function coalesceKey(command: Command): string | null {
     case "set_location":
     case "set_when":
       return `place_line:${[...command.ids].sort().join(",")}`;
+    // The day and the light share a line under it (R78): one step back.
+    case "set_day":
+    case "set_light":
+      return `day_line:${[...command.ids].sort().join(",")}`;
     // The fold's words are typed on the edge (R62): one step back.
     case "set_plant":
       return command.what !== undefined ? `set_plant_what:${[...command.ids].sort().join(",")}` : null;
@@ -900,6 +904,8 @@ export type PlotCoderWindowApi = {
   setProjectNameOpen: (words: string) => unknown;
   /** A when, or with `open` the writer's words for why it is not decided (R61). */
   setWhen: (ids: string[], when: string, open?: string) => unknown;
+  setDay: (ids: string[], day: string, open?: string) => unknown;
+  setLight: (ids: string[], light: string, open?: string) => unknown;
   /** The writer's words for why there is no premise yet (R61); "" takes them back. */
   setPremiseOpen: (words: string) => unknown;
   /** The writer's words for why a board's name is not decided (R61). */
@@ -962,6 +968,8 @@ export function installWindowApi(): void {
     setLocation: (ids, location, open) => boardStore.dispatch({ type: "set_location", ids, location, ...(open !== undefined ? { open } : {}) }),
     setProjectNameOpen: (words) => boardStore.setProjectNameOpen(words),
     setWhen: (ids, when, open) => boardStore.dispatch({ type: "set_when", ids, when, ...(open !== undefined ? { open } : {}) }),
+    setDay: (ids, day, open) => boardStore.dispatch({ type: "set_day", ids, day, ...(open !== undefined ? { open } : {}) }),
+    setLight: (ids, light, open) => boardStore.dispatch({ type: "set_light", ids, light, ...(open !== undefined ? { open } : {}) }),
     setPremiseOpen: (words) => boardStore.setPremiseOpen(words),
     setBoardNameOpen: (id, words) => boardStore.setBoardNameOpen(id, words),
     setOpen: (ids, open) => boardStore.dispatch({ type: "set_open", ids, open }),

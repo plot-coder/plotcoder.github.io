@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, ty
 import { wordSentence } from "./board/words";
 import { CastLine } from "./CastLine";
 import { PlaceLine } from "./PlaceLine";
+import { DayLine } from "./DayLine";
 import { EditableText } from "./EditableText";
 import { DEFAULT_NOTE_EIGHTHS, formatPages, isMeasured, noteEighths, type BoardCharacter } from "./board/reducer";
 import { NOTE_COLORS, type MockNote, type NoteColor, type NoteRank } from "./noteMock";
@@ -48,6 +49,7 @@ type NoteCardProps = {
   onCastNames: (id: string, names: string[], open: string) => void;
   /** Where and when the scene happens, typed as one line on the card (R37, R55). */
   onLocation: (id: string, location: string, when: string, whenOpen: string, locationOpen: string) => void;
+  onDayLight: (id: string, day: string, light: string, dayOpen: string, lightOpen: string) => void;
   onRaise: (id: string) => void;
   /** The pointer is over this card (or has left it): the Story Map lights its block. */
   onHover: (id: string | null) => void;
@@ -98,6 +100,7 @@ export function NoteCard({
   onOpenPages,
   onCastNames,
   onLocation,
+  onDayLight,
   onRaise,
   onHover,
   onPointerDown,
@@ -675,6 +678,15 @@ export function NoteCard({
         places={places}
         onBegin={() => onRaise(note.id)}
         onCommit={(location, when, whenOpen, locationOpen) => onLocation(note.id, location, when, whenOpen, locationOpen)}
+      />
+      <DayLine
+        headline={note.headline}
+        day={note.day}
+        light={note.light}
+        dayOpen={note.dayOpen}
+        lightOpen={note.lightOpen}
+        onBegin={() => onRaise(note.id)}
+        onCommit={(day, light, dayOpen, lightOpen) => onDayLight(note.id, day, light, dayOpen, lightOpen)}
       />
       <button
         type="button"

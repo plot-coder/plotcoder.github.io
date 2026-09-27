@@ -1192,6 +1192,27 @@ describe("set_location with open (R61's edge)", () => {
   });
 });
 
+describe("set_day and set_light (R78)", () => {
+  it("sets the day and the light as the when is set, opens either in the writer's words, and repairs cards without them", () => {
+    const base = applyCommand(emptyState(), { type: "create_note", id: "a", headline: "The office", when: "DAY" }, NOW).state;
+    const dated = applyCommand(base, { type: "set_day", ids: ["a"], day: "  day  four " }, NOW);
+    expect(dated.changed).toBe(true);
+    expect(dated.state.notes[0]).toMatchObject({ day: "day four", dayOpen: "", when: "DAY" });
+    const lit = applyCommand(dated.state, { type: "set_light", ids: ["a"], open: "rain or not — R." }, NOW).state;
+    expect(lit.notes[0]).toMatchObject({ light: "", lightOpen: "rain or not — R." });
+    // A value decides it and the open words go; open "" leaves it blank.
+    const decided = applyCommand(lit, { type: "set_light", ids: ["a"], light: "rain on the window" }, NOW).state;
+    expect(decided.notes[0]).toMatchObject({ light: "rain on the window", lightOpen: "" });
+    expect(applyCommand(decided, { type: "set_day", ids: ["a"], open: "" }, NOW).state.notes[0]).toMatchObject({ day: "day four", dayOpen: "" });
+    expect(applyCommand(decided, { type: "set_day", ids: ["a"], day: "day four" }, NOW).changed).toBe(false);
+    // Born with them, and repaired without them.
+    const born = applyCommand(emptyState(), { type: "create_note", headline: "b", day: "day one", lightOpen: "the light — R." }, NOW).state.notes[0];
+    expect(born).toMatchObject({ day: "day one", dayOpen: "", light: "", lightOpen: "the light — R." });
+    const old = { ...decided, notes: decided.notes.map(({ day, dayOpen, light, lightOpen, ...rest }) => rest) };
+    expect(normalizeState(old).notes[0]).toMatchObject({ day: "", dayOpen: "", light: "", lightOpen: "" });
+  });
+});
+
 describe("set_when with open (R61)", () => {
   it("leaves a card's when open in the writer's words; a when decides it; open \"\" leaves it blank", () => {
     const base = run(emptyState(), { type: "create_note", id: "a", headline: "The key", change: "Ruth has it." });

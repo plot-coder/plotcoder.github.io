@@ -612,6 +612,13 @@ export function App() {
     boardStore.dispatch({ type: "set_when", ids, when, open: whenOpen });
   }
 
+  // The day and the light, or the writer's words for why either is not decided (R78), one command each.
+  function setDayLight(id: string, day: string, light: string, dayOpen: string, lightOpen: string) {
+    const ids = selectedIds.includes(id) && selectedIds.length >= 2 ? selectedIds : [id];
+    boardStore.dispatch({ type: "set_day", ids, day, open: dayOpen });
+    boardStore.dispatch({ type: "set_light", ids, light, open: lightOpen });
+  }
+
   // Every picture of a person as one package (Roadmap 2, item 5).
   async function downloadPictures(characterId: string, name: string) {
     const pictures = account.assets.filter((asset) => asset.subject === characterId && asset.kind === "picture");
@@ -1101,6 +1108,7 @@ export function App() {
         places={placeNames}
         onCastNames={castNames}
         onLocation={setLocation}
+        onDayLight={setDayLight}
         onStructure={() => setStructureOpen(true)}
         onWords={() => setWordsOpen(true)}
         onAgents={() => setAgentsOpen(true)}

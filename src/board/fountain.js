@@ -217,6 +217,11 @@ export function toFountain(state, options = {}) {
     if (note.changeOpen) marks.push(`change line open: ${note.changeOpen}`);
     if (note.locationOpen) marks.push(`place open: ${note.locationOpen}`);
     if (note.whenOpen) marks.push(`when open: ${note.whenOpen}`);
+    // The day of the film's time and the light (R78): under the heading, never in it — a script says NIGHT; the day of the story is a note.
+    if (note.day) marks.push(note.day);
+    if (note.dayOpen) marks.push(`day open: ${note.dayOpen}`);
+    if (note.light) marks.push(`light: ${note.light}`);
+    if (note.lightOpen) marks.push(`light open: ${note.lightOpen}`);
     const onThreads = (state.threads ?? []).filter((thread) => thread.noteIds.includes(note.id)).map((thread) => thread.name);
     if (onThreads.length) marks.push(`thread: ${onThreads.join(", ")}`);
     if (revisionMarksFor(marks, note)) marks.push(`changed in the ${state.revision.color} revision`);

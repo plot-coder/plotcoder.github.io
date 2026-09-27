@@ -109,6 +109,14 @@ export type BoardNote = {
   when: string;
   /** The writer's words for why the when is not decided (R61), or empty; while they stand the when is blank and the reading lists them. */
   whenOpen: string;
+  /** Which day of the film's time the scene falls on (R78), in the writer's words — "day four" — or empty. */
+  day: string;
+  /** The writer's words for why the day is not decided, or empty. */
+  dayOpen: string;
+  /** The light of the scene (R78): the weather, the hour's light, in the writer's words, or empty. */
+  light: string;
+  /** The writer's words for why the light is not decided, or empty. */
+  lightOpen: string;
   /** The writer's words for why the place is not decided (R61's edge), or empty; while they stand the place is blank, listed, and not asked. */
   locationOpen: string;
   /** The writer's words for why the change line is not decided (R67), or empty; while they stand the change line waits, listed and not asked, and the card's other questions stand. */
@@ -224,6 +232,10 @@ export type Command =
       location?: string;
       when?: string;
       whenOpen?: string;
+      day?: string;
+      dayOpen?: string;
+      light?: string;
+      lightOpen?: string;
       locationOpen?: string;
       /** The writer's words for why there is no change line yet (R67), in place of one. */
       changeOpen?: string;
@@ -265,6 +277,8 @@ export type Command =
   | { type: "set_payoff_board"; ids: string[]; boardId: string | null; noteId?: string | null }
   | { type: "set_location"; ids: string[]; location?: string; open?: string }
   | { type: "set_when"; ids: string[]; when?: string; open?: string }
+  | { type: "set_day"; ids: string[]; day?: string; open?: string }
+  | { type: "set_light"; ids: string[]; light?: string; open?: string }
   | { type: "apply_template"; template: string; beats?: Array<{ name: string; prompt: string; at: number }> }
   | { type: "set_text"; id: string; text: string }
   | { type: "lock_numbers"; order?: string[] }

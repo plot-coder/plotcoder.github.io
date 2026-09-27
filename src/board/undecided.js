@@ -37,7 +37,7 @@ export function maybeLine(note, state) {
   return `${names.map((name) => `${name}?`).join(" ")} — not decided whether ${names.length === 1 ? "they are" : "they are"} here.`;
 }
 
-const FIELD = { change: "what changes", location: "where", when: "when" };
+const FIELD = { change: "what changes", location: "where", when: "when", day: "the day", light: "the light" };
 
 /**
  * The last page of a script: what is not decided, in the writer's words.
@@ -73,7 +73,7 @@ export function undecidedPage(state, extras = {}) {
     const parts = [];
     const whole = openById.get(id);
     if (whole) parts.push(whole.words);
-    for (const kind of ["change", "location", "when"]) {
+    for (const kind of ["change", "location", "when", "day", "light"]) {
       const field = reading.openFields.find((item) => item.field === kind && item.id === id);
       if (field) parts.push(`${FIELD[kind]}: ${field.words}`);
     }
@@ -93,6 +93,8 @@ export function undecidedPage(state, extras = {}) {
       (note.changeOpen ?? "").trim() ? `${FIELD.change}: ${note.changeOpen.trim()}` : "",
       (note.locationOpen ?? "").trim() ? `${FIELD.location}: ${note.locationOpen.trim()}` : "",
       (note.whenOpen ?? "").trim() ? `${FIELD.when}: ${note.whenOpen.trim()}` : "",
+      (note.dayOpen ?? "").trim() ? `${FIELD.day}: ${note.dayOpen.trim()}` : "",
+      (note.lightOpen ?? "").trim() ? `${FIELD.light}: ${note.lightOpen.trim()}` : "",
       maybeNames(note, state).length ? `whether ${maybeNames(note, state).join(" and ")} ${maybeNames(note, state).length === 1 ? "is" : "are"} in it` : "",
       (note.castOpen ?? "").trim() ? `${castOpenLabel(note)}: ${note.castOpen.trim()}` : "",
     ].filter(Boolean);

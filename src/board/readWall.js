@@ -794,6 +794,8 @@ function describeOpenFields(state, order) {
   for (const note of order) if ((note.locationOpen ?? "").trim()) fields.push({ field: "location", id: note.id, words: note.locationOpen.trim() });
   for (const note of order) if ((note.changeOpen ?? "").trim()) fields.push({ field: "change", id: note.id, words: note.changeOpen.trim() });
   for (const note of order) if ((note.whenOpen ?? "").trim()) fields.push({ field: "when", id: note.id, words: note.whenOpen.trim() });
+  for (const note of order) if ((note.dayOpen ?? "").trim()) fields.push({ field: "day", id: note.id, words: note.dayOpen.trim() });
+  for (const note of order) if ((note.lightOpen ?? "").trim()) fields.push({ field: "light", id: note.id, words: note.lightOpen.trim() });
   for (const note of order) {
     const words = maybeWords(note, state);
     if (words) fields.push({ field: "cast", id: note.id, words });
@@ -842,7 +844,7 @@ function sameList(a, b) {
 export function openOutsideFilm(state) {
   let count = 0;
   for (const note of state.notes.filter((item) => !inStory(item))) {
-    for (const words of [note.open, note.changeOpen, note.locationOpen, note.whenOpen, note.castOpen]) if ((words ?? "").trim()) count += 1;
+    for (const words of [note.open, note.changeOpen, note.locationOpen, note.whenOpen, note.dayOpen, note.lightOpen, note.castOpen]) if ((words ?? "").trim()) count += 1;
     if (maybeWords(note, state)) count += 1;
   }
   return count;
@@ -851,7 +853,7 @@ export function openOutsideFilm(state) {
 export function describeUndecided(state, reading, extras = {}) {
   const byId = new Map(state.notes.map((note) => [note.id, note]));
   const name = (id) => `"${byId.get(id)?.headline ?? id}"`;
-  const FIELD = { change: "the change line", location: "where", when: "when" };
+  const FIELD = { change: "the change line", location: "where", when: "when", day: "the day", light: "the light" };
   const open = [];
   for (const item of extras.project ?? []) open.push(`  - ${item.label} — ${item.words}`);
   for (const line of reading.openLines ?? []) open.push(`  - about the film — ${line}`);
@@ -860,7 +862,7 @@ export function describeUndecided(state, reading, extras = {}) {
 
   // Words shared by three or more cards in one field are one line.
   const grouped = new Set();
-  for (const kind of ["change", "location", "when"]) {
+  for (const kind of ["change", "location", "when", "day", "light"]) {
     const byWords = new Map();
     for (const field of reading.openFields.filter((item) => item.field === kind)) {
       const key = field.words.toLowerCase();
@@ -881,7 +883,7 @@ export function describeUndecided(state, reading, extras = {}) {
     const parts = [];
     const whole = openById.get(id);
     if (whole) parts.push(`open: ${whole.words}${extras.wouldAsk ? extras.wouldAsk(whole) : ""}`);
-    for (const kind of ["change", "location", "when"]) {
+    for (const kind of ["change", "location", "when", "day", "light"]) {
       const field = reading.openFields.find((item) => item.field === kind && item.id === id);
       if (field && !grouped.has(`${kind}:${id}`)) parts.push(`${FIELD[kind]}: ${field.words}`);
     }
@@ -900,6 +902,8 @@ export function describeUndecided(state, reading, extras = {}) {
       (note.changeOpen ?? "").trim() ? `${FIELD.change}: ${note.changeOpen.trim()}` : "",
       (note.locationOpen ?? "").trim() ? `${FIELD.location}: ${note.locationOpen.trim()}` : "",
       (note.whenOpen ?? "").trim() ? `${FIELD.when}: ${note.whenOpen.trim()}` : "",
+      (note.dayOpen ?? "").trim() ? `${FIELD.day}: ${note.dayOpen.trim()}` : "",
+      (note.lightOpen ?? "").trim() ? `${FIELD.light}: ${note.lightOpen.trim()}` : "",
       maybeWords(note, state),
       (note.castOpen ?? "").trim() ? `${castOpenLabel(note)}: ${note.castOpen.trim()}` : "",
     ].filter(Boolean);

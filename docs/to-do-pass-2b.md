@@ -105,3 +105,20 @@ door's undo stack was the last agent's.
   page prints; set_title_page turns it off").
 - [ ] **22 · export_project inline: the reply did not say no file was
   written.** *Plan:* the inline reply says "no file kept on the account".
+
+## Direction 2: the man's card comes back (entries 23 to 26)
+
+The arrow, then one paragraph inserted by edit_scene; the [unsaid]
+question came and went between the two calls.
+
+- [ ] **23 · The wall holds no "where in the scene" for a payoff.**
+  *Decided:* the page is the writer's and the agent's; the wall claims
+  the scene, not the line. Nothing to build.
+- [ ] **24 · The day-one guide does not mention edit_scene.** *Plan:* one
+  line in the day-one guide's Pages paragraph — "to change or add one
+  line, edit_scene; the whole guide's Pages section has the rest" — so
+  a resend of the page is never the first reach.
+- [ ] **25 · Whether one insert can carry several paragraphs.** *Plan:*
+  the description says a blank line inside `insert` makes two paragraphs.
+- [ ] **26 · A two-part direction shows a question between the calls.**
+  *Decided against, as pass 1b's 66:* the wall reads the wall as it is.

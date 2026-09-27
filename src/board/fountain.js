@@ -12,6 +12,7 @@
 // `= ` synopsis; `[[ ]]` note. All of them are invisible on the printed page
 // except the heading and the action.
 
+import { parseShotLine } from "./shots.js";
 import { formatPages, boardEighths, targetWords } from "./reducer.js";
 import { PLACEHOLDER_CHANGE, storyOrder } from "./readWall.js";
 import { maybeLine, undecidedLines } from "./undecided.js";
@@ -313,7 +314,8 @@ export function fromFountain(text) {
       current.synopsis = `${current.synopsis}${current.synopsis ? " " : ""}${line.replace(/^=+\s*/, "")}`.trim();
       continue;
     }
-    if (line.startsWith("[[") && line.endsWith("]]")) {
+    // A shot's line is a note that stays in the scene (R80): it is where the shot stands in the script.
+    if (line.startsWith("[[") && line.endsWith("]]") && !parseShotLine(line)) {
       current.notes.push(line.slice(2, -2).trim());
       continue;
     }

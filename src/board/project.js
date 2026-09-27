@@ -37,6 +37,7 @@ export function emptyProject(now = nowIso()) {
     nameOpen: "",
     premise: "",
     premiseOpen: "",
+    look: "",
     // The title page's byline and contact (pass 1a, entry 50): the project's, since every board's script goes out under them.
     author: "",
     contact: "",
@@ -99,6 +100,8 @@ export function normalizeProject(value, now = nowIso()) {
     premise: typeof value.premise === "string" ? value.premise.trim() : "",
     // A project written before R61 has no open premise (R61).
     premiseOpen: openWords(value.premiseOpen),
+    // A project written before R80 has no look: blank, which claims nothing and rides in no prompt.
+    look: typeof value.look === "string" ? value.look.trim() : "",
     // A project written before pass 1a has no byline: blank, which claims nothing.
     author: typeof value.author === "string" ? value.author.trim() : "",
     contact: typeof value.contact === "string" ? value.contact.trim() : "",
@@ -380,6 +383,13 @@ export function setPremise(project, premise, now = nowIso()) {
   const premiseOpen = next ? "" : (project.premiseOpen ?? "");
   if (next === project.premise && premiseOpen === (project.premiseOpen ?? "")) return project;
   return touch(project, { premise: next, premiseOpen }, now);
+}
+
+/** The project's look (R80): the style every shot's still shares — words, and an image tool's own codes — or "" for none. */
+export function setLook(project, look, now = nowIso()) {
+  const next = typeof look === "string" ? look.trim().replace(/\s+/g, " ") : "";
+  if (next === (project.look ?? "")) return project;
+  return touch(project, { look: next }, now);
 }
 
 /** The writer's words for why there is no premise yet (R61), or "" to take them back; words clear the premise. */

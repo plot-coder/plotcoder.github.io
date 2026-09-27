@@ -81,6 +81,13 @@ export const WORKFLOWS = [
     tools: ["segment_brief", "build_segment", "add_take", "list_takes", "read_pages", "list_board"],
     then: "Hand the brief to the writer to approve before any tool makes anything; file what is made with add_take.",
   },
+  {
+    id: "break-into-shots",
+    name: "Break a scene into shots",
+    ask: "Break the scene on this card into shots from its script: for each, what the camera sees, the line where it begins, how the camera moves and how many seconds. Show only what the page and the pages of its people and its place say. Then give me the prompt for each shot's still.",
+    tools: ["read_pages", "read_character", "read_place", "set_look", "set_shots", "list_shots", "update_shot", "segment_brief", "add_picture", "build_segment"],
+    then: "The scene is written first: a shot is a line of its script. Give the writer the shots to read before any prompt; they make each still in their own image tool from the prompt and bring it back to the shot; the still is the clip's first frame.",
+  },
 ];
 
 export function workflowById(id) {

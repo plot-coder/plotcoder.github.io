@@ -54,6 +54,8 @@ the account; pass 3a's report says where its export came from.
    recommendation after 3b is that its first two sessions are logged as
    the next round, friction log and working list as always.
 
+**R80, a scene's shots: the agent's half is built** (2026-09-27, `docs/to-do-shots.md`), on Robert's need and four decisions taken with him: a shot is a line of the script, `[[shot k3f9: what · move · 4s]]`; its stills and takes are files under its id; the stills are made outside the app from a prompt the app hands over; the app holds them. **Waiting on Robert:** the mockup of the person's half, `docs/mockups/r80-a-scenes-shots.html`. **Not yet walked:** anything through the account door — filing a still, choosing a frame, a dry-run take of one shot. Not released.
+
 **The small list is built** (2026-09-27, `docs/to-do-small-items.md`): all eight, each with its plan and what the asking changed — the duplicate check asks once of a group and reads no line under four words; the one-letter rule is the page checks' only; `leave_question` already read the wall, and what changed is what it and the guides say. Not released: the door still carries 0.1.66. Left behind, in that file: a place's pictures do not follow a rename; a possible lost write through `window.plotcoder`.
 
 **How to work here.** Plan, ask, build, test (`CLAUDE.md`); Robert wants

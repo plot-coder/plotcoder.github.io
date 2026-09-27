@@ -944,15 +944,60 @@ edits appear in real time; the change is already saved either way.
 ## Workflows
 
 A workflow is what the writer asks for in a sentence; you compose the tools.
-`list_workflows` has the six with the tools each composes and the rule to keep:
+`list_workflows` has the seven with the tools each composes and the rule to keep:
 break a treatment into a wall; read the wall and raise questions (change
 nothing); lay a structure over what is here; draft a sequence in Fountain from
 its cards; restick the remaining cards after the pages moved; brief a segment
-for video. Read `list_reminders` first — they are the house style.
+for video; break a scene into shots. Read `list_reminders` first — they are the house style.
 
 `segment_brief` briefs one card or a run of cards for a
 video tool from what the wall holds. It is text for the writer to approve;
 nothing is generated or sent, and no video tool is chosen yet.
+
+## Shots
+
+Shots come after the script. When the writer asks for a scene's shots, the
+scene is written first: **a shot is a line of its script**, a note of the
+form `[[shot k3f9: close on Nell's hand on the ledger · slow push in · 4s]]`
+— what the camera sees, then how it moves, then how long, the last two
+optional. It never prints, is never measured, and is never read as the
+page's words; `read_wall` asks nothing of shots. No record stands beside
+the card: the script carries the shot, and a shot runs from its line to
+the next shot line or the end of its scene.
+
+- `set_shots` — break a written scene into shots in one call: for each,
+  `what`, `at` (a few words quoted from the line of the script where the
+  shot begins), and `move` and `seconds` when the writer has them. The line
+  goes above the block its words are in — above a cue, never between a cue
+  and its speech. A shot whose `at` is on no line is not placed, and the
+  reply says which. `replace: true` starts the scene's shots over; pass a
+  shot's `id` to keep it and its stills.
+- `list_shots` — one scene's shots, or the board's, with facts and never
+  questions: the seconds the shots say against the scene's length, script
+  that stands above the first shot line, whether a still is filed.
+  `prompts: true` prints each shot's prompt.
+- `update_shot` — change one shot's words, move or seconds, move its line
+  (`at`), take it out (`remove`), or choose which still is its first frame
+  (`frame`).
+- `set_look` — the look every still shares, for the whole project: the
+  writer's style words and their image tool's own codes. It ends every
+  prompt. Invent no style.
+- `segment_brief` with `shot` — the brief for one shot, and **the prompt
+  for its still, to copy into an image tool**. Every word of it is the
+  wall's: the shot's line, the place's page, the looks of the people in it,
+  the light, the look. What the wall does not hold is listed under NOT ON
+  THE WALL and left out of the prompt. PlotCoder calls no image tool: the
+  writer makes the still in theirs and brings it back.
+- `add_picture` with `shot` — file a still on the shot. The newest is its
+  first frame unless one is chosen.
+- `build_segment` with `shot` — hand the video tool the shot's brief, its
+  seconds and its first frame; the take is filed on the shot. A shot with
+  no still is refused.
+
+`write_scene` and an import keep a scene's shots: a page sent without its
+shot lines gets them back, each above the line it stood over, and the reply
+says so. Show only what the page and the pages of its people and its place
+say: a shot invents no prop, no face and no weather.
 
 ## The account door
 

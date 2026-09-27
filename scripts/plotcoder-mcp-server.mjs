@@ -84,6 +84,7 @@ import {
   removeStructure,
   setActiveBoard,
   setPremise,
+  setLook,
   setTitlePage,
   setPremiseOpen,
   setBoardNameOpen,
@@ -104,6 +105,7 @@ import { selectStretch, stretchState } from "../src/board/stretch.js";
 import { findCards } from "../src/board/find.js";
 import { loadProvider, providerNames } from "./providers/index.mjs";
 import { PLACE_FIELDS, placeKey, placeLine, placePage, renamePlacePage, updatePlace } from "../src/board/places.js";
+import { carryShots, describeShots, findShot, placeShots, rewriteShot, shotBrief, shotIds, shotPrompt, shotSubject, shotsOfText } from "../src/board/shots.js";
 
 /**
  * One PlotCoder server, with its own doors and its own trail: the stdio door
@@ -3186,7 +3188,13 @@ server.registerTool(
     inputSchema: { id: z.string(), text: z.string() },
   },
   async (args) => {
-    const { state, changed, result, live, before: stateBefore } = await commit({ type: "set_text", id: args.id, text: args.text });
+    // A page resent keeps the scene's shots (R80): a shot line the new text does not carry goes back above the line it stood over.
+    const held = (await readBoard()).state.notes.find((note) => note.id === args.id);
+    const kept = held ? carryShots(held.text ?? "", args.text) : { text: args.text, carried: [] };
+    const carriedLine = kept.carried.length
+      ? ` The scene's ${kept.carried.length === 1 ? "shot was" : `${kept.carried.length} shots were`} not in the text you sent and ${kept.carried.length === 1 ? "is" : "are"} kept (${kept.carried.map((item) => item.id).join(", ")})${kept.carried.some((item) => !item.placed) ? `; ${kept.carried.filter((item) => !item.placed).map((item) => item.id).join(", ")} stood over a line that is gone and went to the end of the scene — update_shot with at moves one, or with remove takes it out` : ""}.`
+      : "";
+    const { state, changed, result, live, before: stateBefore } = await commit({ type: "set_text", id: args.id, text: kept.text });
     if (!changed) {
       if (!result) return ok(`No card with id ${args.id}. Call list_board.`);
       return ok(`Nothing changed: "${result.headline}" already reads that way.`);
@@ -3196,7 +3204,7 @@ server.registerTool(
     const landedLines = String(args.text ?? "").split("\n").map((line) => line.trim()).filter(Boolean);
     const landed = landedLines.length ? ` First line as it landed: "${clip(landedLines[0], 80)}"${landedLines.length > 1 ? `; last: "${clip(landedLines[landedLines.length - 1], 80)}"` : ""}.` : "";
     return ok(
-      `Wrote "${result.headline}": ${printed} line(s) as they print${once("write-lines", " (headings, blank lines and wrapped dialogue counted; a [[note]] neither prints nor counts)")}, measured at ${formatPages(noteEighths(result))} of a 55-line page${once("write-measure", ", rounded to the nearest eighth and never below one eighth")}${noteEighths(result) < (result.lengthEighths ?? DEFAULT_NOTE_EIGHTHS) ? ` — a sketch: shorter than ${result.lengthEighths !== null ? "the writer's pages for it" : "the page it was read as"}${once("write-sketch", "; the wall counts the measure and says so")}` : ""}${cameraReply(result.text)}${where(live)}.${(result.changeOpen ?? "").trim() ? ` A page and no turn: its change line is still open by the writer's word ("${result.changeOpen.trim()}"); the reading counts it written and says so.` : ""}${stillOpenOn(result)}${twoHomes(result)}${revisionMark(state, result.id)}${once("heading-from-place", " The heading comes from the card's place and when, so the text starts with the action.")} While the text stands the wall reads the measure, not the estimate${(() => {
+      `Wrote "${result.headline}": ${printed} line(s) as they print${once("write-lines", " (headings, blank lines and wrapped dialogue counted; a [[note]] neither prints nor counts)")}, measured at ${formatPages(noteEighths(result))} of a 55-line page${once("write-measure", ", rounded to the nearest eighth and never below one eighth")}${noteEighths(result) < (result.lengthEighths ?? DEFAULT_NOTE_EIGHTHS) ? ` — a sketch: shorter than ${result.lengthEighths !== null ? "the writer's pages for it" : "the page it was read as"}${once("write-sketch", "; the wall counts the measure and says so")}` : ""}${cameraReply(result.text)}${where(live)}.${carriedLine}${(result.changeOpen ?? "").trim() ? ` A page and no turn: its change line is still open by the writer's word ("${result.changeOpen.trim()}"); the reading counts it written and says so.` : ""}${stillOpenOn(result)}${twoHomes(result)}${revisionMark(state, result.id)}${once("heading-from-place", " The heading comes from the card's place and when, so the text starts with the action.")} While the text stands the wall reads the measure, not the estimate${(() => {
         // How far the measure sits from what the card was read as before (round eighteen, entry 43): the writer's estimate, or the page an unsized card is read as.
         // A card already written measures against its last measure, not the estimate under it (pass 1a, entries 66, 74).
         const wasWritten = beforeWrite && isMeasured(beforeWrite);
@@ -3399,7 +3407,10 @@ server.registerTool(
     if (source === null) return ok("Nothing to import: pass a path or text.");
     const { state } = await readBoard();
     const parsed = fromFountain(source);
-    const { commands, matched } = mergeFountain(state, parsed);
+    const merged = mergeFountain(state, parsed);
+    // A scene's shots are not in a script that comes back, and are kept (R80).
+    const { commands, shotsKept } = keepShots(state, merged.commands);
+    const { matched } = merged;
     // The whole import as one change, so one undo takes every scene back.
     const { live } = await commitAll(`import_fountain (${parsed.scenes.length} scene(s))`, (step) => {
       for (const command of commands) step(command);
@@ -3408,7 +3419,7 @@ server.registerTool(
     const created = matched.filter((item) => item.created).length;
     const same = matched.length - created - written;
     return ok(
-      `Imported ${parsed.scenes.length} scene(s): ${written} written onto cards${writtenNames(state, commands)}, ${same} matched with the same text (unchanged), ${created} new card(s)${where(live)}.`,
+      `Imported ${parsed.scenes.length} scene(s): ${written} written onto cards${writtenNames(state, commands)}, ${same} matched with the same text (unchanged), ${created} new card(s)${where(live)}.${shotsKept}`,
       matched,
     );
   },
@@ -3451,14 +3462,21 @@ server.registerTool(
   {
     title: "Brief a segment",
     description:
-      "The brief for a segment of the movie: one card, or several in wall order for a run between beats. Everything the wall knows — the film, the story, the people with their pages and what is open about them, the places, and each scene with its number and id, who is in it, its time of day and length, what changes, the script or 'unwritten', what it plants and where that pays off, and what must be true after — in the order a video tool would need it; and, said in words, what the wall does not hold (the day of the film's time, a place's look, a face beyond the page), so nothing is invented for a gap. Text only; nothing is generated or sent. Hand it to the writer to approve; fix a wrong brief on the cards.",
-    inputSchema: { ids: z.array(z.string()).min(1) },
+      "The brief for a segment of the movie: one card, or several in wall order for a run between beats. Everything the wall knows — the film, the story, the people with their pages and what is open about them, the places, and each scene with its number and id, who is in it, its time of day and length, what changes, the script or 'unwritten', what it plants and where that pays off, and what must be true after — in the order a video tool would need it; and, said in words, what the wall does not hold (the day of the film's time, a place's look, a face beyond the page), so nothing is invented for a gap. Text only; nothing is generated or sent. Hand it to the writer to approve; fix a wrong brief on the cards. With shot (a shot's id) instead of ids, the brief for that one shot: the look, what the camera sees, the move, the length, the place with its page, who is in it with their looks, the script it covers, whether a still is filed, and a prompt for the still to copy into an image tool — every word of it the wall's, and what the wall does not hold said and never filled.",
+    inputSchema: { ids: z.array(z.string()).optional(), shot: z.string().optional() },
   },
   async (args) => {
     const { state, boardId } = await readBoard();
     const { project, boards } = await readProject();
     const openId = boardId ?? project.activeBoardId;
     const board = project.boards.find((item) => item.id === openId);
+    if (args.shot?.trim()) {
+      const filed = await shotFiles();
+      const found = findShot(state, args.shot);
+      const made = shotBrief(state, args.shot, { look: project.look, places: project.places ?? [], title: board?.name, order: storyOrder(state), frame: found && filed ? firstFrame(filed.files.get(found.shot.id))?.name : undefined });
+      return ok(made ?? `No shot "${args.shot}" on this board. list_shots lists them.`);
+    }
+    if (!args.ids?.length) return ok("Say which: ids (one card, or several in wall order) or shot (a shot's id).");
     // Every board's order travels with the brief so a fold's payoff on another episode is named to its scene (pass 4a, entry 11).
     const withOrder = project.boards.map((meta) => {
       const held = meta.id === openId ? state : isBoardState(boards[meta.id]) ? normalizeState(boards[meta.id]) : emptyState();
@@ -3511,7 +3529,10 @@ server.registerTool(
     if (source === null) return ok("Nothing to import: pass a path or xml.");
     const { state } = await readBoard();
     const parsed = fromFdx(source);
-    const { commands, matched } = mergeFountain(state, parsed);
+    const merged = mergeFountain(state, parsed);
+    // A scene's shots are not in a script that comes back, and are kept (R80).
+    const { commands, shotsKept } = keepShots(state, merged.commands);
+    const { matched } = merged;
     // The whole import as one change, so one undo takes every scene back.
     const { live } = await commitAll(`import_fdx (${parsed.scenes.length} scene(s))`, (step) => {
       for (const command of commands) step(command);
@@ -3520,7 +3541,7 @@ server.registerTool(
     const created = matched.filter((item) => item.created).length;
     const same = matched.length - created - written;
     const receipt = describeSetAside(parsed.setAside);
-    return ok(`Imported ${parsed.scenes.length} scene(s) from Final Draft: ${written} written onto cards${writtenNames(state, commands)}, ${same} matched with the same text (unchanged), ${created} new card(s)${where(live)}.${receipt ? ` ${receipt}` : ""}`, matched);
+    return ok(`Imported ${parsed.scenes.length} scene(s) from Final Draft: ${written} written onto cards${writtenNames(state, commands)}, ${same} matched with the same text (unchanged), ${created} new card(s)${where(live)}.${shotsKept}${receipt ? ` ${receipt}` : ""}`, matched);
   },
 );
 
@@ -3659,14 +3680,16 @@ server.registerTool(
   {
     title: "Build a segment",
     description:
-      "Hand a segment's brief — one card, or several in wall order — to the video tool named in the server's PLOTCODER_VIDEO_PROVIDER, with its length (a page a minute) and the first picture on each person's and place's page in it; file what it makes as a take on the card, or run:<ids joined by +>, for the writer to choose in the Takes panel. With no tool named, it returns the brief and says so, and a take built elsewhere is filed with add_take. The dry-run provider makes no video: it files what a tool would have been handed, to rehearse the path. The writer approves the brief before anything is made; nothing the brief leaves open is invented.",
-    inputSchema: { ids: z.array(z.string()).min(1) },
+      "Hand a segment's brief — one card, or several in wall order — to the video tool named in the server's PLOTCODER_VIDEO_PROVIDER, with its length (a page a minute) and the first picture on each person's and place's page in it; file what it makes as a take on the card, or run:<ids joined by +>, for the writer to choose in the Takes panel. With no tool named, it returns the brief and says so, and a take built elsewhere is filed with add_take. The dry-run provider makes no video: it files what a tool would have been handed, to rehearse the path. The writer approves the brief before anything is made; nothing the brief leaves open is invented. With shot (a shot's id) instead of ids, one shot: the tool is handed the shot's brief, its seconds and the still filed as its first frame, and the take is filed on the shot; a shot with no still is refused, since the first frame is what holds the look.",
+    inputSchema: { ids: z.array(z.string()).optional(), shot: z.string().optional() },
   },
   async (args) => {
     const { state, boardId } = await readBoard();
     const { project, boards } = await readProject();
     const openId = boardId ?? project.activeBoardId;
     const board = project.boards.find((item) => item.id === openId);
+    if (args.shot?.trim()) return buildShot(state, project, board, args.shot);
+    if (!args.ids?.length) return ok("Say which: ids (one card, or several in wall order) or shot (a shot's id).");
     // Every board's order travels with the brief so a fold's payoff on another episode is named to its scene (pass 4a, entry 11).
     const withOrder = project.boards.map((meta) => {
       const held = meta.id === openId ? state : isBoardState(boards[meta.id]) ? normalizeState(boards[meta.id]) : emptyState();
@@ -3717,6 +3740,192 @@ server.registerTool(
   },
 );
 
+
+// --- A scene's shots (R80) ---------------------------------------------------
+//
+// A shot is a note in the scene's text, [[shot k3f9: what · move · 4s]], so
+// the script carries it and no record stands beside the card (R28). Its
+// first frame and its takes are files on the project under shot:<id>. The
+// stills are made outside the app — the brief hands a prompt to copy — and
+// filed on the shot; nothing here calls an image tool.
+
+/** A script imported over a scene keeps its shots: each set_text carries the shot lines the incoming text lacks; one that then changes nothing is dropped. */
+function keepShots(state, commands) {
+  let scenes = 0;
+  const kept = [];
+  for (const command of commands) {
+    if (command.type !== "set_text") { kept.push(command); continue; }
+    const held = state.notes.find((note) => note.id === command.id);
+    const carried = held ? carryShots(held.text ?? "", command.text) : { text: command.text, carried: [] };
+    if (carried.carried.length) scenes += 1;
+    if (held && carried.text.replace(/\s+$/, "") === (held.text ?? "")) continue;
+    kept.push({ ...command, text: carried.text });
+  }
+  return { commands: kept, shotsKept: scenes ? ` The shots of ${scenes} scene${scenes === 1 ? "" : "s"} were not in the file and are kept, each above the line it stood over.` : "" };
+}
+
+/** Every shot id on the project, so a new one is no other's: a shot's files are filed under its id alone. */
+async function everyShotId(openState, openId) {
+  const { project, boards } = await readProject();
+  return shotIds(openState, ...project.boards.filter((meta) => meta.id !== openId).map((meta) => (isBoardState(boards[meta.id]) ? normalizeState(boards[meta.id]) : emptyState())));
+}
+
+/** The stills and takes filed on shots, by shot id; null with no account door. */
+async function shotFiles() {
+  const account = await findAccount();
+  if (!account?.projectId) return null;
+  const { data } = await account.client.from("assets").select("id, kind, subject, name, note, path, created_at").eq("project_id", account.projectId).like("subject", "shot:%").order("created_at");
+  const files = new Map();
+  for (const row of data ?? []) files.set(row.subject.slice(5), [...(files.get(row.subject.slice(5)) ?? []), row]);
+  return { account, files };
+}
+/** The still that is a shot's first frame: the chosen one, or the newest. */
+function firstFrame(rows) {
+  const stills = (rows ?? []).filter((row) => row.kind === "picture");
+  return stills.find((row) => row.note === "chosen") ?? stills.at(-1) ?? null;
+}
+
+function shotRow(shot, number, rows) {
+  const frame = firstFrame(rows);
+  const stills = (rows ?? []).filter((row) => row.kind === "picture").length;
+  const takes = (rows ?? []).filter((row) => row.kind === "take").length;
+  const filed = rows === undefined ? "" : ` — ${frame ? `first frame "${frame.name}"${stills > 1 ? ` (of ${stills} stills)` : ""}` : "no still yet"}${takes ? `, ${takes} take${takes === 1 ? "" : "s"}` : ""}`;
+  return `    ${number}. ${shot.id} — ${shot.what}${shot.move ? ` · ${shot.move}` : ""}${typeof shot.seconds === "number" ? ` · ${shot.seconds}s` : ""}${filed}`;
+}
+
+server.registerTool(
+  "list_shots",
+  {
+    title: "List a scene's shots",
+    description:
+      "The shots of one scene (id, or its headline), or with none the whole board scene by scene: each shot's id, what the camera sees, how it moves and how long, whether a still is filed as its first frame, and as facts — never questions — the seconds the shots say against the scene's length (a page a minute), and script that stands above the first shot line and so is in no shot. A shot is a note in the scene's text, [[shot k3f9: what · move · 4s]]: read_pages shows the lines where they stand. prompts: true prints each shot's prompt for a still, to copy into an image tool. read_wall asks nothing of shots.",
+    inputSchema: { id: z.string().optional().describe("One scene, by id or headline; without it, every scene of the open board."), prompts: z.boolean().optional() },
+  },
+  async (args) => {
+    const { state } = await readBoard();
+    const { project } = await readProject();
+    const order = storyOrder(state);
+    let cards = order;
+    if (args.id) {
+      const refs = cardsByRef(state, [args.id]);
+      if (!refs.found.length) return ok(`No card matches "${args.id}". Call list_board.`);
+      cards = state.notes.filter((note) => note.id === refs.found[0]);
+    }
+    const filed = await shotFiles();
+    const scenes = describeShots(state, cards);
+    const broken = scenes.filter((scene) => scene.shots.length);
+    const total = broken.reduce((sum, scene) => sum + scene.shots.length, 0);
+    const options = { look: project.look, places: project.places ?? [], order };
+    const lines = [
+      `shots: ${total} in ${broken.length} of ${scenes.length} scene${scenes.length === 1 ? "" : "s"}${args.id ? "" : ` of the open board; ${scenes.filter((scene) => !scene.written).length} scene(s) unwritten, which can hold none`}`,
+      `the look: ${(project.look ?? "").trim() ? `"${project.look.trim()}"` : "(none set: set_look holds what every still shares)"}`,
+      ...(filed ? [] : ["stills and takes are files on the project: with no account door, none are listed"]),
+    ];
+    for (const scene of args.id ? scenes : broken) {
+      lines.push(`  "${scene.headline}" (${scene.id}) — ${scene.shots.length} shot${scene.shots.length === 1 ? "" : "s"}${scene.shots.length ? `, ${scene.seconds} seconds said${scene.unsaid ? ` (${scene.unsaid} with no length)` : ""} of about ${scene.sceneSeconds} the scene runs` : scene.written ? "" : ": unwritten — a shot is a line of the script, so write_scene comes first"}${scene.uncovered ? "; script stands above the first shot line, in no shot" : ""}`);
+      for (const [index, shot] of scene.shots.entries()) {
+        lines.push(shotRow(shot, index + 1, filed ? filed.files.get(shot.id) ?? [] : undefined));
+        if (args.prompts) lines.push(`       prompt: ${shotPrompt(state, shot.id, options)}`);
+      }
+    }
+    return ok(lines.join("\n"), scenes.filter((scene) => scene.shots.length || args.id).map((scene) => ({ id: scene.id, headline: scene.headline, seconds: scene.seconds, sceneSeconds: scene.sceneSeconds, shots: scene.shots.map(({ id, what, move, seconds }) => ({ id, what, move, seconds })) })));
+  },
+);
+
+server.registerTool(
+  "set_shots",
+  {
+    title: "Break a scene into shots",
+    description:
+      "Break a written scene into shots, in one call: shots, in order, each with what (what the camera sees, in a sentence — the framing is part of it: \"close on Nell's hand on the ledger\"), at (words quoted from the line of the script where the shot begins; the shot line goes above that line), and optionally move (how the camera moves) and seconds. Each becomes a note in the scene's text, [[shot k3f9: …]], with an id of its own: it never prints, is never measured and is never read as the page's words. A shot runs to the next shot line or the end of its scene. replace: true takes the scene's shot lines out first; pass a shot's id to keep it, and its stills with it. A shot whose at is on no line is not placed and the reply says which; nothing is placed by guess. Shots come after the script: an unwritten scene is refused. Show only what the page and the pages of its people and place say: invent no prop, no face, no weather. Then list_shots, and segment_brief with shot for the prompt to copy.",
+    inputSchema: {
+      id: z.string().describe("The scene, by id or headline."),
+      shots: z.array(z.object({ what: z.string().min(1), at: z.string().optional(), move: z.string().optional(), seconds: z.number().positive().optional(), id: z.string().optional() })).min(1),
+      replace: z.boolean().optional(),
+    },
+  },
+  async (args) => {
+    const { state, boardId } = await readBoard();
+    const refs = cardsByRef(state, [args.id]);
+    if (!refs.found.length) return ok(`No card matches "${args.id}". Call list_board.`);
+    const card = state.notes.find((note) => note.id === refs.found[0]);
+    if (!(card.text ?? "").trim()) return ok(`Nothing changed: "${card.headline}" is unwritten, and a shot is a line of the script. write_scene first; the shots come after the script.`);
+    const was = shotsOfText(card.text).shots;
+    const taken = (await everyShotId(state, boardId)).filter((id) => !(args.replace && was.some((shot) => shot.id === id)));
+    const placed = placeShots(card.text, args.shots, { replace: args.replace === true, taken });
+    if (!placed.placed.length) return ok(`Nothing changed: none of the ${args.shots.length} shot${args.shots.length === 1 ? "" : "s"} could be placed — ${placed.missing.map((shot) => `"${shot.at}" is on no line of the script`).join("; ")}. Quote a few words as they stand on the page; read_pages with scene shows it.`);
+    const { live, state: after } = await commit({ type: "set_text", id: card.id, text: placed.text });
+    const now = describeShots(after, [after.notes.find((note) => note.id === card.id)])[0];
+    const gone = args.replace ? was.filter((shot) => !placed.placed.some((made) => made.id === shot.id)) : [];
+    return ok(
+      `"${card.headline}" is ${now.shots.length} shot${now.shots.length === 1 ? "" : "s"}${where(live)}: ${placed.placed.map((shot) => `${shot.id} — ${shot.what}`).join("; ")}.${placed.missing.length ? ` Not placed, their words on no line of the script: ${placed.missing.map((shot) => `"${shot.what}" (at "${shot.at}")`).join("; ")}.` : ""}${gone.length ? ` Taken out: ${gone.map((shot) => shot.id).join(", ")}; a still filed on one stays on the project until remove_file.` : ""} The shots say ${now.seconds} seconds${now.unsaid ? ` (${now.unsaid} with no length)` : ""} of about ${now.sceneSeconds} the scene runs${now.uncovered ? "; script stands above the first shot line, in no shot" : ""}. The lines neither print nor count; segment_brief with shot gives the prompt for a still.`,
+      { id: card.id, shots: now.shots.map(({ id, what, move, seconds }) => ({ id, what, move, seconds })), missing: placed.missing },
+    );
+  },
+);
+
+server.registerTool(
+  "update_shot",
+  {
+    title: "Change a shot",
+    description:
+      "Change one shot, by its id: what the camera sees, move, seconds (0 clears the length), or at — words quoted from the script, to move the shot's line above that line. remove: true takes the shot out of the script. frame: the id of a still filed on the shot (list_files) makes that still its first frame. Only on the writer's word once they have seen the shots.",
+    inputSchema: { id: z.string().min(1), what: z.string().optional(), move: z.string().optional(), seconds: z.number().min(0).optional(), at: z.string().optional(), remove: z.boolean().optional(), frame: z.string().optional() },
+  },
+  async (args) => {
+    const { state } = await readBoard();
+    const found = findShot(state, args.id);
+    if (!found) return ok(`No shot "${args.id}" on this board. list_shots lists them; a shot on another board is reached after open_board.`);
+    const said = [];
+    if (args.frame) {
+      const filed = await shotFiles();
+      if (!filed) return shut("A still is a file on the project: set PLOTCODER_EMAIL and PLOTCODER_PASSWORD to choose one.");
+      const stills = (filed.files.get(found.shot.id) ?? []).filter((row) => row.kind === "picture");
+      const chosen = stills.find((row) => row.id === args.frame);
+      if (!chosen) return ok(`No still with id ${args.frame} on shot ${found.shot.id}. It holds ${stills.length ? stills.map((row) => `${row.id} "${row.name}"`).join(", ") : "none"}.`);
+      for (const row of stills.filter((item) => item.note === "chosen" && item.id !== chosen.id)) await filed.account.client.from("assets").update({ note: "" }).eq("id", row.id);
+      const marked = await filed.account.client.from("assets").update({ note: "chosen" }).eq("id", chosen.id);
+      if (marked.error) return ok(`Could not choose the still: ${marked.error.message}`);
+      said.push(`"${chosen.name}" is its first frame`);
+    }
+    const patch = { what: args.what, move: args.move, seconds: args.seconds === 0 ? null : args.seconds, remove: args.remove === true };
+    let text = rewriteShot(found.note.text, found.shot.id, patch);
+    let moved = "";
+    if (args.at && !args.remove && text.now) {
+      const out = rewriteShot(text.text, found.shot.id, { remove: true });
+      const back = placeShots(out.text, [{ ...text.now, at: args.at }], { taken: [] });
+      if (!back.placed.length) return ok(`Nothing changed: "${args.at}" is on no line of "${found.note.headline}". Quote a few words as they stand on the page.`);
+      text = { ...text, text: back.text };
+      moved = `, above "${clip(args.at.trim(), 60)}"`;
+    }
+    if (text.text === found.note.text) return ok(said.length ? `Shot ${found.shot.id}: ${said.join("; ")} (saved to the account).` : `Nothing changed on shot ${found.shot.id}.`);
+    const { live } = await commit({ type: "set_text", id: found.note.id, text: text.text });
+    return ok(
+      args.remove
+        ? `Took shot ${found.shot.id} ("${found.shot.what}") out of "${found.note.headline}"${where(live)}; the script it covered falls to the shot before it. A still filed on it stays on the project until remove_file.`
+        : `Shot ${found.shot.id} in "${found.note.headline}" reads: ${text.now.what}${text.now.move ? ` · ${text.now.move}` : ""}${typeof text.now.seconds === "number" ? ` · ${text.now.seconds}s` : ""}${moved}${where(live)}.${said.length ? ` ${said.join("; ")}.` : ""}`,
+      { id: found.shot.id, card: found.note.id, shot: text.now },
+    );
+  },
+);
+
+server.registerTool(
+  "set_look",
+  {
+    title: "Set the project's look",
+    description:
+      "The look every shot's still shares, for the whole project: style in the writer's words, and an image tool's own codes when they use them (a style reference, a personalisation code) — \"35mm, overcast, desaturated greens --sref 1234\". It ends every prompt a shot's brief prints, so one film looks like one film. \"\" clears it. The writer's to say: invent no style.",
+    inputSchema: { look: z.string() },
+  },
+  async (args) => {
+    const { project, boards, rev, base, live } = await readProject();
+    const next = setLook(project, args.look);
+    if (next === project) return ok(`Nothing changed: the look ${project.look ? `is "${project.look}"` : "is not set"}.`);
+    await writeProject(next, boards, rev, base);
+    return ok(next.look ? `The look is "${next.look}"${where(live)}: it ends every shot's prompt, and read_project says it.` : `The look is cleared${where(live)}.`, { look: next.look });
+  },
+);
+
 server.registerTool(
   "list_takes",
   {
@@ -3737,6 +3946,33 @@ server.registerTool(
     );
   },
 );
+
+/** One shot to the video tool (R80): its brief, its seconds and its first frame; the take is filed under shot:<id>. */
+async function buildShot(state, project, board, ref) {
+  const found = findShot(state, ref);
+  if (!found) return ok(`No shot "${ref}" on this board. list_shots lists them.`);
+  const filed = await shotFiles();
+  const frame = filed ? firstFrame(filed.files.get(found.shot.id)) : null;
+  const brief = shotBrief(state, found.shot.id, { look: project.look, places: project.places ?? [], title: board?.name, order: storyOrder(state), frame: frame?.name });
+  const provider = env.PLOTCODER_VIDEO_PROVIDER;
+  if (!provider) return ok(`No video tool is configured (PLOTCODER_VIDEO_PROVIDER is unset). Hand this brief and the shot's first frame to one, then file what it makes with add_take, subject ${shotSubject(found.shot.id)}.\n\n${brief}`);
+  const tool = loadProvider(provider);
+  if (!tool) return ok(`The video tool "${provider}" has no module here; the known ones are ${providerNames().join(", ")}. The brief:\n\n${brief}`);
+  if (!filed) return shut(`The video tool "${tool.name}" is named, but a still and a take are files on the project: set PLOTCODER_EMAIL and PLOTCODER_PASSWORD. The brief:\n\n${brief}`);
+  if (!frame) return ok(`Nothing was made: shot ${found.shot.id} has no still, and the first frame is what holds the look from shot to shot. Make one from the prompt below, file it with add_picture and shot, and call again.\n\n${brief}`);
+  const signed = await filed.account.client.storage.from("projects").createSignedUrl(frame.path, 3600);
+  if (!signed.data?.signedUrl) return ok(`Nothing was made: the still "${frame.name}" could not be read from the project.`);
+  const seconds = typeof found.shot.seconds === "number" ? found.shot.seconds : null;
+  let made;
+  try {
+    made = await tool.makeTake({ brief, subject: shotSubject(found.shot.id), seconds, references: [], firstFrame: { name: frame.name, url: signed.data.signedUrl }, env, outDir: path.join(os.tmpdir(), "plotcoder-takes") });
+  } catch (error) {
+    return ok(`The video tool "${tool.name}" failed: ${error instanceof Error ? error.message : String(error)}. Nothing was filed.`);
+  }
+  const take = await fileAsset(filed.account, "take", shotSubject(found.shot.id), made.path, made.note ?? "");
+  if (take.error) return ok(`The video tool "${tool.name}" made ${path.basename(made.path)}, but it could not be filed: ${take.error}`);
+  return ok(`Built a take of shot ${found.shot.id} ("${found.shot.what}") with "${tool.name}" and filed it as "${take.name}" (saved to the account): from the first frame "${frame.name}"${seconds ? `, ${seconds} seconds` : ", no length said, so the tool's own"}.`, { id: take.id, shot: found.shot.id, provider: tool.name, frame: frame.id, seconds });
+}
 
 /** Upload a file by path into the project's bucket and file an assets row for it. */
 async function fileAsset(account, kind, subject, filePath, note = "") {
@@ -3785,14 +4021,26 @@ server.registerTool(
   {
     title: "Add a picture to a person's page or a place's",
     description:
-      "Through the account door: put a picture — an image file by path — on a person's page, by the character's id or name, or on a place's page, by its phrase as the cards carry it (place). The writer sees it in the page's gallery; the first picture is the face of the person or the place.",
-    inputSchema: { character: z.string().optional(), place: z.string().optional(), path: z.string().min(1) },
+      "Through the account door: put a picture — an image file by path — on a person's page, by the character's id or name, or on a place's page, by its phrase as the cards carry it (place), or on a shot, by its id (shot), as a still for its first frame: the newest still is the first frame unless one is chosen, and chosen: true chooses this one. The writer sees it in the page's gallery; the first picture is the face of the person or the place.",
+    inputSchema: { character: z.string().optional(), place: z.string().optional(), shot: z.string().optional(), chosen: z.boolean().optional(), path: z.string().min(1) },
   },
   async (args) => {
-    if (!args.character?.trim() && !args.place?.trim()) return ok("Say whose page: character (an id or a name) or place (its phrase).");
+    if (!args.character?.trim() && !args.place?.trim() && !args.shot?.trim()) return ok("Say whose page: character (an id or a name), place (its phrase) or shot (its id).");
     const account = await findAccount();
     if (!account) return shut("No account door: pictures are files on the project, and need PLOTCODER_EMAIL and PLOTCODER_PASSWORD to add.");
     if (!account.projectId) return ok(noProjectYet());
+    // A shot's stills live under shot:<id> (R80); the chosen one, or the newest, is its first frame.
+    if (args.shot?.trim()) {
+      const found = findShot((await readBoard()).state, args.shot);
+      if (!found) return ok(`No shot "${args.shot}" on this board. list_shots lists them.`);
+      if (args.chosen) {
+        const { data: others } = await account.client.from("assets").select("id").eq("project_id", account.projectId).eq("kind", "picture").eq("subject", shotSubject(found.shot.id)).eq("note", "chosen");
+        for (const row of others ?? []) await account.client.from("assets").update({ note: "" }).eq("id", row.id);
+      }
+      const filed = await fileAsset(account, "picture", shotSubject(found.shot.id), args.path, args.chosen ? "chosen" : "");
+      if (filed.error) return ok(filed.error);
+      return ok(`Filed "${filed.name}" as a still on shot ${found.shot.id} of "${found.note.headline}"${args.chosen ? ", chosen as its first frame" : ""} (saved to the account). build_segment with shot hands it to the video tool as the first frame.`, { id: filed.id, shot: found.shot.id });
+    }
     // A place's pictures live under its phrase, spelt any way (R79), as the app's gallery keeps them.
     if (args.place?.trim()) {
       const filed = await fileAsset(account, "picture", `place:${placeKey(args.place)}`, args.path);
@@ -5181,6 +5429,7 @@ server.registerTool(
     const lines = [
       `PlotCoder project "${project.name}"${project.nameOpen ? ` — its name is open, by the writer's word: "${project.nameOpen}"` : ""} (${door(live, base)})`,
       `premise: ${project.premiseOpen ? `open, by the writer's word — "${project.premiseOpen}"` : project.premise ? `"${project.premise}"` : "(not set)"}`,
+      ...((project.look ?? "").trim() ? [`the look (every shot's still shares it): "${project.look.trim()}"`] : []),
       // The title page and what is open about the people are the project's, so the project read says them (pass 3b, entries 17, 23, and its seventh doubt).
       `title page: ${(project.author ?? "").trim() ? `Written by ${project.author.trim()}` : "no author"}${(project.contact ?? "").trim() ? `; contact ${project.contact.trim()}` : ""}; the last page, "What is not decided", ${project.undecidedPage === false ? "off" : "on"}`,
       ...((project.characters ?? []).some((person) => (person.open ?? "").trim())

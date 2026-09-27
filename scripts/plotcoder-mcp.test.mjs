@@ -183,6 +183,7 @@ describe("plotcoder MCP server", () => {
       "lock_numbers",
       "measure",
       "list_reminders",
+      "list_shots",
       "list_structures",
       "list_takes",
       "list_words",
@@ -220,6 +221,7 @@ describe("plotcoder MCP server", () => {
       "set_length",
       "set_light",
       "set_location",
+      "set_look",
       "set_logline",
       "set_alternative",
       "set_open",
@@ -229,6 +231,7 @@ describe("plotcoder MCP server", () => {
       "set_premise",
       "set_title_page",
       "set_rank",
+      "set_shots",
       "set_target",
       "set_when",
       "start_revision",
@@ -239,6 +242,7 @@ describe("plotcoder MCP server", () => {
       "update_character",
       "update_note",
       "update_place",
+      "update_shot",
       "update_thread",
       "who_is_here",
       "write_scene",
@@ -4265,5 +4269,75 @@ describe("the small replies after pass 3b and 3a (3b 14, 15, question 10; 3a 19)
     const left = await client.callTool("leave_question", { kind: "unmarked", why: "no turns yet" });
     expect(left).toContain("Left, for now: [unmarked]");
     expect(left).toMatch(/Read against the wall as it stands now: \d+ changes? landed since your last read_wall/);
+  });
+});
+
+describe("a scene's shots through the server (R80)", () => {
+  let root;
+  let client;
+  const page = ["Rain on the one window. NELL sets the ledger on the desk.", "", "ADA", "You kept it.", "", "NELL", "Somebody had to.", "", "Ada turns the ledger to face her."].join("\n");
+
+  beforeAll(async () => {
+    root = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-shots-"));
+    client = new McpClient(root);
+    await client.start();
+    for (const seeded of ["maya-letter", "tom-lies", "letter-aloud"]) await client.callTool("delete_note", { id: seeded });
+  }, 30000);
+
+  afterAll(() => {
+    client?.stop();
+    if (root) fs.rmSync(root, { recursive: true, force: true });
+  });
+
+  it("refuses an unwritten scene, breaks a written one into shots, and lists them as facts", async () => {
+    const card = (await client.callToolData("create_note", { headline: "Ada's column", change: "Ada sees the ledger was kept.", location: "INT. THE HARBOUR OFFICE", when: "night" })).id;
+    expect(await client.callTool("set_shots", { id: card, shots: [{ what: "wide on the office" }] })).toContain('Nothing changed: "Ada\'s column" is unwritten, and a shot is a line of the script.');
+    const before = await client.callToolData("write_scene", { id: card, text: page });
+    const made = await client.callTool("set_shots", {
+      id: "Ada's column",
+      shots: [
+        { what: "wide on the office, rain on the window", at: "Rain on the one window", seconds: 5 },
+        { what: "close on Nell's hand on the ledger", at: "you kept it", move: "slow push in", seconds: 4 },
+        { what: "the gull on the sill", at: "a gull lands" },
+      ],
+    });
+    expect(made).toMatch(/^"Ada's column" is 2 shots/);
+    expect(made).toContain('Not placed, their words on no line of the script: "the gull on the sill" (at "a gull lands").');
+    expect(made).toContain("The shots say 9 seconds of about");
+    const listed = await client.callToolData("list_shots", { id: card });
+    expect(listed[0].shots.map((shot) => shot.what)).toEqual(["wide on the office, rain on the window", "close on Nell's hand on the ledger"]);
+    // The scene measures as it did, and the wall asks what it asked.
+    const board = JSON.parse(fs.readFileSync(path.join(root, ".plotcoder", "board.json"), "utf8"));
+    const held = board.state ?? board;
+    expect(held.notes.find((note) => note.id === card).text).toContain(`[[shot ${listed[0].shots[1].id}: close on Nell's hand on the ledger · slow push in · 4s]]\n\nADA\nYou kept it.`);
+    expect((await client.callToolData("list_board")).notes?.find((note) => note.id === card)?.text ?? "").not.toBe(page);
+    expect(await client.callTool("read_pages", { scene: card })).toContain(`measured ${before.eighths === 8 ? "1" : `${before.eighths}/8`}pp`);
+    expect(await client.callTool("read_record")).toContain('broke "Ada\'s column" into 2 shots');
+  });
+
+  it("briefs one shot with a prompt to copy, ending in the project's look", async () => {
+    const [scene] = await client.callToolData("list_shots", { id: "Ada's column" });
+    expect(await client.callTool("set_look", { look: "35mm, desaturated greens --sref 1234" })).toContain('The look is "35mm, desaturated greens --sref 1234"');
+    expect(await client.callTool("read_project")).toContain('the look (every shot\'s still shares it): "35mm, desaturated greens --sref 1234"');
+    const brief = await client.callTool("segment_brief", { shot: scene.shots[1].id });
+    expect(brief).toContain(`SHOT ${scene.shots[1].id}: shot 2 of 2 in "Ada's column"`);
+    expect(brief).toContain("close on Nell's hand on the ledger. INT. THE HARBOUR OFFICE. night. 35mm, desaturated greens --sref 1234.");
+    expect(brief).toContain("NOT ON THE WALL: what INT. THE HARBOUR OFFICE looks like.");
+    expect(await client.callTool("segment_brief", {})).toContain("Say which: ids");
+    expect(await client.callTool("build_segment", { shot: scene.shots[1].id })).toContain(`then file what it makes with add_take, subject shot:${scene.shots[1].id}`);
+  });
+
+  it("keeps the shots when the page is resent without them, and changes and removes one", async () => {
+    const [scene] = await client.callToolData("list_shots", { id: "Ada's column" });
+    const resent = await client.callTool("write_scene", { id: scene.id, text: page.replace("Somebody had to.", "Somebody had to. You never asked.") });
+    expect(resent).toContain(`The scene's 2 shots were not in the text you sent and are kept (${scene.shots.map((shot) => shot.id).join(", ")}).`);
+    expect((await client.callToolData("list_shots", { id: scene.id }))[0].shots.map((shot) => shot.id)).toEqual(scene.shots.map((shot) => shot.id));
+    const changed = await client.callTool("update_shot", { id: scene.shots[1].id, move: "static", seconds: 0, at: "Ada turns the ledger" });
+    expect(changed).toContain(`Shot ${scene.shots[1].id} in "Ada's column" reads: close on Nell's hand on the ledger · static, above "Ada turns the ledger"`);
+    expect(await client.callTool("update_shot", { id: scene.shots[0].id, remove: true })).toContain(`Took shot ${scene.shots[0].id} ("wide on the office, rain on the window") out of "Ada's column"`);
+    const left = await client.callToolData("list_shots", { id: scene.id });
+    expect(left[0].shots.map((shot) => shot.id)).toEqual([scene.shots[1].id]);
+    expect(await client.callTool("list_shots", { id: scene.id })).toContain("script stands above the first shot line, in no shot");
+    expect(await client.callTool("update_shot", { id: "zzzz", what: "x" })).toContain('No shot "zzzz" on this board.');
   });
 });

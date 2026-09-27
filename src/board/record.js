@@ -10,6 +10,7 @@
 // it. Bounded: the last fifty changes. Pure and DOM-free.
 
 import { formatPages, inStory, noteEighths, isMeasured } from "./reducer.js";
+import { parseShotLine, shotsOfText } from "./shots.js";
 
 /** How many changes the wall remembers. */
 export const RECORD_CAP = 50;
@@ -77,7 +78,13 @@ export function describeChange(before, after) {
     if ((old.changeOpen ?? "") !== (note.changeOpen ?? "")) say((note.changeOpen ?? "").trim() ? `left what changes in ${quote(note)} open: "${note.changeOpen.trim()}"` : `decided what changes in ${quote(note)}`, note.id);
     const wroteBefore = (old.text ?? "").trim();
     const wroteAfter = (note.text ?? "").trim();
-    if (wroteBefore !== wroteAfter) {
+    // A scene's shots are lines of its text (R80): when only they moved, the page was not touched, and the record says shots.
+    const pageOnly = (text) => text.split("\n").filter((line) => !parseShotLine(line)).join("\n").replace(/\n{3,}/g, "\n\n").trim();
+    if (wroteBefore !== wroteAfter && pageOnly(wroteBefore) === pageOnly(wroteAfter)) {
+      const had = shotsOfText(wroteBefore).shots.length;
+      const has = shotsOfText(wroteAfter).shots.length;
+      say(!had ? `broke ${quote(note)} into ${has} shot${has === 1 ? "" : "s"}` : !has ? `took the shots off ${quote(note)}` : `changed the shots of ${quote(note)} (${has === had ? has : `${had} to ${has}`})`, note.id);
+    } else if (wroteBefore !== wroteAfter) {
       if (!wroteAfter) say(`took the page off ${quote(note)}`, note.id);
       else if (!wroteBefore) say(`wrote ${quote(note)}${isMeasured(note) ? ` (${formatPages(noteEighths(note))} pages)` : ""}`, note.id);
       else {

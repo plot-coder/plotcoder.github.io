@@ -5,7 +5,7 @@ import { segmentBrief, WORKFLOWS, workflowById } from "./workflows";
 const NOW = "2026-01-01T00:00:00.000Z";
 
 describe("workflows (R27)", () => {
-  it("names six workflows, each an ask, the tools it composes, and a rule", () => {
+  it("names seven workflows, each an ask, the tools it composes, and a rule", () => {
     expect(WORKFLOWS.map((workflow) => workflow.id)).toEqual([
       "break-a-treatment",
       "read-and-raise",
@@ -13,6 +13,7 @@ describe("workflows (R27)", () => {
       "draft-a-sequence",
       "restick",
       "brief-a-segment",
+      "break-into-shots",
     ]);
     for (const workflow of WORKFLOWS) {
       expect(workflow.name).toBeTruthy();

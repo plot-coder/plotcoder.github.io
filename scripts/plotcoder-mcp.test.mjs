@@ -1191,7 +1191,7 @@ describe("open fields (R61): the logline, the premise, a when and a board's name
     const listed = await client.callTool("list_board");
     expect(listed).toContain('versions, not chosen');
     // The version's own row says what is on it — rank, length, cast, place — as any card's does (round twenty-three, entries 21, 28).
-    expect(listed).toMatch(new RegExp(`  - ${other.id} \\[scene, [^\\]]+\\] — "Con dies" \\(\\w+\\), a version of "They lose the plots"`));
+    expect(listed).toMatch(new RegExp(`  - ${other.id} \\[scene, [^\\]]+\\] — "Con dies" \\(\\w+\\) at \\d+,\\d+ — change: "[^"]*", a version of "They lose the plots"`));
     expect(await client.callTool("read_wall")).toContain('  - "They lose the plots" or "Con dies"');
     expect(await client.callTool("set_alternative", { id: ending.id, of: other.id })).toContain("is itself a version");
     // Round twenty-two: what a version behind leaves open is said beside it (21); a thread will not run through it, and says why (58); a setup from it has no distance, never NaN (60).

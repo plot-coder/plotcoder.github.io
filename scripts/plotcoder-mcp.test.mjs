@@ -4325,7 +4325,7 @@ describe("a scene's shots through the server (R80)", () => {
     expect(await client.callTool("read_project")).toContain('the look (every shot\'s still shares it): "35mm, desaturated greens --sref 1234"');
     const brief = await client.callTool("segment_brief", { shot: scene.shots[1].id });
     expect(brief).toContain(`SHOT ${scene.shots[1].id}: shot 2 of 2 in "Ada's column"`);
-    expect(brief).toContain("close on Nell's hand on the ledger. INT. THE HARBOUR OFFICE. night. 35mm, desaturated greens --sref 1234.");
+    expect(brief).toContain("close on Nell's hand on the ledger. interior, the harbour office. night. 35mm, desaturated greens --sref 1234.");
     expect(brief).toContain("NOT ON THE WALL: what INT. THE HARBOUR OFFICE looks like.");
     expect(await client.callTool("segment_brief", {})).toContain("Say which: ids");
     expect(await client.callTool("build_segment", { shot: scene.shots[1].id })).toContain(`then file what it makes with add_take, subject shot:${scene.shots[1].id}`);

@@ -259,7 +259,7 @@ export function ProjectCrumb({
                 <input
                   className="project-panel__input"
                   value={revisionName}
-                  placeholder="Start a revision… (blue draft)"
+                  placeholder="Start a revision…"
                   aria-label="Start a revision"
                   spellCheck={false}
                   onChange={(event) => setRevisionName(event.target.value)}

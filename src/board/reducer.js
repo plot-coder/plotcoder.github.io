@@ -530,7 +530,7 @@ export function normalizeState(value) {
     ? value.record
     : (Array.isArray(value.record) ? value.record : [])
         .filter((entry) => entry && typeof entry.at === "string" && typeof entry.by === "string" && Array.isArray(entry.lines))
-        .map((entry) => ({ at: entry.at, by: entry.by, lines: entry.lines.filter((line) => typeof line === "string"), ids: Array.isArray(entry.ids) ? entry.ids.filter((id) => typeof id === "string") : [] }))
+        .map((entry) => ({ at: entry.at, by: entry.by, lines: entry.lines.filter((line) => typeof line === "string"), ids: Array.isArray(entry.ids) ? entry.ids.filter((id) => typeof id === "string") : [], ...(Array.isArray(entry.each) ? { each: entry.each.map((own) => (Array.isArray(own) ? own.filter((id) => typeof id === "string") : [])) } : {}) }))
         .slice(-50);
   const wordOk = value.handOver && typeof value.handOver.words === "string" && value.handOver.words.trim() && typeof value.handOver.at === "string" && typeof value.handOver.by === "string" && value.handOver.words === value.handOver.words.trim();
   const handOver = value.handOver == null ? null : wordOk ? value.handOver : typeof value.handOver.words === "string" && value.handOver.words.trim() && typeof value.handOver.at === "string" ? { at: value.handOver.at, by: typeof value.handOver.by === "string" ? value.handOver.by : "an agent", words: value.handOver.words.trim() } : null;

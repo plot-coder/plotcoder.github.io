@@ -35,7 +35,7 @@ describe("the record of a session (R76): what changed, in the person's terms", (
       'decided a line about the film: "Now, or 1987"',
     ]);
     expect(ids).toEqual(["f", "bank"]);
-    expect(describeChange(after, after)).toEqual({ lines: [], ids: [] });
+    expect(describeChange(after, after)).toEqual({ lines: [], ids: [], each: [] });
   });
 
   it("reads a move as a move only when nothing else on the card changed, and wires and payoffs by their cards", () => {
@@ -45,6 +45,21 @@ describe("the record of a session (R76): what changed, in the person's terms", (
     expect(describeChange(before, wired).lines).toEqual(['wired "The bank" after "The first Friday"']);
     const paid = run(wired, { type: "set_plant", ids: ["f"], what: "the sign" }, { type: "create_arrow", from: "f", to: "bank", kind: "setup" });
     expect(describeChange(wired, paid).lines).toEqual(['folded "The first Friday": it plants the sign', '"The bank" now pays off "The first Friday"']);
+  });
+
+  it("says a fold's payoff on another board was claimed or taken back, and each line keeps the ids it names (pass 3a, entry 37)", () => {
+    const before = run(base(), { type: "set_plant", ids: ["f"], what: "the sign" });
+    const claimed = run(before, { type: "set_payoff_board", ids: ["f"], boardId: "board-two", noteId: "scene-there" });
+    const change = describeChange(before, claimed);
+    expect(change.lines).toEqual(['said "The first Friday" pays off on another board, at a scene there']);
+    expect(change.each).toEqual([["f"]]);
+    expect(describeChange(claimed, run(claimed, { type: "set_payoff_board", ids: ["f"], boardId: null })).lines).toEqual(['took back where "The first Friday" pays off']);
+    // Two cards set aside together: two lines with one id each, and the order's line names no card.
+    const aside = run(base(), { type: "set_aside", ids: ["f", "bank"], aside: true });
+    const told = describeChange(base(), aside);
+    expect(told.each.filter((own) => own.length === 1)).toHaveLength(2);
+    const recorded = describeRecord(withRecord(base(), { at: "2026-09-27T03:24:00.000Z", by: "an agent", ...told }));
+    for (const item of recorded[0].lines) expect(item.ids.length).toBeLessThanOrEqual(1);
   });
 
   it("keeps the last fifty changes, merges a repeated change by the same hand within five minutes, and tells them as sessions", () => {

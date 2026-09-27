@@ -206,7 +206,7 @@ const VOICES = {
   "Ada Quill": ["Forty thousand and six pence. I have said it three times.", "A number is not an opinion, {O}.", "It was there in March. It is not there now.", "I do not lose things.", "Somebody wrote {S} down. Somebody always writes it down.", "I've kept this book since before you could write your name.", "Show me the page, then. Show me the page.", "The bank has a copy. The bank always has a copy."],
   "Sol Brandt": ["I'm not the weather, {O}. I'm just the man with the umbrella.", "Nobody has to lose here.", "The wall is coming down whether we build or not.", "Think about it. Take the week.", "{S} is a detail. Details are what I pay for.", "You've seen the drawings. Eighty berths. A restaurant. Lights.", "I've built on worse ground than this.", "Everyone signs in the end, {O}. Everyone."],
   "Ines Marr": ["It's sand. Under the footing. All the way along.", "I measure. I don't decide.", "I'll be gone by the equinox, {O}. One way or the other.", "You don't want to see the numbers on {S}.", "I have been wrong before. Not about this.", "He pays me to survey. He doesn't pay me to lie. Not yet.", "Every line on that map is a place the sea gets in.", "Ask me again when the tide's out and I'll show you."],
-  "Bram Holt": ["Three years I've filed it.", "Equinox. High water. Gone.", "{O}. Listen.", "It's not the crack. It's what's under it.", "Read the report on {S}. Just read it.", "I carried the second course of that wall in fifty-one with Con.", "You can shore it. You can't save it.", "Nobody reads. They vote."],
+  "Bram Holt": ["Three years I've filed it.", "Equinox. High water. Gone.", "{O}. Listen.", "It's not the crack. It's what's under it.", "Read the report. Just read it.", "I carried the second course of that wall in fifty-one with Con.", "You can shore it. You can't save it.", "Nobody reads. They vote."],
   "Kit Fenn": ["First boat out. I've got a berth.", "There's nothing here for me, {O}. You know that.", "I'm not asking. I'm telling you.", "Two coffees, one black.", "I'm not staying for {S}.", "Tom said Friday. Tom said.", "Everyone says next year. Nobody's ever gone.", "Table four wants the bill."],
   "Rosa Vane": ["Sit down, you're letting the cold in.", "Take it. You'll pay me when you pay me.", "That hut was my mother's and her mother's.", "{O}, I've heard every story this town has.", "I'll not be told about {S} by a man in a good coat.", "The bank rang again. I let it ring.", "Eat something. You look like the wall.", "I know what's owed. I've always known."],
   "Owen Petty": ["The committee's position, {O}, is evolving.", "Nobody wants to see the harbour fail.", "I hear you. I do hear you.", "Friday. Seven. Bring your reasons.", "{S} is a matter for the full council.", "There are procedures, and the procedures protect us all.", "I have never taken a penny I wasn't owed.", "Let's not make this personal, {O}."],
@@ -335,9 +335,12 @@ function buildBoard(episode, index, roster, folds) {
       // A different template for every filler on a board, and a different rotation on every board.
       const template = FILLERS[(slot + index * 5) % FILLERS.length];
       const [headline, change, place, when, slots] = template;
-      const a = people[Math.floor(random() * people.length)];
-      let b = people[Math.floor(random() * people.length)];
-      if (b === a) b = people[(people.indexOf(a) + 1) % people.length];
+      // Nobody plays against themself: a template that names a person keeps them out of A and B.
+      const named = roster.map((person) => person.name).filter((name) => (headline + " " + change).includes(first(name)));
+      const pool = people.filter((name) => !named.includes(name));
+      const a = pool[Math.floor(random() * pool.length)];
+      let b = pool[Math.floor(random() * pool.length)];
+      if (b === a) b = pool[(pool.indexOf(a) + 1) % pool.length];
       const subject = episode.subjects[slot % episode.subjects.length];
       const vars = { A: first(a), B: first(b), S: subject };
       const cast = [];

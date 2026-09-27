@@ -1542,7 +1542,8 @@ function summarize(state) {
       const underneath = isMeasured(note) && note.lengthEighths !== null ? `; the writer's estimate underneath: ${formatPages(note.lengthEighths)}` : "";
       const sketch = isMeasured(note) && noteEighths(note) < (note.lengthEighths ?? DEFAULT_NOTE_EIGHTHS) ? " (a sketch: under the page it was read as)" : "";
       const pages = isMeasured(note) ? `${count} ${count === "1" ? "page" : "pages"}, written${sketch}${underneath}` : note.lengthEighths === null ? "about a page, unsized" : `${count} ${count === "1" ? "page" : "pages"}`;
-      return `  - ${note.id} [${note.rank ?? "scene"}, ${pages}${who}${place}${when}${openWord}${plant}${pays}${revised}] — "${note.headline}" (${note.color}) at ${Math.round(note.x)},${Math.round(note.y)}`;
+      // The change line, as the description has always promised (pass 3a, entry 16): without it the only way to 240 change lines was 440 KB of pages.
+      return `  - ${note.id} [${note.rank ?? "scene"}, ${pages}${who}${place}${when}${openWord}${plant}${pays}${revised}] — "${note.headline}" (${note.color}) at ${Math.round(note.x)},${Math.round(note.y)} — change: "${note.change}"`;
   };
   const unlinkedIds = new Set(unlinkedCards(state).map((note) => note.id));
   const notes = storyOrder(state).map((note) => (unlinkedIds.has(note.id) ? `${cardRow(note)} — unlinked: on no follows arrow, so in the film and in no run, printed last; the wall asks where it goes` : cardRow(note))).join("\n");

@@ -8,7 +8,29 @@ done and merged, what is left, and the order I would take it in.
 
 ---
 
-## Next, for whoever picks this up (2026-09-27, later, after pass 3a's first half)
+## Next, for whoever picks this up (2026-09-27, night, after pass 3a)
+
+**Pass 3a has run, both halves.** The blind half: a fresh agent on "Low
+Water" through the desktop connector, driven from here on
+`blind-runs/pass-3a-prompt.md` — 40 entries (`blind-runs/pass-3a-report.md`),
+worked in `docs/to-do-pass-3a.md`. It found Kit's dropped want and the
+brass key, tightened episode three's second act by six scenes on the word,
+and paid the key off three episodes on — by saving all six boards' pages to
+its own disk (72 to 75 KB each, none fit a reply) and scripting over them,
+which is the pass's finding in one line: **the pages come by the board or
+not at all, so a direction that needs the whole film is six whole boards
+or guesswork** — R77 (a), `read_pages` by range and one scene's text, is
+the first thing to build, on Robert's word. Thirteen entries fixed as it
+ran in #202 to #207 (the folds moving with fresh board ids, `list_board`'s
+change line, `set_aside`'s counts, the payoff's distance, the record of a
+cross-board claim and per-line ids, a series read whole first). The
+session's connector had the cached tool list again (pass 2b's 4): no
+`hand_over`, so the last word is in the report. **Next:** release the six
+fixes (0.1.60), then R77's alternatives with Robert, then 3b (hands-off:
+a list of directions and standing answers) on the same project, which is
+still on the test account with the agent's three changes on it.
+
+## Before it (2026-09-27, later, after pass 3a's first half)
 
 **Pass 3a's first half has run** — no agent: `scripts/measure-reads.mjs`
 counted every read on "Ninety-Nine" (pass 1a's wall, recovered from the

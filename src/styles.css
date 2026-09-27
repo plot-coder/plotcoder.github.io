@@ -6354,3 +6354,22 @@ body {
   line-height: 1.4;
   color: var(--muted);
 }
+
+/* The target's words at the map's end are a way to the length menu too. */
+.story-map__target-label[role="button"] {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.story-map__target-label[role="button"]:hover,
+.story-map__target-label[role="button"]:focus-visible {
+  text-decoration: underline;
+  outline: none;
+}
+
+/* At the map's end the bar of icons stands just above the map: the menu opens clear of it. */
+.story-map__menu--end {
+  left: auto;
+  right: 1.1rem;
+  bottom: calc(100% + 4.4rem);
+}

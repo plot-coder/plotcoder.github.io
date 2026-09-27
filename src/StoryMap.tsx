@@ -83,6 +83,13 @@ export function StoryMap({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lengthOpen]);
 
+  /** The menu opens where it was asked for: beside the tab, or at the axis's end under the target's words. */
+  const [lengthSide, setLengthSide] = useState<"start" | "end">("start");
+  function openLength(side: "start" | "end") {
+    setLengthSide(side);
+    setLengthOpen(true);
+  }
+
   function choose(choice: TargetChoice) {
     onSetTarget(choice);
     setLengthOpen(false);
@@ -142,7 +149,7 @@ export function StoryMap({
             className={`story-map__tab story-map__length ${chosen ? "" : "is-asking"}`}
             aria-expanded={lengthOpen}
             aria-haspopup="dialog"
-            onClick={() => setLengthOpen((now) => !now)}
+            onClick={() => (lengthOpen ? setLengthOpen(false) : openLength("start"))}
             title="How long is this board? Each board of a project has its own length."
           >
             {board.targetOpen ? (
@@ -165,7 +172,7 @@ export function StoryMap({
       {open && lengthOpen ? (
         <>
           <button type="button" className="story-map__length-away" aria-label="Close the length menu" onClick={() => setLengthOpen(false)} />
-          <div className="story-map__menu" role="dialog" aria-label="How long is this board?">
+          <div className={`story-map__menu ${lengthSide === "end" ? "story-map__menu--end" : ""}`} role="dialog" aria-label="How long is this board?">
             <p className="story-map__menu-k">How long is this board?</p>
             {(Object.keys(TARGET_KINDS) as Array<keyof typeof TARGET_KINDS>).map((kind) => {
               const pages = TARGET_KINDS[kind].eighths / EIGHTHS_PER_PAGE;
@@ -345,7 +352,7 @@ export function StoryMap({
               <line className="story-map__tick" x1={x(tick)} y1={axisY} x2={x(tick)} y2={axisY + 4} />
               {/* A page number gives way to the target label when the target is
                   still ahead and the two would share the axis's end (Robert, 2026-09-13). */}
-              {open && !(chosen && !board.targetOpen && !layout.targetInRange && x(layout.spanEighths) - x(tick) < 72) ? (
+              {open && !(!(chosen && !board.targetOpen && layout.targetInRange) && x(layout.spanEighths) - x(tick) < 72) ? (
                 <text className="story-map__page" x={x(tick)} y={axisY + 15}>
                   {tick / EIGHTHS_PER_PAGE}
                 </text>
@@ -365,20 +372,7 @@ export function StoryMap({
                 x2={x(layout.targetEighths)}
                 y2={axisY}
               />
-              {open ? (
-                <text className="story-map__target-label" x={x(layout.targetEighths) + 3} y={12}>
-                  target
-                </text>
-              ) : null}
             </>
-          ) : open ? (
-            <text
-              className="story-map__target-label story-map__target-label--ahead"
-              x={x(layout.spanEighths)}
-              y={axisY + 15}
-            >
-              {targetWords(board) ? `${targetWords(board)} · ` : "target "}{formatPages(layout.targetEighths)} →
-            </text>
           ) : null}
 
           {/* Every card as a block. Click to go there; hover to read it. */}
@@ -463,6 +457,48 @@ export function StoryMap({
                   </g>
                 );
               })
+            : null}
+
+          {/* The target's own words, drawn last so they are above every block and can be pressed: they open the length menu
+              where they stand (Robert, 2026-09-27). A board with no length chosen says so at the axis's end. */}
+          {open
+            ? (() => {
+                const press = {
+                  role: "button",
+                  tabIndex: 0,
+                  onClick: () => openLength("end"),
+                  onKeyDown: (event: { key: string; preventDefault: () => void }) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      openLength("end");
+                    }
+                  },
+                } as const;
+                if (board.targetOpen) {
+                  return (
+                    <text className="story-map__target-label story-map__target-label--ahead" x={x(layout.spanEighths)} y={axisY + 15} aria-label="The board's length: not decided. Press to set it." {...press}>
+                      length not decided →
+                    </text>
+                  );
+                }
+                if (!chosen) {
+                  return (
+                    <text className="story-map__target-label story-map__target-label--ahead" x={x(layout.spanEighths)} y={axisY + 15} aria-label="Set this board's length" {...press}>
+                      set a length →
+                    </text>
+                  );
+                }
+                return layout.targetInRange ? (
+                  <text className="story-map__target-label" x={x(layout.targetEighths) + 3} y={12} aria-label={`The board's length: ${formatPages(layout.targetEighths)} pages. Press to change it.`} {...press}>
+                    target{targetWords(board) ? ` · ${targetWords(board)}` : ""} {formatPages(layout.targetEighths)}
+                  </text>
+                ) : (
+                  <text className="story-map__target-label story-map__target-label--ahead" x={x(layout.spanEighths)} y={axisY + 15} aria-label={`The board's length: ${formatPages(layout.targetEighths)} pages. Press to change it.`} {...press}>
+                    {targetWords(board) ? `${targetWords(board)} · ` : "target "}
+                    {formatPages(layout.targetEighths)} →
+                  </text>
+                );
+              })()
             : null}
 
           {/* Beat names above the blocks, only where they fit; the number is always on the block. */}

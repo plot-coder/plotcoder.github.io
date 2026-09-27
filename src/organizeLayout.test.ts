@@ -24,7 +24,7 @@ function card(id: string, x: number, y: number, rotate = -2.2): MockNote {
   open: "",
     location: "",
     when: "",
-  whenOpen: "", changeOpen: "", aside: false,
+  whenOpen: "", day: "", dayOpen: "", light: "", lightOpen: "", changeOpen: "", aside: false,
   locationOpen: "",
   plantsWhat: "",
   alternativeOf: null,

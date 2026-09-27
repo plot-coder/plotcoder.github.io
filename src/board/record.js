@@ -101,6 +101,10 @@ export function describeChange(before, after) {
     if ((old.locationOpen ?? "") !== (note.locationOpen ?? "") && (note.locationOpen ?? "").trim()) say(`left the place of ${quote(note)} open: "${note.locationOpen.trim()}"`, note.id);
     if ((old.when ?? "") !== (note.when ?? "") && (note.when ?? "").trim()) say(`set when ${quote(note)} happens: ${note.when.trim()}`, note.id);
     if ((old.whenOpen ?? "") !== (note.whenOpen ?? "") && (note.whenOpen ?? "").trim()) say(`left when ${quote(note)} happens open: "${note.whenOpen.trim()}"`, note.id);
+    if ((old.day ?? "") !== (note.day ?? "") && (note.day ?? "").trim()) say(`set the day of ${quote(note)}: ${note.day.trim()}`, note.id);
+    if ((old.dayOpen ?? "") !== (note.dayOpen ?? "") && (note.dayOpen ?? "").trim()) say(`left the day of ${quote(note)} open: "${note.dayOpen.trim()}"`, note.id);
+    if ((old.light ?? "") !== (note.light ?? "") && (note.light ?? "").trim()) say(`set the light of ${quote(note)}: ${note.light.trim()}`, note.id);
+    if ((old.lightOpen ?? "") !== (note.lightOpen ?? "") && (note.lightOpen ?? "").trim()) say(`left the light of ${quote(note)} open: "${note.lightOpen.trim()}"`, note.id);
     if ((old.open ?? "") !== (note.open ?? "")) say((note.open ?? "").trim() ? `left ${quote(note)} open: "${note.open.trim()}"` : `closed ${quote(note)}: it is decided`, note.id);
     if (Boolean(old.plants) !== Boolean(note.plants) || (old.plantsWhat ?? "") !== (note.plantsWhat ?? "")) {
       say(note.plants ? `folded ${quote(note)}: it plants ${(note.plantsWhat ?? "").trim() || "something"}` : `unfolded ${quote(note)}`, note.id);

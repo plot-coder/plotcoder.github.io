@@ -297,6 +297,11 @@ export function seedState(now = nowIso()) {
     when: "",
     // The writer's words for why the when is not decided (R61), or nothing.
     whenOpen: "",
+    // Which day of the film's time the scene falls on, and its light — the weather, the hour's light (R78); each with the writer's words when not decided.
+    day: "",
+    dayOpen: "",
+    light: "",
+    lightOpen: "",
     // The writer's words for why the change line is not decided (R67), or nothing.
     changeOpen: "",
     // Set aside (R66): on the wall and not in the film.
@@ -444,6 +449,11 @@ export function normalizeState(value) {
     const when = typeof note?.when === "string" ? note.when : "";
     // Cards written before R61 have no open when; a when is decided or blank until the writer says otherwise.
     const whenOpen = typeof note?.whenOpen === "string" ? note.whenOpen : "";
+    // Cards written before R78 have no day and no light; both are blank until the writer says, and open only by their word.
+    const day = typeof note?.day === "string" ? note.day : "";
+    const dayOpen = typeof note?.dayOpen === "string" ? note.dayOpen : "";
+    const light = typeof note?.light === "string" ? note.light : "";
+    const lightOpen = typeof note?.lightOpen === "string" ? note.lightOpen : "";
     // Cards written before R67 have no open change line; a change line is decided or waiting until the writer says why it waits.
     const changeOpen = typeof note?.changeOpen === "string" ? note.changeOpen : "";
     // Cards written before R66 are in the film; nothing is set aside until the writer sets it aside.
@@ -470,6 +480,10 @@ export function normalizeState(value) {
       note.locationOpen === locationOpen &&
       note.when === when &&
       note.whenOpen === whenOpen &&
+      note.day === day &&
+      note.dayOpen === dayOpen &&
+      note.light === light &&
+      note.lightOpen === lightOpen &&
       note.changeOpen === changeOpen &&
       note.aside === aside &&
       note.text === text
@@ -477,7 +491,7 @@ export function normalizeState(value) {
       return note;
     }
     patched = true;
-    return { ...note, rank, lengthEighths, characterIds, maybeCharacterIds, castOpen, proposedBeat, plants, plantsWhat, alternativeOf, payoffBoardId, payoffNoteId, open, location, locationOpen, when, whenOpen, changeOpen, aside, text };
+    return { ...note, rank, lengthEighths, characterIds, maybeCharacterIds, castOpen, proposedBeat, plants, plantsWhat, alternativeOf, payoffBoardId, payoffNoteId, open, location, locationOpen, when, whenOpen, day, dayOpen, light, lightOpen, changeOpen, aside, text };
   });
   // A version of a version is a version of the front card, so the pair stays a pair.
   for (const [index, note] of notes.entries()) {
@@ -874,6 +888,11 @@ export function applyCommand(state, command, now = nowIso()) {
         locationOpen: cleanOpen(command.locationOpen),
         when: cleanOpen(command.whenOpen) ? "" : cleanWhen(command.when),
         whenOpen: cleanOpen(command.whenOpen),
+        // The day and the light (R78), as the when: decided words, or the writer's words for why not.
+        day: cleanOpen(command.dayOpen) ? "" : cleanWhen(command.day),
+        dayOpen: cleanOpen(command.dayOpen),
+        light: cleanOpen(command.lightOpen) ? "" : cleanWhen(command.light),
+        lightOpen: cleanOpen(command.lightOpen),
         text: typeof command.text === "string" ? command.text : "",
         z: maxZ(state.notes) + 1,
         createdAt: now,
@@ -1593,6 +1612,10 @@ export function applyCommand(state, command, now = nowIso()) {
         locationOpen: "",
         when: "",
         whenOpen: "",
+        day: "",
+        dayOpen: "",
+        light: "",
+        lightOpen: "",
         changeOpen: "",
         aside: false,
         text: "",
@@ -1735,6 +1758,34 @@ export function applyCommand(state, command, now = nowIso()) {
           whenOpen: whenOpen === null ? (when ? "" : (note.whenOpen ?? "")) : whenOpen,
         };
         if (patch.when === (note.when ?? "") && patch.whenOpen === (note.whenOpen ?? "")) return note;
+        const next = bump(note, patch, now);
+        touched.push(next);
+        return next;
+      });
+      if (touched.length === 0) return { state, changed: false };
+      return { state: { ...state, notes }, changed: true, result: touched };
+    }
+
+    // The day of the film's time a scene falls on, and its light (R78): each
+    // as the when is set — a value clears the open words, open words clear the
+    // value, open "" leaves it blank. Neither is asked about by the reading.
+    case "set_day":
+    case "set_light": {
+      const ids = new Set(command.ids);
+      if (ids.size === 0) return { state, changed: false };
+      const field = command.type === "set_day" ? "day" : "light";
+      const openField = `${field}Open`;
+      const hasOpen = typeof command.open === "string";
+      const openWords = hasOpen ? cleanOpen(command.open) : null;
+      const value = hasOpen ? (openWords ? "" : typeof command[field] === "string" ? cleanWhen(command[field]) : null) : cleanWhen(command[field]);
+      const touched = [];
+      const notes = state.notes.map((note) => {
+        if (!ids.has(note.id)) return note;
+        const patch = {
+          [field]: value === null ? (note[field] ?? "") : value,
+          [openField]: openWords === null ? (value ? "" : (note[openField] ?? "")) : openWords,
+        };
+        if (patch[field] === (note[field] ?? "") && patch[openField] === (note[openField] ?? "")) return note;
         const next = bump(note, patch, now);
         touched.push(next);
         return next;

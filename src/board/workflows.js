@@ -149,12 +149,13 @@ export function segmentBrief(state, ids, options = {}) {
   lines.push(`PEOPLE: ${people.size ? [...people.values()].map(personLine).join(" | ") : "(nobody cast)"}`);
   lines.push(`PLACES: ${places.length ? places.join("; ") : "(none set)"}`);
   // What no wall holds, said once so a reader knows the gap is the wall's and not this brief's.
-  lines.push("NOT ON THE WALL: which day of the film's time a scene falls on (a card holds a time of day, never a day); what a place looks like beyond its name; a face, a build or a voice beyond the page's line. Ask the writer, or leave it open.");
+  const dayMissing = notes.some((note) => !(note.day ?? "").trim() && !(note.dayOpen ?? "").trim());
+  lines.push(`NOT ON THE WALL: ${dayMissing ? "which day of the film's time a scene falls on (set_day holds it, or the writer's words for why not); " : ""}what a place looks like beyond its name; a face, a build or a voice beyond the page's line. Ask the writer, or leave it open.`);
   for (const note of notes) {
     const number = position(note);
     lines.push("");
     // The card's id rides on the scene line so a take can be filed against it (pass 4a, the run's entries).
-    lines.push(`SCENE${number ? ` ${number}` : ""}: "${note.headline}" [[id: ${note.id}]]${note.rank === "beat" ? " — a beat" : ""}${note.location ? ` — at ${note.location}` : note.locationOpen ? ` — the place open, by the writer's word: "${note.locationOpen}"` : " — no place set"} — ${note.when ? note.when : note.whenOpen ? `when open, by the writer's word: "${note.whenOpen}"` : "no time of day set"} — about ${formatPages(noteEighths(note))} page${formatPages(noteEighths(note)) === "1" ? "" : "s"}, ${isMeasured(note) ? "measured" : note.lengthEighths !== null ? "the writer's estimate" : "unsized, read as a page"}`);
+    lines.push(`SCENE${number ? ` ${number}` : ""}: "${note.headline}" [[id: ${note.id}]]${note.rank === "beat" ? " — a beat" : ""}${note.location ? ` — at ${note.location}` : note.locationOpen ? ` — the place open, by the writer's word: "${note.locationOpen}"` : " — no place set"} — ${note.when ? note.when : note.whenOpen ? `when open, by the writer's word: "${note.whenOpen}"` : "no time of day set"}${(note.day ?? "").trim() ? ` — ${note.day.trim()}` : (note.dayOpen ?? "").trim() ? ` — day: open, by the writer's word: "${note.dayOpen.trim()}"` : ""}${(note.light ?? "").trim() ? ` — ${note.light.trim()}` : (note.lightOpen ?? "").trim() ? ` — light: open, by the writer's word: "${note.lightOpen.trim()}"` : ""} — about ${formatPages(noteEighths(note))} page${formatPages(noteEighths(note)) === "1" ? "" : "s"}, ${isMeasured(note) ? "measured" : note.lengthEighths !== null ? "the writer's estimate" : "unsized, read as a page"}`);
     // Who is in this scene, by name, so a run's reader does not scroll to the header to learn who "Mira" is (pass 4a, entry 39).
     const cast = (note.characterIds ?? []).map((id) => state.characters.find((item) => item.id === id)?.name).filter(Boolean);
     const maybes = (note.maybeCharacterIds ?? []).map((id) => state.characters.find((item) => item.id === id)?.name).filter(Boolean).map((name) => `${name}?`);

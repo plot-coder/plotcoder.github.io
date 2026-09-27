@@ -1564,6 +1564,8 @@ function summarize(state) {
       const revised = snap && (snap.headline !== note.headline || snap.change !== note.change || (snap.text ?? "") !== (note.text ?? "") || (snap.location ?? "") !== (note.location ?? "")) ? `, changed in ${state.revision.color}` : "";
       const place = note.location ? `, at: ${note.location}` : note.locationOpen ? `, at: open, by the writer's word — "${note.locationOpen}"` : "";
       const when = note.when ? `, when: ${note.when}` : note.whenOpen ? `, when: open, by the writer's word — "${note.whenOpen}"` : "";
+      // The day and the light (R78), as the when.
+      const dayLight = `${note.day ? `, day: ${note.day}` : note.dayOpen ? `, day: open, by the writer's word — "${note.dayOpen}"` : ""}${note.light ? `, light: ${note.light}` : note.lightOpen ? `, light: open, by the writer's word — "${note.lightOpen}"` : ""}`;
       const openWord = `${note.changeOpen ? `, change line: open, by the writer's word — "${note.changeOpen}"` : ""}${note.open ? `, open (the writer's words): "${note.open}"` : ""}${note.aside ? ", set aside: not in the film" : ""}${note.proposedBeat ? ", proposed as a turn (yours, not yet the writer's: set_rank beat keeps it, scene strikes it)" : ""}`;
       const count = formatPages(noteEighths(note));
       // A written card's estimate is kept underneath for when the text goes; say it, or it is invisible (round sixteen, entry 44).
@@ -1571,7 +1573,7 @@ function summarize(state) {
       const sketch = isMeasured(note) && noteEighths(note) < (note.lengthEighths ?? DEFAULT_NOTE_EIGHTHS) ? " (a sketch: under the page it was read as)" : "";
       const pages = isMeasured(note) ? `${count} ${count === "1" ? "page" : "pages"}, written${sketch}${underneath}` : note.lengthEighths === null ? "about a page, unsized" : `${count} ${count === "1" ? "page" : "pages"}`;
       // The change line, as the description has always promised (pass 3a, entry 16): without it the only way to 240 change lines was 440 KB of pages.
-      return `  - ${note.id} [${note.rank ?? "scene"}, ${pages}${who}${place}${when}${openWord}${plant}${pays}${revised}] — "${note.headline}" (${note.color}) at ${Math.round(note.x)},${Math.round(note.y)} — change: "${note.change}"`;
+      return `  - ${note.id} [${note.rank ?? "scene"}, ${pages}${who}${place}${when}${dayLight}${openWord}${plant}${pays}${revised}] — "${note.headline}" (${note.color}) at ${Math.round(note.x)},${Math.round(note.y)} — change: "${note.change}"`;
   };
   const unlinkedIds = new Set(unlinkedCards(state).map((note) => note.id));
   const notes = storyOrder(state).map((note) => (unlinkedIds.has(note.id) ? `${cardRow(note)} — unlinked: on no follows arrow, so in the film and in no run, printed last; the wall asks where it goes` : cardRow(note))).join("\n");
@@ -1980,6 +1982,10 @@ const createNoteShape = {
     when: z.string().optional().describe('When the scene happens, as the writer says it — "night", "day four, dawn" — printed after the place on the scene heading.'),
     locationOpen: z.string().optional().describe("The writer's words for why the place is not decided: the card is born with its place open, listed and not asked where, while its other questions stand."),
     whenOpen: z.string().optional().describe("The writer's words for why the when is not decided: the card is born with its when open, listed and not asked."),
+    day: z.string().optional().describe('Which day of the film\'s time the scene falls on, in the writer\'s words — "day four"; a note under the heading, never in it.'),
+    dayOpen: z.string().optional().describe("The writer's words for why the day is not decided."),
+    light: z.string().optional().describe('The light of the scene — the weather, the hour\'s light — in the writer\'s words.'),
+    lightOpen: z.string().optional().describe("The writer's words for why the light is not decided."),
     open: z.string().optional().describe("The writer's words for what is not decided about this card — \"whether Tom knows\" — so the card is born open: the reading lists it and asks nothing else of it until the words are cleared."),
     characters: z.array(z.string().min(1)).optional(),
     castOpen: z.string().optional().describe("The writer's words for why who is in the scene is not decided, when nobody can be named or beside the names given. Not the same as open, which says the whole card is undecided."),
@@ -2084,6 +2090,10 @@ async function createNoteCall(args) {
         location: args.location,
         locationOpen: args.locationOpen,
         whenOpen: args.whenOpen,
+        day: args.day,
+        dayOpen: args.dayOpen,
+        light: args.light,
+        lightOpen: args.lightOpen,
         changeOpen: (args.change ?? "").trim() ? undefined : args.changeOpen,
         castOpen: args.castOpen,
         when: args.when,
@@ -2417,6 +2427,16 @@ server.registerTool(
         return [
           `cast: ${cast.length ? cast.map((person) => `${person.name} (${person.on === 0 ? (person.maybe ? "on no card for certain" : state.notes.some((note) => (note.alternativeOf || note.aside) && (note.characterIds ?? []).includes(person.id)) ? "on no card in the film: only on a card set aside or a version behind, so not asked about" : "on no card") : `${person.on} scene${person.on === 1 ? "" : "s"}`}${person.maybe ? `, and maybe ${person.maybe} more` : ""})`).join(", ") : "(nobody yet)"}`,
           `places: ${places.length ? places.map((item) => `${item.place} (${item.on})`).join(", ") : "(none yet)"}`,
+          // The film's days, once any card holds one (R78): the calendar read off the wall, never asked for.
+          ...(() => {
+            const days = new Map();
+            let open = 0;
+            for (const note of storyOrder(state)) {
+              if ((note.day ?? "").trim()) days.set(note.day.trim(), (days.get(note.day.trim()) ?? 0) + 1);
+              else if ((note.dayOpen ?? "").trim()) open += 1;
+            }
+            return days.size || open ? [`days: ${[...days.entries()].map(([day, count]) => `${day} (${count})`).join(", ")}${open ? `${days.size ? ", " : ""}open by the writer's word (${open})` : ""}`] : [];
+          })(),
         ];
       })(),
       ...runtimeBlock(state),
@@ -3927,6 +3947,35 @@ server.registerTool(
     );
   },
 );
+
+// The day of the film's time and the light (R78): two more things the card
+// holds in the writer's words, each with its own open, printed under the
+// heading in the pages and on the brief's scene line; the reading asks nothing.
+for (const [name, field, title, what] of [
+  ["set_day", "day", "Set which day scenes fall on", "which day of the film's time the scene falls on — \"day four\", \"the Friday after the crack\", \"the same night\" — in the writer's words, beside the time of day the card already holds; never in the heading (a script says NIGHT; the day of the story is a note under it in the pages, the exports and the brief)"],
+  ["set_light", "light", "Set the light of scenes", "the light of the scene — the weather and the hour's light, \"rain on the window\", \"the light going\" — in the writer's words, beside the day; printed as a note under the heading in the pages, the exports and the brief"],
+]) {
+  server.registerTool(
+    name,
+    {
+      title,
+      description: `${what.charAt(0).toUpperCase()}${what.slice(1)}. Free text; an empty string clears it. Or leave it open in the writer's words — open: "not decided — R." — and the reading lists it under open, by the writer's word, and asks nothing; a value decides it and the open words go; open "" leaves it blank. The reading never asks for a ${field}: a film set on one afternoon has none.`,
+      inputSchema: { ids: z.array(z.string()).min(1), [field]: z.string().optional(), open: z.string().optional() },
+    },
+    async (args) => {
+      if (args[field] === undefined && args.open === undefined) return ok(`Say which: ${field} (the writer's words, or "" to clear it), or open (their words for why the ${field} is not decided).`);
+      const { state, changed, result, live } = await commit({ type: name, ids: args.ids, ...(args[field] !== undefined ? { [field]: args[field] } : {}), ...(args.open !== undefined ? { open: args.open } : {}) });
+      if (!changed) {
+        const missing = args.ids.filter((id) => !state.notes.some((note) => note.id === id));
+        return ok(missing.length ? `No card with id ${missing.join(", ")}. Call list_board for the real ids.` : `Nothing changed: ${args.ids.length === 1 ? "the card already says" : "those cards already say"} "${(args[field] ?? args.open ?? "").trim()}".`);
+      }
+      const value = result[0]?.[field] ?? "";
+      const openWords = result[0]?.[`${field}Open`] ?? "";
+      if (openWords) return ok(`${result.length} card(s) have their ${field} left open, by the writer's word: "${openWords}"${where(live)}. The reading lists it and asks nothing; the pages and the brief print it as open; ${name} with a ${field} decides it, open "" leaves it blank.`, result);
+      return ok(value ? `${result.length} card(s) now carry the ${field} "${value}"${where(live)}: under the heading in the pages and on the brief's scene line, never in the heading itself.` : `${result.length} card(s) no longer say their ${field}${where(live)}.`, result);
+    },
+  );
+}
 
 // The open card (R59): the writer's word that a card is not decided. The
 // per-card twin of leave_question — that one leaves a question, this one

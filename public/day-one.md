@@ -397,6 +397,16 @@ only when the server is started with `PLOTCODER_JSON=1`.
   they say it is not decided, `open` with their words leaves the when open
   — listed by the reading, no time on the heading, and the card still
   asked about everything else, unlike `set_open` on the whole card.
+- `set_day` and `set_light` — **which day of the film's time** a scene falls
+  on ("day four", "the Friday after the crack") and **its light** (the
+  weather, the hour's light: "rain on the window, the light going"), in the
+  writer's words, beside the when; `open` leaves either in their words. Never
+  in the heading — a script says NIGHT — but a note under it in the pages
+  and every export, and on the brief's scene line; `list_board` shows both
+  and `read_wall` lists the days once any card holds one. The reading asks
+  for neither: a film set on one afternoon has no days. On the wall it is the
+  card's fifth line, "day four · rain on the window", typed as the place line
+  is.
 - `delete_note` — remove a card. Its arrows go with it and it leaves its
   group; a card wired into a chain — one `follows` in, one out — leaves the
   chain joined behind it. The reply names each arrow by its cards, the join,

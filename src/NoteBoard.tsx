@@ -53,6 +53,7 @@ type NoteBoardProps = {
   places: string[];
   onCastNames: (id: string, names: string[], open: string) => void;
   onLocation: (id: string, location: string, when: string, whenOpen: string, locationOpen: string) => void;
+  onDayLight: (id: string, day: string, light: string, dayOpen: string, lightOpen: string) => void;
   /** The empty wall offers a structure (R38). */
   onStructure: () => void;
   /** What these words mean (R42). */
@@ -171,6 +172,7 @@ export function NoteBoard({
   places,
   onCastNames,
   onLocation,
+  onDayLight,
   onStructure,
   onWords,
   onAgents,
@@ -663,6 +665,7 @@ export function NoteBoard({
           revised={revision && isRevised(note, revision.snapshot[note.id]) ? revision.color : null}
           onCastNames={onCastNames}
           onLocation={onLocation}
+          onDayLight={onDayLight}
           onRaise={onRaise}
           onHover={onHoverNote}
           onPointerDown={startNoteDrag}

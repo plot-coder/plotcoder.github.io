@@ -47,6 +47,12 @@ describe("the record of a session (R76): what changed, in the person's terms", (
     expect(describeChange(wired, paid).lines).toEqual(['folded "The first Friday": it plants the sign', '"The bank" now pays off "The first Friday"']);
   });
 
+  it("says the day and the light of a scene, set or left open (R78)", () => {
+    const before = base();
+    const dated = run(before, { type: "set_day", ids: ["f"], day: "day four" }, { type: "set_light", ids: ["f"], open: "rain or not — R." });
+    expect(describeChange(before, dated).lines).toEqual(['set the day of "The first Friday": day four', 'left the light of "The first Friday" open: "rain or not — R."']);
+  });
+
   it("says a fold's payoff on another board was claimed or taken back, and each line keeps the ids it names (pass 3a, entry 37)", () => {
     const before = run(base(), { type: "set_plant", ids: ["f"], what: "the sign" });
     const claimed = run(before, { type: "set_payoff_board", ids: ["f"], boardId: "board-two", noteId: "scene-there" });

@@ -53,7 +53,7 @@ describe("the brief (R28)", () => {
         "STORY: Can Maya forgive a useful lie?",
         "PEOPLE: Maya — looks: Tall, a good coat.; voice: Low.",
         "PLACES: the piano shop",
-        "NOT ON THE WALL: which day of the film's time a scene falls on (a card holds a time of day, never a day); what a place looks like beyond its name; a face, a build or a voice beyond the page's line. Ask the writer, or leave it open.",
+        "NOT ON THE WALL: which day of the film's time a scene falls on (set_day holds it, or the writer's words for why not); what a place looks like beyond its name; a face, a build or a voice beyond the page's line. Ask the writer, or leave it open.",
         "",
         'SCENE 1: "Maya finds the letter" [[id: maya-letter]] — at the piano shop — night — about 1/8 pages, measured',
         "WHO: Maya",
@@ -71,6 +71,12 @@ describe("the brief (R28)", () => {
     state = applyCommand(state, { type: "add_open_line", text: "the era — not decided" }, NOW).state;
     const later = segmentBrief(state, ["maya-letter"], { boards: [{ id: "ep3", name: "Episode 3", order: [{ id: "x", headline: "Elsewhere" }, { id: "the-drawer", headline: "The drawer" }] }] });
     expect(later).toContain('OPEN ABOUT THE FILM, BY THE WRITER\'S WORD: "the era — not decided"');
+    // The day and the light ride on the scene line (R78), and the day leaves NOT ON THE WALL once the wall holds it.
+    state = applyCommand(state, { type: "set_day", ids: ["maya-letter"], day: "day four" }, NOW).state;
+    state = applyCommand(state, { type: "set_light", ids: ["maya-letter"], open: "rain or not — R." }, NOW).state;
+    const dated = segmentBrief(state, ["maya-letter"]);
+    expect(dated).toContain(' — night — day four — light: open, by the writer\'s word: "rain or not — R." — about');
+    expect(dated).toContain("NOT ON THE WALL: what a place looks like beyond its name;");
     expect(later).toContain('PLANTS: the letter — pays off at "The drawer" (scene 2 on "Episode 3"); keep it visible.');
     expect(later).toContain('not decided, by the writer\'s word: whether she keeps it');
     expect(later).toContain('— open about the people, by the writer\'s word: Maya: "whether she keeps it"');

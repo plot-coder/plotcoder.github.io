@@ -5013,3 +5013,24 @@ body {
   list-style: none;
   padding-left: 0;
 }
+
+/* The day of the film's time and the light (R78), the card's fifth line: a
+   shade dimmer than the place line, the same type, the same dot. Empty, an
+   invitation on hover only, as the place line is. */
+.note__day {
+  margin-top: 0.05rem;
+  opacity: 0.78;
+}
+/* Empty, the line takes no room: a wall with no days looks exactly as it did.
+   It appears under the place line when the pointer is on that line, when the
+   card is being typed on, or when it is selected. */
+.note__day.note__with--empty {
+  display: none;
+  font-style: italic;
+}
+.note__at:hover + .note__day.note__with--empty,
+.note__day.note__with--empty:hover,
+.note:focus-within .note__day.note__with--empty,
+.note.is-selected .note__day.note__with--empty {
+  display: block;
+}

@@ -85,6 +85,7 @@ import {
   setActiveBoard,
   setPremise,
   setLook,
+  setReferenceOutside,
   setTitlePage,
   setPremiseOpen,
   setBoardNameOpen,
@@ -106,6 +107,7 @@ import { findCards } from "../src/board/find.js";
 import { loadProvider, providerNames } from "./providers/index.mjs";
 import { PLACE_FIELDS, placeFilesMove, placeKey, placeLine, placePage, placeSubject, renamePlacePage, updatePlace } from "../src/board/places.js";
 import { movePlaceFiles } from "../src/board/placeFiles.js";
+import { referenceFileName, shotFileName } from "../src/board/walkthrough.js";
 import { carryShots, describeShots, findShot, placeShots, rewriteShot, shotBrief, shotIds, shotPrompt, shotReferences, shotSubject, shotsOfText } from "../src/board/shots.js";
 
 /**
@@ -3835,17 +3837,19 @@ server.registerTool(
     const pictures = await referencePictures();
     const references = shotReferences(state, cards, options);
     if (references.length) {
-      const waiting = pictures ? references.filter((item) => !pictures[item.key]) : [];
-      lines.push(`references, to make before the stills — a still holds a face only when a picture of it is attached: ${references.length}${pictures ? `, ${waiting.length} with no picture yet` : " (with no account door, whether a page has a picture is not known)"}`);
+      // Done is a picture on the page, or the writer's tick that they keep it outside the app (mark_reference).
+      const ticked = new Set(project.referencesOutside ?? []);
+      const waiting = references.filter((item) => !(pictures && pictures[item.key]) && !ticked.has(item.key));
+      lines.push(`references, to make before the stills — a still holds a face only when a picture of it is attached: ${references.length}, ${waiting.length} not done${pictures ? "" : " (with no account door, whether a page has a picture is not known; a tick is)"}`);
       for (const item of references) {
-        lines.push(`    ${item.kind === "place" ? "the place " : ""}${item.name} — ${pictures ? (pictures[item.key] ? `"${pictures[item.key]}", the first picture on the page` : "no picture yet") : "picture not known"}${item.prompt ? "" : ` — the page holds no looks: ${item.kind === "place" ? "update_place" : "update_character"} with looks, in the writer's words, before a prompt can be made`}`);
-        if (args.prompts && item.prompt && !(pictures && pictures[item.key])) lines.push(`       prompt: ${item.prompt}`);
+        lines.push(`    ${item.kind === "place" ? "the place " : ""}${item.name} — ${pictures && pictures[item.key] ? `"${pictures[item.key]}", the first picture on the page` : ticked.has(item.key) ? "kept outside the app, by the writer's tick" : pictures ? "no picture yet" : "picture not known"} — save it as ${referenceFileName(item.kind, item.name)}${item.prompt ? "" : ` — the page holds no looks: ${item.kind === "place" ? "update_place" : "update_character"} with looks, in the writer's words, before a prompt can be made`}`);
+        if (args.prompts && item.prompt && waiting.includes(item)) lines.push(`       prompt: ${item.prompt}`);
       }
     }
     for (const scene of args.id ? scenes : broken) {
       lines.push(`  "${scene.headline}" (${scene.id}) — ${scene.shots.length} shot${scene.shots.length === 1 ? "" : "s"}${scene.shots.length ? `, ${scene.seconds} seconds said${scene.unsaid ? ` (${scene.unsaid} with no length)` : ""} of about ${scene.sceneSeconds} the scene runs` : scene.written ? "" : ": unwritten — a shot is a line of the script, so write_scene comes first"}${scene.uncovered ? "; script stands above the first shot line, in no shot" : ""}`);
       for (const [index, shot] of scene.shots.entries()) {
-        lines.push(shotRow(shot, index + 1, filed ? filed.files.get(shot.id) ?? [] : undefined));
+        lines.push(`${shotRow(shot, index + 1, filed ? filed.files.get(shot.id) ?? [] : undefined)} — save it as ${shotFileName(order.findIndex((note) => note.id === scene.id) + 1, index + 1, shot.id)}`);
         if (args.prompts) lines.push(`       prompt: ${shotPrompt(state, shot.id, options)}`);
       }
     }
@@ -3927,6 +3931,37 @@ server.registerTool(
         : `Shot ${found.shot.id} in "${found.note.headline}" reads: ${text.now.what}${text.now.move ? ` · ${text.now.move}` : ""}${typeof text.now.seconds === "number" ? ` · ${text.now.seconds}s` : ""}${moved}${where(live)}.${said.length ? ` ${said.join("; ")}.` : ""}`,
       { id: found.shot.id, card: found.note.id, shot: text.now },
     );
+  },
+);
+
+server.registerTool(
+  "mark_reference",
+  {
+    title: "Mark a reference as kept outside the app",
+    description:
+      "The writer's tick that a reference picture — of a person (character: an id or a name) or a place (place: its phrase) — exists and is kept outside the app: the reference is done, and the shots that name it are no longer waiting on it. outside: false takes the tick off. A picture filed on the page with add_picture makes a reference done without a tick, and is the better of the two: the app can then show it and hand it on. Only on the writer's word that they have the picture.",
+    inputSchema: { character: z.string().optional(), place: z.string().optional(), outside: z.boolean().optional() },
+  },
+  async (args) => {
+    if (!args.character?.trim() && !args.place?.trim()) return ok("Say which: character (an id or a name) or place (its phrase).");
+    const { state } = await readBoard();
+    let key;
+    let name;
+    if (args.place?.trim()) {
+      key = `place:${placeKey(args.place)}`;
+      name = args.place.trim();
+    } else {
+      const wanted = args.character.trim().toLowerCase();
+      const person = state.characters.find((item) => item.id === args.character) ?? state.characters.find((item) => item.name.trim().toLowerCase() === wanted);
+      if (!person) return ok(`Nobody called "${args.character}" in the cast. Call list_board for the cast.`);
+      key = person.id;
+      name = person.name;
+    }
+    const { project, boards, rev, base, live } = await readProject();
+    const next = setReferenceOutside(project, key, args.outside !== false);
+    if (next === project) return ok(`Nothing changed: the reference of ${name} is ${args.outside === false ? "not ticked" : "already ticked as kept outside the app"}.`);
+    await writeProject(next, boards, rev, base);
+    return ok(args.outside === false ? `The tick is off ${name}${where(live)}: the reference is done again when a picture is on the page or the writer ticks it.` : `${name}'s reference is ticked as kept outside the app${where(live)}, as ${referenceFileName(args.place?.trim() ? "place" : "person", name)}: the shots that name it no longer wait on it.`, { key, outside: args.outside !== false });
   },
 );
 

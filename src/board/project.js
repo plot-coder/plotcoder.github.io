@@ -38,6 +38,7 @@ export function emptyProject(now = nowIso()) {
     premise: "",
     premiseOpen: "",
     look: "",
+    referencesOutside: [],
     // The title page's byline and contact (pass 1a, entry 50): the project's, since every board's script goes out under them.
     author: "",
     contact: "",
@@ -102,6 +103,8 @@ export function normalizeProject(value, now = nowIso()) {
     premiseOpen: openWords(value.premiseOpen),
     // A project written before R80 has no look: blank, which claims nothing and rides in no prompt.
     look: typeof value.look === "string" ? value.look.trim() : "",
+    // The references the writer keeps outside the app (R80): a person's id or place:<phrase>, by their tick. None until they say.
+    referencesOutside: Array.isArray(value.referencesOutside) ? [...new Set(value.referencesOutside.filter((key) => typeof key === "string" && key.trim()).map((key) => key.trim()))] : [],
     // A project written before pass 1a has no byline: blank, which claims nothing.
     author: typeof value.author === "string" ? value.author.trim() : "",
     contact: typeof value.contact === "string" ? value.contact.trim() : "",
@@ -390,6 +393,15 @@ export function setLook(project, look, now = nowIso()) {
   const next = typeof look === "string" ? look.trim().replace(/\s+/g, " ") : "";
   if (next === (project.look ?? "")) return project;
   return touch(project, { look: next }, now);
+}
+
+/** A reference the writer keeps outside the app (R80), by their tick: the key is a person's id or place:<phrase>. `on` false takes the tick off. */
+export function setReferenceOutside(project, key, on, now = nowIso()) {
+  const wanted = typeof key === "string" ? key.trim() : "";
+  if (!wanted) return project;
+  const held = project.referencesOutside ?? [];
+  if (held.includes(wanted) === Boolean(on)) return project;
+  return touch(project, { referencesOutside: on ? [...held, wanted] : held.filter((item) => item !== wanted) }, now);
 }
 
 /** The writer's words for why there is no premise yet (R61), or "" to take them back; words clear the premise. */

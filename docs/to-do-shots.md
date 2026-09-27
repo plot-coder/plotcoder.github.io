@@ -78,6 +78,41 @@ Robert made the stills in Grok. What it found, in the order it found it:
 - [ ] Still to hear from the rehearsal: what Robert changed in each prompt
   to get a still he would keep.
 
+## Built — the person's half (2026-09-27)
+
+On Robert's "This looks great. Let's build it", as drawn in
+`docs/mockups/r80-the-walkthrough.html`.
+
+- [x] `src/board/walkthrough.js`: the order as facts — what to make, what
+  to paste, what to call the file, what to attach, what a shot waits on,
+  where to go next, which row a dropped file is for.
+- [x] `referencesOutside` on the project; `mark_reference`.
+- [x] `src/ShotsSheet.tsx`, from the bar: the four steps, the rows, drop,
+  choose and paste, the tick, the gate, the strip.
+- [x] The agent's replies name the files; the guide says the order.
+- [x] `public/writers.html`.
+- [x] Looked at in the app, signed out: the steps and their counts, a
+  reference ticked, a place with no looks asking for them, the shots
+  opening, each shot's attach list, prompt and file name.
+
+**Not walked, and the first thing to do signed in:** keeping a picture by
+drop, choice and paste; the name a kept file gets; a file finding its row
+by name; Download and "Download all"; the strip with pictures in it.
+A session may not type an account's password into the app, so this is
+Robert's to walk, or an agent's through the account door.
+
+**Decided while building, Robert's to overrule:**
+
+- *The look does not gate.* The sheet opens on the look when nothing is
+  done, and the people are open without one: the rehearsal ran with no
+  look, and a gate there would stop a writer who has none.
+- *A shot that names someone who is not in the scene's cast* attaches
+  nobody for them. Cast the person on the card and the shot finds them.
+- *No mark in Pages.* Pages never showed a shot line, so nothing there
+  was unkind to read; the first mockup said otherwise and was wrong.
+- *"Identical face and build to the reference"* is in the prompt, from a
+  guide. Untested in Robert's hands.
+
 ## Waiting on Robert — the person's half
 
 - [ ] **The mockup**, `docs/mockups/r80-a-scenes-shots.html`: the shot

@@ -5034,3 +5034,341 @@ body {
 .note.is-selected .note__day.note__with--empty {
   display: block;
 }
+
+/* The walkthrough (R80): the look, the people, the places, then the shots. */
+.modal--shots {
+  width: min(46rem, 100%);
+  max-height: calc(100vh - 2.5rem);
+}
+
+.shots__steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0 0 1.1rem;
+}
+
+.shots__step {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2rem;
+  padding: 0 0.8rem;
+  border: 1px solid var(--bar-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.shots__step span {
+  color: var(--muted);
+}
+
+.shots__step.is-done::after {
+  content: "✓";
+  color: var(--over);
+}
+
+.shots__step.is-on {
+  border-color: var(--over);
+  color: var(--over);
+}
+
+.shots__step.is-waiting,
+.shots__step:disabled {
+  border-style: dashed;
+  opacity: 0.5;
+  cursor: default;
+}
+
+.shots__k {
+  margin: 0.55rem 0 0.2rem;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.shots__how {
+  margin: 0 0 0.6rem;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.shots__how .shots__k {
+  margin-top: 0;
+}
+
+.shots__how ol {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.shots__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.shots__item {
+  display: grid;
+  grid-template-columns: 7rem minmax(0, 1fr);
+  gap: 0.9rem;
+  padding: 0.85rem 0;
+  border-top: 1px solid var(--bar-border);
+}
+
+.shots__item.is-waiting {
+  opacity: 0.55;
+}
+
+.shots__slot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 7rem;
+  height: 7rem;
+  padding: 0 0.4rem;
+  border: 1px dashed var(--muted);
+  border-radius: 0.5rem;
+  background: transparent;
+  color: var(--muted);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.68rem;
+  line-height: 1.35;
+  text-align: center;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.shots__slot--wide {
+  height: 3.95rem;
+}
+
+.shots__slot.has-picture {
+  padding: 0;
+  border-style: solid;
+  border-color: var(--bar-border);
+}
+
+.shots__slot.is-target {
+  border-color: var(--over);
+  color: var(--over);
+}
+
+.shots__slot img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.shots__tick {
+  position: absolute;
+  top: 0.3rem;
+  right: 0.3rem;
+  padding: 0.12rem 0.34rem;
+  border-radius: 999px;
+  background: var(--over);
+  color: var(--canvas);
+  font-size: 0.66rem;
+  font-weight: 700;
+}
+
+.shots__name {
+  margin: 0 0 0.3rem;
+  font-size: 1rem;
+  line-height: 1.35;
+}
+
+.shots__name small {
+  margin-left: 0.45rem;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.shots__copy {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.shots__text {
+  flex: 1;
+  padding: 0.45rem 0.6rem;
+  border-radius: 0.4rem;
+  background: color-mix(in srgb, var(--ink) 9%, transparent);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  user-select: all;
+  overflow-wrap: anywhere;
+}
+
+.shots__text--short {
+  flex: none;
+}
+
+.shots__btn {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.75rem;
+  padding: 0 0.7rem;
+  border: 1px solid var(--bar-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.shots__btn--main {
+  border-color: var(--over);
+  color: var(--over);
+}
+
+.shots__line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.15rem 0 0;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.76rem;
+}
+
+.shots__lab {
+  margin: 0;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.74rem;
+  color: var(--muted);
+}
+
+.shots__ref {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.45rem;
+  border-radius: 0.3rem;
+  background: color-mix(in srgb, var(--ink) 9%, transparent);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.7rem;
+}
+
+.shots__ref img {
+  width: 1.2rem;
+  height: 1.2rem;
+  border-radius: 0.2rem;
+  object-fit: cover;
+}
+
+.shots__check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+}
+
+.shots__looks {
+  flex: 1;
+  min-height: 2rem;
+  margin: 0.2rem 0;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--bar-border);
+  border-radius: 0.4rem;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.9rem;
+}
+
+.shots__count {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0 0 0.4rem;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.shots__count b {
+  color: var(--ink);
+}
+
+.shots__pick {
+  max-width: 18rem;
+  min-height: 1.9rem;
+  padding: 0 0.5rem;
+  border: 1px solid var(--bar-border);
+  border-radius: 0.4rem;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.8rem;
+}
+
+.shots__strip {
+  display: flex;
+  gap: 0.4rem;
+  padding: 0.4rem 0 0.6rem;
+  overflow-x: auto;
+}
+
+.shots__strip figure {
+  position: relative;
+  flex: none;
+  width: 15rem;
+  height: 8.45rem;
+  margin: 0;
+  border-radius: 0.4rem;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--ink) 9%, transparent);
+}
+
+.shots__strip figure.is-empty {
+  border: 1px dashed var(--muted);
+  background: transparent;
+}
+
+.shots__strip img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.shots__strip figcaption {
+  position: absolute;
+  left: 0.35rem;
+  bottom: 0.35rem;
+  padding: 0.1rem 0.3rem;
+  border-radius: 0.2rem;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.64rem;
+  font-weight: 700;
+}
+
+.shots__said {
+  margin: 0 0 0.6rem;
+}
+
+@media (max-width: 34rem) {
+  .shots__item {
+    grid-template-columns: 1fr;
+  }
+}

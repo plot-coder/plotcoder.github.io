@@ -1,12 +1,12 @@
 // Type surface for shots.js — a scene's shots (R80).
 
-import type { BoardState, Note } from "./reducer";
+import type { BoardState, BoardNote as Note } from "./reducer";
 import type { PlacePage } from "./places";
 
 export type Shot = { id: string; what: string; move: string; seconds: number | null };
 export type PlacedShot = Shot & { line: number; covers: string };
 export type SceneShots = { id: string; headline: string; written: boolean; shots: PlacedShot[]; seconds: number; unsaid: number; sceneSeconds: number; uncovered: boolean };
-export type ShotBriefOptions = { look?: string; places?: PlacePage[]; title?: string; order?: { id: string }[]; frame?: string; pictures?: Record<string, string> };
+export type ShotBriefOptions = { look?: string; places?: PlacePage[]; title?: string; order?: { id: string }[]; frame?: string; pictures?: Record<string, string>; attached?: string[] };
 
 export declare function shotSubject(id: string): string;
 export declare function parseShotLine(line: string): Shot | null;
@@ -27,3 +27,4 @@ export declare function shotBrief(state: BoardState, id: string, options?: ShotB
 export declare function shotPrompt(state: BoardState, id: string, options?: ShotBriefOptions): string;
 export type ShotReference = { kind: "person" | "place"; key: string; name: string; prompt: string | null };
 export declare function shotReferences(state: BoardState, cards: Note[], options?: { look?: string; places?: PlacePage[] }): ShotReference[];
+export declare function shotPeople(state: BoardState, note: Note, shot: { what: string }): BoardState["characters"];

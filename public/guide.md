@@ -965,7 +965,13 @@ each person and each place on its page (`add_picture`), then the stills.
 `list_shots` says above the shots which references a scene's shots need and
 which have no picture yet, and with `prompts: true` a prompt for each; a
 shot's brief says what to attach. A page with no looks gets no prompt:
-ask the writer for the looks, and invent none.
+ask the writer for the looks, and invent none. A reference is done when a
+picture is on the page, or when the writer says they keep it outside the
+app — `mark_reference`, only on their word. Every reply names the file a
+picture is to be saved as (`ada-quill.png`, `the-harbour-office.png`,
+`s04-02-q3j9.png`): say the name with the prompt, since the writer's sheet
+finds a file's row by it. The writer's own way through all of this is the
+Shots sheet in the app.
 
 - `set_shots` — break a written scene into shots in one call: for each,
   `what`, `at` (a few words quoted from the line of the script where the

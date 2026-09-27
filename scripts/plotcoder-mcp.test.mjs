@@ -181,6 +181,7 @@ describe("plotcoder MCP server", () => {
       "list_projects",
       "list_questions",
       "lock_numbers",
+      "mark_reference",
       "measure",
       "list_reminders",
       "list_shots",
@@ -4331,7 +4332,11 @@ describe("a scene's shots through the server (R80)", () => {
     // The references come before the stills; the place has no page, so no prompt is made for it.
     const listed = await client.callTool("list_shots", { id: "Ada's column", prompts: true });
     expect(listed).toContain("references, to make before the stills");
-    expect(listed).toContain("the place INT. THE HARBOUR OFFICE — picture not known — the page holds no looks: update_place with looks");
+    expect(listed).toContain("the place INT. THE HARBOUR OFFICE — picture not known — save it as the-harbour-office.png — the page holds no looks: update_place with looks");
+    expect(listed).toMatch(/2\. [a-z0-9]{4} — close on Nell's hand on the ledger · slow push in · 4s — save it as s01-02-[a-z0-9]{4}\.png/);
+    expect(await client.callTool("mark_reference", { place: "int. the harbour office" })).toContain("ticked as kept outside the app");
+    expect(await client.callTool("list_shots", { id: "Ada's column" })).toContain("the place INT. THE HARBOUR OFFICE — kept outside the app, by the writer's tick");
+    expect(await client.callTool("mark_reference", { character: "Nobody" })).toContain('Nobody called "Nobody" in the cast.');
     expect(await client.callTool("build_segment", { shot: scene.shots[1].id })).toContain(`then file what it makes with add_take, subject shot:${scene.shots[1].id}`);
   });
 

@@ -2780,6 +2780,35 @@ describe("the premise and reminders (roadmap item 6)", () => {
     expect(await door.callTool("list_takes")).toContain("No account door");
   });
 
+  it("has a seam for a video tool: a module per provider, and a dry run that files what it would be handed (pass 4b)", async () => {
+    const { loadProvider, providerNames } = await import("./providers/index.mjs");
+    expect(providerNames()).toContain("dry-run");
+    expect(loadProvider("nowhere")).toBeNull();
+    const dry = loadProvider("DRY-RUN");
+    const outDir = fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-dry-"));
+    const made = await dry.makeTake({ brief: 'SEGMENT: "Maya finds the letter"', subject: "maya-letter", seconds: 75, references: [{ kind: "person", name: "Maya", url: "https://example.invalid/maya.png" }], env: {}, outDir });
+    const written = fs.readFileSync(made.path, "utf8");
+    expect(written).toContain("DRY RUN — no video was made");
+    expect(written).toContain("SECONDS: 75");
+    expect(written).toContain('REFERENCES: person "Maya"');
+    expect(written).toContain('SEGMENT: "Maya finds the letter"');
+    fs.rmSync(outDir, { recursive: true, force: true });
+    // Named, with no account: the take has nowhere to be filed, and the reply says so with the brief.
+    const named = new McpClient(fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-provider-")), { PLOTCODER_VIDEO_PROVIDER: "dry-run" });
+    await named.start();
+    try {
+      const text = await named.callTool("build_segment", { ids: ["maya-letter"] });
+      expect(text).toContain('The video tool "dry-run" is named, but a take is a file on the project');
+      expect(text).toContain('SEGMENT: "Maya finds the letter"');
+      const unknown = new McpClient(fs.mkdtempSync(path.join(os.tmpdir(), "plotcoder-mcp-provider-")), { PLOTCODER_VIDEO_PROVIDER: "nowhere" });
+      await unknown.start();
+      expect(await unknown.callTool("build_segment", { ids: ["maya-letter"] })).toContain('The video tool "nowhere" has no module here; the known ones are dry-run');
+      unknown.stop();
+    } finally {
+      named.stop();
+    }
+  });
+
   it("lists the workflows and briefs a segment from the wall", async () => {
     const listed = await door.callTool("list_workflows");
     // A film is one board: the treatment questions do not send an agent to ask for its name (round twenty-two, entry 16).

@@ -48,6 +48,7 @@
     "scripts/plotcoder-mcp-server.mjs",
     "scripts/plotcoder-call.mjs",
     "scripts/plotcoder-http.mjs",
+    "scripts/providers/*.mjs",
     "src/board/*.js",
     "src/board/*.d.ts",
     "README.md"

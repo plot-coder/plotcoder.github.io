@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
+import { storyMapLayout, storyMapRows } from "./storyMapLayout";
 import type { PlaceField } from "./board/places";
 import { CastLens } from "./CastLens";
 import { resolveCast } from "./castNames";
@@ -260,6 +261,11 @@ export function App() {
     const found = TEMPLATES.find((template) => template.id === stripStructureId) ?? (project.structures ?? []).find((structure) => structure.id === stripStructureId);
     return found ? { name: found.name, beats: found.beats } : null;
   }, [stripStructureId, project.structures]);
+  // How tall the story map stands: the wall and the bar stand on it.
+  const mapHeight = useMemo(() => {
+    const layout = storyMapLayout(board, reading);
+    return storyMapRows({ open: mapOpen, structure: Boolean(stripStructure), groups: layout.groups.length > 0, beats: layout.beats.length > 0 }).height;
+  }, [board, reading, mapOpen, stripStructure]);
   // Cards with a take filed on them, alone or in a run (item 9): a mark on the card.
   const hasTake = useMemo(() => {
     const marked = new Set<string>();
@@ -894,7 +900,7 @@ export function App() {
   }
 
   return (
-    <div className={`canvas ${mapOpen ? "has-map" : "has-ruler"}`}>
+    <div className={`canvas ${mapOpen ? "has-map" : "has-ruler"}`} style={{ "--map-height": `${mapHeight}px` } as CSSProperties}>
       <ProjectCrumb
         project={project}
         shapeOf={boardStore.boardShape}

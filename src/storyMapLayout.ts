@@ -227,3 +227,31 @@ export function beatLabels(
   });
   return labels;
 }
+
+/** The strip closed to a ruler. */
+export const MAP_RULER = 22;
+
+/**
+ * How tall the story map stands, and where its rows sit, from what it has to
+ * show (Robert, 2026-09-27: the room kept above the blocks was empty on a
+ * wall with no beats and no groups). From the top: the line that reads the
+ * card under the pointer; the structure's marks, when one is set over the
+ * strip; the groups' brackets, when there are groups; the beats' names and
+ * the pages between them, when there are beats; the blocks; the page numbers.
+ * A row that has nothing to show takes no room.
+ */
+export function storyMapRows({ open, structure, groups, beats }: { open: boolean; structure: boolean; groups: boolean; beats: boolean }) {
+  if (!open) return { height: MAP_RULER, axisY: MAP_RULER - 8, beatTop: MAP_RULER - 16, blockTop: MAP_RULER - 12, labelY: 0, groupY: 0, structureY: 0 };
+  const READ = 30;
+  const STRUCTURE = 34;
+  const GROUPS = 18;
+  const LABELS = 14;
+  const BLOCKS = 24;
+  const FOOT = 24;
+  const height = READ + (structure ? STRUCTURE : 0) + (groups ? GROUPS : 0) + (beats ? LABELS : 0) + 4 + BLOCKS + FOOT;
+  const axisY = height - FOOT;
+  const beatTop = axisY - BLOCKS;
+  const labelY = beatTop - 6;
+  const groupY = beatTop - (beats ? LABELS : 0) - 4;
+  return { height, axisY, beatTop, blockTop: axisY - 14, labelY, groupY, structureY: READ + 4 };
+}

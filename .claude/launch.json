@@ -52,6 +52,18 @@
         "--strictPort"
       ],
       "port": 5199
+    },
+    {
+      "name": "plotcoder-built-4180",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "preview",
+        "--port",
+        "4180",
+        "--strictPort"
+      ],
+      "port": 4180
     }
   ]
 }

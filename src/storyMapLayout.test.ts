@@ -7,7 +7,7 @@ import {
   type BoardState,
   type Command,
 } from "./board/reducer";
-import { axisSpan, beatLabels, pageTicks, storyMapLayout, xFor } from "./storyMapLayout";
+import { axisSpan, beatLabels, pageTicks, storyMapLayout, storyMapRows, xFor } from "./storyMapLayout";
 
 const NOW = "2026-01-01T00:00:00.000Z";
 
@@ -213,5 +213,22 @@ describe("beatLabels", () => {
     expect(roomy[0].text.startsWith("1 · ")).toBe(true);
     expect(roomy[0].text.endsWith("…")).toBe(true);
     expect(roomy[0].text.length).toBeLessThan("1 · A very long headline for a beat".length);
+  });
+});
+
+describe("how tall the map stands (Robert, 2026-09-27)", () => {
+  it("takes room only for the rows that have something to show", () => {
+    const rows = (input: Partial<Parameters<typeof storyMapRows>[0]>) => storyMapRows({ open: true, structure: false, groups: false, beats: false, ...input });
+    expect(storyMapRows({ open: false, structure: true, groups: true, beats: true }).height).toBe(22);
+    expect(rows({}).height).toBe(82);
+    expect(rows({ beats: true }).height).toBe(96);
+    expect(rows({ groups: true }).height).toBe(100);
+    expect(rows({ groups: true, beats: true }).height).toBe(114);
+    expect(rows({ groups: true, beats: true, structure: true }).height).toBe(148);
+    // The groups' brackets stand clear above the beats' names, and both above the blocks.
+    const full = rows({ groups: true, beats: true });
+    expect(full.labelY).toBeLessThan(full.beatTop);
+    expect(full.groupY).toBeLessThan(full.labelY - 8);
+    expect(rows({ groups: true }).groupY).toBeLessThan(rows({ groups: true }).beatTop);
   });
 });

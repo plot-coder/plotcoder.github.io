@@ -146,3 +146,28 @@ The thread's start tied and a line on the page; the wall asks nothing now.
   could carry the distance ("both ends tied, about 4 pages apart") — it
   already does when both ends are in the film; the "pays off" words on the
   card are the fold's alone.
+
+## Direction 4: the changes read back from the wall (entries 31 to 35)
+
+**The record works through the hosted door:** read_wall opened with "since
+anyone last changed this wall: 5 changes by an agent, today 00:57 to
+00:59 — …", the agent's own changes in the writer's terms, and it read
+them back from that line rather than from memory.
+
+- [ ] **31 · The wall cannot say whether the last agent's door never wrote
+  the record or the record was added since.** *With 18:* the guide's
+  sentence about where the record begins.
+- [ ] **32 · "5 changes" and six lines: one call told as two lines.** *Plan:*
+  say "5 changes" and let the lines be lines — or count lines. The count
+  is the record's entries (one per tool call); the head could read "5
+  calls". Decide the word: "changes" it is, and a line is a thing that
+  changed; say "5 changes, 6 things".
+- [ ] **33 · A one-line insert and a note struck both read as "rewrote".**
+  *Plan:* the describer says "changed a line in "X"" when most of the
+  page's lines stand, "rewrote" when they do not, "took a note off" when
+  only a [[note]] went. Kernel, with a test.
+- [ ] **34 · edit_scene normalised blank lines elsewhere on the page.**
+  *Fixed in 0.1.56 by design* for a take-out (the gap closes); an insert
+  should not touch the rest. *Check:* the insert path's spacing.
+- [ ] **35 · edit_scene's description never says an empty replace removes
+  the paragraph.** *Plan:* one clause in the description.

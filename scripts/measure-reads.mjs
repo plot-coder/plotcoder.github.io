@@ -110,6 +110,9 @@ async function main() {
     for (const name of ["read_project", "list_boards", "list_questions", "read_record", "list_structures", "list_files"]) await measure(name, name);
     const person = project.characters?.[0]?.name;
     if (person) await measure(`read_character ("${person}")`, "read_character", { name: person });
+    // The selecting reads across the project (R77 b and c): one person's pages on the open board, and a card found by a phrase.
+    if (person) await measure(`read_character ("${person}", pages)`, "read_character", { name: person, pages: true });
+    await measure('find_card ("key")', "find_card", { phrase: "key" });
     // Each board.
     for (const meta of project.boards) {
       await door.call("open_board", { board: meta.id });

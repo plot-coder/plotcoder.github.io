@@ -100,6 +100,7 @@ import {
   withRoster,
 } from "../src/board/project.js";
 import { selectStretch, stretchState } from "../src/board/stretch.js";
+import { findCards } from "../src/board/find.js";
 
 /**
  * One PlotCoder server, with its own doors and its own trail: the stdio door
@@ -4279,13 +4280,15 @@ server.registerTool(
     title: "Read a person's page",
     description:
       "Read one person's page back, by id or by name: the five lines — looks, voice, wants, needs, notes — as they stand, and every card the person is on across every board of the project, in story order, each with its place, when and rank. The cast is the project's (one record, one page), so this reads all of it; list_board says only which lines are written.",
-    inputSchema: { id: z.string().optional(), name: z.string().optional() },
+    inputSchema: { id: z.string().optional(), name: z.string().optional(), pages: z.boolean().optional().describe("The text of the person's scenes on one board — the open one, or `board` — scene by scene with ids, so one person's pages are read without the board's."), board: z.string().optional().describe("With pages: the board whose scenes to print, by name, id or number.") },
   },
   async (args) => {
     const key = (args.id ?? args.name ?? "").trim();
     if (!key) return ok("Say who: the person's id or name from list_board.");
     const { state, boardId, live, base } = await readBoard();
     const { project, boards } = await readProject();
+    const pagesOf = args.pages ? (args.board?.trim() ? findBoard(project, args.board.trim()) : project.boards.find((meta) => meta.id === (boardId ?? project.activeBoardId))) : null;
+    if (args.pages && !pagesOf) return ok(`No board matches "${args.board}". Call list_boards for the real ones.`);
     const wanted = key.toLowerCase();
     const person = state.characters.find((item) => item.id === key) ?? state.characters.find((item) => item.name.trim().toLowerCase() === wanted);
     if (!person) return ok(`Nobody called "${key}" in the cast. Call list_board for the cast, or add_character.`);
@@ -4312,11 +4315,59 @@ server.registerTool(
       ...((person.open ?? "").trim() ? [`  not decided yet, by the writer's word: ${person.open.trim()}`] : []),
       ...parts.flatMap((part) =>
         part.on.length
-          ? [`  "${part.meta.name}", ${part.on.length} card${part.on.length === 1 ? "" : "s"} in story order:`, ...part.on.map((note, index) => `    ${index + 1}. "${note.headline}"${where_(note) ? ` (${where_(note)})` : ""}`)]
+          // Each card's change line (R77 b; pass 3a, entries 10 and 20): what the person's scenes do, so a want dropped by the story is read here and not from six boards of pages.
+          ? [`  "${part.meta.name}", ${part.on.length} card${part.on.length === 1 ? "" : "s"} in story order:`, ...part.on.map((note, index) => `    ${index + 1}. "${note.headline}"${where_(note) ? ` (${where_(note)})` : ""} — ${note.change}`)]
           : [`  "${part.meta.name}": on no card`],
       ),
+      // The person's scenes with their text on one board (R77 b): the pages an agent would otherwise read whole.
+      ...(pagesOf
+        ? (() => {
+            const part = parts.find((item) => item.meta.id === pagesOf.id);
+            const on = part?.on ?? [];
+            if (!on.length) return [`  the pages: ${person.name} is on no card of "${pagesOf.name}"`];
+            const eighths = on.reduce((sum, note) => sum + noteEighths(note), 0);
+            return [
+              `  the pages of ${person.name}'s ${on.length} scene${on.length === 1 ? "" : "s"} on "${pagesOf.name}", about ${formatPages(eighths)} pages (read_pages with scene, from and to, or group for the rest of the board):`,
+              ...on.flatMap((note) => [``, `${sceneHeading(note)}    [[id: ${note.id} · ${isMeasured(note) ? "measured" : "estimated"} ${formatPages(noteEighths(note))}pp]]`, ...((note.text ?? "").trim() ? [note.text.replace(/\s+$/, "")] : [`(unwritten; the change line: ${note.change})`])]),
+            ];
+          })()
+        : []),
     ];
     return ok(lines.join("\n"), { ...person, cards: parts.flatMap((part) => part.on.map((note) => note.id)), boards: parts.map((part) => ({ id: part.meta.id, name: part.meta.name, cards: part.on.map((note) => note.id) })) });
+  },
+);
+
+server.registerTool(
+  "find_card",
+  {
+    title: "Find a card",
+    description:
+      "A card found by a phrase or an id, across every board of the project: every card whose id, headline, change line or page holds the phrase, board by board in the writer's order and in story order on each, with its id and where the phrase landed — a page hit quotes the line. A card set aside or behind another version is found and said so. For \"which scene has the brass key\", \"which board holds this id\", \"where is the ferry road\" — one call instead of six boards of pages. Forty at most; narrow the phrase for the rest.",
+    inputSchema: { phrase: z.string().min(1).describe("Words to find, case aside, or a card's id."), board: z.string().optional().describe("One board only, by name, id or number.") },
+  },
+  async (args) => {
+    const { state, boardId, live, base } = await readBoard();
+    const { project, boards } = await readProject();
+    const openId = boardId ?? project.activeBoardId;
+    let metas = project.boards;
+    if (args.board?.trim()) {
+      const one = findBoard(project, args.board.trim());
+      if (!one) return ok(`No board matches "${args.board}". Call list_boards for the real ones.`);
+      metas = [one];
+    }
+    const held = metas.map((meta) => ({ meta, state: meta.id === openId ? state : isBoardState(boards[meta.id]) ? normalizeState(boards[meta.id]) : emptyState() }));
+    const found = findCards(held, args.phrase);
+    if (!found.length) return ok(`Nothing holds "${args.phrase.trim()}" on ${metas.length === 1 ? `"${metas[0].name}"` : `any of the ${metas.length} boards`}: no id, headline, change line or page. Try fewer words.`);
+    const shown = found.slice(0, 40);
+    const lines = [`${found.length} card${found.length === 1 ? "" : "s"} hold${found.length === 1 ? "s" : ""} "${args.phrase.trim()}" (${door(live, base)})${found.length > shown.length ? ` — the first ${shown.length}; narrow the phrase for the rest` : ""}:`];
+    let lastBoard = null;
+    for (const item of shown) {
+      if (item.boardId !== lastBoard) { lines.push(`  "${item.boardName}"${item.boardId === openId ? " (open)" : ""}:`); lastBoard = item.boardId; }
+      const where = item.where === "page" ? `on the page: "${clip(item.line, 120)}"` : item.where === "id" ? "by id" : `in the ${item.where === "change" ? "change line" : "headline"}`;
+      lines.push(`    - ${item.id} "${item.headline}" — ${where}${item.inStory ? "" : " (not in the film: set aside or a version behind another)"}`);
+    }
+    lines.push(`open_board and read_pages with scene for a card's page; the ids are the boards' own.`);
+    return ok(lines.join("\n"), { found: shown.map((item) => ({ board: item.boardId, id: item.id, headline: item.headline, where: item.where })) });
   },
 );
 

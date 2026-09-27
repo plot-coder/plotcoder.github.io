@@ -1,7 +1,117 @@
-# Pass 3a — the report, first half: the size
+# Pass 3a — the report
 
-Run 2026-09-27, the first pass of goal 3 in `docs/plan.md` (projects past
-an agent's context window, worked hands-off). **No agent in this half:**
+Run 2026-09-27 in two halves, the first pass of goal 3 in `docs/plan.md`
+(projects past an agent's context window, worked hands-off). The first
+half measured the size with no agent; the second handed the generated
+series to a fresh agent through the desktop connector with three
+directions that need the whole film. **Forty entries** from the blind
+half, below the first half's ten.
+
+## The second half — a fresh agent on "Low Water"
+
+**What the pass was for, answered.** *From the wall alone:* the series,
+its six loglines, the target and the length of every board, the cast and
+every want, and that nothing was open — told in full from `read_project`,
+`list_boards`, one `read_wall` and twelve `read_character` calls. Not
+told: how episodes two to six are built (beats, runs, groups, whether
+written), which `read_project` did not say (11; fixed, #207), and where
+five cross-episode folds pay off, which printed raw board ids and "Ep 0"
+because the account import had re-minted the boards' ids and left the
+folds pointing at the old ones (7; fixed, #202). *The three directions:*
+**the dropped want** — Kit Fenn, found right, from 240 change lines lined
+up by hand after six `read_pages` of 72 to 75 KB each, none of which the
+agent could hold in a reply; the wall's own want check never pointed at
+Kit, because Kit keeps saying the words while the plot stops moving them
+(20, 21). **The second act** — the agent asked which of seven, was told
+episode three, proposed six scenes to set aside with reasons and what to
+keep, and did it on the word: 68 to 57 2/8 pages; "what shortens" it
+declined without the writer's lines (26). **The unpaid plant** — the brass
+key, which the wall had asked about on every reading; proposed "The chart
+drawer" three episodes on with a line of its own, claimed the payoff
+across boards and inserted the line, and the question went. *Where it ran
+out of room:* the pages, six times of six; the agent saved each reply to
+its own disk and worked from scripted extracts of five of the six
+boards, and said so as the one risk in its answer. *What it re-read:*
+nothing from the app twice; its own extracts many times. *What it got
+wrong:* the stale board ids read as boards outside the project (7); "the
+second act" offered as two readings when there were seven (25); one call
+miscounted; five boards' pages never read as a reader. *What it left:*
+the report's section 7 — and not on the wall, because **the session's
+connector still had the tool list cached from before 0.1.57: no
+`hand_over`, no `read_record`** (39, 40), the same finding as pass 2b's
+4, and the prompt's head had said to turn the connector off and on.
+
+**The third hand.** The driving session read the record through its own
+door after "stop": episode four's record held the line edit ("changed a
+line in 'The chart drawer' (2 1/8 pages)"); episode three's held the six
+set-asides as one change — but printed forty ids under every line, the
+whole change's ids on each; and **episode one's record was empty**, though
+the payoff claim had been written to its fold a second before the line —
+the describer had no words for a payoff on another board (37). Both
+fixed (#206). The six set-aside cards are out of episode three's "Act Two"
+group and listed under "set aside" on its `list_board`, which the agent
+had not been sure of (6, in its section 6).
+
+**Fixed as it ran**, in six pull requests: the folds move with the boards
+under fresh ids, a fold on a board the project lacks says so in words,
+and the gap line no longer promises a record that is empty (5, 7, 31;
+#202); `list_board` carries the change line its description promised (16,
+23; #203); `set_aside` counts arrows dropped and drawn against the wall as
+it was, and a question reshaped by a cut is one question (27, 28; #204);
+a payoff says how many boards back its fold is, and a clean camera check
+is said once (34, 38; #205); the record says a payoff was claimed on
+another board and each line keeps its own ids (37; #206); a series is read
+whole first, and `read_project` says which boards are written and which
+carry acts (3, 11, 25; #207). The rest is in `docs/to-do-pass-3a.md`.
+
+### The friction log, as the agent handed it (W = the way in, R = the reading, D = the directions)
+
+1. (W) The agent's fetch tool paraphrased llms.txt; re-fetched by curl.
+2. (W) The day-one guide is 42 KB, over what it holds in one reply; three passes. No shorter path for a reading-only session.
+3. (W) The on-ramp's "call these first" ends at one board and never names `read_project` or `list_boards`; for a six-board series it found them in the guide, after spending the first reading on one episode.
+4. (W) `list_projects` already had "Low Water" working; `open_project`'s one-line reply did not say whether it restarted the "first reading" state.
+5. (R) `read_wall`'s first line promised "the record below says what changed since" 00:59; no record followed.
+6. (R) Project and board 1 share the name "Low Water"; every header says both; needed `list_boards` to be sure which the counts were about.
+7. (R) Cross-episode folds print as raw ids, "Ep 0", doubled quotes in `read_project` — and none of the board ids is in `list_boards`. Five folds on three boards.
+8. (R) Duplicate questions on identical headlines cannot say whether one scene is twice on the wall or two scenes share a name.
+9. (R) The cue line "no cue on 'A hand's width', 'A hand's width'" cannot be tied to a card.
+10. (R) Twelve `read_character` calls to learn twelve wants; `list_board` says only which page lines exist; each reply also lists every card the person is on across six boards.
+11. (R) `read_project` gives per-board questions and length but not beats, runs, groups or whether all scenes are written; six more `open_board` + `read_wall` pairs for "how is it built".
+12. (R) For a fully written board, two long `read_wall` blocks say "everything is written" eight ways.
+13. (R) Three numbers for one board's length (as it prints, by cards, `page_count`'s), with the reading telling it which not to use.
+14. (R) [absent] questions list a person id and two card ids in one "(ids: …)" with nothing saying which is which.
+15. (D1) `read_pages`: 72–75 KB per board, six of six over its ceiling; no range, no "change lines only".
+16. (D1) `list_board`'s description promises each card's "change"; the reply has none. The only way to change lines was 440 KB of pages.
+17. (D1) `read_pages` reads only the open board: `open_board`, `read_pages`, ×6, then `open_board` back. Thirteen calls for one question.
+18. (D1) `open_board` says "saved to the account" for what was meant as a read; never learned whether switching boards moved anything on the writer's screen. Its first reply carried a presence note the later ones dropped.
+19. (D1) Nothing in `read_pages` marks which line is the card's change line; inferred "last action line" and it held.
+20. (D1) The "unvoiced" want check counts words; it flagged four followed-through wants and missed the dropped one, whose owner keeps saying the words.
+21. (D1) The [absent] questions on Kit were the wall's only trace of the drop; 240 change lines lined up by hand.
+22. (D1, harness) Its tools told it to read each saved reply in eleven chunks; scripted round it.
+23. (D2) The change lines for judging cuts came from its own extract, not the app.
+24. (D2) Act group membership is a bare list of twenty ids in `list_board`; the group's pages are only in `read_wall`. About 28 KB to answer "what is Act Two and how long".
+25. (D2) "The second act" has seven readings on a six-board wall; nothing at project level says which boards carry act groups.
+26. (D2) "Shorten" has no tool for a written card; the route is the page. `edit_scene`'s existence known only from a one-line tool name until loaded.
+27. (D2) `set_aside`'s reply says "6 arrows drawn" and lists five. Five is right.
+28. (D2) The reply's tail reported Con's [unvoiced] question as "gone" and "new" because its wording changed; "13 now" overstates the change.
+29. (D2) The sag question survived because the median dropped with the cuts; nothing warned that cutting elsewhere sharpens this run.
+30. (D2) The write's tail was nearly enough; two reads made anyway because it said nothing about duplicates or the act group.
+31. (D3) The wall knew the unpaid fold from the first reading — good — but printed five paid folds as unlocatable; matched one by scene id against `list_board` by hand. A reader who trusted the reading would count six unpaid.
+32. (D3) No read of one scene's text; grepped the saved 74 KB instead.
+33. (D3) The payoff check reads words, so the page line must repeat the fold's label or the wall keeps asking; it shaped the line.
+34. (D3) Episode 4's reading calls the payoff "one board earlier". It is three.
+35. (D3) The setups head promises to quote the payoff page's sentence; for the cross-board payoff it quoted nothing. Only "checks: clean" implied the line counted.
+36. (D3) `set_payoff`'s tail gave board 1's questions as a count because opening other boards reset board 1's state; two more calls to see the unpaid question gone.
+37. (D3) Episode 4's "since" record shows the `edit_scene` and not the payoff claim made from the same board a second earlier.
+38. (D3) `edit_scene` appends the same camera-check paragraph to every reply, marked or not.
+39. (stop) The guide names `hand_over` and `read_record`; the connector offers neither. The on-ramp's remedy (turn the connector off and on) is not the agent's to do mid-session.
+40. (R, stop) Entries 5 and 39 are one gap from two ends: the reading promised a record; the tool that would hold it is missing.
+
+**What it read:** `list_words` 1 · `list_workflows` 1 · `list_projects` 1 · `open_project` 1 · `list_boards` 1 · `read_project` 1 · `list_reminders` 1 · `read_character` 12 · `list_board` 2 · `read_wall` 7 · `read_pages` 6 · `open_board` 9 · writes 3 (`set_aside`, `set_payoff`, `edit_scene`). Off the app: llms.txt twice, day-one.md once in three passes, the six saved pages files many times by script.
+
+## The first half — the size
+
+**No agent in this half:**
 the driving session counted every read an agent makes, on the door as it
 ships (the stdio server, the JSON tail off, as the hosted door and the
 desktop connector hand it over), first on **"Ninety-Nine"** — pass 1a's

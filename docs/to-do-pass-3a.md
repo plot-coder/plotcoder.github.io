@@ -4,11 +4,12 @@ Pass 3a's first half ran 2026-09-27 with no agent (`docs/plan.md`, goal 3:
 measure the size): `scripts/measure-reads.mjs` counted every read on
 "Ninety-Nine", "Last Orders" and a generated series, "Low Water"
 (`scripts/generate-series.mjs`). The report is `blind-runs/pass-3a-report.md`,
-ten findings; every one accounted for below. The second half — a fresh
-agent on "Low Water" with three directions that need the whole film — has
-its prompt in `blind-runs/pass-3a-prompt.md` and adds its entries here
-when it runs. Every item follows plan, ask, build, test; a read an agent
-sees gets its alternatives named before it is built.
+ten findings; every one accounted for below. The second half ran the same
+day: a fresh agent on "Low Water" through the desktop connector with three
+directions that need the whole film (`blind-runs/pass-3a-prompt.md`),
+**forty entries**, accounted for in the second list. Every item follows
+plan, ask, build, test; a read an agent sees gets its alternatives named
+before it is built.
 
 ## The size (findings 1 to 7)
 
@@ -87,7 +88,42 @@ sees gets its alternatives named before it is built.
   made in `blind-runs/pass-3a-prompt.md`'s head already (the project is on
   the account, not exported inline).
 
+## The blind half (entries 1 to 40 of the second list, `blind-runs/pass-3a-report.md`)
+
+**Fixed as it ran**, each with a test, in six pull requests:
+
+- [x] **7, 31, 5 · The folds pointed at boards the project did not have; the gap line promised a record that was empty.** The account import re-minted board ids and left every fold's `payoffBoardId` on the old one, so five paid folds read as unlocatable and one as "Ep 0". `reidentifyBoard` moves the folds with the boards on both doors (the store's push and the server's import); a fold on a board the project lacks says so in words; the gap line says the record holds nothing. #202.
+- [x] **16, 23 · `list_board` promised the change line and printed none.** The row ends with it now. #203.
+- [x] **27, 28 · `set_aside` said "6 arrows drawn" and listed five; a reshaped question read as gone and new.** Counted against the wall as it was; a question of the same kind over overlapping cards is one question, reshaped. #204.
+- [x] **34, 38 · "One board earlier" for three; the camera check on every reply.** The distance is counted in the writer's order; a clean check is said once a session. #205.
+- [x] **37 · The record had no words for a payoff claimed on another board, and every line carried every id.** Said now, claimed and taken back; each line keeps the ids it names; the order's line names none. #206.
+- [x] **3, 11, 25 · The on-ramp ended at one board; `read_project` did not say what was written or grouped.** A project of more than one board is read whole first, on the on-ramp, the skill and the handshake; `read_project`'s board line says "every scene written" or "38 of 40", and its groups. #207.
+
+**Held for Robert**, with the alternatives named:
+
+- [ ] **15, 17, 32, 19 · The pages by the board or not at all** — 72 to 75 KB a board, six of six over the agent's ceiling; no range, no one scene, no "change lines only"; nothing marks the change line on the page. *This is R77 (a):* `read_pages` and the exports with `from`/`to` by id or headline, as `measure` already takes; and a read of one card's text. **Held**, R77's first alternative, recommended.
+- [ ] **10 · Twelve `read_character` calls for twelve wants.** *Plan:* `list_board`'s cast line carries each person's want when the page has one — one line each, the words the check reads. *Ask:* it lengthens `list_board` by a line a person; `read_character` stays the page. **Held**, small; R77 (f).
+- [ ] **20, 21 · The want check reads words, so a want the story drops while its owner keeps saying it is never asked about.** The pass's own finding: the check is R74's word check and it did its job on words. *Plan:* a second reading of a want — the person's change lines, not their speeches: a want no change line moves after the page it is last moved on. *Ask:* it is the first check that reads the story rather than the words, and it is a question the writer may not want asked on every reading. **Held for Robert**; a mockup on the Asks sheet if wanted.
+- [ ] **2 · The day-one guide is 42 KB.** With the first half's 1 and 2. **Held.**
+- [ ] **4, 36 · `open_project` and `open_board` reset the first-reading state and the tails go back to counting.** *Plan:* the tail says "opening a board began the reading again; read_wall lists them" once, so the count is not a surprise. **Held**, small.
+- [ ] **8, 9 · Two identical headlines on one board.** The duplicate question could say "the same headline twice" and give both ids beside their positions in the order. With the first half's 8. **Held.**
+- [ ] **12 · Two blocks say "everything is written" eight ways on a written board.** *Plan:* the cues line and the written-by-stretch line fold to one line when every scene is written. **Held**, small.
+- [ ] **13 · Three numbers for one length.** Long-standing (pass 1a); the reading names which to say. **Held.**
+- [ ] **14 · The [absent] question's ids: a person and two cards, unlabeled.** *Plan:* "(person: …; cards: …, …)". **Held**, small.
+- [ ] **18 · `open_board` says "saved to the account" for a read.** It is a write — the open board is on the project record, and the writer's app follows it. *Plan:* say so once: "the writer's app opens it too". **Held**, small; and worth a thought — an agent reading six boards moves the writer's wall six times.
+- [ ] **24 · A group is twenty ids in `list_board` and a page count in `read_wall`.** *Plan:* `list_board`'s group line names the first and last card and the count. **Held**, small.
+- [ ] **26 · "Shorten" has no tool for a written card.** By design: the page is the writer's; `edit_scene` changes a line on their word. **Decided against** a tool; the agent did right to propose cuts only.
+- [ ] **29 · The sag stood because the median fell with the cuts.** A fact about the reading; the tail could say "the median is now N" when it moves. **Held**, small.
+- [ ] **30 · The write's tail said nothing of duplicates or the group.** The tail quotes questions that changed; none did. **Nothing to do.**
+- [ ] **33 · The payoff check reads words, so the line is written to it.** R74 by design; the guide says so. **Nothing to do.**
+- [ ] **35 · A cross-board payoff's page is not quoted in the setups head.** *Plan:* the receiving board's line quotes the sentence where the fold's word lands, as a same-board setup's does. **Held**, R74's extension, small.
+- [ ] **6 · Project and board share a name.** The generator's; a real writer's pilot often does too. **Nothing to do.**
+- [ ] **1, 22 · The agent's own fetch and chunking.** Not the app. **Noted.**
+- [ ] **39, 40 · The connector's cached tool list, again** (pass 2b's 4): `hand_over` and `read_record` missing from the session, so the last word went into the report and not onto the wall. The prompt's head said to turn the connector off and on; it was not done. *Plan:* nothing in the app can reach a client's cache; the prompt's head now says it in its first line, and the driving session checks the tool count before "go on". **Process**, recorded.
+
 ## Held for Robert, in one list
 
-1, 2, 3 (R77), 4, 6, 8, 10 above. The blind half runs first on the prompt in
-`blind-runs/pass-3a-prompt.md`; its entries join this list.
+From the first half: 1, 2, 3 (R77), 4, 6, 8, 10. From the blind half: the
+pages by range and one scene's text (R77 a, recommended first), the wants on
+`list_board`, a want the story drops (a reading of change lines, mockup if
+wanted), and the small ones above.

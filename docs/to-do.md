@@ -31,10 +31,14 @@ LENGTH, WHO, a time per scene, the fold's words and payoff, the premise,
 the opens, ids, NOT ON THE WALL); what the wall cannot hold is **R78** (a
 scene's day and light) and **R79** (a place's page), proposed; 48 entries in
 `blind-runs/pass-4a-report.md`, worked in `docs/to-do-pass-4a.md`.
-Released as 0.1.64. **Next:** Robert's word on R78 and R79 (mockups on the
-card's sheet and a place's page), the page check's paste and the
-generator's pages together; then 4b, one provider on ten segments; and the
-rest held — the "[still]" question, the standing answers' tie-break, the small
+Released as 0.1.64. **R78 and R79 drawn** (`docs/mockups/r78-a-scenes-day-and-light.html`,
+`docs/mockups/r79-a-places-page.html`, #226) and **4b planned**
+(`blind-runs/pass-4b-plan.md`: ten segments, the rubric, the seam).
+**Next:** Robert's word on the two mockups; the provider and its key for
+4b (question 26), chosen by whether its API holds a reference image for a
+face and a place; then the seam under `build_segment` and the ten takes;
+the page check's paste and the generator's pages together; and the rest
+held — the "[still]" question, the standing answers' tie-break, the small
 reply changes — and then a real story with the writer in the room, the first
 two sessions logged as the next round.
 

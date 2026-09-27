@@ -662,7 +662,7 @@ function sceneLabel(state, noteId) {
 /** A board of the project in quotes, or the plain fact that the project has no board by that id (pass 3a, entry 7): never a raw id where a name should be. */
 function boardName(project, boardId) {
   const meta = boardById(project, boardId);
-  return meta ? `"${meta.name}"` : `a board this project does not have (${boardId}; set_payoff_board with a board of this project, or null to take the claim back)`;
+  return meta ? `"${meta.name}"` : `a board this project does not have (${boardId}; set_plant with later names a board of this project, set_payoff from the board where it pays off names the scene, and set_plant with later "" takes the claim back)`;
 }
 /** "three boards earlier": how far back in the writer's order a fold's board is from the board that pays it off (pass 3a, entry 34: it said "one board earlier" of any distance). */
 function boardsApart(project, fromBoardId, hereId) {
@@ -2518,7 +2518,7 @@ server.registerTool(
   {
     title: "Your last word to the writer",
     description:
-      "Leave one sentence on the wall for the writer when you stop: what you did not do and what you need from them — \"I have done nothing to the unpaid card; whether the man's card comes back is yours.\" It shows at the head of the writer's Read the wall sheet and in a fresh agent's read_wall, and stands until the writer's next change. Not a report and not the log: one sentence, in words the writer would use. \"\" takes it back. What you did needs no word from you — the wall records every change by card, by whom and when, and read_record lists it.",
+      "Leave one sentence on the wall for the writer when you stop: what you did not do and what you need from them — \"I have done nothing to the unpaid card; whether the man's card comes back is yours.\" It shows at the head of the writer's Read the wall sheet for the open board and in a fresh agent's read_wall of it — one word a board; on a series, leave it on the board the writer opens first — and stands until the writer's next change to that board. Not a report and not the log: one sentence, in words the writer would use. \"\" takes it back. What you did needs no word from you — the wall records every change by card, by whom and when, and read_record lists it.",
     inputSchema: { words: z.string().describe("One sentence, or \"\" to take the last one back.") },
   },
   async (args) => {
@@ -2533,7 +2533,7 @@ server.registerTool(
   {
     title: "The record: who changed the wall, and when",
     description:
-      "The wall's own memory of its last fifty changes, told as sessions — one hand, no gap over half an hour — newest first: who (the signed-in writer's name, or an agent), when, how many changes, and each change in the person's terms (\"wrote 'The morning after' (4/8 pages)\", \"set 'The bank' aside, out of the film\"). Every door writes it as changes land; nothing here is what anyone said, only what the wall saw. read_wall opens with the last session by another hand; this is the whole of it. For picking up a wall another session worked, or past your own context: read this before you ask the writer what happened.",
+      "The open board's own memory of its last fifty changes — each board keeps its own record; open_board and read again for another — told as sessions — one hand, no gap over half an hour — newest first: who (the signed-in writer's name, or an agent), when, how many changes, and each change in the person's terms (\"wrote 'The morning after' (4/8 pages)\", \"set 'The bank' aside, out of the film\"). Every door writes it as changes land; nothing here is what anyone said, only what the wall saw. read_wall opens with the last session by another hand; this is the whole of it. For picking up a wall another session worked, or past your own context: read this before you ask the writer what happened.",
     inputSchema: { sessions: z.number().int().positive().optional().describe("How many sessions, newest first; default all.") },
   },
   async (args = {}) => {
@@ -4577,7 +4577,7 @@ server.registerTool(
   {
     title: "Name a thread",
     description:
-      "Name a thread — a thing that runs through the story and is first seen somewhere and comes out somewhere: \"the letter\", \"the shop's lease\", a subplot — and string it through the cards it touches, by id or headline, in story order. Say which end is not decided: startOpen when the writer knows where it comes out and not where it is first seen; endOpen when the card where it comes out is not decided — they may know it comes out at the end and not on which card, or what happens when it does; the last is the end card's change line, open in their words. The reading asks about each open end from that end — \"where is it first seen?\" — until update_thread ties it, and lists every thread with its cards. A thread is beside the fold and the setup arrow, not instead of them: fold the card that plants and draw the setup arrow when both scenes exist; a thread is for the writer's word before they do, and for a strand a fold cannot hold. Only on the writer's word: a thread is theirs to name.",
+      "Name a thread — a thing that runs through the story and is first seen somewhere and comes out somewhere: \"the letter\", \"the shop's lease\", a subplot — and string it through the cards it touches, by id or headline, in story order. A thread is one board's: every card on it is on the open board. A strand across episodes is a fold — set_plant on the card where it starts, with later and at, or set_payoff from the board where it comes out — and the readings of both boards name it. Say which end is not decided: startOpen when the writer knows where it comes out and not where it is first seen; endOpen when the card where it comes out is not decided — they may know it comes out at the end and not on which card, or what happens when it does; the last is the end card's change line, open in their words. The reading asks about each open end from that end — \"where is it first seen?\" — until update_thread ties it, and lists every thread with its cards. A thread is beside the fold and the setup arrow, not instead of them: fold the card that plants and draw the setup arrow when both scenes exist; a thread is for the writer's word before they do, and for a strand a fold cannot hold. Only on the writer's word: a thread is theirs to name.",
     inputSchema: {
       name: z.string().min(1),
       cards: z.array(z.string()).optional(),
@@ -4896,6 +4896,11 @@ server.registerTool(
     const lines = [
       `PlotCoder project "${project.name}"${project.nameOpen ? ` — its name is open, by the writer's word: "${project.nameOpen}"` : ""} (${door(live, base)})`,
       `premise: ${project.premiseOpen ? `open, by the writer's word — "${project.premiseOpen}"` : project.premise ? `"${project.premise}"` : "(not set)"}`,
+      // The title page and what is open about the people are the project's, so the project read says them (pass 3b, entries 17, 23, and its seventh doubt).
+      `title page: ${(project.author ?? "").trim() ? `Written by ${project.author.trim()}` : "no author"}${(project.contact ?? "").trim() ? `; contact ${project.contact.trim()}` : ""}; the last page, "What is not decided", ${project.undecidedPage === false ? "off" : "on"}`,
+      ...((project.characters ?? []).some((person) => (person.open ?? "").trim())
+        ? [`open about the people, by the writer's word: ${(project.characters ?? []).filter((person) => (person.open ?? "").trim()).map((person) => `${person.name} — "${person.open.trim()}"`).join("; ")}`]
+        : []),
     ];
     let asked = 0;
     for (const [index, meta] of project.boards.entries()) {

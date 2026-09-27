@@ -1129,6 +1129,8 @@ describe("open fields (R61): the logline, the premise, a when and a board's name
   it("reads the project as a whole: every board's questions in one call, and organize says what stands when nothing moves", async () => {
     const read = await client.callTool("read_project");
     expect(read).toContain('PlotCoder project "');
+    // The title page is the project's, so the project read says it (pass 3b, entries 17 and 23).
+    expect(read).toMatch(/\ntitle page: (no author|Written by [^;\n]+)[^\n]*; the last page, "What is not decided", (on|off)\n/);
     expect(read).toMatch(/1\. "Board 1"[^\n]*\(open\) — \d+ cards?, \d+ beats?, about [\d /]+ of 120 pages; logline:/);
     expect(read).toContain("   - [unmarked]");
     expect(read).toMatch(/the whole project: \d+ cards?, about [\d /]+ of 120 pages across 1 board; \d+ questions? in all/);

@@ -140,7 +140,8 @@ export function describeChange(before, after) {
     const old = groupsWere.get(group.id);
     if (!old) say(`grouped ${group.noteIds.length} cards as "${group.title || "a group"}"`, ...group.noteIds);
     else if ((old.title ?? "") !== (group.title ?? "")) say(`renamed the group "${old.title}" to "${group.title}"`, ...group.noteIds);
-    else if (!sameList(old.noteIds, group.noteIds)) say(`changed the group "${group.title}" (${group.noteIds.length} cards)`, ...group.noteIds);
+    // The cards that joined or left, not every card still in it (pass 3b, entry 8: nineteen ids under one line).
+    else if (!sameList(old.noteIds, group.noteIds)) say(`changed the group "${group.title}" (${group.noteIds.length} cards)`, ...group.noteIds.filter((id) => !old.noteIds.includes(id)), ...old.noteIds.filter((id) => !group.noteIds.includes(id)));
   }
   for (const old of before.groups ?? []) if (!groupsNow.has(old.id)) say(`ungrouped "${old.title || "a group"}"`, ...old.noteIds);
 

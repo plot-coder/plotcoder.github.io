@@ -1244,20 +1244,22 @@ export function applyCommand(state, command, now = nowIso()) {
       if (moving.length === 0) return { state, changed: false };
       const movingIds = new Set(moving.map((note) => note.id));
       let arrows = state.arrows;
-      let closed = 0;
-      let dropped = 0;
       if (aside) {
         for (const id of movingIds) {
           const ins = arrows.filter((arrow) => arrow.kind !== "setup" && arrow.to === id);
           const outs = arrows.filter((arrow) => arrow.kind !== "setup" && arrow.from === id);
-          dropped += ins.length + outs.length;
           arrows = arrows.filter((arrow) => arrow.kind === "setup" || (arrow.from !== id && arrow.to !== id));
           if (ins.length === 1 && outs.length === 1 && ins[0].from !== outs[0].to && !arrows.some((arrow) => arrow.kind !== "setup" && arrow.from === ins[0].from && arrow.to === outs[0].to)) {
             arrows = [...arrows, { id: newId(), from: ins[0].from, to: outs[0].to, kind: "follows" }];
-            closed += 1;
           }
         }
       }
+      // Counted against the wall as it was, not call by call (pass 3a, entry 27): two neighbours set aside together
+      // draw one closing arrow between the cards on either side, and the arrow drawn for the first and dropped for
+      // the second is neither drawn nor dropped.
+      const wasArrow = new Set(state.arrows);
+      const dropped = state.arrows.filter((arrow) => !arrows.includes(arrow)).length;
+      const closed = arrows.filter((arrow) => !wasArrow.has(arrow)).length;
       // A card with versions behind it cannot go aside and leave them fronting nothing: they stand as plain cards.
       const notes = state.notes.map((note) => {
         if (movingIds.has(note.id)) return bump(note, aside ? { aside: true, rank: "scene" } : { aside: false }, now);

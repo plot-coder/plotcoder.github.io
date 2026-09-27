@@ -703,6 +703,20 @@ describe("a card set aside (R66): on the wall and not in the film", () => {
     expect(claimed.arrows.some((arrow) => arrow.kind === "setup" && arrow.from === "b")).toBe(true);
   });
 
+  it("counts two neighbours set aside together as three arrows dropped and one drawn (pass 3a, entry 27)", () => {
+    let state = emptyState();
+    const ids: string[] = [];
+    for (const headline of ["a", "b", "c", "d"]) {
+      const made = applyCommand(state, { type: "create_note", headline });
+      state = made.state;
+      ids.push((made.result as { id: string }).id);
+    }
+    for (let i = 1; i < ids.length; i += 1) state = applyCommand(state, { type: "create_arrow", from: ids[i - 1], to: ids[i] }).state;
+    const done = applyCommand(state, { type: "set_aside", ids: [ids[1], ids[2]], aside: true });
+    expect(done.result).toMatchObject({ aside: true, arrowsDropped: 3, closedOver: 1 });
+    expect(done.state.arrows.map((arrow) => [arrow.from, arrow.to])).toEqual([[ids[0], ids[3]]]);
+  });
+
   it("takes no follows arrow while it is aside, and may carry a setup arrow", () => {
     const aside = applyCommand(chain(), { type: "set_aside", ids: ["b"], aside: true }, at).state;
     expect(applyCommand(aside, { type: "create_arrow", from: "c", to: "b", kind: "follows" }, at).changed).toBe(false);

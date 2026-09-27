@@ -893,6 +893,8 @@ function newWallInHand() {
 let lastChange = null;
 // The same question in the same words is the same question, whatever order its names come in (round seventeen, entry 21).
 const findingKey = (finding) => `${finding.kind}|${[...finding.ids].sort().join(",")}`;
+/** The same question by kind, over cards that overlap: what a change under it reshapes rather than replaces. */
+const sameQuestion = (a, b) => a.kind === b.kind && a.ids.some((id) => b.ids.includes(id));
 /** Set by a tool whose write can change the story's shape — a reorder, a cut, a delete, a choice of version, a scene wired in — so the next change's tail says what it did to the runs, the ending and the wall's order (round twenty-three, entries 30, 31, 50, 52, 72). */
 let shapeAsked = null;
 function askShape(options = {}) {
@@ -921,11 +923,17 @@ function noteChange(before, after, boardId = null) {
   lastChange = {
     leftNow: leftNow.size,
     unleft,
-    gone: was.findings.filter((finding) => !nowKeys.has(findingKey(finding)) && !leftNow.has(findingKey(finding))),
-    came: now.findings.filter((finding) => !wasKeys.has(findingKey(finding))),
+    // A question about the same thing whose cards changed under it — a person's absence or unvoiced want after a card
+    // of theirs went aside — is the same question asked differently, not one gone and one new (pass 3a, entry 28).
+    gone: was.findings.filter((finding) => !nowKeys.has(findingKey(finding)) && !leftNow.has(findingKey(finding)) && !now.findings.some((other) => sameQuestion(finding, other))),
+    came: now.findings.filter((finding) => !wasKeys.has(findingKey(finding)) && !was.findings.some((other) => sameQuestion(finding, other))),
     // The same question, asked differently now: both ends open became one (round twenty-four, entry 32).
     // A sag whose pages moved with a measure is the same question with new numbers, not a new shape (pass 1a, entry 36): compare the words, not the figures.
-    reshaped: now.findings.filter((finding) => wasKeys.has(findingKey(finding)) && withoutFigures(wasText.get(findingKey(finding))) !== withoutFigures(finding.text)),
+    reshaped: now.findings.filter((finding) => {
+      if (wasKeys.has(findingKey(finding))) return withoutFigures(wasText.get(findingKey(finding))) !== withoutFigures(finding.text);
+      const before = was.findings.find((other) => sameQuestion(finding, other));
+      return Boolean(before) && withoutFigures(before.text) !== withoutFigures(finding.text);
+    }),
     asks: now.findings.length,
     leftBefore: was.left.length,
     leftAfter: now.left.length,

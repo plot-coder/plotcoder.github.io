@@ -27,7 +27,11 @@ cross-board claim and per-line ids, a series read whole first). The
 session's connector had the cached tool list again (pass 2b's 4): no
 `hand_over`, so the last word is in the report. **Released as 0.1.60** (npm, the pin, the function redeployed, the live
 door answering 0.1.60). **R77 (a) built** the same night on Robert's word: `read_pages` and the
-text exports by `scene`, `from`/`to` or `group` (`src/board/stretch.js`). **Next:** R77's other alternatives with Robert, then 3b (hands-off:
+text exports by `scene`, `from`/`to` or `group` (`src/board/stretch.js`),
+**released as 0.1.61** (npm, the pin, the function, the live door). **Pass
+3b's prompt is written** (`blind-runs/pass-3b-prompt.md`) and the pass is
+running in a session Robert opened, driven from here with nothing sent
+after the paste. **Next:** file 3b; then R77's other alternatives with Robert, then 3b (hands-off:
 a list of directions and standing answers) on the same project, which is
 still on the test account with the agent's three changes on it.
 

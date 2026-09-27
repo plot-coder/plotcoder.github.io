@@ -60,6 +60,13 @@ describe("the record of a session (R76): what changed, in the person's terms", (
     expect(told.each.filter((own) => own.length === 1)).toHaveLength(2);
     const recorded = describeRecord(withRecord(base(), { at: "2026-09-27T03:24:00.000Z", by: "an agent", ...told }));
     for (const item of recorded[0].lines) expect(item.ids.length).toBeLessThanOrEqual(1);
+    // A group that lost a card names the card that left, not the cards still in it (pass 3b, entry 8).
+    const grouped = run(base(), { type: "create_note", id: "pier", x: 600, y: 0, headline: "The pier", change: "The tide." }, { type: "create_group", noteIds: ["f", "bank", "pier"], title: "Act One" });
+    const shrunk = run(grouped, { type: "set_aside", ids: ["pier"], aside: true });
+    const groupLine = describeChange(grouped, shrunk);
+    const at = groupLine.lines.findIndex((line) => line.startsWith('changed the group "Act One"'));
+    expect(at).toBeGreaterThanOrEqual(0);
+    expect(groupLine.each[at]).toEqual(["pier"]);
   });
 
   it("keeps the last fifty changes, merges a repeated change by the same hand within five minutes, and tells them as sessions", () => {

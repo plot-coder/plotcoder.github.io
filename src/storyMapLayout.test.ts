@@ -220,11 +220,14 @@ describe("how tall the map stands (Robert, 2026-09-27)", () => {
   it("takes room only for the rows that have something to show", () => {
     const rows = (input: Partial<Parameters<typeof storyMapRows>[0]>) => storyMapRows({ open: true, structure: false, groups: false, beats: false, ...input });
     expect(storyMapRows({ open: false, structure: true, groups: true, beats: true }).height).toBe(22);
-    expect(rows({}).height).toBe(82);
-    expect(rows({ beats: true }).height).toBe(96);
-    expect(rows({ groups: true }).height).toBe(100);
-    expect(rows({ groups: true, beats: true }).height).toBe(114);
-    expect(rows({ groups: true, beats: true, structure: true }).height).toBe(148);
+    // The reading line has no row of its own: it floats over the wall's foot.
+    expect(rows({}).height).toBe(52);
+    expect(rows({ beats: true }).height).toBe(72);
+    expect(rows({ groups: true }).height).toBe(76);
+    expect(rows({ groups: true, beats: true }).height).toBe(90);
+    expect(rows({ groups: true, beats: true, structure: true }).height).toBe(124);
+    // Nothing is drawn above the map's own edge.
+    for (const made of [rows({}), rows({ beats: true }), rows({ groups: true, beats: true, structure: true })]) expect(made.beatTop).toBeGreaterThanOrEqual(4);
     // The groups' brackets stand clear above the beats' names, and both above the blocks.
     const full = rows({ groups: true, beats: true });
     expect(full.labelY).toBeLessThan(full.beatTop);

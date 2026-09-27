@@ -24,6 +24,7 @@ import { supabase, SUPABASE_KEY, SUPABASE_URL } from "../supabase";
 import { isProjectRecord, normalizeProject, type ProjectRecord } from "./project";
 import { isBoardState, normalizeState, nowIso, type BoardState } from "./reducer";
 import { movePlaceFiles } from "./placeFiles";
+import type { ProjectFacts } from "./projectFacts";
 import { boardStore } from "./store";
 import {
   deviceName,
@@ -98,6 +99,8 @@ export type Account = {
   uploading: number;
   /** When an agent's session last touched this account (R81), or null: none has, or none in the last day. */
   agentSeenAt: string | null;
+  /** What each project holds, by its id, for its row in the list; a project not yet read has none. */
+  facts: Record<string, ProjectFacts>;
 };
 
 export type NameStatus = "free" | "taken" | "invalid" | "unknown";
@@ -226,6 +229,7 @@ class AccountStore {
     present: [],
     needsPick: false,
     agentSeenAt: null,
+    facts: {},
     busy: false,
     recovering: false,
     resetSentTo: null,
@@ -314,7 +318,7 @@ class AccountStore {
       this.leaveChannel();
       this.books = null;
       this.saveBooks();
-      this.set({ ready: true, user: null, status: "idle", lastSavedAt: null, notice: null, projects: [], people: [], present: [], needsPick: false, agentSeenAt: null });
+      this.set({ ready: true, user: null, status: "idle", lastSavedAt: null, notice: null, projects: [], people: [], present: [], needsPick: false, agentSeenAt: null, facts: {} });
       return;
     }
     const metaName = typeof session?.user?.user_metadata?.name === "string" ? session.user.user_metadata.name : "";
@@ -628,6 +632,120 @@ class AccountStore {
     }
     await this.refreshProjects();
     return this.openProject(record.id);
+  };
+
+  // --- a writer's projects, from the list (the account sheet) ---------------
+
+  /** What every project holds, for its row: one read of each project's boards. The open project is read from this device, which is ahead of the account by a keystroke. */
+  loadProjectFacts = async (): Promise<void> => {
+    if (!this.client || !this.account.user) return;
+    const { projectFacts } = await import("./projectFacts");
+    const facts: Record<string, ProjectFacts> = {};
+    const open = this.books?.projectId ?? null;
+    for (const item of this.account.projects) {
+      if (item.id === open) {
+        const record = boardStore.getProject();
+        facts[item.id] = projectFacts(record.boards.map((meta) => boardStore.boardState(meta.id)).filter((state): state is BoardState => state !== null));
+        continue;
+      }
+      const { data, error } = await this.client.from(BOARDS).select("id, state").eq("project_id", item.id);
+      if (error) continue;
+      facts[item.id] = projectFacts(((data ?? []) as Array<{ state: unknown }>).map((row) => (isBoardState(row.state) ? normalizeState(row.state) : null)).filter((state): state is BoardState => state !== null));
+    }
+    this.set({ facts });
+  };
+
+  /** Rename one of the writer's projects. The open one is renamed on the wall, which carries it to the account; another, on the account. */
+  renameProject = async (id: string, name: string): Promise<boolean> => {
+    if (!this.client || !this.account.user) return false;
+    const next = name.trim().replace(/\s+/g, " ");
+    if (!next) return false;
+    if (this.books && this.books.projectId === id) {
+      boardStore.renameProject(next);
+      await this.push();
+      await this.refreshProjects();
+      return true;
+    }
+    const remote = await this.fetchProject(id);
+    if (!remote) {
+      this.set({ error: "That project could not be read." });
+      return false;
+    }
+    const { renameProject } = await import("./project");
+    const record = renameProject(remote.project, next);
+    const { data, error } = await this.client.from(PROJECTS).update({ record, rev: remote.rev + 1, updated_at: nowIso() }).eq("id", id).eq("rev", remote.rev).select("rev");
+    if (error || !data || data.length === 0) {
+      this.set({ error: error?.message ?? "The project changed elsewhere as you renamed it. Try again." });
+      return false;
+    }
+    await this.refreshProjects();
+    return true;
+  };
+
+  /** A project as the file Save project writes, with the name to save it under; null when it could not be read. */
+  projectFile = async (id: string): Promise<{ name: string; text: string } | null> => {
+    if (!this.client || !this.account.user) return null;
+    if (this.books && this.books.projectId === id && (this.books.dirtyProject || this.books.dirtyBoards.length)) await this.push();
+    const remote = await this.fetchProject(id);
+    if (!remote) return null;
+    const rows = await this.fetchBoards(id, remote.project.boards.map((board) => board.id));
+    if (!rows) return null;
+    const boards: Record<string, BoardState> = {};
+    for (const row of rows) if (isBoardState(row.state)) boards[row.id] = normalizeState(row.state);
+    const { toProjectFile } = await import("./projectFile");
+    const file = toProjectFile({ project: remote.project, boards, reminders: Array.isArray(remote.reminders) ? remote.reminders : null });
+    const safe = remote.project.name.replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "") || "project";
+    return { name: `${safe}.plotcoder.json`, text: JSON.stringify(file, null, 2) };
+  };
+
+  /**
+   * Delete a project the writer owns: its files, then its row; its boards go with it. Cannot be undone.
+   * When it was the open one, the wall opens the newest that is left; when none is, a new project is
+   * started, since a wall with no project on the account would be carried in again as a new one.
+   */
+  deleteProject = async (id: string): Promise<boolean> => {
+    if (!this.client || !this.account.user) return false;
+    const item = this.account.projects.find((project) => project.id === id);
+    if (!item || !item.mine) {
+      this.set({ error: "Only a project's owner can delete it." });
+      return false;
+    }
+    this.set({ busy: true, error: null });
+    try {
+      const wasOpen = Boolean(this.books && this.books.projectId === id);
+      if (wasOpen && this.pushTimer) clearTimeout(this.pushTimer);
+      const files = await this.client.from(ASSETS).select("path").eq("project_id", id);
+      const paths = ((files.data ?? []) as Array<{ path: string }>).map((file) => file.path);
+      if (paths.length) {
+        const removed = await this.client.storage.from(BUCKET).remove(paths);
+        if (removed.error) {
+          this.set({ error: `The files of "${item.name}" could not be removed: ${removed.error.message}` });
+          return false;
+        }
+      }
+      const gone = await this.client.from(PROJECTS).delete().eq("id", id).select("id");
+      if (gone.error || !gone.data || gone.data.length === 0) {
+        this.set({ error: gone.error?.message ?? `"${item.name}" was not deleted: the account did not allow it.` });
+        return false;
+      }
+      if (wasOpen) {
+        this.leaveChannel();
+        this.books = null;
+      }
+      await this.refreshProjects();
+      if (wasOpen) {
+        const left = this.account.projects[0];
+        if (left) await this.openProject(left.id);
+        else {
+          await this.newProject("");
+          this.set({ notice: `"${item.name}" is deleted. It was your last project, so a new one was started.` });
+        }
+      }
+      await this.loadProjectFacts();
+      return true;
+    } finally {
+      this.set({ busy: false });
+    }
   };
 
   dismissPick = (): void => {

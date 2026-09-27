@@ -1014,6 +1014,8 @@ export function App() {
           onClose={() => setAccountOpen(false)}
           currentProjectId={project.id}
           onAgents={() => setAgentsOpen(true)}
+          agent={agent}
+          onAgent={() => setAgentOpen(true)}
           lastChange={(() => {
             const newest = describeRecord(board).slice(0, 2);
             if (!newest.length) return "";

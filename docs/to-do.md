@@ -54,6 +54,8 @@ the account; pass 3a's report says where its export came from.
    recommendation after 3b is that its first two sessions are logged as
    the next round, friction log and working list as always.
 
+**Built 2026-09-27 and not yet seen signed in — Robert's to walk on plotcoder.com:** the account sheet refreshed (rename, download and delete from a project's row), the Shots sheet's picture-keeping, and Your agent's line changing as an agent connects.
+
 **Found 2026-09-27, not fixed:** the dev app, signed in, makes a new copy of the wall on the account at every load — three "Harbour Three" on the test account. Under the dev bridge every page takes the bridge's project and its id, which is not the id the last load pushed under, so `planSignIn` reads it as work the account has not seen. plotcoder.com has no bridge; walk there, not on localhost. The copies are Robert's to delete.
 
 **R81 walked once, by Robert, 2026-09-27:** the four steps took a fresh session to the wall — it listed, opened, read and changed nothing; `who_is_here` named the agent beside the writer's screen. Found: the first message sent it to one board of two (fixed: a project of several boards is read whole); the hosted door at 0.1.66 has none of the shot tools (a release); the walk was on the test account, on "Harbour Three", the dev wall carried in at sign-in with this session's test debris on it; an "Untitled project" appeared on the account during the walk, its maker not known. Not yet known: whether the button changed to "Agent · here" on Robert's screen.

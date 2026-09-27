@@ -5876,3 +5876,99 @@ body {
 .agents .shots__steps {
   margin: 0.3rem 0 0.8rem;
 }
+
+/* The fresh wall: an empty wall says how to begin, in the middle, and is gone with the first card. */
+.fresh-wall {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 6;
+  width: min(44rem, calc(100% - 3rem));
+  transform: translate(-50%, -52%);
+  text-align: center;
+}
+
+.fresh-wall h2 {
+  margin: 0 0 0.3rem;
+  font-size: 1.8rem;
+  font-weight: 400;
+}
+
+.fresh-wall__sub {
+  margin: 0 0 1.4rem;
+  color: var(--muted);
+}
+
+.fresh-wall__ways {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+  text-align: left;
+}
+
+@media (max-width: 46rem) {
+  .fresh-wall__ways {
+    grid-template-columns: 1fr;
+  }
+
+  .fresh-wall {
+    top: 8rem;
+    transform: translateX(-50%);
+  }
+}
+
+.fresh-wall__way {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0.9rem 1rem 1rem;
+  border: 1px solid var(--bar-border);
+  border-radius: 0.8rem;
+  background: var(--bar);
+  box-shadow: var(--bar-shadow);
+}
+
+.fresh-wall__way.is-first {
+  border-color: var(--over);
+}
+
+.fresh-wall__way h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0 0 0.25rem;
+  font-size: 1.05rem;
+  font-weight: 400;
+}
+
+.fresh-wall__way.is-first .agent-welcome__dot {
+  border-color: #3f9b5f;
+  background: #3f9b5f;
+}
+
+.fresh-wall__way p {
+  flex: 1;
+  margin: 0 0 0.7rem;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.fresh-wall__way .fresh-wall__say {
+  flex: none;
+  padding: 0.4rem 0.55rem;
+  border-radius: 0.4rem;
+  background: color-mix(in srgb, var(--ink) 9%, transparent);
+  color: var(--ink);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.66rem;
+  user-select: all;
+}
+
+.fresh-wall__foot {
+  margin: 1rem 0 0;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.76rem;
+  color: var(--muted);
+}

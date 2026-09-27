@@ -7,6 +7,8 @@ import {
 } from "react";
 import { arrowLayout, noteAtPoint, previewPath } from "./arrowGeometry";
 import { NoteCard } from "./NoteCard";
+import { FreshWall } from "./FreshWall";
+import type { AgentSeen } from "./board/agentSeen";
 import { atPlace, type ArrowKind, type BoardCharacter, type BoardState } from "./board/reducer";
 import { isRevised } from "./board/numbering";
 import { storyOrder } from "./board/readWall";
@@ -58,8 +60,12 @@ type NoteBoardProps = {
   onStructure: () => void;
   /** What these words mean (R42). */
   onWords: () => void;
-  /** Are you an agent? Start here (R43). */
-  onAgents: () => void;
+  /** Whether an agent is on the wall (R81): an empty wall puts its card first when one is. */
+  agent: AgentSeen;
+  /** Open Your agent (R81), from an empty wall. */
+  onAgent: () => void;
+  /** A new card, from an empty wall. */
+  onNewNote: () => void;
   /** Pages are open beside the wall (R23 b): the wall keeps to the left. */
   pagesOpen?: boolean;
   /** The page a written scene starts on (R23 c). */
@@ -175,7 +181,9 @@ export function NoteBoard({
   onDayLight,
   onStructure,
   onWords,
-  onAgents,
+  agent,
+  onAgent,
+  onNewNote,
   pagesOpen = false,
   pageOf,
   numberOf,
@@ -474,23 +482,7 @@ export function NoteBoard({
       onPointerCancel={endPointer}
     >
       {notes.length === 0 && !lasso ? (
-        <p className="group-hint group-hint--empty">
-          No cards yet. Add one,{" "}
-          <button type="button" className="group-hint__link" onClick={onStructure}>
-            start from a structure
-          </button>
-          , or read{" "}
-          <button type="button" className="group-hint__link" onClick={onWords}>
-            what these words mean
-          </button>
-          .
-          <span className="group-hint__agent">
-            Are you an agent?{" "}
-            <button type="button" className="group-hint__link" onClick={onAgents}>
-              Start here.
-            </button>
-          </span>
-        </p>
+        <FreshWall agent={agent} onNewNote={onNewNote} onStructure={onStructure} onWords={onWords} onAgent={onAgent} />
       ) : groups.length === 0 && selectedIds.length === 0 && arrows.length === 0 && !lasso ? (
         <p className="group-hint">
           Drag on empty canvas to select notes, then Group. Drag a card’s handle onto another

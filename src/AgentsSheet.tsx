@@ -8,7 +8,8 @@
 // tap behind each. Nothing here says what the on-ramp does not. A door, not
 // a tour; it closes on Escape like every sheet.
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
+import { useSheet } from "./useSheet";
 import { AGENTS, AGENTS_SHEET } from "./board/agents";
 
 type AgentsSheetProps = {
@@ -34,19 +35,14 @@ export function AgentsSheet({ open, onClose, onAgent }: AgentsSheetProps) {
   const [fold, setFold] = useState<string | null>(null);
   const [wholeFold, setWholeFold] = useState(false);
 
-  useEffect(() => {
-    if (!open) return;
+  // Once, as the sheet opens: a fold the writer opens stays open (see useSheet).
+  useSheet(open, onClose, () => {
     setCopied(null);
     setWhole(false);
     setFold(null);
     setWholeFold(false);
     closeRef.current?.focus();
-    function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+  });
 
   if (!open) return null;
 

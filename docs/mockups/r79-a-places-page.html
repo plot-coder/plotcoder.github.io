@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<title>R79 — a place's page</title>
+<!-- The app's own paper: the source stylesheet, so the link never goes stale. -->
+<link rel="stylesheet" href="../../src/styles.css">
+<style>
+  html, body { height: auto; min-height: 100%; }
+  body { margin: 0; padding: 2rem 2.5rem 4rem; font-family: ui-sans-serif, system-ui, sans-serif; }
+  h1 { font: 600 1.05rem/1.3 ui-serif, Georgia, serif; margin: 0 0 0.25rem; }
+  h2.sec { font: 600 0.95rem/1.3 ui-serif, Georgia, serif; margin: 3rem 0 0.2rem; padding-top: 1.2rem; border-top: 1px solid rgba(127,127,127,0.25); }
+  .lede { font-size: 0.85rem; opacity: 0.78; margin: 0 0 1.2rem; max-width: 78ch; line-height: 1.5; }
+  .said { font-size: 0.82rem; line-height: 1.5; margin: 0.4rem 0 1.3rem; max-width: 80ch; padding: 0.6rem 0.9rem; border-left: 3px solid var(--over); background: rgba(127,127,127,0.08); }
+  .said b { font-weight: 600; }
+  .row { display: flex; gap: 2.2rem; flex-wrap: wrap; align-items: flex-start; }
+  .opt { width: 420px; max-width: 100%; }
+  .opt.wide { width: 560px; }
+  .opt h3 { font: 700 0.62rem/1.3 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; margin: 0 0 0.6rem; }
+  .opt h3 em { font-style: normal; color: var(--over); }
+  .opt p { font-size: 0.8rem; line-height: 1.45; opacity: 0.82; margin: 0.7rem 0 0; max-width: 62ch; }
+  /* The lens as the app draws it, standing on the page instead of beside the wall. */
+  .stand .cast-lens { position: static; max-height: none; box-shadow: none; width: 100%; }
+  .stand .cast-page__text--ask { opacity: 0.55; font-style: italic; }
+  pre.read { font: 0.66rem/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; background: rgba(127,127,127,0.12); padding: 0.75rem 0.95rem; border-radius: 6px; white-space: pre-wrap; margin: 0.7rem 0; }
+  pre.read b { color: var(--over); font-weight: 600; }
+  pre.read i { font-style: normal; opacity: 0.55; }
+  table.rules { border-collapse: collapse; font-size: 0.76rem; line-height: 1.45; max-width: 100%; margin: 0.8rem 0 0; }
+  table.rules th, table.rules td { text-align: left; vertical-align: top; padding: 0.45rem 0.7rem 0.45rem 0; border-top: 1px solid rgba(127,127,127,0.25); }
+  table.rules th { font: 700 0.6rem/1.3 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; border-top: 0; }
+  table.rules td:first-child { white-space: nowrap; font-weight: 600; }
+  .ask { margin-top: 1.2rem; max-width: 82ch; font-size: 0.86rem; line-height: 1.55; }
+  .ask b { font-weight: 600; }
+  .honest { font-size: 0.82rem; line-height: 1.5; max-width: 80ch; margin: 0.6rem 0 0; padding: 0.6rem 0.9rem; border-left: 3px solid rgba(127,127,127,0.5); background: rgba(127,127,127,0.06); }
+  .honest b { font-weight: 600; }
+</style>
+</head>
+<body>
+<h1>R79: a place's page</h1>
+<p class="lede">Drawn 2026-09-27 from pass 4a (<code>blind-runs/pass-4a-report.md</code>, entries 7, 18, 45, and its question 9). A person has a page — looks, voice, wants, needs, notes, what is open, a picture — and every card they are on. A place has a phrase on a card and nothing else: <code>set_location</code> takes the words, the app relates no two, and every fact a shoot needs about the harbour office — its size, its window, what is on its walls, the era of its fittings — has nowhere to live but the first line of some scene's action. What follows is the page a place would have, drawn in the cast lens's own paper beside a person's; where it opens from; the tools; and the question. The reading asks nothing of a place: a page fills when the writer writes on it, and an empty one asks its questions the way a person's does.</p>
+
+<!-- ───────────── 1 ───────────── -->
+<h2 class="sec">1 · The moment: the places the wall already knows</h2>
+<div class="said"><b>As it ships.</b> The cast lens lists the board's places under the cast — "INT. THE HARBOUR OFFICE · 7 cards · 11 pp" — and holding one lights its cards on the wall. That is the whole of what a place is: a phrase the cards share, counted. The reading's places line says the same. The brief prints the phrase under PLACES and the reader shoots from the script's first line.</div>
+<div class="said"><b>With R79.</b> The place's row opens a page, as a person's row does, keyed by the phrase the cards carry, on the project (one harbour office across six episodes, as there is one Nell): what the camera sees, what is heard when nobody speaks, notes, what is open by the writer's word, pictures, and its scenes across every board. <code>read_place</code> and <code>update_place</code> on the door; the brief prints the page under PLACES.</div>
+
+<!-- ───────────── 2 ───────────── -->
+<h2 class="sec">2 · The page, in the lens's paper</h2>
+<div class="row">
+  <div class="opt stand">
+    <h3>A place's page · <em>filled, one line open</em></h3>
+    <section class="cast-lens cast-lens--page">
+      <h2 class="cast-lens__name">INT. THE HARBOUR OFFICE</h2>
+      <p class="cast-page__meta">7 of 40 cards · about 11 pages · on 5 of 6 boards</p>
+      <div class="cast-page__line"><p class="cast-lens__kicker">Looks</p><p class="cast-page__text">One room over the slip. A desk under the window, the tide table pinned beside it, a ledger that has not closed since 1951. Paint the colour of tea.</p></div>
+      <div class="cast-page__line"><p class="cast-lens__kicker">Sound</p><p class="cast-page__text">Rain on the one window; the tide under the floor at high water; a lorry on the ferry road, then quiet.</p></div>
+      <div class="cast-page__line"><p class="cast-lens__kicker">Notes</p><p class="cast-page__text">Nell's father's office. The telephone dials four numbers. Nobody knocks.</p></div>
+      <div class="cast-page__line"><p class="cast-lens__kicker">Not decided yet</p><p class="cast-page__text">what era the fittings are — not decided — R.</p></div>
+      <div class="cast-page__line cast-page__pictures"><p class="cast-lens__kicker">Pictures</p><p class="cast-page__text cast-page__text--muted cast-page__picture-empty">None yet. Drop a picture here, or add_picture with the place's name; the first is the face of the place on this page.</p></div>
+      <div class="cast-page__scenes">
+        <p class="cast-lens__kicker">Its scenes</p>
+        <ol class="cast-page__list">
+          <li class="cast-page__scene"><button type="button" class="cast-page__jump"><span class="cast-page__n">1</span><span class="cast-page__headline">Nell opens the office</span><span class="cast-page__pg">Low Water · p. 5</span></button></li>
+          <li class="cast-page__scene"><button type="button" class="cast-page__jump"><span class="cast-page__n">2</span><span class="cast-page__headline">Ada's column</span><span class="cast-page__pg">Low Water · p. 9</span></button></li>
+          <li class="cast-page__scene"><button type="button" class="cast-page__jump"><span class="cast-page__n">3</span><span class="cast-page__headline">Nell counts the crack in the wall again</span><span class="cast-page__pg">Low Water · p. 22</span></button></li>
+          <li class="cast-page__scene"><button type="button" class="cast-page__jump"><span class="cast-page__n">4</span><span class="cast-page__headline">Ada at the bank</span><span class="cast-page__pg">The Survey · p. 17</span></button></li>
+          <li class="cast-page__scene"><button type="button" class="cast-page__jump"><span class="cast-page__n">5</span><span class="cast-page__headline">Bram's report</span><span class="cast-page__pg">Spring Tides · p. 6</span></button></li>
+          <li class="cast-page__scene"><button type="button" class="cast-page__jump"><span class="cast-page__n">…</span><span class="cast-page__headline">and two more</span><span class="cast-page__pg"></span></button></li>
+        </ol>
+      </div>
+      <p class="cast-lens__foot">One page for the project. The phrase on any board's card is this place; rename it here and every card follows.</p>
+    </section>
+    <p>The person's page, with the questions a place answers: <b>Looks</b> asks "What would the camera see first?", <b>Sound</b> "What is heard here when nobody speaks?", <b>Notes</b> what the treatment says of it. Wants and needs do not apply and are not there. Pictures as a person has them (R57's gallery), and its scenes across every board, as a person's.</p>
+  </div>
+
+  <div class="opt stand">
+    <h3>A place's page · <em>empty, as a new one opens</em></h3>
+    <section class="cast-lens cast-lens--page">
+      <h2 class="cast-lens__name">EXT. THE FERRY ROAD</h2>
+      <p class="cast-page__meta">3 of 40 cards · about 4 pages · on 4 of 6 boards</p>
+      <div class="cast-page__line"><p class="cast-lens__kicker">Looks</p><p class="cast-page__text cast-page__text--ask">What would the camera see first?</p></div>
+      <div class="cast-page__line"><p class="cast-lens__kicker">Sound</p><p class="cast-page__text cast-page__text--ask">What is heard here when nobody speaks?</p></div>
+      <div class="cast-page__line"><p class="cast-lens__kicker">Notes</p><p class="cast-page__text cast-page__text--ask">What does the treatment say of it?</p></div>
+      <div class="cast-page__line"><p class="cast-lens__kicker">Not decided yet</p><p class="cast-page__text cast-page__text--ask">Anything about this place you have not decided, in your words.</p></div>
+      <div class="cast-page__line cast-page__pictures"><p class="cast-lens__kicker">Pictures</p><p class="cast-page__text cast-page__text--muted">None yet.</p></div>
+      <p class="cast-lens__foot">Nothing written yet; the page is the phrase and its cards until you write. Nothing is asked.</p>
+    </section>
+    <p>A page with nothing on it costs nothing and asks nothing: no record exists until a line is written, and <code>read_place</code> on an unwritten place says the phrase, its cards and "no page yet", as a person's does.</p>
+  </div>
+</div>
+
+<!-- ───────────── 3 ───────────── -->
+<h2 class="sec">3 · Where it opens from</h2>
+<div class="row">
+  <div class="opt">
+    <h3>The lens · <em>the places rows, as they ship, now open a page</em></h3>
+    <div class="stand"><section class="cast-lens">
+      <p class="cast-lens__kicker">Places</p>
+      <ul class="cast-lens__list">
+        <li class="cast-lens__row cast-lens__row--place is-focus"><span class="cast-lens__name">INT. THE HARBOUR OFFICE</span><span class="cast-lens__count">7 cards · 11 pp</span></li>
+        <li class="cast-lens__row cast-lens__row--place"><span class="cast-lens__name">EXT. THE SLIP</span><span class="cast-lens__count">6 cards · 8 4/8 pp</span></li>
+        <li class="cast-lens__row cast-lens__row--place"><span class="cast-lens__name">EXT. THE BREAKWATER</span><span class="cast-lens__count">5 cards · 7 pp</span></li>
+      </ul>
+      <p class="cast-lens__foot">Hold a place to light its cards; open it to its page.</p>
+    </section></div>
+    <p>The rows exist. Today a click holds the place and lights its cards; the page opens the way a person's does from the cast rows above it — the same gesture, the same lens. On the card, the "at" line's place opens the page too, as the "with" line's names open theirs.</p>
+  </div>
+  <div class="opt wide">
+    <h3>The brief · <em>PLACES carries the page</em></h3>
+<pre class="read">PLACES: INT. THE HARBOUR OFFICE <b>— looks: One room over the slip. A desk under the window, the tide table pinned beside it, a ledger that has not closed since 1951. Paint the colour of tea.; sound: Rain on the one window; the tide under the floor at high water; a lorry on the ferry road, then quiet.; notes: Nell's father's office. The telephone dials four numbers. Nobody knocks.; not decided, by the writer's word: what era the fittings are — not decided — R.</b>
+NOT ON THE WALL: which day of the film's time a scene falls on; <s>what a place looks like beyond its name;</s> a face, a build or a voice beyond the page's line.</pre>
+    <p>The place's line reads as a person's does, and the NOT ON THE WALL line stops naming a place's look. A place with no page prints "(no page yet)", as a person does, so the gap is still said.</p>
+  </div>
+</div>
+
+<!-- ───────────── 4 ───────────── -->
+<h2 class="sec">4 · The tools and the record</h2>
+<table class="rules">
+  <tr><th>Tool</th><th>Takes</th><th>Says</th></tr>
+  <tr><td><code>read_place</code></td><td><code>name</code> (the phrase, case aside)</td><td>the page's lines, or "no page yet", and its cards on every board in story order with their change lines</td></tr>
+  <tr><td><code>update_place</code></td><td><code>name</code>, <code>looks</code>, <code>sound</code>, <code>notes</code>, <code>open</code>, any subset</td><td>Wrote the harbour office's page (looks, sound). — the first line written makes the record</td></tr>
+  <tr><td><code>rename_place</code></td><td><code>name</code>, <code>to</code></td><td>Renamed "INT. THE HARBOUR OFFICE" to "INT. THE HARBOURMASTER'S OFFICE" on 7 cards across 5 boards; the page followed.</td></tr>
+  <tr><td><code>add_picture</code></td><td><code>place</code> beside <code>name</code>/<code>id</code></td><td>as for a person: the file on the project, the first the face of the place</td></tr>
+  <tr><td><code>list_board</code></td><td>—</td><td>the places line says which have a page: "INT. THE HARBOUR OFFICE (page: looks, sound)"</td></tr>
+  <tr><td>the record</td><td>—</td><td>"wrote the harbour office's page (looks)"; "left something about the slip open: …"; "renamed the place …"</td></tr>
+  <tr><td>the project</td><td><code>places: [{ name, looks, sound, notes, open }]</code> on the project record beside <code>characters</code>, keyed by the phrase; <code>normalizeProject</code> repairs; a place with no line is not stored</td><td>—</td></tr>
+</table>
+<p class="honest"><b>What it costs, and one rule.</b> A record on the project, three tools, a page in the lens, the brief's line, one section of the writer's guide. The rule: <b>the phrase is the key.</b> "INT. THE HARBOUR OFFICE" and "the harbour office" are two places until the writer says otherwise, as two spellings of a name are two people until renamed — and the same fix applies: rename one to the other and the cards follow, the pages merge, the first line written wins. A place's page is not a slugline's: the page is the writer's words and the heading prints the phrase as before.</p>
+
+<!-- ───────────── 5 ───────────── -->
+<div class="ask">
+  <b>Recommended: as drawn</b> — a page that fills when written on, keyed by the phrase, in the lens the places already sit in, with the person's gestures and the person's tools renamed. <b>The alternatives:</b> a note on the first card at that place (a drawer nobody reads, and the brief prints the first card's note for every scene there); the premise for the era alone (true of the film, not of a place, and the office's window is not the premise's); a separate "locations" sheet with its own list (a second place where places live — the combine log's rule says no).<br><br>
+  <b>Is this the best we could do?</b> Two things this does not do. It does not relate an interior to its exterior ("INT. THE HARBOUR OFFICE" and "EXT. THE HARBOUR OFFICE" are two pages; a writer who wants one can name the place without the prefix and let the heading's INT./EXT. come from the card, which is a rule the app does not have yet). And it does not give a place a picture the video tool can hold across two hundred segments — that is 4b's question, and the page is where such a picture would live. Say whether the page waits for the day (R78) or goes first; it is the larger of the two and the one the reader asked for most.
+</div>
+</body>
+</html>

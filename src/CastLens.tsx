@@ -24,7 +24,7 @@ import {
 import { EditableText } from "./EditableText";
 import type { Asset } from "./board/account";
 import type { CastElsewhere } from "./board/project";
-import { placeKey, type PlaceField, type PlacePage } from "./board/places";
+import { placeKey, placeSubject, type PlaceField, type PlacePage } from "./board/places";
 
 type CastLensProps = {
   open: boolean;
@@ -300,7 +300,7 @@ export function CastLens({
               </div>
             ))}
             {/* What is not decided about this place, in the writer's words: listed, never asked. */}
-            {(placeSaved?.open ?? "").trim() || leavingOpen === `place:${placeKey(placeName)}` ? (
+            {(placeSaved?.open ?? "").trim() || leavingOpen === placeSubject(placeName) ? (
               <div className="cast-page__line">
                 <p className="cast-lens__kicker">Not decided yet</p>
                 <span className="open-field">
@@ -316,22 +316,22 @@ export function CastLens({
                     }}
                     ariaLabel={`What is not decided about ${placeName}`}
                     placeholder="not decided: say what, in your words"
-                    autoFocus={leavingOpen === `place:${placeKey(placeName)}`}
+                    autoFocus={leavingOpen === placeSubject(placeName)}
                   />
                 </span>
               </div>
             ) : (
-              <button type="button" className="field-offer cast-page__offer" onClick={() => setLeavingOpen(`place:${placeKey(placeName)}`)}>
+              <button type="button" className="field-offer cast-page__offer" onClick={() => setLeavingOpen(placeSubject(placeName))}>
                 Something not decided yet…
               </button>
             )}
             <PagePictures
               name={placeRow?.name ?? placeName}
-              pictures={pictures === null ? null : pictures.filter((asset) => asset.subject === `place:${placeKey(placeName)}` && asset.kind === "picture")}
+              pictures={pictures === null ? null : pictures.filter((asset) => asset.subject === placeSubject(placeName) && asset.kind === "picture")}
               uploading={uploading}
-              onAdd={(files) => onAddPictures(`place:${placeKey(placeName)}`, files)}
+              onAdd={(files) => onAddPictures(placeSubject(placeName), files)}
               onRemove={onRemovePicture}
-              onDownload={() => onDownloadPictures(`place:${placeKey(placeName)}`, placeRow?.name ?? placeName)}
+              onDownload={() => onDownloadPictures(placeSubject(placeName), placeRow?.name ?? placeName)}
             />
             <PlaceScenes name={placeName} notes={notes} reading={reading} onJump={onJump} />
             <p className="cast-lens__foot">One page for the project: the phrase on any board's card is this place, spelt any way.</p>

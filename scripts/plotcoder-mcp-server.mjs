@@ -104,7 +104,8 @@ import {
 import { selectStretch, stretchState } from "../src/board/stretch.js";
 import { findCards } from "../src/board/find.js";
 import { loadProvider, providerNames } from "./providers/index.mjs";
-import { PLACE_FIELDS, placeKey, placeLine, placePage, renamePlacePage, updatePlace } from "../src/board/places.js";
+import { PLACE_FIELDS, placeFilesMove, placeKey, placeLine, placePage, placeSubject, renamePlacePage, updatePlace } from "../src/board/places.js";
+import { movePlaceFiles } from "../src/board/placeFiles.js";
 import { carryShots, describeShots, findShot, placeShots, rewriteShot, shotBrief, shotIds, shotPrompt, shotSubject, shotsOfText } from "../src/board/shots.js";
 
 /**
@@ -3718,7 +3719,7 @@ server.registerTool(
     const firstOf = (subjectKey) => (pictures ?? []).find((row) => row.subject === subjectKey) ?? null;
     const references = [];
     const missing = [];
-    for (const [who, key, kind] of [...people.map((person) => [person.name, person.id, "person"]), ...places.map(([key, spelt]) => [spelt, `place:${key}`, "place"])]) {
+    for (const [who, key, kind] of [...people.map((person) => [person.name, person.id, "person"]), ...places.map(([key, spelt]) => [spelt, placeSubject(spelt), "place"])]) {
       const row = firstOf(key);
       if (!row) { missing.push(`${kind === "person" ? "" : "the place "}${who}`); continue; }
       const signed = await account.client.storage.from("projects").createSignedUrl(row.path, 3600);
@@ -4043,7 +4044,7 @@ server.registerTool(
     }
     // A place's pictures live under its phrase, spelt any way (R79), as the app's gallery keeps them.
     if (args.place?.trim()) {
-      const filed = await fileAsset(account, "picture", `place:${placeKey(args.place)}`, args.path);
+      const filed = await fileAsset(account, "picture", placeSubject(args.place), args.path);
       if (filed.error) return ok(filed.error);
       return ok(`Added "${filed.name}" to the page of "${args.place.trim()}" (saved to the account; the writer's gallery has it).`, { id: filed.id, place: args.place.trim() });
     }
@@ -4062,7 +4063,7 @@ server.registerTool(
   {
     title: "List the project's files",
     description:
-      "Through the account door: every file on the working project — pictures on people's pages, takes on cards, other files — with its id, kind, what it is about (a character id, a card id, or run:<ids>), name and size.",
+      "Through the account door: every file on the working project — pictures on people's pages, takes on cards, other files — with its id, kind, what it is about (a character id, place:<the place's phrase>, a card id, or run:<ids>), name and size.",
     inputSchema: {},
   },
   async () => {
@@ -4817,7 +4818,7 @@ server.registerTool(
   {
     title: "Rename a place",
     description:
-      "Rename a place on every card that carries it, on every board of the project, and its page with it: \"INT. THE HARBOUR OFFICE\" to \"INT. THE HARBOURMASTER'S OFFICE\". Two spellings are two places until renamed; renaming one to the other makes them one, and their pages merge line by line, the line already written on the new one standing.",
+      "Rename a place on every card that carries it, on every board of the project, and its page with it: \"INT. THE HARBOUR OFFICE\" to \"INT. THE HARBOURMASTER'S OFFICE\". Two spellings are two places until renamed; renaming one to the other makes them one, and their pages merge line by line, the line already written on the new one standing. Through the account door the place's pictures follow to the new name, and join the pictures already there: none is replaced.",
     inputSchema: { name: z.string().min(1), to: z.string().min(1) },
   },
   async (args) => {
@@ -4827,7 +4828,18 @@ server.registerTool(
     const openId = open.boardId ?? held.project.activeBoardId;
     const parts = placeScenes(held.project, held.boards, openId, open.state, args.name).filter((part) => part.on.length);
     const hadPage = Boolean(placePage(held.project, args.name));
-    if (!parts.length && !hadPage) return ok(`No card is at "${args.name.trim()}" and it has no page. read_wall lists the places.`);
+    // The pictures are files on the account, filed under the phrase (R79): they follow it, and with no account there are none.
+    const followed = async () => {
+      if (!placeFilesMove(args.name, to) || !(await findAccount())?.projectId) return { words: "", pictures: 0 };
+      const { moved, error } = await movePlaceFiles(accountDoor.client, accountDoor.projectId, args.name, to);
+      if (error) return { words: `its pictures did not follow (${error}): list_files has them under "${placeSubject(args.name)}"`, pictures: 0 };
+      return { words: moved ? `${moved} picture${moved === 1 ? "" : "s"} followed` : "", pictures: moved };
+    };
+    if (!parts.length && !hadPage) {
+      const files = await followed();
+      if (files.pictures) return ok(`No card is at "${args.name.trim()}" and it has no page; ${files.words} to "${to}".`, { to, cards: 0, boards: [], pictures: files.pictures });
+      return ok(`No card is at "${args.name.trim()}" and it has no page${files.words ? `; ${files.words}` : ""}. read_wall lists the places.`);
+    }
     let cards = 0;
     let current = openId;
     // Each board through the kernel: open it, set the place, and come back — one change on each board's record.
@@ -4849,7 +4861,8 @@ server.registerTool(
     const after = await readProject();
     const moved = renamePlacePage(after.project, args.name, to);
     if (moved !== after.project) await writeProject(moved, after.boards, after.rev, after.base);
-    return ok(`Renamed "${args.name.trim()}" to "${to}" on ${cards} card${cards === 1 ? "" : "s"} across ${parts.length} board${parts.length === 1 ? "" : "s"}${hadPage ? "; the page followed" : ""}. The open board is the one you were on.`, { to, cards, boards: parts.map((part) => part.meta.id) });
+    const files = await followed();
+    return ok(`Renamed "${args.name.trim()}" to "${to}" on ${cards} card${cards === 1 ? "" : "s"} across ${parts.length} board${parts.length === 1 ? "" : "s"}${hadPage ? "; the page followed" : ""}${files.words ? `; ${files.words}` : ""}. The open board is the one you were on.`, { to, cards, boards: parts.map((part) => part.meta.id), pictures: files.pictures });
   },
 );
 

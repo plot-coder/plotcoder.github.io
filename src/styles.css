@@ -5762,3 +5762,116 @@ body {
   border-bottom-color: color-mix(in srgb, var(--warm, #c0563f) 45%, transparent);
   color: var(--warm, #c0563f);
 }
+
+/* Agents, refreshed (2026-09-27): who is reading, then one way in at a time. */
+.agents__who {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+  margin: 0.9rem 0 0;
+}
+
+@media (max-width: 30rem) {
+  .agents__who {
+    grid-template-columns: 1fr;
+  }
+}
+
+.agents__card {
+  padding: 0.8rem 0.9rem;
+  border: 1px solid var(--bar-border);
+  border-radius: 0.7rem;
+}
+
+.agents__card.is-first {
+  border-color: var(--over);
+}
+
+.agents__card h3 {
+  margin: 0 0 0.25rem;
+  font-size: 1.05rem;
+  font-weight: 400;
+}
+
+.agents__card p {
+  margin: 0 0 0.7rem;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.agents__step + .agents__step {
+  margin-top: 0.6rem;
+}
+
+.agents__say {
+  margin: 0 0 0.3rem;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.agents__pre {
+  white-space: pre-wrap;
+}
+
+.agents__more {
+  margin: 0.7rem 0 0.3rem;
+  padding: 0 0 1px;
+  border: 0;
+  border-bottom: 1px solid var(--bar-border);
+  background: transparent;
+  color: var(--muted);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.74rem;
+  cursor: pointer;
+}
+
+.agents__folds {
+  margin-top: 1.1rem;
+  border-bottom: 1px solid var(--bar-border);
+}
+
+.agents__fold {
+  border-top: 1px solid var(--bar-border);
+}
+
+.agents__fold-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 0.6rem 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.86rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.agents__fold-head small {
+  margin-left: 0.5rem;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.agents__fold-head > span:last-child {
+  color: var(--muted);
+}
+
+.agents__fold-body {
+  padding: 0 0 0.8rem;
+}
+
+.agents .account__group:first-of-type {
+  margin-top: 1.1rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--bar-border);
+}
+
+.agents .shots__steps {
+  margin: 0.3rem 0 0.8rem;
+}

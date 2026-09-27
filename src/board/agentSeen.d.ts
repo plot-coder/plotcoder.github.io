@@ -11,4 +11,4 @@ export declare function agoShort(at: string, now?: string): string;
 export declare function agoWords(at: string, now?: string): string;
 export declare function agentSeen(input?: { present?: string[]; sessionAt?: string | null; record?: { by: string; at: string; lines: string[] }[]; now?: string }): AgentSeen;
 export declare function basicHeader(email: string, password: string): string;
-export declare function firstMessage(projectName: string): string;
+export declare function firstMessage(projectName: string, boards?: number): string;

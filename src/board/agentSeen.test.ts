@@ -49,5 +49,6 @@ describe("what the writer copies (R81)", () => {
   it("writes a first message that names the project and changes nothing", () => {
     expect(firstMessage("Low Water")).toBe('I am working in PlotCoder on my project "Low Water", and I have it open on my screen. Use the PlotCoder tools: call list_projects, open_project with "Low Water", then read_wall, and tell me in a few sentences what is on the wall and what it asks. Change nothing until I say.');
     expect(firstMessage("")).toContain("call list_projects, then read_wall");
+    expect(firstMessage("Low Water", 6)).toContain('open_project with "Low Water", then read_project, since it has 6 boards, and tell me in a few sentences what is on each and what it asks. Change nothing until I say.');
   });
 });

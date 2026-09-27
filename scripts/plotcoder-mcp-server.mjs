@@ -106,7 +106,7 @@ import { findCards } from "../src/board/find.js";
 import { loadProvider, providerNames } from "./providers/index.mjs";
 import { PLACE_FIELDS, placeFilesMove, placeKey, placeLine, placePage, placeSubject, renamePlacePage, updatePlace } from "../src/board/places.js";
 import { movePlaceFiles } from "../src/board/placeFiles.js";
-import { carryShots, describeShots, findShot, placeShots, rewriteShot, shotBrief, shotIds, shotPrompt, shotSubject, shotsOfText } from "../src/board/shots.js";
+import { carryShots, describeShots, findShot, placeShots, rewriteShot, shotBrief, shotIds, shotPrompt, shotReferences, shotSubject, shotsOfText } from "../src/board/shots.js";
 
 /**
  * One PlotCoder server, with its own doors and its own trail: the stdio door
@@ -3474,7 +3474,7 @@ server.registerTool(
     if (args.shot?.trim()) {
       const filed = await shotFiles();
       const found = findShot(state, args.shot);
-      const made = shotBrief(state, args.shot, { look: project.look, places: project.places ?? [], title: board?.name, order: storyOrder(state), frame: found && filed ? firstFrame(filed.files.get(found.shot.id))?.name : undefined });
+      const made = shotBrief(state, args.shot, { look: project.look, places: project.places ?? [], title: board?.name, order: storyOrder(state), frame: found && filed ? firstFrame(filed.files.get(found.shot.id))?.name : undefined, pictures: (await referencePictures()) ?? undefined });
       return ok(made ?? `No shot "${args.shot}" on this board. list_shots lists them.`);
     }
     if (!args.ids?.length) return ok("Say which: ids (one card, or several in wall order) or shot (a shot's id).");
@@ -3780,6 +3780,15 @@ async function shotFiles() {
   for (const row of data ?? []) files.set(row.subject.slice(5), [...(files.get(row.subject.slice(5)) ?? []), row]);
   return { account, files };
 }
+/** The first picture on each page of the project, by the key it is filed under — a person's id, or place:<phrase>; null with no account door. */
+async function referencePictures() {
+  const account = await findAccount();
+  if (!account?.projectId) return null;
+  const { data } = await account.client.from("assets").select("subject, name, created_at").eq("project_id", account.projectId).eq("kind", "picture").not("subject", "like", "shot:%").order("created_at");
+  const first = {};
+  for (const row of data ?? []) if (row.subject && !(row.subject in first)) first[row.subject] = row.name;
+  return first;
+}
 /** The still that is a shot's first frame: the chosen one, or the newest. */
 function firstFrame(rows) {
   const stills = (rows ?? []).filter((row) => row.kind === "picture");
@@ -3799,7 +3808,7 @@ server.registerTool(
   {
     title: "List a scene's shots",
     description:
-      "The shots of one scene (id, or its headline), or with none the whole board scene by scene: each shot's id, what the camera sees, how it moves and how long, whether a still is filed as its first frame, and as facts — never questions — the seconds the shots say against the scene's length (a page a minute), and script that stands above the first shot line and so is in no shot. A shot is a note in the scene's text, [[shot k3f9: what · move · 4s]]: read_pages shows the lines where they stand. prompts: true prints each shot's prompt for a still, to copy into an image tool. read_wall asks nothing of shots.",
+      "The shots of one scene (id, or its headline), or with none the whole board scene by scene: each shot's id, what the camera sees, how it moves and how long, whether a still is filed as its first frame, and as facts — never questions — the seconds the shots say against the scene's length (a page a minute), and script that stands above the first shot line and so is in no shot. A shot is a note in the scene's text, [[shot k3f9: what · move · 4s]]: read_pages shows the lines where they stand. Above the shots, what to make first: each person a shot's line names and each place, with whether a picture is on its page — a still holds a face from shot to shot only when a picture of the person is attached, so the references come before the stills; add_picture files one. prompts: true prints each shot's prompt for a still, to copy into an image tool, and a prompt for each reference that has no picture yet. read_wall asks nothing of shots.",
     inputSchema: { id: z.string().optional().describe("One scene, by id or headline; without it, every scene of the open board."), prompts: z.boolean().optional() },
   },
   async (args) => {
@@ -3822,6 +3831,17 @@ server.registerTool(
       `the look: ${(project.look ?? "").trim() ? `"${project.look.trim()}"` : "(none set: set_look holds what every still shares)"}`,
       ...(filed ? [] : ["stills and takes are files on the project: with no account door, none are listed"]),
     ];
+    // What to make before any still (the rehearsal): a picture of each person a shot names and of each place, the first on its page.
+    const pictures = await referencePictures();
+    const references = shotReferences(state, cards, options);
+    if (references.length) {
+      const waiting = pictures ? references.filter((item) => !pictures[item.key]) : [];
+      lines.push(`references, to make before the stills — a still holds a face only when a picture of it is attached: ${references.length}${pictures ? `, ${waiting.length} with no picture yet` : " (with no account door, whether a page has a picture is not known)"}`);
+      for (const item of references) {
+        lines.push(`    ${item.kind === "place" ? "the place " : ""}${item.name} — ${pictures ? (pictures[item.key] ? `"${pictures[item.key]}", the first picture on the page` : "no picture yet") : "picture not known"}${item.prompt ? "" : ` — the page holds no looks: ${item.kind === "place" ? "update_place" : "update_character"} with looks, in the writer's words, before a prompt can be made`}`);
+        if (args.prompts && item.prompt && !(pictures && pictures[item.key])) lines.push(`       prompt: ${item.prompt}`);
+      }
+    }
     for (const scene of args.id ? scenes : broken) {
       lines.push(`  "${scene.headline}" (${scene.id}) — ${scene.shots.length} shot${scene.shots.length === 1 ? "" : "s"}${scene.shots.length ? `, ${scene.seconds} seconds said${scene.unsaid ? ` (${scene.unsaid} with no length)` : ""} of about ${scene.sceneSeconds} the scene runs` : scene.written ? "" : ": unwritten — a shot is a line of the script, so write_scene comes first"}${scene.uncovered ? "; script stands above the first shot line, in no shot" : ""}`);
       for (const [index, shot] of scene.shots.entries()) {

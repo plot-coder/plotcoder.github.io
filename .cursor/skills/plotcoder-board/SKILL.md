@@ -967,6 +967,15 @@ page's words; `read_wall` asks nothing of shots. No record stands beside
 the card: the script carries the shot, and a shot runs from its line to
 the next shot line or the end of its scene.
 
+**References first.** A still holds a face from shot to shot only when a
+picture of the person is attached to the prompt: words describe a kind of
+person, a picture this one. So the order is the look, then a picture of
+each person and each place on its page (`add_picture`), then the stills.
+`list_shots` says above the shots which references a scene's shots need and
+which have no picture yet, and with `prompts: true` a prompt for each; a
+shot's brief says what to attach. A page with no looks gets no prompt:
+ask the writer for the looks, and invent none.
+
 - `set_shots` — break a written scene into shots in one call: for each,
   `what`, `at` (a few words quoted from the line of the script where the
   shot begins), and `move` and `seconds` when the writer has them. The line

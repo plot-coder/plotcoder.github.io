@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { applyCommand, emptyState, noteEighths, type BoardState, type Command } from "./reducer";
-import { carryShots, describeShots, findShot, newShotId, parseShotLine, placeShots, rewriteShot, shotBrief, shotLine, shotPrompt, shotsOfText, shotSubject } from "./shots";
+import { carryShots, describeShots, findShot, newShotId, parseShotLine, placeShots, rewriteShot, shotBrief, shotLine, shotPrompt, shotReferences, shotsOfText, shotSubject } from "./shots";
 import { describeChange } from "./record";
 import { fromFountain } from "./fountain";
 import { readWall } from "./readWall";
@@ -136,6 +136,14 @@ describe("the wall with shots on it (R80)", () => {
     expect(brief).toContain("Ada Finch — (no looks on their page)");
     expect(brief).not.toContain("NOT ON THE WALL");
     expect(shotBrief(state, "zzzz", options)).toBeNull();
+    // The references come first: who the shots' lines name, and the place; a page with no looks has no prompt, and none is invented.
+    expect(shotReferences(state, state.notes, options)).toEqual([
+      { kind: "person", key: "nell", name: "Nell Carrow", prompt: "Character reference, face and full figure, plain background, neutral light: Nell Carrow, Forty, oilskin, a burn on the left wrist. 35mm, desaturated greens --sref 1234." },
+      { kind: "person", key: "ada", name: "Ada Finch", prompt: null },
+      { kind: "place", key: "place:int. the harbour office", name: "INT. THE HARBOUR OFFICE", prompt: "Location reference, wide, no people: interior, the harbour office: One room over the slip. 35mm, desaturated greens --sref 1234." },
+    ]);
+    // With the project's files in sight the brief says what to attach, and what is not made yet.
+    expect(shotBrief(state, ids[1], { ...options, pictures: { nell: "nell.png" } })).toContain('ATTACH, AS REFERENCES: Nell Carrow — "nell.png"; the place, INT. THE HARBOUR OFFICE — no picture yet: make it first');
   });
 
   it("comes back from a Fountain file with its shot lines where they stood", () => {

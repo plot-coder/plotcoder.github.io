@@ -118,3 +118,70 @@ export function agentsInstructions() {
     `The day-one guide is ${AGENTS.dayOne}; the whole guide, for pages, exports, a series, structures and production, is ${AGENTS.guide}.`,
   ].join("\n\n");
 }
+
+/**
+ * The on-ramp as a person meets it (the Agents sheet, refreshed 2026-09-27;
+ * drawn in docs/mockups/for-agents-refreshed.html). The words above are an
+ * agent's and stay as every round tuned them; these are the short lines a
+ * person reads first, each held to the door it shortens — `from` is a
+ * phrase of that door's own text or code, and the test says so — with the
+ * door's whole text one tap behind it.
+ */
+export const AGENTS_SHEET = {
+  lead: "An agent works this wall with the same tools you have. You direct; it operates; what it does shows here as it lands.",
+  hand: "Send it as a message. An agent reads a page of text better than it reads this sheet.",
+  tabs: [
+    {
+      id: "claude-app",
+      name: "Claude app",
+      doors: ["hosted"],
+      steps: [
+        { say: "Settings, Connectors, Add custom connector. Give it this address, and choose No sign-in on its Authentication screen.", copy: "https://mcp.plotcoder.com", from: "https://mcp.plotcoder.com" },
+        { say: "Then one header, named Authorization, which holds your email and password. Its value is made on this device, from what you type, in", agent: true },
+      ],
+    },
+    {
+      id: "code",
+      name: "Claude Code · Cursor",
+      doors: ["mcp", "account"],
+      steps: [
+        { say: "Once, from any folder. Then start the session again: a server added inside a session connects on the next one.", copy: "claude mcp add plotcoder-board -s user -- npx -y plotcoder-board@latest", from: "claude mcp add plotcoder-board -s user -- npx -y plotcoder-board@latest" },
+        { say: "To work your account and not a folder, give the server your sign-in where it is started.", copy: "claude mcp add plotcoder-board -s user \\\n  -e PLOTCODER_EMAIL=you@example.com \\\n  -e PLOTCODER_PASSWORD=… \\\n  -- npx -y plotcoder-board@latest", from: "-e PLOTCODER_EMAIL=you@example.com" },
+      ],
+    },
+    {
+      id: "shell",
+      name: "A shell, no setup",
+      doors: ["shell", "where"],
+      steps: [
+        { say: "One call from a shell, with nothing wired in and no restart. This one reads the app's words and changes nothing.", copy: "npx -y plotcoder-board@latest call list_words", from: "npx -y plotcoder-board@latest call" },
+        { say: "Without an account the wall is a folder: run it from the folder whose wall you mean, and choose one that will outlive the session." },
+      ],
+    },
+    {
+      id: "server",
+      name: "Your own server",
+      doors: ["hosted", "page"],
+      steps: [
+        { say: "Run PlotCoder's server on a port of your own; any MCP client connects to it over HTTP with your sign-in on the request.", copy: "npx -y plotcoder-board@latest serve", from: "npx -y plotcoder-board@latest serve" },
+      ],
+    },
+  ],
+  folds: [
+    { id: "first", title: "What an agent calls first", hint: "six reads that change nothing", whole: "firstNote" },
+    {
+      id: "rules",
+      title: "The rules it keeps",
+      hint: "questions, not fixes, until you say",
+      whole: "rules",
+      lines: [
+        "Questions, not fixes, until you say.",
+        "No opinions about how many beats there should be.",
+        "Page counts are estimates.",
+        "It asks before it deletes a board, a project or the account, unlocks the numbers, removes a file, or makes an account.",
+        "It invents no person and no logline; what you have not decided is held open in your words, never guessed.",
+      ],
+    },
+    { id: "trust", title: "Before you trust it with your account", hint: "it signs in as you", whole: "person" },
+  ],
+};

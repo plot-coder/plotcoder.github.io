@@ -1024,7 +1024,7 @@ export function App() {
           })()}
         />
         <WordsSheet open={wordsOpen} onClose={() => setWordsOpen(false)} onShow={showWord} onAgents={() => setAgentsOpen(true)} />
-        <AgentsSheet open={agentsOpen} onClose={() => setAgentsOpen(false)} />
+        <AgentsSheet open={agentsOpen} onClose={() => setAgentsOpen(false)} onAgent={() => setAgentOpen(true)} />
         <HelpSheet
           open={helpOpen}
           onClose={() => setHelpOpen(false)}

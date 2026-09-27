@@ -6192,3 +6192,165 @@ body {
     grid-column: 1 / -1;
   }
 }
+
+/* Set a length (2026-09-27): the count beside the story map's tab is the control, and a board nobody gave a length asks for one. */
+.story-map__tabs {
+  position: absolute;
+  left: 1.1rem;
+  top: -0.85rem;
+  z-index: 1;
+  display: flex;
+  gap: 0.35rem;
+}
+
+.story-map__tabs .story-map__tab {
+  position: static;
+}
+
+.story-map__length {
+  letter-spacing: 0.04em;
+  text-transform: none;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.story-map__length small {
+  margin-left: 0.4rem;
+  font-size: 1em;
+  color: var(--muted);
+}
+
+.story-map__length.is-asking {
+  border-color: var(--over);
+  color: var(--over);
+}
+
+.story-map__length-away {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  border: 0;
+  background: transparent;
+  cursor: default;
+}
+
+.story-map__menu {
+  position: absolute;
+  left: 1.1rem;
+  bottom: calc(100% + 1.2rem);
+  z-index: 2;
+  width: min(21rem, calc(100vw - 2.2rem));
+  padding: 0.5rem;
+  border: 1px solid var(--bar-border);
+  border-radius: 0.8rem;
+  background: var(--bar);
+  box-shadow: var(--bar-shadow);
+}
+
+.story-map__menu-k {
+  margin: 0.4rem 0.5rem 0.5rem;
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.story-map__opt {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  border: 0;
+  border-radius: 0.4rem;
+  background: transparent;
+  color: var(--ink);
+  font-family: "Iowan Old Style", Palatino, "Palatino Linotype", Georgia, serif;
+  font-size: 1rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.story-map__opt small,
+.story-map__own small {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.story-map__opt:hover,
+.story-map__opt:focus-visible,
+.story-map__opt.is-on,
+.story-map__own.is-on {
+  background: var(--slot);
+  outline: none;
+}
+
+.story-map__opt.is-on span::before,
+.story-map__own.is-on label::before {
+  content: "✓ ";
+  color: var(--over);
+}
+
+.story-map__own {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: 0.4rem;
+}
+
+.story-map__own label {
+  font-family: "Iowan Old Style", Palatino, "Palatino Linotype", Georgia, serif;
+  font-size: 1rem;
+  white-space: nowrap;
+}
+
+.story-map__own input {
+  width: 3.6rem;
+  min-width: 0;
+  min-height: 1.7rem;
+  padding: 0 0.4rem;
+  border: 1px solid var(--bar-border);
+  border-radius: 0.3rem;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.82rem;
+}
+
+.story-map__own input.is-wide {
+  flex: 1;
+  width: auto;
+}
+
+.story-map__set {
+  margin-left: auto;
+  min-height: 1.7rem;
+  padding: 0 0.7rem;
+  border: 1px solid var(--bar-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  font-size: 0.64rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.story-map__set:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.story-map__menu-note {
+  margin: 0.5rem 0.6rem 0.3rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--bar-border);
+  font-size: 0.7rem;
+  line-height: 1.4;
+  color: var(--muted);
+}

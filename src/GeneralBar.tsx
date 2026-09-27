@@ -61,6 +61,8 @@ type GeneralBarProps = {
   runtimeEighths: number;
   targetEighths: number;
   onSetTarget: (pages: number) => void;
+  /** Whether the length is the writer's own: until it is, the bar says the pages and no target. */
+  targetChosen: boolean;
   onFit: () => void;
   onZoomIn: () => void;
   onZoomOut: () => void;
@@ -99,13 +101,14 @@ export function GeneralBar({
   runtimeEighths,
   targetEighths,
   onSetTarget,
+  targetChosen,
   onFit,
   onZoomIn,
   onZoomOut,
 }: GeneralBarProps) {
   const nextChange = formatNextChange(theme);
   const followingClock = theme === scheduled;
-  const over = runtimeEighths - targetEighths;
+  const over = targetChosen ? runtimeEighths - targetEighths : 0;
   const [wallOpen, setWallOpen] = useState(false);
 
   useEffect(() => {
@@ -223,16 +226,20 @@ export function GeneralBar({
                 <EditableText
                   as="span"
                   className="general-bar__target"
-                  value={String(Math.round(targetEighths / EIGHTHS_PER_PAGE))}
-                  onCommit={(text) => onSetTarget(Number(text.replace(/[^0-9]/g, "")))}
+                  value={targetChosen ? String(Math.round(targetEighths / EIGHTHS_PER_PAGE)) : ""}
+                  onCommit={(text) => {
+                    const pages = Number(text.replace(/[^0-9]/g, ""));
+                    if (pages) onSetTarget(pages);
+                  }}
                   ariaLabel="Target script length in pages"
-                  placeholder="120"
+                  placeholder="a length"
                 />{" "}
                 pages
                 {over > 0 ? ` · ${formatPages(over)} over` : ""}
                 <br />
                 <span className="readout__note">
-                  about {formatMinutes(runtimeEighths)} of {formatMinutes(targetEighths)}
+                  about {formatMinutes(runtimeEighths)}
+                  {targetChosen ? ` of ${formatMinutes(targetEighths)}` : "; the story map sets a length"}
                 </span>
               </span>
               <span />

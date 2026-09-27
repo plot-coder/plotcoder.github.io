@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { sceneNumbers } from "./numbering";
 import {
+  targetChosen,
   threadOrder,
   unlinkedCards,
   formatMinutes,
@@ -2084,5 +2085,20 @@ describe("a place or a when set through update_note decides it (pass 1b, entry 6
     expect(card.locationOpen).toBe("");
     expect(card.when).toBe("first light");
     expect(card.whenOpen).toBe("");
+  });
+});
+
+describe("whether a board's length is the writer's (Robert, 2026-09-27)", () => {
+  it("is not until they give a kind, a number of their own, or their words for why not", () => {
+    const fresh = emptyState();
+    expect(targetChosen(fresh)).toBe(false);
+    expect(targetChosen(applyCommand(fresh, { type: "set_target", kind: "hour" }).state)).toBe(true);
+    expect(targetChosen(applyCommand(fresh, { type: "set_target", kind: "feature" }).state)).toBe(true);
+    expect(targetChosen(applyCommand(fresh, { type: "set_target", targetEighths: 45 * 8 }).state)).toBe(true);
+    expect(targetChosen(applyCommand(fresh, { type: "set_target", open: "a short, or a feature: not decided" }).state)).toBe(true);
+    // The words taken back, the board is where it began.
+    const opened = applyCommand(fresh, { type: "set_target", open: "not decided" }).state;
+    expect(targetChosen(applyCommand(opened, { type: "set_target", open: "" }).state)).toBe(false);
+    expect(targetChosen(null)).toBe(false);
   });
 });

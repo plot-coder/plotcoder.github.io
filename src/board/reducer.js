@@ -155,6 +155,17 @@ export const TARGET_KINDS = {
   "half-hour": { words: "a half-hour", eighths: 30 * 8 },
 };
 
+/**
+ * Whether the board's length is the writer's: they gave a kind, a number of
+ * their own, or their words for why it is not decided. A board holds 120
+ * pages until then, which is the app's number and not theirs (Robert,
+ * 2026-09-27), so nothing should say "of 120" as though it had been chosen.
+ * A writer who means exactly 120 says "a feature".
+ */
+export function targetChosen(state) {
+  return Boolean(TARGET_KINDS[state?.targetKind] || (state?.targetOpen ?? "").trim() || (typeof state?.targetEighths === "number" && state.targetEighths !== DEFAULT_TARGET_EIGHTHS));
+}
+
 /** "a feature", or "" when the target is a number or nothing. */
 export function targetWords(state) {
   return TARGET_KINDS[state?.targetKind]?.words ?? "";

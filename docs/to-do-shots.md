@@ -68,8 +68,13 @@ Robert made the stills in Grok. What it found, in the order it found it:
   repost** (Robert). Not the app's to fix inside Grok; the sheet's part is
   to take a pasted image and to hold the references where they can be
   copied out. With the redraw.
-- [ ] **The sheet redrawn**: paste, the count across the board and "next
-  without a still", the strip of frames, the references beside each shot.
+- [x] **The sheet redrawn as a walkthrough**, 2026-09-27, on Robert's
+  word that the app must walk the writer through the references before
+  any shot's prompt: `docs/mockups/r80-the-walkthrough.html` — the look,
+  the people, the places, the shots; copy, name, bring back; a gate per
+  scene; a tick or a picture for a reference, a picture for a shot; the
+  strip. **Waiting on his word.** It replaces section 3 of the first
+  mockup; the mark in Pages (2 A or 2 B) is still his to choose.
 - [ ] Still to hear from the rehearsal: what Robert changed in each prompt
   to get a still he would keep.
 

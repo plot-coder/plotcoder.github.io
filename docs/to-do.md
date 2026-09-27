@@ -10,6 +10,9 @@ done and merged, what is left, and the order I would take it in.
 
 ## Next, for whoever picks this up (2026-09-27, after pass 2b)
 
+**Released as 0.1.58** (pass 2b's fixes): npm, the pin, the function
+redeployed and the live door answering 0.1.58.
+
 **Pass 2b has run** — a fresh agent on "Last Orders" from the wall alone,
 in a session Robert opened, driven from here: 36 entries
 (`blind-runs/pass-2b-report.md`), worked in `docs/to-do-pass-2b.md`. The

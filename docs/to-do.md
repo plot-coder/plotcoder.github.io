@@ -16,7 +16,7 @@ list for whatever you pick up. Everything below this section is history.
 **Where things stand.** Every pass on the claim board has run: goals 1 to 3
 (a complete script, a person and an agent handing over, a project past the
 window worked hands-off) and goal 4's first pass (the brief read blind).
-`main`, npm and the hosted door carry **0.1.66**. What that release holds
+`main`, npm and the hosted door carry **0.1.67** (2026-09-27: the small list, R80's shots and the Shots sheet, R81's Your agent, the title band, the story map). Before it, 0.1.66. What that release holds
 beyond 0.1.64: R78 (a scene's day and light, the card's fifth line), R79 (a
 place's page, in the cast lens and on the door), and pass 4b's seam
 (`build_segment` hands a provider module the brief and files a take; a

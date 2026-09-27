@@ -21,9 +21,10 @@ pass could not measure was the record of pass 1b's changes, since the
 record began after them, and **the desktop app had cached the connector's
 tool list** without `read_record` and `hand_over` — the on-ramp now says
 to turn the connector off and on when the guide names a tool the session
-does not show. **The largest thing held for Robert:** the hosted door's
-session is the connector's, so a fresh agent inherits the last agent's
-since-line and undo trail (2b's 6 and 16); the plan is in the list. Then
+does not show. **Built on Robert's word, 2026-09-27:** the door's session behind one
+connector — a gap of half an hour is a session boundary the door can see;
+the reading starts fresh and says so, and a step older than the gap is
+not this agent's to undo (2b's 6 and 16). Released as 0.1.59. Then
 the rest of 2a's mockup on his word (the card's handle, corner mark and
 foot, the tidy, the premise, the caret), and 3a.
 

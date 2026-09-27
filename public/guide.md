@@ -800,7 +800,7 @@ than a dictionary's, so the app and you never explain a word two ways.
   day, and `undo` takes them back newest first, refusing when the wall has
   changed since so nobody's work is trampled. `undo` with `preview: true`
   says what it would take back, and whether it still can, and takes nothing —
-  use it before an undo you are not sure of. Redo is not kept there: through the hosted door "forward again" is the change made again by hand, a page re-sent in full. A client
+  use it before an undo you are not sure of. Redo is not kept there: through the hosted door "forward again" is the change made again by hand, a page re-sent in full. Through the hosted door the trail is the connector's, and the desktop app keeps a connector across its own sessions: a gap of half an hour starts a new session, so a change older than that is not yours to undo, and a reading after the gap starts fresh and says so — the record says what changed meanwhile. A client
   that sends no session has no trail, and `undo` says so. The writer's ⌘Z on
   the wall takes any change back at every door. And "undo that scene" from a
   writer, when other changes they want have landed since, is `delete_note`

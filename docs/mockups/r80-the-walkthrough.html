@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<title>R80 — the walkthrough</title>
+<!-- The app's own paper: the source stylesheet, so the link never goes stale. -->
+<link rel="stylesheet" href="../../src/styles.css">
+<style>
+  html, body { height: auto; min-height: 100%; }
+  body { margin: 0; padding: 2rem 2.5rem 4rem; font-family: ui-sans-serif, system-ui, sans-serif; }
+  h1 { font: 600 1.05rem/1.3 ui-serif, Georgia, serif; margin: 0 0 0.25rem; }
+  h2.sec { font: 600 0.95rem/1.3 ui-serif, Georgia, serif; margin: 3rem 0 0.2rem; padding-top: 1.2rem; border-top: 1px solid rgba(127,127,127,0.25); }
+  .lede { font-size: 0.85rem; opacity: 0.78; margin: 0 0 1.2rem; max-width: 78ch; line-height: 1.5; }
+  .said { font-size: 0.82rem; line-height: 1.5; margin: 0.4rem 0 1.3rem; max-width: 80ch; padding: 0.6rem 0.9rem; border-left: 3px solid var(--over); background: rgba(127,127,127,0.08); }
+  .said b { font-weight: 600; }
+  .row { display: flex; gap: 2.2rem; flex-wrap: wrap; align-items: flex-start; }
+  .opt { width: 470px; max-width: 100%; }
+  .opt.wide { width: 660px; }
+  .opt h3 { font: 700 0.62rem/1.3 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; margin: 0 0 0.6rem; }
+  .opt h3 em { font-style: normal; color: var(--over); }
+  .opt p { font-size: 0.8rem; line-height: 1.45; opacity: 0.82; margin: 0.7rem 0 0; max-width: 62ch; }
+  .ask { margin-top: 1.2rem; max-width: 82ch; font-size: 0.86rem; line-height: 1.55; }
+  .ask b { font-weight: 600; }
+  .honest { font-size: 0.82rem; line-height: 1.5; max-width: 80ch; margin: 0.6rem 0 0; padding: 0.6rem 0.9rem; border-left: 3px solid rgba(127,127,127,0.5); background: rgba(127,127,127,0.06); }
+  .honest b { font-weight: 600; }
+
+  .sheet { border: 1px solid rgba(127,127,127,0.3); border-radius: 10px; padding: 1rem 1.1rem 1.1rem; background: rgba(127,127,127,0.06); }
+  .top { display: flex; justify-content: space-between; align-items: baseline; margin: 0 0 0.6rem; }
+  .title { font: 600 0.98rem/1.3 ui-serif, Georgia, serif; }
+  .close { font: 700 0.6rem/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.6; }
+  .steps { display: flex; gap: 0.35rem; margin: 0 0 1rem; flex-wrap: wrap; }
+  .step { font: 600 0.68rem/1 ui-sans-serif, system-ui, sans-serif; padding: 0.45rem 0.7rem; border-radius: 999px; border: 1px solid rgba(127,127,127,0.4); display: flex; gap: 0.4rem; align-items: center; }
+  .step .n { opacity: 0.6; }
+  .step.done { opacity: 0.75; }
+  .step.done::after { content: "✓"; color: var(--over); }
+  .step.on { border-color: var(--over); color: var(--over); }
+  .step.wait { opacity: 0.45; border-style: dashed; }
+  .k { font: 700 0.56rem/1.3 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.6; display: block; margin-bottom: 0.2rem; }
+  .how { font-size: 0.76rem; line-height: 1.5; opacity: 0.85; margin: 0 0 0.8rem; }
+  .how ol { margin: 0.2rem 0 0; padding-left: 1.2rem; }
+  .item { display: grid; grid-template-columns: 96px 1fr; gap: 0.8rem; padding: 0.75rem 0; border-top: 1px solid rgba(127,127,127,0.2); }
+  .pic { width: 96px; height: 96px; border-radius: 6px; background: linear-gradient(160deg, rgba(120,110,95,0.95), rgba(45,45,50,0.95)); position: relative; }
+  .pic.b { background: linear-gradient(160deg, rgba(95,115,120,0.95), rgba(40,48,55,0.95)); }
+  .pic.wide { height: 54px; }
+  .pic.none { background: none; border: 1px dashed rgba(127,127,127,0.6); display: flex; align-items: center; justify-content: center; text-align: center; font-size: 0.64rem; opacity: 0.8; padding: 0 0.4rem; box-sizing: border-box; }
+  .pic .tick { position: absolute; right: 5px; top: 5px; font: 700 0.62rem/1 ui-sans-serif, system-ui, sans-serif; background: var(--over); color: #000; padding: 3px 5px; border-radius: 999px; }
+  .name { font: 0.86rem/1.3 ui-serif, Georgia, serif; margin: 0 0 0.35rem; }
+  .name small { font: 0.7rem/1 ui-sans-serif, system-ui, sans-serif; opacity: 0.6; margin-left: 0.4rem; }
+  .copy { display: flex; gap: 0.5rem; align-items: stretch; margin: 0 0 0.4rem; }
+  .copy .text { flex: 1; font: 0.68rem/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; background: rgba(127,127,127,0.13); border-radius: 5px; padding: 0.4rem 0.55rem; }
+  .copy .text.short { flex: none; }
+  .copy .btn { align-self: flex-start; }
+  .btn { font: 600 0.66rem/1 ui-sans-serif, system-ui, sans-serif; padding: 0.42rem 0.62rem; border-radius: 999px; border: 1px solid rgba(127,127,127,0.45); white-space: nowrap; }
+  .btn.main { border-color: var(--over); color: var(--over); }
+  .line { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; font-size: 0.72rem; margin-top: 0.15rem; }
+  .line .lab { opacity: 0.6; }
+  .ref { display: inline-flex; align-items: center; gap: 0.3rem; font: 0.66rem/1 ui-monospace, Menlo, monospace; padding: 0.2rem 0.4rem 0.2rem 0.2rem; border-radius: 4px; background: rgba(127,127,127,0.13); }
+  .ref i { width: 18px; height: 18px; border-radius: 3px; display: inline-block; background: linear-gradient(160deg, rgba(120,110,95,0.95), rgba(45,45,50,0.95)); }
+  .ref i.b { background: linear-gradient(160deg, rgba(95,115,120,0.95), rgba(40,48,55,0.95)); }
+  .ref i.c { background: linear-gradient(160deg, rgba(90,120,110,0.9), rgba(40,55,60,0.9)); }
+  .locked { opacity: 0.5; }
+  .lockline { font-size: 0.74rem; margin: 0.1rem 0 0; }
+  .lockline b { font-weight: 600; color: var(--over); }
+  .check { display: inline-flex; gap: 0.35rem; align-items: center; font-size: 0.7rem; opacity: 0.8; }
+  .check i { width: 11px; height: 11px; border: 1px solid rgba(127,127,127,0.7); border-radius: 2px; display: inline-block; }
+  .count { font-size: 0.72rem; opacity: 0.7; margin: 0 0 0.8rem; }
+  .strip { display: flex; gap: 6px; overflow: hidden; padding: 0.2rem 0 0.4rem; }
+  .strip div { flex: none; width: 150px; height: 84px; border-radius: 5px; background: linear-gradient(135deg, rgba(90,120,110,0.9), rgba(40,55,60,0.9)); position: relative; }
+  .strip div:nth-child(2) { background: linear-gradient(135deg, rgba(120,110,95,0.9), rgba(45,45,50,0.9)); }
+  .strip div:nth-child(3) { background: linear-gradient(135deg, rgba(95,115,120,0.9), rgba(40,48,55,0.9)); }
+  .strip div.none { background: none; border: 1px dashed rgba(127,127,127,0.6); box-sizing: border-box; }
+  .strip span { position: absolute; left: 5px; bottom: 5px; font: 700 0.58rem/1 ui-sans-serif, system-ui, sans-serif; background: rgba(0,0,0,0.6); color: #fff; padding: 2px 4px; border-radius: 3px; }
+</style>
+</head>
+<body>
+<h1>R80: the walkthrough — the look, the people, the places, then the shots</h1>
+<p class="lede">Drawn 2026-09-27 after the rehearsal on "Ada's column". It replaces section 3 of <code>r80-a-scenes-shots.html</code>. Robert's findings, in his words: without reference characters made first "it's hard to get the images to look like the reference characters"; getting pictures out and back is "screenshotting and reposting"; the app "needs to walk the user through creating these characters, downloading them and naming them correctly" with "really easy copy and paste sections where the user then marks something is done and potentially even uploads the reference files"; and "this has to be done before prompts can be iterated."</p>
+
+<!-- ───────────── 1 ───────────── -->
+<h2 class="sec">1 · One sheet, four steps, in order</h2>
+<div class="said"><b>Shots</b> in the bar opens the sheet for the project. The four steps stand across its head with what is done. A step opens when the one before it is done; the shots of a scene open as soon as the people and the place <i>that scene's shots name</i> are done, so one scene can be worked to the end before another's people exist.</div>
+<div class="row">
+  <div class="opt wide">
+    <h3>Step 2 · <em>the people, one done and one to make</em></h3>
+    <div class="sheet">
+      <div class="top"><span class="title">Shots · Low Water</span><span class="close">Close</span></div>
+      <div class="steps">
+        <span class="step done"><span class="n">1</span>The look</span>
+        <span class="step on"><span class="n">2</span>The people · 1 of 2</span>
+        <span class="step"><span class="n">3</span>The places · 0 of 1</span>
+        <span class="step wait"><span class="n">4</span>The shots · waiting</span>
+      </div>
+      <div class="how"><span class="k">How, each time</span>
+        <ol><li>Copy the prompt. Paste it into your image tool.</li><li>Download the picture you keep, and name it as shown.</li><li>Drop it here, or paste it, or tick that you have it.</li></ol>
+      </div>
+
+      <div class="item">
+        <div class="pic"><span class="tick">✓</span></div>
+        <div>
+          <p class="name">Ada Quill <small>in 6 of this board's shots</small></p>
+          <div class="line"><span class="lab">Saved as</span><span class="ref"><i></i>ada-quill.png</span><span class="btn">Download</span><span class="btn">Replace</span></div>
+        </div>
+      </div>
+
+      <div class="item">
+        <div class="pic none">drop or paste<br>the picture</div>
+        <div>
+          <p class="name">Nell Carrick <small>in 5 of this board's shots</small></p>
+          <span class="k">1 · Paste this</span>
+          <div class="copy"><span class="text">Character reference, face and full figure, plain background, neutral light: Nell Carrick, harbourmaster, 44, salt in the hair, a coat too big for her. 35mm, overcast, desaturated greens.</span><span class="btn main">Copy</span></div>
+          <span class="k">2 · Name the file</span>
+          <div class="copy"><span class="text short">nell-carrick.png</span><span class="btn">Copy</span></div>
+          <span class="k">3 · Bring it back</span>
+          <div class="line"><span class="btn">Choose a file</span><span class="lab">or drop it, or paste it</span><span class="check"><i></i>I have it, outside the app</span></div>
+        </div>
+      </div>
+      <div class="item locked">
+        <div class="pic none">—</div>
+        <div>
+          <p class="name">Bram Holt <small>in no shot yet</small></p>
+          <p class="lockline">No shot names him. He joins this list when one does.</p>
+        </div>
+      </div>
+    </div>
+    <p>A person with nothing on their page under <b>looks</b> has no prompt: the row says "Say what Nell looks like first", with the line to type it in, and the words go to her page. The app invents no face.</p>
+  </div>
+
+  <div class="opt">
+    <h3>The two ways a reference is done</h3>
+    <div class="honest"><b>A · The picture is in the app</b> (recommended where you can). Dropped, chosen or pasted. The app can then show it beside every shot it belongs to, hand it back to you with its name, and later hand it to a video tool.</div>
+    <div class="honest"><b>B · A tick: "I have it, outside the app."</b> The step is done and the shots open. The app shows the file's name beside each shot and no picture. This is the one that keeps the app light; it costs nothing to store.</div>
+    <p>Both are drawn because you said <i>marks something is done and potentially even uploads</i>. A tick can become a picture later by dropping one on the row.</p>
+    <h3 style="margin-top:1.4rem">Names</h3>
+    <p style="margin-top:0">A person is their name: <code>ada-quill.png</code>. A place is its phrase: <code>the-harbour-office.png</code>. A shot is its scene's number, its own, and its id: <code>s04-03-n34s.png</code>, so a folder sorts in story order and the app still knows the file if the numbers move. A second try adds <code>-2</code>. A file dropped with its name finds its row; any other file goes to the row it is dropped on.</p>
+  </div>
+</div>
+
+<!-- ───────────── 2 ───────────── -->
+<h2 class="sec">2 · Step 4: a shot says what to attach and what to paste</h2>
+<div class="row">
+  <div class="opt wide">
+    <h3>The shots of one scene · <em>one made, one to make, one waiting</em></h3>
+    <div class="sheet">
+      <div class="top"><span class="title">Shots · Low Water</span><span class="close">Close</span></div>
+      <div class="steps">
+        <span class="step done"><span class="n">1</span>The look</span>
+        <span class="step done"><span class="n">2</span>The people · 2 of 2</span>
+        <span class="step done"><span class="n">3</span>The places · 1 of 1</span>
+        <span class="step on"><span class="n">4</span>The shots · 1 of 10</span>
+      </div>
+      <p class="count">Ada's column · scene 4 of 40 · 10 shots, 1 with a still · <b>Next without a still ›</b></p>
+
+      <div class="item">
+        <div class="pic wide b"><span class="tick">✓</span></div>
+        <div>
+          <p class="name">1 · wide on the harbour office: the desk, the tide table on the wall <small>static · 5s</small></p>
+          <div class="line"><span class="lab">Saved as</span><span class="ref"><i class="c"></i>s04-01-4638.png</span><span class="btn">Another try</span></div>
+        </div>
+      </div>
+
+      <div class="item">
+        <div class="pic wide none">drop or paste</div>
+        <div>
+          <p class="name">2 · two-shot, Ada and Nell either side of the open ledger <small>8s</small></p>
+          <span class="k">1 · Attach these</span>
+          <div class="line" style="margin-bottom:0.45rem"><span class="ref"><i></i>ada-quill.png</span><span class="ref"><i class="b"></i>nell-carrick.png</span><span class="ref"><i class="c"></i>the-harbour-office.png</span><span class="btn">Download all three</span></div>
+          <span class="k">2 · Paste this</span>
+          <div class="copy"><span class="text">two-shot, Ada and Nell either side of the open ledger. interior, the harbour office. day. Identical faces and build to the references. 35mm, overcast, desaturated greens.</span><span class="btn main">Copy</span></div>
+          <span class="k">3 · Name the file</span>
+          <div class="copy"><span class="text short">s04-02-q3j9.png</span><span class="btn">Copy</span></div>
+          <span class="k">4 · Bring it back</span>
+          <div class="line"><span class="btn">Choose a file</span><span class="lab">or drop it, or paste it</span></div>
+        </div>
+      </div>
+
+      <div class="item locked">
+        <div class="pic wide none">—</div>
+        <div>
+          <p class="name">5 · Bram at the door, rain behind him <small>4s</small></p>
+          <p class="lockline">Waiting on <b>Bram Holt</b>: make his reference first. <span class="btn">Go to Bram</span></p>
+        </div>
+      </div>
+    </div>
+    <p>With the references attached, the prompt no longer spells out each person's looks: the picture carries the face, and the words would argue with it. What it keeps is the shot, the place, the light and the look. A shot's still is a picture in the app, never a tick: it is the first frame a video tool is handed.</p>
+  </div>
+  <div class="opt">
+    <h3>The strip · <em>to judge whether the look holds</em></h3>
+    <div class="sheet">
+      <p class="count" style="margin-bottom:0.4rem">Ada's column · 3 of 10 stills</p>
+      <div class="strip"><div><span>1</span></div><div><span>2</span></div><div><span>3</span></div><div class="none"><span>4</span></div></div>
+    </div>
+    <p>The scene's frames side by side, in order, nothing else. It is where you see the coat that changed. One tap from the sheet's head, and back.</p>
+    <h3 style="margin-top:1.4rem">What is held back</h3>
+    <div class="honest"><b>Your own wording.</b> When you change a prompt in your image tool to get the still you keep, the app does not know. A line under a finished shot, "What I changed", is cheap to add; say if you want it.</div>
+    <div class="honest"><b>Video.</b> Still question 26. When a tool is chosen, a shot with a still gets one more button.</div>
+  </div>
+</div>
+
+<!-- ───────────── 3 ───────────── -->
+<h2 class="sec">3 · Is this the best we can do?</h2>
+<div class="honest"><b>The gate is per scene, not per film.</b> "Before prompts can be iterated" could mean every person in the film before any shot. That is forty references before the first still, and a reason to give up. The gate drawn is: a shot opens when the people <i>it</i> names and <i>its</i> place are done.</div>
+<div class="honest"><b>Done means a picture or a tick, for references; a picture only, for a shot.</b> A reference kept outside the app still does its job in your image tool. A shot's still is what the app hands on, so it has to be here.</div>
+<div class="honest"><b>What it cannot fix.</b> The download from your image tool and the upload back into it are that tool's. The app's part is that nothing is retyped: the prompt, the file's name and the list of what to attach are each one copy.</div>
+<div class="honest"><b>Untested.</b> "Identical faces and build to the references" is a line from a guide, not from our rehearsal. If it does not help in your hands it comes out.</div>
+
+<p class="ask"><b>What a yes means.</b> "Build it as drawn" builds the sheet with its four steps, the per-scene gate, the tick for references, the names, paste and drop, the strip, and the writer's guide for it; the agent's tools say the same order and the same names. "No tick" makes a reference done only by a picture in the app. "Gate the whole film" opens the shots only when every person and place in the film is done. Anything else, say what, and it is drawn again first.</p>
+</body>
+</html>

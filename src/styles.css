@@ -6520,3 +6520,30 @@ body {
 .title-panel .open-lines__strike {
   opacity: 0.8;
 }
+
+.title-panel__close {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.55rem;
+  width: 1.7rem;
+  height: 1.7rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.title-panel__close:hover,
+.title-panel__close:focus-visible {
+  background: var(--slot);
+  color: var(--ink);
+  outline: none;
+}
+
+.title-panel__head {
+  padding-right: 1.8rem;
+}

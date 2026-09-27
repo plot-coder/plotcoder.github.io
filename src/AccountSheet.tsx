@@ -11,7 +11,8 @@
 // Change email, change password and delete account ask for the current
 // password once, because they are what a stranger at an open laptop could do.
 
-import { useEffect, useId, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
+import { useId, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
+import { useSheet } from "./useSheet";
 import { accountStore, savedAgo } from "./board/account";
 import type { AgentSeen } from "./board/agentSeen";
 import { factsLine } from "./board/projectFacts";
@@ -48,25 +49,21 @@ export function AccountSheet({ open, onClose, currentProjectId, onAgents, lastCh
   const [rename, setRename] = useState("");
   const [, tick] = useState(0);
 
-  useEffect(() => {
-    if (!open) return;
-    setMode("none");
-    setCurrent("");
-    setNext("");
-    setEditing(null);
-    setDeleting(false);
-    void accountStore.loadProjectFacts();
-    closeRef.current?.focus();
-    function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
-    }
-    window.addEventListener("keydown", onKey);
-    const timer = setInterval(() => tick((n) => n + 1), 30_000);
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      clearInterval(timer);
-    };
-  }, [open, onClose]);
+  // Once, as the sheet opens: a row the writer opens stays open until they close it (see useSheet).
+  useSheet(
+    open,
+    onClose,
+    () => {
+      setMode("none");
+      setCurrent("");
+      setNext("");
+      setEditing(null);
+      setDeleting(false);
+      void accountStore.loadProjectFacts();
+      closeRef.current?.focus();
+    },
+    { run: () => tick((n) => n + 1), ms: 30_000 },
+  );
 
   if (!open) return null;
 

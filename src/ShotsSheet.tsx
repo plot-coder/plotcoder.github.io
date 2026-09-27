@@ -9,7 +9,8 @@
 // app; a shot's still is a picture here, since it is the first frame a video
 // tool is handed. Drawn in docs/mockups/r80-the-walkthrough.html.
 
-import { useEffect, useId, useMemo, useRef, useState, type ClipboardEvent, type DragEvent } from "react";
+import { useId, useMemo, useRef, useState, type ClipboardEvent, type DragEvent } from "react";
+import { useSheet } from "./useSheet";
 import { accountStore, type Asset } from "./board/account";
 import { EditableText } from "./EditableText";
 import { type PlacePage } from "./board/places";
@@ -76,28 +77,17 @@ export function ShotsSheet({ open, board, order, projectName, look, places, outs
 
   const walk = useMemo(() => walkthrough(board, { look, places, outside, files: assets, order }), [board, look, places, outside, assets, order]);
 
-  useEffect(() => {
-    if (!open) return;
+  // Once, as the sheet opens, where the work is: the first step with something left. Moving the writer between
+  // steps as they work would take the row from under their hand (see useSheet).
+  useSheet(open, onClose, () => {
     closeRef.current?.focus();
     setSaid(null);
     setCopied(null);
-    function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
-
-  // Open where the work is: the first step with something left.
-  useEffect(() => {
-    if (!open) return;
     const { counts } = walk;
     setStep(!walk.look.done && counts.people.done === 0 ? "look" : counts.people.done < counts.people.of ? "people" : counts.places.done < counts.places.of ? "places" : "shots");
     setSceneId(walk.next?.scene ?? walk.scenes[0]?.id ?? null);
     setStrip(false);
-    // Only as the sheet opens: moving the writer between steps as they work would take the row from under their hand.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  });
 
   if (!open) return null;
 

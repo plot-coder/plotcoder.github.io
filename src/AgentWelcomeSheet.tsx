@@ -10,6 +10,7 @@
 // never kept. The technical doors stay where they were, behind Agents.
 
 import { useEffect, useId, useRef, useState } from "react";
+import { useSheet } from "./useSheet";
 import { basicHeader, firstMessage, type AgentSeen } from "./board/agentSeen";
 import { WORKFLOWS } from "./board/workflows";
 
@@ -51,27 +52,21 @@ export function AgentWelcomeSheet({ open, seen, email, projectName, boards, onCl
   /** An agent has been, and the writer asked to see the steps again. */
   const [again, setAgain] = useState(false);
 
-  useEffect(() => {
-    if (!open) return;
-    setCopied(null);
-    setPassword("");
-    setAgain(false);
-    setStep(email ? 2 : 1);
-    closeRef.current?.focus();
-    function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
-    }
-    window.addEventListener("keydown", onKey);
-    // While the writer waits for their agent, look every ten seconds: the head changes under their eyes.
-    onLook();
-    const timer = window.setInterval(onLook, 10000);
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      window.clearInterval(timer);
-    };
-    // The open step is chosen as the sheet opens; signing in while it is open moves it on below.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, onClose, onLook]);
+  // Once, as the sheet opens (see useSheet). While the writer waits for their agent, look every ten seconds: the
+  // head changes under their eyes, and what they have typed or opened stays as it is.
+  useSheet(
+    open,
+    onClose,
+    () => {
+      setCopied(null);
+      setPassword("");
+      setAgain(false);
+      setStep(email ? 2 : 1);
+      closeRef.current?.focus();
+      onLook();
+    },
+    { run: onLook, ms: 10000 },
+  );
 
   useEffect(() => {
     if (open && email && step === 1) setStep(2);

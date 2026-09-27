@@ -107,8 +107,11 @@ of the result what the wall says of the cards.
 
 **Where it stands.** Everything is there to look at — the wall, the strip,
 the pages panel, the cast lens, Read the wall in Reminders, Help (R64),
-the writer's guide (R63), who is here (R41) — and nothing has ever been
-tested from the person's side after an agent's session. Every round ended
+the writer's guide (R63), who is here (R41) — and pass 2a (2026-09-26)
+was the first look from the person's side after an agent's session; its
+finding, that the wall had no memory of a session, is **R76**, the record
+of a session, built the same night: Since you looked on the sheet, the
+since-anyone line in the reading, the agent's last word. Before it: Every round ended
 with the agent's report and an emptied account; nobody opened the wall the
 agent left and asked what it says. There is no record on the wall of what
 the agent did or asked; undo holds the steps but names none to a person;

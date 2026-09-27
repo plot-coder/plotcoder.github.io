@@ -91,6 +91,16 @@ only when the server is started with `PLOTCODER_JSON=1`.
   length — the same checks `read_wall` runs, board by board, so it never
   says what `read_wall` would not. For a series, read this first;
   `read_wall` for one board in full.
+- `read_record` — **the wall's memory of its last fifty changes**, told as
+  sessions: who (the signed-in writer's name, or an agent), when, and each
+  change in the person's terms — "wrote 'The morning after' (4/8 pages)",
+  "set 'The bank' aside". Every door writes it as changes land; nothing in
+  it is what anyone said. `read_wall` opens with the last session by
+  another hand ("since anyone last changed this wall"); picking up a wall
+  another session worked, or past your own context, read the record before
+  you ask the writer what happened. When you stop, `hand_over` leaves one
+  sentence for the writer — what you did not do and what you need — at the
+  head of their Read the wall sheet, until their next change.
 - `read_wall` — step 4 of the method. The beats in wall order, the pages of
   scenes between consecutive beats, and the **questions the wall raises**: a run
   out of proportion with the others, a card with no change line, a card no arrow

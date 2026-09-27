@@ -28,8 +28,8 @@ set-aside card sliding to its row with a word, and the agent's tidy after
 `create_cards` (2); the premise at two lines opening on tap, and the end
 key and the caret in Pages (3). Waiting on Robert's word.
 
-- [ ] **4, 19, 21 · What the agent did last, what it is waiting on, and
-  which turns were whose.** The largest finding, and goal 2's: the wall
+- [x] **4, 19, 21 · What the agent did last, what it is waiting on, and
+  which turns were whose.** **Built 2026-09-26, late, as R76** (the record on the board, Since you looked, read_wall's since-anyone line, read_record, hand_over; the account sheet's last-changed line answers 9 and 20). The largest finding, and goal 2's: the wall
   has no memory of a session. *Plan:* a short record on the project — the
   last session's changes by card, in the person's terms, and its open
   questions — shown as "Since you looked" at the head of Read the wall and
@@ -54,9 +54,9 @@ key and the caret in Pages (3). Waiting on Robert's word.
   to the end of the scene, not the box.
 - [ ] **2, 3 · The premise is cut off at the top; the film is nine cards to
   read.** *Plan:* the premise wraps to two lines or opens on tap.
-- [ ] **9, 20 · Does the agent see what I change?** *Plan:* with the record
+- [x] **9, 20 · Does the agent see what I change?** Built with R76. *Plan:* with the record
   above, the account sheet says when an agent last read the wall.
 
 ## Every entry, accounted for
 
-1 → planned · 2, 3 → planned · 4 → planned · 5 → fixed · 6 → nothing to do (the sheet reads well) · 7 → planned · 8 → the file was a copy, nothing to do · 9 → planned · 10 → with 15 · 11 → with 1 · 12 → planned · 13 → planned · 14 → nothing to do · 15 → fixed · 16 → planned · 17 → planned · 18 → planned · 19 → planned with 4 · 20 → planned · 21 → planned with 4 · 22 → fixed.
+1 → planned · 2, 3 → planned · 4 → built (R76) · 5 → fixed · 6 → nothing to do (the sheet reads well) · 7 → planned · 8 → the file was a copy, nothing to do · 9 → built (R76) · 10 → with 15 · 11 → with 1 · 12 → planned · 13 → planned · 14 → nothing to do · 15 → fixed · 16 → planned · 17 → planned · 18 → planned · 19 → built (R76) · 20 → built (R76) · 21 → built (R76) · 22 → fixed.

@@ -66,6 +66,7 @@ import { DEFAULT_REMINDERS, titleFromBody } from "../src/board/reminders.js";
 import crypto from "node:crypto";
 import { describePage, describePages, describeRuns, describeSetups, describeUndecided, openOutsideFilm, readWall } from "../src/board/readWall.js";
 import { undecidedPage } from "../src/board/undecided.js";
+import { describeChange, describeRecord, spanWords, withRecord } from "../src/board/record.js";
 import { compareStructure, describeComparison, MATCH_PAGES } from "../src/board/compareStructure.js";
 import { GAP, ROW_WIDTH, organizePoses } from "../src/board/organize.js";
 import { parseScene, sceneLineCount } from "../src/board/paginate.js";
@@ -1113,18 +1114,24 @@ async function commit(command) {
   // command teaches the agent the board is in a state it is not.
   if (!changed) return { state: next, changed, result, live: base !== null };
 
-  const live = await writeBoard(next, rev, base, boardId, "exact");
+  // The record of a session (R76): what an agent did, in the person's terms, found by reading the wall before
+  // against the wall after, so no tool has to remember to say it.
+  const recorded = command.type === "hand_over" ? next : withRecord(next, { at: new Date().toISOString(), by: AGENT_HAND, ...describeChange(state, next) });
+  const live = await writeBoard(recorded, rev, base, boardId, "exact");
   // A page written or rewritten is named by its card (R74; pass 1b, entry 63), so "since your last reading", the
   // undo's preview and the undo itself all say which page, not "set_text".
   const what = command.type === "set_text" && result?.headline ? `the page of "${result.headline}"` : describeCommand(command);
-  trail.push({ before: state, after: canon(next), what });
-  queueUndo(state, next, what, boardId);
+  trail.push({ before: state, after: canon(recorded), what });
+  queueUndo(state, recorded, what, boardId);
   sinceRead.push(what);
-  noteChange(state, next, boardId);
+  noteChange(state, recorded, boardId);
   if (trail.length > TRAIL_CAP) trail.shift();
   undone.length = 0;
-  return { state: next, changed, result, live, before: state };
+  return { state: recorded, changed, result, live, before: state };
 }
+
+/** Whose hand an agent's change is on the record (R76): every door through this server. */
+const AGENT_HAND = "an agent";
 
 /**
  * Several kernel commands as one change. Read once; `build(step, current)` applies
@@ -1149,6 +1156,8 @@ async function commitAll(what, build) {
   };
   const value = await build(step, () => current);
   if (!changed) return { state: current, changed: false, value, live: base !== null };
+  // One tool call is one change on the record (R76), however many commands it took.
+  current = withRecord(current, { at: new Date().toISOString(), by: AGENT_HAND, ...describeChange(state, current) });
   const live = await writeBoard(current, rev, base, boardId, "exact");
   trail.push({ before: state, after: canon(current), what });
   queueUndo(state, current, what, boardId);
@@ -2277,6 +2286,11 @@ server.registerTool(
     const sinceLine = lastReading
       ? `since your last reading: ${sinceRead.length ? `${sinceRead.length} change${sinceRead.length === 1 ? "" : "s"} (${[...sinceRead.reduce((counts, what) => counts.set(what, (counts.get(what) ?? 0) + 1), new Map())].map(([what, count]) => (count > 1 ? `${what} ×${count}` : what)).join(", ")})` : "no change"}${typeof lastReading.eighths === "number" ? `; it was about ${formatPages(lastReading.eighths)} pages then and is about ${formatPages(boardEighths(state))} now${boardEighths(state) === lastReading.eighths ? "" : ` (${formatPages(Math.abs(boardEighths(state) - lastReading.eighths))} ${boardEighths(state) > lastReading.eighths ? "longer" : "shorter"})`}` : ""}`
       : null;
+    // The record's own since (R76): the last session of changes by another hand, so a fresh agent — or one past its
+    // context — knows what the writer did, and what the agent before it did, from the wall alone.
+    const sessions = describeRecord(state, { limit: 6 });
+    const recordLines = sessions.slice(0, 2).map((session) => `${session === sessions[0] ? "since anyone last changed this wall" : "before that"}: ${session.count} change${session.count === 1 ? "" : "s"} by ${session.by}, ${spanWords(session.from, session.to)} — ${session.lines.map((item) => item.line).join("; ")}${session.more ? `; and ${session.more} more (read_record has the whole record)` : ""}`);
+    if (state.handOver) recordLines.push(`the agent's last word, ${spanWords(state.handOver.at, state.handOver.at)}: "${state.handOver.words}" (it stands until the writer's next change)`);
     lastReading = { findings: reading.findings, eighths: boardEighths(state) };
     sinceRead.length = 0;
     readOnce = true;
@@ -2331,6 +2345,7 @@ server.registerTool(
       `PlotCoder wall (${door(live, base)})`,
       atAGlance(state, reading, projectForRead, readBoardMeta),
       ...(sinceLine ? [sinceLine] : []),
+      ...recordLines,
       ...(state.lock ? [`numbers: locked since ${String(state.lock.at).slice(0, 10)}; read_pages shows each scene's number`] : []),
       `board: "${readBoardMeta?.name ?? "?"}"${readBoardMeta?.nameOpen ? ` — its name is open, by the writer's word: "${readBoardMeta.nameOpen}"` : ""}${projectForRead.boards.length > 1 ? ` — board ${projectForRead.boards.findIndex((meta) => meta.id === readBoardMeta?.id) + 1} of ${projectForRead.boards.length} in the project "${projectForRead.name}"; open_board reads another` : ""}`,
       ...(projectForRead.nameOpen ? [`project: "${projectForRead.name}" — its name is open, by the writer's word: "${projectForRead.nameOpen}"`] : []),
@@ -2448,6 +2463,38 @@ server.registerTool(
 // --- Leaving a question (R53) ----------------------------------------
 
 const sameList = (a, b) => a.length === b.length && a.every((id, index) => id === b[index]);
+
+server.registerTool(
+  "hand_over",
+  {
+    title: "Your last word to the writer",
+    description:
+      "Leave one sentence on the wall for the writer when you stop: what you did not do and what you need from them — \"I have done nothing to the unpaid card; whether the man's card comes back is yours.\" It shows at the head of the writer's Read the wall sheet and in a fresh agent's read_wall, and stands until the writer's next change. Not a report and not the log: one sentence, in words the writer would use. \"\" takes it back. What you did needs no word from you — the wall records every change by card, by whom and when, and read_record lists it.",
+    inputSchema: { words: z.string().describe("One sentence, or \"\" to take the last one back.") },
+  },
+  async (args) => {
+    const { changed, result, live } = await commit({ type: "hand_over", words: args.words, by: AGENT_HAND });
+    if (!changed) return ok(args.words.trim() ? "That is already the last word on the wall." : "There was no last word to take back.");
+    return ok(result ? `Your last word is on the wall${where(live)}: "${result.words}". The writer sees it at the head of Read the wall; it stands until their next change.` : `The last word is taken back${where(live)}.`, result);
+  },
+);
+
+server.registerTool(
+  "read_record",
+  {
+    title: "The record: who changed the wall, and when",
+    description:
+      "The wall's own memory of its last fifty changes, told as sessions — one hand, no gap over half an hour — newest first: who (the signed-in writer's name, or an agent), when, how many changes, and each change in the person's terms (\"wrote 'The morning after' (4/8 pages)\", \"set 'The bank' aside, out of the film\"). Every door writes it as changes land; nothing here is what anyone said, only what the wall saw. read_wall opens with the last session by another hand; this is the whole of it. For picking up a wall another session worked, or past your own context: read this before you ask the writer what happened.",
+    inputSchema: { sessions: z.number().int().positive().optional().describe("How many sessions, newest first; default all.") },
+  },
+  async (args = {}) => {
+    const { state, live, base } = await readBoard();
+    const sessions = describeRecord(state, { limit: 50 }).slice(0, args.sessions ?? undefined);
+    if (!sessions.length) return ok(`The record is empty: nothing has changed on this wall since the record began (${door(live, base)}).`, { sessions: [], handOver: state.handOver ?? null });
+    const lines = sessions.map((session) => `- ${session.by}, ${spanWords(session.from, session.to)} — ${session.count} change${session.count === 1 ? "" : "s"}:\n${session.lines.map((item) => `    ${item.line}${item.ids.length ? ` (${item.ids.join(", ")})` : ""}`).join("\n")}`);
+    return ok([`The record (${door(live, base)}), newest first — the last ${Math.min(50, (state.record ?? []).length)} changes:`, ...lines, ...(state.handOver ? [`The agent's last word, ${spanWords(state.handOver.at, state.handOver.at)}: "${state.handOver.words}"`] : [])].join("\n"), { sessions, handOver: state.handOver ?? null });
+  },
+);
 
 server.registerTool(
   "leave_question",
@@ -3697,6 +3744,8 @@ server.registerTool(
       undone.push(last);
     }
     const { boardId } = await readBoard();
+    // An undo restores the wall as it was before the change, record and all (R76): the undone change's own line
+    // goes with it, so the record never names a change the wall no longer holds.
     const live = await writeBoard(last.before, rev, base, boardId, "exact");
     const orderLine = /^(move_scene|organize)/.test(last.what) ? ` Story order now: ${storyOrder(last.before).map((note, index) => `${index + 1}. ${note.headline}`).join(", ")}.` : "";
     const cardsDiff = last.before.notes.length - state.notes.length;

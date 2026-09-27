@@ -9,6 +9,8 @@
 
 import { useEffect, useId, useRef } from "react";
 import type { Finding, FindingKind } from "./board/readWall";
+import type { RecordSession } from "./board/record";
+import { spanWords } from "./board/record";
 
 type AsksSheetProps = {
   open: boolean;
@@ -26,6 +28,12 @@ type AsksSheetProps = {
   onLeave: (finding: Finding) => void;
   /** Take the word back: ask it again now. */
   onAskAgain: (finding: Finding) => void;
+  /** The record of a session (R76): the sessions of changes since the writer last looked, newest first. */
+  record: RecordSession[];
+  /** The writer at this keyboard, so their own changes read as "you". */
+  whoAmI: string;
+  /** The agent's last word, until the writer's next change. */
+  handOver: { at: string; by: string; words: string } | null;
 };
 
 export const KIND_NAMES: Record<FindingKind, string> = {
@@ -55,7 +63,7 @@ const PAGE_KINDS: ReadonlySet<FindingKind> = new Set(["unsaid", "behind", "unvoi
 /** The kinds a debt is: shown warm. */
 const WARM: ReadonlySet<FindingKind> = new Set(["unpaid", "backwards", "unsaid"]);
 
-export function AsksSheet({ open, findings, left, proposed, onKeep, onStrike, onClose, onShow, onLeave, onAskAgain }: AsksSheetProps) {
+export function AsksSheet({ open, findings, left, proposed, onKeep, onStrike, onClose, onShow, onLeave, onAskAgain, record, whoAmI, handOver }: AsksSheetProps) {
   const titleId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
 
@@ -119,6 +127,52 @@ export function AsksSheet({ open, findings, left, proposed, onKeep, onStrike, on
           Read the way the method reads it: the sag, the setup with no payoff, the person who disappears, two scenes
           doing one job. Questions, not fixes.
         </p>
+        {record.length > 0 || handOver ? (
+          <div className="asks__left" style={{ marginTop: 0 }}>
+            {record.map((session) => (
+              <div key={`${session.by}-${session.from}`}>
+                <p className="cast-lens__kicker cast-lens__section">
+                  Since you looked · {session.by === whoAmI ? "you" : session.by}, {spanWords(session.from, session.to)} · {session.count}{" "}
+                  {session.count === 1 ? "change" : "changes"}
+                </p>
+                <ol className="asks__list">
+                  {session.lines.map((item) => (
+                    <li key={item.line} className="asks__q">
+                      <p className="asks__text">
+                        {item.line}
+                        {item.ids.length > 0 ? (
+                          <>
+                            {" "}
+                            <button
+                              type="button"
+                              className="words__show"
+                              onClick={() => {
+                                onClose();
+                                onShow(item.ids);
+                              }}
+                            >
+                              show me
+                            </button>
+                          </>
+                        ) : null}
+                      </p>
+                    </li>
+                  ))}
+                  {session.more > 0 ? (
+                    <li className="asks__q">
+                      <p className="asks__text">and {session.more} more.</p>
+                    </li>
+                  ) : null}
+                </ol>
+              </div>
+            ))}
+            {handOver ? (
+              <p className="project-copy project-door__hint">
+                The agent's last word, {spanWords(handOver.at, handOver.at)}: <i>“{handOver.words}”</i> — it stands until your next change.
+              </p>
+            ) : null}
+          </div>
+        ) : null}
         {proposed.length > 0 ? (
           <div className="asks__proposed">
             <p className="cast-lens__kicker">Proposed by your agent · turns, for you to keep or strike</p>

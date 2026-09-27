@@ -41,6 +41,7 @@ import { AccountSheet } from "./AccountSheet";
 import { WordsSheet } from "./WordsSheet";
 import { HelpSheet, type HelpQuestion } from "./HelpSheet";
 import { AsksSheet } from "./AsksSheet";
+import { describeRecord, spanWords } from "./board/record";
 import { AgentsSheet } from "./AgentsSheet";
 import type { WordTarget } from "./board/words";
 import { ProjectPicker } from "./ProjectPicker";
@@ -151,9 +152,37 @@ export function App() {
   const [hoverNoteId, setHoverNoteId] = useState<string | null>(null);
   const board = useSyncExternalStore(boardStore.subscribe, boardStore.getState);
   const account = useSyncExternalStore(accountStore.subscribe, accountStore.getAccount);
+  // The record of a session (R76) names the writer at the keyboard: the signed-in name, or the app's own words.
+  useEffect(() => {
+    boardStore.setWho(() => account.user?.name ?? "the writer, in the app");
+  }, [account.user?.name]);
   const history = useSyncExternalStore(boardStore.subscribe, boardStore.getHistory);
   // The project (R35): the boards, the premise, which board is open.
   const project = useSyncExternalStore(boardStore.subscribe, boardStore.getProject);
+  // "Since you looked" (R76): when this viewer last closed the sheet, kept on the device; the record is the wall's.
+  const lookedKey = `plotcoder.looked.${project.activeBoardId}`;
+  const [lastLooked, setLastLooked] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem(lookedKey);
+    } catch {
+      return null;
+    }
+  });
+  const markLooked = () => {
+    const at = new Date().toISOString();
+    setLastLooked(at);
+    try {
+      localStorage.setItem(lookedKey, at);
+    } catch {
+      /* private window: the mark is a convenience */
+    }
+  };
+  const sinceLooked = useMemo(() => {
+    const all = describeRecord(board);
+    const fresh = lastLooked ? all.filter((session) => Date.parse(session.to) > Date.parse(lastLooked)) : [];
+    // Nothing since you looked: the newest session still tells a person who last touched the wall.
+    return fresh.length ? fresh : all.slice(0, 1);
+  }, [board, lastLooked]);
   const { notes, groups, arrows, characters } = board;
   const castFocusId = castOpen ? (castHeld ?? castHover) : null;
   const placeFocus = castOpen && castFocusId === null ? (placeHeld ?? placeHover) : null;
@@ -922,7 +951,18 @@ export function App() {
           onClose={() => setProjectOpen(false)}
           onSignIn={() => setAccountOpen(true)}
         />
-        <AccountSheet open={accountOpen} onClose={() => setAccountOpen(false)} currentProjectId={project.id} onAgents={() => setAgentsOpen(true)} />
+        <AccountSheet
+          open={accountOpen}
+          onClose={() => setAccountOpen(false)}
+          currentProjectId={project.id}
+          onAgents={() => setAgentsOpen(true)}
+          lastChange={(() => {
+            const newest = describeRecord(board).slice(0, 2);
+            if (!newest.length) return "";
+            const who = (session: (typeof newest)[number]) => (session.by === (account.user?.name ?? "the writer, in the app") ? "you" : session.by);
+            return `Last changed by ${who(newest[0])}, ${spanWords(newest[0].from, newest[0].to)}${newest[1] ? `; before that by ${who(newest[1])}, ${spanWords(newest[1].from, newest[1].to)}` : ""}. An agent sees your changes the next time it reads the wall.`;
+          })()}
+        />
         <WordsSheet open={wordsOpen} onClose={() => setWordsOpen(false)} onShow={showWord} onAgents={() => setAgentsOpen(true)} />
         <AgentsSheet open={agentsOpen} onClose={() => setAgentsOpen(false)} />
         <HelpSheet
@@ -942,12 +982,18 @@ export function App() {
         />
         <AsksSheet
           open={asksOpen}
+          record={sinceLooked}
+          whoAmI={account.user?.name ?? "the writer, in the app"}
+          handOver={board.handOver ?? null}
           findings={reading.findings}
           left={reading.left}
           proposed={reading.proposed.map((id) => ({ id, headline: board.notes.find((note) => note.id === id)?.headline ?? "" }))}
           onKeep={(id) => boardStore.dispatch({ type: "set_rank", ids: [id], rank: "beat" })}
           onStrike={(id) => boardStore.dispatch({ type: "set_rank", ids: [id], rank: "scene" })}
-          onClose={() => setAsksOpen(false)}
+          onClose={() => {
+            setAsksOpen(false);
+            markLooked();
+          }}
           onShow={showCards}
           onLeave={(finding) => boardStore.dispatch({ type: "leave_question", kind: finding.kind, ids: finding.ids, text: finding.text })}
           onAskAgain={(finding) => boardStore.dispatch({ type: "ask_again", kind: finding.kind, ids: finding.ids })}

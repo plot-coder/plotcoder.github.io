@@ -268,6 +268,9 @@ export function emptyState() {
     lock: null,
     revision: null,
     left: [],
+    // The record of a session (R76): the last fifty changes, by whom and when; and the agent's last word.
+    record: [],
+    handOver: null,
   };
 }
 
@@ -344,6 +347,9 @@ export function seedState(now = nowIso()) {
     lock: null,
     revision: null,
     left: [],
+    // The record of a session (R76): the last fifty changes, by whom and when; and the agent's last word.
+    record: [],
+    handOver: null,
   };
 }
 
@@ -518,6 +524,17 @@ export function normalizeState(value) {
   // A target left open in the writer's words (the handover's calls, 2026-09-19): the number stands as the default meanwhile.
   const targetOpen = typeof value.targetOpen === "string" ? value.targetOpen : "";
   // Boards written before the target kept the writer's word have a number and no word: nothing is claimed.
+  // The record of a session (R76): boards written before it have none; a bad entry is dropped, the last fifty kept.
+  const entryOk = (entry) => entry && typeof entry.at === "string" && typeof entry.by === "string" && Array.isArray(entry.lines) && entry.lines.every((line) => typeof line === "string") && Array.isArray(entry.ids) && entry.ids.every((id) => typeof id === "string");
+  const record = Array.isArray(value.record) && value.record.length <= 50 && value.record.every(entryOk)
+    ? value.record
+    : (Array.isArray(value.record) ? value.record : [])
+        .filter((entry) => entry && typeof entry.at === "string" && typeof entry.by === "string" && Array.isArray(entry.lines))
+        .map((entry) => ({ at: entry.at, by: entry.by, lines: entry.lines.filter((line) => typeof line === "string"), ids: Array.isArray(entry.ids) ? entry.ids.filter((id) => typeof id === "string") : [] }))
+        .slice(-50);
+  const wordOk = value.handOver && typeof value.handOver.words === "string" && value.handOver.words.trim() && typeof value.handOver.at === "string" && typeof value.handOver.by === "string" && value.handOver.words === value.handOver.words.trim();
+  const handOver = value.handOver == null ? null : wordOk ? value.handOver : typeof value.handOver.words === "string" && value.handOver.words.trim() && typeof value.handOver.at === "string" ? { at: value.handOver.at, by: typeof value.handOver.by === "string" ? value.handOver.by : "an agent", words: value.handOver.words.trim() } : null;
+
   const targetKind = TARGET_KINDS[value.targetKind] ? value.targetKind : "";
   if (
     value.logline === logline &&
@@ -530,6 +547,8 @@ export function normalizeState(value) {
     !arrowsPatched &&
     !patched &&
     value.lock === lock &&
+    value.record === record &&
+    (value.handOver ?? null) === handOver &&
     value.revision === revision &&
     !leftPatched &&
     !threadsPatched
@@ -550,6 +569,8 @@ export function normalizeState(value) {
     lock,
     revision,
     left,
+    record,
+    handOver,
     threads,
   };
 }
@@ -1638,6 +1659,14 @@ export function applyCommand(state, command, now = nowIso()) {
     // with those words is still what the wall would ask, and asks again on
     // its own the moment the question would read differently. Never a
     // dismissal: the kernel records the word; the reading decides.
+    // The agent's last word to the writer (R76): what it did not do and what it needs. "" takes it back.
+    case "hand_over": {
+      const words = typeof command.words === "string" ? command.words.trim() : "";
+      const handOver = words ? { at: now, by: typeof command.by === "string" && command.by.trim() ? command.by.trim() : "an agent", words } : null;
+      if ((state.handOver?.words ?? "") === (handOver?.words ?? "")) return { state, changed: false, result: handOver };
+      return { state: { ...state, handOver }, changed: true, result: handOver };
+    }
+
     case "leave_question": {
       const kind = typeof command.kind === "string" ? command.kind : "";
       const ids = Array.isArray(command.ids) ? command.ids.filter((id) => typeof id === "string") : [];

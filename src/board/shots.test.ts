@@ -122,16 +122,19 @@ describe("the wall with shots on it (R80)", () => {
     const { state, ids } = wall();
     const options = { look: "35mm, desaturated greens --sref 1234", places: [{ name: "INT. THE HARBOUR OFFICE", looks: "One room over the slip", sound: "", notes: "", open: "" }], title: "The Survey", order: state.notes };
     expect(findShot(state, `shot:${ids[1]}`)?.number).toBe(2);
-    expect(shotPrompt(state, ids[1], options)).toBe("close on Nell's hand on the ledger. INT. THE HARBOUR OFFICE: One room over the slip. Nell Carrow: Forty, oilskin, a burn on the left wrist. night, rain, one lamp. 35mm, desaturated greens --sref 1234.");
+    expect(shotPrompt(state, ids[1], options)).toBe("close on Nell's hand on the ledger. interior, the harbour office: One room over the slip. Nell Carrow: Forty, oilskin, a burn on the left wrist. night, rain, one lamp. 35mm, desaturated greens --sref 1234.");
+    // A shot whose line names nobody shows nobody, whoever the script under it speaks of (the rehearsal, 2026-09-27).
+    expect(shotPrompt(state, ids[0], options)).toBe("wide on the office, rain on the window. interior, the harbour office: One room over the slip. night, rain, one lamp. 35mm, desaturated greens --sref 1234.");
     const brief = shotBrief(state, ids[1], options) ?? "";
     expect(brief).toContain(`SHOT ${ids[1]}: shot 2 of 3 in "Ada's column" [[id: col]] — scene 1 of 1 on "The Survey"`);
     expect(brief).toContain("THE MOVE: slow push in");
     expect(brief).toContain("LENGTH: 4 seconds");
     expect(brief).toContain("FIRST FRAME: (no still filed yet)");
     expect(brief).toContain("THE SCRIPT IT COVERS:\nADA\nYou kept it.");
-    // Nell and Ada are both named in the stretch; Ada has no looks, and the brief says so rather than inventing them.
+    // Ada speaks under the shot and is not in its frame: the brief names her, the still does not, and her missing looks are not a gap of this still's.
+    expect(brief).toContain("IN THE FRAME: Nell Carrow");
     expect(brief).toContain("Ada Finch — (no looks on their page)");
-    expect(brief).toContain("NOT ON THE WALL: what Ada Finch looks like.");
+    expect(brief).not.toContain("NOT ON THE WALL");
     expect(shotBrief(state, "zzzz", options)).toBeNull();
   });
 

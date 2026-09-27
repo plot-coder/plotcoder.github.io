@@ -230,12 +230,27 @@ export function describeShots(state, order = null) {
   });
 }
 
-/** The people of a scene a shot names — by a word of their name in what it sees or the script it covers — or the scene's whole cast when it names none. */
-function peopleInShot(state, note, shot) {
+/**
+ * The people of a scene that some words name, by a word of their name. In a
+ * still, only who the shot's own line names (the rehearsal, 2026-09-27: a
+ * close on Nell listed Ada, and a shot of a window listed them both, because
+ * the script under the shot spoke of them): a shot that names nobody shows
+ * nobody. In the brief, who the script it covers names as well.
+ */
+function peopleNamed(state, note, text) {
   const cast = (note.characterIds ?? []).map((id) => (state.characters ?? []).find((person) => person.id === id)).filter(Boolean);
-  const words = ` ${`${shot.what} ${shot.covers}`.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ")} `;
-  const named = cast.filter((person) => person.name.toLowerCase().split(/\s+/).some((word) => word.length > 1 && words.includes(` ${word} `)));
-  return named.length ? named : cast;
+  const words = ` ${String(text).toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ")} `;
+  return cast.filter((person) => person.name.toLowerCase().split(/\s+/).some((word) => word.length > 1 && words.includes(` ${word} `)));
+}
+const peopleInFrame = (state, note, shot) => peopleNamed(state, note, shot.what);
+const peopleInShot = (state, note, shot) => peopleNamed(state, note, `${shot.what} ${shot.covers}`);
+
+/** A place as a sentence says it: "INT. THE HARBOUR OFFICE" is "interior, the harbour office". A phrase with no INT or EXT stands as written. */
+function placeWords(location) {
+  const match = /^\s*(INT\.?\s*\/\s*EXT|I\s*\/\s*E|INT|EXT|EST)[.\s]+(.*)$/i.exec(String(location ?? ""));
+  if (!match) return String(location ?? "").trim();
+  const side = /^(INT\.?\s*\/|I\s*\/)/i.test(match[1]) ? "interior and exterior" : /^INT/i.test(match[1]) ? "interior" : "exterior";
+  return `${side}, ${match[2].trim().toLowerCase()}`;
 }
 
 /**
@@ -253,6 +268,7 @@ export function shotBrief(state, id, options = {}) {
   const order = options.order ?? [];
   const sceneAt = order.findIndex((item) => item.id === note.id);
   const people = peopleInShot(state, note, shot);
+  const inFrame = peopleInFrame(state, note, shot);
   const page = (note.location ?? "").trim() ? placePage({ places: options.places ?? [] }, note.location) : null;
   const look = String(options.look ?? "").trim();
   const when = [note.when, note.day, note.light].map((part) => (part ?? "").trim()).filter(Boolean);
@@ -264,6 +280,7 @@ export function shotBrief(state, id, options = {}) {
     `LENGTH: ${typeof shot.seconds === "number" ? `${shot.seconds} second${shot.seconds === 1 ? "" : "s"}` : "(not said)"} — the scene is about ${formatPages(noteEighths(note))} page${formatPages(noteEighths(note)) === "1" ? "" : "s"}, ${isMeasured(note) ? "measured" : "estimated"}`,
     `AT: ${(note.location ?? "").trim() ? `${note.location.trim()}${page ? ` — ${placeLine(page)}` : " — (no page yet)"}` : (note.locationOpen ?? "").trim() ? `the place open, by the writer's word: "${note.locationOpen.trim()}"` : "(no place set)"}`,
     `WHEN: ${when.length ? when.join(" · ") : "(no time, day or light set)"}`,
+    `IN THE FRAME: ${inFrame.length ? inFrame.map((person) => person.name).join(", ") : "(the shot's line names nobody: the still shows nobody)"}`,
     `WHO: ${people.length ? people.map((person) => `${person.name}${(person.looks ?? "").trim() ? ` — looks: ${person.looks.trim()}` : " — (no looks on their page)"}`).join(" | ") : "(nobody cast)"}`,
     `FIRST FRAME: ${options.frame ? `"${options.frame}", filed on the shot` : "(no still filed yet)"}`,
     "THE SCRIPT IT COVERS:",
@@ -275,14 +292,14 @@ export function shotBrief(state, id, options = {}) {
   const gaps = [
     look ? "" : "the project's look",
     (note.location ?? "").trim() && !page?.looks ? `what ${note.location.trim()} looks like` : "",
-    ...people.filter((person) => !(person.looks ?? "").trim()).map((person) => `what ${person.name} looks like`),
+    ...inFrame.filter((person) => !(person.looks ?? "").trim()).map((person) => `what ${person.name} looks like`),
     when.length ? "" : "the time of day and the light",
   ].filter(Boolean);
   if (gaps.length) lines.push("", `NOT ON THE WALL: ${gaps.join("; ")}. Ask the writer, or leave it out of the prompt: nothing is invented to fill it.`);
   return lines.join("\n");
 }
 
-/** The prompt for a shot's still, one paragraph to copy: what the camera sees, the place, the people in it, the light, the look. */
+/** The prompt for a shot's still, one paragraph to copy: what the camera sees, the place, the people its line names, the light, the look. */
 export function shotPrompt(state, id, options = {}) {
   const found = findShot(state, id);
   if (!found) return "";
@@ -291,9 +308,9 @@ export function shotPrompt(state, id, options = {}) {
   const stop = (text) => String(text ?? "").trim().replace(/[.\s]+$/, "");
   const parts = [
     stop(shot.what),
-    (note.location ?? "").trim() ? `${stop(note.location)}${page?.looks ? `: ${stop(page.looks)}` : ""}` : "",
-    ...peopleInShot(state, note, shot).filter((person) => (person.looks ?? "").trim()).map((person) => `${person.name}: ${stop(person.looks)}`),
-    [note.when, note.light].map(stop).filter(Boolean).join(", "),
+    (note.location ?? "").trim() ? `${stop(placeWords(note.location))}${page?.looks ? `: ${stop(page.looks)}` : ""}` : "",
+    ...peopleInFrame(state, note, shot).filter((person) => (person.looks ?? "").trim()).map((person) => `${person.name}: ${stop(person.looks)}`),
+    [String(note.when ?? "").toLowerCase(), note.light].map(stop).filter(Boolean).join(", "),
     stop(options.look),
   ].filter(Boolean);
   return `${parts.join(". ")}.`;

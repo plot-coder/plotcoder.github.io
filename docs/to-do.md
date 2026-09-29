@@ -8,6 +8,47 @@ done and merged, what is left, and the order I would take it in.
 
 ---
 
+## Start here first (2026-09-29 — the live test story, and the title area)
+
+Read this, then the section under it, which is still true except where this says otherwise.
+
+**Since 0.1.67, app only — no tool changed, so no release is owed for these:** the account sheet
+refreshed (projects first, a row's rename, open, download, delete; Delete account at the foot), Agents and
+Your agent refreshed, the fresh wall's three ways in, the set-a-length menu on the story map and its target
+label, `useSheet` (a sheet's opening effect no longer depends on `onClose`), and **the story panel**: the
+head of the wall is one line and a press opens Logline, Premise and Open questions (#263); the project panel
+stands over the agent's button (#264). Each has its row in the change log of `REQUIREMENTS.md`.
+
+**The test account has changed.** Robert cleared it. "Low Water" and "Last Orders" are gone from the
+account; a copy of Low Water is on Robert's machine at
+`~/Documents/PlotCoder-backups/Low-Water-2026-09-27.plotcoder.json`. It now holds one project,
+**"Frog and Toad Go Fishing"** (`b86e1c1e-a7af-4a87-ba4f-101bc22469ad`), the live test Robert is driving:
+thirty pages, logline "Is fishing fun?", Frog and Toad with a want and a need each, nineteen cards wired in
+order, five beats, two folds paid off (the old rod, the sandwiches), no scene written. Robert said "you
+choose it all", so every choice on it is the agent's on his word. Two of the sample cards ("Maya finds the
+letter", "Tom lies about the job") are set aside, not deleted: the desktop app's own safety check refused
+two of three `delete_note` calls. The wall asks one question, a sag of about eleven pages between "Frog
+gives Toad the old rod" and "Frog notices"; it has been put to Robert and not answered.
+
+**Next on the test story:** Robert's answer on the sag; then draft the scenes (draft-a-sequence), then
+shots for one scene (break-into-shots, R80) — the first run of that workflow through the hosted door by a
+person and an agent together.
+
+**Found in the live test, not yet worked:**
+- A new account's sample wall takes five calls to clear (three cards, two people) before a treatment can
+  land; `new_project` would have been cleaner, and the sample's own line says "Replace it, or new_board"
+  without saying how to replace.
+- The agent's readings still say "against the feature default of 120" when no length is chosen; the wall
+  no longer does (the set-a-length work). Next release.
+- The dev app, signed in, copies the wall to the account on each load.
+- Not looked at signed in by an agent, and Robert's to walk: the account sheet's rename, download and
+  delete; the Shots sheet's pictures; the story panel and the project panel in the dark theme.
+
+**Waiting on Robert:** the Supabase OAuth server for R72 (Authentication › OAuth Server, dynamic
+registration on, authorization path `/oauth/consent`), beside what the section below lists.
+
+---
+
 ## Start here (2026-09-27, afternoon — the session that ran passes 1b to 4a closed)
 
 Read this section, then `docs/plan.md`'s claim board, then the working
